@@ -1,0 +1,6 @@
+cn.bitlinks.ems.framework.apilog.config.EmsApiLogAutoConfiguration
+cn.bitlinks.ems.framework.jackson.config.EmsJacksonAutoConfiguration
+cn.bitlinks.ems.framework.swagger.config.EmsSwaggerAutoConfiguration
+cn.bitlinks.ems.framework.web.config.EmsWebAutoConfiguration
+cn.bitlinks.ems.framework.apilog.config.EmsApiLogRpcAutoConfiguration
+cn.bitlinks.ems.framework.banner.config.EmsBannerAutoConfiguration

@@ -1,0 +1,5 @@
+cn.bitlinks.ems.framework.security.config.EmsSecurityRpcAutoConfiguration
+cn.bitlinks.ems.framework.security.config.EmsSecurityAutoConfiguration
+cn.bitlinks.ems.framework.security.config.EmsWebSecurityConfigurerAdapter
+cn.bitlinks.ems.framework.operatelog.config.EmsOperateLogConfiguration
+cn.bitlinks.ems.framework.operatelog.config.EmsOperateLogRpcAutoConfiguration

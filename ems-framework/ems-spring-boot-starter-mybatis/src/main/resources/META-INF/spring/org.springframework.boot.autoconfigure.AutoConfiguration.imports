@@ -1,0 +1,3 @@
+cn.bitlinks.ems.framework.datasource.config.EmsDataSourceAutoConfiguration
+cn.bitlinks.ems.framework.mybatis.config.EmsMybatisAutoConfiguration
+cn.bitlinks.ems.framework.translate.config.EmsTranslateAutoConfiguration

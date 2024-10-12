@@ -1,0 +1,3 @@
+cn.bitlinks.ems.framework.mq.redis.config.EmsRedisMQProducerAutoConfiguration
+cn.bitlinks.ems.framework.mq.redis.config.EmsRedisMQConsumerAutoConfiguration
+cn.bitlinks.ems.framework.mq.rabbitmq.config.EmsRabbitMQAutoConfiguration

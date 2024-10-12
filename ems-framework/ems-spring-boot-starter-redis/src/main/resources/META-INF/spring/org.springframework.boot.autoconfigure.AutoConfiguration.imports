@@ -1,0 +1,2 @@
+cn.bitlinks.ems.framework.redis.config.EmsRedisAutoConfiguration
+cn.bitlinks.ems.framework.redis.config.EmsCacheAutoConfiguration

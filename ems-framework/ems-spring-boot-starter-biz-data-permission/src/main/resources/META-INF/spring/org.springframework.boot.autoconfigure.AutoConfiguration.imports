@@ -1,0 +1,3 @@
+cn.bitlinks.ems.framework.datapermission.config.EmsDataPermissionAutoConfiguration
+cn.bitlinks.ems.framework.datapermission.config.EmsDeptDataPermissionAutoConfiguration
+cn.bitlinks.ems.framework.datapermission.config.EmsDataPermissionRpcAutoConfiguration
