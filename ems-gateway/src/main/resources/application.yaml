@@ -86,6 +86,9 @@ knife4j:
       - name: infra-server
         service-name: infra-server
         url: /admin-api/infra/v3/api-docs
+      - name: power-server
+        service-name: power-server
+        url: /admin-api/power/v3/api-docs
 
 --- #################### bitlinks相关配置 ####################
 
