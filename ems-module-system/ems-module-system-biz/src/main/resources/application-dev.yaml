@@ -3,16 +3,16 @@
 spring:
   cloud:
     nacos:
-      server-addr: 192.168.2.29:8848 # Nacos 服务器地址
+      server-addr: 127.0.0.1:8848 # Nacos 服务器地址
       username: nacos # Nacos 账号
       password: nacos # Nacos 密码
       discovery: # 【配置中心】配置项
-        namespace: dev # 命名空间。这里使用 dev 开发环境
+        namespace: 98dbbbee-8a69-4a76-afe7-b76281e8ddba # 命名空间。这里使用 dev 开发环境
         group: DEFAULT_GROUP # 使用的 Nacos 配置分组，默认为 DEFAULT_GROUP
         metadata:
           version: 1.0.0 # 服务实例的版本号，可用于灰度发布
       config: # 【注册中心】配置项
-        namespace: dev # 命名空间。这里使用 dev 开发环境
+        namespace: 98dbbbee-8a69-4a76-afe7-b76281e8ddba # 命名空间。这里使用 dev 开发环境
         group: DEFAULT_GROUP # 使用的 Nacos 配置分组，默认为 DEFAULT_GROUP
 
 --- #################### 数据库相关配置 ####################
@@ -58,19 +58,19 @@ spring:
         master:
           url: jdbc:mysql://127.0.0.1:3306/ydme_ems?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true # MySQL Connector/J 8.X 连接的示例
           username: root
-          password: 123456
+          password: BitlinkMysql@2022
         slave: # 模拟从库，可根据自己需要修改 # 模拟从库，可根据自己需要修改
           lazy: true # 开启懒加载，保证启动速度
           url: jdbc:mysql://127.0.0.1:3306/ydme_ems?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true # MySQL Connector/J 8.X 连接的示例
           username: root
-          password: 123456
+          password: BitlinkMysql@2022
 
   # Redis 配置。Redisson 默认的配置足够使用，一般不需要进行调优
   redis:
-    host: 400-infra.server.bitlinks.cn # 地址
+    host: 192.168.2.26 # 地址
     port: 6379 # 端口
     database: 1 # 数据库索引
-#    password: 123456 # 密码，建议生产环境开启
+    password: bitlink2022 # 密码，建议生产环境开启
 
 --- #################### MQ 消息队列相关配置 ####################
 
@@ -92,6 +92,7 @@ spring:
 --- #################### 定时任务相关配置 ####################
 xxl:
   job:
+    enabled: false # 是否开启调度中心，默认为 true 开启
     admin:
       addresses: http://127.0.0.1:9090/xxl-job-admin # 调度中心部署跟地址
 
@@ -154,7 +155,9 @@ wx:
 
 # bitlinks配置项，设置当前项目所有自定义的配置
 ems:
-  demo: true # 开启演示模式
+  #demo: true # 开启演示模式
+  captcha:
+    enable: false # 本地环境，暂时关闭图片验证码，方便登录等接口的测试
 
 justauth:
   enabled: true
