@@ -56,7 +56,7 @@ spring:
         prefix-enabled: false # 避免 Swagger 重复带上额外的 /admin-api/system 前缀
 
 server:
-  port: 48080
+  port: 48090
 
 logging:
   file:
