@@ -18,7 +18,20 @@ spring:
     gateway:
       # 路由配置项，对应 RouteDefinition 数组
       routes:
-        ## system-server 服务
+        ## power-server 服务
+        - id: power-admin-api # 路由的编号
+          uri: grayLb://power-server
+          predicates: # 断言，作为路由的匹配条件，对应 RouteDefinition 数组
+            - Path=/admin-api/power/**
+          filters:
+              - RewritePath=/admin-api/power/v3/api-docs, /v3/api-docs # 配置，保证转发到 /v3/api-docs
+        - id: power-app-api # 路由的编号
+          uri: grayLb://power-server
+          predicates: # 断言，作为路由的匹配条件，对应 RouteDefinition 数组
+            - Path=/app-api/power/**
+          filters:
+              - RewritePath=/app-api/system/v3/api-docs, /v3/api-docs
+            ## system-server 服务
         - id: system-admin-api # 路由的编号
           uri: grayLb://system-server
           predicates: # 断言，作为路由的匹配条件，对应 RouteDefinition 数组
