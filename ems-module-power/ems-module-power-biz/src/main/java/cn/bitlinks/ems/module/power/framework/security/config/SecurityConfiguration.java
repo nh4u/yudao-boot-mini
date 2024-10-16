@@ -36,8 +36,6 @@ public class SecurityConfiguration {
                 // Spring Boot Admin Server 的安全配置
                 registry.requestMatchers(adminSeverContextPath).permitAll()
                         .requestMatchers(adminSeverContextPath + "/**").permitAll();
-                // 文件读取
-                registry.requestMatchers(buildAdminApi("/infra/file/*/get/**")).permitAll();
 
                 // TODO bitlinks：这个每个项目都需要重复配置，得捉摸有没通用的方案
                 // RPC 服务的安全配置
