@@ -142,9 +142,9 @@ spring:
 logging:
   level:
     # 配置自己写的 MyBatis Mapper 打印日志
-    cn.bitlinks.ems.module.infra.dal.mysql: debug
-    cn.bitlinks.ems.module.infra.dal.mysql.logger.ApiErrorLogMapper: INFO # 配置 ApiErrorLogMapper 的日志级别为 info，避免和 GlobalExceptionHandler 重复打印
-    cn.bitlinks.ems.module.infra.dal.mysql.file.FileConfigMapper: INFO # 配置 FileConfigMapper 的日志级别为 info
+    cn.bitlinks.ems.module.power.dal.mysql: debug
+    cn.bitlinks.ems.module.power.dal.mysql.logger.ApiErrorLogMapper: INFO # 配置 ApiErrorLogMapper 的日志级别为 info，避免和 GlobalExceptionHandler 重复打印
+    cn.bitlinks.ems.module.power.dal.mysql.file.FileConfigMapper: INFO # 配置 FileConfigMapper 的日志级别为 info
     org.springframework.context.support.PostProcessorRegistrationDelegate: ERROR # TODO bitlinks：先禁用，Spring Boot 3.X 存在部分错误的 WARN 提示
 
 --- #################### bitlinks相关配置 ####################
