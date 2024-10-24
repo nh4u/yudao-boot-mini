@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
+
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
@@ -114,6 +116,14 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         }
 
         return energyConfigurationMapper.selectList(queryWrapper);
+    }
+
+    @Override
+    public Map<Integer, List<EnergyConfigurationDO>> getEnergyMenu() {
+        List<EnergyConfigurationDO> energyConfigurations = energyConfigurationMapper.selectList();
+        Map<Integer, List<EnergyConfigurationDO>> groupedByClassify = energyConfigurations.stream()
+                .collect(Collectors.groupingBy(EnergyConfigurationDO::getEnergyClassify));
+        return groupedByClassify;
     }
 
 }

@@ -106,10 +106,18 @@ public class EnergyConfigurationController {
     @Operation(summary = "根据条件查询能源配置")
     @PreAuthorize("@ss.hasPermission('power:energy-configuration:searchEnergyConfigurations')")
     @ApiAccessLog(operateType = EXPORT)
-    public List<EnergyConfigurationDO> searchEnergyConfigurations(
+    public CommonResult<List<EnergyConfigurationDO>> searchEnergyConfigurations(
             @RequestParam(required = false) String energyName,
             @RequestParam(required = false) String energyClassify,
             @RequestParam(required = false) String code) {
-        return energyConfigurationService.selectByCondition(energyName, energyClassify, code);
+        return success(energyConfigurationService.selectByCondition(energyName, energyClassify, code));
+    }
+//return success(BeanUtils.toBean(pageResult, EnergyConfigurationRespVO.class));
+    @GetMapping("/menu")
+    @Operation(summary = "根据能源分类获取能源")
+    @PreAuthorize("@ss.hasPermission('power:energy-configuration:menu')")
+    @ApiAccessLog(operateType = EXPORT)
+    public CommonResult<Map<Integer, List<EnergyConfigurationDO>>> getEnergyMenu() {
+        return success(energyConfigurationService.getEnergyMenu());
     }
 }

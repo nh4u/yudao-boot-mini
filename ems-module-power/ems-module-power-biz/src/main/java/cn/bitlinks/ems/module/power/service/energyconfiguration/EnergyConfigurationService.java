@@ -70,4 +70,5 @@ public interface EnergyConfigurationService {
      */
     List<EnergyConfigurationDO> selectByCondition(String energyName, String energyClassify, String code);
 
+    Map<Integer, List<EnergyConfigurationDO>> getEnergyMenu();
 }
