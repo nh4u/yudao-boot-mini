@@ -1,0 +1,55 @@
+package cn.bitlinks.ems.module.power.service.standingbook;
+
+import cn.bitlinks.ems.framework.common.pojo.PageResult;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookSaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
+
+import javax.validation.Valid;
+
+/**
+ * 台账属性 Service 接口
+ *
+ * @author bitlinks
+ */
+public interface StandingbookService {
+
+    /**
+     * 创建台账属性
+     *
+     * @param createReqVO 创建信息
+     * @return 编号
+     */
+    Long createStandingbook(@Valid StandingbookSaveReqVO createReqVO);
+
+    /**
+     * 更新台账属性
+     *
+     * @param updateReqVO 更新信息
+     */
+    void updateStandingbook(@Valid StandingbookSaveReqVO updateReqVO);
+
+    /**
+     * 删除台账属性
+     *
+     * @param id 编号
+     */
+    void deleteStandingbook(Long id);
+
+    /**
+     * 获得台账属性
+     *
+     * @param id 编号
+     * @return 台账属性
+     */
+    StandingbookDO getStandingbook(Long id);
+
+    /**
+     * 获得台账属性分页
+     *
+     * @param pageReqVO 分页查询
+     * @return 台账属性分页
+     */
+    PageResult<StandingbookDO> getStandingbookPage(StandingbookPageReqVO pageReqVO);
+
+}
