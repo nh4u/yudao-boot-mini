@@ -30,6 +30,7 @@ public interface FileService {
      * @return 文件路径
      */
     String createFile(String name, String path, byte[] content);
+    FileDO createFileReturnDO(String name, String path, byte[] content);
 
     /**
      * 创建文件
@@ -63,4 +64,5 @@ public interface FileService {
      */
     FilePresignedUrlRespVO getFilePresignedUrl(String path) throws Exception;
 
+    FileDO getFile(Long id);
 }

@@ -23,4 +23,20 @@ public class FileApiImpl implements FileApi {
                 createReqDTO.getContent()));
     }
 
+    @Override
+    public CommonResult<Long> createFileReturnId(FileCreateReqDTO createReqDTO) {
+        return success(fileService.createFileReturnDO(createReqDTO.getName(), createReqDTO.getPath(),
+                createReqDTO.getContent()).getId());
+    }
+
+    @Override
+    public CommonResult getFile(Long id) {
+        return success(fileService.getFile(id));
+    }
+
+    @Override
+    public CommonResult<byte[]> getFileContent( FileCreateReqDTO createReqDTO) throws Exception {
+        return success(fileService.getFileContent(createReqDTO.getConfigId(), createReqDTO.getPath()));
+    }
+
 }

@@ -6,6 +6,7 @@ import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.Standingboo
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 
 import javax.validation.Valid;
+import java.util.List;
 
 /**
  * 台账属性 Service 接口
@@ -51,5 +52,6 @@ public interface StandingbookService {
      * @return 台账属性分页
      */
     PageResult<StandingbookDO> getStandingbookPage(StandingbookPageReqVO pageReqVO);
+    List<StandingbookDO> getStandingbookList(StandingbookPageReqVO pageReqVO);
 
 }

@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import org.springframework.stereotype.Service;
@@ -99,10 +100,19 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
     public List<StandingbookAttributeDO> getStandingbookAttributeByStandingbookId(Long standingbookId) {
         return standingbookAttributeMapper.selectStandingbookId(standingbookId);
     }
+  @Override
+    public List<StandingbookAttributeDO> getStandingbookAttributeByTypeId(Long typeId) {
+        return standingbookAttributeMapper.selectTypeId(typeId);
+    }
 
     @Override
     public PageResult<StandingbookAttributeDO> getStandingbookAttributePage(StandingbookAttributePageReqVO pageReqVO) {
         return standingbookAttributeMapper.selectPage(pageReqVO);
+    }
+
+    @Override
+    public List<StandingbookDO> getStandingbook(List<StandingbookAttributePageReqVO> children, Long typeId) {
+        return standingbookAttributeMapper.selectStandingbook(children,typeId);
     }
 
 }

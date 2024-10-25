@@ -14,9 +14,10 @@ public class FileCreateReqDTO {
 
     @Schema(description = "文件路径", example = "xxx.png")
     private String path;
-
     @Schema(description = "文件内容", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotEmpty(message = "文件内容不能为空")
     private byte[] content;
+    @Schema(description = "配置编号", example = "11")
+    private Long configId;
 
 }

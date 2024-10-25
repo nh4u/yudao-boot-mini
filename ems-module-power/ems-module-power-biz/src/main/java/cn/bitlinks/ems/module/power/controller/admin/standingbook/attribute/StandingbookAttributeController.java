@@ -68,6 +68,14 @@ public class StandingbookAttributeController {
         StandingbookAttributeDO standingbookAttribute = standingbookAttributeService.getStandingbookAttribute(id);
         return success(BeanUtils.toBean(standingbookAttribute, StandingbookAttributeRespVO.class));
     }
+  @GetMapping("/getByTypeId")
+    @Operation(summary = "获得台账属性")
+    @Parameter(name = "id", description = "编号", required = true, example = "1024")
+    @PreAuthorize("@ss.hasPermission('power:standingbook-attribute:query')")
+    public CommonResult<List<StandingbookAttributeRespVO>> getByTypeId(@RequestParam("typeId") Long typeId) {
+        List<StandingbookAttributeDO> standingbookAttributes = standingbookAttributeService.getStandingbookAttributeByTypeId(typeId);
+        return success(BeanUtils.toBean(standingbookAttributes, StandingbookAttributeRespVO.class));
+    }
 
     @GetMapping("/page")
     @Operation(summary = "获得台账属性分页")

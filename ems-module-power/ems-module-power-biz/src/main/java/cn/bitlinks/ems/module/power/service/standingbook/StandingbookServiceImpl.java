@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.standingbook;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_NOT_EXISTS;
@@ -21,7 +23,7 @@ import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK
  *
  * @author bitlinks
  */
-@Service
+@Service("standingbookService")
 @Validated
 public class StandingbookServiceImpl implements StandingbookService {
 
@@ -102,6 +104,14 @@ public class StandingbookServiceImpl implements StandingbookService {
         PageResult<StandingbookDO> standingbookDOPageResult = standingbookMapper.selectPage(pageReqVO);
         standingbookDOPageResult.getList().forEach(this::addChildAll);
         return standingbookDOPageResult;
+    }
+
+    @Override
+    public List<StandingbookDO> getStandingbookList(StandingbookPageReqVO pageReqVO) {
+        List<StandingbookAttributePageReqVO> children = pageReqVO.getChildren();
+        List<StandingbookDO> standingbookDOS=standingbookAttributeService.getStandingbook(children,pageReqVO.getTypeId());
+        standingbookDOS.forEach(this::addChildAll);
+        return standingbookDOS;
     }
 
 }

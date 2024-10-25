@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.standingbook.attribute;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 
 import javax.validation.Valid;
@@ -70,6 +71,13 @@ public interface StandingbookAttributeService {
      * @return 台账属性
      */
     List<StandingbookAttributeDO>  getStandingbookAttributeByStandingbookId(Long standingbookId);
+   /**
+     * 获得台账属性by typeId
+     *
+     * @param id 编号
+     * @return 台账属性
+     */
+    List<StandingbookAttributeDO>  getStandingbookAttributeByTypeId(Long typeId);
 
     /**
      * 获得台账属性分页
@@ -79,4 +87,6 @@ public interface StandingbookAttributeService {
      */
     PageResult<StandingbookAttributeDO> getStandingbookAttributePage(StandingbookAttributePageReqVO pageReqVO);
 
+
+    List<StandingbookDO> getStandingbook(List<StandingbookAttributePageReqVO> children,Long typeId);
 }

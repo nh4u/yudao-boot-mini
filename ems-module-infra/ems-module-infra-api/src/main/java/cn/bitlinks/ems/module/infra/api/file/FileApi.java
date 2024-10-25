@@ -3,9 +3,10 @@ package cn.bitlinks.ems.module.infra.api.file;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.infra.api.file.dto.FileCreateReqDTO;
 import cn.bitlinks.ems.module.infra.enums.ApiConstants;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -56,5 +57,19 @@ public interface FileApi {
     @PostMapping(PREFIX + "/create")
     @Operation(summary = "保存文件，并返回文件的访问路径")
     CommonResult<String> createFile(@Valid @RequestBody FileCreateReqDTO createReqDTO);
-
+    @PostMapping(PREFIX + "/createFile")
+    @Operation(summary = "保存文件，并返回文件的访问路径")
+    CommonResult<Long> createFileReturnId(@Valid @RequestBody FileCreateReqDTO createReqDTO);
+    @GetMapping(PREFIX + "/getFile")
+    @Operation(summary = "保存文件，并返回文件的访问路径")
+    CommonResult getFile(@RequestParam("id")  Long id);
+    @PostMapping(PREFIX + "/getFileContent")
+    @Operation(summary = "返回文件内容")
+    CommonResult<byte[]> getFileContent(  @RequestBody FileCreateReqDTO createReqDTO) throws Exception;
+    default  CommonResult<byte[]> getFileContent(Long id,String path) throws Exception {
+         FileCreateReqDTO createReqDTO=new FileCreateReqDTO();
+         createReqDTO.setConfigId(id);
+         createReqDTO.setPath(path);
+        return getFileContent(createReqDTO);
+    }
 }
