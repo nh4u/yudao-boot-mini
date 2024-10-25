@@ -1,0 +1,70 @@
+package cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo;
+
+import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
+import com.alibaba.excel.annotation.ExcelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+@Schema(description = "管理后台 - 台账属性 Response VO")
+@Data
+@ExcelIgnoreUnannotated
+public class StandingbookAttributeRespVO {
+
+    @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "14000")
+    @ExcelProperty("编号")
+    private Long id;
+
+    @Schema(description = "属性名字", requiredMode = Schema.RequiredMode.REQUIRED, example = "李四")
+    @ExcelProperty("属性名字")
+    private String name;
+
+    @Schema(description = "属性值")
+    @ExcelProperty("属性值")
+    private String value;
+
+    @Schema(description = "类型编号", example = "16688")
+    @ExcelProperty("类型编号")
+    private Long typeId;
+
+    @Schema(description = "台账编号", example = "28937")
+    @ExcelProperty("台账编号")
+    private Long standingbookId;
+
+    @Schema(description = "文件编号", example = "28264")
+    @ExcelProperty("文件编号")
+    private Long fileId;
+
+    @Schema(description = "是否必填", requiredMode = Schema.RequiredMode.REQUIRED)
+    @ExcelProperty("是否必填")
+    private String isRequired;
+
+    @Schema(description = "编码", requiredMode = Schema.RequiredMode.REQUIRED)
+    @ExcelProperty("编码")
+    private String code;
+
+    @Schema(description = "排序")
+    @ExcelProperty("排序")
+    private Long sort;
+
+    @Schema(description = "格式")
+    @ExcelProperty("格式")
+    private String format;
+
+    @Schema(description = "归属节点")
+    @ExcelProperty("归属节点")
+    private String node;
+
+    @Schema(description = "下拉框选项")
+    private String options;
+
+    @Schema(description = "简介", example = "你说的对")
+    @ExcelProperty("简介")
+    private String description;
+
+    @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
+    @ExcelProperty("创建时间")
+    private LocalDateTime createTime;
+
+}

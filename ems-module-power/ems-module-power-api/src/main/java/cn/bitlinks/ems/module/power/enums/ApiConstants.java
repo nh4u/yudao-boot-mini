@@ -19,5 +19,27 @@ public class ApiConstants {
     public static final String PREFIX = RpcConstants.RPC_API_PREFIX + "/power";
 
     public static final String VERSION = "1.0.0";
-
+    /**
+     * 设备属性-数据格式
+     */
+    // 文本
+    public static final String TEXT = "TEXT";
+    //数字
+    public static final String NUMBER = "NUMBER";
+    //日期yyyy-dd-mm
+    public static final String DATE = "DATE";
+    //单选下拉框
+    public static final String SELECT = "SELECT";
+    //多选下拉框
+    public static final String MULTIPLE = "MULTIPLE";
+    //日期时间yyyy-dd-mm hh:mm:ss
+    public static final String DATETIME = "DATETIME";
+    //文件
+    public static final String FILE = "FILE";
+    /**
+     * 设备属性-是否必填
+     */
+    public static final String YES = "0";
+    public static final String NO = "1";
+    //多选下拉框
 }
