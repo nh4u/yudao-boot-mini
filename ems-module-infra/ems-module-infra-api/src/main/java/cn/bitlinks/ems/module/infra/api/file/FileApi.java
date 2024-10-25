@@ -58,10 +58,10 @@ public interface FileApi {
     @Operation(summary = "保存文件，并返回文件的访问路径")
     CommonResult<String> createFile(@Valid @RequestBody FileCreateReqDTO createReqDTO);
     @PostMapping(PREFIX + "/createFile")
-    @Operation(summary = "保存文件，并返回文件的访问路径")
+    @Operation(summary = "保存文件，并返回文件的ID")
     CommonResult<Long> createFileReturnId(@Valid @RequestBody FileCreateReqDTO createReqDTO);
     @GetMapping(PREFIX + "/getFile")
-    @Operation(summary = "保存文件，并返回文件的访问路径")
+    @Operation(summary = "返回文件数据库对象")
     CommonResult getFile(@RequestParam("id")  Long id);
     @PostMapping(PREFIX + "/getFileContent")
     @Operation(summary = "返回文件内容")
