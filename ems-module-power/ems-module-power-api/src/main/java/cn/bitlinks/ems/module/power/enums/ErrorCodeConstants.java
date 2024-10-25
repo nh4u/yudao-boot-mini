@@ -28,6 +28,6 @@ public interface ErrorCodeConstants {
     ErrorCode STANDINGBOOK_NOT_EXISTS = new ErrorCode(1_001_202_007, "台账不存在");
 
     // ========== 标签配置 ==========
-    ErrorCode LABEL_CONFIG_NOT_EXISTS = new ErrorCode(1_001_201_010, "配置标签不存在");
-
+    ErrorCode LABEL_CONFIG_NOT_EXISTS = new ErrorCode(1_001_401_001, "配置标签不存在");
+    ErrorCode LABEL_CONFIG_REACH_LIMIT = new ErrorCode(1_001_401_002, "标签已超过限制");
 }

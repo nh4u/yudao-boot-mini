@@ -22,9 +22,10 @@ package cn.bitlinks.ems.module.power.enums;
 public interface CommonConstants {
 
 	/**
-	 * 菜单树根节点
+	 * 标签树根节点
 	 */
 	Long LABEL_TREE_ROOT_ID = 0L;
 
+	Long LABEL_NUM_LIMIT = 10L;
 
 }

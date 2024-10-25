@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.labelconfig;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
@@ -10,6 +11,7 @@ import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.core.lang.tree.TreeNode;
 import cn.hutool.core.lang.tree.TreeUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -22,6 +24,7 @@ import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.LABEL_CONFIG_NOT_EXISTS;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.LABEL_CONFIG_REACH_LIMIT;
 
 /**
  * 配置标签 Service 实现类
@@ -37,6 +40,14 @@ public class LabelConfigServiceImpl implements LabelConfigService {
 
     @Override
     public Long createLabelConfig(LabelConfigSaveReqVO createReqVO) {
+
+        // 判断是否已有10条
+        Long count = labelConfigMapper.selectCount(new LambdaQueryWrapperX<LabelConfigDO>()
+                .eq(LabelConfigDO::getParentId, createReqVO.getParentId()));
+        if (count >= CommonConstants.LABEL_NUM_LIMIT) {
+            throw exception(LABEL_CONFIG_REACH_LIMIT);
+        }
+
         // 插入
         LabelConfigDO labelConfig = BeanUtils.toBean(createReqVO, LabelConfigDO.class);
         labelConfigMapper.insert(labelConfig);
@@ -80,10 +91,12 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     }
 
     @Override
-    public List<Tree<Long>> getLabelTree(boolean lazy, Long parentId) {
+    public List<Tree<Long>> getLabelTree(boolean lazy, Long parentId, String labelName) {
         if (!lazy) {
             List<TreeNode<Long>> collect = labelConfigMapper
-                    .selectList(Wrappers.<LabelConfigDO>lambdaQuery().orderByAsc(LabelConfigDO::getSort)).stream()
+                    .selectList(Wrappers.<LabelConfigDO>lambdaQuery()
+                            .like(StrUtil.isNotEmpty(labelName), LabelConfigDO::getLabelName, labelName)
+                            .orderByAsc(LabelConfigDO::getSort)).stream()
                     .map(getNodeFunction()).collect(Collectors.toList());
 
             return TreeUtil.build(collect, CommonConstants.LABEL_TREE_ROOT_ID);
@@ -91,7 +104,9 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         Long parent = parentId == null ? CommonConstants.LABEL_TREE_ROOT_ID : parentId;
 
         List<TreeNode<Long>> collect = labelConfigMapper
-                .selectList(Wrappers.<LabelConfigDO>lambdaQuery().eq(LabelConfigDO::getParentId, parent)
+                .selectList(Wrappers.<LabelConfigDO>lambdaQuery()
+                        .like(StrUtil.isNotEmpty(labelName), LabelConfigDO::getLabelName, labelName)
+                        .eq(LabelConfigDO::getParentId, parent)
                         .orderByAsc(LabelConfigDO::getSort))
                 .stream().map(getNodeFunction()).collect(Collectors.toList());
 

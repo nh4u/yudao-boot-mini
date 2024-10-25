@@ -100,8 +100,10 @@ public class LabelConfigController {
     @GetMapping("/tree")
     @Operation(summary = "获取标签tree")
     @PreAuthorize("@ss.hasPermission('power:label-config:query')")
-    public CommonResult<List<Tree<Long>>> getLabelTree(@RequestParam("lazy") boolean lazy, @RequestParam("parentId") Long parentId) {
-        List<Tree<Long>> labelTree = labelConfigService.getLabelTree(lazy, parentId);
+    public CommonResult<List<Tree<Long>>> getLabelTree(@RequestParam("lazy") boolean lazy,
+                                                       @RequestParam(value = "parentId", required = false) Long parentId,
+                                                       @RequestParam(value = "labelName", required = false) String labelName) {
+        List<Tree<Long>> labelTree = labelConfigService.getLabelTree(lazy, parentId, labelName);
         return success(labelTree);
     }
 
