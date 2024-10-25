@@ -22,8 +22,6 @@ public interface LabelConfigMapper extends BaseMapperX<LabelConfigDO> {
                 .eqIfPresent(LabelConfigDO::getRemark, reqVO.getRemark())
                 .eqIfPresent(LabelConfigDO::getCode, reqVO.getCode())
                 .eqIfPresent(LabelConfigDO::getParentId, reqVO.getParentId())
-                .betweenIfPresent(LabelConfigDO::getCreatedTime, reqVO.getCreatedTime())
-                .betweenIfPresent(LabelConfigDO::getUpdatedTime, reqVO.getUpdatedTime())
                 .orderByDesc(LabelConfigDO::getId));
     }
 

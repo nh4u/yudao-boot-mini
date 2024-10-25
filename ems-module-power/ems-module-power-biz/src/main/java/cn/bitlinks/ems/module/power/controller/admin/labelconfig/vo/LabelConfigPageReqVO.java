@@ -30,12 +30,4 @@ public class LabelConfigPageReqVO extends PageParam {
     @Schema(description = "父标签ID", example = "26722")
     private Long parentId;
 
-    @Schema(description = "创建时间")
-    @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
-    private LocalDateTime[] createdTime;
-
-    @Schema(description = "更新时间")
-    @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
-    private LocalDateTime[] updatedTime;
-
 }

@@ -1,11 +1,10 @@
 package cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.*;
-import java.util.*;
-import javax.validation.constraints.*;
-import org.springframework.format.annotation.DateTimeFormat;
-import java.time.LocalDateTime;
+import lombok.Data;
+
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
 @Schema(description = "管理后台 - 配置标签新增/修改 Request VO")
 @Data
@@ -23,7 +22,6 @@ public class LabelConfigSaveReqVO {
     private Integer sort;
 
     @Schema(description = "备注", requiredMode = Schema.RequiredMode.REQUIRED, example = "随便")
-    @NotEmpty(message = "备注不能为空")
     private String remark;
 
     @Schema(description = "编码", requiredMode = Schema.RequiredMode.REQUIRED)
@@ -33,13 +31,5 @@ public class LabelConfigSaveReqVO {
     @Schema(description = "父标签ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "26722")
     @NotNull(message = "父标签ID不能为空")
     private Long parentId;
-
-    @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "创建时间不能为空")
-    private LocalDateTime createdTime;
-
-    @Schema(description = "更新时间", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "更新时间不能为空")
-    private LocalDateTime updatedTime;
 
 }

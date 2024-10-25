@@ -11,6 +11,7 @@ import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigR
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
+import cn.hutool.core.lang.tree.Tree;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -82,21 +83,26 @@ public class LabelConfigController {
     @PreAuthorize("@ss.hasPermission('power:label-config:export')")
     @ApiAccessLog(operateType = EXPORT)
     public void exportLabelConfigExcel(@Valid LabelConfigPageReqVO pageReqVO,
-              HttpServletResponse response) throws IOException {
+                                       HttpServletResponse response) throws IOException {
         pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
         List<LabelConfigDO> list = labelConfigService.getLabelConfigPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "配置标签.xls", "数据", LabelConfigRespVO.class,
-                        BeanUtils.toBean(list, LabelConfigRespVO.class));
+                BeanUtils.toBean(list, LabelConfigRespVO.class));
     }
 
-    // 添加以下代码到 LabelConfigController 类中
 
-    @GetMapping("/list")
-    @Operation(summary = "获取所有标签配置列表（外部接口）")
-    public CommonResult<List<LabelConfigRespVO>> getAllLabelConfigs() {
-        List<LabelConfigDO> labelConfigList = labelConfigService.getAllLabelConfigs();
-        return success(BeanUtils.toBean(labelConfigList, LabelConfigRespVO.class));
+    /**
+     * 获取标签tree
+     *
+     * @return labelTree
+     */
+    @GetMapping("/tree")
+    @Operation(summary = "获取标签tree")
+    @PreAuthorize("@ss.hasPermission('power:label-config:query')")
+    public CommonResult<List<Tree<Long>>> getLabelTree(@RequestParam("lazy") boolean lazy, @RequestParam("parentId") Long parentId) {
+        List<Tree<Long>> labelTree = labelConfigService.getLabelTree(lazy, parentId);
+        return success(labelTree);
     }
 
 

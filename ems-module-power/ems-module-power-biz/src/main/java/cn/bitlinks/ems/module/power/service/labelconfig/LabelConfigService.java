@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
+import cn.hutool.core.lang.tree.Tree;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -53,5 +54,5 @@ public interface LabelConfigService {
      */
     PageResult<LabelConfigDO> getLabelConfigPage(LabelConfigPageReqVO pageReqVO);
 
-    List<LabelConfigDO> getAllLabelConfigs();
+    List<Tree<Long>> getLabelTree(boolean lazy, Long parentId);
 }

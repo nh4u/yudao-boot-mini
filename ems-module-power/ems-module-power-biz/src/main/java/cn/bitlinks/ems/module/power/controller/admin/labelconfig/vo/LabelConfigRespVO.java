@@ -36,12 +36,4 @@ public class LabelConfigRespVO {
     @ExcelProperty("父标签ID")
     private Long parentId;
 
-    @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
-    @ExcelProperty("创建时间")
-    private LocalDateTime createdTime;
-
-    @Schema(description = "更新时间", requiredMode = Schema.RequiredMode.REQUIRED)
-    @ExcelProperty("更新时间")
-    private LocalDateTime updatedTime;
-
 }

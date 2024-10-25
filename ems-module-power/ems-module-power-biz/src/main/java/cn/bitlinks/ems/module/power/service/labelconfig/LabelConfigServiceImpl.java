@@ -6,12 +6,19 @@ import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigP
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.mysql.labelconfig.LabelConfigMapper;
+import cn.bitlinks.ems.module.power.enums.CommonConstants;
+import cn.hutool.core.lang.tree.Tree;
+import cn.hutool.core.lang.tree.TreeNode;
+import cn.hutool.core.lang.tree.TreeUtil;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
-
+import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.LABEL_CONFIG_NOT_EXISTS;
@@ -73,9 +80,35 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     }
 
     @Override
-    public List<LabelConfigDO> getAllLabelConfigs() {
-        return null;
+    public List<Tree<Long>> getLabelTree(boolean lazy, Long parentId) {
+        if (!lazy) {
+            List<TreeNode<Long>> collect = labelConfigMapper
+                    .selectList(Wrappers.<LabelConfigDO>lambdaQuery().orderByAsc(LabelConfigDO::getSort)).stream()
+                    .map(getNodeFunction()).collect(Collectors.toList());
+
+            return TreeUtil.build(collect, CommonConstants.LABEL_TREE_ROOT_ID);
+        }
+        Long parent = parentId == null ? CommonConstants.LABEL_TREE_ROOT_ID : parentId;
+
+        List<TreeNode<Long>> collect = labelConfigMapper
+                .selectList(Wrappers.<LabelConfigDO>lambdaQuery().eq(LabelConfigDO::getParentId, parent)
+                        .orderByAsc(LabelConfigDO::getSort))
+                .stream().map(getNodeFunction()).collect(Collectors.toList());
+
+        return TreeUtil.build(collect, parent);
+
     }
 
+    @NotNull
+    private Function<LabelConfigDO, TreeNode<Long>> getNodeFunction() {
+        return label -> {
+            TreeNode<Long> node = new TreeNode<>();
+            node.setId(label.getId());
+            node.setName(label.getLabelName());
+            node.setParentId(label.getParentId());
+            node.setWeight(label.getSort());
+            return node;
+        };
+    }
 
 }

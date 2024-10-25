@@ -48,13 +48,5 @@ public class LabelConfigDO extends BaseDO {
      * 父标签ID
      */
     private Long parentId;
-    /**
-     * 创建时间
-     */
-    private LocalDateTime createdTime;
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updatedTime;
 
 }
