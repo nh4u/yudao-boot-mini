@@ -294,7 +294,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             // 合并第二、三、四、五列
             sheet.addMergedRegion(new CellRangeAddress(0, 0, 2, 5));
             Cell hintCell = firstRow.createCell(2);
-            hintCell.setCellValue("表头黄色的为必填项，请勿修改模板编号，否则无法导入数据。请从第三行开始填写数据。");
+            hintCell.setCellValue("表头黄色的为必填项，请勿修改模板编号，否则无法导入数据。请从第三行开始填写数据。（暂不支持导入图片）");
             CellStyle s = workbook.createCellStyle();
             s.setFillForegroundColor(IndexedColors.ORANGE.getIndex());
             s.setFillPattern(FillPatternType.SOLID_FOREGROUND);
