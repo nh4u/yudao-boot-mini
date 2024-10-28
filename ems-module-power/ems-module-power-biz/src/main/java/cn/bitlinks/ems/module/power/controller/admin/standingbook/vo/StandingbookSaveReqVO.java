@@ -23,4 +23,8 @@ public class StandingbookSaveReqVO {
     @Schema(description = "简介", example = "你猜")
     private String description;
     List<StandingbookAttributeSaveReqVO> children = new ArrayList<>();
+
+    public StandingbookSaveReqVO(List<StandingbookAttributeSaveReqVO> children) {
+        this.children = children;
+    }
 }

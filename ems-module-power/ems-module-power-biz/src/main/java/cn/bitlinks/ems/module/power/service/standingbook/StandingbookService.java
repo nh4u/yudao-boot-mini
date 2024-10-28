@@ -2,9 +2,12 @@ package cn.bitlinks.ems.module.power.service.standingbook;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.util.List;
 
@@ -54,4 +57,9 @@ public interface StandingbookService {
     PageResult<StandingbookDO> getStandingbookPage(StandingbookPageReqVO pageReqVO);
     List<StandingbookDO> getStandingbookList(StandingbookPageReqVO pageReqVO);
 
+    Object importStandingbook(MultipartFile file, StandingbookRespVO pageReqVO);
+
+    void exportStandingbookExcel(StandingbookPageReqVO pageReqVO, HttpServletResponse response);
+
+    void template(Long typeId, HttpServletResponse response);
 }

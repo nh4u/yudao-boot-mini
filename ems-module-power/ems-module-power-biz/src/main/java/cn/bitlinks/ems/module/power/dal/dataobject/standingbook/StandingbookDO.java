@@ -53,4 +53,8 @@ public class StandingbookDO extends BaseDO {
     public void addChildAll(List<StandingbookAttributeDO> childs) {
         children.addAll(childs);
     }
+
+    public StandingbookDO(List<StandingbookAttributeDO> children) {
+        this.children = children;
+    }
 }
