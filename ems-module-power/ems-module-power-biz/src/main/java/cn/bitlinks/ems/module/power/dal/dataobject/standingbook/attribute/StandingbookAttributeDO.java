@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute;
 
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -24,7 +25,7 @@ public class StandingbookAttributeDO extends BaseDO {
     /**
      * 编号
      */
-    @TableId
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
      * 属性名字

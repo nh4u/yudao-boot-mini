@@ -8,12 +8,13 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.TimeZone;
 
 @Slf4j
 @SpringBootApplication
 public class PowerApplication {
-    @SneakyThrows
+    @SneakyThrows(UnknownHostException.class)
     public static void main(String[] args) {
 
         TimeZone.setDefault(TimeZone.getTimeZone("GMT+8"));

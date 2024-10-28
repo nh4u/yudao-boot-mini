@@ -2,10 +2,7 @@ package cn.bitlinks.ems.module.power.dal.dataobject.standingbook;
 
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
-import com.baomidou.mybatisplus.annotation.KeySequence;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.*;
 
 import java.util.ArrayList;
@@ -29,7 +26,7 @@ public class StandingbookDO extends BaseDO {
     /**
      * 编号
      */
-    @TableId
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
      * 类型ID
@@ -43,6 +40,22 @@ public class StandingbookDO extends BaseDO {
      * 简介
      */
     private String description;
+    /**
+     * 采集频率
+     */
+    private Integer frequency;
+    /**
+     * 采集频率单位
+     */
+    private String frequencyUit;
+    /**
+     * 数据来源分类
+     */
+    private Integer sourceType;
+    /**
+     * 开关（0：关；1开。）
+     */
+    private Boolean status;
     @TableField(exist = false)
     List<StandingbookAttributeDO> children = new ArrayList<>();
 
@@ -50,6 +63,7 @@ public class StandingbookDO extends BaseDO {
     public void addChild(StandingbookAttributeDO child) {
         children.add(child);
     }
+
     public void addChildAll(List<StandingbookAttributeDO> childs) {
         children.addAll(childs);
     }
