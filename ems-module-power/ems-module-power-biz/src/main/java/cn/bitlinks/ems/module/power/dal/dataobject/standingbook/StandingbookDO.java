@@ -47,11 +47,15 @@ public class StandingbookDO extends BaseDO {
     /**
      * 采集频率单位
      */
-    private String frequencyUit;
+    private String frequencyUnit;
     /**
      * 数据来源分类
      */
     private Integer sourceType;
+    /**
+     * 数据来源分类=关联计量器具时 相关信息json
+     */
+    private String associationMeasurementJson;
     /**
      * 开关（0：关；1开。）
      */
