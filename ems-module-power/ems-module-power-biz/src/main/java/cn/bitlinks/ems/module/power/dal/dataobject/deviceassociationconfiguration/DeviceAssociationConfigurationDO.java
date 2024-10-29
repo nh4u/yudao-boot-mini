@@ -25,7 +25,7 @@ public class DeviceAssociationConfigurationDO extends BaseDO {
     /**
      * id
      */
-    @TableId
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
      * 能源id
