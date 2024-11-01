@@ -37,5 +37,5 @@ public interface ErrorCodeConstants {
     ErrorCode VOUCHER_NOT_EXISTS = new ErrorCode(1_001_501_001, "凭证不存在");
     ErrorCode VOUCHER_LIST_IS_EMPTY = new ErrorCode(1_001_501_002, "凭证ID列表为空");
 
-
+    ErrorCode DA_PARAM_FORMULA_NOT_EXISTS = new ErrorCode(1_001_601_001, "参数公式不存在");
 }
