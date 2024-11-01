@@ -31,12 +31,17 @@ public class StandingbookSaveReqVO {
      * 采集频率单位
      */
     @Schema(description = "采集频率单位", example = "秒")
-    private String frequencyUit;
+    private String frequencyUnit;
     /**
      * 数据来源分类
      */
     @Schema(description = "数据来源分类", example = "1")
     private Integer sourceType;
+    /**
+     * 数据来源分类=关联计量器具时 相关信息json
+     */
+    @Schema(description = "数据来源分类=关联计量器具时 相关信息json", example = "json")
+    private String associationMeasurementJson;
     /**
      * 开关（0：关；1开。）
      */
