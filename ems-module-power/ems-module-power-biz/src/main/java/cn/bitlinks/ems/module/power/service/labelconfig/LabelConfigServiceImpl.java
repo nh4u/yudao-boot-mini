@@ -12,6 +12,7 @@ import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.core.lang.tree.TreeNode;
 import cn.hutool.core.lang.tree.TreeUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -82,6 +83,14 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     public LabelConfigDO getLabelConfig(Long id) {
         return labelConfigMapper.selectById(id);
     }
+
+    @Override
+    @DS("slave")
+    public LabelConfigDO getLabelConfig07(Long id) {
+        // TODO: 2024/11/1 多数据源测试后续可删
+        return labelConfigMapper.selectById(id);
+    }
+
 
     @Override
     public PageResult<LabelConfigDO> getLabelConfigPage(LabelConfigPageReqVO pageReqVO) {

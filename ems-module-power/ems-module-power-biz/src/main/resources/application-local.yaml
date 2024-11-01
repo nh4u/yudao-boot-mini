@@ -75,7 +75,7 @@ spring:
         #          password: SYSDBA # DM 连接的示例
         slave: # 模拟从库，可根据自己需要修改
           lazy: true # 开启懒加载，保证启动速度
-          url: jdbc:mysql://192.168.2.26:3306/ydme_ems?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
+          url: jdbc:mysql://192.168.2.26:3307/ydme_ems?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
           username: ENC(vpwz0SZq17Zm0nt2psiC4A==)
           password: ENC(Q9ClbSzSD2TMCMohtls4SnyGn+t0gtGMRyx4AZosTEM=)
 

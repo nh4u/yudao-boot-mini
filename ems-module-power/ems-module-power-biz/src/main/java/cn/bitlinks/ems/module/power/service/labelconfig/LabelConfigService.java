@@ -47,6 +47,14 @@ public interface LabelConfigService {
     LabelConfigDO getLabelConfig(Long id);
 
     /**
+     * 获得配置标签   TODO: 2024/11/1 多数据源测试后续可删
+     *
+     * @param id 编号
+     * @return 配置标签
+     */
+    LabelConfigDO getLabelConfig07(Long id);
+
+    /**
      * 获得配置标签分页
      *
      * @param pageReqVO 分页查询
