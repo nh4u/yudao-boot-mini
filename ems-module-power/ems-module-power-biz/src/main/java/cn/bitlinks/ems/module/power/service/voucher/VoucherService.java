@@ -20,7 +20,7 @@ public interface VoucherService {
      * @param createReqVO 创建信息
      * @return 编号
      */
-    Long createVoucher(@Valid VoucherSaveReqVO createReqVO);
+    VoucherDO createVoucher(@Valid VoucherSaveReqVO createReqVO);
 
     /**
      * 更新凭证管理
@@ -55,7 +55,7 @@ public interface VoucherService {
     /**
      * 批量删除凭证管理
      *
-     * @param ids 编号
+     * @param deleteVO 删除实体
      */
     void deleteVouchers( VoucherSaveReqVO deleteVO);
 

@@ -9,4 +9,14 @@
         文档可见：https://www.bitlinks.cn/MyBatis/x-plugins/
      -->
 
+
+    <select id="existsByVoucherId" parameterType="java.lang.Long">
+        select * from ems_additional_recording
+        <where>
+            <if test="voucherId !=null">
+                voucher_id = #{voucherId}
+            </if>
+        </where>
+    </select>
+
 </mapper>

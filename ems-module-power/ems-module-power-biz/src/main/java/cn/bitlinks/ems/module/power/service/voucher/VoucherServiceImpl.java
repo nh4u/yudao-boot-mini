@@ -2,19 +2,25 @@ package cn.bitlinks.ems.module.power.service.voucher;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.voucher.vo.VoucherPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.voucher.vo.VoucherSaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.voucher.VoucherDO;
+import cn.bitlinks.ems.module.power.dal.mysql.additionalrecording.AdditionalRecordingMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.voucher.VoucherMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.util.List;
+//思路1
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.VOUCHER_LIST_IS_EMPTY;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.VOUCHER_NOT_EXISTS;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
 /**
  * 凭证管理 Service 实现类
@@ -27,24 +33,61 @@ public class VoucherServiceImpl implements VoucherService {
 
     @Resource
     private VoucherMapper voucherMapper;
+    @Resource
+    private AdditionalRecordingMapper additionalRecordingMapper;
+
 
     @Override
-    public Long createVoucher(VoucherSaveReqVO createReqVO) {
-        // 插入
+    public VoucherDO createVoucher(VoucherSaveReqVO createReqVO) {
+        // 转换请求对象到数据对象
         VoucherDO voucher = BeanUtils.toBean(createReqVO, VoucherDO.class);
+
+        // 生成凭证编号前缀部分并设置到 voucher 中
+        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String codePrefix = "PZ" + today;
+
+        // 获取当天最大流水号并生成新流水号
+        Integer maxSerial = voucherMapper.selectMaxSerialByCodePrefix(codePrefix);
+        int newSerial = (maxSerial == null) ? 1 : maxSerial + 1;
+        String voucherCode = codePrefix + String.format("%04d", newSerial);
+
+        voucher.setCode(voucherCode);
+
+        // 插入数据库
         voucherMapper.insert(voucher);
-        // 返回
-        return voucher.getId();
+
+        // 返回记录 ID
+        return voucher;
     }
+
+
 
     @Override
     public void updateVoucher(VoucherSaveReqVO updateReqVO) {
-        // 校验存在
-        validateVoucherExists(updateReqVO.getId());
-        // 更新
+        Long voucherId = updateReqVO.getId();
+        // Step 1: 校验凭证是否存在
+        validateVoucherExists(voucherId);
+
+        // Step 2: 获取现有凭证记录并检查“用量”是否更改
+        VoucherDO existingVoucher = voucherMapper.selectById(voucherId);
+
+        // Step 3: 判断“用量”是否发生更改
+        if (!existingVoucher.getUsage().equals(updateReqVO.getUsage())) {
+            // Step 4: 如果“用量”已修改，检查 `additional_recording` 表中是否使用该凭证记录
+//            boolean isUsedInAdditionalRecording = additionalRecordingMapper.existsByVoucherId(voucherId);
+            Long l = additionalRecordingMapper.selectCount(new LambdaQueryWrapperX<AdditionalRecordingDO>()
+                    .eq(AdditionalRecordingDO::getVoucherId, voucherId)
+                    .eq(AdditionalRecordingDO::getDeleted, 0));
+            if ( l > 0) {
+                throw exception(VOUCHER_USAGE_MODIFIED_ERROR);
+            }
+        }
+
+        // Step 5: 更新凭证记录
         VoucherDO updateObj = BeanUtils.toBean(updateReqVO, VoucherDO.class);
         voucherMapper.updateById(updateObj);
     }
+
 
     @Override
     public void deleteVoucher(Long id) {
@@ -81,56 +124,6 @@ public class VoucherServiceImpl implements VoucherService {
         // 2.批量删除
         voucherMapper.deleteByIds(ids);
     }
-
-
-//    @Override
-//    public void deleteVouchers(List<Long> ids) {
-//        boolean empty = CollUtil.isEmpty(ids);
-//        if (empty){
-//            throw exception(VOUCHER_BATCH_NOT_EXISTS);
-//        }
-//        // 校验每个凭证是否存在
-//        validateVouchersExist(ids);
-//        // 批量删除
-//        voucherMapper.deleteByIds(ids);
-//    }
-
-//    @Override
-//    public void deleteVouchers(List<Long> ids) {
-//        // 校验每个凭证是否存在
-//        validateVouchersExist(ids);
-//        // 批量删除
-//        voucherMapper.deleteByIds(ids);
-//    }
-
-//    private void validateVouchersExist(List<Long> ids) {
-//        // 查询数据库中存在的 ID 列表
-//        List<Long> existingIds = voucherMapper.selectByIds(ids);
-//
-//        // 判断是否有不存在的 ID
-//        if (existingIds.size() != ids.size()) {
-//            // 找出不存在的 ID
-//            ids.removeAll(existingIds);
-//            throw exception(VOUCHER_BATCH_NOT_EXISTS, "以下凭证不存在: " + ids);
-//        }
-//    }
-
-//    private void validateVouchersExist(List<Long> ids) {
-//        for (Long id : ids) {
-//            if (voucherMapper.selectById(id) == null) {
-//                throw exception(VOUCHER_NOT_EXISTS, "以下凭证不存在: " + id);
-//            }
-//        }
-
-//    private void validateVouchersExist(List<Long> ids) {
-//        // 查询所有存在的凭证 ID
-//        List<Long> existingIds = voucherMapper.selectBatchIds(ids);
-//        // 检查是否有不存在的 ID
-//        for (Long id : ids) {
-//            if (!existingIds.contains(id)) {
-//                throw exception(VOUCHER_BATCH_NOT_EXISTS);  // 抛出异常，说明某个 ID 不存在
-//            }
-//        }
 
 
 }

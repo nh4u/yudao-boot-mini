@@ -39,9 +39,12 @@ public class VoucherController {
     @PostMapping("/create")
     @Operation(summary = "创建凭证管理")
     @PreAuthorize("@ss.hasPermission('power:voucher:create')")
-    public CommonResult<Long> createVoucher(@Valid @RequestBody VoucherSaveReqVO createReqVO) {
-        return success(voucherService.createVoucher(createReqVO));
+    public CommonResult<VoucherRespVO> createVoucher(@Valid @RequestBody VoucherSaveReqVO createReqVO) {
+        VoucherDO voucher = voucherService.createVoucher(createReqVO);
+        return success(BeanUtils.toBean(voucher, VoucherRespVO.class));
     }
+    
+//    voucherService.createVoucher(createReqVO)
 
     @PutMapping("/update")
     @Operation(summary = "更新凭证管理")

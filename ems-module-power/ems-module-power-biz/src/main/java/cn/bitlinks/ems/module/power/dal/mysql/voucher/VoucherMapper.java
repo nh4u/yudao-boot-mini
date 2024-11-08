@@ -6,6 +6,8 @@ import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.voucher.vo.VoucherPageReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.voucher.VoucherDO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 /**
  * 凭证管理 Mapper
@@ -27,4 +29,8 @@ public interface VoucherMapper extends BaseMapperX<VoucherDO> {
                 .orderByDesc(VoucherDO::getId));
     }
 
+    // 新增方法用于获取当日最大流水号
+    @Select("SELECT MAX(CAST(SUBSTRING(code, LENGTH(#{codePrefix}) + 1) AS UNSIGNED)) " +
+            "FROM ems_voucher WHERE code LIKE CONCAT(#{codePrefix}, '%')")
+    Integer selectMaxSerialByCodePrefix(@Param("codePrefix") String codePrefix);
 }

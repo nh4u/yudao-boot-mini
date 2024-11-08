@@ -17,7 +17,7 @@ public class VoucherRespVO {
     @ExcelProperty("编号")
     private Long id;
 
-    @Schema(description = "凭证编号", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "凭证编号")
     @ExcelProperty("凭证编号")
     private String code;
 

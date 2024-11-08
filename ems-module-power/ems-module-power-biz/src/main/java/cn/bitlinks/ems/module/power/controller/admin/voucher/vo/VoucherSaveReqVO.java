@@ -16,8 +16,12 @@ public class VoucherSaveReqVO {
     @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "3687")
     private Long id;
 
-    @Schema(description = "凭证编号", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotEmpty(message = "凭证编号不能为空")
+
+//    @Schema(description = "凭证编号", requiredMode = Schema.RequiredMode.REQUIRED)
+//    @NotEmpty(message = "凭证编号不能为空")
+//    private String code;
+
+    @Schema(description = "凭证编号")
     private String code;
 
     @Schema(description = "凭证名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "王五")

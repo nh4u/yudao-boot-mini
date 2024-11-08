@@ -1,13 +1,12 @@
 package cn.bitlinks.ems.module.power.dal.mysql.additionalrecording;
 
-import java.util.*;
-
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
-import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.framework.mybatis.core.mapper.BaseMapperX;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingPageReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
 import org.apache.ibatis.annotations.Mapper;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.*;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 补录 Mapper
@@ -30,5 +29,7 @@ public interface AdditionalRecordingMapper extends BaseMapperX<AdditionalRecordi
                 .betweenIfPresent(AdditionalRecordingDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(AdditionalRecordingDO::getId));
     }
+
+    boolean existsByVoucherId(@Param("voucherId") Long voucherId);
 
 }
