@@ -70,7 +70,7 @@ public class LabelConfigController {
 
         // TODO: 2024/11/1 多数据源测试后续可删
         LabelConfigDO labelConfig;
-        if (database == 3307){
+        if (database != null && database == 3307){
              labelConfig = labelConfigService.getLabelConfig07(id);
         }else {
              labelConfig = labelConfigService.getLabelConfig(id);

@@ -154,6 +154,7 @@ ems:
     ignore-urls:
       - /admin-api/power/test/get
     ignore-tables:
+      - crashdata
 
 
 debug: false

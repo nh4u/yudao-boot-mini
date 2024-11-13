@@ -5,7 +5,9 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigSaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
+import cn.bitlinks.ems.module.power.dal.mysql.coalfactorhistory.CoalFactorHistoryMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.labelconfig.LabelConfigMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.hutool.core.lang.tree.Tree;
@@ -20,6 +22,8 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.Resource;
 import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -38,6 +42,9 @@ public class LabelConfigServiceImpl implements LabelConfigService {
 
     @Resource
     private LabelConfigMapper labelConfigMapper;
+
+    @Resource
+    private CoalFactorHistoryMapper coalFactorHistoryMapper;
 
     @Override
     public Long createLabelConfig(LabelConfigSaveReqVO createReqVO) {
@@ -87,6 +94,15 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     @Override
     @DS("slave")
     public LabelConfigDO getLabelConfig07(Long id) {
+
+        List<Map<String, Objects>>  map = labelConfigMapper.queryData();
+        map.forEach(System.out::println);
+
+        List<CoalFactorHistoryDO> list = coalFactorHistoryMapper.selectList();
+        list.forEach(System.out::println);
+
+
+
         // TODO: 2024/11/1 多数据源测试后续可删
         return labelConfigMapper.selectById(id);
     }
