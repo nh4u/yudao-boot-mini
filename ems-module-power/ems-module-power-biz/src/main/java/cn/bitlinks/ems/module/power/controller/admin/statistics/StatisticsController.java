@@ -1,7 +1,7 @@
 package cn.bitlinks.ems.module.power.controller.admin.statistics;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
 import cn.bitlinks.ems.module.power.service.statistics.StatisticsService;
 import com.alibaba.fastjson.JSONObject;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,8 +31,8 @@ public class StatisticsController {
 
     @PostMapping("/energyFlowAnalysis")
     @Operation(summary = "能流分析")
-    public CommonResult<JSONObject> energyFlowAnalysis(@Valid @RequestBody StatisticsPageReqVO pageReqVO) {
-        JSONObject jsonObject = statisticsService.energyFlowAnalysis(pageReqVO);
+    public CommonResult<JSONObject> energyFlowAnalysis(@Valid @RequestBody StatisticsParamVO paramVO) {
+        JSONObject jsonObject = statisticsService.energyFlowAnalysis(paramVO);
         return success(jsonObject);
     }
 

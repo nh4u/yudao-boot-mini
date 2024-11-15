@@ -1,6 +1,6 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
 import com.alibaba.fastjson.JSONObject;
 
 /**
@@ -12,8 +12,8 @@ public interface StatisticsService {
 
     /**
      *   能留分析图
-     * @param pageReqVO 入参
+     * @param paramVO 入参
      * @return 数据
      */
-    JSONObject energyFlowAnalysis(StatisticsPageReqVO pageReqVO);
+    JSONObject energyFlowAnalysis(StatisticsParamVO paramVO);
 }

@@ -17,7 +17,7 @@ import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_M
 @Data
 @EqualsAndHashCode(callSuper = false)
 @ToString(callSuper = true)
-public class StatisticsPageReqVO {
+public class StatisticsParamVO {
 
     @Schema(description = "统计周期")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
