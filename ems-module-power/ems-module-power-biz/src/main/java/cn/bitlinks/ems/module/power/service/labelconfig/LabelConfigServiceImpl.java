@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.labelconfig;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
+import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigPageReqVO;
@@ -99,8 +100,8 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         map.forEach(System.out::println);
 
         List<CoalFactorHistoryDO> list = coalFactorHistoryMapper.selectList();
-        list.forEach(System.out::println);
-
+        // 美化打印
+        System.out.println(JsonUtils.toJsonPrettyString(list));
 
 
         // TODO: 2024/11/1 多数据源测试后续可删
