@@ -20,8 +20,6 @@ public class StandingbookTypeSaveReqVO {
     @Schema(description = "父级类型编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "31064")
     private Long superId;
 
-    @Schema(description = "父级名字", requiredMode = Schema.RequiredMode.REQUIRED, example = "bitlinks")
-    private String superName;
 
     @Schema(description = "类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
     @NotEmpty(message = "类型不能为空")

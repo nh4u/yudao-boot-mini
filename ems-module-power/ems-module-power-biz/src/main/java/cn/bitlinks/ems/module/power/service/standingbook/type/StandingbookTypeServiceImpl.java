@@ -244,12 +244,23 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
                 .setNode("计量器具根节点")
                 .setTypeId(standingbookTypeDO.getId())
                 .setSort(5L);
+
+        StandingbookAttributeDO do6 = new StandingbookAttributeDO();
+        do6.setDescription("系统生成：虚拟表计关联台账类型")
+                .setName("虚拟表计关联台账类型")
+                .setCode("unionStandingbookId")
+                .setFormat(ApiConstants.TEXT)
+                .setIsRequired(ApiConstants.NO)
+                .setNode("计量器具根节点")
+                .setTypeId(standingbookTypeDO.getId())
+                .setSort(6L);
         ArrayList<StandingbookAttributeDO> standingbookAttributeDOS = new ArrayList<StandingbookAttributeDO>() {{
             add(do1);
             add(do2);
             add(do3);
             add(do4);
             add(do5);
+            add(do6);
         }};
         attributeService.createStandingbookAttributeBatch(standingbookAttributeDOS);
     }

@@ -26,9 +26,6 @@ public class StandingbookTypeRespVO {
     @ExcelProperty("父级类型编号")
     private Long superId;
 
-    @Schema(description = "父级名字", requiredMode = Schema.RequiredMode.REQUIRED, example = "bitlinks")
-    @ExcelProperty("父级名字")
-    private String superName;
 
     @Schema(description = "类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
     @ExcelProperty("类型")
