@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 
 @Schema(description = "管理后台 - 台账类型新增/修改 Request VO")
 @Data
@@ -22,14 +21,12 @@ public class StandingbookTypeSaveReqVO {
 
 
     @Schema(description = "类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
-    @NotEmpty(message = "类型不能为空")
     private String topType;
 
     @Schema(description = "排序")
     private Long sort;
 
     @Schema(description = "当前层级", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "当前层级不能为空")
     private Long level;
 
     @Schema(description = "编码")
