@@ -39,14 +39,14 @@ public class StandingbookAttributeController {
     @PostMapping("/create")
     @Operation(summary = "创建台账属性")
     @PreAuthorize("@ss.hasPermission('power:standingbook-attribute:create')")
-    public CommonResult<Long> createStandingbookAttribute(@Valid StandingbookAttributeSaveReqVO createReqVO) {
+    public CommonResult<Long> createStandingbookAttribute(@Valid @RequestBody StandingbookAttributeSaveReqVO createReqVO) {
         return success(standingbookAttributeService.createStandingbookAttribute(createReqVO));
     }
 
     @PutMapping("/update")
     @Operation(summary = "更新台账属性")
     @PreAuthorize("@ss.hasPermission('power:standingbook-attribute:update')")
-    public CommonResult<Boolean> updateStandingbookAttribute(@Valid StandingbookAttributeSaveReqVO updateReqVO) {
+    public CommonResult<Boolean> updateStandingbookAttribute(@Valid @RequestBody StandingbookAttributeSaveReqVO updateReqVO) {
         standingbookAttributeService.updateStandingbookAttribute(updateReqVO);
         return success(true);
     }
@@ -77,10 +77,10 @@ public class StandingbookAttributeController {
         return success(BeanUtils.toBean(standingbookAttributes, StandingbookAttributeRespVO.class));
     }
 
-    @GetMapping("/page")
+    @PostMapping("/page")
     @Operation(summary = "获得台账属性分页")
     @PreAuthorize("@ss.hasPermission('power:standingbook-attribute:query')")
-    public CommonResult<PageResult<StandingbookAttributeRespVO>> getStandingbookAttributePage(@Valid StandingbookAttributePageReqVO pageReqVO) {
+    public CommonResult<PageResult<StandingbookAttributeRespVO>> getStandingbookAttributePage(@Valid @RequestBody StandingbookAttributePageReqVO pageReqVO) {
         PageResult<StandingbookAttributeDO> pageResult = standingbookAttributeService.getStandingbookAttributePage(pageReqVO);
         return success(BeanUtils.toBean(pageResult, StandingbookAttributeRespVO.class));
     }
@@ -89,7 +89,7 @@ public class StandingbookAttributeController {
     @Operation(summary = "导出台账属性 Excel")
     @PreAuthorize("@ss.hasPermission('power:standingbook-attribute:export')")
     @ApiAccessLog(operateType = EXPORT)
-    public void exportStandingbookAttributeExcel(@Valid StandingbookAttributePageReqVO pageReqVO,
+    public void exportStandingbookAttributeExcel(@Valid @RequestBody StandingbookAttributePageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
         pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
         List<StandingbookAttributeDO> list = standingbookAttributeService.getStandingbookAttributePage(pageReqVO).getList();

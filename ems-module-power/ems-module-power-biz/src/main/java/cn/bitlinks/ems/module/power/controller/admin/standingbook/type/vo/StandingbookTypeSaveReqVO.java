@@ -3,8 +3,6 @@ package cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import javax.validation.constraints.NotEmpty;
-
 @Schema(description = "管理后台 - 台账类型新增/修改 Request VO")
 @Data
 public class StandingbookTypeSaveReqVO {
@@ -13,7 +11,6 @@ public class StandingbookTypeSaveReqVO {
     private Long id;
 
     @Schema(description = "名字", requiredMode = Schema.RequiredMode.REQUIRED, example = "bitlinks")
-    @NotEmpty(message = "名字不能为空")
     private String name;
 
     @Schema(description = "父级类型编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "31064")

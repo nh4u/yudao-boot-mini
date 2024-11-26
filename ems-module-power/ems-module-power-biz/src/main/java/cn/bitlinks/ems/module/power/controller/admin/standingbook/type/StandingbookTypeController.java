@@ -37,7 +37,7 @@ public class StandingbookTypeController {
     @PostMapping("/create")
     @Operation(summary = "创建台账类型")
     @PreAuthorize("@ss.hasPermission('power:standingbook-type:create')")
-    public CommonResult<Long> createStandingbookType(@Valid StandingbookTypeSaveReqVO createReqVO) {
+    public CommonResult<Long> createStandingbookType(@Valid @RequestBody StandingbookTypeSaveReqVO createReqVO) {
         return success(standingbookTypeService.createStandingbookType(createReqVO));
     }
 
@@ -75,17 +75,17 @@ public class StandingbookTypeController {
         return success(BeanUtils.toBean(standingbookType, StandingbookTypeRespVO.class));
     }
 
-    @GetMapping("/list")
+    @PostMapping("/list")
     @Operation(summary = "获得台账类型列表")
     @PreAuthorize("@ss.hasPermission('power:standingbook-type:query')")
-    public CommonResult<List<StandingbookTypeRespVO>> getStandingbookTypeList(@Valid StandingbookTypeListReqVO listReqVO) {
+    public CommonResult<List<StandingbookTypeRespVO>> getStandingbookTypeList(@Valid @RequestBody StandingbookTypeListReqVO listReqVO) {
         List<StandingbookTypeDO> list = standingbookTypeService.getStandingbookTypeList(listReqVO);
         return success(BeanUtils.toBean(list, StandingbookTypeRespVO.class));
     }
     @GetMapping("/tree")
     @Operation(summary = "获得台账类型树形列表")
     @PreAuthorize("@ss.hasPermission('power:standingbook-type:query')")
-    public CommonResult<List> getStandingbookTree(@Valid StandingbookTypeListReqVO listReqVO) {
+    public CommonResult<List> getStandingbookTree() {
     List nodes = standingbookTypeService.getStandingbookTypeNode();
     return success(BeanUtils.toBean(nodes, StandingbookTypeRespVO.class));
     }
@@ -94,7 +94,7 @@ public class StandingbookTypeController {
     @Operation(summary = "导出台账类型 Excel")
     @PreAuthorize("@ss.hasPermission('power:standingbook-type:export')")
     @ApiAccessLog(operateType = EXPORT)
-    public void exportStandingbookTypeExcel(@Valid StandingbookTypeListReqVO listReqVO,
+    public void exportStandingbookTypeExcel(@Valid @RequestBody StandingbookTypeListReqVO listReqVO,
               HttpServletResponse response) throws IOException {
         List<StandingbookTypeDO> list = standingbookTypeService.getStandingbookTypeList(listReqVO);
         // 导出 Excel
