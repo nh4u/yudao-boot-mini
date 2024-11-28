@@ -44,7 +44,7 @@ public class StandingbookTypeController {
     @PutMapping("/update")
     @Operation(summary = "更新台账类型")
     @PreAuthorize("@ss.hasPermission('power:standingbook-type:update')")
-    public CommonResult<StandingbookTypeRespVO> updateStandingbookType(@Valid StandingbookTypeSaveReqVO updateReqVO) {
+    public CommonResult<StandingbookTypeRespVO> updateStandingbookType(@Valid   @RequestBody  StandingbookTypeSaveReqVO updateReqVO) {
         standingbookTypeService.updateStandingbookType(updateReqVO);
         return success(getStandingbookType(updateReqVO.getId()).getData());
     }

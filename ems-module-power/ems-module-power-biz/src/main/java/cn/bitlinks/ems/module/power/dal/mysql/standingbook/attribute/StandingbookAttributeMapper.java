@@ -36,13 +36,13 @@ public interface StandingbookAttributeMapper extends BaseMapperX<StandingbookAtt
                 .betweenIfPresent(StandingbookAttributeDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(StandingbookAttributeDO::getId));
     }
-    @Select("SELECT * FROM power_standingbook_attribute WHERE type_id = #{typeId} and standingbook_id IS NULL order by sort")
+    @Select("SELECT * FROM power_standingbook_attribute WHERE type_id = #{typeId} and deleted=0 and standingbook_id IS NULL order by sort")
      List<StandingbookAttributeDO> selectTypeId(@Param("typeId")Long typeId) ;
     default int deleteTypeId(Long typeId) {
         return delete(StandingbookAttributeDO::getTypeId, typeId);
     }
 
-    @Select("SELECT * FROM power_standingbook_attribute WHERE standingbook_id = #{standingbookId} order by sort")
+    @Select("SELECT * FROM power_standingbook_attribute WHERE standingbook_id = #{standingbookId} and deleted=0 order by sort")
      List<StandingbookAttributeDO> selectStandingbookId(@Param("standingbookId") Long standingbookId) ;
 
 

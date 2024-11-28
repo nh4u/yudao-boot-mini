@@ -12,7 +12,7 @@ public class StandingbookAttributeSaveReqVO {
     private Long id;
 
     @Schema(description = "属性名字", requiredMode = Schema.RequiredMode.REQUIRED, example = "李四")
-    @NotEmpty(message = "属性名字不能为空")
+//    @NotEmpty(message = "属性名字不能为空")
     private String name;
 
     @Schema(description = "属性值")

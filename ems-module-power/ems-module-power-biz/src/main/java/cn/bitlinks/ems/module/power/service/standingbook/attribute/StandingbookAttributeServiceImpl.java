@@ -7,6 +7,8 @@ import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.S
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -28,6 +30,8 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
     @Resource
     private StandingbookAttributeMapper standingbookAttributeMapper;
 
+    @Autowired
+    private ApplicationContext context;
     @Transactional
     @Override
     public Long createStandingbookAttribute(StandingbookAttributeSaveReqVO createReqVO) {
@@ -43,6 +47,7 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
          standingbookAttributeMapper.insertBatch(dos);
     }
 
+    @Transactional
     @Override
     public void updateStandingbookAttribute(StandingbookAttributeSaveReqVO updateReqVO) {
         // 校验存在
@@ -113,6 +118,15 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
     @Override
     public List<StandingbookDO> getStandingbook(List<StandingbookAttributePageReqVO> children, Long typeId) {
         return standingbookAttributeMapper.selectStandingbook(children,typeId);
+    }
+
+    @Override
+    public void saveMultiple(List<StandingbookAttributeSaveReqVO> createReqVOs) {
+        StandingbookAttributeService proxy = context.getBean(StandingbookAttributeService.class);
+        proxy.deleteStandingbookAttributeByTypeId(createReqVOs.get(0).getTypeId());
+        for (StandingbookAttributeSaveReqVO createReqVO : createReqVOs) {
+          proxy.createStandingbookAttribute(createReqVO);
+        }
     }
 
 }

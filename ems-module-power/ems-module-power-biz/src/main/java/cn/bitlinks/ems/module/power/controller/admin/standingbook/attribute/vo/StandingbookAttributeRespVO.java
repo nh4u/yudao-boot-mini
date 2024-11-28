@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo;
 
+import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -66,5 +67,8 @@ public class StandingbookAttributeRespVO {
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("创建时间")
     private LocalDateTime createTime;
+
+    @Schema(description = "创建人")
+    private AdminUserRespDTO creatBy;
 
 }

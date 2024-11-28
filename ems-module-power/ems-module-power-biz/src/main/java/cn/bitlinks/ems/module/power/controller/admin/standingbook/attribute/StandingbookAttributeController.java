@@ -8,9 +8,12 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.excel.core.util.ExcelUtils;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveMultipleReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
+import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
+import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
@@ -35,12 +39,26 @@ public class StandingbookAttributeController {
 
     @Resource
     private StandingbookAttributeService standingbookAttributeService;
-
+    @Resource
+    private AdminUserApi adminUserApi;
     @PostMapping("/create")
     @Operation(summary = "创建台账属性")
     @PreAuthorize("@ss.hasPermission('power:standingbook-attribute:create')")
     public CommonResult<Long> createStandingbookAttribute(@Valid @RequestBody StandingbookAttributeSaveReqVO createReqVO) {
         return success(standingbookAttributeService.createStandingbookAttribute(createReqVO));
+    }
+    @PostMapping("/saveMultiple")
+    @Operation(summary = "保存多个台账属性")
+    @PreAuthorize("@ss.hasPermission('power:standingbook-attribute:create')")
+    public CommonResult<Boolean> saveMultiple(@Valid @RequestBody StandingbookAttributeSaveMultipleReqVO multipleReqVO) {
+        Long typeId = multipleReqVO.getTypeId();
+        List<StandingbookAttributeSaveReqVO> createReqVOs = multipleReqVO.getCreateReqVOs();
+        if (createReqVOs == null || createReqVOs.isEmpty()) {
+            standingbookAttributeService.deleteStandingbookAttributeByTypeId(typeId);
+            return success(true);
+        }
+        standingbookAttributeService.saveMultiple(createReqVOs);
+        return success(true);
     }
 
     @PutMapping("/update")
@@ -69,12 +87,19 @@ public class StandingbookAttributeController {
         return success(BeanUtils.toBean(standingbookAttribute, StandingbookAttributeRespVO.class));
     }
   @GetMapping("/getByTypeId")
-    @Operation(summary = "获得台账属性")
+    @Operation(summary = "获得台账属性ByTypeId")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
     @PreAuthorize("@ss.hasPermission('power:standingbook-attribute:query')")
     public CommonResult<List<StandingbookAttributeRespVO>> getByTypeId(@RequestParam("typeId") Long typeId) {
         List<StandingbookAttributeDO> standingbookAttributes = standingbookAttributeService.getStandingbookAttributeByTypeId(typeId);
-        return success(BeanUtils.toBean(standingbookAttributes, StandingbookAttributeRespVO.class));
+      List<StandingbookAttributeRespVO> bean = BeanUtils.toBean(standingbookAttributes, StandingbookAttributeRespVO.class);
+      IntStream.range(0, bean.size()).forEach(i -> {
+          String creatorId = standingbookAttributes.get(i).getCreator();
+          AdminUserRespDTO data = adminUserApi.getUser(Long.valueOf(creatorId)).getData();
+          bean.get(i).setCreatBy(data);
+      });
+
+      return success(bean);
     }
 
     @PostMapping("/page")
