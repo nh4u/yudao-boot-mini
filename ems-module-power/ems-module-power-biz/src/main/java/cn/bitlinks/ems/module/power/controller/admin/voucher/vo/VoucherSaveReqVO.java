@@ -16,7 +16,7 @@ public class VoucherSaveReqVO {
     @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "3687")
     private Long id;
 
-    
+
 
     @Schema(description = "凭证编号")
     private String code;

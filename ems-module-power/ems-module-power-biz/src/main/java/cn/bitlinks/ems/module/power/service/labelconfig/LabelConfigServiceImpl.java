@@ -29,8 +29,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.LABEL_CONFIG_NOT_EXISTS;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.LABEL_CONFIG_REACH_LIMIT;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
 /**
  * 配置标签 Service 实现类
@@ -49,6 +48,8 @@ public class LabelConfigServiceImpl implements LabelConfigService {
 
     @Override
     public Long createLabelConfig(LabelConfigSaveReqVO createReqVO) {
+        // 校验层数限制
+        validateLabelLayer(createReqVO.getParentId());
 
         // 判断是否已有10条
         Long count = labelConfigMapper.selectCount(new LambdaQueryWrapperX<LabelConfigDO>()
@@ -63,6 +64,28 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         // 返回
         return labelConfig.getId();
     }
+
+    /**
+     * 校验标签的层数限制
+     */
+    private void validateLabelLayer(Long parentId) {
+        int layerCount = 1;
+        while (parentId != null && !parentId.equals(CommonConstants.LABEL_TREE_ROOT_ID)) {
+            LabelConfigDO parentLabel = labelConfigMapper.selectById(parentId);
+            if (parentLabel == null) {
+                throw exception(LABEL_CONFIG_NOT_EXISTS);
+            }
+            parentId = parentLabel.getParentId();
+            layerCount++;
+        }
+
+        if (layerCount > CommonConstants.LABEL_LAYER_LIMIT) {
+            throw exception(LABEL_CONFIG_REACH_LAYER_LIMIT); // 新增异常类型
+        }
+    }
+
+
+
 
     @Override
     public void updateLabelConfig(LabelConfigSaveReqVO updateReqVO) {
