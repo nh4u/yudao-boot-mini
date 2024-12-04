@@ -135,8 +135,11 @@ public class StandingbookServiceImpl implements StandingbookService {
     public List<StandingbookDO> getStandingbookList(StandingbookPageReqVO pageReqVO) {
         List<StandingbookAttributePageReqVO> children = pageReqVO.getChildren();
         List<StandingbookDO> standingbookDOS = standingbookAttributeService.getStandingbook(children, pageReqVO.getTypeId());
-        standingbookDOS.forEach(this::addChildAll);
-        return standingbookDOS;
+        List<StandingbookDO> result = new ArrayList<>();
+        for (StandingbookDO standingbookDO : standingbookDOS) {
+            result.add(getStandingbook(standingbookDO.getId()));
+        }
+        return result;
     }
     @Override
     public Object importStandingbook(MultipartFile file, StandingbookRespVO pageReqVO) {

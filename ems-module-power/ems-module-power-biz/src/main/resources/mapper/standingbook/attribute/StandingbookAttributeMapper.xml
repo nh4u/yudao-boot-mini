@@ -10,7 +10,7 @@
      -->
 
     <select id="selectStandingbook" parameterType="java.util.List"  resultType="cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO">
-        SELECT * FROM power_standingbook standingbook LEFT JOIN (SELECT * FROM power_standingbook_attribute
+        SELECT standingbook.id FROM power_standingbook standingbook LEFT JOIN (SELECT * FROM power_standingbook_attribute
         <where>
             deleted = 0
             <if test="list!= null and list.size > 0">
