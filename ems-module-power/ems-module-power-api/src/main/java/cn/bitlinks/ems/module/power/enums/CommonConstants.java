@@ -28,4 +28,7 @@ public interface CommonConstants {
 
 	Long LABEL_NUM_LIMIT = 10L;
 
+	Long LABEL_LAYER_LIMIT = 3L;
+
+
 }
