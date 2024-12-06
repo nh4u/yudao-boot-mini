@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.S
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,7 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
 
     @Autowired
     private ApplicationContext context;
+
     @Transactional
     @Override
     public Long createStandingbookAttribute(StandingbookAttributeSaveReqVO createReqVO) {
@@ -41,10 +43,21 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
         // 返回
         return standingbookAttribute.getId();
     }
+
+    @Transactional
+    @Override
+    public Long create(StandingbookAttributeSaveReqVO createReqVO) {
+        // 插入
+        StandingbookAttributeDO standingbookAttribute = BeanUtils.toBean(createReqVO, StandingbookAttributeDO.class);
+        standingbookAttributeMapper.insert(standingbookAttribute);
+        // 返回
+        return standingbookAttribute.getId();
+    }
+
     @Transactional
     @Override
     public void createStandingbookAttributeBatch(List<StandingbookAttributeDO> dos) {
-         standingbookAttributeMapper.insertBatch(dos);
+        standingbookAttributeMapper.insertBatch(dos);
     }
 
     @Transactional
@@ -57,6 +70,16 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
         standingbookAttributeMapper.updateById(updateObj);
     }
 
+    @Transactional
+    @Override
+    public void update(StandingbookAttributeSaveReqVO updateReqVO) {
+        // 更新
+        StandingbookAttributeDO updateObj = BeanUtils.toBean(updateReqVO, StandingbookAttributeDO.class);
+        LambdaUpdateWrapper<StandingbookAttributeDO> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(StandingbookAttributeDO::getCode, updateObj.getCode());
+        standingbookAttributeMapper.update(updateObj, updateWrapper);
+    }
+
     @Override
     public void deleteStandingbookAttribute(Long id) {
         // 校验存在
@@ -64,6 +87,7 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
         // 删除
         standingbookAttributeMapper.deleteById(id);
     }
+
     @Override
     public void deleteStandingbookAttributeByTypeId(Long typeId) {
         // 校验存在
@@ -71,10 +95,11 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
         // 删除
         standingbookAttributeMapper.deleteTypeId(typeId);
     }
-   @Override
+
+    @Override
     public void deleteStandingbookAttributeByStandingbookId(Long standingbookId) {
         // 校验存在
-      validateStandingbookAttributeExistsByStandingbookId(standingbookId);
+        validateStandingbookAttributeExistsByStandingbookId(standingbookId);
         // 删除
         standingbookAttributeMapper.deleteStandingbookId(standingbookId);
     }
@@ -84,6 +109,7 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
             throw exception(STANDINGBOOK_ATTRIBUTE_NOT_EXISTS);
         }
     }
+
     private void validateStandingbookAttributeExistsByStandingbookId(Long standingbookId) {
         if (standingbookAttributeMapper.selectStandingbookId(standingbookId) == null) {
             throw exception(STANDINGBOOK_ATTRIBUTE_NOT_EXISTS);
@@ -105,7 +131,8 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
     public List<StandingbookAttributeDO> getStandingbookAttributeByStandingbookId(Long standingbookId) {
         return standingbookAttributeMapper.selectStandingbookId(standingbookId);
     }
-  @Override
+
+    @Override
     public List<StandingbookAttributeDO> getStandingbookAttributeByTypeId(Long typeId) {
         return standingbookAttributeMapper.selectTypeId(typeId);
     }
@@ -117,7 +144,7 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
 
     @Override
     public List<StandingbookDO> getStandingbook(List<StandingbookAttributePageReqVO> children, Long typeId) {
-        return standingbookAttributeMapper.selectStandingbook(children,typeId);
+        return standingbookAttributeMapper.selectStandingbook(children, typeId);
     }
 
     @Override
@@ -125,7 +152,7 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
         StandingbookAttributeService proxy = context.getBean(StandingbookAttributeService.class);
         proxy.deleteStandingbookAttributeByTypeId(createReqVOs.get(0).getTypeId());
         for (StandingbookAttributeSaveReqVO createReqVO : createReqVOs) {
-          proxy.createStandingbookAttribute(createReqVO);
+            proxy.createStandingbookAttribute(createReqVO);
         }
     }
 

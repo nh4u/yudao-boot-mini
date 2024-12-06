@@ -37,6 +37,7 @@ import java.io.*;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_NOT_EXISTS;
@@ -57,9 +58,9 @@ public class StandingbookServiceImpl implements StandingbookService {
     private StandingbookAttributeService standingbookAttributeService;
     @Resource
     private FileApi fileApi;
-    @Override
+
     @Transactional
-    public Long createStandingbook(StandingbookSaveReqVO createReqVO) {
+    public Long create(StandingbookSaveReqVO createReqVO) {
         // 插入
         StandingbookDO standingbook = BeanUtils.toBean(createReqVO, StandingbookDO.class);
         standingbookMapper.insert(standingbook);
@@ -72,18 +73,59 @@ public class StandingbookServiceImpl implements StandingbookService {
         }
         return standingbook.getId();
     }
+    @Override
+    @Transactional
+    public Long createStandingbook(Map <String,String>  createReqVO) {
+        // 插入
+        StandingbookDO standingbook = new StandingbookDO();
+        standingbook.setTypeId(Long.valueOf(createReqVO.get("typeId")));
+        standingbookMapper.insert(standingbook);
+        // 使用 entrySet() 遍历键和值
+        List<StandingbookAttributeSaveReqVO> children= new ArrayList<>();
+        for (Map.Entry<String, String> entry : createReqVO.entrySet()) {
+            System.out.println("Key: " + entry.getKey() + ", Value: " + entry.getValue());
+            String key = entry.getKey();
+            String value = entry.getValue();
+            if (!entry.getKey() .equals("typeId")){
+                StandingbookAttributeSaveReqVO attribute = new StandingbookAttributeSaveReqVO();
+                attribute.setCode(key).setValue(value);
+                children.add(attribute);
+            }
+        }
+        // 返回
+        if (children.size() > 0) {
+            children.forEach(child -> {
+                child.setStandingbookId(standingbook.getId()).setIsRequired("0").setTypeId(standingbook.getTypeId());//默认不必填;
+                standingbookAttributeService.create(child);
+            });
+        }
+        return standingbook.getId();
+    }
 
     @Override
     @Transactional
-    public void updateStandingbook(StandingbookSaveReqVO updateReqVO) {
+    public void updateStandingbook(Map <String,String>  updateReqVO) {
         // 校验存在
-        validateStandingbookExists(updateReqVO.getId());
+        validateStandingbookExists(Long.valueOf(updateReqVO.get("id")));
         // 更新
-        StandingbookDO updateObj = BeanUtils.toBean(updateReqVO, StandingbookDO.class);
-        standingbookMapper.updateById(updateObj);
+        StandingbookDO standingbook = new StandingbookDO();
+        standingbook.setTypeId(Long.valueOf(updateReqVO.get("typeId")));
+        standingbook.setId(Long.valueOf(updateReqVO.get("id")));
+        standingbookMapper.updateById(standingbook);
+        // 使用 entrySet() 遍历键和值
+        List<StandingbookAttributeSaveReqVO> children= new ArrayList<>();
+        for (Map.Entry<String, String> entry : updateReqVO.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            if (!entry.getKey() .equals("typeId")&&!entry.getKey() .equals("id")){
+                StandingbookAttributeSaveReqVO attribute = new StandingbookAttributeSaveReqVO();
+                attribute.setCode(key).setValue(value);
+                children.add(attribute);
+            }
+        }
         // 更新属性
-        if (updateReqVO.getChildren() != null && updateReqVO.getChildren().size() > 0) {
-            updateReqVO.getChildren().forEach(child -> standingbookAttributeService.updateStandingbookAttribute(child));
+        if (children.size() > 0) {
+            children.forEach(child -> standingbookAttributeService.update(child));
         }
 
     }
@@ -132,9 +174,21 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
     @Override
-    public List<StandingbookDO> getStandingbookList(StandingbookPageReqVO pageReqVO) {
-        List<StandingbookAttributePageReqVO> children = pageReqVO.getChildren();
-        List<StandingbookDO> standingbookDOS = standingbookAttributeService.getStandingbook(children, pageReqVO.getTypeId());
+    public List<StandingbookDO> getStandingbookList( Map<String,String> pageReqVO) {
+        String typeId = pageReqVO.get("typeId");
+        List<StandingbookAttributePageReqVO> children= new ArrayList<>();
+        // 使用 entrySet() 遍历键和值
+        for (Map.Entry<String, String> entry : pageReqVO.entrySet()) {
+            System.out.println("Key: " + entry.getKey() + ", Value: " + entry.getValue());
+            String key = entry.getKey();
+            String value = entry.getValue();
+            if (!entry.getKey() .equals("typeId")){
+                StandingbookAttributePageReqVO attribute = new StandingbookAttributePageReqVO();
+                attribute.setCode(key).setValue(value);
+                children.add(attribute);
+            }
+        }
+        List<StandingbookDO> standingbookDOS = standingbookAttributeService.getStandingbook(children, Long.valueOf(typeId));
         List<StandingbookDO> result = new ArrayList<>();
         for (StandingbookDO standingbookDO : standingbookDOS) {
             result.add(getStandingbook(standingbookDO.getId()));
@@ -178,7 +232,7 @@ public class StandingbookServiceImpl implements StandingbookService {
                     }
                     children.add(attribute);
                 }
-                proxy.createStandingbook(saveReq);
+                proxy.create(saveReq);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -188,9 +242,9 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
     @Override
-    public void exportStandingbookExcel(StandingbookPageReqVO pageReqVO, HttpServletResponse response) {
+    public void exportStandingbookExcel( Map <String,String> pageReqVO, HttpServletResponse response) {
         List<StandingbookDO> list =getStandingbookList(pageReqVO);
-        Long typeId = pageReqVO.getTypeId();
+        Long typeId = Long.valueOf(pageReqVO.get("typeId"));
         List<StandingbookAttributeDO> attributes = standingbookAttributeService.getStandingbookAttributeByTypeId(typeId);
         if (attributes == null || attributes.isEmpty()) {
             throw new IllegalArgumentException("台账属性不能为空");
