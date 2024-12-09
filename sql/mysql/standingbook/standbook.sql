@@ -28,6 +28,7 @@ CREATE TABLE `power_standingbook_attribute`
     `standingbook_id` bigint COMMENT '台账编号',
     `file_id`         bigint COMMENT '文件编号',
     `is_required`     varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NOT NULL COMMENT '是否必填',
+    `auto_generated`     varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NOT NULL COMMENT '是否自动生成',
     `code`            varchar(63) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NOT NULL COMMENT '编码',
     `sort`            bigint COMMENT '排序',
     `format`          varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT '格式',
