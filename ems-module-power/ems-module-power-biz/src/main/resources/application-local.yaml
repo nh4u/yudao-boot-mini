@@ -3,16 +3,16 @@
 spring:
   cloud:
     nacos:
-      server-addr: 192.168.1.38:8848 # Nacos 服务器地址
-      username: nacos # Nacos 账号
-      password: nacos # Nacos 密码
+      server-addr: 192.168.2.29:8848 # Nacos 服务器地址
+      username: ENC(U4gGLM7LbeaK/xObztiIZQ==) # Nacos 账号
+      password: ENC(U4gGLM7LbeaK/xObztiIZQ==) # Nacos 密码
       discovery: # 【配置中心】配置项
-        namespace: ems # 命名空间。这里使用 dev 开发环境
+        namespace: dev # 命名空间。这里使用 dev 开发环境
         group: DEFAULT_GROUP # 使用的 Nacos 配置分组，默认为 DEFAULT_GROUP
         metadata:
           version: 1.0.0 # 服务实例的版本号，可用于灰度发布
       config: # 【注册中心】配置项
-        namespace: ems # 命名空间。这里使用 dev 开发环境
+        namespace: dev # 命名空间。这里使用 dev 开发环境
         group: DEFAULT_GROUP # 使用的 Nacos 配置分组，默认为 DEFAULT_GROUP
 
 --- #################### 数据库相关配置 ####################
@@ -61,28 +61,28 @@ spring:
       primary: master
       datasource:
         master:
-          url: jdbc:mysql://127.0.0.1:3306/ydme1ems?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true # MySQL Connector/J 8.X 连接的示例
+          url: ENC(Is2OFD0Hn3WJtT6V4zV+E6ZwOy/MADcDt4jldEp+KKSKzuxyY59tFcXG+IB+GkoyojDRH+2TFrBPtnrouWFLS1IXz95b0HuBf7lCiHZFJih4P54HkcuZyRSy+Fl2aERHNDLff/dTneY4vQyN/zTMsv9NZSP29Crfnu1CkB9JTDr2CBstwsnnJ3LVXF76Nzuf1fajbCB7h2oR9RJQ5/kcucrx0xKw542xgEXy6y6WMTGqqLiY/2znZg==) # MySQL Connector/J 8.X 连接的示例
           #          url: jdbc:mysql://127.0.0.1:3306/ruoyi-vue-pro?useSSL=true&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true # MySQL Connector/J 5.X 连接的示例
           #          url: jdbc:postgresql://127.0.0.1:5432/ruoyi-vue-pro # PostgreSQL 连接的示例
           #          url: jdbc:oracle:thin:@127.0.0.1:1521:xe # Oracle 连接的示例
           #          url: jdbc:sqlserver://127.0.0.1:1433;DatabaseName=ruoyi-vue-pro # SQLServer 连接的示例
           #          url: jdbc:dm://10.211.55.4:5236?schema=RUOYI_VUE_PRO # DM 连接的示例
-          username: root
-          password: root
+          username: ENC(vpwz0SZq17Zm0nt2psiC4A==)
+          password: ENC(Q9ClbSzSD2TMCMohtls4SnyGn+t0gtGMRyx4AZosTEM=)
         #          username: sa # SQL Server 连接的示例
         #          password: JSm:g(*%lU4ZAkz06cd52KqT3)i1?H7W # SQL Server 连接的示例
         #          username: SYSDBA # DM 连接的示例
         #          password: SYSDBA # DM 连接的示例
         slave: # 模拟从库，可根据自己需要修改
           lazy: true # 开启懒加载，保证启动速度
-          url: jdbc:mysql://127.0.0.1:3306/ydme1ems?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
-          username: root
-          password: root
+          url: jdbc:mysql://192.168.2.29:9031/quickstart?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
+          username: ENC(vpwz0SZq17Zm0nt2psiC4A==)
+#          password: ENC(Q9ClbSzSD2TMCMohtls4SnyGn+t0gtGMRyx4AZosTEM=)
 
   # Redis 配置。Redisson 默认的配置足够使用，一般不需要进行调优
   redis:
-    host: 127.0.0.1 # 地址
-    password: bitlink2022
+    host: 192.168.2.26 # 地址
+    password: ENC(RPbxWwLhv1OjfgYGRyseQUaFfMngoYAx)
     database: 0 # 数据库索引
 #    password: dev # 密码，建议生产环境开启
 
