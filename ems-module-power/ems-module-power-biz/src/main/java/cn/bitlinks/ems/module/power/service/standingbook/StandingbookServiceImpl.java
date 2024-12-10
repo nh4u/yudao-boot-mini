@@ -120,6 +120,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             if (!entry.getKey() .equals("typeId")&&!entry.getKey() .equals("id")){
                 StandingbookAttributeSaveReqVO attribute = new StandingbookAttributeSaveReqVO();
                 attribute.setCode(key).setValue(value);
+                attribute.setStandingbookId(standingbook.getId());
                 children.add(attribute);
             }
         }

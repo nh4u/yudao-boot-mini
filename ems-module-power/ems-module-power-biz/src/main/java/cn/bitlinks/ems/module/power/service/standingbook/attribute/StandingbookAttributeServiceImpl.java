@@ -76,7 +76,7 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
         // 更新
         StandingbookAttributeDO updateObj = BeanUtils.toBean(updateReqVO, StandingbookAttributeDO.class);
         LambdaUpdateWrapper<StandingbookAttributeDO> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.eq(StandingbookAttributeDO::getCode, updateObj.getCode());
+        updateWrapper.eq(StandingbookAttributeDO::getCode, updateObj.getCode()).eq(StandingbookAttributeDO::getStandingbookId, updateObj.getStandingbookId());
         standingbookAttributeMapper.update(updateObj, updateWrapper);
     }
 
