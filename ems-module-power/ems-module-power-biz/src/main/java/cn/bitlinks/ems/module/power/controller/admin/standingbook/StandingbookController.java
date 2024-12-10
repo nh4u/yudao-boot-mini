@@ -55,8 +55,13 @@ public class StandingbookController {
     @Operation(summary = "删除台账")
     @Parameter(name = "id", description = "编号", required = true)
     @PreAuthorize("@ss.hasPermission('power:standingbook:delete')")
-    public CommonResult<Boolean> deleteStandingbook(@RequestParam("id") Long id) {
-        standingbookService.deleteStandingbook(id);
+    public CommonResult<Boolean> deleteStandingbook( @RequestBody List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return CommonResult.error(ErrorCodeConstants.STANDINGBOOK_NOT_EXISTS.getCode(), "台账编号不能为空");
+        }
+        for (Long aLong : ids) {
+            standingbookService.deleteStandingbook(aLong);
+        }
         return success(true);
     }
 
