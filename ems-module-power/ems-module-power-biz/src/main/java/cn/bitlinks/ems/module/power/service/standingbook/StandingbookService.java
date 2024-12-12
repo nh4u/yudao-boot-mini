@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 台账属性 Service 接口
@@ -24,14 +25,14 @@ public interface StandingbookService {
      * @param createReqVO 创建信息
      * @return 编号
      */
-    Long createStandingbook(@Valid StandingbookSaveReqVO createReqVO);
+    Long createStandingbook(@Valid Map <String,String>  createReqVO);
 
     /**
      * 更新台账属性
      *
      * @param updateReqVO 更新信息
      */
-    void updateStandingbook(@Valid StandingbookSaveReqVO updateReqVO);
+    void updateStandingbook(@Valid Map <String,String>  updateReqVO);
 
     /**
      * 删除台账属性
@@ -55,11 +56,13 @@ public interface StandingbookService {
      * @return 台账属性分页
      */
     PageResult<StandingbookDO> getStandingbookPage(StandingbookPageReqVO pageReqVO);
-    List<StandingbookDO> getStandingbookList(StandingbookPageReqVO pageReqVO);
+    List<StandingbookDO> getStandingbookList( Map<String,String> pageReqVO);
 
     Object importStandingbook(MultipartFile file, StandingbookRespVO pageReqVO);
 
-    void exportStandingbookExcel(StandingbookPageReqVO pageReqVO, HttpServletResponse response);
+    void exportStandingbookExcel(Map <String,String> pageReqVO, HttpServletResponse response);
 
     void template(Long typeId, HttpServletResponse response);
+
+    Long create(StandingbookSaveReqVO saveReq);
 }

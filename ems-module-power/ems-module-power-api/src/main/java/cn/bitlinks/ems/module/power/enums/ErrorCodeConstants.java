@@ -32,7 +32,9 @@ public interface ErrorCodeConstants {
 
     // ========== 标签配置 ==========
     ErrorCode LABEL_CONFIG_NOT_EXISTS = new ErrorCode(1_001_401_001, "配置标签不存在");
-    ErrorCode LABEL_CONFIG_REACH_LIMIT = new ErrorCode(1_001_401_002, "标签已超过限制");
+    ErrorCode LABEL_CONFIG_REACH_LIMIT = new ErrorCode(1_001_401_002, "单层标签超过限制");
+    ErrorCode LABEL_CONFIG_REACH_LAYER_LIMIT = new ErrorCode(1_001_401_003, "标签层数超过限制");
+
     // ========== 凭证管理 ==========
     ErrorCode VOUCHER_NOT_EXISTS = new ErrorCode(1_001_501_001, "凭证不存在");
     ErrorCode VOUCHER_LIST_IS_EMPTY = new ErrorCode(1_001_501_002, "凭证ID列表为空");

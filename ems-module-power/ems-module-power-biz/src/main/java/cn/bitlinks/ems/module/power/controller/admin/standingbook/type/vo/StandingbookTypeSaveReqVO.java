@@ -3,9 +3,6 @@ package cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-
 @Schema(description = "管理后台 - 台账类型新增/修改 Request VO")
 @Data
 public class StandingbookTypeSaveReqVO {
@@ -14,24 +11,19 @@ public class StandingbookTypeSaveReqVO {
     private Long id;
 
     @Schema(description = "名字", requiredMode = Schema.RequiredMode.REQUIRED, example = "bitlinks")
-    @NotEmpty(message = "名字不能为空")
     private String name;
 
     @Schema(description = "父级类型编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "31064")
     private Long superId;
 
-    @Schema(description = "父级名字", requiredMode = Schema.RequiredMode.REQUIRED, example = "bitlinks")
-    private String superName;
 
     @Schema(description = "类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
-    @NotEmpty(message = "类型不能为空")
     private String topType;
 
     @Schema(description = "排序")
     private Long sort;
 
     @Schema(description = "当前层级", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "当前层级不能为空")
     private Long level;
 
     @Schema(description = "编码")

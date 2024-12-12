@@ -3,9 +3,8 @@ CREATE TABLE `power_standingboook_type`
 (
     `id`          bigint                                                        NOT NULL AUTO_INCREMENT COMMENT '编号',
     `name`        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '名字',
-    `super_id`    bigint                                                        NOT NULL COMMENT '父级类型编号',
-    `super_name`  varchar(255)                                                  NOT NULL COMMENT '父级名字',
-    `top_type`    varchar(10)                                                   NOT NULL COMMENT '类型',
+    `super_id`    bigint                                                        COMMENT '父级类型编号'
+    `top_type`    varchar(20)                                                   NOT NULL COMMENT '类型',
     `sort`        bigint COMMENT '排序',
     `level`       bigint                                                        NOT NULL COMMENT '当前层级',
     `code`        varchar(63) COMMENT '编码',
@@ -29,6 +28,7 @@ CREATE TABLE `power_standingbook_attribute`
     `standingbook_id` bigint COMMENT '台账编号',
     `file_id`         bigint COMMENT '文件编号',
     `is_required`     varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NOT NULL COMMENT '是否必填',
+    `auto_generated`     varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NOT NULL COMMENT '是否自动生成',
     `code`            varchar(63) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NOT NULL COMMENT '编码',
     `sort`            bigint COMMENT '排序',
     `format`          varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT '格式',
@@ -60,4 +60,6 @@ CREATE TABLE `power_standingboook`
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '台账表';
 
+INSERT INTO`power_standingbook_type`(`id`, `name`, `super_id`, `super_name`, `top_type`, `sort`, `level`, `code`, `description`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1, '重点设备', NULL, NULL, '1', 1, 1, '1', NULL, '系统', '2024-10-17 11:35:16', '系统', '2024-11-26 09:59:24', b'0', 1);
+INSERT INTO`power_standingbook_type`(`id`, `name`, `super_id`, `super_name`, `top_type`, `sort`, `level`, `code`, `description`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (2, '计量器具', NULL, NULL, '2', 1, 1, '2', NULL, '系统', '2024-10-17 11:35:40', '系统', '2024-11-26 10:00:02', b'0', 1);
 

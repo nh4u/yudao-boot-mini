@@ -10,26 +10,30 @@
      -->
 
     <select id="selectStandingbook" parameterType="java.util.List"  resultType="cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO">
-        SELECT * FROM power_standingbook standingbook LEFT JOIN (SELECT * FROM power_standingbook_attribute
+        SELECT standingbook.id,standingbook.update_time FROM power_standingbook standingbook LEFT JOIN (SELECT * FROM power_standingbook_attribute
         <where>
+            deleted = 0
             <if test="list!= null and list.size > 0">
-                `value` IN
+                AND (
+                <foreach collection="list" item="item"  separator="OR" >
+                       `value` LIKE   CONCAT('%', #{item.value},'%')
+                </foreach>)
+                AND `code` IN
                 <foreach collection="list" item="item" open="(" separator="," close=")">
-                    #{item.value}
-                </foreach>
-                and `name` IN
-                <foreach collection="list" item="item" open="(" separator="," close=")">
-                    #{item.name}
+                    #{item.code}
                 </foreach>
             </if>
         </where>
         ) standingbookattribute ON standingbook.id = standingbookattribute.standingbook_id
         <where>
+            standingbook.deleted = 0
             <if test="typeId!= null">
                 AND standingbook.type_id = #{typeId}
             </if>
+            AND standingbookattribute.id  IS NOT NULL
         </where>
-        GROUP BY standingbook.id
+        GROUP BY standingbook.id,standingbook.update_time
+        ORDER BY standingbook.update_time DESC
 
     </select>
 

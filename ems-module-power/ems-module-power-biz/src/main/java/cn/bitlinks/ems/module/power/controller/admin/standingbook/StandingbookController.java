@@ -3,9 +3,7 @@ package cn.bitlinks.ems.module.power.controller.admin.standingbook;
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
@@ -22,6 +20,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Map;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.IMPORT;
@@ -40,14 +39,14 @@ public class StandingbookController {
     @PostMapping("/create")
     @Operation(summary = "创建台账")
     @PreAuthorize("@ss.hasPermission('power:standingbook:create')")
-    public CommonResult<Long> createStandingbook(@Valid  @RequestBody StandingbookSaveReqVO createReqVO) {
+    public CommonResult<Long> createStandingbook(@Valid  @RequestBody Map <String,String>  createReqVO) {
         return success(standingbookService.createStandingbook(createReqVO));
     }
 
     @PutMapping("/update")
     @Operation(summary = "更新台账")
     @PreAuthorize("@ss.hasPermission('power:standingbook:update')")
-    public CommonResult<Boolean> updateStandingbook(@Valid @RequestBody StandingbookSaveReqVO updateReqVO) {
+    public CommonResult<Boolean> updateStandingbook(@Valid @RequestBody Map <String,String>  updateReqVO) {
         standingbookService.updateStandingbook(updateReqVO);
         return success(true);
     }
@@ -56,8 +55,13 @@ public class StandingbookController {
     @Operation(summary = "删除台账")
     @Parameter(name = "id", description = "编号", required = true)
     @PreAuthorize("@ss.hasPermission('power:standingbook:delete')")
-    public CommonResult<Boolean> deleteStandingbook(@RequestParam("id") Long id) {
-        standingbookService.deleteStandingbook(id);
+    public CommonResult<Boolean> deleteStandingbook( @RequestBody List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return CommonResult.error(ErrorCodeConstants.STANDINGBOOK_NOT_EXISTS.getCode(), "台账编号不能为空");
+        }
+        for (Long aLong : ids) {
+            standingbookService.deleteStandingbook(aLong);
+        }
         return success(true);
     }
 
@@ -72,7 +76,7 @@ public class StandingbookController {
     @PostMapping("/list")
     @Operation(summary = "获得台账列表")
     @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
-    public CommonResult<List<StandingbookRespVO>> getStandingbookPage(@Valid @RequestBody StandingbookPageReqVO pageReqVO) {
+    public CommonResult<List<StandingbookRespVO>> getStandingbookPage(@Valid @RequestBody Map <String,String> pageReqVO) {
         List<StandingbookDO> list = standingbookService.getStandingbookList(pageReqVO);
         return success(BeanUtils.toBean(list, StandingbookRespVO.class));
     }
@@ -90,9 +94,9 @@ public class StandingbookController {
     @Operation(summary = "导出台账 Excel")
     @PreAuthorize("@ss.hasPermission('power:standingbook:export')")
     @ApiAccessLog(operateType = EXPORT)
-    public void exportStandingbookExcel(@Valid @RequestBody StandingbookPageReqVO pageReqVO,
+    public void exportStandingbookExcel(@Valid @RequestBody Map <String,String> pageReqVO,
               HttpServletResponse response) {
-        if (pageReqVO == null && pageReqVO.getTypeId() == null) {
+        if (pageReqVO == null && pageReqVO.get("typeId") == null) {
             throw new IllegalArgumentException("参数不能为空");
         }
         standingbookService.exportStandingbookExcel(pageReqVO, response);

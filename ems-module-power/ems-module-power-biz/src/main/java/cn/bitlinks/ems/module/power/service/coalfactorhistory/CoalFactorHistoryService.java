@@ -1,11 +1,11 @@
 package cn.bitlinks.ems.module.power.service.coalfactorhistory;
 
-import java.util.*;
-import javax.validation.*;
-import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.*;
-import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
-import cn.bitlinks.ems.framework.common.pojo.PageParam;
+import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistorySaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
+
+import javax.validation.Valid;
 
 /**
  * 折标煤系数历史 Service 接口
@@ -22,12 +22,28 @@ public interface CoalFactorHistoryService {
      */
     Long createCoalFactorHistory(@Valid CoalFactorHistorySaveReqVO createReqVO);
 
+    Long createCoalFactorHistory(CoalFactorHistorySaveReqVO createReqVO, boolean use3307);
+
+
+
+
+    /**
+     * 创建折标煤系数历史
+     *
+     * @param createReqVO 创建信息
+     * @return 编号
+     */
+    Long createCoalFactorHistory07(@Valid CoalFactorHistorySaveReqVO createReqVO);
+
     /**
      * 更新折标煤系数历史
      *
      * @param updateReqVO 更新信息
      */
     void updateCoalFactorHistory(@Valid CoalFactorHistorySaveReqVO updateReqVO);
+
+    void updateCoalFactorHistory07(@Valid CoalFactorHistorySaveReqVO updateReqVO);
+
 
     /**
      * 删除折标煤系数历史
@@ -36,6 +52,9 @@ public interface CoalFactorHistoryService {
      */
     void deleteCoalFactorHistory(Long id);
 
+    void deleteCoalFactorHistory07(Long id);
+
+
     /**
      * 获得折标煤系数历史
      *
@@ -43,6 +62,9 @@ public interface CoalFactorHistoryService {
      * @return 折标煤系数历史
      */
     CoalFactorHistoryDO getCoalFactorHistory(Long id);
+
+    CoalFactorHistoryDO getCoalFactorHistory07(Long id);
+
 
     /**
      * 获得折标煤系数历史分页

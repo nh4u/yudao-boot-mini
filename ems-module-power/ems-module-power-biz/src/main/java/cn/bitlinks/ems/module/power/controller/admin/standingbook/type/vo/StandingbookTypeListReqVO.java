@@ -18,8 +18,6 @@ public class StandingbookTypeListReqVO {
     @Schema(description = "父级类型编号", example = "31064")
     private Long superId;
 
-    @Schema(description = "父级名字", example = "bitlinks")
-    private String superName;
 
     @Schema(description = "类型", example = "2")
     private String topType;

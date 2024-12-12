@@ -38,10 +38,6 @@ public class StandingbookTypeDO extends BaseDO {
      */
     private Long superId;
     /**
-     * 父级名字
-     */
-    private String superName;
-    /**
      * 类型
      */
     private String topType;

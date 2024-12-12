@@ -36,6 +36,8 @@ public class ApiConstants {
     public static final String DATETIME = "DATETIME";
     //文件
     public static final String FILE = "FILE";
+    //图片
+    public static final String PICTURE = "PICTURE";
     /**
      * 设备属性-是否必填
      */

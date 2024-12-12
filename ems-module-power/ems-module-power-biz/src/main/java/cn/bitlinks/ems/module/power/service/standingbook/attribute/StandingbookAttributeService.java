@@ -23,6 +23,7 @@ public interface StandingbookAttributeService {
      * @return 编号
      */
     Long createStandingbookAttribute(@Valid StandingbookAttributeSaveReqVO createReqVO);
+    Long create(StandingbookAttributeSaveReqVO createReqVO);
 
     /**
      * 更新台账属性
@@ -30,6 +31,7 @@ public interface StandingbookAttributeService {
      * @param updateReqVO 更新信息
      */
     void updateStandingbookAttribute(@Valid StandingbookAttributeSaveReqVO updateReqVO);
+    void update(StandingbookAttributeSaveReqVO updateReqVO);
 
     /**
      * 删除台账属性
@@ -89,4 +91,6 @@ public interface StandingbookAttributeService {
 
 
     List<StandingbookDO> getStandingbook(List<StandingbookAttributePageReqVO> children,Long typeId);
+
+    void saveMultiple(List<StandingbookAttributeSaveReqVO> createReqVOs);
 }
