@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 import javax.validation.Valid;
 
+import java.util.Map;
+
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 
 /**
@@ -36,5 +38,10 @@ public class StatisticsController {
         return success(jsonObject);
     }
 
+    @PostMapping("/standardCoalAnalysis")
+    @Operation(summary = "折标煤分析")
+    public CommonResult< Map<String, Object>> standardCoalAnalysis(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsService.standardCoalAnalysis(paramVO));
+    }
 
 }

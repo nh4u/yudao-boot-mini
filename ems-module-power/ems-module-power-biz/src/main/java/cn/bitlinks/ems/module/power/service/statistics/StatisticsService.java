@@ -3,6 +3,8 @@ package cn.bitlinks.ems.module.power.service.statistics;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
 import com.alibaba.fastjson.JSONObject;
 
+import java.util.Map;
+
 /**
  * 用能分析 Service 接口
  *
@@ -11,9 +13,12 @@ import com.alibaba.fastjson.JSONObject;
 public interface StatisticsService {
 
     /**
-     *   能留分析图
+     * 能留分析图
+     *
      * @param paramVO 入参
      * @return 数据
      */
     JSONObject energyFlowAnalysis(StatisticsParamVO paramVO);
+
+    Map<String, Object> standardCoalAnalysis(StatisticsParamVO paramVO);
 }

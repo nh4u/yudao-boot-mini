@@ -39,4 +39,11 @@ public interface ErrorCodeConstants {
     ErrorCode VOUCHER_USAGE_MODIFIED_ERROR = new ErrorCode(1_001_501_003, "凭证ID已在数据补录中使用，无法修改用量值");
 
     ErrorCode DA_PARAM_FORMULA_NOT_EXISTS = new ErrorCode(1_001_601_001, "参数公式不存在");
+
+
+
+    // ========== 其他业务错误 ==========
+
+    ErrorCode DATE_RANGE_NOT_EXISTS = new ErrorCode(1_001_601_001, "日期范围不存在");
+
 }

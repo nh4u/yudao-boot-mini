@@ -102,6 +102,11 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     }
 
     @Override
+    public List<EnergyConfigurationDO> getEnergyConfigurationList(EnergyConfigurationSaveReqVO queryVO) {
+       return energyConfigurationMapper.selectList(queryVO );
+    }
+
+    @Override
     public List<EnergyConfigurationDO> selectByCondition(String energyName, String energyClassify, String code) {
         QueryWrapper<EnergyConfigurationDO> queryWrapper = new QueryWrapper<>();
 
