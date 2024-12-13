@@ -6,6 +6,7 @@ import cn.bitlinks.ems.framework.common.pojo.PageParam;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.excel.core.util.ExcelUtils;
+import cn.bitlinks.ems.framework.idempotent.core.annotation.Idempotent;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigSaveReqVO;
@@ -37,6 +38,7 @@ public class LabelConfigController {
     @Resource
     private LabelConfigService labelConfigService;
 
+    @Idempotent(timeout = 5)
     @PostMapping("/create")
     @Operation(summary = "创建配置标签")
     @PreAuthorize("@ss.hasPermission('power:label-config:create')")
