@@ -36,7 +36,7 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
                 .orderByDesc(EnergyConfigurationDO::getId));
     }
 
-    default List<EnergyConfigurationDO> selectList(EnergyConfigurationSaveReqVO reqVO) {
+    default List<EnergyConfigurationDO> selectList(EnergyConfigurationPageReqVO reqVO) {
         return selectList(new LambdaQueryWrapperX<EnergyConfigurationDO>()
                 .likeIfPresent(EnergyConfigurationDO::getEnergyName, reqVO.getEnergyName())
                 .eqIfPresent(EnergyConfigurationDO::getCode, reqVO.getCode())
@@ -49,6 +49,7 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
                 .eqIfPresent(EnergyConfigurationDO::getUnitPrice, reqVO.getUnitPrice())
                 .eqIfPresent(EnergyConfigurationDO::getUnitPriceFormula, reqVO.getUnitPriceFormula())
                 .eqIfPresent(EnergyConfigurationDO::getUnitPriceScale, reqVO.getUnitPriceScale())
+                .inIfPresent(EnergyConfigurationDO::getId, reqVO.getEnergyIds())
                 .orderByAsc(EnergyConfigurationDO::getId));
     }
 

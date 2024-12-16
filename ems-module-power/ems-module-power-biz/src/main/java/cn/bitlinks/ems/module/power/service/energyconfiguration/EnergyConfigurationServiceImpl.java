@@ -102,7 +102,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     }
 
     @Override
-    public List<EnergyConfigurationDO> getEnergyConfigurationList(EnergyConfigurationSaveReqVO queryVO) {
+    public List<EnergyConfigurationDO> getEnergyConfigurationList(EnergyConfigurationPageReqVO queryVO) {
        return energyConfigurationMapper.selectList(queryVO );
     }
 

@@ -63,4 +63,6 @@ public interface LabelConfigService {
     PageResult<LabelConfigDO> getLabelConfigPage(LabelConfigPageReqVO pageReqVO);
 
     List<Tree<Long>> getLabelTree(boolean lazy, Long parentId,String labelName);
+
+    List<Tree<Long>> getLabelTreeByParam(List<Long> labelIdList);
 }

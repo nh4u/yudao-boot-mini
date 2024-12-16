@@ -22,7 +22,7 @@ public class EnergyConfigurationPageReqVO extends PageParam {
     @Schema(description = "编码")
     private String code;
 
-    @Schema(description = "能源分类")
+    @Schema(description = "能源分类 1：外购能源；2：园区能源")
     private Integer energyClassify;
 
     @Schema(description = "能源参数")
@@ -60,5 +60,8 @@ public class EnergyConfigurationPageReqVO extends PageParam {
     @Schema(description = "创建时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] createTime;
+
+    @Schema(description = "统计能源", example = "[1,2,3,4]")
+    private List<Long> energyIds;
 
 }

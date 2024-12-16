@@ -1,7 +1,7 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsDateData;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultVO;
@@ -47,7 +47,6 @@ public class StatisticsServiceImpl implements StatisticsService {
     private EnergyConfigurationService energyConfigurationService;
 
 
-
     @Override
     public JSONObject energyFlowAnalysis(StatisticsParamVO paramVO) {
         return null;
@@ -62,24 +61,57 @@ public class StatisticsServiceImpl implements StatisticsService {
             throw exception(DATE_RANGE_NOT_EXISTS);
         }
 
+
+
+        // TODO: 2024/12/16  根据日月年返回对应range
+
+
+
+
+
         // 返回结果map
         Map<String, Object> result = new HashMap<>(2);
 
-        // 表头处理
-        List<String> tableHeader = getTableHeader(range);
-        List<Tree<Long>> labelTree = labelConfigService.getLabelTree(false, null, null);
-
-        // 外购能源list
-        EnergyConfigurationSaveReqVO queryVO = new EnergyConfigurationSaveReqVO();
-        queryVO.setEnergyClassify(1);
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.getEnergyConfigurationList(queryVO);
-
-        // TODO: 2024/12/11 多线程处理 labelTree for循环
         // 统计结果list
         List<StatisticsResultVO> list = new ArrayList<>();
-        for (Tree<Long> tree : labelTree) {
-            List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVO(tree, energyList, range);
+
+        // 表头处理
+        List<String> tableHeader = getTableHeader(range);
+
+
+
+        Integer queryType = paramVO.getQueryType();
+
+        if (1 == queryType) {
+            // 1、按能源查看
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+            // 能源结果list
+            List<StatisticsResultVO> statisticsResultVOList = getEnergyList(new StatisticsResultVO(), energyList, range);
             list.addAll(statisticsResultVOList);
+
+        } else if (2 == queryType) {
+            // 2、按标签查看
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range);
+                list.addAll(statisticsResultVOList);
+            }
+
+        } else {
+            // 0、综合查看（默认）
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+
+            // TODO: 2024/12/11 多线程处理 labelTree for循环
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range);
+                list.addAll(statisticsResultVOList);
+            }
         }
 
         result.put("header", tableHeader);
@@ -112,8 +144,46 @@ public class StatisticsServiceImpl implements StatisticsService {
         return headerList;
     }
 
+    /**
+     * 标签查询条件处理
+     *
+     * @param paramVO
+     * @return
+     */
+    private List<Tree<Long>> dealLabelQueryData(StatisticsParamVO paramVO) {
+        List<Tree<Long>> labelTree;
+        List<Long> labelIds = paramVO.getLabelIds();
+        if (CollectionUtil.isNotEmpty(labelIds)) {
+            labelTree = labelConfigService.getLabelTreeByParam(labelIds);
+        } else {
+            labelTree = labelConfigService.getLabelTree(false, null, null);
+        }
+        return labelTree;
+    }
 
-    private List<StatisticsResultVO> getStatisticsResultVO(Tree<Long> labelTree, List<EnergyConfigurationDO> energyList, LocalDate[] range) {
+    /**
+     * 能源查询条件处理
+     *
+     * @param paramVO
+     * @return
+     */
+    private List<EnergyConfigurationDO> dealEnergyQueryData(StatisticsParamVO paramVO) {
+        // 能源查询条件处理
+        EnergyConfigurationPageReqVO queryVO = new EnergyConfigurationPageReqVO();
+
+        List<Long> energyIds = paramVO.getEnergyIds();
+        if (CollectionUtil.isNotEmpty(energyIds)) {
+            queryVO.setEnergyIds(energyIds);
+        } else {
+            // 默认 外购能源全部
+            queryVO.setEnergyClassify(1);
+        }
+        // 能源list
+        return energyConfigurationService.getEnergyConfigurationList(queryVO);
+    }
+
+
+    private List<StatisticsResultVO> getStatisticsResultVOHaveEnergy(Tree<Long> labelTree, List<EnergyConfigurationDO> energyList, LocalDate[] range) {
 
         List<StatisticsResultVO> list = new ArrayList<>();
 
@@ -158,7 +228,59 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 还有孩子节点的数据
         for (Tree<Long> longTree : labelTreeList) {
 
-            List<StatisticsResultVO> statisticsResultList = getStatisticsResultVO(longTree, energyList, range);
+            List<StatisticsResultVO> statisticsResultList = getStatisticsResultVOHaveEnergy(longTree, energyList, range);
+            list.addAll(statisticsResultList);
+        }
+
+        return list;
+    }
+
+    private List<StatisticsResultVO> getStatisticsResultVONotHaveEnergy(Tree<Long> labelTree, LocalDate[] range) {
+
+        List<StatisticsResultVO> list = new ArrayList<>();
+
+        List<Tree<Long>> labelTreeList = labelTree.getChildren();
+
+        // 没有孩子的节点处理
+        if (CollectionUtil.isEmpty(labelTreeList)) {
+
+            StatisticsResultVO statisticsResultVO = new StatisticsResultVO();
+            statisticsResultVO.setLabelId(labelTree.getId());
+            // 获取父节点名称包含本节点名称
+            List<String> parentsNameList = labelTree.getParentsName(true).stream()
+                    .map(name -> (String) name)
+                    .collect(Collectors.toList());
+
+            switch (parentsNameList.size()) {
+                case 1:
+                    statisticsResultVO.setLabel1(parentsNameList.get(0));
+                    statisticsResultVO.setLabel2(parentsNameList.get(0));
+                    statisticsResultVO.setLabel3(parentsNameList.get(0));
+                    break;
+                case 2:
+                    statisticsResultVO.setLabel1(parentsNameList.get(1));
+                    statisticsResultVO.setLabel2(parentsNameList.get(0));
+                    statisticsResultVO.setLabel3(parentsNameList.get(0));
+                    break;
+                case 3:
+                    statisticsResultVO.setLabel1(parentsNameList.get(2));
+                    statisticsResultVO.setLabel2(parentsNameList.get(1));
+                    statisticsResultVO.setLabel3(parentsNameList.get(0));
+                    break;
+                default:
+
+            }
+
+            // 包含 能源类型的结果list
+            List<StatisticsResultVO> statisticsResultVOList = getLabelList(statisticsResultVO, range);
+            list.addAll(statisticsResultVOList);
+            return list;
+        }
+
+        // 还有孩子节点的数据
+        for (Tree<Long> longTree : labelTreeList) {
+
+            List<StatisticsResultVO> statisticsResultList = getStatisticsResultVONotHaveEnergy(longTree, range);
             list.addAll(statisticsResultList);
         }
 
@@ -194,6 +316,19 @@ public class StatisticsServiceImpl implements StatisticsService {
         return list;
     }
 
+    private List<StatisticsResultVO> getLabelList(StatisticsResultVO statisticsResultVO, LocalDate[] range) {
+
+        List<StatisticsResultVO> list = new ArrayList<>();
+        StatisticsResultVO vo = BeanUtils.toBean(statisticsResultVO, StatisticsResultVO.class);
+
+        // 获取对应标签下对应能源的每日用能数据和折价数据
+        StatisticsResultVO dateData = getDateData(vo, range);
+
+        dateData.setSumLabelConsumption(dateData.getSumEnergyConsumption());
+        dateData.setSumLabelMoney(dateData.getSumEnergyMoney());
+        list.add(dateData);
+        return list;
+    }
 
     /**
      * @param range 时间范围
@@ -245,7 +380,7 @@ public class StatisticsServiceImpl implements StatisticsService {
     private StatisticsDateData getData(Long labelId, Long energyId, LocalDate date) {
         StatisticsDateData statisticsDateData = new StatisticsDateData();
 
-        // TODO: 2024/12/12 调用starrocks数据库获取对应 标签、能源、日期下的数据。 （待完善）
+        // TODO: 2024/12/12 调用starrocks数据库获取对应 标签、能源、日期下的数据。  可能没标签或者没能源类型（待完善）
 
 
         statisticsDateData.setConsumption(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));

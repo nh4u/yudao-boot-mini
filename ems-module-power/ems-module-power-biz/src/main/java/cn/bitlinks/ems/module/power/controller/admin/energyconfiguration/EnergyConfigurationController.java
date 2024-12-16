@@ -1,33 +1,32 @@
 package cn.bitlinks.ems.module.power.controller.admin.energyconfiguration;
 
-import org.springframework.web.bind.annotation.*;
-import javax.annotation.Resource;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.security.access.prepost.PreAuthorize;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.Operation;
-
-import javax.validation.constraints.*;
-import javax.validation.*;
-import javax.servlet.http.*;
-import java.util.*;
-import java.io.IOException;
-
+import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
+import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageParam;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
-import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
-
 import cn.bitlinks.ems.framework.excel.core.util.ExcelUtils;
-
-import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
-import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.*;
-
-import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.*;
+import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
+import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 能源配置")
 @RestController
@@ -113,10 +112,9 @@ public class EnergyConfigurationController {
         return success(energyConfigurationService.selectByCondition(energyName, energyClassify, code));
     }
 //return success(BeanUtils.toBean(pageResult, EnergyConfigurationRespVO.class));
-    @GetMapping("/menu")
-    @Operation(summary = "根据能源分类获取能源")
-    @PreAuthorize("@ss.hasPermission('power:energy-configuration:menu')")
-    @ApiAccessLog(operateType = EXPORT)
+    @GetMapping("/getStatisticsEnergy")
+    @Operation(summary = "用能分析下【统计能源条件】接口 1:外购2:园区")
+    @PreAuthorize("@ss.hasPermission('power:energy-configuration:query')")
     public CommonResult<Map<Integer, List<EnergyConfigurationDO>>> getEnergyMenu() {
         return success(energyConfigurationService.getEnergyMenu());
     }

@@ -66,7 +66,7 @@ public interface EnergyConfigurationService {
      * @param queryVO 分页查询
      * @return 能源配置分页
      */
-    List<EnergyConfigurationDO> getEnergyConfigurationList(EnergyConfigurationSaveReqVO queryVO);
+    List<EnergyConfigurationDO> getEnergyConfigurationList(EnergyConfigurationPageReqVO queryVO);
 
     /**
      * 根据条件查询能源配置列表。
