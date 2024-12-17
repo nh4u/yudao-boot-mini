@@ -48,5 +48,5 @@ public interface ErrorCodeConstants {
     // ========== 其他业务错误 ==========
 
     ErrorCode DATE_RANGE_NOT_EXISTS = new ErrorCode(1_001_601_001, "日期范围不存在");
-
+    ErrorCode DATE_RANGE_EXCEED_LIMIT = new ErrorCode(1_001_601_002, "日期范围超出限制（MAX：366）");
 }
