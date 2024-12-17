@@ -10,6 +10,7 @@ import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurat
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.RandomUtil;
@@ -61,13 +62,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             throw exception(DATE_RANGE_NOT_EXISTS);
         }
 
-
-
-        // TODO: 2024/12/16  根据日月年返回对应range
-
-
-
-
+        Integer dateType = paramVO.getDateType();
 
         // 返回结果map
         Map<String, Object> result = new HashMap<>(2);
@@ -76,8 +71,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         List<StatisticsResultVO> list = new ArrayList<>();
 
         // 表头处理
-        List<String> tableHeader = getTableHeader(range);
-
+        List<String> tableHeader = getTableHeader(range, dateType);
 
 
         Integer queryType = paramVO.getQueryType();
@@ -87,7 +81,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             // 能源查询条件处理
             List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
             // 能源结果list
-            List<StatisticsResultVO> statisticsResultVOList = getEnergyList(new StatisticsResultVO(), energyList, range);
+            List<StatisticsResultVO> statisticsResultVOList = getEnergyList(new StatisticsResultVO(), energyList, range, dateType);
             list.addAll(statisticsResultVOList);
 
         } else if (2 == queryType) {
@@ -95,7 +89,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             // 标签查询条件处理
             List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
             for (Tree<Long> tree : labelTree) {
-                List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range);
+                List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType);
                 list.addAll(statisticsResultVOList);
             }
 
@@ -109,7 +103,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 
             // TODO: 2024/12/11 多线程处理 labelTree for循环
             for (Tree<Long> tree : labelTree) {
-                List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range);
+                List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType);
                 list.addAll(statisticsResultVOList);
             }
         }
@@ -125,20 +119,45 @@ public class StatisticsServiceImpl implements StatisticsService {
      * @param range 时间范围
      * @return ['2024/5/5','2024/5/5','2024/5/5']
      */
-    private List<String> getTableHeader(LocalDate[] range) {
+    private List<String> getTableHeader(LocalDate[] range, Integer dateType) {
 
         List<String> headerList = new ArrayList<>();
 
         LocalDate startDate = range[0];
         LocalDate endDate = range[1];
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DatePattern.NORM_DATE_PATTERN);
 
-        while (startDate.isBefore(endDate) || startDate.isEqual(endDate)) {
+        if (1 == dateType) {
+            // 月
+            LocalDate tempStartDate = LocalDate.of(startDate.getYear(), startDate.getMonth(), 1);
+            LocalDate tempEndDate = LocalDate.of(endDate.getYear(), endDate.getMonth(), 1);
 
-            String formattedDate = formatter.format(startDate);
-            headerList.add(formattedDate);
+            while (tempStartDate.isBefore(tempEndDate) || tempStartDate.isEqual(tempEndDate)) {
 
-            startDate = startDate.plusDays(1);
+                int year = tempStartDate.getYear();
+                int month = tempStartDate.getMonthValue();
+                String monthSuffix = (month < 10 ? "-0" : "-") + month;
+                headerList.add(year + monthSuffix);
+
+                tempStartDate = tempStartDate.plusMonths(1);
+            }
+
+        } else if (2 == dateType) {
+            // 年
+            while (startDate.getYear() <= endDate.getYear()) {
+
+                headerList.add(String.valueOf(startDate.getYear()));
+
+                startDate = startDate.plusYears(1);
+            }
+        } else {
+            // 日
+            while (startDate.isBefore(endDate) || startDate.isEqual(endDate)) {
+
+                String formattedDate = LocalDateTimeUtil.formatNormal(startDate);
+                headerList.add(formattedDate);
+
+                startDate = startDate.plusDays(1);
+            }
         }
 
         return headerList;
@@ -183,7 +202,7 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
 
-    private List<StatisticsResultVO> getStatisticsResultVOHaveEnergy(Tree<Long> labelTree, List<EnergyConfigurationDO> energyList, LocalDate[] range) {
+    private List<StatisticsResultVO> getStatisticsResultVOHaveEnergy(Tree<Long> labelTree, List<EnergyConfigurationDO> energyList, LocalDate[] range, Integer dateType) {
 
         List<StatisticsResultVO> list = new ArrayList<>();
 
@@ -220,7 +239,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             }
 
             // 包含 能源类型的结果list
-            List<StatisticsResultVO> statisticsResultVOList = getEnergyList(statisticsResultVO, energyList, range);
+            List<StatisticsResultVO> statisticsResultVOList = getEnergyList(statisticsResultVO, energyList, range, dateType);
             list.addAll(statisticsResultVOList);
             return list;
         }
@@ -228,14 +247,14 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 还有孩子节点的数据
         for (Tree<Long> longTree : labelTreeList) {
 
-            List<StatisticsResultVO> statisticsResultList = getStatisticsResultVOHaveEnergy(longTree, energyList, range);
+            List<StatisticsResultVO> statisticsResultList = getStatisticsResultVOHaveEnergy(longTree, energyList, range, dateType);
             list.addAll(statisticsResultList);
         }
 
         return list;
     }
 
-    private List<StatisticsResultVO> getStatisticsResultVONotHaveEnergy(Tree<Long> labelTree, LocalDate[] range) {
+    private List<StatisticsResultVO> getStatisticsResultVONotHaveEnergy(Tree<Long> labelTree, LocalDate[] range, Integer dateType) {
 
         List<StatisticsResultVO> list = new ArrayList<>();
 
@@ -272,7 +291,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             }
 
             // 包含 能源类型的结果list
-            List<StatisticsResultVO> statisticsResultVOList = getLabelList(statisticsResultVO, range);
+            List<StatisticsResultVO> statisticsResultVOList = getLabelList(statisticsResultVO, range, dateType);
             list.addAll(statisticsResultVOList);
             return list;
         }
@@ -280,14 +299,14 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 还有孩子节点的数据
         for (Tree<Long> longTree : labelTreeList) {
 
-            List<StatisticsResultVO> statisticsResultList = getStatisticsResultVONotHaveEnergy(longTree, range);
+            List<StatisticsResultVO> statisticsResultList = getStatisticsResultVONotHaveEnergy(longTree, range, dateType);
             list.addAll(statisticsResultList);
         }
 
         return list;
     }
 
-    private List<StatisticsResultVO> getEnergyList(StatisticsResultVO statisticsResultVO, List<EnergyConfigurationDO> energyList, LocalDate[] range) {
+    private List<StatisticsResultVO> getEnergyList(StatisticsResultVO statisticsResultVO, List<EnergyConfigurationDO> energyList, LocalDate[] range, Integer dateType) {
 
         List<StatisticsResultVO> list = new ArrayList<>();
         BigDecimal sumLabelConsumption = BigDecimal.ZERO;
@@ -298,7 +317,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             vo.setEnergyId(energy.getId());
 
             // 获取对应标签下对应能源的每日用能数据和折价数据
-            StatisticsResultVO dateData = getDateData(vo, range);
+            StatisticsResultVO dateData = getDateData(vo, range, dateType);
             list.add(dateData);
         }
 
@@ -316,13 +335,13 @@ public class StatisticsServiceImpl implements StatisticsService {
         return list;
     }
 
-    private List<StatisticsResultVO> getLabelList(StatisticsResultVO statisticsResultVO, LocalDate[] range) {
+    private List<StatisticsResultVO> getLabelList(StatisticsResultVO statisticsResultVO, LocalDate[] range, Integer dateType) {
 
         List<StatisticsResultVO> list = new ArrayList<>();
         StatisticsResultVO vo = BeanUtils.toBean(statisticsResultVO, StatisticsResultVO.class);
 
         // 获取对应标签下对应能源的每日用能数据和折价数据
-        StatisticsResultVO dateData = getDateData(vo, range);
+        StatisticsResultVO dateData = getDateData(vo, range, dateType);
 
         dateData.setSumLabelConsumption(dateData.getSumEnergyConsumption());
         dateData.setSumLabelMoney(dateData.getSumEnergyMoney());
@@ -334,14 +353,13 @@ public class StatisticsServiceImpl implements StatisticsService {
      * @param range 时间范围
      * @return
      */
-    private StatisticsResultVO getDateData(StatisticsResultVO vo, LocalDate[] range) {
+    private StatisticsResultVO getDateData(StatisticsResultVO vo, LocalDate[] range, Integer dateType) {
 
         List<StatisticsDateData> statisticsDateDataList = new ArrayList<>();
 
         //时间预处理
         LocalDate startDate = range[0];
         LocalDate endDate = range[1];
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DatePattern.NORM_DATE_PATTERN);
 
         // 标签、能源id预处理
         Long energyId = vo.getEnergyId();
@@ -351,22 +369,63 @@ public class StatisticsServiceImpl implements StatisticsService {
         BigDecimal sumEnergyConsumption = BigDecimal.ZERO;
         BigDecimal sumEnergyMoney = BigDecimal.ZERO;
 
+        if (1 == dateType) {
+            // 月
+            LocalDate tempStartDate = LocalDate.of(startDate.getYear(), startDate.getMonth(), 1);
+            LocalDate tempEndDate = LocalDate.of(endDate.getYear(), endDate.getMonth(), 1);
 
-        while (startDate.isBefore(endDate) || startDate.isEqual(endDate)) {
+            while (tempStartDate.isBefore(tempEndDate) || tempStartDate.isEqual(tempEndDate)) {
 
-            // 时间处理
-            String formattedDate = formatter.format(startDate);
+                int year = tempStartDate.getYear();
+                int month = tempStartDate.getMonthValue();
 
-            // 用量、折价处理  根据标签 能源 获取对应日期的统计数据。
-            StatisticsDateData statisticsDateData = getData(labelId, energyId, startDate);
+                // 用量、折价处理  根据标签 能源 获取对应日期的统计数据。
+                StatisticsDateData statisticsDateData = getMonthData(labelId, energyId, range, year, month);
 
-            statisticsDateData.setDate(formattedDate);
-            statisticsDateDataList.add(statisticsDateData);
+                String monthSuffix = (month < 10 ? "-0" : "-") + month;
+                statisticsDateData.setDate(year + monthSuffix);
+                statisticsDateDataList.add(statisticsDateData);
 
-            sumEnergyConsumption = sumEnergyConsumption.add(statisticsDateData.getConsumption());
-            sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
+                sumEnergyConsumption = sumEnergyConsumption.add(statisticsDateData.getConsumption());
+                sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
 
-            startDate = startDate.plusDays(1);
+                tempStartDate = tempStartDate.plusMonths(1);
+            }
+
+        } else if (2 == dateType) {
+            // 年
+            while (startDate.getYear() <= endDate.getYear()) {
+
+                int year = startDate.getYear();
+                // 用量、折价处理  根据标签 能源 获取对应日期的统计数据。
+                StatisticsDateData statisticsDateData = getYearData(labelId, energyId, range, year);
+                statisticsDateData.setDate(String.valueOf(year));
+                statisticsDateDataList.add(statisticsDateData);
+
+                sumEnergyConsumption = sumEnergyConsumption.add(statisticsDateData.getConsumption());
+                sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
+
+                startDate = startDate.plusYears(1);
+            }
+
+        } else {
+            // 日
+            while (startDate.isBefore(endDate) || startDate.isEqual(endDate)) {
+
+                // 时间处理
+                String formattedDate = LocalDateTimeUtil.formatNormal(startDate);
+
+                // 用量、折价处理  根据标签 能源 获取对应日期的统计数据。
+                StatisticsDateData statisticsDateData = getData(labelId, energyId, startDate);
+
+                statisticsDateData.setDate(formattedDate);
+                statisticsDateDataList.add(statisticsDateData);
+
+                sumEnergyConsumption = sumEnergyConsumption.add(statisticsDateData.getConsumption());
+                sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
+
+                startDate = startDate.plusDays(1);
+            }
         }
 
         vo.setStatisticsDateDataList(statisticsDateDataList);
@@ -389,4 +448,30 @@ public class StatisticsServiceImpl implements StatisticsService {
         return statisticsDateData;
     }
 
+
+    private StatisticsDateData getMonthData(Long labelId, Long energyId, LocalDate[] range, Integer year, Integer month) {
+        StatisticsDateData statisticsDateData = new StatisticsDateData();
+
+        // TODO: 2024/12/12 调用starrocks数据库获取对应 标签、能源、日期下的数据。  可能没标签或者没能源类型（待完善）
+        //  在范围内拿年月的数据，where time between 2024-05-5 and 2024-08-05 and year = 2024 and month = 12
+
+
+        statisticsDateData.setConsumption(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
+        statisticsDateData.setMoney(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
+
+        return statisticsDateData;
+    }
+
+    private StatisticsDateData getYearData(Long labelId, Long energyId, LocalDate[] range, Integer year) {
+        StatisticsDateData statisticsDateData = new StatisticsDateData();
+
+        // TODO: 2024/12/12 调用starrocks数据库获取对应 标签、能源、日期下的数据。  可能没标签或者没能源类型（待完善）
+        //  在范围内拿年月的数据，where time between 2024-05-5 and 2024-08-05 and year = 2024
+
+
+        statisticsDateData.setConsumption(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
+        statisticsDateData.setMoney(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
+
+        return statisticsDateData;
+    }
 }
