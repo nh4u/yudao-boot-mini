@@ -7,6 +7,7 @@ import lombok.ToString;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY;
@@ -22,7 +23,7 @@ public class StatisticsParamVO {
 
     @Schema(description = "统计周期",example = "[2024-08-01, 2024-08-05]")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY)
-    private LocalDate[] range;
+    private LocalDateTime[] range;
 
     @Schema(description = "统计标签（需去重）", example = "[1,2,3,4]")
     private List<Long> labelIds;

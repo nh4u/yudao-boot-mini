@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.statistics;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsBarVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsDateData;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultVO;
@@ -22,6 +23,7 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,13 +57,16 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public Map<String, Object> standardCoalAnalysis(StatisticsParamVO paramVO) {
+    public Map<String, Object> standardCoalAnalysisTable(StatisticsParamVO paramVO) {
 
         // 校验时间范围是否存在
-        LocalDate[] range = paramVO.getRange();
-        if (ArrayUtil.isEmpty(range)) {
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
             throw exception(DATE_RANGE_NOT_EXISTS);
         }
+
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
 
         long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
         if (CommonConstants.YEAR < between) {
@@ -118,6 +123,54 @@ public class StatisticsServiceImpl implements StatisticsService {
         result.put("data", list);
         return result;
     }
+
+    @Override
+    public Map<String, Object> standardCoalAnalysisChart(StatisticsParamVO paramVO) {
+
+        // 返回结果map
+        Map<String, Object> result = new HashMap<>(2);
+
+        result.put("", "");
+        result.put("data", "list");
+        return result;
+    }
+
+
+    /**
+     * 投资指数-成本柱状图
+     *
+     * @param pageReqVO
+     * @return
+     */
+    private StatisticsBarVO getTotalBarVO(StatisticsParamVO pageReqVO) {
+        //获取数据
+
+        //X轴数据
+        List<String> XData = new ArrayList<>();
+        XData.add("标识设备成本");
+        XData.add("标识载体成本");
+        XData.add("标识应用成本");
+        //X轴数据
+        List<BigDecimal> YData = new ArrayList<>();
+
+        //标识设备成本
+        BigDecimal identifierEquipmentCosts = BigDecimal.ZERO;
+        //标识载体成本
+        BigDecimal identifierCarrierCosts = BigDecimal.ZERO;
+        //标识应用成本
+        BigDecimal identifierApplicationCosts = BigDecimal.ZERO;
+
+
+        YData.add(identifierEquipmentCosts);
+        YData.add(identifierCarrierCosts);
+        YData.add(identifierApplicationCosts);
+
+
+        return StatisticsBarVO.builder()
+                .XData(XData)
+                .YData(YData).build();
+    }
+
 
     /**
      * 格式 时间list ['2024/5/5','2024/5/5','2024/5/5'];

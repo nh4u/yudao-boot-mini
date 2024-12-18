@@ -38,10 +38,15 @@ public class StatisticsController {
         return success(jsonObject);
     }
 
-    @PostMapping("/standardCoalAnalysis")
-    @Operation(summary = "折标煤分析")
-    public CommonResult< Map<String, Object>> standardCoalAnalysis(@Valid @RequestBody StatisticsParamVO paramVO) {
-        return success(statisticsService.standardCoalAnalysis(paramVO));
+    @PostMapping("/standardCoalAnalysisTable")
+    @Operation(summary = "折标煤分析（表）")
+    public CommonResult<Map<String, Object>> standardCoalAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsService.standardCoalAnalysisTable(paramVO));
     }
 
+    @PostMapping("/standardCoalAnalysisChart")
+    @Operation(summary = "折标煤分析（图）")
+    public CommonResult<Map<String, Object>> standardCoalAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsService.standardCoalAnalysisChart(paramVO));
+    }
 }

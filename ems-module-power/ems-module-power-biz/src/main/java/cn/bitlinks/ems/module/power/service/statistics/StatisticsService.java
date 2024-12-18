@@ -20,5 +20,7 @@ public interface StatisticsService {
      */
     JSONObject energyFlowAnalysis(StatisticsParamVO paramVO);
 
-    Map<String, Object> standardCoalAnalysis(StatisticsParamVO paramVO);
+    Map<String, Object> standardCoalAnalysisTable(StatisticsParamVO paramVO);
+
+    Map<String, Object>  standardCoalAnalysisChart(StatisticsParamVO paramVO);
 }
