@@ -44,9 +44,21 @@ public class StatisticsController {
         return success(statisticsService.standardCoalAnalysisTable(paramVO));
     }
 
+    @PostMapping("/moneyAnalysisTable")
+    @Operation(summary = "折价分析（表）")
+    public CommonResult< Map<String, Object>> moneyAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsService.moneyAnalysisTable(paramVO));
+    }
+
     @PostMapping("/standardCoalAnalysisChart")
     @Operation(summary = "折标煤分析（图）")
     public CommonResult<Map<String, Object>> standardCoalAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
         return success(statisticsService.standardCoalAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/moneyAnalysisChart")
+    @Operation(summary = "折价分析（图）")
+    public CommonResult< Map<String, Object>> moneyAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsService.moneyAnalysisChart(paramVO));
     }
 }

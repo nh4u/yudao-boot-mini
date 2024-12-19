@@ -92,7 +92,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             // 能源查询条件处理
             List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
             // 能源结果list
-            List<StatisticsResultVO> statisticsResultVOList = getEnergyList(new StatisticsResultVO(), energyList, range, dateType);
+            List<StatisticsResultVO> statisticsResultVOList = getEnergyList(new StatisticsResultVO(), energyList, range, dateType, queryType);
             list.addAll(statisticsResultVOList);
 
         } else if (2 == queryType) {
@@ -100,7 +100,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             // 标签查询条件处理
             List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
             for (Tree<Long> tree : labelTree) {
-                List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType);
+                List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType);
                 list.addAll(statisticsResultVOList);
             }
 
@@ -114,7 +114,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 
             // TODO: 2024/12/11 多线程处理 labelTree for循环
             for (Tree<Long> tree : labelTree) {
-                List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType);
+                List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType);
                 list.addAll(statisticsResultVOList);
             }
         }
@@ -171,6 +171,84 @@ public class StatisticsServiceImpl implements StatisticsService {
                 .YData(YData).build();
     }
 
+
+    public Map<String, Object> moneyAnalysisTable(StatisticsParamVO paramVO) {
+
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        Integer dateType = paramVO.getDateType();
+
+        // 返回结果map
+        Map<String, Object> result = new HashMap<>(2);
+
+        // 统计结果list
+        List<StatisticsResultVO> list = new ArrayList<>();
+
+        // 表头处理
+        List<String> tableHeader = getTableHeader(range, dateType);
+
+
+        Integer queryType = paramVO.getQueryType();
+
+        if (1 == queryType) {
+            // 1、按能源查看
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+            // 能源结果list
+            List<StatisticsResultVO> statisticsResultVOList = getEnergyList(new StatisticsResultVO(), energyList, range, dateType, queryType);
+            list.addAll(statisticsResultVOList);
+
+        } else if (2 == queryType) {
+            // 2、按标签查看
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType);
+                list.addAll(statisticsResultVOList);
+            }
+
+        } else {
+            // 0、综合查看（默认）
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+
+            // TODO: 2024/12/11 多线程处理 labelTree for循环
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType);
+                list.addAll(statisticsResultVOList);
+            }
+        }
+
+        result.put("header", tableHeader);
+        result.put("data", list);
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> moneyAnalysisChart(StatisticsParamVO paramVO) {
+
+        // 返回结果map
+        Map<String, Object> result = new HashMap<>(2);
+
+        result.put("", "");
+        result.put("data", "list");
+        return result;
+    }
 
     /**
      * 格式 时间list ['2024/5/5','2024/5/5','2024/5/5'];
@@ -261,7 +339,7 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
 
-    private List<StatisticsResultVO> getStatisticsResultVOHaveEnergy(Tree<Long> labelTree, List<EnergyConfigurationDO> energyList, LocalDate[] range, Integer dateType) {
+    private List<StatisticsResultVO> getStatisticsResultVOHaveEnergy(Tree<Long> labelTree, List<EnergyConfigurationDO> energyList, LocalDate[] range, Integer dateType, Integer queryType) {
 
         List<StatisticsResultVO> list = new ArrayList<>();
 
@@ -298,7 +376,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             }
 
             // 包含 能源类型的结果list
-            List<StatisticsResultVO> statisticsResultVOList = getEnergyList(statisticsResultVO, energyList, range, dateType);
+            List<StatisticsResultVO> statisticsResultVOList = getEnergyList(statisticsResultVO, energyList, range, dateType, queryType);
             list.addAll(statisticsResultVOList);
             return list;
         }
@@ -306,14 +384,14 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 还有孩子节点的数据
         for (Tree<Long> longTree : labelTreeList) {
 
-            List<StatisticsResultVO> statisticsResultList = getStatisticsResultVOHaveEnergy(longTree, energyList, range, dateType);
+            List<StatisticsResultVO> statisticsResultList = getStatisticsResultVOHaveEnergy(longTree, energyList, range, dateType, queryType);
             list.addAll(statisticsResultList);
         }
 
         return list;
     }
 
-    private List<StatisticsResultVO> getStatisticsResultVONotHaveEnergy(Tree<Long> labelTree, LocalDate[] range, Integer dateType) {
+    private List<StatisticsResultVO> getStatisticsResultVONotHaveEnergy(Tree<Long> labelTree, LocalDate[] range, Integer dateType, Integer queryType) {
 
         List<StatisticsResultVO> list = new ArrayList<>();
 
@@ -350,7 +428,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             }
 
             // 包含 能源类型的结果list
-            List<StatisticsResultVO> statisticsResultVOList = getLabelList(statisticsResultVO, range, dateType);
+            List<StatisticsResultVO> statisticsResultVOList = getLabelList(statisticsResultVO, range, dateType, queryType);
             list.addAll(statisticsResultVOList);
             return list;
         }
@@ -358,14 +436,14 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 还有孩子节点的数据
         for (Tree<Long> longTree : labelTreeList) {
 
-            List<StatisticsResultVO> statisticsResultList = getStatisticsResultVONotHaveEnergy(longTree, range, dateType);
+            List<StatisticsResultVO> statisticsResultList = getStatisticsResultVONotHaveEnergy(longTree, range, dateType, queryType);
             list.addAll(statisticsResultList);
         }
 
         return list;
     }
 
-    private List<StatisticsResultVO> getEnergyList(StatisticsResultVO statisticsResultVO, List<EnergyConfigurationDO> energyList, LocalDate[] range, Integer dateType) {
+    private List<StatisticsResultVO> getEnergyList(StatisticsResultVO statisticsResultVO, List<EnergyConfigurationDO> energyList, LocalDate[] range, Integer dateType, Integer queryType) {
 
         List<StatisticsResultVO> list = new ArrayList<>();
         BigDecimal sumLabelConsumption = BigDecimal.ZERO;
@@ -376,7 +454,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             vo.setEnergyId(energy.getId());
 
             // 获取对应标签下对应能源的每日用能数据和折价数据
-            StatisticsResultVO dateData = getDateData(vo, range, dateType);
+            StatisticsResultVO dateData = getDateData(vo, range, dateType, queryType);
             list.add(dateData);
         }
 
@@ -394,13 +472,13 @@ public class StatisticsServiceImpl implements StatisticsService {
         return list;
     }
 
-    private List<StatisticsResultVO> getLabelList(StatisticsResultVO statisticsResultVO, LocalDate[] range, Integer dateType) {
+    private List<StatisticsResultVO> getLabelList(StatisticsResultVO statisticsResultVO, LocalDate[] range, Integer dateType, Integer queryType) {
 
         List<StatisticsResultVO> list = new ArrayList<>();
         StatisticsResultVO vo = BeanUtils.toBean(statisticsResultVO, StatisticsResultVO.class);
 
         // 获取对应标签下对应能源的每日用能数据和折价数据
-        StatisticsResultVO dateData = getDateData(vo, range, dateType);
+        StatisticsResultVO dateData = getDateData(vo, range, dateType,queryType);
 
         dateData.setSumLabelConsumption(dateData.getSumEnergyConsumption());
         dateData.setSumLabelMoney(dateData.getSumEnergyMoney());
@@ -412,7 +490,7 @@ public class StatisticsServiceImpl implements StatisticsService {
      * @param range 时间范围
      * @return
      */
-    private StatisticsResultVO getDateData(StatisticsResultVO vo, LocalDate[] range, Integer dateType) {
+    private StatisticsResultVO getDateData(StatisticsResultVO vo, LocalDate[] range, Integer dateType, Integer queryType) {
 
         List<StatisticsDateData> statisticsDateDataList = new ArrayList<>();
 
@@ -439,14 +517,19 @@ public class StatisticsServiceImpl implements StatisticsService {
                 int month = tempStartDate.getMonthValue();
 
                 // 用量、折价处理  根据标签 能源 获取对应日期的统计数据。
-                StatisticsDateData statisticsDateData = getMonthData(labelId, energyId, range, year, month);
+                StatisticsDateData statisticsDateData = getMonthData(labelId, energyId, range, year, month, queryType);
 
                 String monthSuffix = (month < 10 ? "-0" : "-") + month;
                 statisticsDateData.setDate(year + monthSuffix);
                 statisticsDateDataList.add(statisticsDateData);
 
-                sumEnergyConsumption = sumEnergyConsumption.add(statisticsDateData.getConsumption());
-                sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
+                if (statisticsDateData.getConsumption()!=null) {
+                    sumEnergyConsumption = sumEnergyConsumption.add(statisticsDateData.getConsumption());
+                    sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
+                }else{
+                    sumEnergyConsumption = null;
+                    sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
+                }
 
                 tempStartDate = tempStartDate.plusMonths(1);
             }
@@ -457,12 +540,17 @@ public class StatisticsServiceImpl implements StatisticsService {
 
                 int year = startDate.getYear();
                 // 用量、折价处理  根据标签 能源 获取对应日期的统计数据。
-                StatisticsDateData statisticsDateData = getYearData(labelId, energyId, range, year);
+                StatisticsDateData statisticsDateData = getYearData(labelId, energyId, range, year, queryType);
                 statisticsDateData.setDate(String.valueOf(year));
                 statisticsDateDataList.add(statisticsDateData);
 
-                sumEnergyConsumption = sumEnergyConsumption.add(statisticsDateData.getConsumption());
-                sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
+                if (statisticsDateData.getConsumption()!=null) {
+                    sumEnergyConsumption = sumEnergyConsumption.add(statisticsDateData.getConsumption());
+                    sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
+                }else{
+                    sumEnergyConsumption = null;
+                    sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
+                }
 
                 startDate = startDate.plusYears(1);
             }
@@ -475,13 +563,18 @@ public class StatisticsServiceImpl implements StatisticsService {
                 String formattedDate = LocalDateTimeUtil.formatNormal(startDate);
 
                 // 用量、折价处理  根据标签 能源 获取对应日期的统计数据。
-                StatisticsDateData statisticsDateData = getData(labelId, energyId, startDate);
+                StatisticsDateData statisticsDateData = getData(labelId, energyId, startDate, queryType);
 
                 statisticsDateData.setDate(formattedDate);
                 statisticsDateDataList.add(statisticsDateData);
 
-                sumEnergyConsumption = sumEnergyConsumption.add(statisticsDateData.getConsumption());
-                sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
+                if (statisticsDateData.getConsumption()!=null) {
+                    sumEnergyConsumption = sumEnergyConsumption.add(statisticsDateData.getConsumption());
+                    sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
+                }else{
+                    sumEnergyConsumption = null;
+                    sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
+                }
 
                 startDate = startDate.plusDays(1);
             }
@@ -495,42 +588,51 @@ public class StatisticsServiceImpl implements StatisticsService {
         return vo;
     }
 
-    private StatisticsDateData getData(Long labelId, Long energyId, LocalDate date) {
+    private StatisticsDateData getData(Long labelId, Long energyId, LocalDate date, Integer queryType) {
         StatisticsDateData statisticsDateData = new StatisticsDateData();
 
         // TODO: 2024/12/12 调用starrocks数据库获取对应 标签、能源、日期下的数据。  可能没标签或者没能源类型（待完善）
 
-
-        statisticsDateData.setConsumption(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
-        statisticsDateData.setMoney(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
-
+        if (queryType != 2) {
+            statisticsDateData.setConsumption(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
+            statisticsDateData.setMoney(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
+        } else {
+            statisticsDateData.setConsumption(null);
+            statisticsDateData.setMoney(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
+        }
         return statisticsDateData;
     }
 
 
-    private StatisticsDateData getMonthData(Long labelId, Long energyId, LocalDate[] range, Integer year, Integer month) {
+    private StatisticsDateData getMonthData(Long labelId, Long energyId, LocalDate[] range, Integer year, Integer month, Integer queryType) {
         StatisticsDateData statisticsDateData = new StatisticsDateData();
 
         // TODO: 2024/12/12 调用starrocks数据库获取对应 标签、能源、日期下的数据。  可能没标签或者没能源类型（待完善）
         //  在范围内拿年月的数据，where time between 2024-05-5 and 2024-08-05 and year = 2024 and month = 12
 
-
-        statisticsDateData.setConsumption(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
-        statisticsDateData.setMoney(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
-
+        if (queryType != 2) {
+            statisticsDateData.setConsumption(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
+            statisticsDateData.setMoney(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
+        } else {
+            statisticsDateData.setConsumption(null);
+            statisticsDateData.setMoney(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
+        }
         return statisticsDateData;
     }
 
-    private StatisticsDateData getYearData(Long labelId, Long energyId, LocalDate[] range, Integer year) {
+    private StatisticsDateData getYearData(Long labelId, Long energyId, LocalDate[] range, Integer year, Integer queryType) {
         StatisticsDateData statisticsDateData = new StatisticsDateData();
 
         // TODO: 2024/12/12 调用starrocks数据库获取对应 标签、能源、日期下的数据。  可能没标签或者没能源类型（待完善）
         //  在范围内拿年月的数据，where time between 2024-05-5 and 2024-08-05 and year = 2024
 
-
-        statisticsDateData.setConsumption(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
-        statisticsDateData.setMoney(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
-
+        if (queryType != 2) {
+            statisticsDateData.setConsumption(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
+            statisticsDateData.setMoney(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
+        } else {
+            statisticsDateData.setConsumption(null);
+            statisticsDateData.setMoney(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
+        }
         return statisticsDateData;
     }
 }

@@ -20,6 +20,10 @@ public interface StatisticsService {
      */
     JSONObject energyFlowAnalysis(StatisticsParamVO paramVO);
 
+    Map<String, Object> moneyAnalysisTable(StatisticsParamVO paramVO);
+
+    Map<String, Object>  moneyAnalysisChart(StatisticsParamVO paramVO);
+
     Map<String, Object> standardCoalAnalysisTable(StatisticsParamVO paramVO);
 
     Map<String, Object>  standardCoalAnalysisChart(StatisticsParamVO paramVO);
