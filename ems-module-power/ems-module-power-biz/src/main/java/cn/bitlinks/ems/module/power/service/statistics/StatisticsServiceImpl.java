@@ -1,13 +1,17 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.DeviceAssociationConfigurationPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsBarVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsDateData;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.deviceassociationconfiguration.DeviceAssociationConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
+import cn.bitlinks.ems.module.power.service.deviceassociationconfiguration.DeviceAssociationConfigurationService;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.hutool.core.collection.CollectionUtil;
@@ -16,6 +20,7 @@ import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.alibaba.fastjson.JSONObject;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -50,11 +55,127 @@ public class StatisticsServiceImpl implements StatisticsService {
     @Resource
     private EnergyConfigurationService energyConfigurationService;
 
+    @Resource
+    private DeviceAssociationConfigurationService deviceAssociationConfigurationService;
 
     @Override
-    public JSONObject energyFlowAnalysis(StatisticsParamVO paramVO) {
-        return null;
+    public Map<String, Object> energyFlowAnalysis(StatisticsParamVO paramVO) {
+
+
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+
+        Map<String, Object> result = new HashMap<>(2);
+
+        List<Map<String, String>> data = new ArrayList<>();
+
+        List<Map<String, Object>> links = new ArrayList<>();
+
+        // 能源数据
+        List<EnergyConfigurationDO> energyList = dealEnergyQueryDataForEnergyFlow(paramVO);
+        energyList.forEach(e -> {
+            Map<String, String> map = new HashMap<>();
+            map.put("name", e.getEnergyName());
+            data.add(map);
+        });
+
+        // 标签数据
+        ImmutablePair<List<LabelConfigDO>, List<Tree<Long>>> labelPair = dealLabelQueryDataForEnergyFlow(paramVO);
+
+        List<LabelConfigDO> list = labelPair.getLeft();
+        list.forEach(l -> {
+            Map<String, String> map = new HashMap<>();
+            map.put("name", l.getLabelName());
+            data.add(map);
+        });
+
+
+        Map<Integer, List<EnergyConfigurationDO>> collect = energyList.stream().collect(Collectors.groupingBy(EnergyConfigurationDO::getEnergyClassify));
+        List<EnergyConfigurationDO> energy1 = collect.get(1);
+        List<EnergyConfigurationDO> energy2 = collect.get(2);
+
+        energy1.forEach(e -> {
+
+            energy2.forEach(e2 -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("source", e.getEnergyName());
+                map.put("target", e2.getEnergyName());
+                map.put("value", RandomUtil.randomBigDecimal(BigDecimal.valueOf(1000L)).setScale(2, RoundingMode.HALF_UP));
+                links.add(map);
+            });
+        });
+
+        List<Tree<Long>> labelTree = labelPair.getRight();
+
+        energy2.forEach(e -> {
+            for (Tree<Long> tree : labelTree) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("source", e.getEnergyName());
+                map.put("target", tree.getName());
+                map.put("value", RandomUtil.randomBigDecimal(BigDecimal.valueOf(1000L)).setScale(2, RoundingMode.HALF_UP));
+                links.add(map);
+            }
+        });
+
+
+        for (Tree<Long> tree : labelTree) {
+            List<Map<String, Object>> mapList = getMapList(energyList, tree, range);
+            links.addAll(mapList);
+        }
+
+        result.put("data", data);
+        result.put("links", links);
+        return result;
     }
+
+    private List<Map<String, Object>> getMapList(List<EnergyConfigurationDO> energyList, Tree<Long> labelTree, LocalDate[] range) {
+
+        List<Map<String, Object>> links = new ArrayList<>();
+
+
+        List<Tree<Long>> labelTreeList = labelTree.getChildren();
+        // 没有孩子的节点处理
+        if (CollectionUtil.isEmpty(labelTreeList)) {
+            Map<String, Object> map = new HashMap<>();
+
+            List<CharSequence> parentsNames = labelTree.getParentsName(true);
+            map.put("source", parentsNames.get(parentsNames.size() - 1));
+            map.put("target", labelTree.getName());
+            map.put("value", RandomUtil.randomBigDecimal(BigDecimal.valueOf(1000L)).setScale(2, RoundingMode.HALF_UP));
+            links.add(map);
+            return links;
+        }
+
+        // TODO: 2024/12/18 能流数据处理  关系 以及 标签，处理
+
+        // 能源关系处理
+//        energyList.forEach(e -> {
+//
+//            if (e.getEnergyClassify() == 1){
+//                // 外购能源
+//                DeviceAssociationConfigurationPageReqVO deviceAssociationVo = new DeviceAssociationConfigurationPageReqVO();
+//                deviceAssociationVo.setEnergyId(e.getId());
+//                List<DeviceAssociationConfigurationDO> list = deviceAssociationConfigurationService.getDeviceAssociationConfigurationList(deviceAssociationVo);
+//                list.forEach(l->{
+//                    String preMeasurement = l.getPreMeasurement();
+//                });
+//            }
+//        });
+
+        for (Tree<Long> longTree : labelTreeList) {
+            List<Map<String, Object>> mapList = getMapList(energyList, longTree, range);
+            links.addAll(mapList);
+        }
+
+        return links;
+    }
+
 
     @Override
     public Map<String, Object> standardCoalAnalysisTable(StatisticsParamVO paramVO) {
@@ -301,6 +422,23 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     /**
+     * 标签查询条件处理 能流图
+     *
+     * @param paramVO
+     * @return
+     */
+    private ImmutablePair<List<LabelConfigDO>, List<Tree<Long>>> dealLabelQueryDataForEnergyFlow(StatisticsParamVO paramVO) {
+        ImmutablePair<List<LabelConfigDO>, List<Tree<Long>>> labelPair;
+        List<Long> labelIds = paramVO.getLabelIds();
+        if (CollectionUtil.isNotEmpty(labelIds)) {
+            labelPair = labelConfigService.getLabelPairByParam(labelIds);
+        } else {
+            labelPair = labelConfigService.getLabelPair(false, null, null);
+        }
+        return labelPair;
+    }
+
+    /**
      * 标签查询条件处理
      *
      * @param paramVO
@@ -315,6 +453,24 @@ public class StatisticsServiceImpl implements StatisticsService {
             labelTree = labelConfigService.getLabelTree(false, null, null);
         }
         return labelTree;
+    }
+
+    /**
+     * 能源查询条件处理
+     *
+     * @param paramVO
+     * @return
+     */
+    private List<EnergyConfigurationDO> dealEnergyQueryDataForEnergyFlow(StatisticsParamVO paramVO) {
+        // 能源查询条件处理
+        EnergyConfigurationPageReqVO queryVO = new EnergyConfigurationPageReqVO();
+
+        List<Long> energyIds = paramVO.getEnergyIds();
+        if (CollectionUtil.isNotEmpty(energyIds)) {
+            queryVO.setEnergyIds(energyIds);
+        }
+        // 能源list
+        return energyConfigurationService.getEnergyConfigurationList(queryVO);
     }
 
     /**
@@ -478,7 +634,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         StatisticsResultVO vo = BeanUtils.toBean(statisticsResultVO, StatisticsResultVO.class);
 
         // 获取对应标签下对应能源的每日用能数据和折价数据
-        StatisticsResultVO dateData = getDateData(vo, range, dateType,queryType);
+        StatisticsResultVO dateData = getDateData(vo, range, dateType, queryType);
 
         dateData.setSumLabelConsumption(dateData.getSumEnergyConsumption());
         dateData.setSumLabelMoney(dateData.getSumEnergyMoney());
@@ -523,10 +679,10 @@ public class StatisticsServiceImpl implements StatisticsService {
                 statisticsDateData.setDate(year + monthSuffix);
                 statisticsDateDataList.add(statisticsDateData);
 
-                if (statisticsDateData.getConsumption()!=null) {
+                if (statisticsDateData.getConsumption() != null) {
                     sumEnergyConsumption = sumEnergyConsumption.add(statisticsDateData.getConsumption());
                     sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
-                }else{
+                } else {
                     sumEnergyConsumption = null;
                     sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
                 }
@@ -544,10 +700,10 @@ public class StatisticsServiceImpl implements StatisticsService {
                 statisticsDateData.setDate(String.valueOf(year));
                 statisticsDateDataList.add(statisticsDateData);
 
-                if (statisticsDateData.getConsumption()!=null) {
+                if (statisticsDateData.getConsumption() != null) {
                     sumEnergyConsumption = sumEnergyConsumption.add(statisticsDateData.getConsumption());
                     sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
-                }else{
+                } else {
                     sumEnergyConsumption = null;
                     sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
                 }
@@ -568,10 +724,10 @@ public class StatisticsServiceImpl implements StatisticsService {
                 statisticsDateData.setDate(formattedDate);
                 statisticsDateDataList.add(statisticsDateData);
 
-                if (statisticsDateData.getConsumption()!=null) {
+                if (statisticsDateData.getConsumption() != null) {
                     sumEnergyConsumption = sumEnergyConsumption.add(statisticsDateData.getConsumption());
                     sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
-                }else{
+                } else {
                     sumEnergyConsumption = null;
                     sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
                 }

@@ -33,8 +33,8 @@ public class StatisticsController {
 
     @PostMapping("/energyFlowAnalysis")
     @Operation(summary = "能流分析")
-    public CommonResult<JSONObject> energyFlowAnalysis(@Valid @RequestBody StatisticsParamVO paramVO) {
-        JSONObject jsonObject = statisticsService.energyFlowAnalysis(paramVO);
+    public CommonResult<Map<String, Object>> energyFlowAnalysis(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsService.energyFlowAnalysis(paramVO);
         return success(jsonObject);
     }
 

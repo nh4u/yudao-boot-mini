@@ -18,7 +18,7 @@ public interface StatisticsService {
      * @param paramVO 入参
      * @return 数据
      */
-    JSONObject energyFlowAnalysis(StatisticsParamVO paramVO);
+    Map<String, Object> energyFlowAnalysis(StatisticsParamVO paramVO);
 
     Map<String, Object> moneyAnalysisTable(StatisticsParamVO paramVO);
 

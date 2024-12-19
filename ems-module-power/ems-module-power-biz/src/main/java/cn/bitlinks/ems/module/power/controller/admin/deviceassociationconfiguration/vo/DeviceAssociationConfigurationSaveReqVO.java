@@ -21,10 +21,10 @@ public class DeviceAssociationConfigurationSaveReqVO {
     @Schema(description = "设备id", example = "22446")
     private Long deviceId;
 
-    @Schema(description = "后置计量")
+    @Schema(description = "后置计量 [{  \"id \":1, \"name \": \"燃气总表 \" ,\"energyId \":1,},...]")
     private String postMeasurement;
 
-    @Schema(description = "前置计量")
+    @Schema(description = "前置计量  [{  \"id \":1, \"name \": \"燃气总表 \" ,\"energyId \":1,},...]")
     private String preMeasurement;
 
 }
