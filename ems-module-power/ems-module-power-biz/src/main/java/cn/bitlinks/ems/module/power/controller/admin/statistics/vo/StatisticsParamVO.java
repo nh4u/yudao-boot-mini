@@ -6,13 +6,15 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY;
+import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 
 /**
+ * LocalDateTime传值时要用时间戳
+ * LocalDate传值时用2024-08-05
+ *
  * @author liumingqiang
  */
 @Schema(description = "管理后台 - 用能统计入参 VO")
@@ -21,8 +23,8 @@ import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_M
 @ToString(callSuper = true)
 public class StatisticsParamVO {
 
-    @Schema(description = "统计周期",example = "[2024-08-01, 2024-08-05]")
-    @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY)
+    @Schema(description = "统计周期", example = "[1734514648000, 1734514648000]")
+    @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] range;
 
     @Schema(description = "统计标签（需去重）", example = "[1,2,3,4]")
