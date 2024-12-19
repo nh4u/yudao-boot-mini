@@ -171,7 +171,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                 .YData(YData).build();
     }
 
-
+    @Override
     public Map<String, Object> moneyAnalysisTable(StatisticsParamVO paramVO) {
 
         // 校验时间范围是否存在
