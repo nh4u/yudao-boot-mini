@@ -52,4 +52,6 @@ public interface DeviceAssociationConfigurationService {
      */
     PageResult<DeviceAssociationConfigurationDO> getDeviceAssociationConfigurationPage(DeviceAssociationConfigurationPageReqVO pageReqVO);
 
+    List<DeviceAssociationConfigurationDO> getDeviceAssociationConfigurationList(DeviceAssociationConfigurationPageReqVO pageReqVO);
+
 }

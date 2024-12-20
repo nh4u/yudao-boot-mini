@@ -18,13 +18,13 @@ import java.util.List;
 public class StatisticsDateData {
 
 
-    @Schema(description = "日期", example = "2024/12/11")
+    @Schema(description = "日期", example = "2024-12-11 | 2024-12 | 2024")
     private String date;
 
     @Schema(description = "用量", example = "0.00")
     private BigDecimal consumption;
 
-    @Schema(description = "折价", example = "0.00")
+    @Schema(description = "折价/折标煤", example = "0.00")
     private BigDecimal money;
 
 }

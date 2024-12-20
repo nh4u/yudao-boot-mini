@@ -71,4 +71,9 @@ public class DeviceAssociationConfigurationServiceImpl implements DeviceAssociat
         return deviceAssociationConfigurationMapper.selectPage(pageReqVO);
     }
 
+    @Override
+    public List<DeviceAssociationConfigurationDO> getDeviceAssociationConfigurationList(DeviceAssociationConfigurationPageReqVO pageReqVO) {
+        return deviceAssociationConfigurationMapper.selectList(pageReqVO);
+    }
+
 }

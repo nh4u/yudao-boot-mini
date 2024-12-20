@@ -28,4 +28,14 @@ public interface DeviceAssociationConfigurationMapper extends BaseMapperX<Device
                 .orderByDesc(DeviceAssociationConfigurationDO::getId));
     }
 
+    default List<DeviceAssociationConfigurationDO> selectList(DeviceAssociationConfigurationPageReqVO reqVO) {
+        return selectList(new LambdaQueryWrapperX<DeviceAssociationConfigurationDO>()
+                .eqIfPresent(DeviceAssociationConfigurationDO::getEnergyId, reqVO.getEnergyId())
+                .eqIfPresent(DeviceAssociationConfigurationDO::getMeasurementInstrumentId, reqVO.getMeasurementInstrumentId())
+                .eqIfPresent(DeviceAssociationConfigurationDO::getDeviceId, reqVO.getDeviceId())
+                .eqIfPresent(DeviceAssociationConfigurationDO::getPostMeasurement, reqVO.getPostMeasurement())
+                .eqIfPresent(DeviceAssociationConfigurationDO::getPreMeasurement, reqVO.getPreMeasurement())
+                .betweenIfPresent(DeviceAssociationConfigurationDO::getCreateTime, reqVO.getCreateTime())
+                .orderByDesc(DeviceAssociationConfigurationDO::getId));
+    }
 }

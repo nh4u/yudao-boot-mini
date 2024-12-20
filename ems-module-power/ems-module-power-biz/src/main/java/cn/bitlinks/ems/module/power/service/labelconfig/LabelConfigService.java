@@ -5,6 +5,7 @@ import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigP
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.hutool.core.lang.tree.Tree;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -62,7 +63,11 @@ public interface LabelConfigService {
      */
     PageResult<LabelConfigDO> getLabelConfigPage(LabelConfigPageReqVO pageReqVO);
 
-    List<Tree<Long>> getLabelTree(boolean lazy, Long parentId,String labelName);
+    List<Tree<Long>> getLabelTree(boolean lazy, Long parentId, String labelName);
+
+    ImmutablePair<List<LabelConfigDO>, List<Tree<Long>>> getLabelPair(boolean lazy, Long parentId, String labelName);
 
     List<Tree<Long>> getLabelTreeByParam(List<Long> labelIdList);
+
+    ImmutablePair<List<LabelConfigDO>, List<Tree<Long>>> getLabelPairByParam(List<Long> labelIdList);
 }

@@ -18,6 +18,7 @@ import cn.hutool.core.lang.tree.TreeUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -170,6 +171,30 @@ public class LabelConfigServiceImpl implements LabelConfigService {
 
     }
 
+    @Override
+    public ImmutablePair<List<LabelConfigDO>, List<Tree<Long>>> getLabelPair(boolean lazy, Long parentId, String labelName) {
+        if (!lazy) {
+
+            List<LabelConfigDO> list = labelConfigMapper
+                    .selectList(Wrappers.<LabelConfigDO>lambdaQuery()
+                            .like(StrUtil.isNotEmpty(labelName), LabelConfigDO::getLabelName, labelName)
+                            .orderByAsc(LabelConfigDO::getSort));
+            List<TreeNode<Long>> collect = list.stream().map(getNodeFunction()).collect(Collectors.toList());
+
+            return ImmutablePair.of(list, TreeUtil.build(collect, CommonConstants.LABEL_TREE_ROOT_ID));
+        }
+        Long parent = parentId == null ? CommonConstants.LABEL_TREE_ROOT_ID : parentId;
+
+        List<LabelConfigDO> list = labelConfigMapper
+                .selectList(Wrappers.<LabelConfigDO>lambdaQuery()
+                        .like(StrUtil.isNotEmpty(labelName), LabelConfigDO::getLabelName, labelName)
+                        .eq(LabelConfigDO::getParentId, parent)
+                        .orderByAsc(LabelConfigDO::getSort));
+        List<TreeNode<Long>> collect = list.stream().map(getNodeFunction()).collect(Collectors.toList());
+
+        return ImmutablePair.of(list, TreeUtil.build(collect, parent));
+
+    }
 
     @Override
     public List<Tree<Long>> getLabelTreeByParam(List<Long> labelIdList) {
@@ -192,6 +217,26 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         return TreeUtil.build(collect, CommonConstants.LABEL_TREE_ROOT_ID);
     }
 
+    @Override
+    public ImmutablePair<List<LabelConfigDO>, List<Tree<Long>>> getLabelPairByParam(List<Long> labelIdList) {
+
+        List<Long> distinctList = labelIdList.stream().distinct().collect(Collectors.toList());
+        List<LabelConfigDO> labelList = labelConfigMapper.selectList("id", distinctList);
+
+        List<LabelConfigDO> list = new ArrayList<>();
+
+        for (LabelConfigDO labelConfigDO : labelList) {
+            List<LabelConfigDO> parent = getParent(labelConfigDO);
+            List<LabelConfigDO> children = getChildren(labelConfigDO);
+
+            list.addAll(parent);
+            list.addAll(children);
+        }
+
+        // 对所有list递归取所有相关联标签节点
+        List<TreeNode<Long>> collect = list.stream().map(getNodeFunction()).collect(Collectors.toList());
+        return ImmutablePair.of(list, TreeUtil.build(collect, CommonConstants.LABEL_TREE_ROOT_ID));
+    }
 
     /**
      * 获取父节点到顶
