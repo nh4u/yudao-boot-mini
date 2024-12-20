@@ -241,13 +241,89 @@ public class StatisticsServiceImpl implements StatisticsService {
 
     @Override
     public Map<String, Object> moneyAnalysisChart(StatisticsParamVO paramVO) {
-
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
         // 返回结果map
         Map<String, Object> result = new HashMap<>(2);
+        // 获取X轴数据
+        List<String> XData;
+        // 获取Y轴数据
+        List<BigDecimal> YData = new ArrayList<>();
+        List<StatisticsResultVO> statisticsResultVOS;
+        // 根据dateType获取数据
+        switch (paramVO.getDateType()) {
+            case 3: // 小时级别
+                XData = getHourlyTableHeader(paramVO.getRange());
+                statisticsResultVOS = getHourlyStatisticsData(paramVO);
+                break;
+            case 1: // 月级别
+                LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+                XData = getTableHeader(range, paramVO.getDateType());
+                statisticsResultVOS = getStatisticsData(paramVO);
+                break;
+            case 2: // 年级别
+                range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+                XData = getTableHeader(range, paramVO.getDateType());
+                statisticsResultVOS = getStatisticsData(paramVO);
+                break;
+            case 0: // 天级别
+                range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+                XData = getTableHeader(range, paramVO.getDateType());
+                statisticsResultVOS = getStatisticsData(paramVO);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid dateType value");
+        }
+        // 初始化一个Map来存储每个时间点的总金额
+        Map<String, BigDecimal> totalMoneyByDate = new HashMap<>();
+        for (String date : XData) {
+            totalMoneyByDate.put(date, BigDecimal.ZERO);
+        }
+        // 填充Y轴数据
+        for (StatisticsResultVO vo : statisticsResultVOS) {
+            for (StatisticsDateData dateData : vo.getStatisticsDateDataList()) {
+                String date = dateData.getDate();
+                BigDecimal money = dateData.getMoney();
+                totalMoneyByDate.merge(date, money, BigDecimal::add);
+            }
+        }
+        // 生成YData列表
+        YData = XData.stream().map(totalMoneyByDate::get).collect(Collectors.toList());
 
-        result.put("", "");
-        result.put("data", "list");
+        StatisticsBarVO statisticsBarVO = StatisticsBarVO.builder()
+                .XData(XData)
+                .YData(YData)
+                .build();
+        result.put("chartData", statisticsBarVO);
         return result;
+    }
+
+    private List<StatisticsResultVO> getStatisticsData(StatisticsParamVO paramVO) {
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+        List<StatisticsResultVO> list = new ArrayList<>();
+        List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+        for (EnergyConfigurationDO energy : energyList) {
+            StatisticsResultVO vo = new StatisticsResultVO();
+            vo.setEnergyId(energy.getId());
+            StatisticsResultVO dateData = getDateData(vo, range, paramVO.getDateType(), paramVO.getQueryType());
+            list.add(dateData);
+        }
+        return list;
     }
 
     /**
@@ -586,6 +662,67 @@ public class StatisticsServiceImpl implements StatisticsService {
 
 
         return vo;
+    }
+
+    private List<StatisticsResultVO> getHourlyStatisticsData(StatisticsParamVO paramVO) {
+        List<StatisticsResultVO> list = new ArrayList<>();
+        List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+        for (EnergyConfigurationDO energy : energyList) {
+            StatisticsResultVO vo = new StatisticsResultVO();
+            vo.setEnergyId(energy.getId());
+            StatisticsResultVO dateData = getHourlyDateData(vo, paramVO.getRange(), paramVO.getQueryType());
+            list.add(dateData);
+        }
+        return list;
+    }
+
+    private List<String> getHourlyTableHeader(LocalDateTime[] range) {
+        List<String> headerList = new ArrayList<>();
+        LocalDateTime startDateTime = range[0];
+        LocalDateTime endDateTime = range[1];
+
+        while (startDateTime.isBefore(endDateTime) || startDateTime.isEqual(endDateTime)) {
+            String formattedDate = LocalDateTimeUtil.format(startDateTime, "yyyy-MM-dd-HH");
+            headerList.add(formattedDate);
+            startDateTime = startDateTime.plusHours(1);
+        }
+
+        return headerList;
+    }
+
+    private StatisticsResultVO getHourlyDateData(StatisticsResultVO vo, LocalDateTime[] range, Integer queryType) {
+        List<StatisticsDateData> statisticsDateDataList = new ArrayList<>();
+        LocalDateTime startDateTime = range[0];
+        LocalDateTime endDateTime = range[1];
+        Long energyId = vo.getEnergyId();
+        Long labelId = vo.getLabelId();
+        while (startDateTime.isBefore(endDateTime) || startDateTime.isEqual(endDateTime)) {
+            String formattedDate = LocalDateTimeUtil.format(startDateTime, "yyyy-MM-dd HH");
+            StatisticsDateData statisticsDateData = getHourData(labelId, energyId, startDateTime, queryType);
+            statisticsDateData.setDate(formattedDate);
+            statisticsDateDataList.add(statisticsDateData);
+            startDateTime = startDateTime.plusHours(1);
+        }
+        vo.setStatisticsDateDataList(statisticsDateDataList);
+        // 计算总金额
+        BigDecimal sumEnergyMoney = statisticsDateDataList.stream()
+                .map(StatisticsDateData::getMoney)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        vo.setSumEnergyMoney(sumEnergyMoney);
+        return vo;
+    }
+
+    private StatisticsDateData getHourData(Long labelId, Long energyId, LocalDateTime dateTime, Integer queryType) {
+        StatisticsDateData statisticsDateData = new StatisticsDateData();
+        if (queryType != 2) {
+            statisticsDateData.setConsumption(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
+            statisticsDateData.setMoney(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP));
+        } else {
+            // 如果没有找到数据，你可以设置默认值或空值。
+            statisticsDateData.setConsumption(null);
+            statisticsDateData.setMoney(BigDecimal.ZERO);
+        }
+        return statisticsDateData;
     }
 
     private StatisticsDateData getData(Long labelId, Long energyId, LocalDate date, Integer queryType) {
