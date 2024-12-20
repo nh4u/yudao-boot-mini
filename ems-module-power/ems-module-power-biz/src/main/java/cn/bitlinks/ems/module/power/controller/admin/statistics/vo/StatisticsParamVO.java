@@ -36,7 +36,7 @@ public class StatisticsParamVO {
     @Schema(description = "查看类型 0：综合查看；1：按能源查看；2：按标签查看。 默认0")
     private Integer queryType = 0;
 
-    @Schema(description = "时间类型 0：日；1：月；2：年。 默认0")
+    @Schema(description = "时间类型 0：日；1：月；2：年；3：时。 默认0")
     private Integer dateType = 0;
 
 }

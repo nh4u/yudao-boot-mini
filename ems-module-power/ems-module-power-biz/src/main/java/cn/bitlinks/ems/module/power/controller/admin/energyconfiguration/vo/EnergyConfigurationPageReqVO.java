@@ -57,6 +57,9 @@ public class EnergyConfigurationPageReqVO extends PageParam {
     @Schema(description = "单价小数位")
     private String unitPriceScale;
 
+    @Schema(description = "创建人")
+    private String creator;
+
     @Schema(description = "创建时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] createTime;

@@ -1,6 +1,9 @@
 package cn.bitlinks.ems.module.power.service.energyconfiguration;
 
+import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.power.dal.mysql.unitpriceconfiguration.UnitPriceConfigurationMapper;
+import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
+import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.stereotype.Service;
@@ -37,6 +40,8 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     private EnergyConfigurationMapper energyConfigurationMapper;
     @Resource
     private UnitPriceConfigurationMapper unitPriceConfigurationMapper;
+    @Resource
+    private AdminUserApi adminUserApi;
 
     @Override
     public Long createEnergyConfiguration(EnergyConfigurationSaveReqVO createReqVO) {
@@ -91,11 +96,20 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         LocalDateTime currentDateTime = LocalDateTime.now();
         // 查询分页数据
         PageResult<EnergyConfigurationDO> pageResult = energyConfigurationMapper.selectPage(pageReqVO);
-        // 遍历结果集，设置 unitPrice
+        // 遍历结果集，设置 unitPrice 和 creator 昵称
         if (pageResult != null && CollectionUtils.isNotEmpty(pageResult.getList())) {
             for (EnergyConfigurationDO energyConfiguration : pageResult.getList()) {
+                // 设置单价详情
                 String priceDetails = unitPriceConfigurationMapper.getPriceDetailsByEnergyIdAndTime(energyConfiguration.getId(), currentDateTime);
                 energyConfiguration.setUnitPrice(priceDetails);
+
+                // 设置创建人昵称
+                if (energyConfiguration.getCreator() != null) {
+                    CommonResult<AdminUserRespDTO> user = adminUserApi.getUser(Long.valueOf(energyConfiguration.getCreator()));
+                    if (user.getData() != null) {
+                        energyConfiguration.setCreator(user.getData().getNickname());
+                    }
+                }
             }
         }
         return pageResult;
