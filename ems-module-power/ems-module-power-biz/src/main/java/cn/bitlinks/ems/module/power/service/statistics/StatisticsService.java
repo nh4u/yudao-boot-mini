@@ -26,5 +26,5 @@ public interface StatisticsService {
 
     Map<String, Object> standardCoalAnalysisTable(StatisticsParamVO paramVO);
 
-    Map<String, Object>  standardCoalAnalysisChart(StatisticsParamVO paramVO);
+    Object  standardCoalAnalysisChart(StatisticsParamVO paramVO);
 }

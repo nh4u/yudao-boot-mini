@@ -3,10 +3,7 @@ package cn.bitlinks.ems.module.power.service.statistics;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.DeviceAssociationConfigurationPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsBarVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsDateData;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.deviceassociationconfiguration.DeviceAssociationConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
@@ -15,6 +12,7 @@ import cn.bitlinks.ems.module.power.service.deviceassociationconfiguration.Devic
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.core.util.ArrayUtil;
@@ -203,7 +201,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         List<StatisticsResultVO> list = new ArrayList<>();
 
         // 表头处理
-        List<String> tableHeader = getTableHeader(range, dateType);
+        List<String> tableHeader = getTableHeader(rangeOrigin, dateType);
 
 
         Integer queryType = paramVO.getQueryType();
@@ -246,48 +244,136 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public Map<String, Object> standardCoalAnalysisChart(StatisticsParamVO paramVO) {
+    public Object standardCoalAnalysisChart(StatisticsParamVO paramVO) {
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
 
-        // 返回结果map
-        Map<String, Object> result = new HashMap<>(2);
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
 
-        result.put("", "");
-        result.put("data", "list");
-        return result;
+        // 统计结果list
+        List<StatisticsResultVO> list = new ArrayList<>();
+
+        Integer queryType = paramVO.getQueryType();
+        Integer dateType = paramVO.getDateType();
+
+        if (1 == queryType) {
+            // 1、按能源查看
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+            // 能源结果list
+            List<StatisticsResultVO> statisticsResultVOList = getEnergyList(new StatisticsResultVO(), energyList, range, dateType, queryType);
+            list.addAll(statisticsResultVOList);
+
+            return getStackVO(rangeOrigin, dateType, list, queryType);
+
+        } else if (2 == queryType) {
+            // 2、按标签查看
+            //X轴数据
+            List<String> XData = getTableHeader(rangeOrigin, dateType);
+            //Y轴数据list
+            List<StackDataVO> YData = new ArrayList<>();
+
+            // 标签查询条件处理 只需要第一级别就可以
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType);
+
+                List<BigDecimal> collect = getYData(XData, statisticsResultVOList);
+                YData.add(StackDataVO.builder()
+                        .name(tree.getName().toString())
+                        .data(collect).build());
+
+            }
+            return StatisticsStackVO.builder()
+                    .XData(XData)
+                    .YData(YData).build();
+
+        } else {
+            // 0、综合查看（默认）
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+
+            //X轴数据
+            List<String> XData = getTableHeader(rangeOrigin, dateType);
+
+            // 统计结果list
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType);
+                list.addAll(statisticsResultVOList);
+            }
+
+            //Y轴数据
+            List<BigDecimal> YData = getYData(XData, list);
+
+            return StatisticsBarVO.builder()
+                    .XData(XData)
+                    .YData(YData).build();
+        }
+
     }
 
+    private List<BigDecimal> getYData(List<String> XData, List<StatisticsResultVO> statisticsResultVOList) {
+        // 初始化一个Map来存储每个时间点的总金额
+        Map<String, BigDecimal> totalMoneyByDate = new HashMap<>();
+        for (String date : XData) {
+            totalMoneyByDate.put(date, BigDecimal.ZERO);
+        }
+        // 填充Y轴数据
+        for (StatisticsResultVO vo : statisticsResultVOList) {
+            for (StatisticsDateData dateData : vo.getStatisticsDateDataList()) {
+                String date = dateData.getDate();
+                BigDecimal money = dateData.getMoney();
+                totalMoneyByDate.merge(date, money, BigDecimal::add);
+            }
+        }
+        // 生成YData列表
+        return XData.stream().map(totalMoneyByDate::get).collect(Collectors.toList());
+
+    }
 
     /**
-     * 投资指数-成本柱状图
+     * 堆叠图
      *
-     * @param pageReqVO
+     * @param rangeOrigin
+     * @param dateType
+     * @param statisticsResultVOList
      * @return
      */
-    private StatisticsBarVO getTotalBarVO(StatisticsParamVO pageReqVO) {
-        //获取数据
+    private StatisticsStackVO getStackVO(LocalDateTime[] rangeOrigin, Integer dateType, List<StatisticsResultVO> statisticsResultVOList, Integer queryType) {
 
         //X轴数据
-        List<String> XData = new ArrayList<>();
-        XData.add("标识设备成本");
-        XData.add("标识载体成本");
-        XData.add("标识应用成本");
-        //X轴数据
-        List<BigDecimal> YData = new ArrayList<>();
+        List<String> XData = getTableHeader(rangeOrigin, dateType);
 
-        //标识设备成本
-        BigDecimal identifierEquipmentCosts = BigDecimal.ZERO;
-        //标识载体成本
-        BigDecimal identifierCarrierCosts = BigDecimal.ZERO;
-        //标识应用成本
-        BigDecimal identifierApplicationCosts = BigDecimal.ZERO;
+        //Y轴数据list
+        List<StackDataVO> YData = new ArrayList<>();
 
+        for (StatisticsResultVO statisticsResultVO : statisticsResultVOList) {
+            String name;
+            if (1 == queryType) {
+                name = statisticsResultVO.getEnergyName();
+            } else if (2 == queryType) {
+                name = statisticsResultVO.getLabel1();
+            } else {
+                name = "";
+            }
 
-        YData.add(identifierEquipmentCosts);
-        YData.add(identifierCarrierCosts);
-        YData.add(identifierApplicationCosts);
+            List<StatisticsDateData> statisticsDateDataList = statisticsResultVO.getStatisticsDateDataList();
+            List<BigDecimal> collect = statisticsDateDataList.stream().map(StatisticsDateData::getMoney).collect(Collectors.toList());
+            YData.add(StackDataVO.builder()
+                    .name(name)
+                    .data(collect).build());
+        }
 
-
-        return StatisticsBarVO.builder()
+        return StatisticsStackVO.builder()
                 .XData(XData)
                 .YData(YData).build();
     }
@@ -318,7 +404,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         List<StatisticsResultVO> list = new ArrayList<>();
 
         // 表头处理
-        List<String> tableHeader = getTableHeader(range, dateType);
+        List<String> tableHeader = getTableHeader(rangeOrigin, dateType);
 
 
         Integer queryType = paramVO.getQueryType();
@@ -381,38 +467,22 @@ public class StatisticsServiceImpl implements StatisticsService {
                 statisticsResultVOS = getHourlyStatisticsData(paramVO);
                 break;
             case 1: // 月级别
-                LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
-                XData = getTableHeader(range, paramVO.getDateType());
+                XData = getTableHeader(rangeOrigin, paramVO.getDateType());
                 statisticsResultVOS = getStatisticsData(paramVO);
                 break;
             case 2: // 年级别
-                range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
-                XData = getTableHeader(range, paramVO.getDateType());
+                XData = getTableHeader(rangeOrigin, paramVO.getDateType());
                 statisticsResultVOS = getStatisticsData(paramVO);
                 break;
             case 0: // 天级别
-                range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
-                XData = getTableHeader(range, paramVO.getDateType());
+                XData = getTableHeader(rangeOrigin, paramVO.getDateType());
                 statisticsResultVOS = getStatisticsData(paramVO);
                 break;
             default:
                 throw new IllegalArgumentException("Invalid dateType value");
         }
-        // 初始化一个Map来存储每个时间点的总金额
-        Map<String, BigDecimal> totalMoneyByDate = new HashMap<>();
-        for (String date : XData) {
-            totalMoneyByDate.put(date, BigDecimal.ZERO);
-        }
-        // 填充Y轴数据
-        for (StatisticsResultVO vo : statisticsResultVOS) {
-            for (StatisticsDateData dateData : vo.getStatisticsDateDataList()) {
-                String date = dateData.getDate();
-                BigDecimal money = dateData.getMoney();
-                totalMoneyByDate.merge(date, money, BigDecimal::add);
-            }
-        }
         // 生成YData列表
-        YData = XData.stream().map(totalMoneyByDate::get).collect(Collectors.toList());
+        YData = getYData(XData, statisticsResultVOS);
 
         StatisticsBarVO statisticsBarVO = StatisticsBarVO.builder()
                 .XData(XData)
@@ -450,13 +520,14 @@ public class StatisticsServiceImpl implements StatisticsService {
     /**
      * 格式 时间list ['2024/5/5','2024/5/5','2024/5/5'];
      *
-     * @param range 时间范围
+     * @param rangeOrigin 时间范围
      * @return ['2024/5/5','2024/5/5','2024/5/5']
      */
-    private List<String> getTableHeader(LocalDate[] range, Integer dateType) {
+    private List<String> getTableHeader(LocalDateTime[] rangeOrigin, Integer dateType) {
 
         List<String> headerList = new ArrayList<>();
 
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
         LocalDate startDate = range[0];
         LocalDate endDate = range[1];
 
@@ -483,6 +554,17 @@ public class StatisticsServiceImpl implements StatisticsService {
 
                 startDate = startDate.plusYears(1);
             }
+        } else if (3 == dateType) {
+            // 时
+            LocalDateTime startDateTime = rangeOrigin[0];
+            LocalDateTime endDateTime = rangeOrigin[1];
+
+            while (startDateTime.isBefore(endDateTime) || startDateTime.isEqual(endDateTime)) {
+                String formattedDate = LocalDateTimeUtil.format(startDateTime, "yyyy-MM-dd-HH");
+                headerList.add(formattedDate);
+                startDateTime = startDateTime.plusHours(1);
+            }
+
         } else {
             // 日
             while (startDate.isBefore(endDate) || startDate.isEqual(endDate)) {
@@ -787,6 +869,28 @@ public class StatisticsServiceImpl implements StatisticsService {
                 startDate = startDate.plusYears(1);
             }
 
+        } else if (3 == dateType) {
+            // 时
+
+            LocalDateTime startDateTime = range[0].atStartOfDay();
+            LocalDateTime endDateTime = range[1].atStartOfDay();
+
+            while (startDateTime.isBefore(endDateTime) || startDateTime.isEqual(endDateTime)) {
+                String formattedDate = LocalDateTimeUtil.format(startDateTime, "yyyy-MM-dd:HH");
+                StatisticsDateData statisticsDateData = getHourData(labelId, energyId, startDateTime, queryType);
+                statisticsDateData.setDate(formattedDate);
+                statisticsDateDataList.add(statisticsDateData);
+
+                if (statisticsDateData.getConsumption() != null) {
+                    sumEnergyConsumption = sumEnergyConsumption.add(statisticsDateData.getConsumption());
+                    sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
+                } else {
+                    sumEnergyConsumption = null;
+                    sumEnergyMoney = sumEnergyMoney.add(statisticsDateData.getMoney());
+                }
+                startDateTime = startDateTime.plusHours(1);
+            }
+
         } else {
             // 日
             while (startDate.isBefore(endDate) || startDate.isEqual(endDate)) {
@@ -813,6 +917,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
 
         vo.setStatisticsDateDataList(statisticsDateDataList);
+        // 横向合计：所有日期的一个合计
         vo.setSumEnergyConsumption(sumEnergyConsumption);
         vo.setSumEnergyMoney(sumEnergyMoney);
 

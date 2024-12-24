@@ -232,7 +232,7 @@ public class LabelConfigServiceImpl implements LabelConfigService {
             list.addAll(parent);
             list.addAll(children);
         }
-
+        list = list.stream().distinct().collect(Collectors.toList());
         // 对所有list递归取所有相关联标签节点
         List<TreeNode<Long>> collect = list.stream().map(getNodeFunction()).collect(Collectors.toList());
         return ImmutablePair.of(list, TreeUtil.build(collect, CommonConstants.LABEL_TREE_ROOT_ID));
