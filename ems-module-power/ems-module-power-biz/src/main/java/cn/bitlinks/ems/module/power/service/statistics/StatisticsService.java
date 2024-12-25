@@ -22,7 +22,7 @@ public interface StatisticsService {
 
     Map<String, Object> moneyAnalysisTable(StatisticsParamVO paramVO);
 
-    Map<String, Object>  moneyAnalysisChart(StatisticsParamVO paramVO);
+    Object  moneyAnalysisChart(StatisticsParamVO paramVO);
 
     Map<String, Object> standardCoalAnalysisTable(StatisticsParamVO paramVO);
 

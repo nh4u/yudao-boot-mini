@@ -57,7 +57,7 @@ public class StatisticsController {
 
     @PostMapping("/moneyAnalysisChart")
     @Operation(summary = "折价分析（图）")
-    public CommonResult<Map<String, Object>> moneyAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+    public CommonResult<Object> moneyAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
         return success(statisticsService.moneyAnalysisChart(paramVO));
     }
 }

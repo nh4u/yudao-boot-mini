@@ -447,49 +447,81 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public Map<String, Object> moneyAnalysisChart(StatisticsParamVO paramVO) {
+    public Object moneyAnalysisChart(StatisticsParamVO paramVO) {
         // 校验时间范围是否存在
         LocalDateTime[] rangeOrigin = paramVO.getRange();
+
         if (ArrayUtil.isEmpty(rangeOrigin)) {
             throw exception(DATE_RANGE_NOT_EXISTS);
         }
-        // 返回结果map
-        Map<String, Object> result = new HashMap<>(2);
-        // 获取X轴数据
-        List<String> XData;
-        // 获取Y轴数据
-        List<BigDecimal> YData = new ArrayList<>();
-        List<StatisticsResultVO> statisticsResultVOS;
-        // 根据dateType获取数据
-        switch (paramVO.getDateType()) {
-            case 3: // 小时级别
-                XData = getHourlyTableHeader(paramVO.getRange());
-                statisticsResultVOS = getHourlyStatisticsData(paramVO);
-                break;
-            case 1: // 月级别
-                XData = getTableHeader(rangeOrigin, paramVO.getDateType());
-                statisticsResultVOS = getStatisticsData(paramVO);
-                break;
-            case 2: // 年级别
-                XData = getTableHeader(rangeOrigin, paramVO.getDateType());
-                statisticsResultVOS = getStatisticsData(paramVO);
-                break;
-            case 0: // 天级别
-                XData = getTableHeader(rangeOrigin, paramVO.getDateType());
-                statisticsResultVOS = getStatisticsData(paramVO);
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid dateType value");
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
         }
-        // 生成YData列表
-        YData = getYData(XData, statisticsResultVOS);
 
-        StatisticsBarVO statisticsBarVO = StatisticsBarVO.builder()
-                .XData(XData)
-                .YData(YData)
-                .build();
-        result.put("chartData", statisticsBarVO);
-        return result;
+        // 统计结果list
+        List<StatisticsResultVO> list = new ArrayList<>();
+
+        Integer queryType = paramVO.getQueryType();
+        Integer dateType = paramVO.getDateType();
+
+        if (1 == queryType) {
+            // 1、按能源查看
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+            // 能源结果list
+            List<StatisticsResultVO> statisticsResultVOList = getEnergyList(new StatisticsResultVO(), energyList, range, dateType, queryType);
+            list.addAll(statisticsResultVOList);
+
+            return getStackVO(rangeOrigin, dateType, list, queryType);
+
+        } else if (2 == queryType) {
+            // 2、按标签查看
+            //X轴数据
+            List<String> XData = getTableHeader(rangeOrigin, dateType);
+            //Y轴数据list
+            List<StackDataVO> YData = new ArrayList<>();
+
+            // 标签查询条件处理 只需要第一级别就可以
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType);
+
+                List<BigDecimal> collect = getYData(XData, statisticsResultVOList);
+                YData.add(StackDataVO.builder()
+                        .name(tree.getName().toString())
+                        .data(collect).build());
+
+            }
+            return StatisticsStackVO.builder()
+                    .XData(XData)
+                    .YData(YData).build();
+
+        } else {
+            // 0、综合查看（默认）
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+
+            //X轴数据
+            List<String> XData = getTableHeader(rangeOrigin, dateType);
+
+            // 统计结果list
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType);
+                list.addAll(statisticsResultVOList);
+            }
+
+            //Y轴数据
+            List<BigDecimal> YData = getYData(XData, list);
+
+            return StatisticsBarVO.builder()
+                    .XData(XData)
+                    .YData(YData).build();
+        }
+
     }
 
     private List<StatisticsResultVO> getStatisticsData(StatisticsParamVO paramVO) {
