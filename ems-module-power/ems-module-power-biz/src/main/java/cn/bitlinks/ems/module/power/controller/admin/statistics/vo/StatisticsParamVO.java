@@ -23,7 +23,7 @@ import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_M
 @ToString(callSuper = true)
 public class StatisticsParamVO {
 
-    @Schema(description = "统计周期", example = "[1734514648000, 1734514648000]")
+    @Schema(description = "统计周期", example = "[1734451200000, 1735315200000]")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] range;
 
@@ -38,5 +38,8 @@ public class StatisticsParamVO {
 
     @Schema(description = "时间类型 0：日；1：月；2：年；3：时。 默认0")
     private Integer dateType = 0;
+
+    @Schema(description = "能源类型 1：外购能源；2：园区能源。 默认1")
+    private Integer energyClassify=1;
 
 }

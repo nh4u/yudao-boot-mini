@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsBarVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
 import com.alibaba.fastjson.JSONObject;
 
@@ -27,4 +28,6 @@ public interface StatisticsService {
     Map<String, Object> standardCoalAnalysisTable(StatisticsParamVO paramVO);
 
     Object  standardCoalAnalysisChart(StatisticsParamVO paramVO);
+
+    StatisticsBarVO getOverallViewBar(StatisticsParamVO paramVO);
 }

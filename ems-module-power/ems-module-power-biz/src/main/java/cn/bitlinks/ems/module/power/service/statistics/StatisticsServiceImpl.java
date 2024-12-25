@@ -297,27 +297,39 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         } else {
             // 0、综合查看（默认）
-            // 标签查询条件处理
-            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
-            // 能源查询条件处理
-            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
-
-            //X轴数据
-            List<String> XData = getTableHeader(rangeOrigin, dateType);
-
-            // 统计结果list
-            for (Tree<Long> tree : labelTree) {
-                List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType);
-                list.addAll(statisticsResultVOList);
-            }
-
-            //Y轴数据
-            List<BigDecimal> YData = getYData(XData, list);
-
-            return StatisticsBarVO.builder()
-                    .XData(XData)
-                    .YData(YData).build();
+            return getOverallViewBar(paramVO);
         }
+
+    }
+
+    @Override
+    public StatisticsBarVO getOverallViewBar(StatisticsParamVO paramVO) {
+        // 0、综合查看（默认）
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+        Integer dateType = paramVO.getDateType();
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+        // 统计结果list
+        List<StatisticsResultVO> list = new ArrayList<>();
+        // 标签查询条件处理
+        List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+        // 能源查询条件处理
+        List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+
+        //X轴数据
+        List<String> XData = getTableHeader(rangeOrigin, dateType);
+
+        // 统计结果list
+        for (Tree<Long> tree : labelTree) {
+            List<StatisticsResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, 0);
+            list.addAll(statisticsResultVOList);
+        }
+
+        //Y轴数据
+        List<BigDecimal> YData = getYData(XData, list);
+
+        return StatisticsBarVO.builder()
+                .XData(XData)
+                .YData(YData).build();
 
     }
 
@@ -592,7 +604,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             LocalDateTime endDateTime = rangeOrigin[1];
 
             while (startDateTime.isBefore(endDateTime) || startDateTime.isEqual(endDateTime)) {
-                String formattedDate = LocalDateTimeUtil.format(startDateTime, "yyyy-MM-dd-HH");
+                String formattedDate = LocalDateTimeUtil.format(startDateTime, "yyyy-MM-dd:HH");
                 headerList.add(formattedDate);
                 startDateTime = startDateTime.plusHours(1);
             }
@@ -975,7 +987,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         LocalDateTime endDateTime = range[1];
 
         while (startDateTime.isBefore(endDateTime) || startDateTime.isEqual(endDateTime)) {
-            String formattedDate = LocalDateTimeUtil.format(startDateTime, "yyyy-MM-dd-HH");
+            String formattedDate = LocalDateTimeUtil.format(startDateTime, "yyyy-MM-dd:HH");
             headerList.add(formattedDate);
             startDateTime = startDateTime.plusHours(1);
         }
@@ -990,7 +1002,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         Long energyId = vo.getEnergyId();
         Long labelId = vo.getLabelId();
         while (startDateTime.isBefore(endDateTime) || startDateTime.isEqual(endDateTime)) {
-            String formattedDate = LocalDateTimeUtil.format(startDateTime, "yyyy-MM-dd HH");
+            String formattedDate = LocalDateTimeUtil.format(startDateTime, "yyyy-MM-dd:HH");
             StatisticsDateData statisticsDateData = getHourData(labelId, energyId, startDateTime, queryType);
             statisticsDateData.setDate(formattedDate);
             statisticsDateDataList.add(statisticsDateData);

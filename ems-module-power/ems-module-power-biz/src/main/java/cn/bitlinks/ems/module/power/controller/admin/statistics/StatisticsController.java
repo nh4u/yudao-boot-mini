@@ -1,7 +1,9 @@
 package cn.bitlinks.ems.module.power.controller.admin.statistics;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsOverviewResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
+import cn.bitlinks.ems.module.power.service.statistics.StatisticsOverviewService;
 import cn.bitlinks.ems.module.power.service.statistics.StatisticsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,6 +30,17 @@ public class StatisticsController {
 
     @Resource
     private StatisticsService statisticsService;
+
+    @Resource
+    private StatisticsOverviewService statisticsOverviewService;
+
+    @PostMapping("/overview")
+    @Operation(summary = "统计总览")
+    public CommonResult<StatisticsOverviewResultVO> overview(@Valid @RequestBody StatisticsParamVO paramVO) {
+        StatisticsOverviewResultVO statisticsOverviewResultVO = statisticsOverviewService.overview(paramVO);
+        return success(statisticsOverviewResultVO);
+    }
+
 
     @PostMapping("/energyFlowAnalysis")
     @Operation(summary = "能流分析")

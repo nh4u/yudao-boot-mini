@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.standingbook;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.infra.api.file.FileApi;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
@@ -12,9 +13,13 @@ import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.Standingboo
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.enums.ApiConstants;
+import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
+import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import org.apache.poi.ss.usermodel.*;
@@ -38,6 +43,7 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_NOT_EXISTS;
@@ -56,6 +62,10 @@ public class StandingbookServiceImpl implements StandingbookService {
     private StandingbookMapper standingbookMapper;
     @Resource
     private StandingbookAttributeService standingbookAttributeService;
+
+    @Resource
+    private StandingbookTypeMapper standingbookTypeMapper;
+
     @Resource
     private FileApi fileApi;
 
@@ -73,6 +83,33 @@ public class StandingbookServiceImpl implements StandingbookService {
         }
         return standingbook.getId();
     }
+
+    @Override
+    public Long count(Long typeId) {
+
+        // 对应类型【重点设备、计量器具、其他设备】下的所有类型id
+        List<Long> typeIdList;
+        if (typeId.equals(CommonConstants.OTHER_EQUIPMENT_ID)) {
+            // 查询对应所有类型id
+             typeIdList = standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>()
+                            .ne(StandingbookTypeDO::getTopType, CommonConstants.MEASUREMENT_INSTRUMENT_ID)
+                            .ne(StandingbookTypeDO::getTopType, CommonConstants.KEY_EQUIPMENT_ID))
+                    .stream()
+                    .map(StandingbookTypeDO::getId)
+                    .collect(Collectors.toList());
+        } else {
+
+            // 差对应id
+            typeIdList = standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>()
+                            .eq(StandingbookTypeDO::getTopType, typeId))
+                    .stream()
+                    .map(StandingbookTypeDO::getId)
+                    .collect(Collectors.toList());
+        }
+        return standingbookMapper.selectCount(new LambdaQueryWrapperX<StandingbookDO>()
+                .in(StandingbookDO::getTypeId,typeIdList));
+    }
+
     @Override
     @Transactional
     public Long createStandingbook(Map <String,String>  createReqVO) {
