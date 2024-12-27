@@ -188,12 +188,12 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
 
         Integer dateType = paramVO.getDateType();
-        if (dateType ==null){
+        if (dateType == null) {
             throw exception(DATE_TYPE_NOT_EXISTS);
         }
 
         Integer queryType = paramVO.getQueryType();
-        if (queryType ==null){
+        if (queryType == null) {
             throw exception(QUERY_TYPE_NOT_EXISTS);
         }
         // 返回结果map
@@ -260,12 +260,12 @@ public class StatisticsServiceImpl implements StatisticsService {
         List<StatisticsResultVO> list = new ArrayList<>();
 
         Integer dateType = paramVO.getDateType();
-        if (dateType ==null){
+        if (dateType == null) {
             throw exception(DATE_TYPE_NOT_EXISTS);
         }
 
         Integer queryType = paramVO.getQueryType();
-        if (queryType ==null){
+        if (queryType == null) {
             throw exception(QUERY_TYPE_NOT_EXISTS);
         }
 
@@ -293,6 +293,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 
                 List<BigDecimal> collect = getYData(XData, statisticsResultVOList);
                 YData.add(StackDataVO.builder()
+                        .id(tree.getId())
                         .name(tree.getName().toString())
                         .data(collect).build());
 
@@ -313,7 +314,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 0、综合查看（默认）
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         Integer dateType = paramVO.getDateType();
-        if (dateType ==null){
+        if (dateType == null) {
             throw exception(DATE_TYPE_NOT_EXISTS);
         }
 
@@ -380,17 +381,22 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         for (StatisticsResultVO statisticsResultVO : statisticsResultVOList) {
             String name;
+            Long id;
             if (1 == queryType) {
                 name = statisticsResultVO.getEnergyName();
+                id = statisticsResultVO.getEnergyId();
             } else if (2 == queryType) {
                 name = statisticsResultVO.getLabel1();
+                id = statisticsResultVO.getLabelId();
             } else {
                 name = "";
+                id = null;
             }
 
             List<StatisticsDateData> statisticsDateDataList = statisticsResultVO.getStatisticsDateDataList();
             List<BigDecimal> collect = statisticsDateDataList.stream().map(StatisticsDateData::getMoney).collect(Collectors.toList());
             YData.add(StackDataVO.builder()
+                    .id(id)
                     .name(name)
                     .data(collect).build());
         }
@@ -418,12 +424,12 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
 
         Integer dateType = paramVO.getDateType();
-        if (dateType ==null){
+        if (dateType == null) {
             throw exception(DATE_TYPE_NOT_EXISTS);
         }
 
         Integer queryType = paramVO.getQueryType();
-        if (queryType ==null){
+        if (queryType == null) {
             throw exception(QUERY_TYPE_NOT_EXISTS);
         }
 
@@ -491,12 +497,12 @@ public class StatisticsServiceImpl implements StatisticsService {
         List<StatisticsResultVO> list = new ArrayList<>();
 
         Integer dateType = paramVO.getDateType();
-        if (dateType ==null){
+        if (dateType == null) {
             throw exception(DATE_TYPE_NOT_EXISTS);
         }
 
         Integer queryType = paramVO.getQueryType();
-        if (queryType ==null){
+        if (queryType == null) {
             throw exception(QUERY_TYPE_NOT_EXISTS);
         }
 
@@ -524,6 +530,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 
                 List<BigDecimal> collect = getYData(XData, statisticsResultVOList);
                 YData.add(StackDataVO.builder()
+                        .id(tree.getId())
                         .name(tree.getName().toString())
                         .data(collect).build());
 

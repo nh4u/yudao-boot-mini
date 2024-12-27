@@ -16,6 +16,14 @@ import java.util.List;
 @Data
 @Builder
 public class StackDataVO {
+
+    /**
+     * 名称
+     */
+    @Schema(description = "元素id")
+    @ExcelProperty("元素id")
+    private Long id;
+
     /**
      * 名称
      */
