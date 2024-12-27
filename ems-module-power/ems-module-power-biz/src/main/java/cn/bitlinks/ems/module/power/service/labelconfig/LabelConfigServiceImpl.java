@@ -150,13 +150,21 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     @Override
     public List<Tree<Long>> getLabelTree(boolean lazy, Long parentId, String labelName) {
         if (!lazy) {
-            List<TreeNode<Long>> collect = labelConfigMapper
-                    .selectList(Wrappers.<LabelConfigDO>lambdaQuery()
-                            .like(StrUtil.isNotEmpty(labelName), LabelConfigDO::getLabelName, labelName)
-                            .orderByAsc(LabelConfigDO::getSort)).stream()
-                    .map(getNodeFunction()).collect(Collectors.toList());
 
-            return TreeUtil.build(collect, CommonConstants.LABEL_TREE_ROOT_ID);
+            if (parentId == null) {
+                List<TreeNode<Long>> collect = labelConfigMapper
+                        .selectList(Wrappers.<LabelConfigDO>lambdaQuery()
+                                .like(StrUtil.isNotEmpty(labelName), LabelConfigDO::getLabelName, labelName)
+                                .orderByAsc(LabelConfigDO::getSort)).stream()
+                        .map(getNodeFunction()).collect(Collectors.toList());
+                return TreeUtil.build(collect, CommonConstants.LABEL_TREE_ROOT_ID);
+            } else {
+                // 递归获取该节点下所有子集
+                List<LabelConfigDO> collect = getLabelTreeNodeList(parentId);
+                List<TreeNode<Long>> collect1 = collect.stream().map(getNodeFunction()).collect(Collectors.toList());
+                return TreeUtil.build(collect1, parentId);
+            }
+
         }
         Long parent = parentId == null ? CommonConstants.LABEL_TREE_ROOT_ID : parentId;
 
@@ -169,6 +177,30 @@ public class LabelConfigServiceImpl implements LabelConfigService {
 
         return TreeUtil.build(collect, parent);
 
+    }
+
+    private List<LabelConfigDO> getLabelTreeNodeList(Long parentId) {
+
+        List<LabelConfigDO> list = new ArrayList<>();
+        List<LabelConfigDO> labelList = labelConfigMapper
+                .selectList(Wrappers.<LabelConfigDO>lambdaQuery()
+                        .eq(LabelConfigDO::getParentId, parentId)
+                        .orderByAsc(LabelConfigDO::getSort));
+
+        if (CollectionUtil.isEmpty(labelList)) {
+            LabelConfigDO labelConfigDO = labelConfigMapper.selectById(parentId);
+            list.add(labelConfigDO);
+            return list;
+        }
+
+        for (LabelConfigDO labelConfigDO : labelList) {
+
+            List<LabelConfigDO> subLabelList = getLabelTreeNodeList(labelConfigDO.getId());
+            list.add(labelConfigDO);
+            list.addAll(subLabelList);
+        }
+
+        return list;
     }
 
     @Override

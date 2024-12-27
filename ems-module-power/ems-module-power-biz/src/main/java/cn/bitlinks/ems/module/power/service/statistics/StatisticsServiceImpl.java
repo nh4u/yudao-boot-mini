@@ -1,10 +1,8 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.DeviceAssociationConfigurationPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
-import cn.bitlinks.ems.module.power.dal.dataobject.deviceassociationconfiguration.DeviceAssociationConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
@@ -12,12 +10,10 @@ import cn.bitlinks.ems.module.power.service.deviceassociationconfiguration.Devic
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.RandomUtil;
-import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -35,8 +31,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_RANGE_EXCEED_LIMIT;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_RANGE_NOT_EXISTS;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
 /**
  * 用能分析 Service 实现类
@@ -193,7 +188,14 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
 
         Integer dateType = paramVO.getDateType();
+        if (dateType ==null){
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
 
+        Integer queryType = paramVO.getQueryType();
+        if (queryType ==null){
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
         // 返回结果map
         Map<String, Object> result = new HashMap<>(2);
 
@@ -202,9 +204,6 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         // 表头处理
         List<String> tableHeader = getTableHeader(rangeOrigin, dateType);
-
-
-        Integer queryType = paramVO.getQueryType();
 
         if (1 == queryType) {
             // 1、按能源查看
@@ -260,8 +259,15 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 统计结果list
         List<StatisticsResultVO> list = new ArrayList<>();
 
-        Integer queryType = paramVO.getQueryType();
         Integer dateType = paramVO.getDateType();
+        if (dateType ==null){
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        Integer queryType = paramVO.getQueryType();
+        if (queryType ==null){
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
 
         if (1 == queryType) {
             // 1、按能源查看
@@ -307,6 +313,10 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 0、综合查看（默认）
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         Integer dateType = paramVO.getDateType();
+        if (dateType ==null){
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
         LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
         // 统计结果list
         List<StatisticsResultVO> list = new ArrayList<>();
@@ -408,6 +418,14 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
 
         Integer dateType = paramVO.getDateType();
+        if (dateType ==null){
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        Integer queryType = paramVO.getQueryType();
+        if (queryType ==null){
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
 
         // 返回结果map
         Map<String, Object> result = new HashMap<>(2);
@@ -417,9 +435,6 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         // 表头处理
         List<String> tableHeader = getTableHeader(rangeOrigin, dateType);
-
-
-        Integer queryType = paramVO.getQueryType();
 
         if (1 == queryType) {
             // 1、按能源查看
@@ -475,8 +490,15 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 统计结果list
         List<StatisticsResultVO> list = new ArrayList<>();
 
-        Integer queryType = paramVO.getQueryType();
         Integer dateType = paramVO.getDateType();
+        if (dateType ==null){
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        Integer queryType = paramVO.getQueryType();
+        if (queryType ==null){
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
 
         if (1 == queryType) {
             // 1、按能源查看

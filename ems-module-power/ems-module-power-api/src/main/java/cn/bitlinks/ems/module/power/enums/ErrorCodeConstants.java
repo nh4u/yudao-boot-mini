@@ -49,4 +49,6 @@ public interface ErrorCodeConstants {
 
     ErrorCode DATE_RANGE_NOT_EXISTS = new ErrorCode(1_001_601_001, "日期范围不存在");
     ErrorCode DATE_RANGE_EXCEED_LIMIT = new ErrorCode(1_001_601_002, "日期范围超出限制（MAX：366）");
+    ErrorCode QUERY_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_003, "查看类型不存在");
+    ErrorCode DATE_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_003, "时间类型不存在");
 }
