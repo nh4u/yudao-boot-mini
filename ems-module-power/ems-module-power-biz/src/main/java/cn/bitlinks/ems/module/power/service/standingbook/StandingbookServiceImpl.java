@@ -1,6 +1,5 @@
 package cn.bitlinks.ems.module.power.service.standingbook;
 
-import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.infra.api.file.FileApi;
@@ -15,12 +14,13 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.Standi
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
 import cn.bitlinks.ems.module.power.enums.ApiConstants;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
-import org.apache.poi.xssf.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFDataValidation;
+import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.imgscalr.Scalr;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -286,34 +286,34 @@ public class StandingbookServiceImpl implements StandingbookService {
                     StandingbookAttributeDO standingbookAttributeDO = children.get(j);
                     Cell cell = dataRow.createCell(j); // 从第1列开始
                     if (ApiConstants.FILE.equals(standingbookAttributeDO.getFormat())){
-                        CommonResult result = fileApi.getFile(standingbookAttributeDO.getFileId());
-                        if (result == null || result.getData() == null)continue;
-                        JSONObject file = (JSONObject) JSONUtil.parse(result.getData());
-                        CommonResult<byte[]> fileId = fileApi.getFileContent(Long.valueOf(file.getStr("configId")),file.getStr("path"));
-                        if (fileId == null || fileId.getData() == null)continue;
-                        byte[] bytes = fileId.getData();
-                        BufferedImage image = ImageIO.read(new ByteArrayInputStream(bytes));
-                        // 缩放图片
-                        ScaledImageDataVO scaledImageData = scaleImage(image);
-
-                        //将缩放后的图片转换为bytes
-                        byte[] imageBytes = processImageToBytes(scaledImageData.getScaledImage());
-
-                        int pictureIdx = workbook.addPicture(imageBytes, Workbook.PICTURE_TYPE_PNG);
-                        CreationHelper helper = workbook.getCreationHelper();
-                        // 创建绘图对象
-                        Drawing<?> drawing = sheet.createDrawingPatriarch();
-
-                        // 定位图片 (行1, 列1, 宽度和高度可根据需要调整)
-
-                        ClientAnchor anchor = helper.createClientAnchor();
-                        anchor.setCol1(j); // 列号从0开始，1表示第一列
-                        anchor.setRow1(i + 2); // 行号从0开始，1表示第一行
-                        anchor.setCol2(j); // 列号从0开始，1表示第一列
-                        anchor.setRow2(i + 2); // 行号从0开始，1表示第一行
-                        // 插入图片
-                        Picture pict = drawing.createPicture(anchor, pictureIdx);
-                        pict.resize(); // 调整图片大小以适应单元格
+//                        CommonResult result = fileApi.getFile(standingbookAttributeDO.getFileId());
+//                        if (result == null || result.getData() == null)continue;
+//                        JSONObject file = (JSONObject) JSONUtil.parse(result.getData());
+//                        CommonResult<byte[]> fileId = fileApi.getFileContent(Long.valueOf(file.getStr("configId")),file.getStr("path"));
+//                        if (fileId == null || fileId.getData() == null)continue;
+//                        byte[] bytes = fileId.getData();
+//                        BufferedImage image = ImageIO.read(new ByteArrayInputStream(bytes));
+//                        // 缩放图片
+//                        ScaledImageDataVO scaledImageData = scaleImage(image);
+//
+//                        //将缩放后的图片转换为bytes
+//                        byte[] imageBytes = processImageToBytes(scaledImageData.getScaledImage());
+//
+//                        int pictureIdx = workbook.addPicture(imageBytes, Workbook.PICTURE_TYPE_PNG);
+//                        CreationHelper helper = workbook.getCreationHelper();
+//                        // 创建绘图对象
+//                        Drawing<?> drawing = sheet.createDrawingPatriarch();
+//
+//                        // 定位图片 (行1, 列1, 宽度和高度可根据需要调整)
+//
+//                        ClientAnchor anchor = helper.createClientAnchor();
+//                        anchor.setCol1(j); // 列号从0开始，1表示第一列
+//                        anchor.setRow1(i + 2); // 行号从0开始，1表示第一行
+//                        anchor.setCol2(j); // 列号从0开始，1表示第一列
+//                        anchor.setRow2(i + 2); // 行号从0开始，1表示第一行
+//                        // 插入图片
+//                        Picture pict = drawing.createPicture(anchor, pictureIdx);
+//                        pict.resize(); // 调整图片大小以适应单元格
                     }else {
                         cell.setCellValue(standingbookAttributeDO.getValue());
                     }
@@ -350,9 +350,9 @@ public class StandingbookServiceImpl implements StandingbookService {
             templateNumberCell1.setCellValue(typeId);
 
             // 合并第二、三、四、五列
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, 2, 5));
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 2, 10));
             Cell hintCell = firstRow.createCell(2);
-            hintCell.setCellValue("表头黄色的为必填项，请勿修改模板编号，否则无法导入数据。请从第三行开始填写数据。（暂不支持导入图片）");
+            hintCell.setCellValue("表头黄色的为必填项，请勿修改模板编号，否则无法导入数据。请从第三行开始填写数据，多选时请使用&符号分隔。（暂不支持导入图片和文件）");
             CellStyle s = workbook.createCellStyle();
             s.setFillForegroundColor(IndexedColors.ORANGE.getIndex());
             s.setFillPattern(FillPatternType.SOLID_FOREGROUND);
@@ -366,10 +366,14 @@ public class StandingbookServiceImpl implements StandingbookService {
                 sheet.setColumnWidth(i, 5000);
 //                 Cell cell = headerRow.createCell(i+1); // 从第二列开始
                 Cell cell = headerRow.createCell(i); // 从第1列开始
-                cell.setCellValue(column.getName());
+                if (ApiConstants.MULTIPLE.equals(column.getFormat())) {
+                    cell.setCellValue(column.getName()+"("+column.getOptions().replaceAll(";","&")+")");
+                }else {
+                    cell.setCellValue(column.getName());
+                }
                 // 设置单元格样式
                 CellStyle style = workbook.createCellStyle();
-                if (ApiConstants.YES.equals(column.getIsRequired())) {
+                if (ApiConstants.YES.equals(column.getIsRequired())&& !column.getFormat().equals(ApiConstants.FILE) && !column.getFormat().equals(ApiConstants.PICTURE)) {
                     style.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
                     style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
                 }
@@ -383,6 +387,7 @@ public class StandingbookServiceImpl implements StandingbookService {
                     XSSFDataValidation validation = (XSSFDataValidation) validationHelper.createValidation(constraint,addressList);
                     sheet.addValidationData(validation);
                 }
+                // 注意: Apache POI 目前不支持直接设置为多选下拉框。对于多选，用户需要通过VBA或者手动配置。
                 cell.setCellStyle(style);
             }
             // 输出
