@@ -398,9 +398,9 @@ public class StandingbookServiceImpl implements StandingbookService {
             workbook.write(os);
             os.flush();
             os.close();
-            try (FileOutputStream fileOut = new FileOutputStream("D:\\破烂\\项目\\"+typeId+"-template.xlsx")) {
-                workbook.write(fileOut);
-            }
+//            try (FileOutputStream fileOut = new FileOutputStream("D:\\破烂\\项目\\"+typeId+"-template.xlsx")) {
+//                workbook.write(fileOut);
+//            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
