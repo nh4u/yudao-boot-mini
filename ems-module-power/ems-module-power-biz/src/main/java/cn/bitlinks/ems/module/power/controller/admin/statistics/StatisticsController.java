@@ -1,9 +1,10 @@
 package cn.bitlinks.ems.module.power.controller.admin.statistics;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsOverviewResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
+import cn.bitlinks.ems.module.power.service.statistics.StatisticsOverviewService;
 import cn.bitlinks.ems.module.power.service.statistics.StatisticsService;
-import com.alibaba.fastjson.JSONObject;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
+import java.util.Map;
 
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 
@@ -29,12 +31,46 @@ public class StatisticsController {
     @Resource
     private StatisticsService statisticsService;
 
-    @PostMapping("/energyFlowAnalysis")
-    @Operation(summary = "能流分析")
-    public CommonResult<JSONObject> energyFlowAnalysis(@Valid @RequestBody StatisticsParamVO paramVO) {
-        JSONObject jsonObject = statisticsService.energyFlowAnalysis(paramVO);
-        return success(jsonObject);
+    @Resource
+    private StatisticsOverviewService statisticsOverviewService;
+
+    @PostMapping("/overview")
+    @Operation(summary = "统计总览")
+    public CommonResult<StatisticsOverviewResultVO> overview(@Valid @RequestBody StatisticsParamVO paramVO) {
+        StatisticsOverviewResultVO statisticsOverviewResultVO = statisticsOverviewService.overview(paramVO);
+        return success(statisticsOverviewResultVO);
     }
 
 
+    @PostMapping("/energyFlowAnalysis")
+    @Operation(summary = "能流分析")
+    public CommonResult<Map<String, Object>> energyFlowAnalysis(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsService.energyFlowAnalysis(paramVO);
+        return success(jsonObject);
+    }
+
+    @PostMapping("/standardCoalAnalysisTable")
+    @Operation(summary = "折标煤分析（表）")
+    public CommonResult<Map<String, Object>> standardCoalAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsService.standardCoalAnalysisTable(paramVO));
+    }
+
+    @PostMapping("/standardCoalAnalysisChart")
+    @Operation(summary = "折标煤分析（图）")
+    public CommonResult<Object> standardCoalAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsService.standardCoalAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/moneyAnalysisTable")
+    @Operation(summary = "折价分析（表）")
+    public CommonResult<Map<String, Object>> moneyAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsService.moneyAnalysisTable(paramVO));
+    }
+
+
+    @PostMapping("/moneyAnalysisChart")
+    @Operation(summary = "折价分析（图）")
+    public CommonResult<Object> moneyAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsService.moneyAnalysisChart(paramVO));
+    }
 }

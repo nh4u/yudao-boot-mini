@@ -34,6 +34,7 @@ public interface ErrorCodeConstants {
     ErrorCode LABEL_CONFIG_NOT_EXISTS = new ErrorCode(1_001_401_001, "配置标签不存在");
     ErrorCode LABEL_CONFIG_REACH_LIMIT = new ErrorCode(1_001_401_002, "单层标签超过限制");
     ErrorCode LABEL_CONFIG_REACH_LAYER_LIMIT = new ErrorCode(1_001_401_003, "标签层数超过限制");
+    ErrorCode LABEL_CONFIG_CODE_NOT_UNIQUE = new ErrorCode(1_001_401_004, "标签编码重复");
 
     // ========== 凭证管理 ==========
     ErrorCode VOUCHER_NOT_EXISTS = new ErrorCode(1_001_501_001, "凭证不存在");
@@ -41,4 +42,13 @@ public interface ErrorCodeConstants {
     ErrorCode VOUCHER_USAGE_MODIFIED_ERROR = new ErrorCode(1_001_501_003, "凭证ID已在数据补录中使用，无法修改用量值");
 
     ErrorCode DA_PARAM_FORMULA_NOT_EXISTS = new ErrorCode(1_001_601_001, "参数公式不存在");
+
+
+
+    // ========== 其他业务错误 ==========
+
+    ErrorCode DATE_RANGE_NOT_EXISTS = new ErrorCode(1_001_601_001, "日期范围不存在");
+    ErrorCode DATE_RANGE_EXCEED_LIMIT = new ErrorCode(1_001_601_002, "日期范围超出限制（MAX：366）");
+    ErrorCode QUERY_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_003, "查看类型不存在");
+    ErrorCode DATE_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_003, "时间类型不存在");
 }

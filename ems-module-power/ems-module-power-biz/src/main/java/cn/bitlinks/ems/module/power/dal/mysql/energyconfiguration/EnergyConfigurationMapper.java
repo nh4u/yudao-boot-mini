@@ -36,4 +36,21 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
                 .orderByDesc(EnergyConfigurationDO::getId));
     }
 
+    default List<EnergyConfigurationDO> selectList(EnergyConfigurationPageReqVO reqVO) {
+        return selectList(new LambdaQueryWrapperX<EnergyConfigurationDO>()
+                .likeIfPresent(EnergyConfigurationDO::getEnergyName, reqVO.getEnergyName())
+                .eqIfPresent(EnergyConfigurationDO::getCode, reqVO.getCode())
+                .eqIfPresent(EnergyConfigurationDO::getEnergyClassify, reqVO.getEnergyClassify())
+                .eqIfPresent(EnergyConfigurationDO::getEnergyParameter, reqVO.getEnergyParameter())
+                .eqIfPresent(EnergyConfigurationDO::getFactor, reqVO.getFactor())
+                .eqIfPresent(EnergyConfigurationDO::getCoalFormula, reqVO.getCoalFormula())
+                .eqIfPresent(EnergyConfigurationDO::getCoalScale, reqVO.getCoalScale())
+                .eqIfPresent(EnergyConfigurationDO::getBillingMethod, reqVO.getBillingMethod())
+                .eqIfPresent(EnergyConfigurationDO::getUnitPrice, reqVO.getUnitPrice())
+                .eqIfPresent(EnergyConfigurationDO::getUnitPriceFormula, reqVO.getUnitPriceFormula())
+                .eqIfPresent(EnergyConfigurationDO::getUnitPriceScale, reqVO.getUnitPriceScale())
+                .inIfPresent(EnergyConfigurationDO::getId, reqVO.getEnergyIds())
+                .orderByAsc(EnergyConfigurationDO::getId));
+    }
+
 }

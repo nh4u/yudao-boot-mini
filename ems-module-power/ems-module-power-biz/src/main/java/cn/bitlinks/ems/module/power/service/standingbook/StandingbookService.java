@@ -65,4 +65,6 @@ public interface StandingbookService {
     void template(Long typeId, HttpServletResponse response);
 
     Long create(StandingbookSaveReqVO saveReq);
+
+    Long count(Long typeId);
 }

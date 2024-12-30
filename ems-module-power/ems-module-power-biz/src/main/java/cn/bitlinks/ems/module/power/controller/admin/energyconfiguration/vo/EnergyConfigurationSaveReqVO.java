@@ -24,7 +24,7 @@ public class EnergyConfigurationSaveReqVO {
     @Schema(description = "编码")
     private String code;
 
-    @Schema(description = "能源分类")
+    @Schema(description = "能源分类 1：外购能源；2：园区能源")
     private Integer energyClassify;
 
     @Schema(description = "能源参数")
