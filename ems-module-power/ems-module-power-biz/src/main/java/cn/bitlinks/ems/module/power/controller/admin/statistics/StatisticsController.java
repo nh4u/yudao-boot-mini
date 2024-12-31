@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsOverviewResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
 import cn.bitlinks.ems.module.power.service.statistics.StatisticsOverviewService;
+import cn.bitlinks.ems.module.power.service.statistics.StatisticsRatioService;
 import cn.bitlinks.ems.module.power.service.statistics.StatisticsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,6 +34,9 @@ public class StatisticsController {
 
     @Resource
     private StatisticsOverviewService statisticsOverviewService;
+
+    @Resource
+    private StatisticsRatioService statisticsRatioService;
 
     @PostMapping("/overview")
     @Operation(summary = "统计总览")
