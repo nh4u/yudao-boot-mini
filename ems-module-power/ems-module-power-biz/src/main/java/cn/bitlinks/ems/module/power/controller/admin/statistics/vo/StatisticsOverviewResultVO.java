@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.statistics.vo;
 
+import com.alibaba.fastjson.JSONObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -49,11 +50,17 @@ public class StatisticsOverviewResultVO {
     @Schema(description = "能源列表数据", example = "能源列表数据")
     private List<StatisticsOverviewEnergyData> statisticsOverviewEnergyDataList;
 
-    @Schema(description = "折标煤用量统计", example = "折标煤用量统计")
+    @Schema(description = "折标煤用量统计", example = "折标煤用量统计",hidden = true)
     private StatisticsOverviewData standardCoalStatistics;
 
-    @Schema(description = "折价统计", example = "折价统计")
+    @Schema(description = "折价统计", example = "折价统计",hidden = true)
     private StatisticsOverviewData moneyStatistics;
+
+    @Schema(description = "折标煤用量统计（new）", example = "折标煤用量统计")
+    private JSONObject standardCoalStatisticsJson;
+
+    @Schema(description = "折价统计（new）", example = "折价统计")
+    private JSONObject moneyStatisticsJson;
 
     @Schema(description = "数据更新时间", example = "数据更新时间")
     private LocalDateTime dataUpdateTime;

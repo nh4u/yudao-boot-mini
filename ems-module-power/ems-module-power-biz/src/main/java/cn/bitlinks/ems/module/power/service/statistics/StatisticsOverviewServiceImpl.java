@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurat
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.hutool.core.util.RandomUtil;
+import com.alibaba.fastjson.JSONObject;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -101,14 +102,14 @@ public class StatisticsOverviewServiceImpl implements StatisticsOverviewService 
 
         // 1.1 今日/本周/本季/本年
         StatisticsOverviewStatisticsData standardCoalNow = new StatisticsOverviewStatisticsData();
-        standardCoalNow.setAccumulate(RandomUtil.randomBigDecimal(BigDecimal.valueOf(8000L),BigDecimal.valueOf(10000L)).setScale(2, RoundingMode.HALF_UP));
+        standardCoalNow.setAccumulate(RandomUtil.randomBigDecimal(BigDecimal.valueOf(8000L), BigDecimal.valueOf(10000L)).setScale(2, RoundingMode.HALF_UP));
         standardCoalNow.setMax(RandomUtil.randomBigDecimal(BigDecimal.valueOf(4000L)).setScale(2, RoundingMode.HALF_UP));
         standardCoalNow.setMin(RandomUtil.randomBigDecimal(BigDecimal.valueOf(1000L)).setScale(2, RoundingMode.HALF_UP));
         standardCoalNow.setAverage(RandomUtil.randomBigDecimal(BigDecimal.valueOf(1000L), BigDecimal.valueOf(3000L)).setScale(2, RoundingMode.HALF_UP));
 
         // 1.2 昨日/上周/上季/去年
         StatisticsOverviewStatisticsData standardCoalPrevious = new StatisticsOverviewStatisticsData();
-        standardCoalPrevious.setAccumulate(RandomUtil.randomBigDecimal(BigDecimal.valueOf(8000L),BigDecimal.valueOf(10000L)).setScale(2, RoundingMode.HALF_UP));
+        standardCoalPrevious.setAccumulate(RandomUtil.randomBigDecimal(BigDecimal.valueOf(8000L), BigDecimal.valueOf(10000L)).setScale(2, RoundingMode.HALF_UP));
         standardCoalPrevious.setMax(RandomUtil.randomBigDecimal(BigDecimal.valueOf(4000L)).setScale(2, RoundingMode.HALF_UP));
         standardCoalPrevious.setMin(RandomUtil.randomBigDecimal(BigDecimal.valueOf(1000L)).setScale(2, RoundingMode.HALF_UP));
         standardCoalPrevious.setAverage(RandomUtil.randomBigDecimal(BigDecimal.valueOf(1000L), BigDecimal.valueOf(3000L)).setScale(2, RoundingMode.HALF_UP));
@@ -116,7 +117,7 @@ public class StatisticsOverviewServiceImpl implements StatisticsOverviewService 
 
         // 1.3 昨日/上周/上季/去年（去年同期）
         StatisticsOverviewStatisticsData standardCoalPreviousLastYear = new StatisticsOverviewStatisticsData();
-        standardCoalPreviousLastYear.setAccumulate(RandomUtil.randomBigDecimal(BigDecimal.valueOf(8000L),BigDecimal.valueOf(10000L)).setScale(2, RoundingMode.HALF_UP));
+        standardCoalPreviousLastYear.setAccumulate(RandomUtil.randomBigDecimal(BigDecimal.valueOf(8000L), BigDecimal.valueOf(10000L)).setScale(2, RoundingMode.HALF_UP));
         standardCoalPreviousLastYear.setMax(RandomUtil.randomBigDecimal(BigDecimal.valueOf(4000L)).setScale(2, RoundingMode.HALF_UP));
         standardCoalPreviousLastYear.setMin(RandomUtil.randomBigDecimal(BigDecimal.valueOf(1000L)).setScale(2, RoundingMode.HALF_UP));
         standardCoalPreviousLastYear.setAverage(RandomUtil.randomBigDecimal(BigDecimal.valueOf(1000L), BigDecimal.valueOf(3000L)).setScale(2, RoundingMode.HALF_UP));
@@ -148,25 +149,39 @@ public class StatisticsOverviewServiceImpl implements StatisticsOverviewService 
         standardCoalStatistics.setBar(standardCoalBar);
 
         statisticsOverviewResultVO.setStandardCoalStatistics(standardCoalStatistics);
+
+        // : 2024/12/31  改成 { list  bar}
+        List<JSONObject> standardCoalJsonList = entity2Json(standardCoalNow,
+                standardCoalPrevious,
+                standardCoalYOY,
+                standardCoalMOM);
+
+        JSONObject standardCoalStatisticsJson = new JSONObject();
+
+        standardCoalStatisticsJson.put("list", standardCoalJsonList);
+        standardCoalStatisticsJson.put("bar", standardCoalBar);
+
+        statisticsOverviewResultVO.setStandardCoalStatisticsJson(standardCoalStatisticsJson);
+
         // 2.折价统计
         StatisticsOverviewData moneyStatistics = new StatisticsOverviewData();
 
         // 2.1 今日/本周/本季/本年
         StatisticsOverviewStatisticsData moneyNow = new StatisticsOverviewStatisticsData();
-        moneyNow.setAccumulate(RandomUtil.randomBigDecimal(BigDecimal.valueOf(8000L),BigDecimal.valueOf(10000L)).setScale(2, RoundingMode.HALF_UP));
+        moneyNow.setAccumulate(RandomUtil.randomBigDecimal(BigDecimal.valueOf(8000L), BigDecimal.valueOf(10000L)).setScale(2, RoundingMode.HALF_UP));
         moneyNow.setMax(RandomUtil.randomBigDecimal(BigDecimal.valueOf(4000L)).setScale(2, RoundingMode.HALF_UP));
         moneyNow.setMin(RandomUtil.randomBigDecimal(BigDecimal.valueOf(1000L)).setScale(2, RoundingMode.HALF_UP));
         moneyNow.setAverage(RandomUtil.randomBigDecimal(BigDecimal.valueOf(1000L), BigDecimal.valueOf(3000L)).setScale(2, RoundingMode.HALF_UP));
         // 2.2 昨日/上周/上季/去年
         StatisticsOverviewStatisticsData moneyPrevious = new StatisticsOverviewStatisticsData();
-        moneyPrevious.setAccumulate(RandomUtil.randomBigDecimal(BigDecimal.valueOf(8000L),BigDecimal.valueOf(10000L)).setScale(2, RoundingMode.HALF_UP));
+        moneyPrevious.setAccumulate(RandomUtil.randomBigDecimal(BigDecimal.valueOf(8000L), BigDecimal.valueOf(10000L)).setScale(2, RoundingMode.HALF_UP));
         moneyPrevious.setMax(RandomUtil.randomBigDecimal(BigDecimal.valueOf(4000L)).setScale(2, RoundingMode.HALF_UP));
         moneyPrevious.setMin(RandomUtil.randomBigDecimal(BigDecimal.valueOf(1000L)).setScale(2, RoundingMode.HALF_UP));
         moneyPrevious.setAverage(RandomUtil.randomBigDecimal(BigDecimal.valueOf(1000L), BigDecimal.valueOf(3000L)).setScale(2, RoundingMode.HALF_UP));
 
         // 2.3 昨日/上周/上季/去年（去年同期）
         StatisticsOverviewStatisticsData moneyPreviousLastYear = new StatisticsOverviewStatisticsData();
-        moneyPreviousLastYear.setAccumulate(RandomUtil.randomBigDecimal(BigDecimal.valueOf(8000L),BigDecimal.valueOf(10000L)).setScale(2, RoundingMode.HALF_UP));
+        moneyPreviousLastYear.setAccumulate(RandomUtil.randomBigDecimal(BigDecimal.valueOf(8000L), BigDecimal.valueOf(10000L)).setScale(2, RoundingMode.HALF_UP));
         moneyPreviousLastYear.setMax(RandomUtil.randomBigDecimal(BigDecimal.valueOf(4000L)).setScale(2, RoundingMode.HALF_UP));
         moneyPreviousLastYear.setMin(RandomUtil.randomBigDecimal(BigDecimal.valueOf(1000L)).setScale(2, RoundingMode.HALF_UP));
         moneyPreviousLastYear.setAverage(RandomUtil.randomBigDecimal(BigDecimal.valueOf(1000L), BigDecimal.valueOf(3000L)).setScale(2, RoundingMode.HALF_UP));
@@ -196,9 +211,68 @@ public class StatisticsOverviewServiceImpl implements StatisticsOverviewService 
         moneyStatistics.setBar(moneyBar);
         statisticsOverviewResultVO.setMoneyStatistics(moneyStatistics);
 
+        // : 2024/12/31  改成 { list  bar}
+        List<JSONObject> moneyStatisticsJsonList = entity2Json(moneyNow,
+                moneyPrevious,
+                moneyYOY,
+                moneyMOM);
+
+        JSONObject moneyStatisticsJson = new JSONObject();
+
+        moneyStatisticsJson.put("list", moneyStatisticsJsonList);
+        moneyStatisticsJson.put("bar", moneyBar);
+
+        statisticsOverviewResultVO.setMoneyStatisticsJson(moneyStatisticsJson);
+
         statisticsOverviewResultVO.setDataUpdateTime(LocalDateTime.now());
         return statisticsOverviewResultVO;
     }
+
+    private List<JSONObject> entity2Json(StatisticsOverviewStatisticsData now,
+                                         StatisticsOverviewStatisticsData previous,
+                                         StatisticsOverviewStatisticsData YOY,
+                                         StatisticsOverviewStatisticsData MOM) {
+        List<JSONObject> standardCoalJsonList = new ArrayList<>();
+
+        for (int i = 0; i < 4; i++) {
+            JSONObject json = new JSONObject();
+            switch (i) {
+                case 0:
+                    json.put("item", "累计");
+                    json.put("now", now.getAccumulate());
+                    json.put("previous", previous.getAccumulate());
+                    json.put("YOY", YOY.getAccumulate());
+                    json.put("MOM", MOM.getAccumulate());
+                    break;
+                case 1:
+                    json.put("item", "最高(Max)");
+                    json.put("now", now.getMax());
+                    json.put("previous", previous.getMax());
+                    json.put("YOY", YOY.getMax());
+                    json.put("MOM", MOM.getMax());
+                    break;
+                case 2:
+                    json.put("item", "最低(Min)");
+                    json.put("now", now.getMin());
+                    json.put("previous", previous.getMin());
+                    json.put("YOY", YOY.getMin());
+                    json.put("MOM", MOM.getMin());
+                    break;
+                case 3:
+                    json.put("item", "平均(Avg)");
+                    json.put("now", now.getAverage());
+                    json.put("previous", previous.getAverage());
+                    json.put("YOY", YOY.getAverage());
+                    json.put("MOM", MOM.getAverage());
+                    break;
+                default:
+            }
+            standardCoalJsonList.add(json);
+        }
+
+        return standardCoalJsonList;
+    }
+
 
     /**
      * 计算环比 环比计算公式：环比增长率=(本期数-上期数)/上期数×100%

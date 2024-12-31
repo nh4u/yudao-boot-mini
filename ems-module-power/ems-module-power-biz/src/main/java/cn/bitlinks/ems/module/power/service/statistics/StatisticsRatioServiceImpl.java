@@ -39,6 +39,15 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
     private StatisticsService statisticsService;
 
 
+
+
+
+
+
+
+
+
+
     /**
      * 计算环比 环比计算公式：环比增长率=(本期数-上期数)/上期数×100%
      * 同比计算公式：同比增长率=(本期数-上年同期数)/上年同期数×100%
