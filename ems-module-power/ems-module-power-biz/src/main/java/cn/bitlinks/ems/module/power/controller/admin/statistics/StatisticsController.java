@@ -77,4 +77,25 @@ public class StatisticsController {
     public CommonResult<Object> moneyAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
         return success(statisticsService.moneyAnalysisChart(paramVO));
     }
+
+    @PostMapping("/standardCoalMomAnalysisTable")
+    @Operation(summary = "环比-折标煤用量环比分析")
+    public CommonResult<Map<String, Object>> standardCoalMomAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.standardCoalMomAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+    @PostMapping("/moneyMomAnalysisTable")
+    @Operation(summary = "环比-折价环比分析")
+    public CommonResult<Map<String, Object>> moneyMomAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.moneyMomAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+    @PostMapping("/utilizationRatioMomAnalysisTable")
+    @Operation(summary = "环比-利用率环比分析")
+    public CommonResult<Map<String, Object>> utilizationRatioMomAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.utilizationRatioMomAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
 }
