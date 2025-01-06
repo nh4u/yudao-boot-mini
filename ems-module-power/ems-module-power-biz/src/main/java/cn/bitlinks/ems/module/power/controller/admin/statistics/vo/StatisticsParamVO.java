@@ -40,6 +40,9 @@ public class StatisticsParamVO {
     private Integer dateType = 0;
 
     @Schema(description = "能源类型 1：外购能源；2：园区能源。 默认1")
-    private Integer energyClassify=1;
+    private Integer energyClassify = 1;
+
+    @Schema(description = "基准年限", example = "2025")
+    private Integer benchmark;
 
 }
