@@ -22,7 +22,7 @@ public interface UnitPriceConfigurationService {
      * @param createReqVOList  创建信息
      * @return 编号
      */
-    List<Long> createUnitPriceConfigurations(@Valid List<UnitPriceConfigurationSaveReqVO> createReqVOList);
+    List<Long> createUnitPriceConfigurations(@Valid Long energyId, List<UnitPriceConfigurationSaveReqVO> createReqVOList);
 
     /**
      * 更新单价配置

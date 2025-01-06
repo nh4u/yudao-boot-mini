@@ -41,10 +41,13 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
     private UnitPriceHistoryMapper unitPriceHistoryMapper;
 
     @Override
-    public List<Long> createUnitPriceConfigurations(List<UnitPriceConfigurationSaveReqVO> createReqVOList) {
+    public List<Long> createUnitPriceConfigurations(Long energyId, List<UnitPriceConfigurationSaveReqVO> createReqVOList) {
         List<Long> ids = new ArrayList<>();
         for (UnitPriceConfigurationSaveReqVO createReqVO : createReqVOList) {
-            // 从时间范围数组中提取开始时间和结束时间
+            // 设置能源ID
+            createReqVO.setEnergyId(energyId);
+
+            // 处理时间范围
             if (createReqVO.getTimeRange() != null && createReqVO.getTimeRange().size() == 2) {
                 createReqVO.setStartTime(createReqVO.getTimeRange().get(0));
                 createReqVO.setEndTime(createReqVO.getTimeRange().get(1));
