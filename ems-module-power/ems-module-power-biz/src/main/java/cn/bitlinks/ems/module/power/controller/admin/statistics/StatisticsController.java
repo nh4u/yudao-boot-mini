@@ -79,23 +79,42 @@ public class StatisticsController {
     }
 
     @PostMapping("/standardCoalMomAnalysisTable")
-    @Operation(summary = "环比-折标煤用量环比分析")
+    @Operation(summary = "环比-折标煤用量环比分析（表）")
     public CommonResult<Map<String, Object>> standardCoalMomAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
         Map<String, Object> jsonObject = statisticsRatioService.standardCoalMomAnalysisTable(paramVO);
         return success(jsonObject);
     }
 
     @PostMapping("/moneyMomAnalysisTable")
-    @Operation(summary = "环比-折价环比分析")
+    @Operation(summary = "环比-折价环比分析（表）")
     public CommonResult<Map<String, Object>> moneyMomAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
         Map<String, Object> jsonObject = statisticsRatioService.moneyMomAnalysisTable(paramVO);
         return success(jsonObject);
     }
 
     @PostMapping("/utilizationRatioMomAnalysisTable")
-    @Operation(summary = "环比-利用率环比分析")
+    @Operation(summary = "环比-利用率环比分析（表）")
     public CommonResult<Map<String, Object>> utilizationRatioMomAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
         Map<String, Object> jsonObject = statisticsRatioService.utilizationRatioMomAnalysisTable(paramVO);
         return success(jsonObject);
+    }
+
+
+    @PostMapping("/standardCoalMomAnalysisChart")
+    @Operation(summary = "环比-折标煤用量环比分析（图）")
+    public CommonResult<Object> standardCoalMomAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.standardCoalMomAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/moneyMomAnalysisChart")
+    @Operation(summary = "环比-折价环比分析（图）")
+    public CommonResult<Object> moneyMomAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.moneyMomAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/utilizationRatioMomAnalysisChart")
+    @Operation(summary = "环比-利用率环比分析（图）")
+    public CommonResult<Object> utilizationRatioMomAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.utilizationRatioMomAnalysisChart(paramVO));
     }
 }

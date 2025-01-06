@@ -15,4 +15,10 @@ public interface StatisticsRatioService {
     Map<String, Object> moneyMomAnalysisTable(StatisticsParamVO paramVO);
 
     Map<String, Object> utilizationRatioMomAnalysisTable(StatisticsParamVO paramVO);
+
+    Object standardCoalMomAnalysisChart(StatisticsParamVO paramVO);
+
+    Object moneyMomAnalysisChart(StatisticsParamVO paramVO);
+
+    Object utilizationRatioMomAnalysisChart(StatisticsParamVO paramVO);
 }
