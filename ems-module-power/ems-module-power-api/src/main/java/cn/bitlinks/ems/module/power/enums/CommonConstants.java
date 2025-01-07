@@ -46,6 +46,16 @@ public interface CommonConstants {
      * 其他设备标志
      */
     Long OTHER_EQUIPMENT_ID = 3L;
-
-
+    /**
+     * 折标煤
+     */
+    Integer STANDARD_COAL = 1;
+    /**
+     * 折价
+     */
+    Integer MONEY = 2;
+    /**
+     * 利用率
+     */
+    Integer RATIO = 3;
 }
