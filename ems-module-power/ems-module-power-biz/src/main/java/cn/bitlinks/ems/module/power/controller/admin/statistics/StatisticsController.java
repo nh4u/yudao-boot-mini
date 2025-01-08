@@ -157,4 +157,43 @@ public class StatisticsController {
     public CommonResult<Object> utilizationRatioBenchmarkAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
         return success(statisticsRatioService.utilizationRatioBenchmarkAnalysisChart(paramVO));
     }
+
+    @PostMapping("/standardCoalYoyAnalysisTable")
+    @Operation(summary = "同比-折标煤用量同比分析（表）")
+    public CommonResult<Map<String, Object>> standardCoalYoyAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.standardCoalYoyAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+    @PostMapping("/moneyYoyAnalysisTable")
+    @Operation(summary = "同比-折价同比分析（表）")
+    public CommonResult<Map<String, Object>> moneyYoyAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.moneyYoyAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+    @PostMapping("/utilizationRatioYoyAnalysisTable")
+    @Operation(summary = "同比-利用率同比分析（表）")
+    public CommonResult<Map<String, Object>> utilizationRatioYoyAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.utilizationRatioYoyAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+    @PostMapping("/standardCoalYoyAnalysisChart")
+    @Operation(summary = "同比-折标煤用量同比分析（图）")
+    public CommonResult<Object> standardCoalYoyAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.standardCoalYoyAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/moneyYoyAnalysisChart")
+    @Operation(summary = "同比-折价同比分析（图）")
+    public CommonResult<Object> moneyYoyAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.moneyYoyAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/utilizationRatioYoyAnalysisChart")
+    @Operation(summary = "同比-利用率同比分析（图）")
+    public CommonResult<Object> utilizationRatioYoyAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.utilizationRatioYoyAnalysisChart(paramVO));
+    }
 }

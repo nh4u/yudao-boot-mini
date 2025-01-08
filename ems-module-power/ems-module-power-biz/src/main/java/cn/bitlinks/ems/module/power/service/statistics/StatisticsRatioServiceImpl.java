@@ -295,6 +295,411 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
     }
 
     @Override
+    public Map<String, Object> standardCoalYoyAnalysisTable(StatisticsParamVO paramVO) {
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+        Integer benchmark = rangeOrigin[0].getYear()-1;
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        Integer dateType = paramVO.getDateType();
+        if (dateType == null) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        Integer queryType = paramVO.getQueryType();
+        if (queryType == null) {
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
+        // 返回结果map
+        Map<String, Object> result = new HashMap<>(2);
+
+        // 统计结果list
+        List<StatisticsRatioResultVO> list = new ArrayList<>();
+
+        // 表头处理
+        List<String> tableHeader = CommonUtil.getTableHeader(rangeOrigin, dateType);
+
+        if (1 == queryType) {
+            // 1、按能源查看
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+            // 能源结果list
+            List<StatisticsRatioResultVO> statisticsResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, STANDARD_COAL, benchmark);
+            list.addAll(statisticsResultVOList);
+
+        } else if (2 == queryType) {
+            // 2、按标签查看
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, STANDARD_COAL, benchmark);
+                list.addAll(statisticsResultVOList);
+            }
+
+        } else {
+            // 0、综合查看（默认）
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+
+            // TODO: 2024/12/11 多线程处理 labelTree for循环
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType, STANDARD_COAL, benchmark);
+                list.addAll(statisticsResultVOList);
+            }
+        }
+
+        result.put("header", tableHeader);
+        result.put("data", list);
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> moneyYoyAnalysisTable(StatisticsParamVO paramVO) {
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+        Integer benchmark = rangeOrigin[0].getYear()-1;
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        Integer dateType = paramVO.getDateType();
+        if (dateType == null) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        Integer queryType = paramVO.getQueryType();
+        if (queryType == null) {
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
+        // 返回结果map
+        Map<String, Object> result = new HashMap<>(2);
+
+        // 统计结果list
+        List<StatisticsRatioResultVO> list = new ArrayList<>();
+
+        // 表头处理
+        List<String> tableHeader = CommonUtil.getTableHeader(rangeOrigin, dateType);
+
+        if (1 == queryType) {
+            // 1、按能源查看
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+            // 能源结果list
+            List<StatisticsRatioResultVO> statisticsResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, MONEY, benchmark);
+            list.addAll(statisticsResultVOList);
+
+        } else if (2 == queryType) {
+            // 2、按标签查看
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, MONEY, benchmark);
+                list.addAll(statisticsResultVOList);
+            }
+
+        } else {
+            // 0、综合查看（默认）
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+
+            // TODO: 2024/12/11 多线程处理 labelTree for循环
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType, MONEY, benchmark);
+                list.addAll(statisticsResultVOList);
+            }
+        }
+
+        result.put("header", tableHeader);
+        result.put("data", list);
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> utilizationRatioYoyAnalysisTable(StatisticsParamVO paramVO) {
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+        Integer benchmark = rangeOrigin[0].getYear()-1;
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        Integer dateType = paramVO.getDateType();
+        if (dateType == null) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        Integer queryType = paramVO.getQueryType();
+        if (queryType == null) {
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
+        // 返回结果map
+        Map<String, Object> result = new HashMap<>(2);
+
+        // 统计结果list
+        List<StatisticsRatioResultVO> list = new ArrayList<>();
+
+        // 表头处理
+        List<String> tableHeader = CommonUtil.getTableHeader(rangeOrigin, dateType);
+
+        if (1 == queryType) {
+            // 1、按能源查看
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+            // 能源结果list
+            List<StatisticsRatioResultVO> statisticsResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, RATIO, benchmark);
+            list.addAll(statisticsResultVOList);
+
+        } else if (2 == queryType) {
+            // 2、按标签查看
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, RATIO, benchmark);
+                list.addAll(statisticsResultVOList);
+            }
+
+        } else {
+            // 0、综合查看（默认）
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+
+            // TODO: 2024/12/11 多线程处理 labelTree for循环
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType, RATIO, benchmark);
+                list.addAll(statisticsResultVOList);
+            }
+        }
+
+        result.put("header", tableHeader);
+        result.put("data", list);
+        return result;
+    }
+
+    @Override
+    public Object standardCoalYoyAnalysisChart(StatisticsParamVO paramVO) {
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+        Integer benchmark = rangeOrigin[0].getYear()-1;
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        // 统计结果list
+        List<StatisticsRatioResultVO> list = new ArrayList<>();
+
+        Integer dateType = paramVO.getDateType();
+        if (dateType == null) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        Integer queryType = paramVO.getQueryType();
+        if (queryType == null) {
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
+
+        if (1 == queryType) {
+            // 1、按能源查看
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+            // 能源结果list
+            List<StatisticsRatioResultVO> statisticsRatioResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, STANDARD_COAL, benchmark);
+            list.addAll(statisticsRatioResultVOList);
+
+            return getChartDataList(rangeOrigin, dateType, list, queryType);
+
+        } else if (2 == queryType) {
+            // 2、按标签查看
+            //X轴数据
+            List<String> XData = CommonUtil.getTableHeader(rangeOrigin, dateType);
+            //Y轴数据list
+            List<RatioBarVO> list1 = new ArrayList<>();
+
+            // 标签查询条件处理 只需要第一级别就可以
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsRatioResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, STANDARD_COAL, benchmark);
+
+                List<RatioDataVO> YData = getYData(XData, statisticsRatioResultVOList);
+                list1.add(RatioBarVO.builder()
+                        .name(tree.getName().toString())
+                        .XData(XData)
+                        .YData(YData).build());
+            }
+            return list1;
+
+        } else {
+            // 0、综合查看（默认）
+            return getOverallViewBar(paramVO, STANDARD_COAL, benchmark);
+        }
+    }
+
+    @Override
+    public Object moneyYoyAnalysisChart(StatisticsParamVO paramVO) {
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+        Integer benchmark = rangeOrigin[0].getYear()-1;
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        // 统计结果list
+        List<StatisticsRatioResultVO> list = new ArrayList<>();
+
+        Integer dateType = paramVO.getDateType();
+        if (dateType == null) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        Integer queryType = paramVO.getQueryType();
+        if (queryType == null) {
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
+
+        if (1 == queryType) {
+            // 1、按能源查看
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+            // 能源结果list
+            List<StatisticsRatioResultVO> statisticsRatioResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, MONEY, benchmark);
+            list.addAll(statisticsRatioResultVOList);
+
+            return getChartDataList(rangeOrigin, dateType, list, queryType);
+
+        } else if (2 == queryType) {
+            // 2、按标签查看
+            //X轴数据
+            List<String> XData = CommonUtil.getTableHeader(rangeOrigin, dateType);
+            //Y轴数据list
+            List<RatioBarVO> list1 = new ArrayList<>();
+
+            // 标签查询条件处理 只需要第一级别就可以
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsRatioResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, MONEY, benchmark);
+
+                List<RatioDataVO> YData = getYData(XData, statisticsRatioResultVOList);
+                list1.add(RatioBarVO.builder()
+                        .name(tree.getName().toString())
+                        .XData(XData)
+                        .YData(YData).build());
+            }
+            return list1;
+
+        } else {
+            // 0、综合查看（默认）
+            return getOverallViewBar(paramVO, MONEY, benchmark);
+        }
+    }
+
+    @Override
+    public Object utilizationRatioYoyAnalysisChart(StatisticsParamVO paramVO) {
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+        Integer benchmark = rangeOrigin[0].getYear()-1;
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        // 统计结果list
+        List<StatisticsRatioResultVO> list = new ArrayList<>();
+
+        Integer dateType = paramVO.getDateType();
+        if (dateType == null) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        Integer queryType = paramVO.getQueryType();
+        if (queryType == null) {
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
+
+        if (1 == queryType) {
+            // 1、按能源查看
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+            // 能源结果list
+            List<StatisticsRatioResultVO> statisticsRatioResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, RATIO, benchmark);
+            list.addAll(statisticsRatioResultVOList);
+
+            return getChartDataList(rangeOrigin, dateType, list, queryType);
+
+        } else if (2 == queryType) {
+            // 2、按标签查看
+            //X轴数据
+            List<String> XData = CommonUtil.getTableHeader(rangeOrigin, dateType);
+            //Y轴数据list
+            List<RatioBarVO> list1 = new ArrayList<>();
+
+            // 标签查询条件处理 只需要第一级别就可以
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsRatioResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, RATIO, benchmark);
+
+                List<RatioDataVO> YData = getYData(XData, statisticsRatioResultVOList);
+                list1.add(RatioBarVO.builder()
+                        .name(tree.getName().toString())
+                        .XData(XData)
+                        .YData(YData).build());
+            }
+            return list1;
+
+        } else {
+            // 0、综合查看（默认）
+            return getOverallViewBar(paramVO, RATIO, benchmark);
+        }
+    }
+
+    @Override
     public Object standardCoalMomAnalysisChart(StatisticsParamVO paramVO) {
         // 校验基准年限是否存在
         Integer benchmark = paramVO.getBenchmark();

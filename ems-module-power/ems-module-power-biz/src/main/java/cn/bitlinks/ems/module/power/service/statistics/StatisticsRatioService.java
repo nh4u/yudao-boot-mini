@@ -33,4 +33,16 @@ public interface StatisticsRatioService {
     Object moneyBenchmarkAnalysisChart(StatisticsParamVO paramVO);
 
     Object utilizationRatioBenchmarkAnalysisChart(StatisticsParamVO paramVO);
+
+    Map<String, Object> standardCoalYoyAnalysisTable(StatisticsParamVO paramVO);
+
+    Map<String, Object> moneyYoyAnalysisTable(StatisticsParamVO paramVO);
+
+    Map<String, Object> utilizationRatioYoyAnalysisTable(StatisticsParamVO paramVO);
+
+    Object standardCoalYoyAnalysisChart(StatisticsParamVO paramVO);
+
+    Object moneyYoyAnalysisChart(StatisticsParamVO paramVO);
+
+    Object utilizationRatioYoyAnalysisChart(StatisticsParamVO paramVO);
 }
