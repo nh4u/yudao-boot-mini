@@ -117,4 +117,44 @@ public class StatisticsController {
     public CommonResult<Object> utilizationRatioMomAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
         return success(statisticsRatioService.utilizationRatioMomAnalysisChart(paramVO));
     }
+
+    @PostMapping("/standardCoalBenchmarkAnalysisTable")
+    @Operation(summary = "定基比-折标煤用量定基比分析（表）")
+    public CommonResult<Map<String, Object>> standardCoalBenchmarkAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.standardCoalBenchmarkAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+    @PostMapping("/moneyBenchmarkAnalysisTable")
+    @Operation(summary = "定基比-折价定基比分析（表）")
+    public CommonResult<Map<String, Object>> moneyBenchmarkAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.moneyBenchmarkAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+    @PostMapping("/utilizationRatioBenchmarkAnalysisTable")
+    @Operation(summary = "定基比-利用率定基比分析（表）")
+    public CommonResult<Map<String, Object>> utilizationRatioBenchmarkAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.utilizationRatioBenchmarkAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+
+    @PostMapping("/standardCoalBenchmarkAnalysisChart")
+    @Operation(summary = "定基比-折标煤用量定基比分析（图）")
+    public CommonResult<Object> standardCoalBenchmarkAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.standardCoalBenchmarkAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/moneyBenchmarkAnalysisChart")
+    @Operation(summary = "定基比-折价定基比分析（图）")
+    public CommonResult<Object> moneyBenchmarkAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.moneyBenchmarkAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/utilizationRatioBenchmarkAnalysisChart")
+    @Operation(summary = "定基比-利用率定基比分析（图）")
+    public CommonResult<Object> utilizationRatioBenchmarkAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.utilizationRatioBenchmarkAnalysisChart(paramVO));
+    }
 }

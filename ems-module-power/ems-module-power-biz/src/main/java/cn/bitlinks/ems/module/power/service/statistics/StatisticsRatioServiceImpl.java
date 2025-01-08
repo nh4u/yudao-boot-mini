@@ -23,16 +23,12 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.QUERY_TYPE_NOT_EXISTS;
 
 /**
  * * 比值（同比、环比、定基比） Service 实现类
@@ -65,6 +61,10 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
     @Override
     public Map<String, Object> standardCoalMomAnalysisTable(StatisticsParamVO paramVO) {
 
+        // 校验基准年限是否存在
+        Integer benchmark = paramVO.getBenchmark();
+        benchmark = Objects.isNull(benchmark) ? LocalDateTime.now().getYear() : benchmark;
+
         // 校验时间范围是否存在
         LocalDateTime[] rangeOrigin = paramVO.getRange();
 
@@ -102,7 +102,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
             // 能源查询条件处理
             List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
             // 能源结果list
-            List<StatisticsRatioResultVO> statisticsResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, STANDARD_COAL);
+            List<StatisticsRatioResultVO> statisticsResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, STANDARD_COAL, benchmark);
             list.addAll(statisticsResultVOList);
 
         } else if (2 == queryType) {
@@ -110,7 +110,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
             // 标签查询条件处理
             List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
             for (Tree<Long> tree : labelTree) {
-                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, STANDARD_COAL);
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, STANDARD_COAL, benchmark);
                 list.addAll(statisticsResultVOList);
             }
 
@@ -124,7 +124,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
             // TODO: 2024/12/11 多线程处理 labelTree for循环
             for (Tree<Long> tree : labelTree) {
-                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType, STANDARD_COAL);
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType, STANDARD_COAL, benchmark);
                 list.addAll(statisticsResultVOList);
             }
         }
@@ -142,6 +142,9 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
      */
     @Override
     public Map<String, Object> moneyMomAnalysisTable(StatisticsParamVO paramVO) {
+        // 校验基准年限是否存在
+        Integer benchmark = paramVO.getBenchmark();
+        benchmark = Objects.isNull(benchmark) ? LocalDateTime.now().getYear() : benchmark;
         // 校验时间范围是否存在
         LocalDateTime[] rangeOrigin = paramVO.getRange();
 
@@ -179,7 +182,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
             // 能源查询条件处理
             List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
             // 能源结果list
-            List<StatisticsRatioResultVO> statisticsResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, MONEY);
+            List<StatisticsRatioResultVO> statisticsResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, MONEY, benchmark);
             list.addAll(statisticsResultVOList);
 
         } else if (2 == queryType) {
@@ -187,7 +190,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
             // 标签查询条件处理
             List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
             for (Tree<Long> tree : labelTree) {
-                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, MONEY);
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, MONEY, benchmark);
                 list.addAll(statisticsResultVOList);
             }
 
@@ -201,7 +204,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
             // TODO: 2024/12/11 多线程处理 labelTree for循环
             for (Tree<Long> tree : labelTree) {
-                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType, MONEY);
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType, MONEY, benchmark);
                 list.addAll(statisticsResultVOList);
             }
         }
@@ -219,6 +222,9 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
      */
     @Override
     public Map<String, Object> utilizationRatioMomAnalysisTable(StatisticsParamVO paramVO) {
+        // 校验基准年限是否存在
+        Integer benchmark = paramVO.getBenchmark();
+        benchmark = Objects.isNull(benchmark) ? LocalDateTime.now().getYear() : benchmark;
         // 校验时间范围是否存在
         LocalDateTime[] rangeOrigin = paramVO.getRange();
 
@@ -256,7 +262,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
             // 能源查询条件处理
             List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
             // 能源结果list
-            List<StatisticsRatioResultVO> statisticsResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, 3);
+            List<StatisticsRatioResultVO> statisticsResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, RATIO, benchmark);
             list.addAll(statisticsResultVOList);
 
         } else if (2 == queryType) {
@@ -264,7 +270,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
             // 标签查询条件处理
             List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
             for (Tree<Long> tree : labelTree) {
-                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, 3);
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, RATIO, benchmark);
                 list.addAll(statisticsResultVOList);
             }
 
@@ -278,7 +284,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
             // TODO: 2024/12/11 多线程处理 labelTree for循环
             for (Tree<Long> tree : labelTree) {
-                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType, 3);
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType, RATIO, benchmark);
                 list.addAll(statisticsResultVOList);
             }
         }
@@ -290,6 +296,9 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
     @Override
     public Object standardCoalMomAnalysisChart(StatisticsParamVO paramVO) {
+        // 校验基准年限是否存在
+        Integer benchmark = paramVO.getBenchmark();
+        benchmark = Objects.isNull(benchmark) ? LocalDateTime.now().getYear() : benchmark;
 
         // 校验时间范围是否存在
         LocalDateTime[] rangeOrigin = paramVO.getRange();
@@ -321,7 +330,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
             // 能源查询条件处理
             List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
             // 能源结果list
-            List<StatisticsRatioResultVO> statisticsRatioResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, STANDARD_COAL);
+            List<StatisticsRatioResultVO> statisticsRatioResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, STANDARD_COAL, benchmark);
             list.addAll(statisticsRatioResultVOList);
 
             return getChartDataList(rangeOrigin, dateType, list, queryType);
@@ -336,7 +345,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
             // 标签查询条件处理 只需要第一级别就可以
             List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
             for (Tree<Long> tree : labelTree) {
-                List<StatisticsRatioResultVO> statisticsRatioResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, STANDARD_COAL);
+                List<StatisticsRatioResultVO> statisticsRatioResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, STANDARD_COAL, benchmark);
 
                 List<RatioDataVO> YData = getYData(XData, statisticsRatioResultVOList);
                 list1.add(RatioBarVO.builder()
@@ -348,13 +357,15 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
         } else {
             // 0、综合查看（默认）
-            return getOverallViewBar(paramVO, STANDARD_COAL);
+            return getOverallViewBar(paramVO, STANDARD_COAL, benchmark);
         }
     }
 
     @Override
     public Object moneyMomAnalysisChart(StatisticsParamVO paramVO) {
-
+        // 校验基准年限是否存在
+        Integer benchmark = paramVO.getBenchmark();
+        benchmark = Objects.isNull(benchmark) ? LocalDateTime.now().getYear() : benchmark;
         // 校验时间范围是否存在
         LocalDateTime[] rangeOrigin = paramVO.getRange();
 
@@ -385,7 +396,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
             // 能源查询条件处理
             List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
             // 能源结果list
-            List<StatisticsRatioResultVO> statisticsRatioResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, MONEY);
+            List<StatisticsRatioResultVO> statisticsRatioResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, MONEY, benchmark);
             list.addAll(statisticsRatioResultVOList);
 
             return getChartDataList(rangeOrigin, dateType, list, queryType);
@@ -400,7 +411,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
             // 标签查询条件处理 只需要第一级别就可以
             List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
             for (Tree<Long> tree : labelTree) {
-                List<StatisticsRatioResultVO> statisticsRatioResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, MONEY);
+                List<StatisticsRatioResultVO> statisticsRatioResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, MONEY, benchmark);
 
                 List<RatioDataVO> YData = getYData(XData, statisticsRatioResultVOList);
                 list1.add(RatioBarVO.builder()
@@ -412,12 +423,317 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
         } else {
             // 0、综合查看（默认）
-            return getOverallViewBar(paramVO, MONEY);
+            return getOverallViewBar(paramVO, MONEY, benchmark);
         }
     }
 
     @Override
     public Object utilizationRatioMomAnalysisChart(StatisticsParamVO paramVO) {
+        // 校验基准年限是否存在
+        Integer benchmark = paramVO.getBenchmark();
+        benchmark = Objects.isNull(benchmark) ? LocalDateTime.now().getYear() : benchmark;
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        // 统计结果list
+        List<StatisticsRatioResultVO> list = new ArrayList<>();
+
+        Integer dateType = paramVO.getDateType();
+        if (dateType == null) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        Integer queryType = paramVO.getQueryType();
+        if (queryType == null) {
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
+
+        if (1 == queryType) {
+            // 1、按能源查看
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+            // 能源结果list
+            List<StatisticsRatioResultVO> statisticsRatioResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, RATIO, benchmark);
+            list.addAll(statisticsRatioResultVOList);
+
+            return getChartDataList(rangeOrigin, dateType, list, queryType);
+
+        } else if (2 == queryType) {
+            // 2、按标签查看
+            //X轴数据
+            List<String> XData = CommonUtil.getTableHeader(rangeOrigin, dateType);
+            //Y轴数据list
+            List<RatioBarVO> list1 = new ArrayList<>();
+
+            // 标签查询条件处理 只需要第一级别就可以
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsRatioResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, RATIO, benchmark);
+
+                List<RatioDataVO> YData = getYData(XData, statisticsRatioResultVOList);
+                list1.add(RatioBarVO.builder()
+                        .name(tree.getName().toString())
+                        .XData(XData)
+                        .YData(YData).build());
+            }
+            return list1;
+
+        } else {
+            // 0、综合查看（默认）
+            return getOverallViewBar(paramVO, RATIO, benchmark);
+        }
+    }
+
+    /**
+     * 定基比-折标煤用量环比分析（表）
+     *
+     * @param paramVO
+     * @return
+     */
+    @Override
+    public Map<String, Object> standardCoalBenchmarkAnalysisTable(StatisticsParamVO paramVO) {
+        // 校验基准年限是否存在
+        Integer benchmark = paramVO.getBenchmark();
+        if (Objects.isNull(benchmark)) {
+            throw exception(BENCH_MARK_NOT_EXISTS);
+        }
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        Integer dateType = paramVO.getDateType();
+        if (dateType == null) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        Integer queryType = paramVO.getQueryType();
+        if (queryType == null) {
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
+        // 返回结果map
+        Map<String, Object> result = new HashMap<>(2);
+
+        // 统计结果list
+        List<StatisticsRatioResultVO> list = new ArrayList<>();
+
+        // 表头处理
+        List<String> tableHeader = CommonUtil.getTableHeader(rangeOrigin, dateType);
+
+        if (1 == queryType) {
+            // 1、按能源查看
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+            // 能源结果list
+            List<StatisticsRatioResultVO> statisticsResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, STANDARD_COAL, benchmark);
+            list.addAll(statisticsResultVOList);
+
+        } else if (2 == queryType) {
+            // 2、按标签查看
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, STANDARD_COAL, benchmark);
+                list.addAll(statisticsResultVOList);
+            }
+
+        } else {
+            // 0、综合查看（默认）
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+
+            // TODO: 2024/12/11 多线程处理 labelTree for循环
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType, STANDARD_COAL, benchmark);
+                list.addAll(statisticsResultVOList);
+            }
+        }
+
+        result.put("header", tableHeader);
+        result.put("data", list);
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> moneyBenchmarkAnalysisTable(StatisticsParamVO paramVO) {
+        // 校验基准年限是否存在
+        Integer benchmark = paramVO.getBenchmark();
+        if (Objects.isNull(benchmark)) {
+            throw exception(BENCH_MARK_NOT_EXISTS);
+        }
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        Integer dateType = paramVO.getDateType();
+        if (dateType == null) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        Integer queryType = paramVO.getQueryType();
+        if (queryType == null) {
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
+        // 返回结果map
+        Map<String, Object> result = new HashMap<>(2);
+
+        // 统计结果list
+        List<StatisticsRatioResultVO> list = new ArrayList<>();
+
+        // 表头处理
+        List<String> tableHeader = CommonUtil.getTableHeader(rangeOrigin, dateType);
+
+        if (1 == queryType) {
+            // 1、按能源查看
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+            // 能源结果list
+            List<StatisticsRatioResultVO> statisticsResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, MONEY, benchmark);
+            list.addAll(statisticsResultVOList);
+
+        } else if (2 == queryType) {
+            // 2、按标签查看
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, MONEY, benchmark);
+                list.addAll(statisticsResultVOList);
+            }
+
+        } else {
+            // 0、综合查看（默认）
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+
+            // TODO: 2024/12/11 多线程处理 labelTree for循环
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType, MONEY, benchmark);
+                list.addAll(statisticsResultVOList);
+            }
+        }
+
+        result.put("header", tableHeader);
+        result.put("data", list);
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> utilizationRatioBenchmarkAnalysisTable(StatisticsParamVO paramVO) {
+        // 校验基准年限是否存在
+        Integer benchmark = paramVO.getBenchmark();
+        if (Objects.isNull(benchmark)) {
+            throw exception(BENCH_MARK_NOT_EXISTS);
+        }
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        Integer dateType = paramVO.getDateType();
+        if (dateType == null) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        Integer queryType = paramVO.getQueryType();
+        if (queryType == null) {
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
+        // 返回结果map
+        Map<String, Object> result = new HashMap<>(2);
+
+        // 统计结果list
+        List<StatisticsRatioResultVO> list = new ArrayList<>();
+
+        // 表头处理
+        List<String> tableHeader = CommonUtil.getTableHeader(rangeOrigin, dateType);
+
+        if (1 == queryType) {
+            // 1、按能源查看
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+            // 能源结果list
+            List<StatisticsRatioResultVO> statisticsResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, RATIO, benchmark);
+            list.addAll(statisticsResultVOList);
+
+        } else if (2 == queryType) {
+            // 2、按标签查看
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, RATIO, benchmark);
+                list.addAll(statisticsResultVOList);
+            }
+
+        } else {
+            // 0、综合查看（默认）
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+
+            // TODO: 2024/12/11 多线程处理 labelTree for循环
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType, RATIO, benchmark);
+                list.addAll(statisticsResultVOList);
+            }
+        }
+
+        result.put("header", tableHeader);
+        result.put("data", list);
+        return result;
+    }
+
+    @Override
+    public Object standardCoalBenchmarkAnalysisChart(StatisticsParamVO paramVO) {
+        // 校验基准年限是否存在
+        Integer benchmark = paramVO.getBenchmark();
+        if (Objects.isNull(benchmark)) {
+            throw exception(BENCH_MARK_NOT_EXISTS);
+        }
 
         // 校验时间范围是否存在
         LocalDateTime[] rangeOrigin = paramVO.getRange();
@@ -449,7 +765,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
             // 能源查询条件处理
             List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
             // 能源结果list
-            List<StatisticsRatioResultVO> statisticsRatioResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, RATIO);
+            List<StatisticsRatioResultVO> statisticsRatioResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, STANDARD_COAL, benchmark);
             list.addAll(statisticsRatioResultVOList);
 
             return getChartDataList(rangeOrigin, dateType, list, queryType);
@@ -464,7 +780,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
             // 标签查询条件处理 只需要第一级别就可以
             List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
             for (Tree<Long> tree : labelTree) {
-                List<StatisticsRatioResultVO> statisticsRatioResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, RATIO);
+                List<StatisticsRatioResultVO> statisticsRatioResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, STANDARD_COAL, benchmark);
 
                 List<RatioDataVO> YData = getYData(XData, statisticsRatioResultVOList);
                 list1.add(RatioBarVO.builder()
@@ -476,12 +792,149 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
         } else {
             // 0、综合查看（默认）
-            return getOverallViewBar(paramVO, RATIO);
+            return getOverallViewBar(paramVO, STANDARD_COAL, benchmark);
+        }
+    }
+
+    @Override
+    public Object moneyBenchmarkAnalysisChart(StatisticsParamVO paramVO) {
+        // 校验基准年限是否存在
+        Integer benchmark = paramVO.getBenchmark();
+        if (Objects.isNull(benchmark)) {
+            throw exception(BENCH_MARK_NOT_EXISTS);
+        }
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        // 统计结果list
+        List<StatisticsRatioResultVO> list = new ArrayList<>();
+
+        Integer dateType = paramVO.getDateType();
+        if (dateType == null) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        Integer queryType = paramVO.getQueryType();
+        if (queryType == null) {
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
+
+        if (1 == queryType) {
+            // 1、按能源查看
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+            // 能源结果list
+            List<StatisticsRatioResultVO> statisticsRatioResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, MONEY, benchmark);
+            list.addAll(statisticsRatioResultVOList);
+
+            return getChartDataList(rangeOrigin, dateType, list, queryType);
+
+        } else if (2 == queryType) {
+            // 2、按标签查看
+            //X轴数据
+            List<String> XData = CommonUtil.getTableHeader(rangeOrigin, dateType);
+            //Y轴数据list
+            List<RatioBarVO> list1 = new ArrayList<>();
+
+            // 标签查询条件处理 只需要第一级别就可以
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsRatioResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, MONEY, benchmark);
+
+                List<RatioDataVO> YData = getYData(XData, statisticsRatioResultVOList);
+                list1.add(RatioBarVO.builder()
+                        .name(tree.getName().toString())
+                        .XData(XData)
+                        .YData(YData).build());
+            }
+            return list1;
+
+        } else {
+            // 0、综合查看（默认）
+            return getOverallViewBar(paramVO, MONEY, benchmark);
+        }
+    }
+
+    @Override
+    public Object utilizationRatioBenchmarkAnalysisChart(StatisticsParamVO paramVO) {
+        // 校验基准年限是否存在
+        Integer benchmark = paramVO.getBenchmark();
+        if (Objects.isNull(benchmark)) {
+            throw exception(BENCH_MARK_NOT_EXISTS);
+        }
+
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        // 统计结果list
+        List<StatisticsRatioResultVO> list = new ArrayList<>();
+
+        Integer dateType = paramVO.getDateType();
+        if (dateType == null) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        Integer queryType = paramVO.getQueryType();
+        if (queryType == null) {
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
+
+        if (1 == queryType) {
+            // 1、按能源查看
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+            // 能源结果list
+            List<StatisticsRatioResultVO> statisticsRatioResultVOList = getEnergyList(new StatisticsRatioResultVO(), energyList, range, dateType, queryType, RATIO, benchmark);
+            list.addAll(statisticsRatioResultVOList);
+
+            return getChartDataList(rangeOrigin, dateType, list, queryType);
+
+        } else if (2 == queryType) {
+            // 2、按标签查看
+            //X轴数据
+            List<String> XData = CommonUtil.getTableHeader(rangeOrigin, dateType);
+            //Y轴数据list
+            List<RatioBarVO> list1 = new ArrayList<>();
+
+            // 标签查询条件处理 只需要第一级别就可以
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsRatioResultVO> statisticsRatioResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType, RATIO, benchmark);
+
+                List<RatioDataVO> YData = getYData(XData, statisticsRatioResultVOList);
+                list1.add(RatioBarVO.builder()
+                        .name(tree.getName().toString())
+                        .XData(XData)
+                        .YData(YData).build());
+            }
+            return list1;
+
+        } else {
+            // 0、综合查看（默认）
+            return getOverallViewBar(paramVO, RATIO, benchmark);
         }
     }
 
     /**
-     * 堆叠图
+     * 按能源查看
      *
      * @param rangeOrigin
      * @param dateType
@@ -526,7 +979,14 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
         return list;
     }
 
-    private RatioBarVO getOverallViewBar(StatisticsParamVO paramVO, Integer filed) {
+    /**
+     * 按总和查看
+     *
+     * @param paramVO
+     * @param filed
+     * @return
+     */
+    private RatioBarVO getOverallViewBar(StatisticsParamVO paramVO, Integer filed, Integer benchmark) {
         // 0、综合查看（默认）
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         Integer dateType = paramVO.getDateType();
@@ -547,7 +1007,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
         // 统计结果list
         for (Tree<Long> tree : labelTree) {
-            List<StatisticsRatioResultVO> statisticsRatioResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, 0, filed);
+            List<StatisticsRatioResultVO> statisticsRatioResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, 0, filed, benchmark);
             list.addAll(statisticsRatioResultVOList);
         }
 
@@ -632,7 +1092,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
         return energyConfigurationService.getEnergyConfigurationList(queryVO);
     }
 
-    private List<StatisticsRatioResultVO> getEnergyList(StatisticsRatioResultVO statisticsRatioResultVO, List<EnergyConfigurationDO> energyList, LocalDate[] range, Integer dateType, Integer queryType, Integer filed) {
+    private List<StatisticsRatioResultVO> getEnergyList(StatisticsRatioResultVO statisticsRatioResultVO, List<EnergyConfigurationDO> energyList, LocalDate[] range, Integer dateType, Integer queryType, Integer filed, Integer benchmark) {
 
         List<StatisticsRatioResultVO> list = new ArrayList<>();
         BigDecimal sumNow = BigDecimal.ZERO;
@@ -643,7 +1103,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
             vo.setEnergyId(energy.getId());
 
             // 获取对应标签下对应能源的每日用能数据和折价数据
-            StatisticsRatioResultVO dateData = getDateData(vo, range, dateType, queryType, filed);
+            StatisticsRatioResultVO dateData = getDateData(vo, range, dateType, queryType, filed, benchmark);
             list.add(dateData);
         }
 
@@ -679,18 +1139,18 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
         return labelTree;
     }
 
-    private List<StatisticsRatioResultVO> getLabelList(StatisticsRatioResultVO statisticsRatioResultVO, LocalDate[] range, Integer dateType, Integer queryType, Integer filed) {
+    private List<StatisticsRatioResultVO> getLabelList(StatisticsRatioResultVO statisticsRatioResultVO, LocalDate[] range, Integer dateType, Integer queryType, Integer filed, Integer benchmark) {
 
         List<StatisticsRatioResultVO> list = new ArrayList<>();
         StatisticsRatioResultVO vo = BeanUtils.toBean(statisticsRatioResultVO, StatisticsRatioResultVO.class);
 
         // 获取对应标签下对应能源的每日用能数据和折价数据
-        StatisticsRatioResultVO dateData = getDateData(vo, range, dateType, queryType, filed);
+        StatisticsRatioResultVO dateData = getDateData(vo, range, dateType, queryType, filed, benchmark);
         list.add(dateData);
         return list;
     }
 
-    private List<StatisticsRatioResultVO> getStatisticsResultVOHaveEnergy(Tree<Long> labelTree, List<EnergyConfigurationDO> energyList, LocalDate[] range, Integer dateType, Integer queryType, Integer filed) {
+    private List<StatisticsRatioResultVO> getStatisticsResultVOHaveEnergy(Tree<Long> labelTree, List<EnergyConfigurationDO> energyList, LocalDate[] range, Integer dateType, Integer queryType, Integer filed, Integer benchmark) {
 
         List<StatisticsRatioResultVO> list = new ArrayList<>();
 
@@ -727,7 +1187,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
             }
 
             // 包含 能源类型的结果list
-            List<StatisticsRatioResultVO> statisticsResultVOList = getEnergyList(statisticsRatioResultVO, energyList, range, dateType, queryType, filed);
+            List<StatisticsRatioResultVO> statisticsResultVOList = getEnergyList(statisticsRatioResultVO, energyList, range, dateType, queryType, filed, benchmark);
             list.addAll(statisticsResultVOList);
             return list;
         }
@@ -735,14 +1195,14 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
         // 还有孩子节点的数据
         for (Tree<Long> longTree : labelTreeList) {
 
-            List<StatisticsRatioResultVO> statisticsResultList = getStatisticsResultVOHaveEnergy(longTree, energyList, range, dateType, queryType, filed);
+            List<StatisticsRatioResultVO> statisticsResultList = getStatisticsResultVOHaveEnergy(longTree, energyList, range, dateType, queryType, filed, benchmark);
             list.addAll(statisticsResultList);
         }
 
         return list;
     }
 
-    private List<StatisticsRatioResultVO> getStatisticsResultVONotHaveEnergy(Tree<Long> labelTree, LocalDate[] range, Integer dateType, Integer queryType, Integer filed) {
+    private List<StatisticsRatioResultVO> getStatisticsResultVONotHaveEnergy(Tree<Long> labelTree, LocalDate[] range, Integer dateType, Integer queryType, Integer filed, Integer benchmark) {
 
         List<StatisticsRatioResultVO> list = new ArrayList<>();
 
@@ -779,7 +1239,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
             }
 
             // 包含 能源类型的结果list
-            List<StatisticsRatioResultVO> statisticsResultVOList = getLabelList(statisticsRatioResultVO, range, dateType, queryType, filed);
+            List<StatisticsRatioResultVO> statisticsResultVOList = getLabelList(statisticsRatioResultVO, range, dateType, queryType, filed, benchmark);
             list.addAll(statisticsResultVOList);
             return list;
         }
@@ -787,7 +1247,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
         // 还有孩子节点的数据
         for (Tree<Long> longTree : labelTreeList) {
 
-            List<StatisticsRatioResultVO> statisticsResultList = getStatisticsResultVONotHaveEnergy(longTree, range, dateType, queryType, filed);
+            List<StatisticsRatioResultVO> statisticsResultList = getStatisticsResultVONotHaveEnergy(longTree, range, dateType, queryType, filed, benchmark);
             list.addAll(statisticsResultList);
         }
 
@@ -798,7 +1258,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
      * @param range 时间范围
      * @return
      */
-    private StatisticsRatioResultVO getDateData(StatisticsRatioResultVO vo, LocalDate[] range, Integer dateType, Integer queryType, Integer filed) {
+    private StatisticsRatioResultVO getDateData(StatisticsRatioResultVO vo, LocalDate[] range, Integer dateType, Integer queryType, Integer filed, Integer benchmark) {
 
         List<StatisticsRatioData> statisticsRatioDataList = new ArrayList<>();
 
@@ -825,7 +1285,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
                 int month = tempStartDate.getMonthValue();
 
                 // 用量、折价处理  根据标签 能源 获取对应日期的统计数据。
-                StatisticsRatioData statisticsRatioData = getMonthData(labelId, energyId, range, year, month, queryType, filed);
+                StatisticsRatioData statisticsRatioData = getMonthData(labelId, energyId, range, year, month, queryType, filed, benchmark);
 
                 String monthSuffix = (month < 10 ? "-0" : "-") + month;
                 statisticsRatioData.setDate(year + monthSuffix);
@@ -843,7 +1303,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
                 int year = startDate.getYear();
                 // 用量、折价处理  根据标签 能源 获取对应日期的统计数据。
-                StatisticsRatioData statisticsRatioData = getYearData(labelId, energyId, range, year, queryType, filed);
+                StatisticsRatioData statisticsRatioData = getYearData(labelId, energyId, range, year, queryType, filed, benchmark);
                 statisticsRatioData.setDate(String.valueOf(year));
                 statisticsRatioDataList.add(statisticsRatioData);
 
@@ -861,7 +1321,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
             while (startDateTime.isBefore(endDateTime) || startDateTime.isEqual(endDateTime)) {
                 String formattedDate = LocalDateTimeUtil.format(startDateTime, "yyyy-MM-dd:HH");
-                StatisticsRatioData statisticsRatioData = getHourData(labelId, energyId, startDateTime, queryType, filed);
+                StatisticsRatioData statisticsRatioData = getHourData(labelId, energyId, startDateTime, queryType, filed, benchmark);
                 statisticsRatioData.setDate(formattedDate);
                 statisticsRatioDataList.add(statisticsRatioData);
 
@@ -879,7 +1339,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
                 String formattedDate = LocalDateTimeUtil.formatNormal(startDate);
 
                 // 用量、折价处理  根据标签 能源 获取对应日期的统计数据。
-                StatisticsRatioData statisticsRatioData = getData(labelId, energyId, startDate, queryType, filed);
+                StatisticsRatioData statisticsRatioData = getData(labelId, energyId, startDate, queryType, filed, benchmark);
 
                 statisticsRatioData.setDate(formattedDate);
                 statisticsRatioDataList.add(statisticsRatioData);
@@ -902,7 +1362,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
         return vo;
     }
 
-    private StatisticsRatioResultVO getHourlyDateData(StatisticsRatioResultVO vo, LocalDateTime[] range, Integer queryType, Integer filed) {
+    private StatisticsRatioResultVO getHourlyDateData(StatisticsRatioResultVO vo, LocalDateTime[] range, Integer queryType, Integer filed, Integer benchmark) {
         List<StatisticsRatioData> statisticsRatioDataList = new ArrayList<>();
         LocalDateTime startDateTime = range[0];
         LocalDateTime endDateTime = range[1];
@@ -910,7 +1370,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
         Long labelId = vo.getLabelId();
         while (startDateTime.isBefore(endDateTime) || startDateTime.isEqual(endDateTime)) {
             String formattedDate = LocalDateTimeUtil.format(startDateTime, "yyyy-MM-dd:HH");
-            StatisticsRatioData statisticsRatioData = getHourData(labelId, energyId, startDateTime, queryType, filed);
+            StatisticsRatioData statisticsRatioData = getHourData(labelId, energyId, startDateTime, queryType, filed, benchmark);
             statisticsRatioData.setDate(formattedDate);
             statisticsRatioDataList.add(statisticsRatioData);
             startDateTime = startDateTime.plusHours(1);
@@ -931,7 +1391,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
         return vo;
     }
 
-    private StatisticsRatioData getHourData(Long labelId, Long energyId, LocalDateTime dateTime, Integer queryType, Integer filed) {
+    private StatisticsRatioData getHourData(Long labelId, Long energyId, LocalDateTime dateTime, Integer queryType, Integer filed, Integer benchmark) {
 
         // TODO: 2024/12/12 调用starrocks数据库获取对应 标签、能源、日期下的数据。  可能没标签或者没能源类型（待完善）折标煤、折价、利用率
         BigDecimal now = BigDecimal.ZERO;
@@ -962,7 +1422,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
                 .build();
     }
 
-    private StatisticsRatioData getData(Long labelId, Long energyId, LocalDate date, Integer queryType, Integer filed) {
+    private StatisticsRatioData getData(Long labelId, Long energyId, LocalDate date, Integer queryType, Integer filed, Integer benchmark) {
 
         // TODO: 2024/12/12 调用starrocks数据库获取对应 标签、能源、日期下的数据。  可能没标签或者没能源类型（待完善）折标煤、折价、利用率
         BigDecimal now = BigDecimal.ZERO;
@@ -994,9 +1454,9 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
     }
 
 
-    private StatisticsRatioData getMonthData(Long labelId, Long energyId, LocalDate[] range, Integer year, Integer month, Integer queryType, Integer filed) {
+    private StatisticsRatioData getMonthData(Long labelId, Long energyId, LocalDate[] range, Integer year, Integer month, Integer queryType, Integer filed, Integer benchmark) {
 
-        // TODO: 2024/12/12 调用starrocks数据库获取对应 标签、能源、日期下的数据。  可能没标签或者没能源类型（待完善）折标煤、折价、利用率
+        // TODO: 2024/12/12 调用starrocks数据库获取对应 标签、能源、日期下的数据。  可能没标签或者没能源类型（待完善）折标煤、折价、利用率  根据benchmark ；来获取 Previous
         //  在范围内拿年月的数据，where time between 2024-05-5 and 2024-08-05 and year = 2024 and month = 12
 
         BigDecimal now = BigDecimal.ZERO;
@@ -1027,7 +1487,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
                 .build();
     }
 
-    private StatisticsRatioData getYearData(Long labelId, Long energyId, LocalDate[] range, Integer year, Integer queryType, Integer filed) {
+    private StatisticsRatioData getYearData(Long labelId, Long energyId, LocalDate[] range, Integer year, Integer queryType, Integer filed, Integer benchmark) {
 
         // TODO: 2024/12/12 调用starrocks数据库获取对应 标签、能源、日期下的数据。  可能没标签或者没能源类型（待完善）折标煤、折价、利用率
         //  在范围内拿年月的数据，where time between 2024-05-5 and 2024-08-05 and year = 2024
