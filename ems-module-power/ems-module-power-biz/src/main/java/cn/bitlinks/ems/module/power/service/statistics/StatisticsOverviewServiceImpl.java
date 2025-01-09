@@ -73,7 +73,7 @@ public class StatisticsOverviewServiceImpl implements StatisticsOverviewService 
             StatisticsOverviewEnergyData data = new StatisticsOverviewEnergyData();
 
             data.setName(e.getEnergyName());
-
+            data.setEnergyIcon(e.getEnergyIcon());
             data.setConsumption(RandomUtil.randomBigDecimal(BigDecimal.valueOf(100000000L)).setScale(2, RoundingMode.HALF_UP));
             data.setStandardCoal(RandomUtil.randomBigDecimal(BigDecimal.valueOf(10000000L)).setScale(2, RoundingMode.HALF_UP));
             data.setMoney(RandomUtil.randomBigDecimal(BigDecimal.valueOf(1000000L)).setScale(2, RoundingMode.HALF_UP));
