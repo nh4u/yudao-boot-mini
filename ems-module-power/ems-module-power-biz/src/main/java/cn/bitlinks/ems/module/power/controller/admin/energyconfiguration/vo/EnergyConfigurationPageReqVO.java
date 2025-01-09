@@ -25,6 +25,9 @@ public class EnergyConfigurationPageReqVO extends PageParam {
     @Schema(description = "能源分类 1：外购能源；2：园区能源")
     private Integer energyClassify;
 
+    @Schema(description = "能源图标")
+    private String energyIcon;
+
     @Schema(description = "能源参数")
     private String energyParameter;
 
