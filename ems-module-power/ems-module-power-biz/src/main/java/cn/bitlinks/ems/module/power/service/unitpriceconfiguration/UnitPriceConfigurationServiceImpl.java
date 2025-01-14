@@ -41,15 +41,30 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
     private UnitPriceHistoryMapper unitPriceHistoryMapper;
 
     @Override
-    public Long createUnitPriceConfiguration(UnitPriceConfigurationSaveReqVO createReqVO) {
-        // 插入
-        UnitPriceConfigurationDO unitPriceConfiguration = BeanUtils.toBean(createReqVO, UnitPriceConfigurationDO.class);
-        unitPriceConfigurationMapper.insertOrUpdate(unitPriceConfiguration);
-        // 插入历史记录
-        UnitPriceHistorySaveReqVO unitPriceHistory = BeanUtils.toBean(createReqVO, UnitPriceHistorySaveReqVO.class);
-        unitPriceHistoryService.createUnitPriceHistory(unitPriceHistory);
-        // 返回
-        return unitPriceConfiguration.getId();
+    public List<Long> createUnitPriceConfigurations(Long energyId, List<UnitPriceConfigurationSaveReqVO> createReqVOList) {
+        List<Long> ids = new ArrayList<>();
+        for (UnitPriceConfigurationSaveReqVO createReqVO : createReqVOList) {
+            // 设置能源ID
+            createReqVO.setEnergyId(energyId);
+
+            // 处理时间范围
+            if (createReqVO.getTimeRange() != null && createReqVO.getTimeRange().size() == 2) {
+                createReqVO.setStartTime(createReqVO.getTimeRange().get(0));
+                createReqVO.setEndTime(createReqVO.getTimeRange().get(1));
+            }
+
+            // 插入
+            UnitPriceConfigurationDO unitPriceConfiguration = BeanUtils.toBean(createReqVO, UnitPriceConfigurationDO.class);
+            unitPriceConfigurationMapper.insertOrUpdate(unitPriceConfiguration);
+
+            // 插入历史记录
+            UnitPriceHistorySaveReqVO unitPriceHistory = BeanUtils.toBean(createReqVO, UnitPriceHistorySaveReqVO.class);
+            unitPriceHistoryService.createUnitPriceHistory(unitPriceHistory);
+
+            // 添加ID到列表
+            ids.add(unitPriceConfiguration.getId());
+        }
+        return ids;
     }
 
     @Override

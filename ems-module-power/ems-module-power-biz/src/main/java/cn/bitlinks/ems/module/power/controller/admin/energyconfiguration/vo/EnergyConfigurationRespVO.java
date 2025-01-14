@@ -33,6 +33,10 @@ public class EnergyConfigurationRespVO {
     @ExcelProperty("能源分类")
     private Integer energyClassify;
 
+    @Schema(description = "能源图标")
+    @ExcelProperty("能源图标")
+    private String energyIcon;
+
     @Schema(description = "能源参数")
     @ExcelProperty("能源参数")
     private String energyParameter;

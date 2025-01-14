@@ -19,10 +19,10 @@ public interface UnitPriceConfigurationService {
     /**
      * 创建单价配置
      *
-     * @param createReqVO 创建信息
+     * @param createReqVOList  创建信息
      * @return 编号
      */
-    Long createUnitPriceConfiguration(@Valid UnitPriceConfigurationSaveReqVO createReqVO);
+    List<Long> createUnitPriceConfigurations(@Valid Long energyId, List<UnitPriceConfigurationSaveReqVO> createReqVOList);
 
     /**
      * 更新单价配置

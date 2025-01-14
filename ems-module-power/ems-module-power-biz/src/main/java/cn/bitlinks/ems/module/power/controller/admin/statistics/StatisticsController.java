@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsOverviewResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
 import cn.bitlinks.ems.module.power.service.statistics.StatisticsOverviewService;
+import cn.bitlinks.ems.module.power.service.statistics.StatisticsRatioService;
 import cn.bitlinks.ems.module.power.service.statistics.StatisticsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,6 +34,9 @@ public class StatisticsController {
 
     @Resource
     private StatisticsOverviewService statisticsOverviewService;
+
+    @Resource
+    private StatisticsRatioService statisticsRatioService;
 
     @PostMapping("/overview")
     @Operation(summary = "统计总览")
@@ -72,5 +76,124 @@ public class StatisticsController {
     @Operation(summary = "折价分析（图）")
     public CommonResult<Object> moneyAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
         return success(statisticsService.moneyAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/standardCoalMomAnalysisTable")
+    @Operation(summary = "环比-折标煤用量环比分析（表）")
+    public CommonResult<Map<String, Object>> standardCoalMomAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.standardCoalMomAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+    @PostMapping("/moneyMomAnalysisTable")
+    @Operation(summary = "环比-折价环比分析（表）")
+    public CommonResult<Map<String, Object>> moneyMomAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.moneyMomAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+    @PostMapping("/utilizationRatioMomAnalysisTable")
+    @Operation(summary = "环比-利用率环比分析（表）")
+    public CommonResult<Map<String, Object>> utilizationRatioMomAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.utilizationRatioMomAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+
+    @PostMapping("/standardCoalMomAnalysisChart")
+    @Operation(summary = "环比-折标煤用量环比分析（图）")
+    public CommonResult<Object> standardCoalMomAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.standardCoalMomAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/moneyMomAnalysisChart")
+    @Operation(summary = "环比-折价环比分析（图）")
+    public CommonResult<Object> moneyMomAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.moneyMomAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/utilizationRatioMomAnalysisChart")
+    @Operation(summary = "环比-利用率环比分析（图）")
+    public CommonResult<Object> utilizationRatioMomAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.utilizationRatioMomAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/standardCoalBenchmarkAnalysisTable")
+    @Operation(summary = "定基比-折标煤用量定基比分析（表）")
+    public CommonResult<Map<String, Object>> standardCoalBenchmarkAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.standardCoalBenchmarkAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+    @PostMapping("/moneyBenchmarkAnalysisTable")
+    @Operation(summary = "定基比-折价定基比分析（表）")
+    public CommonResult<Map<String, Object>> moneyBenchmarkAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.moneyBenchmarkAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+    @PostMapping("/utilizationRatioBenchmarkAnalysisTable")
+    @Operation(summary = "定基比-利用率定基比分析（表）")
+    public CommonResult<Map<String, Object>> utilizationRatioBenchmarkAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.utilizationRatioBenchmarkAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+
+    @PostMapping("/standardCoalBenchmarkAnalysisChart")
+    @Operation(summary = "定基比-折标煤用量定基比分析（图）")
+    public CommonResult<Object> standardCoalBenchmarkAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.standardCoalBenchmarkAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/moneyBenchmarkAnalysisChart")
+    @Operation(summary = "定基比-折价定基比分析（图）")
+    public CommonResult<Object> moneyBenchmarkAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.moneyBenchmarkAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/utilizationRatioBenchmarkAnalysisChart")
+    @Operation(summary = "定基比-利用率定基比分析（图）")
+    public CommonResult<Object> utilizationRatioBenchmarkAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.utilizationRatioBenchmarkAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/standardCoalYoyAnalysisTable")
+    @Operation(summary = "同比-折标煤用量同比分析（表）")
+    public CommonResult<Map<String, Object>> standardCoalYoyAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.standardCoalYoyAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+    @PostMapping("/moneyYoyAnalysisTable")
+    @Operation(summary = "同比-折价同比分析（表）")
+    public CommonResult<Map<String, Object>> moneyYoyAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.moneyYoyAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+    @PostMapping("/utilizationRatioYoyAnalysisTable")
+    @Operation(summary = "同比-利用率同比分析（表）")
+    public CommonResult<Map<String, Object>> utilizationRatioYoyAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsRatioService.utilizationRatioYoyAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+    @PostMapping("/standardCoalYoyAnalysisChart")
+    @Operation(summary = "同比-折标煤用量同比分析（图）")
+    public CommonResult<Object> standardCoalYoyAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.standardCoalYoyAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/moneyYoyAnalysisChart")
+    @Operation(summary = "同比-折价同比分析（图）")
+    public CommonResult<Object> moneyYoyAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.moneyYoyAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/utilizationRatioYoyAnalysisChart")
+    @Operation(summary = "同比-利用率同比分析（图）")
+    public CommonResult<Object> utilizationRatioYoyAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsRatioService.utilizationRatioYoyAnalysisChart(paramVO));
     }
 }

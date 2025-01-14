@@ -23,6 +23,9 @@ public class UnitPriceConfigurationSaveReqVO {
     @Schema(description = "结束时间")
     private LocalDateTime endTime;
 
+    @Schema(description = "时间范围")
+    private List<LocalDateTime> timeRange;
+
     @Schema(description = "计费方式")
     private Integer billingMethod;
 

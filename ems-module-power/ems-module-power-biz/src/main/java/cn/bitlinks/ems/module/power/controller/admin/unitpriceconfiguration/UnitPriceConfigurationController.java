@@ -41,8 +41,8 @@ public class UnitPriceConfigurationController {
     @PostMapping("/create")
     @Operation(summary = "创建单价配置")
     @PreAuthorize("@ss.hasPermission('power:unit-price-configuration:create')")
-    public CommonResult<Long> createUnitPriceConfiguration(@Valid @RequestBody UnitPriceConfigurationSaveReqVO createReqVO) {
-        return success(unitPriceConfigurationService.createUnitPriceConfiguration(createReqVO));
+    public CommonResult<List<Long>> createUnitPriceConfigurations(@Valid @RequestBody UnitPriceConfigurationBatchSaveReqVO batchSaveReqVO) {
+        return success(unitPriceConfigurationService.createUnitPriceConfigurations(batchSaveReqVO.getEnergyId(), batchSaveReqVO.getList()));
     }
 
     @PutMapping("/update")

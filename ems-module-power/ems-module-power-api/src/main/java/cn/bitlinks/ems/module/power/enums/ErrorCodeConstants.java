@@ -4,7 +4,7 @@ import cn.bitlinks.ems.framework.common.exception.ErrorCode;
 
 /**
  * Infra 错误码枚举类
- *
+ * <p>
  * infra 系统，使用 1-001-000-000 段
  */
 public interface ErrorCodeConstants {
@@ -20,10 +20,10 @@ public interface ErrorCodeConstants {
     //========== 设备关联配置 1-001-301-005 ==========
     ErrorCode ADDITIONAL_RECORDING_NOT_EXISTS = new ErrorCode(1_001_301_005, "补录不存在");
 
-// ========== 台账类型 ==========
+    // ========== 台账类型 ==========
     ErrorCode STANDINGBOOK_TYPE_NOT_EXISTS = new ErrorCode(1_001_202_000, "台账类型不存在");
     ErrorCode STANDINGBOOK_TYPE_EXITS_CHILDREN = new ErrorCode(1_001_202_001, "存在存在子台账类型，无法删除");
-    ErrorCode STANDINGBOOK_TYPE_PARENT_NOT_EXITS = new ErrorCode(1_001_202_002,"父级台账类型不存在");
+    ErrorCode STANDINGBOOK_TYPE_PARENT_NOT_EXITS = new ErrorCode(1_001_202_002, "父级台账类型不存在");
     ErrorCode STANDINGBOOK_TYPE_PARENT_ERROR = new ErrorCode(1_001_202_003, "不能设置自己为父台账类型");
     ErrorCode STANDINGBOOK_TYPE_NAME_DUPLICATE = new ErrorCode(1_001_202_004, "已经存在该名字的台账类型");
     ErrorCode STANDINGBOOK_TYPE_PARENT_IS_CHILD = new ErrorCode(1_001_202_005, "不能设置自己的子StandingboookType为父StandingboookType");
@@ -44,11 +44,11 @@ public interface ErrorCodeConstants {
     ErrorCode DA_PARAM_FORMULA_NOT_EXISTS = new ErrorCode(1_001_601_001, "参数公式不存在");
 
 
-
     // ========== 其他业务错误 ==========
 
     ErrorCode DATE_RANGE_NOT_EXISTS = new ErrorCode(1_001_601_001, "日期范围不存在");
     ErrorCode DATE_RANGE_EXCEED_LIMIT = new ErrorCode(1_001_601_002, "日期范围超出限制（MAX：366）");
     ErrorCode QUERY_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_003, "查看类型不存在");
-    ErrorCode DATE_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_003, "时间类型不存在");
+    ErrorCode DATE_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_004, "时间类型不存在");
+    ErrorCode BENCH_MARK_NOT_EXISTS = new ErrorCode(1_001_601_005, "基准年限不存在");
 }

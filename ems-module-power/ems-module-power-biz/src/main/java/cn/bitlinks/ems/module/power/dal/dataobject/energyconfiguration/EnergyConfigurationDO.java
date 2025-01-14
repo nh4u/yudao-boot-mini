@@ -45,6 +45,10 @@ public class EnergyConfigurationDO extends BaseDO {
      */
     private Integer energyClassify;
     /**
+     * 能源图标
+     */
+    private String energyIcon;
+    /**
      * 能源参数
      */
     private String energyParameter;

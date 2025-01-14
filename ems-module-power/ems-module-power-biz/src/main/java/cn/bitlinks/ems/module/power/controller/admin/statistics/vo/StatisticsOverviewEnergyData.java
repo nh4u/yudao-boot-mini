@@ -28,4 +28,8 @@ public class StatisticsOverviewEnergyData {
     @Schema(description = "折价", example = "0.00")
     private BigDecimal money;
 
+    @Schema(description = "能源图标")
+    private String energyIcon;
+
+
 }
