@@ -56,7 +56,7 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
             // 检查时间冲突
             if (isTimeConflict(energyId, createReqVO.getStartTime(), createReqVO.getEndTime())) {
                 // 时间冲突，抛出异常或处理逻辑
-                throw exception(TimeConflict);
+                throw exception(TIME_CONFLICT);
             }
 
             // 插入
@@ -93,7 +93,7 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
         // 检查时间冲突
         if (isTimeConflict(updateReqVO.getEnergyId(), updateReqVO.getStartTime(), updateReqVO.getEndTime())) {
             // 时间冲突，抛出异常或处理逻辑
-            throw exception(TimeConflict);
+            throw exception(TIME_CONFLICT);
         }
         // 更新
         UnitPriceConfigurationDO updateObj = BeanUtils.toBean(updateReqVO, UnitPriceConfigurationDO.class);
