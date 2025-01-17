@@ -37,4 +37,10 @@ public interface UnitPriceConfigurationMapper extends BaseMapperX<UnitPriceConfi
             "WHERE energy_id = #{energyId} AND start_time <= #{currentDateTime} AND end_time >= #{currentDateTime}")
     String getPriceDetailsByEnergyIdAndTime(@Param("energyId") Long energyId, @Param("currentDateTime") LocalDateTime currentDateTime);
 
+
+    // 根据 energyId 查找单价配置记录
+    @Select("SELECT id, energy_id, start_time, end_time, billing_method, accounting_frequency, price_details, formula " +
+            "FROM ems_unit_price_configuration " +
+            "WHERE energy_id = #{energyId}")
+    List<UnitPriceConfigurationDO> findByEnergyId(Long energyId);
 }

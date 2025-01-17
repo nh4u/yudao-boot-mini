@@ -53,6 +53,12 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
                 createReqVO.setEndTime(createReqVO.getTimeRange().get(1));
             }
 
+            // 检查时间冲突
+            if (isTimeConflict(energyId, createReqVO.getStartTime(), createReqVO.getEndTime())) {
+                // 时间冲突，抛出异常或处理逻辑
+                throw exception(TimeConflict);
+            }
+
             // 插入
             UnitPriceConfigurationDO unitPriceConfiguration = BeanUtils.toBean(createReqVO, UnitPriceConfigurationDO.class);
             unitPriceConfigurationMapper.insertOrUpdate(unitPriceConfiguration);
@@ -67,10 +73,28 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
         return ids;
     }
 
+    private boolean isTimeConflict(Long energyId, LocalDateTime startTime, LocalDateTime endTime) {
+        List<UnitPriceConfigurationDO> existingConfigs = unitPriceConfigurationMapper.findByEnergyId(energyId);
+        for (UnitPriceConfigurationDO config : existingConfigs) {
+            if ((startTime.isBefore(config.getEndTime()) && endTime.isAfter(config.getStartTime())) ||
+                    startTime.equals(config.getStartTime()) || endTime.equals(config.getEndTime())) {
+                // 时间范围重叠
+                return true;
+            }
+        }
+        // 没有发现时间冲突
+        return false;
+    }
+
     @Override
     public void updateUnitPriceConfiguration(UnitPriceConfigurationSaveReqVO updateReqVO) {
         // 校验存在
         validateUnitPriceConfigurationExists(updateReqVO.getId());
+        // 检查时间冲突
+        if (isTimeConflict(updateReqVO.getEnergyId(), updateReqVO.getStartTime(), updateReqVO.getEndTime())) {
+            // 时间冲突，抛出异常或处理逻辑
+            throw exception(TimeConflict);
+        }
         // 更新
         UnitPriceConfigurationDO updateObj = BeanUtils.toBean(updateReqVO, UnitPriceConfigurationDO.class);
         unitPriceConfigurationMapper.updateById(updateObj);

@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.infra.controller.app.file;
 
+import cn.bitlinks.ems.module.infra.dal.dataobject.file.FileDO;
 import cn.hutool.core.io.IoUtil;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.infra.controller.admin.file.vo.file.FileCreateReqVO;
@@ -36,6 +37,15 @@ public class AppFileController {
         MultipartFile file = uploadReqVO.getFile();
         String path = uploadReqVO.getPath();
         return success(fileService.createFile(file.getOriginalFilename(), path, IoUtil.readBytes(file.getInputStream())));
+    }
+
+    @PostMapping("/emsUploadFile")
+    @Operation(summary = "上传文件")
+    @PermitAll
+    public CommonResult<FileDO> emsUploadFile(AppFileUploadReqVO uploadReqVO) throws Exception {
+        MultipartFile file = uploadReqVO.getFile();
+        String path = uploadReqVO.getPath();
+        return success(fileService.emsCreateFile(file.getOriginalFilename(), path, IoUtil.readBytes(file.getInputStream())));
     }
 
     @GetMapping("/presigned-url")

@@ -30,6 +30,10 @@ public interface FileService {
      * @return 文件路径
      */
     String createFile(String name, String path, byte[] content);
+
+    FileDO emsCreateFile(String name, String path, byte[] content);
+
+
     FileDO createFileReturnDO(String name, String path, byte[] content);
 
     /**
