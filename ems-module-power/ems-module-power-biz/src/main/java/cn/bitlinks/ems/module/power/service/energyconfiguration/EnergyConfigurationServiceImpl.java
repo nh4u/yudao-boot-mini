@@ -56,6 +56,10 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     public void updateEnergyConfiguration(EnergyConfigurationSaveReqVO updateReqVO) {
         // 校验存在
         validateEnergyConfigurationExists(updateReqVO.getId());
+
+
+        // TODO: 2025/1/18 提交公式需要对 公式历史记录表进行相应的添加操作
+
         // 更新
         EnergyConfigurationDO updateObj = BeanUtils.toBean(updateReqVO, EnergyConfigurationDO.class);
         energyConfigurationMapper.updateById(updateObj);

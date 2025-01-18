@@ -71,26 +71,4 @@ public class DaParamFormulaServiceImpl implements DaParamFormulaService {
         return daParamFormulaMapper.selectPage(pageReqVO);
     }
 
-    @Override
-    public Boolean batchDealDaParamFormula(DaParamFormulaSaveReqVO createReqVO) {
-        List<DaParamFormulaSaveReqVO> daParamFormulaList = createReqVO.getDaParamFormulaList();
-        if (CollUtil.isEmpty(daParamFormulaList)) {
-            throw exception(DA_PARAM_FORMULA_NOT_EXISTS);
-        }
-
-        for (DaParamFormulaSaveReqVO vo : daParamFormulaList) {
-            if (vo.getId() == null) {
-                // 插入
-                DaParamFormulaDO daParamFormula = BeanUtils.toBean(vo, DaParamFormulaDO.class);
-                daParamFormulaMapper.insert(daParamFormula);
-            } else {
-                // 更新
-                DaParamFormulaDO updateObj = BeanUtils.toBean(vo, DaParamFormulaDO.class);
-                daParamFormulaMapper.updateById(updateObj);
-            }
-        }
-
-        return true;
-    }
-
 }

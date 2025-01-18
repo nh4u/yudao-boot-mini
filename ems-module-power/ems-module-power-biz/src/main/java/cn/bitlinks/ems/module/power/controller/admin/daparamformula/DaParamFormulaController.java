@@ -46,14 +46,6 @@ public class DaParamFormulaController {
         return success(daParamFormulaService.createDaParamFormula(createReqVO));
     }
 
-    @PostMapping("/batch")
-    @Operation(summary = "批量处理参数公式")
-    @PreAuthorize("@ss.hasPermission('power:da-param-formula:create')")
-    public CommonResult<Boolean> batchDealDaParamFormula(@Valid @RequestBody DaParamFormulaSaveReqVO createReqVO) {
-        return success(daParamFormulaService.batchDealDaParamFormula(createReqVO));
-    }
-
-
     @PutMapping("/update")
     @Operation(summary = "更新参数公式")
     @PreAuthorize("@ss.hasPermission('power:da-param-formula:update')")
@@ -80,10 +72,10 @@ public class DaParamFormulaController {
         return success(BeanUtils.toBean(daParamFormula, DaParamFormulaRespVO.class));
     }
 
-    @GetMapping("/page")
+    @PostMapping("/page")
     @Operation(summary = "获得参数公式分页")
     @PreAuthorize("@ss.hasPermission('power:da-param-formula:query')")
-    public CommonResult<PageResult<DaParamFormulaRespVO>> getDaParamFormulaPage(@Valid DaParamFormulaPageReqVO pageReqVO) {
+    public CommonResult<PageResult<DaParamFormulaRespVO>> getDaParamFormulaPage(@Valid @RequestBody DaParamFormulaPageReqVO pageReqVO) {
         PageResult<DaParamFormulaDO> pageResult = daParamFormulaService.getDaParamFormulaPage(pageReqVO);
         return success(BeanUtils.toBean(pageResult, DaParamFormulaRespVO.class));
     }

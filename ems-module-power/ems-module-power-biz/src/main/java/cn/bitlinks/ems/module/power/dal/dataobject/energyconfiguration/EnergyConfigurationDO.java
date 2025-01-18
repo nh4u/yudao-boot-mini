@@ -83,7 +83,7 @@ public class EnergyConfigurationDO extends BaseDO {
      */
     private String unitPrice;
     /**
-     * 单价公式
+     * 用能成本公式
      */
     private String unitPriceFormula;
     /**

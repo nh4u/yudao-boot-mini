@@ -17,7 +17,9 @@ public interface DaParamFormulaMapper extends BaseMapperX<DaParamFormulaDO> {
 
     default PageResult<DaParamFormulaDO> selectPage(DaParamFormulaPageReqVO reqVO) {
         return selectPage(reqVO, new LambdaQueryWrapperX<DaParamFormulaDO>()
-                .eqIfPresent(DaParamFormulaDO::getStandingBookId, reqVO.getStandingBookId())
+                .eqIfPresent(DaParamFormulaDO::getEnergyId, reqVO.getEnergyId())
+                .eqIfPresent(DaParamFormulaDO::getEnergyFormula, reqVO.getEnergyFormula())
+                .eqIfPresent(DaParamFormulaDO::getFormulaType, reqVO.getFormulaType())
                 .eqIfPresent(DaParamFormulaDO::getEnergyParam, reqVO.getEnergyParam())
                 .betweenIfPresent(DaParamFormulaDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(DaParamFormulaDO::getId));
