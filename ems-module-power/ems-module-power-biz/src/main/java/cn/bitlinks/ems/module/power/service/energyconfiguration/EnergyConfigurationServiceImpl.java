@@ -188,8 +188,10 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
 
         // 先要更新对应的能源id   formulaType 的上一条数据更新一下结束时间
         DaParamFormulaDO latestOne = daParamFormulaMapper.getLatestOne(daParamFormulaDO);
-        latestOne.setEndEffectiveTime(now);
-        daParamFormulaMapper.updateById(latestOne);
+        if (latestOne != null) {
+            latestOne.setEndEffectiveTime(now);
+            daParamFormulaMapper.updateById(latestOne);
+        }
 
         // 插入数据
         daParamFormulaMapper.insert(daParamFormulaDO);
@@ -205,18 +207,20 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
 
         List<EnergyConfigurationDO> list = new ArrayList<>();
 
-        // 全部
-        EnergyConfigurationDO parent = EnergyConfigurationDO.builder().energyName("全部").id(1L).build();
-
         // 外购能源
         EnergyConfigurationDO energy1 = EnergyConfigurationDO.builder().energyName("外购能源").id(2L).build();
         energy1.setChildren(energyMap.get(1));
-        parent.addChild(energy1);
 
         // 园区能源
         EnergyConfigurationDO energy2 = EnergyConfigurationDO.builder().energyName("园区能源").id(3L).build();
         energy2.setChildren(energyMap.get(2));
-        parent.addChild(energy2);
+
+        // 全部
+        EnergyConfigurationDO parent = EnergyConfigurationDO.builder().energyName("全部").id(1L).build();
+        List<EnergyConfigurationDO> children = new ArrayList<>();
+        children.add(energy1);
+        children.add(energy2);
+        parent.setChildren(children);
 
         list.add(parent);
         return list;
