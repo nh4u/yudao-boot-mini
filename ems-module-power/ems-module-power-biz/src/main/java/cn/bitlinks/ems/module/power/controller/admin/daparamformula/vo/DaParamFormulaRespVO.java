@@ -51,4 +51,7 @@ public class DaParamFormulaRespVO {
     @ExcelProperty("创建时间")
     private LocalDateTime createTime;
 
+    @Schema(description = "创建人")
+    @ExcelProperty("创建人")
+    private String creator;
 }

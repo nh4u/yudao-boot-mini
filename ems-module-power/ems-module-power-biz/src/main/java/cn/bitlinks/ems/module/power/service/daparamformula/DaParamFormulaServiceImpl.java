@@ -1,12 +1,17 @@
 package cn.bitlinks.ems.module.power.service.daparamformula;
 
+import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.daparamformula.vo.DaParamFormulaPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.daparamformula.vo.DaParamFormulaSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.mysql.daparamformula.DaParamFormulaMapper;
+import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
+import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.collection.CollUtil;
+import com.alibaba.nacos.common.utils.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -28,6 +33,8 @@ public class DaParamFormulaServiceImpl implements DaParamFormulaService {
 
     @Resource
     private DaParamFormulaMapper daParamFormulaMapper;
+    @Resource
+    private AdminUserApi adminUserApi;
 
     @Override
     public Long createDaParamFormula(DaParamFormulaSaveReqVO createReqVO) {
@@ -68,7 +75,22 @@ public class DaParamFormulaServiceImpl implements DaParamFormulaService {
 
     @Override
     public PageResult<DaParamFormulaDO> getDaParamFormulaPage(DaParamFormulaPageReqVO pageReqVO) {
-        return daParamFormulaMapper.selectPage(pageReqVO);
+
+        // 设置创建人昵称
+        PageResult<DaParamFormulaDO> pageResult = daParamFormulaMapper.selectPage(pageReqVO);
+        // 遍历结果集，设置 unitPrice 和 creator 昵称
+        if (pageResult != null && CollectionUtils.isNotEmpty(pageResult.getList())) {
+            for (DaParamFormulaDO daParamFormulaDO : pageResult.getList()) {
+                // 设置创建人昵称
+                if (daParamFormulaDO.getCreator() != null) {
+                    CommonResult<AdminUserRespDTO> user = adminUserApi.getUser(Long.valueOf(daParamFormulaDO.getCreator()));
+                    if (user.getData() != null) {
+                        daParamFormulaDO.setCreator(user.getData().getNickname());
+                    }
+                }
+            }
+        }
+        return pageResult;
     }
 
 }
