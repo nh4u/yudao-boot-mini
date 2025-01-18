@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 /**
  * 数据来源为关联计量器具时的参数公式历史记录 DO
  *
@@ -48,7 +50,12 @@ public class DaParamFormulaDO extends BaseDO {
      */
     private Integer formulaScale;
     /**
-     * 生效时间
+     * 开始生效时间
      */
-    private String effectiveTime;
+    private LocalDateTime startEffectiveTime;
+
+    /**
+     * 结束生效时间
+     */
+    private LocalDateTime endEffectiveTime;
 }

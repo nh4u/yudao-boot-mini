@@ -6,6 +6,7 @@ import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsPar
 import cn.bitlinks.ems.module.power.service.statistics.StatisticsOverviewService;
 import cn.bitlinks.ems.module.power.service.statistics.StatisticsRatioService;
 import cn.bitlinks.ems.module.power.service.statistics.StatisticsService;
+import cn.bitlinks.ems.module.power.service.statistics.StatisticsStructureService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
@@ -37,6 +38,9 @@ public class StatisticsController {
 
     @Resource
     private StatisticsRatioService statisticsRatioService;
+
+    @Resource
+    private StatisticsStructureService statisticsStructureService;
 
     @PostMapping("/overview")
     @Operation(summary = "统计总览")
@@ -195,5 +199,18 @@ public class StatisticsController {
     @Operation(summary = "同比-利用率同比分析（图）")
     public CommonResult<Object> utilizationRatioYoyAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
         return success(statisticsRatioService.utilizationRatioYoyAnalysisChart(paramVO));
+    }
+
+    @PostMapping("/standardCoalStructureAnalysisTable")
+    @Operation(summary = "用能结构分析（表）")
+    public CommonResult<Map<String, Object>> standardCoalStructureAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsStructureService.standardCoalStructureAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+    @PostMapping("/standardCoalStructureAnalysisChart")
+    @Operation(summary = "用能结构分析（图）")
+    public CommonResult<Object> standardCoalStructureAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsStructureService.standardCoalStructureAnalysisChart(paramVO));
     }
 }

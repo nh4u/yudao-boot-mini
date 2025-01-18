@@ -39,9 +39,13 @@ public class DaParamFormulaRespVO {
     @ExcelProperty("公式小数点")
     private Integer formulaScale;
 
-    @Schema(description = "生效时间")
-    @ExcelProperty("生效时间")
-    private String effectiveTime;
+    @Schema(description = "开始生效时间")
+    @ExcelProperty("开始生效时间")
+    private LocalDateTime startEffectiveTime;
+
+    @Schema(description = "结束生效时间")
+    @ExcelProperty("结束生效时间")
+    private LocalDateTime endEffectiveTime;
 
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("创建时间")

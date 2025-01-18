@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import javax.validation.constraints.NotNull;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -32,6 +33,9 @@ public class DaParamFormulaSaveReqVO {
     @Schema(description = "公式小数点")
     private Integer formulaScale;
 
-    @Schema(description = "生效时间")
-    private String effectiveTime;
+    @Schema(description = "开始生效时间")
+    private LocalDateTime startEffectiveTime;
+
+    @Schema(description = "结束生效时间")
+    private LocalDateTime endEffectiveTime;
 }

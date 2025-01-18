@@ -62,4 +62,6 @@ public class EnergyConfigurationSaveReqVO {
     @Schema(description = "单价小数位")
     private String unitPriceScale;
 
+    @Schema(description = "公式类型 1：折标煤公式；2：用能成本公式")
+    private Integer formulaType;
 }

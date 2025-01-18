@@ -92,12 +92,12 @@ public class EnergyConfigurationController {
     @PreAuthorize("@ss.hasPermission('power:energy-configuration:export')")
     @ApiAccessLog(operateType = EXPORT)
     public void exportEnergyConfigurationExcel(@Valid EnergyConfigurationPageReqVO pageReqVO,
-              HttpServletResponse response) throws IOException {
+                                               HttpServletResponse response) throws IOException {
         pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
         List<EnergyConfigurationDO> list = energyConfigurationService.getEnergyConfigurationPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "能源配置.xls", "数据", EnergyConfigurationRespVO.class,
-                        BeanUtils.toBean(list, EnergyConfigurationRespVO.class));
+                BeanUtils.toBean(list, EnergyConfigurationRespVO.class));
     }
 
 
@@ -111,11 +111,28 @@ public class EnergyConfigurationController {
             @RequestParam(required = false) String code) {
         return success(energyConfigurationService.selectByCondition(energyName, energyClassify, code));
     }
-//return success(BeanUtils.toBean(pageResult, EnergyConfigurationRespVO.class));
+
+    //return success(BeanUtils.toBean(pageResult, EnergyConfigurationRespVO.class));
     @GetMapping("/getStatisticsEnergy")
     @Operation(summary = "用能分析下【统计能源条件】接口 1:外购2:园区")
     @PreAuthorize("@ss.hasPermission('power:energy-configuration:query')")
     public CommonResult<Map<Integer, List<EnergyConfigurationDO>>> getEnergyMenu() {
         return success(energyConfigurationService.getEnergyMenu());
     }
+
+    @GetMapping("/getEnergyTree")
+    @Operation(summary = "计量器具关联配置能源tree")
+    @PreAuthorize("@ss.hasPermission('power:energy-configuration:query')")
+    public CommonResult<List<EnergyConfigurationDO>> getEnergyTree() {
+        return success(energyConfigurationService.getEnergyTree());
+    }
+
+    @PutMapping("/submitFormula")
+    @Operation(summary = "提交指标煤公式/用能成本公式接口")
+    @PreAuthorize("@ss.hasPermission('power:energy-configuration:update')")
+    public CommonResult<Boolean> submitFormula(@Valid @RequestBody EnergyConfigurationSaveReqVO updateReqVO) {
+        energyConfigurationService.submitFormula(updateReqVO);
+        return success(true);
+    }
+
 }
