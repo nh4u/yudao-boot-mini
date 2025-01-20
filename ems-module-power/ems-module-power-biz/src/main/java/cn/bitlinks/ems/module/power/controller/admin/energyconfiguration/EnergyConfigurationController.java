@@ -79,10 +79,10 @@ public class EnergyConfigurationController {
         return success(BeanUtils.toBean(energyConfiguration, EnergyConfigurationRespVO.class));
     }
 
-    @PostMapping("/page")
+    @GetMapping("/page")
     @Operation(summary = "获得能源配置分页")
     @PreAuthorize("@ss.hasPermission('power:energy-configuration:query')")
-    public CommonResult<PageResult<EnergyConfigurationRespVO>> getEnergyConfigurationPage(@Valid @RequestBody EnergyConfigurationPageReqVO pageReqVO) {
+    public CommonResult<PageResult<EnergyConfigurationRespVO>> getEnergyConfigurationPage(@Valid EnergyConfigurationPageReqVO pageReqVO) {
         PageResult<EnergyConfigurationDO> pageResult = energyConfigurationService.getEnergyConfigurationPage(pageReqVO);
         return success(BeanUtils.toBean(pageResult, EnergyConfigurationRespVO.class));
     }

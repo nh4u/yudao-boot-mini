@@ -13,6 +13,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.unitpriceconfiguration.UnitPriceCo
 import cn.bitlinks.ems.module.power.service.daparamformula.DaParamFormulaService;
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.stereotype.Service;
@@ -147,6 +148,10 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     @Override
     public Map<Integer, List<EnergyConfigurationDO>> getEnergyMenu() {
         List<EnergyConfigurationDO> energyConfigurations = energyConfigurationMapper.selectList();
+        // 把EnergyName->name
+        energyConfigurations.forEach(e -> {
+            e.setName(e.getEnergyName());
+        });
         Map<Integer, List<EnergyConfigurationDO>> groupedByClassify = energyConfigurations.stream()
                 .collect(Collectors.groupingBy(EnergyConfigurationDO::getEnergyClassify));
         return groupedByClassify;
@@ -168,21 +173,23 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         DaParamFormulaDO daParamFormulaDO;
         if (formulaType == 1) {
             // 折标煤公式
+            String coalScale = updateReqVO.getCoalScale();
             daParamFormulaDO = DaParamFormulaDO.builder()
                     .energyFormula(updateReqVO.getCoalFormula())
                     .energyId(updateReqVO.getId())
                     .energyParam(updateReqVO.getEnergyParameter())
                     .startEffectiveTime(now)
-                    .formulaScale(Integer.valueOf(updateReqVO.getCoalScale()))
+                    .formulaScale(StrUtil.isNotEmpty(coalScale) ? Integer.valueOf(coalScale) : null)
                     .formulaType(formulaType).build();
         } else {
             // 折标煤公式
+            String unitPriceScale = updateReqVO.getUnitPriceScale();
             daParamFormulaDO = DaParamFormulaDO.builder()
                     .energyFormula(updateReqVO.getUnitPriceFormula())
                     .energyId(updateReqVO.getId())
                     .energyParam(updateReqVO.getEnergyParameter())
                     .startEffectiveTime(now)
-                    .formulaScale(Integer.valueOf(updateReqVO.getUnitPriceScale()))
+                    .formulaScale(StrUtil.isNotEmpty(unitPriceScale) ? Integer.valueOf(unitPriceScale) : null)
                     .formulaType(formulaType).build();
         }
 
@@ -208,15 +215,15 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         List<EnergyConfigurationDO> list = new ArrayList<>();
 
         // 外购能源
-        EnergyConfigurationDO energy1 = EnergyConfigurationDO.builder().energyName("外购能源").id(2L).build();
+        EnergyConfigurationDO energy1 = EnergyConfigurationDO.builder().name("外购能源").energyName("外购能源").id(2L).build();
         energy1.setChildren(energyMap.get(1));
 
         // 园区能源
-        EnergyConfigurationDO energy2 = EnergyConfigurationDO.builder().energyName("园区能源").id(3L).build();
+        EnergyConfigurationDO energy2 = EnergyConfigurationDO.builder().name("园区能源").energyName("园区能源").id(3L).build();
         energy2.setChildren(energyMap.get(2));
 
         // 全部
-        EnergyConfigurationDO parent = EnergyConfigurationDO.builder().energyName("全部").id(1L).build();
+        EnergyConfigurationDO parent = EnergyConfigurationDO.builder().name("全部").energyName("全部").id(1L).build();
         List<EnergyConfigurationDO> children = new ArrayList<>();
         children.add(energy1);
         children.add(energy2);

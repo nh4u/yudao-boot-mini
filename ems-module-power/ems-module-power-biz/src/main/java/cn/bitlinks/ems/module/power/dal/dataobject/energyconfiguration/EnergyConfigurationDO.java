@@ -36,6 +36,11 @@ public class EnergyConfigurationDO extends BaseDO {
      */
     private String energyName;
     /**
+     * 能源名称
+     */
+    @TableField(exist = false)
+    private String name;
+    /**
      * 编码
      */
     private String code;
