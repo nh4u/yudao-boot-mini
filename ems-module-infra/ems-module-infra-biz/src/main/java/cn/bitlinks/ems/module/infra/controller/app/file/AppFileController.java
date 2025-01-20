@@ -40,7 +40,7 @@ public class AppFileController {
     }
 
     @PostMapping("/emsUploadFile")
-    @Operation(summary = "上传文件")
+    @Operation(summary = "上传文件new")
     @PermitAll
     public CommonResult<FileDO> emsUploadFile(AppFileUploadReqVO uploadReqVO) throws Exception {
         MultipartFile file = uploadReqVO.getFile();
