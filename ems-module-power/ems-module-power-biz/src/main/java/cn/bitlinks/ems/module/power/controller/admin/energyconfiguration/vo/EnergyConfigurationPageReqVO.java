@@ -54,7 +54,7 @@ public class EnergyConfigurationPageReqVO extends PageParam {
     @Schema(description = "单价详细", example = "11713")
     private String unitPrice;
 
-    @Schema(description = "单价公式")
+    @Schema(description = "用能成本公式")
     private String unitPriceFormula;
 
     @Schema(description = "单价小数位")

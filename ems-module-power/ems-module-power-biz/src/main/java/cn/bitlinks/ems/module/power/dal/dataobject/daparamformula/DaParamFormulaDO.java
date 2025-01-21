@@ -1,14 +1,16 @@
 package cn.bitlinks.ems.module.power.dal.dataobject.daparamformula;
 
-import lombok.*;
-import java.util.*;
-import java.time.LocalDateTime;
-import java.time.LocalDateTime;
-import com.baomidou.mybatisplus.annotation.*;
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.KeySequence;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.*;
+
+import java.time.LocalDateTime;
 
 /**
- * 数据来源为关联计量器具时的参数公式 DO
+ * 数据来源为关联计量器具时的参数公式历史记录 DO
  *
  * @author Mingdy
  */
@@ -25,12 +27,12 @@ public class DaParamFormulaDO extends BaseDO {
     /**
      * id
      */
-    @TableId
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
-     * 台账id
+     * 能源id
      */
-    private Long standingBookId;
+    private Long energyId;
     /**
      * 能源参数名称
      */
@@ -39,5 +41,21 @@ public class DaParamFormulaDO extends BaseDO {
      * 能源参数计算公式
      */
     private String energyFormula;
+    /**
+     * 公式类型
+     */
+    private Integer formulaType;
+    /**
+     * 公式小数点
+     */
+    private Integer formulaScale;
+    /**
+     * 开始生效时间
+     */
+    private LocalDateTime startEffectiveTime;
 
+    /**
+     * 结束生效时间
+     */
+    private LocalDateTime endEffectiveTime;
 }

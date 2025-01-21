@@ -46,14 +46,6 @@ public class DaParamFormulaController {
         return success(daParamFormulaService.createDaParamFormula(createReqVO));
     }
 
-    @PostMapping("/batch")
-    @Operation(summary = "批量处理参数公式")
-    @PreAuthorize("@ss.hasPermission('power:da-param-formula:create')")
-    public CommonResult<Boolean> batchDealDaParamFormula(@Valid @RequestBody DaParamFormulaSaveReqVO createReqVO) {
-        return success(daParamFormulaService.batchDealDaParamFormula(createReqVO));
-    }
-
-
     @PutMapping("/update")
     @Operation(summary = "更新参数公式")
     @PreAuthorize("@ss.hasPermission('power:da-param-formula:update')")

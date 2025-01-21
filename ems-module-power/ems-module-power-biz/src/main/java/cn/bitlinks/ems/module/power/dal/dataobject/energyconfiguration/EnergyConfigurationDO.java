@@ -1,13 +1,14 @@
 package cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration;
 
+import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
+import com.baomidou.mybatisplus.annotation.*;
 import com.sun.xml.bind.v2.TODO;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
-import com.baomidou.mybatisplus.annotation.*;
-import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -34,6 +35,11 @@ public class EnergyConfigurationDO extends BaseDO {
      * 能源名称
      */
     private String energyName;
+    /**
+     * 能源名称
+     */
+    @TableField(exist = false)
+    private String name;
     /**
      * 编码
      */
@@ -83,11 +89,18 @@ public class EnergyConfigurationDO extends BaseDO {
      */
     private String unitPrice;
     /**
-     * 单价公式
+     * 用能成本公式
      */
     private String unitPriceFormula;
     /**
      * 单价小数位
      */
     private String unitPriceScale;
+
+    @TableField(exist = false)
+    List<EnergyConfigurationDO> children = new ArrayList<>();
+
+    public void addChild(EnergyConfigurationDO child) {
+        children.add(child);
+    }
 }

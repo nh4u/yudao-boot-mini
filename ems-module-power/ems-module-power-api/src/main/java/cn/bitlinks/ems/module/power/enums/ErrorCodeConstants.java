@@ -15,6 +15,8 @@ public interface ErrorCodeConstants {
     ErrorCode UNIT_PRICE_CONFIGURATION_NOT_EXISTS = new ErrorCode(1_001_301_003, "单价配置不存在");
     ErrorCode TIME_CONFLICT = new ErrorCode(1_001_301_004, "与已有单价时间重叠");
 
+    ErrorCode FORMULA_TYPE_NOT_EXISTS = new ErrorCode(1_001_301_004, "公式类型不存在");
+
     //========== 设备关联配置 1-001-301-004 ==========
     ErrorCode DEVICE_ASSOCIATION_CONFIGURATION_NOT_EXISTS = new ErrorCode(1_001_301_004, "设备关联配置不存在");
 

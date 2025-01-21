@@ -51,6 +51,4 @@ public interface DaParamFormulaService {
      * @return 数据来源为关联计量器具时的参数公式分页
      */
     PageResult<DaParamFormulaDO> getDaParamFormulaPage(DaParamFormulaPageReqVO pageReqVO);
-
-    Boolean batchDealDaParamFormula(DaParamFormulaSaveReqVO createReqVO);
 }

@@ -1,11 +1,13 @@
 package cn.bitlinks.ems.module.power.service.energyconfiguration;
 
-import java.util.*;
-import javax.validation.*;
-import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.*;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
-import cn.bitlinks.ems.framework.common.pojo.PageParam;
+import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
+
+import javax.validation.Valid;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 能源配置 Service 接口
@@ -71,12 +73,22 @@ public interface EnergyConfigurationService {
     /**
      * 根据条件查询能源配置列表。
      *
-     * @param energyName 能源名称
+     * @param energyName     能源名称
      * @param energyClassify 能源分类
-     * @param code 编码
+     * @param code           编码
      * @return 符合条件的能源配置记录列表，如果没有找到任何记录则返回空列表。
      */
     List<EnergyConfigurationDO> selectByCondition(String energyName, String energyClassify, String code);
 
     Map<Integer, List<EnergyConfigurationDO>> getEnergyMenu();
+
+    /**
+     * 提交指标煤公式/用能成本公式接口
+     *
+     * @param updateReqVO
+     * @return
+     */
+    void submitFormula(EnergyConfigurationSaveReqVO updateReqVO);
+
+    List<EnergyConfigurationDO> getEnergyTree();
 }

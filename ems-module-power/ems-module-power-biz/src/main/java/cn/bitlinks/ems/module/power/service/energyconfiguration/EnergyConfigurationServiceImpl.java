@@ -1,31 +1,35 @@
 package cn.bitlinks.ems.module.power.service.energyconfiguration;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
+import cn.bitlinks.ems.framework.common.pojo.PageResult;
+import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
+import cn.bitlinks.ems.module.power.dal.mysql.daparamformula.DaParamFormulaMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.unitpriceconfiguration.UnitPriceConfigurationMapper;
+import cn.bitlinks.ems.module.power.service.daparamformula.DaParamFormulaService;
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.stereotype.Service;
-import javax.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
-import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.*;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
-import cn.bitlinks.ems.framework.common.pojo.PageResult;
-import cn.bitlinks.ems.framework.common.pojo.PageParam;
-import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-
-import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
-import org.thymeleaf.expression.Ids;
-
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.ENERGY_CONFIGURATION_NOT_EXISTS;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.FORMULA_TYPE_NOT_EXISTS;
 
 /**
  * 能源配置 Service 实现类
@@ -40,6 +44,9 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     private EnergyConfigurationMapper energyConfigurationMapper;
     @Resource
     private UnitPriceConfigurationMapper unitPriceConfigurationMapper;
+
+    @Resource
+    private DaParamFormulaMapper daParamFormulaMapper;
     @Resource
     private AdminUserApi adminUserApi;
 
@@ -56,6 +63,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     public void updateEnergyConfiguration(EnergyConfigurationSaveReqVO updateReqVO) {
         // 校验存在
         validateEnergyConfigurationExists(updateReqVO.getId());
+
         // 更新
         EnergyConfigurationDO updateObj = BeanUtils.toBean(updateReqVO, EnergyConfigurationDO.class);
         energyConfigurationMapper.updateById(updateObj);
@@ -117,7 +125,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
 
     @Override
     public List<EnergyConfigurationDO> getEnergyConfigurationList(EnergyConfigurationPageReqVO queryVO) {
-       return energyConfigurationMapper.selectList(queryVO );
+        return energyConfigurationMapper.selectList(queryVO);
     }
 
     @Override
@@ -140,9 +148,88 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     @Override
     public Map<Integer, List<EnergyConfigurationDO>> getEnergyMenu() {
         List<EnergyConfigurationDO> energyConfigurations = energyConfigurationMapper.selectList();
+        // 把EnergyName->name
+        energyConfigurations.forEach(e -> {
+            e.setName(e.getEnergyName());
+        });
         Map<Integer, List<EnergyConfigurationDO>> groupedByClassify = energyConfigurations.stream()
                 .collect(Collectors.groupingBy(EnergyConfigurationDO::getEnergyClassify));
         return groupedByClassify;
     }
 
+    @Override
+    public void submitFormula(EnergyConfigurationSaveReqVO updateReqVO) {
+        // 校验存在
+        validateEnergyConfigurationExists(updateReqVO.getId());
+
+        // 校验一下
+        Integer formulaType = updateReqVO.getFormulaType();
+        if (Objects.isNull(formulaType)) {
+            throw exception(FORMULA_TYPE_NOT_EXISTS);
+        }
+
+        // TODO: 2025/1/18 对历史记录需要处理一下
+        LocalDateTime now = LocalDateTime.now();
+        DaParamFormulaDO daParamFormulaDO;
+        if (formulaType == 1) {
+            // 折标煤公式
+            String coalScale = updateReqVO.getCoalScale();
+            daParamFormulaDO = DaParamFormulaDO.builder()
+                    .energyFormula(updateReqVO.getCoalFormula())
+                    .energyId(updateReqVO.getId())
+                    .energyParam(updateReqVO.getEnergyParameter())
+                    .startEffectiveTime(now)
+                    .formulaScale(StrUtil.isNotEmpty(coalScale) ? Integer.valueOf(coalScale) : null)
+                    .formulaType(formulaType).build();
+        } else {
+            // 折标煤公式
+            String unitPriceScale = updateReqVO.getUnitPriceScale();
+            daParamFormulaDO = DaParamFormulaDO.builder()
+                    .energyFormula(updateReqVO.getUnitPriceFormula())
+                    .energyId(updateReqVO.getId())
+                    .energyParam(updateReqVO.getEnergyParameter())
+                    .startEffectiveTime(now)
+                    .formulaScale(StrUtil.isNotEmpty(unitPriceScale) ? Integer.valueOf(unitPriceScale) : null)
+                    .formulaType(formulaType).build();
+        }
+
+        // 先要更新对应的能源id   formulaType 的上一条数据更新一下结束时间
+        DaParamFormulaDO latestOne = daParamFormulaMapper.getLatestOne(daParamFormulaDO);
+        if (latestOne != null) {
+            latestOne.setEndEffectiveTime(now);
+            daParamFormulaMapper.updateById(latestOne);
+        }
+
+        // 插入数据
+        daParamFormulaMapper.insert(daParamFormulaDO);
+
+        // 更新
+        EnergyConfigurationDO updateObj = BeanUtils.toBean(updateReqVO, EnergyConfigurationDO.class);
+        energyConfigurationMapper.updateById(updateObj);
+    }
+
+    @Override
+    public List<EnergyConfigurationDO> getEnergyTree() {
+        Map<Integer, List<EnergyConfigurationDO>> energyMap = getEnergyMenu();
+
+        List<EnergyConfigurationDO> list = new ArrayList<>();
+
+        // 外购能源
+        EnergyConfigurationDO energy1 = EnergyConfigurationDO.builder().name("外购能源").energyName("外购能源").id(2L).build();
+        energy1.setChildren(energyMap.get(1));
+
+        // 园区能源
+        EnergyConfigurationDO energy2 = EnergyConfigurationDO.builder().name("园区能源").energyName("园区能源").id(3L).build();
+        energy2.setChildren(energyMap.get(2));
+
+        // 全部
+        EnergyConfigurationDO parent = EnergyConfigurationDO.builder().name("全部").energyName("全部").id(1L).build();
+        List<EnergyConfigurationDO> children = new ArrayList<>();
+        children.add(energy1);
+        children.add(energy2);
+        parent.setChildren(children);
+
+        list.add(parent);
+        return list;
+    }
 }

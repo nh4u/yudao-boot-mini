@@ -20,14 +20,17 @@ import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_M
 @ToString(callSuper = true)
 public class DaParamFormulaPageReqVO extends PageParam {
 
-    @Schema(description = "台账id", example = "13897")
-    private Long standingBookId;
+    @Schema(description = "能源id", example = "13897")
+    private Long energyId;
 
     @Schema(description = "能源参数名称")
     private String energyParam;
 
     @Schema(description = "能源参数计算公式")
     private String energyFormula;
+
+    @Schema(description = "公式类型")
+    private Integer formulaType;
 
     @Schema(description = "创建时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
