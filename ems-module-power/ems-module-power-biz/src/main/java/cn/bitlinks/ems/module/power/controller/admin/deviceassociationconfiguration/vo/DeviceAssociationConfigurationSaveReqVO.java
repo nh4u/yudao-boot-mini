@@ -16,11 +16,11 @@ public class DeviceAssociationConfigurationSaveReqVO {
     private Long energyId;
 
     @Schema(description = "计量器具id", example = "17669")
-    private Long measurementInstrument;
+    private Long measurementInstrumentId;
 
     @Schema(description = "关联下级计量", example = "2485")
     private String measurement;
 
     @Schema(description = "关联设备", example = "15562")
-    private String deviceId;
+    private String device;
 }
