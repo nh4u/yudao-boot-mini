@@ -25,7 +25,7 @@ public class DeviceAssociationConfigurationDO extends BaseDO {
     /**
      * id
      */
-    @TableId(value = "id", type = IdType.ASSIGN_ID)
+    @TableId
     private Long id;
     /**
      * 能源id
@@ -36,16 +36,12 @@ public class DeviceAssociationConfigurationDO extends BaseDO {
      */
     private Long measurementInstrumentId;
     /**
-     * 设备id
+     * 关联下级计量
      */
-    private Long deviceId;
+    private String measurement;
     /**
-     * 后置计量
+     * 关联设备
      */
-    private String postMeasurement;
-    /**
-     * 前置计量
-     */
-    private String preMeasurement;
+    private String device;
 
 }

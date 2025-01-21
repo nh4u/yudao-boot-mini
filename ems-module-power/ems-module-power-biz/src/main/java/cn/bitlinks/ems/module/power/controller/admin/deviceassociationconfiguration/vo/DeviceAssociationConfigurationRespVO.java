@@ -12,29 +12,25 @@ import com.alibaba.excel.annotation.*;
 @ExcelIgnoreUnannotated
 public class DeviceAssociationConfigurationRespVO {
 
-    @Schema(description = "id", requiredMode = Schema.RequiredMode.REQUIRED, example = "26859")
+    @Schema(description = "id", requiredMode = Schema.RequiredMode.REQUIRED, example = "20982")
     @ExcelProperty("id")
     private Long id;
 
-    @Schema(description = "能源id", example = "7602")
+    @Schema(description = "能源id", example = "29619")
     @ExcelProperty("能源id")
     private Long energyId;
 
-    @Schema(description = "计量器具id", example = "10771")
+    @Schema(description = "计量器具id", example = "17669")
     @ExcelProperty("计量器具id")
     private Long measurementInstrumentId;
 
-    @Schema(description = "设备id", example = "22446")
-    @ExcelProperty("设备id")
-    private Long deviceId;
+    @Schema(description = "关联下级计量", example = "2485")
+    @ExcelProperty("关联下级计量")
+    private String measurement;
 
-    @Schema(description = "后置计量")
-    @ExcelProperty("后置计量")
-    private String postMeasurement;
-
-    @Schema(description = "前置计量")
-    @ExcelProperty("前置计量")
-    private String preMeasurement;
+    @Schema(description = "关联设备", example = "15562")
+    @ExcelProperty("关联设备")
+    private String device;
 
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("创建时间")

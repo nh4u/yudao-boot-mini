@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.deviceassociationconfiguration;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -69,6 +70,13 @@ public class DeviceAssociationConfigurationServiceImpl implements DeviceAssociat
     @Override
     public PageResult<DeviceAssociationConfigurationDO> getDeviceAssociationConfigurationPage(DeviceAssociationConfigurationPageReqVO pageReqVO) {
         return deviceAssociationConfigurationMapper.selectPage(pageReqVO);
+    }
+
+    @Override
+    public DeviceAssociationConfigurationDO getDeviceAssociationConfigurationByMeasurementInstrumentId(Long measurementInstrumentId) {
+        QueryWrapper<DeviceAssociationConfigurationDO> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("measurement_instrument_id", measurementInstrumentId);
+        return deviceAssociationConfigurationMapper.selectOne(queryWrapper);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.standingbook;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
+import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookSaveReqVO;
@@ -57,6 +58,10 @@ public interface StandingbookService {
      */
     PageResult<StandingbookDO> getStandingbookPage(StandingbookPageReqVO pageReqVO);
     List<StandingbookDO> getStandingbookList( Map<String,String> pageReqVO);
+
+    List<StandingbookDO> getStandingbookListBy( Map<String,String> pageReqVO);
+
+    List<StandingbookWithAssociations> getStandingbookListWithAssociations(Map<String, String> pageReqVO);
 
     Object importStandingbook(MultipartFile file, StandingbookRespVO pageReqVO);
 

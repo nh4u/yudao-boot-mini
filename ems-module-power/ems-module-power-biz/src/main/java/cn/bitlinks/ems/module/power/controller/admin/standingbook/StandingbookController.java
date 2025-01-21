@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.controller.admin.standingbook;
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
@@ -80,6 +81,23 @@ public class StandingbookController {
         List<StandingbookDO> list = standingbookService.getStandingbookList(pageReqVO);
         return success(BeanUtils.toBean(list, StandingbookRespVO.class));
     }
+
+    @PostMapping("/listBy")
+    @Operation(summary = "根据条件获得台账列表")
+    @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
+    public CommonResult<List<StandingbookRespVO>> getStandingbookPageBy(@Valid @RequestBody Map <String,String> pageReqVO) {
+        List<StandingbookDO> list = standingbookService.getStandingbookListBy(pageReqVO);
+        return success(BeanUtils.toBean(list, StandingbookRespVO.class));
+    }
+
+    @PostMapping("/listWithAssociations")
+    @Operation(summary = "根据条件获得台账列表和联系")
+    @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
+    public CommonResult<List<StandingbookWithAssociations>> getStandingbookListWithAssociations(@RequestBody Map<String, String> pageReqVO) {
+        List<StandingbookWithAssociations> list = standingbookService.getStandingbookListWithAssociations(pageReqVO);
+        return success(BeanUtils.toBean(list, StandingbookWithAssociations.class));
+    }
+
     @PostMapping(value = "importStandingbook")
     @Operation(summary = "导入台账 Excel")
     @PreAuthorize("@ss.hasPermission('power:standingbook:export')")

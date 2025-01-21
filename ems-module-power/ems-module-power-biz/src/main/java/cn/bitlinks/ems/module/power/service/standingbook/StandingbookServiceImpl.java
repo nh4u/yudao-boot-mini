@@ -1,16 +1,17 @@
 package cn.bitlinks.ems.module.power.service.standingbook;
 
-import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.infra.api.file.FileApi;
+import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.ScaledImageDataVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookSaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.deviceassociationconfiguration.DeviceAssociationConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
@@ -18,10 +19,8 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.enums.ApiConstants;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
+import cn.bitlinks.ems.module.power.service.deviceassociationconfiguration.DeviceAssociationConfigurationService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
-import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
@@ -44,6 +43,7 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -68,6 +68,9 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Resource
     private StandingbookTypeMapper standingbookTypeMapper;
+
+    @Resource
+    private DeviceAssociationConfigurationService deviceAssociationConfigurationService;
 
     @Resource
     private FileApi fileApi;
@@ -236,6 +239,52 @@ public class StandingbookServiceImpl implements StandingbookService {
         }
         return result;
     }
+
+    @Override
+    public List<StandingbookDO> getStandingbookListBy( Map<String,String> pageReqVO) {
+        String typeId = null;
+        List<StandingbookAttributePageReqVO> children= new ArrayList<>();
+        // 使用 entrySet() 遍历键和值
+        for (Map.Entry<String, String> entry : pageReqVO.entrySet()) {
+            System.out.println("Key: " + entry.getKey() + ", Value: " + entry.getValue());
+            String key = entry.getKey();
+            String value = entry.getValue();
+            if (!entry.getKey() .equals("typeId")){
+                StandingbookAttributePageReqVO attribute = new StandingbookAttributePageReqVO();
+                attribute.setCode(key).setValue(value);
+                children.add(attribute);
+            }
+        }
+        List<StandingbookDO> standingbookDOS = standingbookAttributeService.getStandingbook(children, null);
+        List<StandingbookDO> result = new ArrayList<>();
+        for (StandingbookDO standingbookDO : standingbookDOS) {
+            result.add(getStandingbook(standingbookDO.getId()));
+        }
+        return result;
+    }
+
+    @Override
+    public List<StandingbookWithAssociations> getStandingbookListWithAssociations(Map<String, String> pageReqVO) {
+        // 获取台账列表
+        List<StandingbookDO> standingbookDOS = getStandingbookListBy(pageReqVO);
+        List<StandingbookWithAssociations> result = new ArrayList<>();
+
+        for (StandingbookDO standingbookDO : standingbookDOS) {
+            // 获取关联设备信息
+            DeviceAssociationConfigurationDO association = deviceAssociationConfigurationService.getDeviceAssociationConfigurationByMeasurementInstrumentId(standingbookDO.getTypeId());
+
+            StandingbookWithAssociations standingbookWithAssociations = new StandingbookWithAssociations();
+            standingbookWithAssociations.setStandingbook(standingbookDO);
+
+            // 将单个关联设备信息添加到列表中
+            List<DeviceAssociationConfigurationDO> associations = association != null ? new ArrayList<>(Arrays.asList(association)) : new ArrayList<>();
+            standingbookWithAssociations.setAssociations(associations);
+
+            result.add(standingbookWithAssociations);
+        }
+        return result;
+    }
+
     @Override
     public Object importStandingbook(MultipartFile file, StandingbookRespVO pageReqVO) {
         StandingbookService proxy = context.getBean(StandingbookService.class);

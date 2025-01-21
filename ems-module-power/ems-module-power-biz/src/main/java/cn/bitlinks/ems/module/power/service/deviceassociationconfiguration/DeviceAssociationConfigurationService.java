@@ -37,12 +37,22 @@ public interface DeviceAssociationConfigurationService {
     void deleteDeviceAssociationConfiguration(Long id);
 
     /**
+     * 通过计量器具ID获得设备关联配置
+     *
+     * @param measurementInstrumentId 计量器具ID
+     * @return 设备关联配置
+     */
+    DeviceAssociationConfigurationDO getDeviceAssociationConfigurationByMeasurementInstrumentId(Long measurementInstrumentId);
+
+    /**
      * 获得设备关联配置
      *
      * @param id 编号
      * @return 设备关联配置
      */
     DeviceAssociationConfigurationDO getDeviceAssociationConfiguration(Long id);
+
+
 
     /**
      * 获得设备关联配置分页
