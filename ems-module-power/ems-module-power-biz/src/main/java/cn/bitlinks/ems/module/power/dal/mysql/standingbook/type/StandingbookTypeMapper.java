@@ -5,6 +5,8 @@ import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -47,4 +49,8 @@ public interface StandingbookTypeMapper extends BaseMapperX<StandingbookTypeDO> 
                 .likeIfPresent(StandingbookTypeDO::getName, name)
                 .orderByDesc(StandingbookTypeDO::getId));
     }
+
+    // Mapper 接口
+    @Select("SELECT value FROM power_standingbook_attribute WHERE standingbook_id = #{standingbookId} AND code = #{code} AND deleted=0 ORDER BY sort")
+    String selectAttributeValueByCode(@Param("standingbookId") Long standingbookId, @Param("code") String code);
 }

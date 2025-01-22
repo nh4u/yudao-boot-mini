@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.infra.api.file.FileApi;
+import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.AssociationData;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
@@ -21,6 +22,8 @@ import cn.bitlinks.ems.module.power.enums.ApiConstants;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.service.deviceassociationconfiguration.DeviceAssociationConfigurationService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.sun.xml.internal.bind.v2.TODO;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
@@ -42,13 +45,11 @@ import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.framework.common.util.json.JsonUtils.objectMapper;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_NOT_EXISTS;
 
 /**
@@ -272,13 +273,53 @@ public class StandingbookServiceImpl implements StandingbookService {
         for (StandingbookDO standingbookDO : standingbookDOS) {
             // 获取关联设备信息
             DeviceAssociationConfigurationDO association = deviceAssociationConfigurationService.getDeviceAssociationConfigurationByMeasurementInstrumentId(standingbookDO.getTypeId());
-
+            Long StandingbookId = standingbookDO.getId();
+            String StandingbookName = standingbookTypeMapper.selectAttributeValueByCode(StandingbookId, "measuringInstrumentName");
             StandingbookWithAssociations standingbookWithAssociations = new StandingbookWithAssociations();
             standingbookWithAssociations.setStandingbook(standingbookDO);
+            standingbookWithAssociations.setStandingbookId(StandingbookId);
+            standingbookWithAssociations.setStandingbookName(StandingbookName);
+            standingbookWithAssociations.setStandingbookTypeId(standingbookDO.getTypeId());
+            StandingbookTypeDO standingbookType = standingbookTypeMapper.selectById(standingbookDO.getTypeId());
+            standingbookWithAssociations.setStandingbookTypeName(standingbookType.getName());
 
-            // 将单个关联设备信息添加到列表中
-            List<DeviceAssociationConfigurationDO> associations = association != null ? new ArrayList<>(Arrays.asList(association)) : new ArrayList<>();
-            standingbookWithAssociations.setAssociations(associations);
+            // 解析 measurement 和 device 字段
+            if (association != null) {
+                try {
+                    JsonNode measurementNode = objectMapper.readTree(association.getMeasurementIds());
+                    Long deviceId = association.getDeviceId();
+
+                    List<AssociationData> children = new ArrayList<>();
+                    List<StandingbookDO> deviceAttributes = new ArrayList<>();
+
+                    for (JsonNode node : measurementNode) {
+                        String measurementId = node.get("id").asText();
+                        StandingbookDO measurementAttribute = getStandingbook(Long.valueOf(measurementId));
+                        if (measurementAttribute != null) {
+                            // todo 填充AssociationData
+                            AssociationData associationData = new AssociationData();
+                            associationData.setStandingbookId(measurementAttribute.getId());
+                            associationData.setStandingbookName(measurementAttribute.getName());
+                            String codeValue = standingbookTypeMapper.selectAttributeValueByCode(measurementAttribute.getId(), "measuringInstrumentId");
+                            String stageValue = standingbookTypeMapper.selectAttributeValueByCode(measurementAttribute.getId(), "stage");
+                            associationData.setStandingbookCode(codeValue);
+                            associationData.setStage(stageValue);
+
+                            children.add(associationData);
+                        }
+                    }
+
+                    String codeValue = standingbookTypeMapper.selectAttributeValueByCode(deviceId, "measuringInstrumentId");
+                    StandingbookDO deviceAttribute = getStandingbook(deviceId);
+                    standingbookWithAssociations.setDeviceId(deviceId);
+                    standingbookWithAssociations.setDeviceName(deviceAttribute.getName());
+                    standingbookWithAssociations.setDeviceCode(codeValue);
+                    standingbookWithAssociations.setChildren(children);
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
 
             result.add(standingbookWithAssociations);
         }

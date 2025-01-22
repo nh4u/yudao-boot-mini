@@ -14,6 +14,18 @@ import java.util.List;
  **/
 @Data
 public class StandingbookWithAssociations {
+
+    private  Long standingbookTypeId;
+    private  String standingbookTypeName;
+    private  Long standingbookId;
+    private  String standingbookName;
     private StandingbookDO standingbook;
-    private List<DeviceAssociationConfigurationDO> associations;
+
+    private List<AssociationData> children;
+
+    private  Long deviceId;
+    private  String deviceName;
+    private  String deviceCode;
+
 }
+

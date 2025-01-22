@@ -59,7 +59,7 @@ public interface StandingbookService {
     PageResult<StandingbookDO> getStandingbookPage(StandingbookPageReqVO pageReqVO);
     List<StandingbookDO> getStandingbookList( Map<String,String> pageReqVO);
 
-    List<StandingbookDO> getStandingbookListBy( Map<String,String> pageReqVO);
+    List<StandingbookDO> getStandingbookListBy(Map<String,String> pageReqVO);
 
     List<StandingbookWithAssociations> getStandingbookListWithAssociations(Map<String, String> pageReqVO);
 

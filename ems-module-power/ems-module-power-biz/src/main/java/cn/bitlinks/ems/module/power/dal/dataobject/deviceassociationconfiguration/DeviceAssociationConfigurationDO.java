@@ -48,12 +48,12 @@ public class DeviceAssociationConfigurationDO extends BaseDO {
      */
     @Schema(description = "关联下级计量")
     @ExcelProperty("关联下级计量")
-    private String measurement;
+    private String measurementIds;
     /**
      * 关联设备
      */
     @Schema(description = "关联设备")
     @ExcelProperty("关联设备")
-    private String device;
+    private Long deviceId;
 
 }

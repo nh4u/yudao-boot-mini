@@ -15,21 +15,20 @@ import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_M
 @ToString(callSuper = true)
 public class DeviceAssociationConfigurationPageReqVO extends PageParam {
 
-    @Schema(description = "能源id", example = "29619")
+    @Schema(description = "能源id", example = "22906")
     private Long energyId;
 
-    @Schema(description = "计量器具id", example = "17669")
+    @Schema(description = "计量器具id", example = "25507")
     private Long measurementInstrumentId;
 
-    @Schema(description = "关联下级计量", example = "2485")
-    private String measurement;
+    @Schema(description = "关联下级计量")
+    private String measurementIds;
 
-    @Schema(description = "关联设备", example = "15562")
-    private String device;
+    @Schema(description = "关联设备", example = "32363")
+    private Long deviceId;
 
     @Schema(description = "创建时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] createTime;
-
 
 }
