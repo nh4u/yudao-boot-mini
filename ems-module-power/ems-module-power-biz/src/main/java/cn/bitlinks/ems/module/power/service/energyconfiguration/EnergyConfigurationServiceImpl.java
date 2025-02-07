@@ -110,8 +110,10 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
                 // 设置单价详情
                 String priceDetails = unitPriceConfigurationMapper.getPriceDetailsByEnergyIdAndTime(energyConfiguration.getId(), currentDateTime);
                 Integer billingMethod = unitPriceConfigurationMapper.getBillingMethodByEnergyIdAndTime(energyConfiguration.getId(), currentDateTime);
+                Integer accountingFrequency = unitPriceConfigurationMapper.getAccountingFrequencyByEnergyIdAndTime(energyConfiguration.getId(), currentDateTime);;
                 energyConfiguration.setUnitPrice(priceDetails);
                 energyConfiguration.setBillingMethod(billingMethod);
+                energyConfiguration.setAccountingFrequency(accountingFrequency);
 
                 // 设置创建人昵称
                 if (energyConfiguration.getCreator() != null) {

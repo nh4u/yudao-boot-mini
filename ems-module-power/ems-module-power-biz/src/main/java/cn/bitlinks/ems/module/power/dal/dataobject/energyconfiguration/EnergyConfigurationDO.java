@@ -85,6 +85,10 @@ public class EnergyConfigurationDO extends BaseDO {
      */
     private Integer billingMethod;
     /**
+     * 核算频率
+     */
+    private Integer accountingFrequency;
+    /**
      * 单价详细
      */
     private String unitPrice;

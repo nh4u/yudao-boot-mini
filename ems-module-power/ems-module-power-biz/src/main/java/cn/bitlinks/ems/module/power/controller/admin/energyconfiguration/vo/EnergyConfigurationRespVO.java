@@ -68,6 +68,10 @@ public class EnergyConfigurationRespVO {
     @DictFormat("billing_method") // TODO 代码优化：建议设置到对应的 DictTypeConstants 枚举类中
     private Integer billingMethod;
 
+    @Schema(description = "核算频率")
+    @ExcelProperty("核算频率")
+    private Integer accountingFrequency;
+
     @Schema(description = "单价详细", example = "11713")
     @ExcelProperty("单价详细")
     private String unitPrice;
