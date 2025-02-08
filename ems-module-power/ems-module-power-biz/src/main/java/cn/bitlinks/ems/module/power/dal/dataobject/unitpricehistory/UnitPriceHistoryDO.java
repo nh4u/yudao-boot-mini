@@ -62,9 +62,5 @@ public class UnitPriceHistoryDO extends BaseDO {
      * 计算公式
      */
     private String formula;
-    /**
-     * 修改人
-     */
-    private String updater;
 
 }

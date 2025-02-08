@@ -40,6 +40,10 @@ public class VoucherDO extends BaseDO {
      */
     private Long energyId;
     /**
+     * 能源name
+     */
+    private String energyName;
+    /**
      * 购入时间
      */
     private LocalDateTime purchaseTime;

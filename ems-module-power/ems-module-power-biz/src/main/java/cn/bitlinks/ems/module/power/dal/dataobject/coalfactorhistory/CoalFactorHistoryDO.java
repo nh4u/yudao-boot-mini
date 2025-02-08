@@ -50,9 +50,5 @@ public class CoalFactorHistoryDO extends BaseDO {
      * 关联计算公式
      */
     private String formula;
-    /**
-     * 修改人
-     */
-    private String updater;
 
 }

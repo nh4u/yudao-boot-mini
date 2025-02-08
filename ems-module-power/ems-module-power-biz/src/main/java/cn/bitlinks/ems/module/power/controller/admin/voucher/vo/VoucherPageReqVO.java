@@ -27,6 +27,9 @@ public class VoucherPageReqVO extends PageParam {
     @Schema(description = "能源id", example = "5445")
     private Long energyId;
 
+    @Schema(description = "能源name", example = "bitlinks")
+    private String energyName;
+
     @Schema(description = "购入时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] purchaseTime;

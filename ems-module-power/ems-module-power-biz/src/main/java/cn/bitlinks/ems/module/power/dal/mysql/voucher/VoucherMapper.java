@@ -22,6 +22,7 @@ public interface VoucherMapper extends BaseMapperX<VoucherDO> {
                 .eqIfPresent(VoucherDO::getCode, reqVO.getCode())
                 .likeIfPresent(VoucherDO::getName, reqVO.getName())
                 .eqIfPresent(VoucherDO::getEnergyId, reqVO.getEnergyId())
+                .likeIfPresent(VoucherDO::getEnergyName, reqVO.getEnergyName())
                 .betweenIfPresent(VoucherDO::getPurchaseTime, reqVO.getPurchaseTime())
                 .eqIfPresent(VoucherDO::getPrice, reqVO.getPrice())
                 .eqIfPresent(VoucherDO::getUsage, reqVO.getUsage())
