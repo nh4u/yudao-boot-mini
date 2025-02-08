@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfigura
 
 import cn.bitlinks.ems.module.power.dal.dataobject.deviceassociationconfiguration.DeviceAssociationConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.util.List;
@@ -15,16 +16,24 @@ import java.util.List;
 @Data
 public class StandingbookWithAssociations {
 
+    @Schema(description = "计量器具类型id")
     private  Long standingbookTypeId;
+    @Schema(description = "计量器具类型名称")
     private  String standingbookTypeName;
+    @Schema(description = "计量器具id")
     private  Long standingbookId;
+    @Schema(description = "计量器具名称")
     private  String standingbookName;
+    @Schema(description = "计量器具信息")
     private StandingbookDO standingbook;
 
     private List<AssociationData> children;
 
+    @Schema(description = "设备id")
     private  Long deviceId;
+    @Schema(description = "设备名字")
     private  String deviceName;
+    @Schema(description = "设备编码")
     private  String deviceCode;
 
 }

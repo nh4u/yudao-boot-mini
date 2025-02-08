@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.unitpricehistory.vo;
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -39,5 +40,8 @@ public class UnitPriceHistorySaveReqVO {
 
     @Schema(description = "计算公式")
     private String formula;
+
+    @Schema(description = "修改人")
+    private String updater;
 
 }

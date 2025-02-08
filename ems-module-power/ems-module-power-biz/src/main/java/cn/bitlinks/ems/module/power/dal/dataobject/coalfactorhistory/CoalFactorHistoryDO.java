@@ -1,5 +1,7 @@
 package cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory;
 
+import com.alibaba.excel.annotation.ExcelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
 import java.math.BigDecimal;
@@ -48,5 +50,9 @@ public class CoalFactorHistoryDO extends BaseDO {
      * 关联计算公式
      */
     private String formula;
+    /**
+     * 修改人
+     */
+    private String updater;
 
 }
