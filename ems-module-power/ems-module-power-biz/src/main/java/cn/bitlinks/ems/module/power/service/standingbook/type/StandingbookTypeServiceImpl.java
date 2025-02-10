@@ -266,7 +266,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
                 .setSort(6L);
 
         StandingbookAttributeDO do7 = new StandingbookAttributeDO();
-        do6.setDescription("系统生成：环节")
+        do7.setDescription("系统生成：环节")
                 .setName("环节")
                 .setCode("stage")
                 .setFormat(ApiConstants.SELECT).setOptions("外购存储;加工转换;传输分配;终端使用;回收利用")
