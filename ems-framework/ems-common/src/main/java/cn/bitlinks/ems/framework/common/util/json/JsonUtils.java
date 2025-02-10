@@ -26,7 +26,7 @@ import java.util.List;
 @Slf4j
 public class JsonUtils {
 
-    private static ObjectMapper objectMapper = new ObjectMapper();
+    public static ObjectMapper objectMapper = new ObjectMapper();
 
     static {
         objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);

@@ -53,6 +53,9 @@ public class EnergyConfigurationSaveReqVO {
     @Schema(description = "计费方式")
     private Integer billingMethod;
 
+    @Schema(description = "核算频率")
+    private Integer accountingFrequency;
+
     @Schema(description = "单价详细", example = "11713")
     private String unitPrice;
 

@@ -72,10 +72,10 @@ public class DaParamFormulaController {
         return success(BeanUtils.toBean(daParamFormula, DaParamFormulaRespVO.class));
     }
 
-    @PostMapping("/page")
+    @GetMapping("/page")
     @Operation(summary = "获得参数公式分页")
     @PreAuthorize("@ss.hasPermission('power:da-param-formula:query')")
-    public CommonResult<PageResult<DaParamFormulaRespVO>> getDaParamFormulaPage(@Valid @RequestBody DaParamFormulaPageReqVO pageReqVO) {
+    public CommonResult<PageResult<DaParamFormulaRespVO>> getDaParamFormulaPage(@Valid DaParamFormulaPageReqVO pageReqVO) {
         PageResult<DaParamFormulaDO> pageResult = daParamFormulaService.getDaParamFormulaPage(pageReqVO);
         return success(BeanUtils.toBean(pageResult, DaParamFormulaRespVO.class));
     }

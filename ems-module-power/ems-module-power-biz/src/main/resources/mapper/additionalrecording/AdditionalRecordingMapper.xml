@@ -10,7 +10,7 @@
      -->
 
 
-    <select id="existsByVoucherId" parameterType="java.lang.Long">
+    <select id="existsByVoucherId" parameterType="java.lang.Long" resultType="java.lang.Boolean">
         select * from ems_additional_recording
         <where>
             <if test="voucherId !=null">

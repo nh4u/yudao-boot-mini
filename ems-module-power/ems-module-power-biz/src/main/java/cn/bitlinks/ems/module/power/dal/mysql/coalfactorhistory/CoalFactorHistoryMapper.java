@@ -24,6 +24,7 @@ public interface CoalFactorHistoryMapper extends BaseMapperX<CoalFactorHistoryDO
                 .betweenIfPresent(CoalFactorHistoryDO::getEndTime, reqVO.getEndTime())
                 .eqIfPresent(CoalFactorHistoryDO::getFactor, reqVO.getFactor())
                 .eqIfPresent(CoalFactorHistoryDO::getFormula, reqVO.getFormula())
+                .eqIfPresent(CoalFactorHistoryDO::getUpdater,reqVO.getUpdater())
                 .betweenIfPresent(CoalFactorHistoryDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(CoalFactorHistoryDO::getId));
     }

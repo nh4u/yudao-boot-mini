@@ -1,5 +1,7 @@
 package cn.bitlinks.ems.module.power.dal.dataobject.deviceassociationconfiguration;
 
+import com.alibaba.excel.annotation.ExcelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
 import java.time.LocalDateTime;
@@ -25,27 +27,33 @@ public class DeviceAssociationConfigurationDO extends BaseDO {
     /**
      * id
      */
-    @TableId(value = "id", type = IdType.ASSIGN_ID)
+    @TableId
+    @Schema(description = "id")
+    @ExcelProperty("id")
     private Long id;
     /**
      * 能源id
      */
+    @Schema(description = "能源id")
+    @ExcelProperty("能源id")
     private Long energyId;
     /**
      * 计量器具id
      */
+    @Schema(description = "计量器具id")
+    @ExcelProperty("计量器具id")
     private Long measurementInstrumentId;
     /**
-     * 设备id
+     * 关联下级计量
      */
+    @Schema(description = "关联下级计量")
+    @ExcelProperty("关联下级计量")
+    private String measurementIds;
+    /**
+     * 关联设备
+     */
+    @Schema(description = "关联设备")
+    @ExcelProperty("关联设备")
     private Long deviceId;
-    /**
-     * 后置计量
-     */
-    private String postMeasurement;
-    /**
-     * 前置计量
-     */
-    private String preMeasurement;
 
 }

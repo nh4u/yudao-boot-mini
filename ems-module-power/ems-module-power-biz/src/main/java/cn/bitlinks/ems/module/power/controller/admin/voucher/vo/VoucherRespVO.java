@@ -29,6 +29,10 @@ public class VoucherRespVO {
     @ExcelProperty("能源id")
     private Long energyId;
 
+    @Schema(description = "能源name", example = "bitlinks")
+    @ExcelProperty("能源name")
+    private String energyName;
+
     @Schema(description = "购入时间")
     @ExcelProperty("购入时间")
     private LocalDateTime purchaseTime;

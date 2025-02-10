@@ -9,22 +9,19 @@ import javax.validation.constraints.*;
 @Data
 public class DeviceAssociationConfigurationSaveReqVO {
 
-    @Schema(description = "id", requiredMode = Schema.RequiredMode.REQUIRED, example = "26859")
+    @Schema(description = "id", requiredMode = Schema.RequiredMode.REQUIRED, example = "18547")
     private Long id;
 
-    @Schema(description = "能源id", example = "7602")
+    @Schema(description = "能源id", example = "22906")
     private Long energyId;
 
-    @Schema(description = "计量器具id", example = "10771")
+    @Schema(description = "计量器具id", example = "25507")
     private Long measurementInstrumentId;
 
-    @Schema(description = "设备id", example = "22446")
+    @Schema(description = "关联下级计量")
+    private String measurementIds;
+
+    @Schema(description = "关联设备", example = "32363")
     private Long deviceId;
-
-    @Schema(description = "后置计量 [{  \"id \":1, \"name \": \"燃气总表 \" ,\"energyId \":1,},...]")
-    private String postMeasurement;
-
-    @Schema(description = "前置计量  [{  \"id \":1, \"name \": \"燃气总表 \" ,\"energyId \":1,},...]")
-    private String preMeasurement;
 
 }

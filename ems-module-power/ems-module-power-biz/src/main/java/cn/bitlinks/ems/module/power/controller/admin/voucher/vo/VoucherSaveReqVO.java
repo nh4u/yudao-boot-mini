@@ -29,6 +29,9 @@ public class VoucherSaveReqVO {
     @NotNull(message = "能源id不能为空")
     private Long energyId;
 
+    @Schema(description = "能源name", example = "bitlinks")
+    private String energyName;
+
     @Schema(description = "购入时间")
     private LocalDateTime purchaseTime;
 

@@ -6,6 +6,7 @@ import java.util.*;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.framework.mybatis.core.mapper.BaseMapperX;
+import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.unitpricehistory.UnitPriceHistoryDO;
 import org.apache.ibatis.annotations.Mapper;
 import cn.bitlinks.ems.module.power.controller.admin.unitpricehistory.vo.*;
@@ -27,6 +28,7 @@ public interface UnitPriceHistoryMapper extends BaseMapperX<UnitPriceHistoryDO> 
                 .eqIfPresent(UnitPriceHistoryDO::getAccountingFrequency, reqVO.getAccountingFrequency())
                 .eqIfPresent(UnitPriceHistoryDO::getPriceDetails, reqVO.getPriceDetails())
                 .eqIfPresent(UnitPriceHistoryDO::getFormula, reqVO.getFormula())
+                .eqIfPresent(UnitPriceHistoryDO::getUpdater,reqVO.getUpdater())
                 .betweenIfPresent(UnitPriceHistoryDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(UnitPriceHistoryDO::getId));
     }

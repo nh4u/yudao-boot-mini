@@ -36,6 +36,11 @@ public class EnergyConfigurationDO extends BaseDO {
      */
     private String energyName;
     /**
+     * 能源名称
+     */
+    @TableField(exist = false)
+    private String name;
+    /**
      * 编码
      */
     private String code;
@@ -79,6 +84,10 @@ public class EnergyConfigurationDO extends BaseDO {
      * 枚举 {@link TODO billing_method 对应的类}
      */
     private Integer billingMethod;
+    /**
+     * 核算频率
+     */
+    private Integer accountingFrequency;
     /**
      * 单价详细
      */

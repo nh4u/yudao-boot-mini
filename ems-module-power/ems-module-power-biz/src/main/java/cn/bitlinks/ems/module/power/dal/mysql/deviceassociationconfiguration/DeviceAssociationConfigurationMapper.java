@@ -21,9 +21,8 @@ public interface DeviceAssociationConfigurationMapper extends BaseMapperX<Device
         return selectPage(reqVO, new LambdaQueryWrapperX<DeviceAssociationConfigurationDO>()
                 .eqIfPresent(DeviceAssociationConfigurationDO::getEnergyId, reqVO.getEnergyId())
                 .eqIfPresent(DeviceAssociationConfigurationDO::getMeasurementInstrumentId, reqVO.getMeasurementInstrumentId())
+                .eqIfPresent(DeviceAssociationConfigurationDO::getMeasurementIds, reqVO.getMeasurementIds())
                 .eqIfPresent(DeviceAssociationConfigurationDO::getDeviceId, reqVO.getDeviceId())
-                .eqIfPresent(DeviceAssociationConfigurationDO::getPostMeasurement, reqVO.getPostMeasurement())
-                .eqIfPresent(DeviceAssociationConfigurationDO::getPreMeasurement, reqVO.getPreMeasurement())
                 .betweenIfPresent(DeviceAssociationConfigurationDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(DeviceAssociationConfigurationDO::getId));
     }
@@ -32,9 +31,8 @@ public interface DeviceAssociationConfigurationMapper extends BaseMapperX<Device
         return selectList(new LambdaQueryWrapperX<DeviceAssociationConfigurationDO>()
                 .eqIfPresent(DeviceAssociationConfigurationDO::getEnergyId, reqVO.getEnergyId())
                 .eqIfPresent(DeviceAssociationConfigurationDO::getMeasurementInstrumentId, reqVO.getMeasurementInstrumentId())
+                .eqIfPresent(DeviceAssociationConfigurationDO::getMeasurementIds, reqVO.getMeasurementIds())
                 .eqIfPresent(DeviceAssociationConfigurationDO::getDeviceId, reqVO.getDeviceId())
-                .eqIfPresent(DeviceAssociationConfigurationDO::getPostMeasurement, reqVO.getPostMeasurement())
-                .eqIfPresent(DeviceAssociationConfigurationDO::getPreMeasurement, reqVO.getPreMeasurement())
                 .betweenIfPresent(DeviceAssociationConfigurationDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(DeviceAssociationConfigurationDO::getId));
     }

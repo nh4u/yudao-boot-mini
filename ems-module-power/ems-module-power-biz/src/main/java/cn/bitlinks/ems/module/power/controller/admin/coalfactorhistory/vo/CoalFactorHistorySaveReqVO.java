@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo;
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -28,5 +29,8 @@ public class CoalFactorHistorySaveReqVO {
 
     @Schema(description = "关联计算公式")
     private String formula;
+
+    @Schema(description = "修改人")
+    private String updater;
 
 }

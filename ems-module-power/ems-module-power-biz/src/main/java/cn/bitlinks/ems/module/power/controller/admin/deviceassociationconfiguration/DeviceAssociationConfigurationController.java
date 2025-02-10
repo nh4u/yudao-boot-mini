@@ -71,6 +71,15 @@ public class DeviceAssociationConfigurationController {
         return success(BeanUtils.toBean(deviceAssociationConfiguration, DeviceAssociationConfigurationRespVO.class));
     }
 
+    @GetMapping("/get-by-measurement-instrument-id")
+    @Operation(summary = "通过计量器具ID获得设备关联配置")
+    @Parameter(name = "measurementInstrumentId", description = "计量器具ID", required = true, example = "2048")
+    @PreAuthorize("@ss.hasPermission('power:device-association-configuration:query')")
+    public CommonResult<DeviceAssociationConfigurationRespVO> getDeviceAssociationConfigurationByMeasurementInstrumentId(@RequestParam("measurementInstrumentId") Long measurementInstrumentId) {
+        DeviceAssociationConfigurationDO deviceAssociationConfiguration = deviceAssociationConfigurationService.getDeviceAssociationConfigurationByMeasurementInstrumentId(measurementInstrumentId);
+        return CommonResult.success(BeanUtils.toBean(deviceAssociationConfiguration, DeviceAssociationConfigurationRespVO.class));
+    }
+
     @GetMapping("/page")
     @Operation(summary = "获得设备关联配置分页")
     @PreAuthorize("@ss.hasPermission('power:device-association-configuration:query')")
