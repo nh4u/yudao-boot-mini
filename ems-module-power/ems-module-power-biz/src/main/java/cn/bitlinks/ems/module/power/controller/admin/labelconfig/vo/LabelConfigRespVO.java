@@ -36,4 +36,8 @@ public class LabelConfigRespVO {
     @ExcelProperty("父标签ID")
     private Long parentId;
 
+    @Schema(description = "是否为默认标签")
+    @ExcelProperty("是否为默认标签")
+    private Boolean ifDefault;
+
 }

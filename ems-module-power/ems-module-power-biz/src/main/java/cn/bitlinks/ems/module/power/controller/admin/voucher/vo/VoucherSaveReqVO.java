@@ -59,6 +59,9 @@ public class VoucherSaveReqVO {
     @Schema(description = "识别结果")
     private String results;
 
+    @Schema(description = "凭证附件")
+    private String appendix;
+
     @Schema(description = "ids")
     private List<Long> ids;
 

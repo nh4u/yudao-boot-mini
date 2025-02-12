@@ -32,4 +32,7 @@ public class LabelConfigSaveReqVO {
     @NotNull(message = "父标签ID不能为空")
     private Long parentId;
 
+    @Schema(description = "是否为默认标签")
+    private Boolean ifDefault;
+
 }

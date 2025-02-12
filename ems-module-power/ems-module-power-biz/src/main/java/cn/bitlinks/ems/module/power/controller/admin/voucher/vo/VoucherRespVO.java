@@ -69,6 +69,9 @@ public class VoucherRespVO {
     @ExcelProperty("识别结果")
     private String results;
 
+    @Schema(description = "凭证附件")
+    private String appendix;
+
     @Schema(description = "更新时间", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("更新时间")
     private LocalDateTime updateTime;

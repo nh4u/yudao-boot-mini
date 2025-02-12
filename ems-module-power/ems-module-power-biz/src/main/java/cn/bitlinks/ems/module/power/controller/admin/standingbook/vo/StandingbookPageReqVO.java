@@ -29,6 +29,9 @@ public class StandingbookPageReqVO extends PageParam {
     @Schema(description = "简介", example = "你猜")
     private String description;
 
+    @Schema(description = "标签信息")
+    private String labelInfo;
+
     @Schema(description = "创建时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] createTime;
