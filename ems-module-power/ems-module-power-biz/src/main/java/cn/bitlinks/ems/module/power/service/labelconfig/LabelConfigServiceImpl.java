@@ -24,10 +24,7 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import javax.validation.constraints.NotNull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -322,11 +319,16 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     @NotNull
     private Function<LabelConfigDO, TreeNode<Long>> getNodeFunction() {
         return label -> {
+            Map<String, Object> extraData = new HashMap<>();
+            extraData.put("code", label.getCode());
+            extraData.put("ifDefault", label.getIfDefault());
+
             TreeNode<Long> node = new TreeNode<>();
             node.setId(label.getId());
             node.setName(label.getLabelName());
             node.setParentId(label.getParentId());
             node.setWeight(label.getSort());
+            node.setExtra(extraData);
             return node;
         };
     }
