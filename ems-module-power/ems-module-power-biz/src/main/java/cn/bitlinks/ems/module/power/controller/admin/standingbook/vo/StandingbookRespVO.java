@@ -28,6 +28,10 @@ public class StandingbookRespVO {
     @ExcelProperty("简介")
     private String description;
 
+    @Schema(description = "标签信息")
+    @ExcelProperty("标签信息")
+    private String labelInfo;
+
     /**
      * 采集频率
      */

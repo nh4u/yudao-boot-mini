@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.dal.dataobject.standingbook;
 
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
+import com.alibaba.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -45,6 +46,11 @@ public class StandingbookDO extends BaseDO {
      */
     @Schema(description = "简介")
     private String description;
+    /**
+     * 标签信息
+     */
+    @Schema(description = "标签信息")
+    private String labelInfo;
     /**
      * 采集频率
      */

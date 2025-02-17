@@ -48,5 +48,9 @@ public class LabelConfigDO extends BaseDO {
      * 父标签ID
      */
     private Long parentId;
+    /**
+     * 是否为默认标签
+     */
+    private Boolean ifDefault;
 
 }

@@ -80,5 +80,9 @@ public class VoucherDO extends BaseDO {
      * 识别结果
      */
     private String results;
+    /**
+     * 凭证附件
+     */
+    private String appendix;
 
 }

@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.controller.admin.standingbook.vo;
 
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
+import com.alibaba.excel.annotation.ExcelProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -22,6 +23,11 @@ public class StandingbookSaveReqVO {
     private Long typeId;
     @Schema(description = "简介", example = "你猜")
     private String description;
+
+    @Schema(description = "标签信息")
+    @ExcelProperty("标签信息")
+    private String labelInfo;
+
     /**
      * 采集频率
      */
