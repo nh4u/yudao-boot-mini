@@ -6,6 +6,7 @@ import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -38,9 +39,9 @@ public interface StandingbookAttributeMapper extends BaseMapperX<StandingbookAtt
     }
     @Select("SELECT * FROM power_standingbook_attribute WHERE type_id = #{typeId} and deleted=0 and standingbook_id IS NULL order by sort")
      List<StandingbookAttributeDO> selectTypeId(@Param("typeId")Long typeId) ;
-    default int deleteTypeId(Long typeId) {
-        return delete(StandingbookAttributeDO::getTypeId, typeId);
-    }
+
+    @Delete("DELETE FROM power_standingbook_attribute WHERE type_id = #{typeId} and deleted=0 and standingbook_id IS NULL")
+    int deleteTypeId( @Param("typeId") Long typeId) ;
 
     @Select("SELECT * FROM power_standingbook_attribute WHERE standingbook_id = #{standingbookId} and deleted=0 order by sort")
      List<StandingbookAttributeDO> selectStandingbookId(@Param("standingbookId") Long standingbookId) ;

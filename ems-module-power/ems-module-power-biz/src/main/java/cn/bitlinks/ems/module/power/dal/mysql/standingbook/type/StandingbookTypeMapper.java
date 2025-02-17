@@ -40,7 +40,8 @@ public interface StandingbookTypeMapper extends BaseMapperX<StandingbookTypeDO> 
         return selectCount(StandingbookTypeDO::getSuperId, superId);
     }
     default  List<StandingbookTypeDO> selectNotDelete() {
-        return selectList(
+        return selectList(new LambdaQueryWrapperX<StandingbookTypeDO>().orderByAsc(StandingbookTypeDO::getSuperId)
+                        .orderByAsc(StandingbookTypeDO::getSort).orderByAsc(StandingbookTypeDO::getCreateTime)
                 );
     }
 
