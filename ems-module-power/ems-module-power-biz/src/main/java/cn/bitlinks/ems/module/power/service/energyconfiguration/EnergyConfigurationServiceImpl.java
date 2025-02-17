@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.energyconfiguration;
 
+import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
@@ -15,6 +16,7 @@ import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.nacos.common.utils.CollectionUtils;
+import com.alibaba.nacos.common.utils.StringUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -28,8 +30,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.ENERGY_CONFIGURATION_NOT_EXISTS;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.FORMULA_TYPE_NOT_EXISTS;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
 /**
  * 能源配置 Service 实现类
@@ -52,6 +53,8 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
 
     @Override
     public Long createEnergyConfiguration(EnergyConfigurationSaveReqVO createReqVO) {
+        // 检查能源编码是否重复
+        checkEnergyCodeDuplicate(createReqVO.getCode(), null);
         // 插入
         EnergyConfigurationDO energyConfiguration = BeanUtils.toBean(createReqVO, EnergyConfigurationDO.class);
         energyConfigurationMapper.insert(energyConfiguration);
@@ -63,10 +66,22 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     public void updateEnergyConfiguration(EnergyConfigurationSaveReqVO updateReqVO) {
         // 校验存在
         validateEnergyConfigurationExists(updateReqVO.getId());
-
+        // 检查能源编码是否重复（排除自身）
+        checkEnergyCodeDuplicate(updateReqVO.getCode(), updateReqVO.getId());
         // 更新
         EnergyConfigurationDO updateObj = BeanUtils.toBean(updateReqVO, EnergyConfigurationDO.class);
         energyConfigurationMapper.updateById(updateObj);
+    }
+
+    private void checkEnergyCodeDuplicate(String code, Long id) {
+        if (StringUtils.isBlank(code)) {
+            return; // 如果编码允许为空，根据业务需求调整
+        }
+        // 查询是否存在重复编码
+        int count = energyConfigurationMapper.countByCodeAndNotId(code, id);
+        if (count > 0) {
+            throw new ServiceException(ENERGY_CODE_DUPLICATE);
+        }
     }
 
     @Override

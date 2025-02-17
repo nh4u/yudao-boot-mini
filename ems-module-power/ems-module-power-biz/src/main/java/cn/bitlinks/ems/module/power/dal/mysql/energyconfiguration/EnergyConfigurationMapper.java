@@ -8,6 +8,8 @@ import cn.bitlinks.ems.framework.mybatis.core.mapper.BaseMapperX;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import org.apache.ibatis.annotations.Mapper;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.*;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 /**
  * 能源配置 Mapper
@@ -56,5 +58,9 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
                 .inIfPresent(EnergyConfigurationDO::getId, reqVO.getEnergyIds())
                 .orderByAsc(EnergyConfigurationDO::getId));
     }
+
+    @Select("SELECT COUNT(*) FROM ems_energy_configuration " +
+            "WHERE code = #{code} AND (id != #{id} OR #{id} IS NULL)")
+    int countByCodeAndNotId(@Param("code") String code, @Param("id") Long id);
 
 }
