@@ -49,6 +49,9 @@ public interface ErrorCodeConstants {
     ErrorCode DA_PARAM_FORMULA_NOT_EXISTS = new ErrorCode(1_001_601_001, "参数公式不存在");
 
 
+    // ========== 告警管理 ==========
+    ErrorCode WARNING_INFO_NOT_EXISTS = new ErrorCode(1_001_601_001, "告警信息不存在");
+
     // ========== 其他业务错误 ==========
 
     ErrorCode DATE_RANGE_NOT_EXISTS = new ErrorCode(1_001_601_001, "日期范围不存在");
