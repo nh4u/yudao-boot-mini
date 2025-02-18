@@ -24,8 +24,16 @@ public class StandingbookWithAssociations {
     private  Long standingbookId;
     @Schema(description = "计量器具名称")
     private  String standingbookName;
-    @Schema(description = "计量器具信息")
-    private StandingbookDO standingbook;
+    @Schema(description = "计量器具编号")
+    private  String measuringInstrumentId;
+    @Schema(description = "表类型")
+    private  String tableType;
+    @Schema(description = "数值类型")
+    private  String valueType;
+    @Schema(description = "环节")
+    private  Integer stage;
+    @Schema(description = "标签信息")
+    private  String labelInfo;
 
     private List<AssociationData> children;
 

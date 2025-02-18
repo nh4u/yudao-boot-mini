@@ -277,13 +277,24 @@ public class StandingbookServiceImpl implements StandingbookService {
             DeviceAssociationConfigurationDO association = deviceAssociationConfigurationService.getDeviceAssociationConfigurationByMeasurementInstrumentId(standingbookDO.getTypeId());
             Long StandingbookId = standingbookDO.getId();
             String StandingbookName = standingbookTypeMapper.selectAttributeValueByCode(StandingbookId, "measuringInstrumentName");
+            String measuringInstrumentId = standingbookTypeMapper.selectAttributeValueByCode(StandingbookId, "measuringInstrumentId");
+            String tableType = standingbookTypeMapper.selectAttributeValueByCode(StandingbookId, "tableType");
+            String valueType = standingbookTypeMapper.selectAttributeValueByCode(StandingbookId, "valueType");
+            Integer stage = standingbookDO.getStage();
+            String labelInfo = standingbookDO.getLabelInfo();
+
             StandingbookWithAssociations standingbookWithAssociations = new StandingbookWithAssociations();
-            standingbookWithAssociations.setStandingbook(standingbookDO);
             standingbookWithAssociations.setStandingbookId(StandingbookId);
             standingbookWithAssociations.setStandingbookName(StandingbookName);
             standingbookWithAssociations.setStandingbookTypeId(standingbookDO.getTypeId());
             StandingbookTypeDO standingbookType = standingbookTypeMapper.selectById(standingbookDO.getTypeId());
             standingbookWithAssociations.setStandingbookTypeName(standingbookType.getName());
+            standingbookWithAssociations.setMeasuringInstrumentId(measuringInstrumentId);
+            standingbookWithAssociations.setTableType(tableType);
+            standingbookWithAssociations.setValueType(valueType);
+            standingbookWithAssociations.setStage(stage);
+            standingbookWithAssociations.setLabelInfo(labelInfo);
+
 
             // 解析 measurement 和 device 字段
             if (association != null) {
