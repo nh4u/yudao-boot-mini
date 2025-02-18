@@ -11,6 +11,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookType
 import cn.bitlinks.ems.module.power.enums.ApiConstants;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookServiceImpl;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
+import com.alibaba.excel.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,12 +53,15 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         StandingbookTypeDO standingbookType = BeanUtils.toBean(createReqVO, StandingbookTypeDO.class);
         standingbookTypeMapper.insert(standingbookType);
         //此处只对重点设备和计量器具进行属性固定的控制
-        if (createReqVO.getTopType().equals("1")) {
+        if (StringUtils.isNotBlank(createReqVO.getTopType()) && createReqVO.getTopType().equals("1")) {
             // 重点设备
             createKeyEquipment(standingbookType);
-        } else if (createReqVO.getTopType().equals("2")) {
+        } else if (StringUtils.isNotBlank(createReqVO.getTopType()) && createReqVO.getTopType().equals("2")) {
             // 计量器具
             createMeasuringInstrument(standingbookType);
+        }else {
+            // 其他类型
+            other(standingbookType);
         }
         // 返回
         return standingbookType.getId();
@@ -218,6 +222,11 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         }
         return rootNodes;
 
+    }
+    void other(StandingbookTypeDO standingbookTypeDO) {
+        Long superId = standingbookTypeDO.getSuperId();
+        List<StandingbookAttributeDO> savedStandingbookAttributeDOS = findSuperAttributes(superId,standingbookTypeDO.getId(),new ArrayList<>());
+        attributeService.createStandingbookAttributeBatch(savedStandingbookAttributeDOS);
     }
 
     void createMeasuringInstrument(StandingbookTypeDO standingbookTypeDO) {

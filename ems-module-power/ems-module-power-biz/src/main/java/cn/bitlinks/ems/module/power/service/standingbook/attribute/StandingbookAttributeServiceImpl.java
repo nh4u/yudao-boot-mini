@@ -11,6 +11,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.Standingboo
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.enums.ApiConstants;
+import com.alibaba.excel.util.StringUtils;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -200,7 +201,7 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
                         break;
                     }
                 }
-                if ("0".equals(flag)&& sonAttribute.getDescription().contains("父节点属性自动生成")) {
+                if ("0".equals(flag)&& StringUtils.isNotBlank(sonAttribute.getDescription()) && sonAttribute.getDescription().contains("父节点属性自动生成")) {
                   continue;
                 }
 
