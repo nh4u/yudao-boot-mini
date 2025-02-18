@@ -51,6 +51,11 @@ public interface ErrorCodeConstants {
 
     // ========== 告警管理 ==========
     ErrorCode WARNING_INFO_NOT_EXISTS = new ErrorCode(1_001_601_001, "告警信息不存在");
+    ErrorCode WARNING_TEMPLATE_NOT_EXISTS = new ErrorCode(1_001_601_002, "告警模板不存在");
+    ErrorCode WARNING_TEMPLATE_CODE_EXISTS = new ErrorCode(1_001_601_003, "邮件模版 code({}) 已存在");
+    ErrorCode WARNING_TEMPLATE_DELETE_ERROR = new ErrorCode(1_001_601_004, "该模板已关联告警规则，不可删除！");
+    ErrorCode WARNING_TEMPLATE_DELETE_BATCH_ERROR = new ErrorCode(1_001_601_005, "{}模板已关联告警规则，不可删除！");
+    ErrorCode WARNING_STRATEGY_NOT_EXISTS = new ErrorCode(1_001_601_006, "告警策略不存在");
 
     // ========== 其他业务错误 ==========
 
