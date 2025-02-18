@@ -20,7 +20,9 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
@@ -85,8 +87,20 @@ public class StandingbookTypeController {
     @GetMapping("/tree")
     @Operation(summary = "获得台账类型树形列表")
     @PreAuthorize("@ss.hasPermission('power:standingbook-type:query')")
-    public CommonResult<List> getStandingbookTree() {
-    List nodes = standingbookTypeService.getStandingbookTypeNode();
+    @Parameter(name = "id", description = "编号", example = "1024")
+    public CommonResult<List> getStandingbookTree(@RequestParam(value = "id",required = false) Long id) {
+    System.out.println("id========================"+id);
+    List<StandingbookTypeDO> nodes = standingbookTypeService.getStandingbookTypeNode();
+    if (id!=null){
+        List<StandingbookTypeDO> result = new ArrayList<>();
+        for (StandingbookTypeDO node : nodes) {
+            if (Objects.equals(node.getId(), id)){
+                result.add(node);
+                break;
+            }
+        }
+        nodes = result;
+    }
     return success(BeanUtils.toBean(nodes, StandingbookTypeRespVO.class));
     }
 

@@ -103,7 +103,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         // 删除
         standingbookTypeMapper.deleteById(id);
         try {
-            attributeService.deleteStandingbookAttribute(id);
+            attributeService.deleteStandingbookAttributeByTypeId(id);
         } catch (Exception e) {
             e.printStackTrace();
         }
