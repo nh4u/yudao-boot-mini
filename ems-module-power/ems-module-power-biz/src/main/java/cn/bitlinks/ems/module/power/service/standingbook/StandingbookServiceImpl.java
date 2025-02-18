@@ -123,6 +123,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         // 插入
         StandingbookDO standingbook = new StandingbookDO();
         standingbook.setTypeId(Long.valueOf(createReqVO.get("typeId")));
+        standingbook.setLabelInfo(createReqVO.get("labelInfo"));
         standingbookMapper.insert(standingbook);
         // 使用 entrySet() 遍历键和值
         List<StandingbookAttributeSaveReqVO> children= new ArrayList<>();
@@ -155,6 +156,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         StandingbookDO standingbook = new StandingbookDO();
         standingbook.setTypeId(Long.valueOf(updateReqVO.get("typeId")));
         standingbook.setId(Long.valueOf(updateReqVO.get("id")));
+        standingbook.setLabelInfo(updateReqVO.get("labelInfo"));
         standingbookMapper.updateById(standingbook);
         // 使用 entrySet() 遍历键和值
         List<StandingbookAttributeSaveReqVO> children= new ArrayList<>();
