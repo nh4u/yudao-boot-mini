@@ -52,6 +52,11 @@ public class StandingbookDO extends BaseDO {
     @Schema(description = "标签信息")
     private String labelInfo;
     /**
+     * 环节 | 1：外购存储  2：加工转换 3：传输分配 4：终端使用 5：回收利用
+     */
+    @Schema(description = "环节")
+    private Integer stage;
+    /**
      * 采集频率
      */
     @Schema(description = "采集频率")

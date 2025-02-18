@@ -19,6 +19,7 @@ public interface StandingbookMapper extends BaseMapperX<StandingbookDO> {
         return selectPage(reqVO, new LambdaQueryWrapperX<StandingbookDO>()
                 .likeIfPresent(StandingbookDO::getName, reqVO.getName())
                 .eqIfPresent(StandingbookDO::getLabelInfo, reqVO.getLabelInfo())
+                .eqIfPresent(StandingbookDO::getStage, reqVO.getStage())
                 .eqIfPresent(StandingbookDO::getDescription, reqVO.getDescription())
                 .eqIfPresent(StandingbookDO::getTypeId, reqVO.getTypeId())
                 .betweenIfPresent(StandingbookDO::getCreateTime, reqVO.getCreateTime())

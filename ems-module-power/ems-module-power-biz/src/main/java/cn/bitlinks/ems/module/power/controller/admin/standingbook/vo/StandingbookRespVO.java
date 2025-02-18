@@ -32,6 +32,10 @@ public class StandingbookRespVO {
     @ExcelProperty("标签信息")
     private String labelInfo;
 
+    @Schema(description = "环节 | 1：外购存储  2：加工转换 3：传输分配 4：终端使用 5：回收利用")
+    @ExcelProperty("环节 | 1：外购存储  2：加工转换 3：传输分配 4：终端使用 5：回收利用")
+    private Integer stage;
+
     /**
      * 采集频率
      */

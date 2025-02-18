@@ -32,6 +32,9 @@ public class StandingbookPageReqVO extends PageParam {
     @Schema(description = "标签信息")
     private String labelInfo;
 
+    @Schema(description = "环节 | 1：外购存储  2：加工转换 3：传输分配 4：终端使用 5：回收利用")
+    private Integer stage;
+
     @Schema(description = "创建时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] createTime;
