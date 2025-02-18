@@ -366,6 +366,8 @@ public class StandingbookServiceImpl implements StandingbookService {
                     children.add(attribute);
                 }
                 proxy.create(saveReq);
+//                TODO 保存标签信息
+
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -410,6 +412,9 @@ public class StandingbookServiceImpl implements StandingbookService {
                     style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
                 }
             }
+//            TODO 标签表头
+
+            // 创建数据行
             for (int i = 0; i < list.size(); i++) {
                 Row dataRow = sheet.createRow(i + 2);
                 dataRow.setHeightInPoints(50); // 设置行高
@@ -451,6 +456,8 @@ public class StandingbookServiceImpl implements StandingbookService {
                     }
                 }
             }
+//            TODO 标签数据
+
             // 输出到文件
 
             response.reset();
@@ -522,6 +529,8 @@ public class StandingbookServiceImpl implements StandingbookService {
                 // 注意: Apache POI 目前不支持直接设置为多选下拉框。对于多选，用户需要通过VBA或者手动配置。
                 cell.setCellStyle(style);
             }
+//            TODO 标签配置
+
             // 输出
             response.setContentType("application/octet-stream; charset=utf-8");
             response.setHeader("Content-Disposition", "attachment; filename="+ URLEncoder.encode("模板编号-" + typeId + "-台账导入模板.xlsx","UTF-8"));
