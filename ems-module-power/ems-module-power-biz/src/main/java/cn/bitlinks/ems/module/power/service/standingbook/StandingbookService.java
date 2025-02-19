@@ -72,4 +72,6 @@ public interface StandingbookService {
     Long create(StandingbookSaveReqVO saveReq);
 
     Long count(Long typeId);
+
+    List<StandingbookDO> listByBaseTypeId(Map<String, String> pageReqVO );
 }

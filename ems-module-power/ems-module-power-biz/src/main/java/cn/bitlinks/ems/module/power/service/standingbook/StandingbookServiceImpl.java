@@ -8,6 +8,7 @@ import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfigurat
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.ScaledImageDataVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
@@ -20,6 +21,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.enums.ApiConstants;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
+import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
 import cn.bitlinks.ems.module.power.service.deviceassociationconfiguration.DeviceAssociationConfigurationService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -115,6 +117,29 @@ public class StandingbookServiceImpl implements StandingbookService {
         }
         return standingbookMapper.selectCount(new LambdaQueryWrapperX<StandingbookDO>()
                 .in(StandingbookDO::getTypeId,typeIdList));
+    }
+
+    @Override
+    public List<StandingbookDO> listByBaseTypeId(Map<String, String> pageReqVO ) {
+        if (!pageReqVO.containsKey("topType")) {
+            throw exception(ErrorCodeConstants.STANDINGBOOK_TYPE_NOT_EXISTS);
+        }
+        String topType = pageReqVO.get("topType");
+        StandingbookTypeListReqVO listReqVO = new StandingbookTypeListReqVO();
+        listReqVO.setTopType(String.valueOf(topType));
+        List<StandingbookTypeDO> standingbookTypeDOS = standingbookTypeMapper.selectList(listReqVO);
+        if (standingbookTypeDOS == null || standingbookTypeDOS.size() == 0) {
+            throw exception(ErrorCodeConstants.STANDINGBOOK_NOT_EXISTS);
+        }
+        List<StandingbookDO> result =new ArrayList<>();
+        pageReqVO.remove("topType");
+        standingbookTypeDOS.forEach(standingbookTypeDO -> {
+            Long sonId = standingbookTypeDO.getId();
+            pageReqVO.put("typeId",String.valueOf(sonId));
+            List<StandingbookDO> standingbookDOS = getStandingbookList(pageReqVO);
+            result.addAll(standingbookDOS);
+        });
+        return result;
     }
 
     @Override

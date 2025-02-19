@@ -81,6 +81,13 @@ public class StandingbookController {
         List<StandingbookDO> list = standingbookService.getStandingbookList(pageReqVO);
         return success(BeanUtils.toBean(list, StandingbookRespVO.class));
     }
+    @PostMapping("/listByBaseTopType")
+    @Operation(summary = "获得计量器具（topType=2）或者重点设备（topType=1）台账列表")
+    @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
+    public CommonResult<List<StandingbookRespVO>> listByBaseTypeId(@RequestBody Map<String, String> pageReqVO) {
+        List<StandingbookDO> list = standingbookService.listByBaseTypeId(pageReqVO);
+        return success(BeanUtils.toBean(list, StandingbookRespVO.class));
+    }
 
     @PostMapping("/listBy")
     @Operation(summary = "根据条件获得台账列表")
