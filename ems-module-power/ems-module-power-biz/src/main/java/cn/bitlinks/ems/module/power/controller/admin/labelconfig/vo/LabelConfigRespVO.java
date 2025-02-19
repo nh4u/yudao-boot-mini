@@ -38,6 +38,6 @@ public class LabelConfigRespVO {
 
     @Schema(description = "是否为默认标签")
     @ExcelProperty("是否为默认标签")
-    private Boolean ifDefault;
+    private Integer ifDefault;
 
 }

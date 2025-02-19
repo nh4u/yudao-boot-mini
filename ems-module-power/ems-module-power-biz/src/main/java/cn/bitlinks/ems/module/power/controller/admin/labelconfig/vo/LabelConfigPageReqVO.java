@@ -31,6 +31,6 @@ public class LabelConfigPageReqVO extends PageParam {
     private Long parentId;
 
     @Schema(description = "是否为默认标签")
-    private Boolean ifDefault;
+    private Integer ifDefault;
 
 }
