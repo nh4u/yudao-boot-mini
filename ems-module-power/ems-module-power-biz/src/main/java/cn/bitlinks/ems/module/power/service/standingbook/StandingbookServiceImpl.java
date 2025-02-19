@@ -23,7 +23,11 @@ import cn.bitlinks.ems.module.power.enums.ApiConstants;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
 import cn.bitlinks.ems.module.power.service.deviceassociationconfiguration.DeviceAssociationConfigurationService;
+import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
+import cn.hutool.core.lang.tree.Tree;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 //import com.sun.xml.internal.bind.v2.TODO;
 import org.apache.poi.ss.usermodel.*;
@@ -68,6 +72,8 @@ public class StandingbookServiceImpl implements StandingbookService {
     private StandingbookMapper standingbookMapper;
     @Resource
     private StandingbookAttributeService standingbookAttributeService;
+    @Resource
+    private LabelConfigService labelService;
 
     @Resource
     private StandingbookTypeMapper standingbookTypeMapper;
@@ -182,6 +188,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         standingbook.setTypeId(Long.valueOf(updateReqVO.get("typeId")));
         standingbook.setId(Long.valueOf(updateReqVO.get("id")));
         standingbook.setLabelInfo(updateReqVO.get("labelInfo"));
+        standingbook.setStage(Integer.valueOf(updateReqVO.get("stage")));
         standingbookMapper.updateById(standingbook);
         // 使用 entrySet() 遍历键和值
         List<StandingbookAttributeSaveReqVO> children= new ArrayList<>();
@@ -371,6 +378,11 @@ public class StandingbookServiceImpl implements StandingbookService {
         Long typeId = pageReqVO.getTypeId();
         //模板
         List<StandingbookAttributeDO> attributes = standingbookAttributeService.getStandingbookAttributeByTypeId(typeId);
+
+        // 获取标签信息
+        String labelInfo = pageReqVO.getLabelInfo();
+        JSONObject labelJson = JSONUtil.parseObj(labelInfo); // 使用JSONUtil解析JSON字符串
+
         try (InputStream inputStream = file.getInputStream();
              Workbook workbook = new XSSFWorkbook(inputStream)) {
 
@@ -401,8 +413,28 @@ public class StandingbookServiceImpl implements StandingbookService {
                     }
                     children.add(attribute);
                 }
+                // 处理标签信息
+                for (Map.Entry<String, Object> entry : labelJson.entrySet()) {
+                    StandingbookAttributeSaveReqVO attribute = new StandingbookAttributeSaveReqVO();
+                    attribute.setName(entry.getKey());
+                    attribute.setValue(entry.getValue().toString());
+                    children.add(attribute);
+                }
+                for (int j = 0; j < attributes.size(); j++) {
+                    Cell cell = row.getCell(j);
+                    if (cell == null) continue;
+                    StandingbookAttributeSaveReqVO attribute = new StandingbookAttributeSaveReqVO();
+                    BeanUtils.copyProperties(attributes.get(j), attribute);
+                    attribute.setStandingbookId(null);
+                    if (!attribute.getFormat().equals(ApiConstants.FILE)) {
+                        String cellValue = getCellValue(cell);
+                        attribute.setValue(cellValue);
+                    } else {
+                        // TODO 读取图片文件
+                    }
+                    children.add(attribute);
+                }
                 proxy.create(saveReq);
-//                TODO 保存标签信息
 
             }
         } catch (IOException e) {
@@ -417,6 +449,11 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<StandingbookDO> list =getStandingbookList(pageReqVO);
         Long typeId = Long.valueOf(pageReqVO.get("typeId"));
         List<StandingbookAttributeDO> attributes = standingbookAttributeService.getStandingbookAttributeByTypeId(typeId);
+
+        // 获取标签信息
+        String labelInfo = pageReqVO.get("labelInfo");
+        JSONObject labelJson = JSONUtil.parseObj(labelInfo); // 使用JSONUtil解析JSON字符串
+
         if (attributes == null || attributes.isEmpty()) {
             throw new IllegalArgumentException("台账属性不能为空");
         }
@@ -431,6 +468,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             templateNumberCell1.setCellValue(typeId);
             // 创建表头
             Row headerRow = sheet.createRow(1);
+            int attributeCount = attributes.size();
             for (int i = 0; i < attributes.size(); i++) {
                 sheet.setColumnWidth(i, 5000);
                 StandingbookAttributeDO column = attributes.get(i);
@@ -448,17 +486,22 @@ public class StandingbookServiceImpl implements StandingbookService {
                     style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
                 }
             }
-//            TODO 标签表头
+            // 添加标签信息的表头
+            int labelIndex = attributeCount;
+            for (String labelKey : labelJson.keySet()) {
+                Cell labelHeaderCell = headerRow.createCell(labelIndex++);
+                labelHeaderCell.setCellValue(labelKey);
+            }
 
             // 创建数据行
             for (int i = 0; i < list.size(); i++) {
                 Row dataRow = sheet.createRow(i + 2);
                 dataRow.setHeightInPoints(50); // 设置行高
                 List<StandingbookAttributeDO> children = list.get(i).getChildren();
-                for (int j =0; j < children.size(); j++) {
+                for (int j = 0; j < children.size(); j++) {
                     StandingbookAttributeDO standingbookAttributeDO = children.get(j);
                     Cell cell = dataRow.createCell(j); // 从第1列开始
-                    if (ApiConstants.FILE.equals(standingbookAttributeDO.getFormat())){
+                    if (ApiConstants.FILE.equals(standingbookAttributeDO.getFormat())) {
 //                        CommonResult result = fileApi.getFile(standingbookAttributeDO.getFileId());
 //                        if (result == null || result.getData() == null)continue;
 //                        JSONObject file = (JSONObject) JSONUtil.parse(result.getData());
@@ -487,12 +530,17 @@ public class StandingbookServiceImpl implements StandingbookService {
 //                        // 插入图片
 //                        Picture pict = drawing.createPicture(anchor, pictureIdx);
 //                        pict.resize(); // 调整图片大小以适应单元格
-                    }else {
+                    } else {
                         cell.setCellValue(standingbookAttributeDO.getValue());
                     }
                 }
+                // 添加标签信息的数据
+                int labelDataIndex = attributeCount;
+                for (Map.Entry<String, Object> entry : labelJson.entrySet()) {
+                    Cell labelCell = dataRow.createCell(labelDataIndex++);
+                    labelCell.setCellValue(entry.getValue().toString());
+                }
             }
-//            TODO 标签数据
 
             // 输出到文件
 
@@ -514,6 +562,16 @@ public class StandingbookServiceImpl implements StandingbookService {
         if (attributes == null || attributes.isEmpty()) {
             throw new IllegalArgumentException("台账属性不能为空");
         }
+
+        List<Tree<Long>> labelTree = labelService.getLabelTree(false, null, null);
+        // 提取根标签的 code 作为表头
+        List<String> rootLabelNames = new ArrayList<>();
+        for (Tree<Long> tree : labelTree) {
+            if (tree.getParentId() == 0) { // 只处理根标签
+                rootLabelNames.add(String.valueOf(tree.getName())); // 提取 code 字段
+            }
+        }
+
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
             XSSFSheet sheet = workbook.createSheet("数据模板");
 
@@ -565,7 +623,12 @@ public class StandingbookServiceImpl implements StandingbookService {
                 // 注意: Apache POI 目前不支持直接设置为多选下拉框。对于多选，用户需要通过VBA或者手动配置。
                 cell.setCellStyle(style);
             }
-//            TODO 标签配置
+            // 添加根标签作为表头
+            int labelStartColumn = attributes.size(); // 标签从台账属性之后开始
+            for (int i = 0; i < rootLabelNames.size(); i++) {
+                Cell labelHeaderCell = headerRow.createCell(labelStartColumn + i);
+                labelHeaderCell.setCellValue(rootLabelNames.get(i));
+            }
 
             // 输出
             response.setContentType("application/octet-stream; charset=utf-8");

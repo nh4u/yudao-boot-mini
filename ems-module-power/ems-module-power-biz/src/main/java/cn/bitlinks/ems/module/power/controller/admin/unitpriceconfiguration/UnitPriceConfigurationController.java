@@ -71,6 +71,16 @@ public class UnitPriceConfigurationController {
         return success(BeanUtils.toBean(unitPriceConfiguration, UnitPriceConfigurationRespVO.class));
     }
 
+    @GetMapping("/get-by-energy-id")
+    @Operation(summary = "根据能源ID获得单价配置列表")
+    @Parameter(name = "energyId", description = "能源ID", required = true, example = "1024")
+    @PreAuthorize("@ss.hasPermission('power:unit-price-configuration:query')")
+    public CommonResult<List<UnitPriceConfigurationRespVO>> getUnitPriceConfigurationByEnergyId(@RequestParam("energyId") Long energyId) {
+        List<UnitPriceConfigurationDO> unitPriceConfigurations = unitPriceConfigurationService.getUnitPriceConfigurationByEnergyId(energyId);
+        List<UnitPriceConfigurationRespVO> result = BeanUtils.toBean(unitPriceConfigurations, UnitPriceConfigurationRespVO.class);
+        return success(result);
+    }
+
     @GetMapping("/page")
     @Operation(summary = "获得单价配置分页")
     @PreAuthorize("@ss.hasPermission('power:unit-price-configuration:query')")
