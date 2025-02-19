@@ -5,6 +5,7 @@ import cn.bitlinks.ems.module.power.controller.admin.unitpricehistory.vo.UnitPri
 import cn.bitlinks.ems.module.power.dal.dataobject.unitpricehistory.UnitPriceHistoryDO;
 import cn.bitlinks.ems.module.power.dal.mysql.unitpricehistory.UnitPriceHistoryMapper;
 import cn.bitlinks.ems.module.power.service.unitpricehistory.UnitPriceHistoryService;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
@@ -122,6 +123,13 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
     @Override
     public PageResult<UnitPriceConfigurationDO> getUnitPriceConfigurationPage(UnitPriceConfigurationPageReqVO pageReqVO) {
         return unitPriceConfigurationMapper.selectPage(pageReqVO);
+    }
+
+    @Override
+    public List<UnitPriceConfigurationDO> getUnitPriceConfigurationByEnergyId(Long energyId) {
+        return unitPriceConfigurationMapper.selectList(Wrappers.<UnitPriceConfigurationDO>lambdaQuery()
+                .eq(UnitPriceConfigurationDO::getEnergyId, energyId)
+                .orderByAsc(UnitPriceConfigurationDO::getStartTime)); // 按开始时间排序
     }
 
 }

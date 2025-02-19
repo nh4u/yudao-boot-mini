@@ -54,5 +54,11 @@ public interface UnitPriceConfigurationService {
      */
     PageResult<UnitPriceConfigurationDO> getUnitPriceConfigurationPage(UnitPriceConfigurationPageReqVO pageReqVO);
 
-
+    /**
+     * 根据能源ID获取单价配置列表
+     *
+     * @param energyId 能源ID
+     * @return 单价配置列表
+     */
+    List<UnitPriceConfigurationDO> getUnitPriceConfigurationByEnergyId(Long energyId);
 }
