@@ -22,6 +22,7 @@ public interface StandingbookTypeMapper extends BaseMapperX<StandingbookTypeDO> 
         return selectList(new LambdaQueryWrapperX<StandingbookTypeDO>()
                 .likeIfPresent(StandingbookTypeDO::getName, reqVO.getName())
                 .eqIfPresent(StandingbookTypeDO::getSuperId, reqVO.getSuperId())
+                .eqIfPresent(StandingbookTypeDO::getIsDefault, reqVO.getIsDefault())
 
                 .eqIfPresent(StandingbookTypeDO::getTopType, reqVO.getTopType())
                 .eqIfPresent(StandingbookTypeDO::getSort, reqVO.getSort())

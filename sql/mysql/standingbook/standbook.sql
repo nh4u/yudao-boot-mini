@@ -5,6 +5,7 @@ CREATE TABLE `power_standingboook_type`
     `name`        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '名字',
     `super_id`    bigint                                                        COMMENT '父级类型编号'
     `top_type`    varchar(255)                                                   NOT NULL COMMENT '类型',
+    `is_default`    varchar(255)                                                   NOT NULL COMMENT '是否默认',
     `sort`        bigint COMMENT '排序',
     `level`       bigint                                                        NOT NULL COMMENT '当前层级',
     `code`        varchar(255) COMMENT '编码',
