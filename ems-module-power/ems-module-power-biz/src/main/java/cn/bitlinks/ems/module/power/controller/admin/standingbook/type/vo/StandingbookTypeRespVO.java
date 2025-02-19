@@ -51,6 +51,9 @@ public class StandingbookTypeRespVO {
     @ExcelProperty("创建时间")
     private LocalDateTime createTime;
 
+    @Schema(description = "默认", example = "默认")
+    private String  isDefault;
+
     @Schema(description = "更新时间", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("创建时间")
     private LocalDateTime updateTime;

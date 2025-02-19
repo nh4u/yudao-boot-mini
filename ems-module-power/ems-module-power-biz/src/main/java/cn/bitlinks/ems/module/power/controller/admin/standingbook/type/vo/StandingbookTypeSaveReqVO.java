@@ -31,5 +31,6 @@ public class StandingbookTypeSaveReqVO {
 
     @Schema(description = "简介", example = "你猜")
     private String description;
-
+    @Schema(description = "默认", example = "默认")
+    private String  isDefault;
 }

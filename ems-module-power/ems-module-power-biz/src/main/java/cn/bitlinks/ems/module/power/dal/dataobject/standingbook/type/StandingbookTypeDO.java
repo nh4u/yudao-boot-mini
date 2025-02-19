@@ -57,6 +57,7 @@ public class StandingbookTypeDO extends BaseDO {
      * 简介
      */
     private String description;
+    private String  isDefault;
     @TableField(exist = false)
     List<StandingbookTypeDO> children = new ArrayList<>();
 
