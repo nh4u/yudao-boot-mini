@@ -61,6 +61,6 @@ CREATE TABLE `power_standingboook`
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '台账表';
 
-INSERT INTO`power_standingbook_type`(`id`, `name`, `super_id`, `super_name`, `top_type`, `sort`, `level`, `code`, `description`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1, '重点设备', NULL, NULL, '1', 1, 1, '1', NULL, '系统', '2024-10-17 11:35:16', '系统', '2024-11-26 09:59:24', b'0', 1);
-INSERT INTO`power_standingbook_type`(`id`, `name`, `super_id`, `super_name`, `top_type`, `sort`, `level`, `code`, `description`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (2, '计量器具', NULL, NULL, '2', 1, 1, '2', NULL, '系统', '2024-10-17 11:35:40', '系统', '2024-11-26 10:00:02', b'0', 1);
+INSERT INTO`power_standingbook_type`(`id`, `name`, `super_id`, `super_name`, `top_type`, `sort`, `level`, `code`, `description`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`, `is_default`) VALUES (1, '重点设备', NULL, NULL, '1', 1, 1, '1', NULL, '系统', '2024-10-17 11:35:16', '系统', '2024-11-26 09:59:24', b'0', 1, "1");
+INSERT INTO`power_standingbook_type`(`id`, `name`, `super_id`, `super_name`, `top_type`, `sort`, `level`, `code`, `description`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`, `is_default`) VALUES (2, '计量器具', NULL, NULL, '2', 1, 1, '2', NULL, '系统', '2024-10-17 11:35:40', '系统', '2024-11-26 10:00:02', b'0', 1, "1");
 
