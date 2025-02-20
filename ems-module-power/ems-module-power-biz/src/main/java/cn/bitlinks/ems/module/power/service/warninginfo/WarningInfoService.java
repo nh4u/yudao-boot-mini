@@ -56,4 +56,9 @@ public interface WarningInfoService {
      */
     WarningInfoStatisticsRespVO statistics();
 
+    /**
+     * 处理/处理完成 告警消息
+     * @param updateReqVO 更新信息
+     */
+    void updateWarningInfoStatus(WarningInfoStatusUpdReqVO updateReqVO);
 }

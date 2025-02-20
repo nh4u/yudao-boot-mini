@@ -5,6 +5,7 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatisticsRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatusUpdReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
 import cn.bitlinks.ems.module.power.dal.mysql.warninginfo.WarningInfoMapper;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.Resource;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.framework.web.core.util.WebFrameworkUtils.getLoginUserId;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.WARNING_INFO_NOT_EXISTS;
 
 /**
@@ -71,7 +73,15 @@ public class WarningInfoServiceImpl implements WarningInfoService {
 
     @Override
     public WarningInfoStatisticsRespVO statistics() {
-        return warningInfoMapper.countWarningsByLevel();
+        return warningInfoMapper.countWarningsByLevel(getLoginUserId());
+    }
+
+    @Override
+    public void updateWarningInfoStatus(WarningInfoStatusUpdReqVO updateReqVO) {
+        // 校验存在
+        validateWarningInfoExists(updateReqVO.getId());
+        // 更新处理状态
+        warningInfoMapper.updateStatusById(updateReqVO.getId(), updateReqVO.getStatus());
     }
 
 

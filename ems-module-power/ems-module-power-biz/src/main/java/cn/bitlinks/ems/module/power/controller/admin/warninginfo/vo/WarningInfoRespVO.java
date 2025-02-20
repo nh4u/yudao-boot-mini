@@ -16,6 +16,9 @@ public class WarningInfoRespVO {
     @ExcelProperty("编号")
     private Long id;
 
+    @Schema(description = "用户id", example = "30582")
+    private Long userId;
+
     @Schema(description = "告警等级：紧急4 重要3 次要2 警告1 提示0", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("告警等级：紧急4 重要3 次要2 警告1 提示0")
     private Integer level;
@@ -31,6 +34,14 @@ public class WarningInfoRespVO {
     @Schema(description = "设备名称与编号", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("设备名称与编号")
     private String deviceRel;
+
+    @Schema(description = "模板id", requiredMode = Schema.RequiredMode.REQUIRED, example = "3996")
+    @ExcelProperty("模板id")
+    private Long templateId;
+
+    @Schema(description = "标题", requiredMode = Schema.RequiredMode.REQUIRED)
+    @ExcelProperty("标题")
+    private String title;
 
     @Schema(description = "告警内容", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("告警内容")

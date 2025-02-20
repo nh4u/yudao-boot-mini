@@ -33,6 +33,10 @@ public class WarningInfoDO extends BaseDO {
      */
     private Integer level;
     /**
+     * 用户id
+     */
+    private Long userId;
+    /**
      * 告警时间
      */
     private LocalDateTime warningTime;
@@ -44,6 +48,14 @@ public class WarningInfoDO extends BaseDO {
      * 设备名称与编号
      */
     private String deviceRel;
+    /**
+     * 模板id
+     */
+    private Long templateId;
+    /**
+     * 标题
+     */
+    private String title;
     /**
      * 告警内容
      */

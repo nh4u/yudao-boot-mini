@@ -18,6 +18,9 @@ public class WarningInfoPageReqVO extends PageParam {
     @Schema(description = "告警等级：紧急4 重要3 次要2 警告1 提示0")
     private Integer level;
 
+    @Schema(description = "用户id", example = "30582")
+    private Long userId;
+
     @Schema(description = "告警时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] warningTime;
