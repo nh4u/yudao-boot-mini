@@ -36,6 +36,7 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
                 .eqIfPresent(EnergyConfigurationDO::getUnitPrice, reqVO.getUnitPrice())
                 .eqIfPresent(EnergyConfigurationDO::getUnitPriceFormula, reqVO.getUnitPriceFormula())
                 .eqIfPresent(EnergyConfigurationDO::getUnitPriceScale, reqVO.getUnitPriceScale())
+                .inIfPresent(EnergyConfigurationDO::getId, reqVO.getEnergyIds())
                 .betweenIfPresent(EnergyConfigurationDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(EnergyConfigurationDO::getId));
     }
