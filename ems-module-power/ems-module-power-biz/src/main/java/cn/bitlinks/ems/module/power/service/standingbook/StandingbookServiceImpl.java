@@ -168,7 +168,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             System.out.println("Key: " + entry.getKey() + ", Value: " + entry.getValue());
             String key = entry.getKey();
             String value = entry.getValue();
-            if (!entry.getKey() .equals("typeId")){
+            if (!entry.getKey() .equals("typeId")&&!entry.getKey().equals("labelInfo")){
                 StandingbookAttributeSaveReqVO attribute = new StandingbookAttributeSaveReqVO();
                 attribute.setCode(key).setValue(value);
                 standingbookAttributeByTypeId.forEach(standingbookAttributeDO -> {
@@ -214,7 +214,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         for (Map.Entry<String, String> entry : updateReqVO.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
-            if (!entry.getKey() .equals("typeId")&&!entry.getKey() .equals("id")){
+            if (!entry.getKey() .equals("typeId")&&!entry.getKey() .equals("id")&&!entry.getKey().equals("labelInfo")){
                 StandingbookAttributeSaveReqVO attribute = new StandingbookAttributeSaveReqVO();
                 attribute.setCode(key).setValue(value);
                 attribute.setStandingbookId(standingbook.getId());
