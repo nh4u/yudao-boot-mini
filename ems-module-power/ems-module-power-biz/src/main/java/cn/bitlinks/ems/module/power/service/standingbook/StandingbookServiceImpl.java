@@ -206,7 +206,9 @@ public class StandingbookServiceImpl implements StandingbookService {
         standingbook.setTypeId(Long.valueOf(updateReqVO.get("typeId")));
         standingbook.setId(Long.valueOf(updateReqVO.get("id")));
         standingbook.setLabelInfo(updateReqVO.get("labelInfo"));
-        standingbook.setStage(Integer.valueOf(updateReqVO.get("stage")));
+        if(updateReqVO.get("stage") != null) {
+            standingbook.setStage(Integer.valueOf(updateReqVO.get("stage")));
+        }
         standingbookMapper.updateById(standingbook);
         // 使用 entrySet() 遍历键和值
         List<StandingbookAttributeSaveReqVO> children= new ArrayList<>();
@@ -384,10 +386,10 @@ public class StandingbookServiceImpl implements StandingbookService {
 
                 if (association.getDeviceId() != null) {
                     Long deviceId = association.getDeviceId();
-                    String codeValue = standingbookTypeMapper.selectAttributeValueByCode(deviceId, "measuringInstrumentId");
-                    StandingbookDO deviceAttribute = getStandingbook(deviceId);
+                    String codeValue = standingbookTypeMapper.selectAttributeValueByCode(deviceId, "equipmentId");
+                    String name = standingbookTypeMapper.selectAttributeValueByCode(deviceId, "equipmentName");
                     standingbookWithAssociations.setDeviceId(deviceId);
-                    standingbookWithAssociations.setDeviceName(deviceAttribute.getName());
+                    standingbookWithAssociations.setDeviceName(name);
                     standingbookWithAssociations.setDeviceCode(codeValue);
                 }
             }
