@@ -32,11 +32,20 @@ public class DeviceAssociationConfigurationServiceImpl implements DeviceAssociat
 
     @Override
     public Long createDeviceAssociationConfiguration(DeviceAssociationConfigurationSaveReqVO createReqVO) {
-        // 插入
-        DeviceAssociationConfigurationDO deviceAssociationConfiguration = BeanUtils.toBean(createReqVO, DeviceAssociationConfigurationDO.class);
-        deviceAssociationConfigurationMapper.insert(deviceAssociationConfiguration);
-        // 返回
-        return deviceAssociationConfiguration.getId();
+        // 查询现有记录
+        DeviceAssociationConfigurationSaveReqVO existing = deviceAssociationConfigurationMapper.selectByEnergyAndInstrument(createReqVO.getEnergyId(),createReqVO.getMeasurementInstrumentId());
+        if (existing == null) {
+            // 插入
+            DeviceAssociationConfigurationDO deviceAssociationConfiguration = BeanUtils.toBean(createReqVO, DeviceAssociationConfigurationDO.class);
+            deviceAssociationConfigurationMapper.insert(deviceAssociationConfiguration);
+        }else {
+            Long id = existing.getId();
+            DeviceAssociationConfigurationDO updateObj = BeanUtils.toBean(createReqVO, DeviceAssociationConfigurationDO.class);
+            updateObj.setId(id);
+            deviceAssociationConfigurationMapper.updateById(updateObj);
+        }
+
+        return 0L;
     }
 
     @Override

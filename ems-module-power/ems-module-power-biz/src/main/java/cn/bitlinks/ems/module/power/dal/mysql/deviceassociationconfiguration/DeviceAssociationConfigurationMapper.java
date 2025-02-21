@@ -8,6 +8,8 @@ import cn.bitlinks.ems.framework.mybatis.core.mapper.BaseMapperX;
 import cn.bitlinks.ems.module.power.dal.dataobject.deviceassociationconfiguration.DeviceAssociationConfigurationDO;
 import org.apache.ibatis.annotations.Mapper;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.*;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 /**
  * 设备关联配置 Mapper
@@ -36,4 +38,10 @@ public interface DeviceAssociationConfigurationMapper extends BaseMapperX<Device
                 .betweenIfPresent(DeviceAssociationConfigurationDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(DeviceAssociationConfigurationDO::getId));
     }
+
+    @Select("SELECT * FROM ems_device_association_configuration WHERE energy_id = #{energyId} AND measurement_instrument_id = #{instrumentId}")
+    DeviceAssociationConfigurationSaveReqVO selectByEnergyAndInstrument(
+            @Param("energyId") Long energyId,
+            @Param("instrumentId") Long measurementInstrumentId
+    );
 }
