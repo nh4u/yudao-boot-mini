@@ -49,6 +49,14 @@ public interface ErrorCodeConstants {
     ErrorCode DA_PARAM_FORMULA_NOT_EXISTS = new ErrorCode(1_001_601_001, "参数公式不存在");
 
 
+    // ========== 告警管理 ==========
+    ErrorCode WARNING_INFO_NOT_EXISTS = new ErrorCode(1_001_701_001, "告警信息不存在");
+    ErrorCode WARNING_TEMPLATE_NOT_EXISTS = new ErrorCode(1_001_701_002, "告警模板不存在");
+    ErrorCode WARNING_TEMPLATE_CODE_EXISTS = new ErrorCode(1_001_701_003, "邮件模版 code({}) 已存在");
+    ErrorCode WARNING_TEMPLATE_DELETE_ERROR = new ErrorCode(1_001_701_004, "该模板已关联告警规则，不可删除！");
+    ErrorCode WARNING_TEMPLATE_DELETE_BATCH_ERROR = new ErrorCode(1_001_701_005, "{}模板已关联告警规则，不可删除！");
+    ErrorCode WARNING_STRATEGY_NOT_EXISTS = new ErrorCode(1_001_701_006, "告警策略不存在");
+
     // ========== 其他业务错误 ==========
 
     ErrorCode DATE_RANGE_NOT_EXISTS = new ErrorCode(1_001_601_001, "日期范围不存在");

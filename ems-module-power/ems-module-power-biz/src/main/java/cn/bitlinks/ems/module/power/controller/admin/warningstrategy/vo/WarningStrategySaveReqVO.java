@@ -1,0 +1,62 @@
+package cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.*;
+import java.util.*;
+import javax.validation.constraints.*;
+
+@Schema(description = "管理后台 - 告警策略新增/修改 Request VO")
+@Data
+public class WarningStrategySaveReqVO {
+
+    @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "27747")
+    private Long id;
+
+    @Schema(description = "规则名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "zzc")
+    @NotEmpty(message = "规则名称不能为空")
+    private String name;
+
+    @Schema(description = "描述", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotEmpty(message = "描述不能为空")
+    private String description;
+
+    @Schema(description = "设备范围")
+    private String deviceScope;
+
+    @Schema(description = "设备分类范围")
+    private String deviceTypeScope;
+
+    @Schema(description = "告警条件", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotEmpty(message = "告警条件不能为空")
+    private String condition;
+
+    @Schema(description = "告警等级：紧急4 重要3 次要2 警告1 提示0", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "告警等级：紧急4 重要3 次要2 警告1 提示0不能为空")
+    private Integer level;
+
+    @Schema(description = "站内信模板id", requiredMode = Schema.RequiredMode.REQUIRED, example = "30741")
+    @NotNull(message = "站内信模板id不能为空")
+    private Long siteTemplateId;
+
+    @Schema(description = "邮件模板id", example = "3143")
+    private Long mailTemplateId;
+
+    @Schema(description = "站内信人员", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotEmpty(message = "站内信人员不能为空")
+    private String siteStaff;
+
+    @Schema(description = "邮件人员")
+    private String mailStaff;
+
+    @Schema(description = "公共人员")
+    private String commonStaff;
+
+    @Schema(description = "告警间隔", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotEmpty(message = "告警间隔不能为空")
+    private String interval;
+
+    @Schema(description = "告警间隔单位", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "告警间隔单位不能为空")
+    private Integer intervalUnit;
+
+}
