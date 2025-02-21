@@ -349,33 +349,40 @@ public class StandingbookServiceImpl implements StandingbookService {
             // 解析 measurement 和 device 字段
             if (association != null) {
                 if (association.getMeasurementIds() != null) {
-                    try {
-                        JsonNode measurementNode = objectMapper.readTree(association.getMeasurementIds());
+                    String measurementIdList = association.getMeasurementIds();
+                    List<AssociationData> children = new ArrayList<>();
 
-                        List<AssociationData> children = new ArrayList<>();
+                    // 1. 清理非法字符
+                    String cleanStr = measurementIdList.replaceAll("[^\\d,-]", "");
 
-                        for (JsonNode node : measurementNode) {
-                            String measurementId = node.get("id").asText();
-                            StandingbookDO measurementAttribute = getStandingbook(Long.valueOf(measurementId));
-                            if (measurementAttribute != null) {
-                                // todo 填充AssociationData
-                                AssociationData associationData = new AssociationData();
-                                associationData.setStandingbookId(measurementAttribute.getId());
-                                associationData.setStandingbookName(measurementAttribute.getName());
-                                String codeValue = standingbookTypeMapper.selectAttributeValueByCode(measurementAttribute.getId(), "measuringInstrumentId");
-                                String stageValue = standingbookTypeMapper.selectAttributeValueByCode(measurementAttribute.getId(), "stage");
-                                associationData.setStandingbookCode(codeValue);
-                                associationData.setStage(stageValue);
-
-                                children.add(associationData);
-                            }
+                    // 2. 分割并转换
+                    if (!cleanStr.isEmpty()) {
+                        String[] idArray = cleanStr.split(",");
+                        for (String idStr : idArray) {
+                                if (!idStr.trim().isEmpty()) {
+                                    Long measurementId = Long.parseLong(idStr.trim());
+                                    StandingbookDO measurementAttribute = getStandingbook(measurementId);
+                                    if (measurementAttribute != null) {
+                                        AssociationData associationData = new AssociationData();
+                                        String name = standingbookTypeMapper.selectAttributeValueByCode(
+                                                measurementAttribute.getId(), "measuringInstrumentName");
+                                        associationData.setStandingbookId(measurementAttribute.getId());
+                                        associationData.setStandingbookName(name);
+                                        String codeValue = standingbookTypeMapper.selectAttributeValueByCode(
+                                                measurementAttribute.getId(), "measuringInstrumentId");
+                                        String stageValue = standingbookTypeMapper.selectAttributeValueByCode(
+                                                measurementAttribute.getId(), "stage");
+                                        associationData.setStandingbookCode(codeValue);
+                                        associationData.setStage(stageValue);
+                                        children.add(associationData);
+                                    }
+                                }
                         }
-                        standingbookWithAssociations.setChildren(children);
-                    } catch (IOException e) {
-                        e.printStackTrace();
                     }
+                    standingbookWithAssociations.setChildren(children);
                 }
-                if(association.getDeviceId() != null){
+
+                if (association.getDeviceId() != null) {
                     Long deviceId = association.getDeviceId();
                     String codeValue = standingbookTypeMapper.selectAttributeValueByCode(deviceId, "measuringInstrumentId");
                     StandingbookDO deviceAttribute = getStandingbook(deviceId);
@@ -383,10 +390,11 @@ public class StandingbookServiceImpl implements StandingbookService {
                     standingbookWithAssociations.setDeviceName(deviceAttribute.getName());
                     standingbookWithAssociations.setDeviceCode(codeValue);
                 }
+            }
 
                 result.add(standingbookWithAssociations);
-            }
         }
+
         return result;
     }
 
