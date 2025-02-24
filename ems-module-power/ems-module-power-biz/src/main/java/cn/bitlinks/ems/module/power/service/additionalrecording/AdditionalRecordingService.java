@@ -25,6 +25,8 @@ public interface AdditionalRecordingService {
      */
     List<Long> createAdditionalRecording(@Valid List<AdditionalRecordingSaveReqVO> createReqVOs);
 
+    AdditionalRecordingLastVO getLastRecord(Long standingbookId, LocalDateTime currentCollectTime);
+
     /**
      * 更新补录
      *
@@ -60,6 +62,6 @@ public interface AdditionalRecordingService {
             String recordPerson,
             Integer recordMethod,
             LocalDateTime startThisCollectTime, LocalDateTime endThisCollectTime,
-            LocalDateTime startCreateTime, LocalDateTime endCreateTime);
+            LocalDateTime startEnterTime, LocalDateTime endEnterTime);
 
 }

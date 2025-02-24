@@ -1,10 +1,10 @@
 package cn.bitlinks.ems.module.power.service.additionalrecording;
 
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,7 +12,6 @@ import java.util.*;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
-import cn.bitlinks.ems.framework.common.pojo.PageParam;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 
 import cn.bitlinks.ems.module.power.dal.mysql.additionalrecording.AdditionalRecordingMapper;
@@ -31,25 +30,31 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
 
     @Resource
     private AdditionalRecordingMapper additionalRecordingMapper;
+    @Resource
+    private StandingbookTypeMapper standingbookTypeMapper;
 
     @Override
     public List<Long> createAdditionalRecording(List<AdditionalRecordingSaveReqVO> createReqVOs) {
         List<Long> createdIds = new ArrayList<>();
 
-        // 查询最后采集点的数据
-        QueryWrapper<AdditionalRecordingDO> queryWrapper = new QueryWrapper<>();
-        queryWrapper.orderByDesc("this_collect_time");
-        queryWrapper.last("LIMIT 1");
-        AdditionalRecordingDO lastRecord = additionalRecordingMapper.selectOne(queryWrapper);
-
         for (AdditionalRecordingSaveReqVO createReqVO : createReqVOs) {
+            AdditionalRecordingLastVO lastRecord = getLastRecord(createReqVO.getStandingbookId(),createReqVO.getThisCollectTime());
+            String valueType = standingbookTypeMapper.selectAttributeValueByCode(createReqVO.getStandingbookId(), "valueType");
+            createReqVO.setValueType(valueType);
             // 设置“上次采集时间”和“上次数值”
             if (lastRecord != null) {
-                createReqVO.setLastCollectTime(lastRecord.getThisCollectTime());
-                createReqVO.setLastValue(lastRecord.getThisValue());
+                createReqVO.setLastCollectTime(lastRecord.getLastCollectTime());
+                createReqVO.setLastValue(lastRecord.getLastValue());
+            } else {
+                // 如果没有记录，可以设置为null或根据业务需求处理
+                createReqVO.setLastCollectTime(null);
+                createReqVO.setLastValue(null);
             }
 
             AdditionalRecordingDO additionalRecording = BeanUtils.toBean(createReqVO, AdditionalRecordingDO.class);
+
+            // 设置录入时间为当前时间
+            additionalRecording.setEnterTime(LocalDateTime.now());
 
             // 根据 voucherId 存在与否设置补录方式
             if (createReqVO.getVoucherId() != null) {
@@ -67,9 +72,26 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     }
 
     @Override
+    public AdditionalRecordingLastVO getLastRecord(Long standingbookId, LocalDateTime currentCollectTime) {
+        QueryWrapper<AdditionalRecordingDO> queryWrapper = new QueryWrapper<>();
+        queryWrapper.select("this_collect_time", "this_value")
+                .eq("standingbook_id", standingbookId)
+                .lt("this_collect_time", currentCollectTime)
+                .orderByDesc("this_collect_time")
+                .last("LIMIT 1");
+
+        AdditionalRecordingDO lastRecord = additionalRecordingMapper.selectOne(queryWrapper);
+
+        return new AdditionalRecordingLastVO()
+                .setLastCollectTime(lastRecord != null ? lastRecord.getThisCollectTime() : null)
+                .setLastValue(lastRecord != null ? lastRecord.getThisValue() : null);
+    }
+
+    @Override
     public void updateAdditionalRecording(AdditionalRecordingSaveReqVO updateReqVO) {
         // 校验存在
         validateAdditionalRecordingExists(updateReqVO.getId());
+        updateReqVO.setEnterTime(LocalDateTime.now());
         // 更新
         AdditionalRecordingDO updateObj = BeanUtils.toBean(updateReqVO, AdditionalRecordingDO.class);
         additionalRecordingMapper.updateById(updateObj);
@@ -105,7 +127,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             String recordPerson,
             Integer recordMethod,
             LocalDateTime startThisCollectTime, LocalDateTime endThisCollectTime,
-            LocalDateTime startCreateTime, LocalDateTime endCreateTime) {
+            LocalDateTime startEnterTime, LocalDateTime endEnterTime) {
         QueryWrapper<AdditionalRecordingDO> queryWrapper = new QueryWrapper<>();
         // 本次数值范围查询
         if (minThisValue != null && maxThisValue != null) {
@@ -126,9 +148,9 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             queryWrapper.le("this_collect_time", endThisCollectTime);
         }
         // 创建时间范围查询
-        if (startCreateTime != null && endCreateTime != null) {
-            queryWrapper.ge("create_time", startCreateTime);
-            queryWrapper.le("create_time", endCreateTime);
+        if (startEnterTime != null && endEnterTime != null) {
+            queryWrapper.ge("enter_time", startEnterTime);
+            queryWrapper.le("enter_time", endEnterTime);
         }
         return additionalRecordingMapper.selectList(queryWrapper);
     }

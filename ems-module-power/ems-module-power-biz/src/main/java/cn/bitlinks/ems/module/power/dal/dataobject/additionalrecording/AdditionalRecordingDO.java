@@ -37,6 +37,14 @@ public class AdditionalRecordingDO extends BaseDO {
      */
     private Long voucherId;
     /**
+     * 计量器具id
+     */
+    private Long standingbookId;
+    /**
+     * 数值类型
+     */
+    private String valueType;
+    /**
      * 上次采集时间
      */
     private LocalDateTime lastCollectTime;
@@ -66,5 +74,8 @@ public class AdditionalRecordingDO extends BaseDO {
      * 枚举 {@link TODO record_method 对应的类}
      */
     private Integer recordMethod;
-
+    /**
+     * 录入时间
+     */
+    private LocalDateTime enterTime;
 }

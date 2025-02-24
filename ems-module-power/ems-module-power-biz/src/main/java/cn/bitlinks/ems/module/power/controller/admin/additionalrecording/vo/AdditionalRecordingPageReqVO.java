@@ -19,6 +19,12 @@ public class AdditionalRecordingPageReqVO extends PageParam {
     @Schema(description = "凭证id", example = "29399")
     private Long voucherId;
 
+    @Schema(description = "计量器具id", example = "18976")
+    private Long standingbookId;
+
+    @Schema(description = "数值类型")
+    private String valueType;
+
     @Schema(description = "上次采集时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] lastCollectTime;
@@ -41,6 +47,10 @@ public class AdditionalRecordingPageReqVO extends PageParam {
 
     @Schema(description = "补录方式")
     private Integer recordMethod;
+
+    @Schema(description = "录入时间")
+    @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
+    private LocalDateTime[] enterTime;
 
     @Schema(description = "创建时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)

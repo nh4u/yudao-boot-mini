@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.additionalrecording;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -26,6 +27,7 @@ import cn.bitlinks.ems.framework.excel.core.util.ExcelUtils;
 
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.*;
+import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
@@ -45,6 +47,16 @@ public class AdditionalRecordingController {
     @PreAuthorize("@ss.hasPermission('power:additional-recording:create')")
     public CommonResult<List<Long>> createAdditionalRecording(@Valid @RequestBody List<AdditionalRecordingSaveReqVO> createReqVOs) {
         return success(additionalRecordingService.createAdditionalRecording(createReqVOs));
+    }
+
+    @GetMapping("/last-record")
+    @Operation(summary = "获取上次记录")
+    public CommonResult<AdditionalRecordingLastVO> getLastRecord(
+            @RequestParam("standingbookId") Long standingbookId,
+            @RequestParam("currentCollectTime")
+            @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
+            LocalDateTime currentCollectTime) {
+        return CommonResult.success(additionalRecordingService.getLastRecord(standingbookId, currentCollectTime));
     }
 
     @PutMapping("/update")
@@ -95,15 +107,15 @@ public class AdditionalRecordingController {
     }
 
     @GetMapping("/query")
-    @Operation(summary = "分页查询补录数据")
+    @Operation(summary = "查询补录数据")
     @PreAuthorize("@ss.hasPermission('power:additional-recording:query')")
     public CommonResult<List<AdditionalRecordingDO>> getAdditionalRecordingPage(
             BigDecimal minThisValue, BigDecimal maxThisValue,
             String recordPerson,
             Integer recordMethod,
             LocalDateTime startThisCollectTime, LocalDateTime endThisCollectTime,
-            LocalDateTime startCreateTime, LocalDateTime endCreateTime) {
-        return success(additionalRecordingService.selectByCondition(minThisValue,maxThisValue,recordPerson,recordMethod,startThisCollectTime,endThisCollectTime,startCreateTime,endCreateTime));
+            LocalDateTime startEnterTime, LocalDateTime endEnterTime) {
+        return success(additionalRecordingService.selectByCondition(minThisValue,maxThisValue,recordPerson,recordMethod,startThisCollectTime,endThisCollectTime,startEnterTime,endEnterTime));
     }
 
 }

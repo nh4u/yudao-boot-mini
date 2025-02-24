@@ -19,6 +19,8 @@ public interface AdditionalRecordingMapper extends BaseMapperX<AdditionalRecordi
     default PageResult<AdditionalRecordingDO> selectPage(AdditionalRecordingPageReqVO reqVO) {
         return selectPage(reqVO, new LambdaQueryWrapperX<AdditionalRecordingDO>()
                 .eqIfPresent(AdditionalRecordingDO::getVoucherId, reqVO.getVoucherId())
+                .eqIfPresent(AdditionalRecordingDO::getStandingbookId, reqVO.getStandingbookId())
+                .eqIfPresent(AdditionalRecordingDO::getValueType, reqVO.getValueType())
                 .betweenIfPresent(AdditionalRecordingDO::getLastCollectTime, reqVO.getLastCollectTime())
                 .eqIfPresent(AdditionalRecordingDO::getLastValue, reqVO.getLastValue())
                 .betweenIfPresent(AdditionalRecordingDO::getThisCollectTime, reqVO.getThisCollectTime())
@@ -26,6 +28,7 @@ public interface AdditionalRecordingMapper extends BaseMapperX<AdditionalRecordi
                 .eqIfPresent(AdditionalRecordingDO::getRecordPerson, reqVO.getRecordPerson())
                 .eqIfPresent(AdditionalRecordingDO::getRecordReason, reqVO.getRecordReason())
                 .eqIfPresent(AdditionalRecordingDO::getRecordMethod, reqVO.getRecordMethod())
+                .betweenIfPresent(AdditionalRecordingDO::getEnterTime, reqVO.getEnterTime())
                 .betweenIfPresent(AdditionalRecordingDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(AdditionalRecordingDO::getId));
     }

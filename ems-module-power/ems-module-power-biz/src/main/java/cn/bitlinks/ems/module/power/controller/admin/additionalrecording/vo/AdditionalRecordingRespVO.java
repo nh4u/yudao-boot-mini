@@ -23,6 +23,14 @@ public class AdditionalRecordingRespVO {
     @ExcelProperty("凭证id")
     private Long voucherId;
 
+    @Schema(description = "计量器具id", example = "18976")
+    @ExcelProperty("计量器具id")
+    private Long standingbookId;
+
+    @Schema(description = "数值类型")
+    @ExcelProperty("数值类型")
+    private String valueType;
+
     @Schema(description = "上次采集时间")
     @ExcelProperty("上次采集时间")
     private LocalDateTime lastCollectTime;
@@ -51,6 +59,10 @@ public class AdditionalRecordingRespVO {
     @ExcelProperty(value = "补录方式", converter = DictConvert.class)
     @DictFormat("record_method") // TODO 代码优化：建议设置到对应的 DictTypeConstants 枚举类中
     private Integer recordMethod;
+
+    @Schema(description = "录入时间")
+    @ExcelProperty("录入时间")
+    private LocalDateTime enterTime;
 
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("创建时间")

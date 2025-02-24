@@ -18,6 +18,12 @@ public class AdditionalRecordingSaveReqVO {
     @Schema(description = "凭证id", example = "29399")
     private Long voucherId;
 
+    @Schema(description = "计量器具id", example = "18976")
+    private Long standingbookId;
+
+    @Schema(description = "数值类型")
+    private String valueType;
+
     @Schema(description = "上次采集时间")
     private LocalDateTime lastCollectTime;
 
@@ -38,5 +44,8 @@ public class AdditionalRecordingSaveReqVO {
 
     @Schema(description = "补录方式")
     private Integer recordMethod;
+
+    @Schema(description = "录入时间")
+    private LocalDateTime enterTime;
 
 }
