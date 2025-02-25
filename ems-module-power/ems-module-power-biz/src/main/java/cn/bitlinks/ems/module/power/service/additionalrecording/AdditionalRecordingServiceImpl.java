@@ -49,6 +49,9 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         createReqVO.setValueType(valueType);
         createReqVO.setUnit(unit);
         AdditionalRecordingDO additionalRecording = BeanUtils.toBean(createReqVO, AdditionalRecordingDO.class);
+        if(createReqVO.getRecordPerson() == null){
+            createReqVO.setRecordPerson(getLoginUserNickname());
+        }
 
         // 设置录入时间为当前时间
         additionalRecording.setEnterTime(LocalDateTime.now());

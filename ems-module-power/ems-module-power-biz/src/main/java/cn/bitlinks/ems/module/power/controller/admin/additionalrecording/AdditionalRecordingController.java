@@ -52,8 +52,10 @@ public class AdditionalRecordingController {
     @PostMapping("/createByVoucherId")
     @Operation(summary = "凭证导入")
     @PreAuthorize("@ss.hasPermission('power:additional-recording:createByVoucherId')")
-    public CommonResult<List<Long>> createAdditionalRecording(@Valid @RequestBody List<Long> VoucherIds,Long standingbookId) {
-        return success(additionalRecordingService.createAdditionalRecordingByVoucherId(VoucherIds,standingbookId));
+    public CommonResult<List<Long>> createAdditionalRecording(@RequestBody CreateAdditionalRecordingDTO request) {
+        Long standingbookId = request.getStandingbookId();
+        List<Long> voucherIds = request.getVoucherIds();
+        return success(additionalRecordingService.createAdditionalRecordingByVoucherId(voucherIds,standingbookId));
     }
 
     @GetMapping("/getVoucherIdBystandingbookId")
