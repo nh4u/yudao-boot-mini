@@ -59,7 +59,7 @@ public class AdditionalRecordingController {
     @GetMapping("/getVoucherIdBystandingbookId")
     @Operation(summary = "回显凭证id")
     @PreAuthorize("@ss.hasPermission('power:additional-recording:getVoucherIdBystandingbookId')")
-    public CommonResult<List<Long>> getVoucherIdsByStandingbookId(Long standingbookId) {
+    public CommonResult<List<Long>> getVoucherIdsByStandingbookId(@RequestParam("standingbookId")Long standingbookId) {
         return success(additionalRecordingService.getVoucherIdsByStandingbookId(standingbookId));
     }
 
