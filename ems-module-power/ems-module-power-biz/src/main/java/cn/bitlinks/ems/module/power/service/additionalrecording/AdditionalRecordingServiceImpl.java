@@ -119,6 +119,14 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     }
 
     @Override
+    public void deleteAdditionalRecording(Long id) {
+        // 校验存在
+        validateAdditionalRecordingExists(id);
+        // 删除
+        additionalRecordingMapper.deleteById(id);
+    }
+
+    @Override
     public void deleteAdditionalRecordings(List<Long> ids) {
         for (Long id : ids) {
             // 校验存在

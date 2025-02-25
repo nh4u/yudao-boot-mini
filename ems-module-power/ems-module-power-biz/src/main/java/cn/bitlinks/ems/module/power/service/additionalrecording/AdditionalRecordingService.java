@@ -39,11 +39,19 @@ public interface AdditionalRecordingService {
     void updateAdditionalRecording(@Valid AdditionalRecordingSaveReqVO updateReqVO);
 
     /**
-     * 删除补录
+     * 批量删除补录
      *
      * @param ids 编号
      */
     void deleteAdditionalRecordings(List<Long> ids);
+
+
+    /**
+     * 删除补录
+     *
+     * @param id 编号
+     */
+    void deleteAdditionalRecording(Long id);
 
     /**
      * 获得补录
