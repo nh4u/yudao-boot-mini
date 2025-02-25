@@ -96,8 +96,8 @@ public class VoucherController {
     @DeleteMapping("/delete-batch")
     @Operation(summary = "批量删除凭证管理")
     @PreAuthorize("@ss.hasPermission('power:voucher:delete')")
-    public CommonResult<Boolean> deleteVouchers(@RequestBody VoucherSaveReqVO deleteVO) {
-        voucherService.deleteVouchers(deleteVO);
+    public CommonResult<Boolean> deleteVouchers(@RequestBody List<Long> ids) {
+        voucherService.deleteVouchers(ids);
         return success(true);
     }
 

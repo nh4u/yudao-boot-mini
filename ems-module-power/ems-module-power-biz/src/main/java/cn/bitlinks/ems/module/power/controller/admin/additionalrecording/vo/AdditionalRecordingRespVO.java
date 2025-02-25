@@ -15,29 +15,21 @@ import cn.bitlinks.ems.framework.excel.core.convert.DictConvert;
 @ExcelIgnoreUnannotated
 public class AdditionalRecordingRespVO {
 
-    @Schema(description = "id", requiredMode = Schema.RequiredMode.REQUIRED, example = "86")
+    @Schema(description = "id", requiredMode = Schema.RequiredMode.REQUIRED, example = "11841")
     @ExcelProperty("id")
     private Long id;
 
-    @Schema(description = "凭证id", example = "29399")
+    @Schema(description = "凭证id", example = "4781")
     @ExcelProperty("凭证id")
     private Long voucherId;
 
-    @Schema(description = "计量器具id", example = "18976")
+    @Schema(description = "计量器具id", example = "21597")
     @ExcelProperty("计量器具id")
     private Long standingbookId;
 
-    @Schema(description = "数值类型")
+    @Schema(description = "数值类型", example = "1")
     @ExcelProperty("数值类型")
     private String valueType;
-
-    @Schema(description = "上次采集时间")
-    @ExcelProperty("上次采集时间")
-    private LocalDateTime lastCollectTime;
-
-    @Schema(description = "上次数值")
-    @ExcelProperty("上次数值")
-    private BigDecimal lastValue;
 
     @Schema(description = "本次采集时间")
     @ExcelProperty("本次采集时间")
@@ -47,17 +39,20 @@ public class AdditionalRecordingRespVO {
     @ExcelProperty("本次数值")
     private BigDecimal thisValue;
 
+    @Schema(description = "单位")
+    @ExcelProperty("单位")
+    private String unit;
+
     @Schema(description = "补录人")
     @ExcelProperty("补录人")
     private String recordPerson;
 
-    @Schema(description = "补录原因", example = "不香")
+    @Schema(description = "补录原因", example = "不好")
     @ExcelProperty("补录原因")
     private String recordReason;
 
     @Schema(description = "补录方式")
-    @ExcelProperty(value = "补录方式", converter = DictConvert.class)
-    @DictFormat("record_method") // TODO 代码优化：建议设置到对应的 DictTypeConstants 枚举类中
+    @ExcelProperty("补录方式")
     private Integer recordMethod;
 
     @Schema(description = "录入时间")
@@ -67,5 +62,6 @@ public class AdditionalRecordingRespVO {
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("创建时间")
     private LocalDateTime createTime;
+
 
 }

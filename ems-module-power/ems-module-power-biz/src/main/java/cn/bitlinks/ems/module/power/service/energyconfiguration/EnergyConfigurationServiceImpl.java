@@ -55,6 +55,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     public Long createEnergyConfiguration(EnergyConfigurationSaveReqVO createReqVO) {
         // 检查能源编码是否重复
         checkEnergyCodeDuplicate(createReqVO.getCode(), null);
+        checkEnergyNameDuplicate(createReqVO.getEnergyName(), null);
         // 插入
         EnergyConfigurationDO energyConfiguration = BeanUtils.toBean(createReqVO, EnergyConfigurationDO.class);
         energyConfigurationMapper.insert(energyConfiguration);
@@ -68,6 +69,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         validateEnergyConfigurationExists(updateReqVO.getId());
         // 检查能源编码是否重复（排除自身）
         checkEnergyCodeDuplicate(updateReqVO.getCode(), updateReqVO.getId());
+        checkEnergyNameDuplicate(updateReqVO.getEnergyName(), updateReqVO.getId());
         // 更新
         EnergyConfigurationDO updateObj = BeanUtils.toBean(updateReqVO, EnergyConfigurationDO.class);
         energyConfigurationMapper.updateById(updateObj);
@@ -81,6 +83,17 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         int count = energyConfigurationMapper.countByCodeAndNotId(code, id);
         if (count > 0) {
             throw new ServiceException(ENERGY_CODE_DUPLICATE);
+        }
+    }
+
+    private void checkEnergyNameDuplicate(String energyName, Long id) {
+        if (StringUtils.isBlank(energyName)) {
+            return;
+        }
+        // 查询是否存在重复名称
+        int count = energyConfigurationMapper.countByEnergyNameAndNotId(energyName, id);
+        if (count > 0) {
+            throw new ServiceException(ENERGY_NAME_DUPLICATE);
         }
     }
 

@@ -64,4 +64,37 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
             "WHERE code = #{code} AND (id != #{id} OR #{id} IS NULL)")
     int countByCodeAndNotId(@Param("code") String code, @Param("id") Long id);
 
+    @Select("SELECT COUNT(*) FROM ems_energy_configuration " +
+            "WHERE energy_name = #{energyName} AND (id != #{id} OR #{id} IS NULL)")
+    int countByEnergyNameAndNotId(@Param("energyName") String energyName, @Param("id") Long id);
+
+    @Select("SELECT * FROM ems_energy_configuration " +
+            "WHERE energy_name = #{energyName}")
+    EnergyConfigurationSaveReqVO selectByEnergyName(@Param("energyName") String energyName);
+
+    @Select({
+            "SELECT",
+            "  JSON_UNQUOTE(",
+            "    JSON_EXTRACT(",
+            "      energy_parameter,",
+            "      REPLACE(",
+            "        JSON_UNQUOTE(",
+            "          JSON_SEARCH(",
+            "            energy_parameter,",
+            "            'one',",
+            "            '用量',",  // 这里固定为'用量'
+            "            NULL,",
+            "            '$[*].chinese'",
+            "          )",
+            "        ),",
+            "        '.chinese',",
+            "        '.unit'",
+            "      )",
+            "    )",
+            "  ) AS unit",
+            "FROM ems_energy_configuration",
+            "WHERE energy_name = #{energyName}",
+            "LIMIT 1"
+    })
+    String selectUnitByEnergyNameAndChinese(@Param("energyName") String energyName);
 }

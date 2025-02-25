@@ -12,23 +12,17 @@ import java.time.LocalDateTime;
 @Data
 public class AdditionalRecordingSaveReqVO {
 
-    @Schema(description = "id", requiredMode = Schema.RequiredMode.REQUIRED, example = "86")
+    @Schema(description = "id", requiredMode = Schema.RequiredMode.REQUIRED, example = "11841")
     private Long id;
 
-    @Schema(description = "凭证id", example = "29399")
+    @Schema(description = "凭证id", example = "4781")
     private Long voucherId;
 
-    @Schema(description = "计量器具id", example = "18976")
+    @Schema(description = "计量器具id", example = "21597")
     private Long standingbookId;
 
-    @Schema(description = "数值类型")
+    @Schema(description = "数值类型", example = "1")
     private String valueType;
-
-    @Schema(description = "上次采集时间")
-    private LocalDateTime lastCollectTime;
-
-    @Schema(description = "上次数值")
-    private BigDecimal lastValue;
 
     @Schema(description = "本次采集时间")
     private LocalDateTime thisCollectTime;
@@ -36,10 +30,13 @@ public class AdditionalRecordingSaveReqVO {
     @Schema(description = "本次数值")
     private BigDecimal thisValue;
 
+    @Schema(description = "单位")
+    private String unit;
+
     @Schema(description = "补录人")
     private String recordPerson;
 
-    @Schema(description = "补录原因", example = "不香")
+    @Schema(description = "补录原因", example = "不好")
     private String recordReason;
 
     @Schema(description = "补录方式")

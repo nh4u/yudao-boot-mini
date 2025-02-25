@@ -7,6 +7,9 @@ import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.Addi
 import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
 
 /**
  * 补录 Mapper
@@ -21,10 +24,9 @@ public interface AdditionalRecordingMapper extends BaseMapperX<AdditionalRecordi
                 .eqIfPresent(AdditionalRecordingDO::getVoucherId, reqVO.getVoucherId())
                 .eqIfPresent(AdditionalRecordingDO::getStandingbookId, reqVO.getStandingbookId())
                 .eqIfPresent(AdditionalRecordingDO::getValueType, reqVO.getValueType())
-                .betweenIfPresent(AdditionalRecordingDO::getLastCollectTime, reqVO.getLastCollectTime())
-                .eqIfPresent(AdditionalRecordingDO::getLastValue, reqVO.getLastValue())
                 .betweenIfPresent(AdditionalRecordingDO::getThisCollectTime, reqVO.getThisCollectTime())
                 .eqIfPresent(AdditionalRecordingDO::getThisValue, reqVO.getThisValue())
+                .eqIfPresent(AdditionalRecordingDO::getUnit, reqVO.getUnit())
                 .eqIfPresent(AdditionalRecordingDO::getRecordPerson, reqVO.getRecordPerson())
                 .eqIfPresent(AdditionalRecordingDO::getRecordReason, reqVO.getRecordReason())
                 .eqIfPresent(AdditionalRecordingDO::getRecordMethod, reqVO.getRecordMethod())
@@ -34,5 +36,9 @@ public interface AdditionalRecordingMapper extends BaseMapperX<AdditionalRecordi
     }
 
     boolean existsByVoucherId(@Param("voucherId") Long voucherId);
+
+    @Select("SELECT DISTINCT voucher_id FROM ems_additional_recording " +
+            "WHERE standingbook_id = #{standingbookId} AND deleted = 0")
+    List<Long> selectVoucherIdsByStandingbookId(@Param("standingbookId") Long standingbookId);
 
 }

@@ -30,7 +30,7 @@ public class AdditionalRecordingDO extends BaseDO {
     /**
      * id
      */
-    @TableId(value = "id", type = IdType.ASSIGN_ID)
+    @TableId
     private Long id;
     /**
      * 凭证id
@@ -45,14 +45,6 @@ public class AdditionalRecordingDO extends BaseDO {
      */
     private String valueType;
     /**
-     * 上次采集时间
-     */
-    private LocalDateTime lastCollectTime;
-    /**
-     * 上次数值
-     */
-    private BigDecimal lastValue;
-    /**
      * 本次采集时间
      */
     private LocalDateTime thisCollectTime;
@@ -60,6 +52,10 @@ public class AdditionalRecordingDO extends BaseDO {
      * 本次数值
      */
     private BigDecimal thisValue;
+    /**
+     * 单位
+     */
+    private String unit;
     /**
      * 补录人
      */
@@ -70,8 +66,6 @@ public class AdditionalRecordingDO extends BaseDO {
     private String recordReason;
     /**
      * 补录方式
-     *
-     * 枚举 {@link TODO record_method 对应的类}
      */
     private Integer recordMethod;
     /**

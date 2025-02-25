@@ -6,6 +6,7 @@ import cn.bitlinks.ems.module.power.controller.admin.voucher.vo.VoucherSaveReqVO
 import cn.bitlinks.ems.module.power.dal.dataobject.voucher.VoucherDO;
 
 import javax.validation.Valid;
+import java.util.List;
 
 /**
  * 凭证管理 Service 接口
@@ -55,9 +56,9 @@ public interface VoucherService {
     /**
      * 批量删除凭证管理
      *
-     * @param deleteVO 删除实体
+     * @param ids 删除实体
      */
-    void deleteVouchers( VoucherSaveReqVO deleteVO);
+    void deleteVouchers(List<Long> ids);
 
 
 

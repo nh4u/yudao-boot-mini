@@ -25,7 +25,6 @@ public class LabelConfigSaveReqVO {
     private String remark;
 
     @Schema(description = "编码", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotEmpty(message = "编码不能为空")
     private String code;
 
     @Schema(description = "父标签ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "26722")

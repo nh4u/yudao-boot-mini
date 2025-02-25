@@ -43,10 +43,24 @@ public class AdditionalRecordingController {
     private AdditionalRecordingService additionalRecordingService;
 
     @PostMapping("/create")
-    @Operation(summary = "创建补录")
+    @Operation(summary = "手动补录")
     @PreAuthorize("@ss.hasPermission('power:additional-recording:create')")
-    public CommonResult<List<Long>> createAdditionalRecording(@Valid @RequestBody List<AdditionalRecordingSaveReqVO> createReqVOs) {
-        return success(additionalRecordingService.createAdditionalRecording(createReqVOs));
+    public CommonResult<Long> createAdditionalRecording(@Valid @RequestBody AdditionalRecordingSaveReqVO createReqVO) {
+        return success(additionalRecordingService.createAdditionalRecording(createReqVO));
+    }
+
+    @PostMapping("/createByVoucherId")
+    @Operation(summary = "凭证导入")
+    @PreAuthorize("@ss.hasPermission('power:additional-recording:createByVoucherId')")
+    public CommonResult<List<Long>> createAdditionalRecording(@Valid @RequestBody List<Long> VoucherIds,Long standingbookId) {
+        return success(additionalRecordingService.createAdditionalRecordingByVoucherId(VoucherIds,standingbookId));
+    }
+
+    @PostMapping("/getVoucherIdBystandingbookId")
+    @Operation(summary = "回显凭证id")
+    @PreAuthorize("@ss.hasPermission('power:additional-recording:getVoucherIdBystandingbookId')")
+    public CommonResult<List<Long>> getVoucherIdsByStandingbookId(@RequestParam("standingbookId") Long standingbookId) {
+        return success(additionalRecordingService.getVoucherIdsByStandingbookId(standingbookId));
     }
 
     @GetMapping("/last-record")

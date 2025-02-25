@@ -51,13 +51,6 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         // 校验层数限制
         validateLabelLayer(createReqVO.getParentId());
 
-        // 校验标签 code 唯一性
-        boolean codeExists = labelConfigMapper.selectCount(new LambdaQueryWrapperX<LabelConfigDO>()
-                .eq(LabelConfigDO::getCode, createReqVO.getCode())) > 0;
-        if (codeExists) {
-            throw exception(LABEL_CONFIG_CODE_NOT_UNIQUE);
-        }
-
         // 判断是否已有10条
         Long count = labelConfigMapper.selectCount(new LambdaQueryWrapperX<LabelConfigDO>()
                 .eq(LabelConfigDO::getParentId, createReqVO.getParentId()));

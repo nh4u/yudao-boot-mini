@@ -115,11 +115,10 @@ public class VoucherServiceImpl implements VoucherService {
 
 
     @Override
-    public void deleteVouchers(VoucherSaveReqVO deleteVO) {
-        // 1.检查 ids 列表是否为空
-        List<Long> ids = deleteVO.getIds();
-        if (ids == null || ids.isEmpty()) {
-            throw exception(VOUCHER_LIST_IS_EMPTY);
+    public void deleteVouchers(List<Long> ids) {
+        // 校验存在
+        for (Long id : ids) {
+            validateVoucherExists(id);
         }
         // 2.批量删除
         voucherMapper.deleteByIds(ids);

@@ -20,12 +20,16 @@ public interface AdditionalRecordingService {
     /**
      * 创建补录
      *
-     * @param createReqVOs 创建信息
+     * @param createReqVO 创建信息
      * @return 编号
      */
-    List<Long> createAdditionalRecording(@Valid List<AdditionalRecordingSaveReqVO> createReqVOs);
+    Long createAdditionalRecording(@Valid AdditionalRecordingSaveReqVO createReqVO);
 
     AdditionalRecordingLastVO getLastRecord(Long standingbookId, LocalDateTime currentCollectTime);
+
+    List<Long> createAdditionalRecordingByVoucherId(List<Long> VoucherIds,Long standingbookId);
+
+    List<Long> getVoucherIdsByStandingbookId(Long standingbookId);
 
     /**
      * 更新补录

@@ -1,6 +1,9 @@
 package cn.bitlinks.ems.module.power.service.additionalrecording;
 
+import cn.bitlinks.ems.module.power.dal.dataobject.voucher.VoucherDO;
+import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
+import cn.bitlinks.ems.module.power.service.voucher.VoucherService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
@@ -17,6 +20,7 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.dal.mysql.additionalrecording.AdditionalRecordingMapper;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.framework.security.core.util.SecurityFrameworkUtils.getLoginUserNickname;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
 /**
@@ -32,43 +36,28 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     private AdditionalRecordingMapper additionalRecordingMapper;
     @Resource
     private StandingbookTypeMapper standingbookTypeMapper;
+    @Resource
+    private VoucherService voucherService;
+    @Resource
+    private EnergyConfigurationMapper energyConfigurationMapper;
 
     @Override
-    public List<Long> createAdditionalRecording(List<AdditionalRecordingSaveReqVO> createReqVOs) {
-        List<Long> createdIds = new ArrayList<>();
+    public Long createAdditionalRecording(AdditionalRecordingSaveReqVO createReqVO) {
+        String valueType = standingbookTypeMapper.selectAttributeValueByCode(createReqVO.getStandingbookId(), "valueType");
+        String energy = standingbookTypeMapper.selectAttributeValueByCode(createReqVO.getStandingbookId(), "energy");
+        String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energy);
+        createReqVO.setValueType(valueType);
+        createReqVO.setUnit(unit);
+        AdditionalRecordingDO additionalRecording = BeanUtils.toBean(createReqVO, AdditionalRecordingDO.class);
 
-        for (AdditionalRecordingSaveReqVO createReqVO : createReqVOs) {
-            AdditionalRecordingLastVO lastRecord = getLastRecord(createReqVO.getStandingbookId(),createReqVO.getThisCollectTime());
-            String valueType = standingbookTypeMapper.selectAttributeValueByCode(createReqVO.getStandingbookId(), "valueType");
-            createReqVO.setValueType(valueType);
-            // 设置“上次采集时间”和“上次数值”
-            if (lastRecord != null) {
-                createReqVO.setLastCollectTime(lastRecord.getLastCollectTime());
-                createReqVO.setLastValue(lastRecord.getLastValue());
-            } else {
-                // 如果没有记录，可以设置为null或根据业务需求处理
-                createReqVO.setLastCollectTime(null);
-                createReqVO.setLastValue(null);
-            }
+        // 设置录入时间为当前时间
+        additionalRecording.setEnterTime(LocalDateTime.now());
+        additionalRecording.setRecordMethod(1); // 手动录入
 
-            AdditionalRecordingDO additionalRecording = BeanUtils.toBean(createReqVO, AdditionalRecordingDO.class);
+        // 插入数据库
+        additionalRecordingMapper.insert(additionalRecording);
 
-            // 设置录入时间为当前时间
-            additionalRecording.setEnterTime(LocalDateTime.now());
-
-            // 根据 voucherId 存在与否设置补录方式
-            if (createReqVO.getVoucherId() != null) {
-                additionalRecording.setRecordMethod(2); // 凭证信息导入
-                additionalRecording.setVoucherId(createReqVO.getVoucherId());
-            } else {
-                additionalRecording.setRecordMethod(1); // 手动录入
-            }
-
-            // 插入数据库
-            additionalRecordingMapper.insert(additionalRecording);
-            createdIds.add(additionalRecording.getId());
-        }
-        return createdIds;
+        return additionalRecording.getId();
     }
 
     @Override
@@ -85,6 +74,38 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         return new AdditionalRecordingLastVO()
                 .setLastCollectTime(lastRecord != null ? lastRecord.getThisCollectTime() : null)
                 .setLastValue(lastRecord != null ? lastRecord.getThisValue() : null);
+    }
+
+    @Override
+    public List<Long> createAdditionalRecordingByVoucherId(List<Long> voucherIds,Long standingbookId) {
+        String nickname = getLoginUserNickname();
+        String valueType = standingbookTypeMapper.selectAttributeValueByCode(standingbookId, "valueType");
+        String energy = standingbookTypeMapper.selectAttributeValueByCode(standingbookId, "energy");
+        String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energy);
+        for(Long voucherId : voucherIds){
+            VoucherDO voucherDO = voucherService.getVoucher(voucherId);
+            AdditionalRecordingSaveReqVO saveReqVO = new AdditionalRecordingSaveReqVO();
+            saveReqVO.setRecordMethod(2); //凭证补录
+            saveReqVO.setValueType(valueType);
+            saveReqVO.setThisValue(voucherDO.getUsage());
+            saveReqVO.setThisCollectTime(voucherDO.getPurchaseTime());
+            saveReqVO.setVoucherId(voucherId);
+            saveReqVO.setUnit(unit);
+            saveReqVO.setRecordPerson(nickname);
+            saveReqVO.setStandingbookId(standingbookId);
+            saveReqVO.setEnterTime(LocalDateTime.now());
+            AdditionalRecordingDO additionalRecording = BeanUtils.toBean(saveReqVO, AdditionalRecordingDO.class);
+            additionalRecordingMapper.insert(additionalRecording);
+        }
+        return voucherIds;
+    }
+
+    @Override
+    public List<Long> getVoucherIdsByStandingbookId(Long standingbookId) {
+        if (standingbookId == null) {
+            return Collections.emptyList(); // 参数校验
+        }
+        return additionalRecordingMapper.selectVoucherIdsByStandingbookId(standingbookId);
     }
 
     @Override
