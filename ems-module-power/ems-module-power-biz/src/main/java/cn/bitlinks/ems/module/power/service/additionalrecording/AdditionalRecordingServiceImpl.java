@@ -44,10 +44,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     @Override
     public Long createAdditionalRecording(AdditionalRecordingSaveReqVO createReqVO) {
         String valueType = standingbookTypeMapper.selectAttributeValueByCode(createReqVO.getStandingbookId(), "valueType");
-        String energy = standingbookTypeMapper.selectAttributeValueByCode(createReqVO.getStandingbookId(), "energy");
-        String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energy);
         createReqVO.setValueType(valueType);
-        createReqVO.setUnit(unit);
         AdditionalRecordingDO additionalRecording = BeanUtils.toBean(createReqVO, AdditionalRecordingDO.class);
         if(createReqVO.getRecordPerson() == null){
             createReqVO.setRecordPerson(getLoginUserNickname());
@@ -122,11 +119,13 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     }
 
     @Override
-    public void deleteAdditionalRecording(Long id) {
-        // 校验存在
-        validateAdditionalRecordingExists(id);
+    public void deleteAdditionalRecordings(List<Long> ids) {
+        for (Long id : ids) {
+            // 校验存在
+            validateAdditionalRecordingExists(id);
+        }
         // 删除
-        additionalRecordingMapper.deleteById(id);
+        additionalRecordingMapper.deleteByIds(ids);
     }
 
     private void validateAdditionalRecordingExists(Long id) {

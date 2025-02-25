@@ -6,6 +6,9 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
+import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
@@ -36,6 +39,10 @@ public class StandingbookController {
     private StandingbookService standingbookService;
     @Resource
     private StandingbookAttributeService standingbookAttributeService;
+    @Resource
+    private EnergyConfigurationMapper energyConfigurationMapper;
+    @Resource
+    private StandingbookTypeMapper standingbookTypeMapper;
 
     @PostMapping("/create")
     @Operation(summary = "创建台账")
@@ -50,6 +57,14 @@ public class StandingbookController {
     public CommonResult<Boolean> updateStandingbook(@Valid @RequestBody Map <String,String>  updateReqVO) {
         standingbookService.updateStandingbook(updateReqVO);
         return success(true);
+    }
+
+    @GetMapping("/getUnitById")
+    @Operation(summary = "根据台账id获取对应的单位")
+    @PreAuthorize("@ss.hasPermission('power:standingbook:update')")
+    public CommonResult<String> getUnitById(@RequestParam("id") Long id) {
+        String energy = standingbookTypeMapper.selectAttributeValueByCode(id, "energy");
+        return success(energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energy));
     }
 
     @DeleteMapping("/delete")

@@ -83,12 +83,12 @@ public class AdditionalRecordingController {
         return success(true);
     }
 
-    @DeleteMapping("/delete")
+    @DeleteMapping("/deleteIds")
     @Operation(summary = "删除补录")
-    @Parameter(name = "id", description = "编号", required = true)
+    @Parameter(name = "ids", description = "编号", required = true)
     @PreAuthorize("@ss.hasPermission('power:additional-recording:delete')")
-    public CommonResult<Boolean> deleteAdditionalRecording(@RequestParam("id") Long id) {
-        additionalRecordingService.deleteAdditionalRecording(id);
+    public CommonResult<Boolean> deleteAdditionalRecordings(@RequestBody List<Long> ids) {
+        additionalRecordingService.deleteAdditionalRecordings(ids);;
         return success(true);
     }
 
