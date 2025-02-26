@@ -18,7 +18,7 @@ import org.apache.ibatis.annotations.Select;
 public interface VoucherMapper extends BaseMapperX<VoucherDO> {
 
     default PageResult<VoucherDO> selectPage(VoucherPageReqVO reqVO) {
-        return selectPage(reqVO, new LambdaQueryWrapperX<VoucherDO>()
+        LambdaQueryWrapperX<VoucherDO> queryWrapper = new LambdaQueryWrapperX<VoucherDO>()
                 .eqIfPresent(VoucherDO::getCode, reqVO.getCode())
                 .likeIfPresent(VoucherDO::getName, reqVO.getName())
                 .eqIfPresent(VoucherDO::getEnergyId, reqVO.getEnergyId())
@@ -26,8 +26,25 @@ public interface VoucherMapper extends BaseMapperX<VoucherDO> {
                 .betweenIfPresent(VoucherDO::getPurchaseTime, reqVO.getPurchaseTime())
                 .eqIfPresent(VoucherDO::getPrice, reqVO.getPrice())
                 .eqIfPresent(VoucherDO::getUsage, reqVO.getUsage())
-                .betweenIfPresent(VoucherDO::getUpdateTime, reqVO.getUpdateTime())
-                .orderByDesc(VoucherDO::getId));
+                .betweenIfPresent(VoucherDO::getUpdateTime, reqVO.getUpdateTime());
+
+        // 根据 sortOrder 参数动态排序
+        if (reqVO.getSortOrder() != null) {
+            switch (reqVO.getSortOrder()) {
+                case 0:
+                    queryWrapper.orderByAsc(VoucherDO::getUpdateTime);
+                    break;
+                case 1:
+                    queryWrapper.orderByDesc(VoucherDO::getUpdateTime);
+                    break;
+                default:
+                    queryWrapper.orderByDesc(VoucherDO::getId);
+            }
+        } else {
+            queryWrapper.orderByDesc(VoucherDO::getId);
+        }
+
+        return selectPage(reqVO, queryWrapper);
     }
 
     // 新增方法用于获取当日最大流水号

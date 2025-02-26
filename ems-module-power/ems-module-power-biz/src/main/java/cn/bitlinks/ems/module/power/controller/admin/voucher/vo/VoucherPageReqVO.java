@@ -44,6 +44,7 @@ public class VoucherPageReqVO extends PageParam {
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] updateTime;
 
-
+    @Schema(description = "排序方式：0-上传时间升序，1-上传时间降序")
+    private Integer sortOrder;
 
 }
