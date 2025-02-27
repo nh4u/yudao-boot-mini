@@ -25,11 +25,10 @@ import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
 import cn.bitlinks.ems.module.power.service.deviceassociationconfiguration.DeviceAssociationConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.fasterxml.jackson.databind.JsonNode;
-//import com.sun.xml.internal.bind.v2.TODO;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
@@ -49,13 +48,17 @@ import javax.annotation.Resource;
 import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URLEncoder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.framework.common.util.json.JsonUtils.objectMapper;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_NOT_EXISTS;
 
 /**
@@ -478,7 +481,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<StandingbookDO> list =getStandingbookList(pageReqVO);
         Long typeId = Long.valueOf(pageReqVO.get("typeId"));
         List<StandingbookAttributeDO> attributes = standingbookAttributeService.getStandingbookAttributeByTypeId(typeId);
-
+        StandingbookTypeDO standingbookTypeDO = standingbookTypeMapper.selectById(typeId);
         // 获取标签信息
         String labelInfo = pageReqVO.get("labelInfo");
         JSONObject labelJson = JSONUtil.parseObj(labelInfo); // 使用JSONUtil解析JSON字符串
@@ -575,7 +578,10 @@ public class StandingbookServiceImpl implements StandingbookService {
 
             response.reset();
             response.setContentType("application/octet-stream; charset=utf-8");
-            response.setHeader("Content-Disposition", "attachment; filename="+ URLEncoder.encode("模板编号-" + typeId + "-台账导出.xlsx","UTF-8"));
+            // 当前时间格式化
+            DateTime now = DateTime.now();
+            String dateStr = now.toString("yyyyMMdd");
+            response.setHeader("Content-Disposition", "attachment; filename="+ URLEncoder.encode(standingbookTypeDO.getName() + "台账数据"+dateStr+".xlsx","UTF-8"));
             OutputStream os = response.getOutputStream();
             workbook.write(os);
             os.flush();
@@ -588,6 +594,7 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Override
     public void template(Long typeId, HttpServletResponse response) {
         List<StandingbookAttributeDO> attributes = standingbookAttributeService.getStandingbookAttributeByTypeId(typeId);
+        StandingbookTypeDO standingbookTypeDO = standingbookTypeMapper.selectById(typeId);
         if (attributes == null || attributes.isEmpty()) {
             throw new IllegalArgumentException("台账属性不能为空");
         }
@@ -661,7 +668,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
             // 输出
             response.setContentType("application/octet-stream; charset=utf-8");
-            response.setHeader("Content-Disposition", "attachment; filename="+ URLEncoder.encode("模板编号-" + typeId + "-台账导入模板.xlsx","UTF-8"));
+            response.setHeader("Content-Disposition", "attachment; filename="+ URLEncoder.encode( standingbookTypeDO.getName() + "导入模板.xlsx","UTF-8"));
 
             OutputStream os = response.getOutputStream();
             workbook.write(os);
