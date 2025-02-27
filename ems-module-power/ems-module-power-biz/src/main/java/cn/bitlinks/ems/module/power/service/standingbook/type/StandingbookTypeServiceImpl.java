@@ -81,9 +81,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         StandingbookTypeDO updateObj = BeanUtils.toBean(updateReqVO, StandingbookTypeDO.class);
         standingbookTypeMapper.updateById(updateObj);
     }
-
-    @Override
-    public void deleteStandingbookType(Long id) {
+    void recursiveDeletion(List<Long> ids,Long id){
         // 校验存在
         validateStandingbookTypeExists(id);
         // 校验是否有子台账类型 一并删了
@@ -93,7 +91,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
             List<StandingbookTypeDO> standingbookTypeDOS = standingbookTypeMapper.selectList(listReqVO);
             if (standingbookTypeDOS != null && standingbookTypeDOS.size() > 0) {
                 for (StandingbookTypeDO standingbookTypeDO : standingbookTypeDOS) {
-                    deleteStandingbookType(standingbookTypeDO.getId());
+                    recursiveDeletion(ids,standingbookTypeDO.getId());
                 }
             }
         }
@@ -103,14 +101,23 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         if (standingbookDOS != null && standingbookDOS.size() > 0) {
             throw exception(STANDINGBOOK_EXISTS);
         }
+        ids.add(id);
+    }
 
-        // 删除
-        standingbookTypeMapper.deleteById(id);
-        try {
-            attributeService.deleteStandingbookAttributeByTypeId(id);
-        } catch (Exception e) {
-            e.printStackTrace();
+    @Override
+    public void deleteStandingbookType(Long id) {
+        ArrayList<Long> ids = new ArrayList<>();
+        recursiveDeletion(ids,id);
+        for (Long aLong : ids) {
+            // 删除
+            standingbookTypeMapper.deleteById(aLong);
+            try {
+                attributeService.deleteStandingbookAttributeByTypeId(aLong);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+
     }
 
     private void validateStandingbookTypeExists(Long id) {
