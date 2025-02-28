@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.standingbook.attribute;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.AttributeTreeNode;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
@@ -93,4 +94,11 @@ public interface StandingbookAttributeService {
     List<StandingbookDO> getStandingbook(List<StandingbookAttributePageReqVO> children,Long typeId);
 
     void saveMultiple(List<StandingbookAttributeSaveReqVO> createReqVOs);
+
+    /**
+     * 获取台账属性Tree结构
+     * @param standingbookIds 台账ids
+     * @param typeIds 台账类型ids
+     */
+    List<AttributeTreeNode> queryAttributeTreeNodeByTypeAndSb(List<Long> standingbookIds, List<Long> typeIds);
 }

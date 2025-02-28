@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.dal.mysql.standingbook.type;
 
 import cn.bitlinks.ems.framework.mybatis.core.mapper.BaseMapperX;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.AttributeTreeNode;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import org.apache.ibatis.annotations.Mapper;
@@ -55,4 +56,8 @@ public interface StandingbookTypeMapper extends BaseMapperX<StandingbookTypeDO> 
     // Mapper 接口
     @Select("SELECT value FROM power_standingbook_attribute WHERE standingbook_id = #{standingbookId} AND code = #{code} AND deleted=0 ORDER BY sort")
     String selectAttributeValueByCode(@Param("standingbookId") Long standingbookId, @Param("code") String code);
+
+    @Select("SELECT id,super_id as pId,name ,0 as type FROM power_standingbook_attribute WHERE super_id = #{superId}")
+    AttributeTreeNode selectAttributeTreeNodeBySuperId(Long superId);
+
 }

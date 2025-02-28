@@ -2,16 +2,21 @@ package cn.bitlinks.ems.module.power.service.standingbook.attribute;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.AttributeTreeNode;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.enums.ApiConstants;
+import cn.bitlinks.ems.module.power.enums.standingbook.AttributeTreeNodeTypeEnum;
+import cn.hutool.core.collection.CollUtil;
 import com.alibaba.excel.util.StringUtils;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -21,7 +26,10 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_ATTRIBUTE_NOT_EXISTS;
@@ -38,6 +46,8 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
     private StandingbookAttributeMapper standingbookAttributeMapper;
     @Resource
     private StandingbookTypeMapper standingbookTypeMapper;
+    @Resource
+    private StandingbookMapper standingbookMapper;
 
     @Autowired
     private ApplicationContext context;
@@ -205,8 +215,8 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
                         break;
                     }
                 }
-                if ("0".equals(flag)&& StringUtils.isNotBlank(sonAttribute.getDescription()) && sonAttribute.getDescription().contains("父节点属性自动生成")) {
-                  continue;
+                if ("0".equals(flag) && StringUtils.isNotBlank(sonAttribute.getDescription()) && sonAttribute.getDescription().contains("父节点属性自动生成")) {
+                    continue;
                 }
 
                 StandingbookAttributeSaveReqVO bean = BeanUtils.toBean(sonAttribute, StandingbookAttributeSaveReqVO.class);
@@ -218,5 +228,157 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
         }
 
     }
+
+    @Override
+    public List<AttributeTreeNode> queryAttributeTreeNodeByTypeAndSb(List<Long> standingBookIds, List<Long> typeIds) {
+
+        //包含了台账类型节点和台账节点+叶子节点（台账属性），需要再次处理成树形结构，因为台账节点的父节点可能会和台账类型一致，
+        List<AttributeTreeNode> centerNodeList = new ArrayList<>();
+
+        //一、台账类型ids
+        if (CollUtil.isNotEmpty(typeIds)) {
+            // 查询直接关联的台账属性表，返回叶子节点，
+            List<AttributeTreeNode> sbTypeAttrNodeList = getAttrNodeListByParent(typeIds, AttributeTreeNodeTypeEnum.SB_TYPE);
+            if (CollUtil.isNotEmpty(sbTypeAttrNodeList)) {
+                //1. 直接查询台账类型
+                List<StandingbookTypeDO> standingBookTypeDOS = standingbookTypeMapper.selectBatchIds(typeIds);
+                //1.1 转格式，组成台账节点（叶子节点的上一级）
+                List<AttributeTreeNode> sbTypeNodeList = standingBookTypeDOS.stream()
+                        .map(bookType -> new AttributeTreeNode(
+                                bookType.getSuperId(),
+                                bookType.getId(),
+                                bookType.getName(),
+                                AttributeTreeNodeTypeEnum.SB_TYPE.getCode(),
+                                null)
+                        )
+                        .collect(Collectors.toList());
+                //把叶子节点根据pId放到台账节点中
+                sbTypeNodeList.forEach(node -> {
+                    node.setChildren(sbTypeAttrNodeList.stream().filter(attrNode -> attrNode.getPId().equals(node.getId())).collect(Collectors.toList()));
+                });
+                sbTypeNodeList.removeIf(node -> node.getChildren().isEmpty());
+                centerNodeList.addAll(sbTypeNodeList);
+            }
+        }
+        //二、台账ids
+        if (CollUtil.isNotEmpty(standingBookIds)) {
+            // 查询直接关联的台账属性表，返回叶子节点，
+            List<AttributeTreeNode> sbAttrNodeList = getAttrNodeListByParent(standingBookIds, AttributeTreeNodeTypeEnum.SB);
+            if (CollUtil.isNotEmpty(sbAttrNodeList)) {
+                //1. 直接查询台账
+                List<StandingbookDO> standingBookDOS = standingbookMapper.selectBatchIds(standingBookIds);
+                //1.1 转格式，组成台账节点（叶子节点的上一级）
+                List<AttributeTreeNode> sbNodeList = standingBookDOS.stream()
+                        .map(bookType -> new AttributeTreeNode(
+                                bookType.getTypeId(),
+                                bookType.getId(),
+                                bookType.getName(),
+                                AttributeTreeNodeTypeEnum.SB.getCode(),
+                                null)
+                        )
+                        .collect(Collectors.toList());
+                //把叶子节点根据pId放到台账节点中
+                sbNodeList.forEach(node -> {
+                    node.setChildren(sbAttrNodeList.stream().filter(attrNode -> attrNode.getPId().equals(node.getId())).collect(Collectors.toList()));
+                });
+                sbNodeList.removeIf(node -> node.getChildren().isEmpty());
+                centerNodeList.addAll(sbNodeList);
+            }
+        }
+        //所有的台账分类
+        List<StandingbookTypeDO> sbTypeAllList =  standingbookTypeMapper.selectList();
+        //循环中间节点，根据每个节点的pId在standingBookTypeMapper中查询出节点，直到节点的pId为null，构造树形结构
+        enhanceTree(centerNodeList,sbTypeAllList);
+        return centerNodeList;
+    }
+
+    /**
+     * 根据父节点ids获取台账属性节点
+     *
+     * @param pIds                      台账属性的上一级节点
+     * @param attributeTreeNodeTypeEnum 父节点类型
+     * @return 台账属性节点 可能为null
+     */
+    private List<AttributeTreeNode> getAttrNodeListByParent(List<Long> pIds, AttributeTreeNodeTypeEnum attributeTreeNodeTypeEnum) {
+        //1. 构造查询条件
+        LambdaQueryWrapper<StandingbookAttributeDO> queryWrapper = new LambdaQueryWrapper<>();
+        if (AttributeTreeNodeTypeEnum.SB_TYPE.equals(attributeTreeNodeTypeEnum)) {
+            queryWrapper.in(StandingbookAttributeDO::getTypeId, pIds)
+                    .isNull(StandingbookAttributeDO::getStandingbookId);
+        } else if (AttributeTreeNodeTypeEnum.SB.equals(attributeTreeNodeTypeEnum)) {
+            queryWrapper.in(StandingbookAttributeDO::getStandingbookId, pIds)
+                    .isNotNull(StandingbookAttributeDO::getStandingbookId);
+        } else {
+            return null;
+        }
+
+        //2. 查询台账类型下直接关联的台账属性
+        List<StandingbookAttributeDO> bookAttrDOs = standingbookAttributeMapper.selectList(queryWrapper);
+        if (CollUtil.isEmpty(bookAttrDOs)) {
+            return null;
+        }
+        //3. 转格式，组成台账属性节点（叶子节点）
+        return bookAttrDOs.stream()
+                .map(attributeDO ->
+                        new AttributeTreeNode(
+                                AttributeTreeNodeTypeEnum.SB.equals(attributeTreeNodeTypeEnum) ? attributeDO.getStandingbookId() : attributeDO.getTypeId(),
+                                attributeDO.getId(),
+                                attributeDO.getName(),
+                                AttributeTreeNodeTypeEnum.ATTR.getCode(),
+                                null)
+
+                )
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 合并节点+> 构造树形结构
+     * @param centerList 中间树形结构
+     * @param sourceList 所有台账分类列表
+     */
+    private void enhanceTree(List<AttributeTreeNode> centerList, List<StandingbookTypeDO> sourceList) {
+            // 1. 将 sourceList 转换为 Map
+            Map<Long, StandingbookTypeDO> sourceMap = new HashMap<>();
+            for (StandingbookTypeDO node : sourceList) {
+                sourceMap.put(node.getId(), node);
+            }
+
+            // 2. 使用 Map 存储所有节点，避免重复
+            Map<Long, AttributeTreeNode> nodeMap = new HashMap<>();
+
+            // 3. 只处理 centerList 中的顶级节点，不考虑 children
+            for (AttributeTreeNode topNode : centerList) {
+                // 获取或创建当前节点，不复制 children
+                AttributeTreeNode currentNode = nodeMap.computeIfAbsent(topNode.getId(),
+                        k -> new AttributeTreeNode( topNode.getPId(),topNode.getId(), topNode.getName(), topNode.getType(), topNode.getChildren()));
+
+                // 向上查找父节点
+                Long parentId = topNode.getPId();
+                AttributeTreeNode lastNode = currentNode;
+
+                while (parentId != null && sourceMap.containsKey(parentId)) {
+                    StandingbookTypeDO parentNodeB = sourceMap.get(parentId);
+                    // 获取或创建父节点
+                    AttributeTreeNode parentNodeA = nodeMap.computeIfAbsent(parentNodeB.getId(),
+                            k -> new AttributeTreeNode(parentNodeB.getSuperId(),parentNodeB.getId(), parentNodeB.getName(), AttributeTreeNodeTypeEnum.SB_TYPE.getCode(), new ArrayList<>()));
+
+                    // 如果父节点的 children 中还没有当前节点，则添加
+                    if (!parentNodeA.getChildren().contains(lastNode)) {
+                        parentNodeA.getChildren().add(lastNode);
+                    }
+
+                    lastNode = parentNodeA;
+                    parentId = parentNodeB.getSuperId();
+                }
+            }
+
+            // 4. 找到所有根节点（pId 为 null 的节点）
+            centerList.clear();
+            for (AttributeTreeNode node : nodeMap.values()) {
+                if (node.getPId() == null) {
+                    centerList.add(node);
+                }
+            }
+        }
 
 }
