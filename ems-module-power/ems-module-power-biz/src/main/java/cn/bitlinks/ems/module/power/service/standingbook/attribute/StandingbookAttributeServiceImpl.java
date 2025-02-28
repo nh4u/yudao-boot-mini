@@ -47,7 +47,11 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
     public Long createStandingbookAttribute(StandingbookAttributeSaveReqVO createReqVO) {
         // 插入
         StandingbookAttributeDO standingbookAttribute = BeanUtils.toBean(createReqVO, StandingbookAttributeDO.class);
-        standingbookAttributeMapper.insert(standingbookAttribute);
+        if ((standingbookAttribute.getId()==null)) {
+            standingbookAttributeMapper.insert(standingbookAttribute);
+        }else {
+            standingbookAttributeMapper.updateById(standingbookAttribute);
+        }
         // 返回
         return standingbookAttribute.getId();
     }
