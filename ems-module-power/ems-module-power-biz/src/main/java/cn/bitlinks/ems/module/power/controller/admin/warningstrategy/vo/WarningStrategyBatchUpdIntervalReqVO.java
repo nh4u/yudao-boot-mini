@@ -7,7 +7,7 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 
-@Schema(description = "管理后台 - 告警策略批量修改状态 Request VO")
+@Schema(description = "管理后台 - 告警策略批量修改告警间隔 Request VO")
 @Data
 public class WarningStrategyBatchUpdIntervalReqVO {
 

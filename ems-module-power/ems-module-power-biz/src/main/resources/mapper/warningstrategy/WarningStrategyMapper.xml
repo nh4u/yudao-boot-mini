@@ -10,6 +10,7 @@
      -->
     <sql id="pageWhere">
         <where>
+            ws.deleted = 0
             <if test="reqVO.level != null">
                 and ws.`level` = #{reqVO.level}
             </if>

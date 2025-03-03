@@ -3,11 +3,9 @@ package cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.util.List;
 
-@Schema(description = "管理后台 - 告警策略批量修改告警间隔 Request VO")
+@Schema(description = "管理后台 - 告警策略批量修改告警状态 Request VO")
 @Data
 public class WarningStrategyBatchUpdStatusReqVO {
 

@@ -21,14 +21,14 @@ public class WarningStrategySaveReqVO {
     private String description;
 
     @Schema(description = "设备范围")
-    private String deviceScope;
+    private List<Long> deviceScope;
 
     @Schema(description = "设备分类范围")
-    private String deviceTypeScope;
+    private List<Long> deviceTypeScope;
 
     @Schema(description = "告警条件", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotEmpty(message = "告警条件不能为空")
-    private String condition;
+    private List<ConditionVO> condition;
 
     @Schema(description = "告警等级：紧急4 重要3 次要2 警告1 提示0", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "告警等级：紧急4 重要3 次要2 警告1 提示0不能为空")
@@ -41,15 +41,14 @@ public class WarningStrategySaveReqVO {
     @Schema(description = "邮件模板id", example = "3143")
     private Long mailTemplateId;
 
-    @Schema(description = "站内信人员", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotEmpty(message = "站内信人员不能为空")
-    private String siteStaff;
+    @Schema(description = "站内信人员")
+    private List<Long> siteStaff;
 
     @Schema(description = "邮件人员")
-    private String mailStaff;
+    private List<Long> mailStaff;
 
     @Schema(description = "公共人员")
-    private String commonStaff;
+    private List<Long> commonStaff;
 
     @Schema(description = "告警间隔", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotEmpty(message = "告警间隔不能为空")

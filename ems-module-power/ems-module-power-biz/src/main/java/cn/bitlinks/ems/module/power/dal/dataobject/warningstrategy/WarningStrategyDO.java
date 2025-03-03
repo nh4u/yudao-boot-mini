@@ -2,11 +2,15 @@ package cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy;
 
 import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
+import cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo.ConditionVO;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.*;
+
+import java.util.List;
 
 /**
  * 告警策略 DO
@@ -39,16 +43,18 @@ public class WarningStrategyDO extends BaseDO {
     /**
      * 设备范围
      */
-    private String deviceScope;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<Long> deviceScope;
     /**
      * 设备分类范围
      */
-    private String deviceTypeScope;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<Long> deviceTypeScope;
     /**
      * 告警条件
      */
-    @TableField(value = "`condition`")
-    private String condition;
+    @TableField(value = "`condition`", typeHandler = JacksonTypeHandler.class)
+    private List<ConditionVO> condition;
     /**
      * 告警等级：紧急4 重要3 次要2 警告1 提示0
      * <p>
@@ -67,15 +73,18 @@ public class WarningStrategyDO extends BaseDO {
     /**
      * 站内信人员
      */
-    private String siteStaff;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<Long> siteStaff;
     /**
      * 邮件人员
      */
-    private String mailStaff;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<Long> mailStaff;
     /**
      * 公共人员
      */
-    private String commonStaff;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<Long> commonStaff;
     /**
      * 告警间隔
      */
@@ -84,7 +93,7 @@ public class WarningStrategyDO extends BaseDO {
 
     /**
      * 状态
-     *
+     * <p>
      * 枚举 {@link CommonStatusEnum}
      */
     private Integer status;
