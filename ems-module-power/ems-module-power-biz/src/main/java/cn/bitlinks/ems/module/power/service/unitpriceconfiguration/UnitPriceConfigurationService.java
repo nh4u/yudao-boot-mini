@@ -27,9 +27,9 @@ public interface UnitPriceConfigurationService {
     /**
      * 更新单价配置
      *
-     * @param updateReqVO 更新信息
+     * @param updateReqVOList 更新信息
      */
-    void updateUnitPriceConfiguration(@Valid UnitPriceConfigurationSaveReqVO updateReqVO);
+    List<Long> updateUnitPriceConfiguration(@Valid Long energyId, List<UnitPriceConfigurationSaveReqVO> updateReqVOList);
 
     /**
      * 删除单价配置

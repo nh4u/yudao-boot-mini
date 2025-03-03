@@ -88,17 +88,38 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
     }
 
     @Override
-    public void updateUnitPriceConfiguration(UnitPriceConfigurationSaveReqVO updateReqVO) {
-        // 校验存在
-        validateUnitPriceConfigurationExists(updateReqVO.getId());
-        // 检查时间冲突
-        if (isTimeConflict(updateReqVO.getEnergyId(), updateReqVO.getStartTime(), updateReqVO.getEndTime())) {
-            // 时间冲突，抛出异常或处理逻辑
-            throw exception(TIME_CONFLICT);
+    public List<Long> updateUnitPriceConfiguration(Long energyId, List<UnitPriceConfigurationSaveReqVO> updateReqVOList) {
+        List<Long> ids = new ArrayList<>();
+        for (UnitPriceConfigurationSaveReqVO updateReqVO : updateReqVOList) {
+            // 设置能源ID
+            updateReqVO.setEnergyId(energyId);
+
+            // 处理时间范围
+            if (updateReqVO.getTimeRange() != null && updateReqVO.getTimeRange().size() == 2) {
+                updateReqVO.setStartTime(updateReqVO.getTimeRange().get(0));
+                updateReqVO.setEndTime(updateReqVO.getTimeRange().get(1));
+            }
+
+            // 检查时间冲突
+            if (isTimeConflict(energyId, updateReqVO.getStartTime(), updateReqVO.getEndTime())) {
+                // 时间冲突，抛出异常或处理逻辑
+                throw exception(TIME_CONFLICT);
+            }
+
+            // 插入
+            UnitPriceConfigurationDO unitPriceConfiguration = BeanUtils.toBean(updateReqVO, UnitPriceConfigurationDO.class);
+            // 执行更新并获取影响行数
+            int affectedRows = unitPriceConfigurationMapper.updateById(unitPriceConfiguration);
+
+            // 仅当数据实际变更时插入历史记录
+            if (affectedRows > 0) {
+                // 插入历史记录
+                UnitPriceHistorySaveReqVO unitPriceHistory = BeanUtils.toBean(updateReqVO, UnitPriceHistorySaveReqVO.class);
+                unitPriceHistoryService.createUnitPriceHistory(unitPriceHistory);
+                ids.add(unitPriceConfiguration.getId());
+            }
         }
-        // 更新
-        UnitPriceConfigurationDO updateObj = BeanUtils.toBean(updateReqVO, UnitPriceConfigurationDO.class);
-        unitPriceConfigurationMapper.updateById(updateObj);
+        return ids;
     }
 
     @Override

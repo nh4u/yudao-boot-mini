@@ -8,10 +8,13 @@ import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.Ener
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import cn.bitlinks.ems.module.power.dal.mysql.daparamformula.DaParamFormulaMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.unitpriceconfiguration.UnitPriceConfigurationMapper;
 import cn.bitlinks.ems.module.power.service.daparamformula.DaParamFormulaService;
+import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.util.StrUtil;
@@ -45,6 +48,8 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     private EnergyConfigurationMapper energyConfigurationMapper;
     @Resource
     private UnitPriceConfigurationMapper unitPriceConfigurationMapper;
+    @Resource
+    private StandingbookAttributeMapper standingbookAttributeMapper ;
 
     @Resource
     private DaParamFormulaMapper daParamFormulaMapper;
@@ -55,7 +60,6 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     public Long createEnergyConfiguration(EnergyConfigurationSaveReqVO createReqVO) {
         // 检查能源编码是否重复
         checkEnergyCodeDuplicate(createReqVO.getCode(), null);
-        checkEnergyNameDuplicate(createReqVO.getEnergyName(), null);
         // 插入
         EnergyConfigurationDO energyConfiguration = BeanUtils.toBean(createReqVO, EnergyConfigurationDO.class);
         energyConfigurationMapper.insert(energyConfiguration);
@@ -69,7 +73,11 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         validateEnergyConfigurationExists(updateReqVO.getId());
         // 检查能源编码是否重复（排除自身）
         checkEnergyCodeDuplicate(updateReqVO.getCode(), updateReqVO.getId());
-        checkEnergyNameDuplicate(updateReqVO.getEnergyName(), updateReqVO.getId());
+        String energyName = updateReqVO.getEnergyName();
+        String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energyName);
+        if (standingbookAttributeMapper.selectStandingbookIdByValue(energyName) != null && unit!= null) {
+            throw new ServiceException(ENERGY_CONFIGURATION_STANDINGBOOK_UNIT);
+        }
         // 更新
         EnergyConfigurationDO updateObj = BeanUtils.toBean(updateReqVO, EnergyConfigurationDO.class);
         energyConfigurationMapper.updateById(updateObj);
@@ -101,6 +109,10 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     public void deleteEnergyConfiguration(Long id) {
         // 校验存在
         validateEnergyConfigurationExists(id);
+        String energyName = energyConfigurationMapper.selectById(id).getEnergyName();
+        if (standingbookAttributeMapper.selectStandingbookIdByValue(energyName) != null) {
+            throw exception(ENERGY_CONFIGURATION_STANDINGBOOK_EXISTS);
+        }
         // 删除
         energyConfigurationMapper.deleteById(id);
     }
@@ -110,6 +122,10 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         // 校验存在
         for (Long id : ids) {
             validateEnergyConfigurationExists(id);
+            String energyName = energyConfigurationMapper.selectById(id).getEnergyName();
+            if (standingbookAttributeMapper.selectStandingbookIdByValue(energyName) != null) {
+                throw exception(ENERGY_CONFIGURATION_STANDINGBOOK_EXISTS);
+            }
         }
         // 删除
         energyConfigurationMapper.deleteByIds(ids);

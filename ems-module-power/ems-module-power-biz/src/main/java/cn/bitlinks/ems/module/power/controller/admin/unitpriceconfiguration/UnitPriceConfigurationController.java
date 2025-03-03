@@ -48,9 +48,8 @@ public class UnitPriceConfigurationController {
     @PutMapping("/update")
     @Operation(summary = "更新单价配置")
     @PreAuthorize("@ss.hasPermission('power:unit-price-configuration:update')")
-    public CommonResult<Boolean> updateUnitPriceConfiguration(@Valid @RequestBody UnitPriceConfigurationSaveReqVO updateReqVO) {
-        unitPriceConfigurationService.updateUnitPriceConfiguration(updateReqVO);
-        return success(true);
+    public CommonResult<List<Long>> updateUnitPriceConfiguration(@Valid @RequestBody UnitPriceConfigurationBatchSaveReqVO batchSaveReqVO) {
+        return success(unitPriceConfigurationService.updateUnitPriceConfiguration(batchSaveReqVO.getEnergyId(), batchSaveReqVO.getList()));
     }
 
     @DeleteMapping("/delete")

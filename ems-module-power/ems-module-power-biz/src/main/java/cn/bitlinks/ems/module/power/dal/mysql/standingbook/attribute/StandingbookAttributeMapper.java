@@ -46,6 +46,9 @@ public interface StandingbookAttributeMapper extends BaseMapperX<StandingbookAtt
     @Select("SELECT * FROM power_standingbook_attribute WHERE standingbook_id = #{standingbookId} and deleted=0 order by sort")
      List<StandingbookAttributeDO> selectStandingbookId(@Param("standingbookId") Long standingbookId) ;
 
+    @Select("SELECT standingbook_id FROM power_standingbook_attribute " +
+            "WHERE value = #{value} AND deleted = 0")
+    List<Long> selectStandingbookIdByValue(@Param("value") String value);
 
     default int deleteStandingbookId(Long standingbookId) {
         return delete(StandingbookAttributeDO::getStandingbookId, standingbookId);
