@@ -174,7 +174,7 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
         Long typeId = createReqVOs.get(0).getTypeId();
         StandingbookTypeDO standingbookType = standingbookTypeMapper.selectById(typeId);
         StandingbookAttributeService proxy = context.getBean(StandingbookAttributeService.class);
-        proxy.deleteStandingbookAttributeByTypeId(typeId);
+
         for (StandingbookAttributeSaveReqVO createReqVO : createReqVOs) {
             proxy.createStandingbookAttribute(createReqVO);
         }

@@ -596,7 +596,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<StandingbookAttributeDO> attributes = standingbookAttributeService.getStandingbookAttributeByTypeId(typeId);
         StandingbookTypeDO standingbookTypeDO = standingbookTypeMapper.selectById(typeId);
         if (attributes == null || attributes.isEmpty()) {
-            throw new IllegalArgumentException("台账属性不能为空");
+            throw exception(ErrorCodeConstants.STANDINGBOOK_ATTRIBUTE_NOT_EXISTS);
         }
 
         List<Tree<Long>> labelTree = labelService.getLabelTree(false, null, null);
