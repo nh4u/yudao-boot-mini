@@ -6,6 +6,7 @@ import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFa
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistorySaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.mysql.coalfactorhistory.CoalFactorHistoryMapper;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import com.baomidou.dynamic.datasource.annotation.DS;
@@ -100,13 +101,16 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
 
         // 插入新数据
         CoalFactorHistoryDO coalFactorHistory = BeanUtils.toBean(createReqVO, CoalFactorHistoryDO.class);
+        Long energyId = coalFactorHistory.getEnergyId();
         coalFactorHistory.setStartTime(LocalDateTime.now()); // 设置为当前时间
-        coalFactorHistory.setEndTime(null); // null，表示“至今”
+        coalFactorHistory.setEndTime(null); // null，表示“至今
+        EnergyConfigurationDO energyConfiguration=energyConfigurationService.getEnergyConfiguration(energyId);
+        coalFactorHistory.setFormula(energyConfiguration.getCoalFormula());
         coalFactorHistoryMapper.insert(coalFactorHistory);
 
         // 更新能源配置
         EnergyConfigurationSaveReqVO updateVo = new EnergyConfigurationSaveReqVO();
-        updateVo.setId(coalFactorHistory.getEnergyId());
+        updateVo.setId(energyId);
         updateVo.setFactor(coalFactorHistory.getFactor());
         if (createReqVO.getEnergyId() != null) {
             energyConfigurationService.updateEnergyConfiguration(updateVo);

@@ -2,8 +2,10 @@ package cn.bitlinks.ems.module.power.service.unitpriceconfiguration;
 
 import cn.bitlinks.ems.module.power.controller.admin.unitpricehistory.vo.UnitPriceHistoryRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.unitpricehistory.vo.UnitPriceHistorySaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.unitpricehistory.UnitPriceHistoryDO;
 import cn.bitlinks.ems.module.power.dal.mysql.unitpricehistory.UnitPriceHistoryMapper;
+import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.unitpricehistory.UnitPriceHistoryService;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -40,7 +42,8 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
     private UnitPriceHistoryService unitPriceHistoryService;
     @Resource
     private UnitPriceHistoryMapper unitPriceHistoryMapper;
-
+    @Resource
+    private EnergyConfigurationService energyConfigurationService;
     @Override
     public List<Long> createUnitPriceConfigurations(Long energyId, List<UnitPriceConfigurationSaveReqVO> createReqVOList) {
         List<Long> ids = new ArrayList<>();
@@ -59,7 +62,8 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
                 // 时间冲突，抛出异常或处理逻辑
                 throw exception(TIME_CONFLICT);
             }
-
+            EnergyConfigurationDO energyConfiguration=energyConfigurationService.getEnergyConfiguration(energyId);
+            createReqVO.setFormula(energyConfiguration.getUnitPriceFormula());
             // 插入
             UnitPriceConfigurationDO unitPriceConfiguration = BeanUtils.toBean(createReqVO, UnitPriceConfigurationDO.class);
             unitPriceConfigurationMapper.insertOrUpdate(unitPriceConfiguration);
