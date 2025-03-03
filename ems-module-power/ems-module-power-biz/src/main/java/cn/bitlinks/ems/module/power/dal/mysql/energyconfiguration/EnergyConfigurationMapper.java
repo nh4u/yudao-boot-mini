@@ -61,7 +61,9 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
     }
 
     @Select("SELECT COUNT(*) FROM ems_energy_configuration " +
-            "WHERE code = #{code} AND (id != #{id} OR #{id} IS NULL)")
+            "WHERE code = #{code} " +
+            "AND deleted = 0 " +  // 新增条件：仅校验未删除的数据
+            "AND (id != #{id} OR #{id} IS NULL)")
     int countByCodeAndNotId(@Param("code") String code, @Param("id") Long id);
 
     @Select("SELECT COUNT(*) FROM ems_energy_configuration " +
