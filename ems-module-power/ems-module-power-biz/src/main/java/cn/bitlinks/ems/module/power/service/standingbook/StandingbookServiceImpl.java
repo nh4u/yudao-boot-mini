@@ -124,8 +124,8 @@ public class StandingbookServiceImpl implements StandingbookService {
                     .map(StandingbookTypeDO::getId)
                     .collect(Collectors.toList());
         }
-        return standingbookMapper.selectCount(new LambdaQueryWrapperX<StandingbookDO>()
-                .in(StandingbookDO::getTypeId,typeIdList));
+        return typeIdList.size() > 0 ? standingbookMapper.selectCount(new LambdaQueryWrapperX<StandingbookDO>()
+                .in(StandingbookDO::getTypeId, typeIdList)) : 0;
     }
 
     @Override
