@@ -6,10 +6,7 @@ import cn.bitlinks.ems.framework.common.pojo.PageParam;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.excel.core.util.ExcelUtils;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveMultipleReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
@@ -100,6 +97,13 @@ public class StandingbookAttributeController {
       });
 
       return success(bean);
+    }
+
+    @PostMapping("/treeByTypeAndSb")
+    @Operation(summary = "根据台账ids和台账类型ids查询台账属性树形结构")
+    @PreAuthorize("@ss.hasPermission('power:standingbook-attribute:query')")
+    public CommonResult<List<AttributeTreeNode>> queryAttributeTreeNodeByTypeAndSb(@RequestBody AttributeTreeReqVO reqVO) {
+        return success(standingbookAttributeService.queryAttributeTreeNodeByTypeAndSb(reqVO.getSbIds(), reqVO.getTypeIds()));
     }
 
     @PostMapping("/page")
