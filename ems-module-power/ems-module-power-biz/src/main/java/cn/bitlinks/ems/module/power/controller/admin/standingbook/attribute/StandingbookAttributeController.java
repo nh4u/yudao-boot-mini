@@ -50,10 +50,10 @@ public class StandingbookAttributeController {
     public CommonResult<Boolean> saveMultiple(@Valid @RequestBody StandingbookAttributeSaveMultipleReqVO multipleReqVO) {
         Long typeId = multipleReqVO.getTypeId();
         List<StandingbookAttributeSaveReqVO> createReqVOs = multipleReqVO.getCreateReqVOs();
-        if (createReqVOs == null || createReqVOs.isEmpty()) {
-            standingbookAttributeService.deleteStandingbookAttributeByTypeId(typeId);
-            return success(true);
-        }
+//        if (createReqVOs == null || createReqVOs.isEmpty()) {
+//            standingbookAttributeService.deleteStandingbookAttributeByTypeId(typeId);
+//            return success(true);
+//        }
         standingbookAttributeService.saveMultiple(createReqVOs);
         return success(true);
     }
