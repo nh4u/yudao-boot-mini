@@ -128,6 +128,8 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
                 throw exception(TIME_CONFLICT);
             }
             // 插入
+            EnergyConfigurationDO energyConfiguration=energyConfigurationService.getEnergyConfiguration(energyId);
+            updateReqVO.setFormula(energyConfiguration.getUnitPriceFormula());
             UnitPriceConfigurationDO unitPriceConfiguration = BeanUtils.toBean(updateReqVO, UnitPriceConfigurationDO.class);
             // 执行更新并获取影响行数
             int affectedRows = unitPriceConfigurationMapper.updateById(unitPriceConfiguration);
