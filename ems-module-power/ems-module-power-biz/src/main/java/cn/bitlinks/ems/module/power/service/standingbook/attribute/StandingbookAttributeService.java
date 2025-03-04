@@ -93,6 +93,8 @@ public interface StandingbookAttributeService {
 
     List<StandingbookDO> getStandingbook(List<StandingbookAttributePageReqVO> children,Long typeId);
 
+    List<StandingbookDO> getStandingbookIntersection(List<StandingbookAttributePageReqVO> children, Long typeId);
+
     void saveMultiple(List<StandingbookAttributeSaveReqVO> createReqVOs);
 
     /**

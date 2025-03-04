@@ -299,21 +299,24 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
     @Override
-    public List<StandingbookDO> getStandingbookListBy( Map<String,String> pageReqVO) {
-        String typeId = null;
-        List<StandingbookAttributePageReqVO> children= new ArrayList<>();
-        // 使用 entrySet() 遍历键和值
+    public List<StandingbookDO> getStandingbookListBy(Map<String, String> pageReqVO) {
+        List<StandingbookAttributePageReqVO> children = new ArrayList<>();
+        Long typeId = null;
+
         for (Map.Entry<String, String> entry : pageReqVO.entrySet()) {
-            System.out.println("Key: " + entry.getKey() + ", Value: " + entry.getValue());
             String key = entry.getKey();
             String value = entry.getValue();
-            if (!entry.getKey() .equals("typeId")){
+            if ("typeId".equals(key)) {
+                typeId = Long.parseLong(value);
+            } else {
                 StandingbookAttributePageReqVO attribute = new StandingbookAttributePageReqVO();
                 attribute.setCode(key).setValue(value);
                 children.add(attribute);
             }
         }
-        List<StandingbookDO> standingbookDOS = standingbookAttributeService.getStandingbook(children, null);
+
+        // 调用新方法获取交集结果
+        List<StandingbookDO> standingbookDOS = standingbookAttributeService.getStandingbookIntersection(children, typeId);
         List<StandingbookDO> result = new ArrayList<>();
         for (StandingbookDO standingbookDO : standingbookDOS) {
             result.add(getStandingbook(standingbookDO.getId()));

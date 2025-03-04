@@ -55,4 +55,6 @@ public interface StandingbookAttributeMapper extends BaseMapperX<StandingbookAtt
     }
 
     List<StandingbookDO> selectStandingbook(@Param("list")List<StandingbookAttributePageReqVO> list,@Param("typeId")Long typeId);
+
+    List<StandingbookDO> selectStandingbookIntersection(@Param("list") List<StandingbookAttributePageReqVO> list, @Param("typeId") Long typeId);
 }
