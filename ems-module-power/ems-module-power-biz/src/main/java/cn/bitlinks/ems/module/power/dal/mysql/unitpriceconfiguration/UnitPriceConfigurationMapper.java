@@ -50,4 +50,15 @@ public interface UnitPriceConfigurationMapper extends BaseMapperX<UnitPriceConfi
             "FROM ems_unit_price_configuration " +
             "WHERE energy_id = #{energyId}")
     List<UnitPriceConfigurationDO> findByEnergyId(Long energyId);
+
+    @Select("<script>" +
+            "SELECT id, energy_id, start_time, end_time " +
+            "FROM ems_unit_price_configuration " +
+            "WHERE energy_id = #{energyId} " +
+            "<if test='excludeId != null'>" +
+            "AND id != #{excludeId}" +
+            "</if>" +
+            "</script>")
+    List<UnitPriceConfigurationDO> findByEnergyIdExcludeId(@Param("energyId") Long energyId,
+                                                           @Param("excludeId") Long excludeId);
 }

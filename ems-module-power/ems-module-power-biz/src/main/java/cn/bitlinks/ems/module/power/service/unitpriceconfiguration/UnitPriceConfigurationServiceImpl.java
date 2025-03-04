@@ -91,6 +91,25 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
         return false;
     }
 
+    // 修改后的时间冲突检查方法（增加 excludeId 参数）
+    private boolean isTimeConflict(Long energyId, LocalDateTime startTime, LocalDateTime endTime, Long excludeId) {
+        // 查询时排除指定ID
+        List<UnitPriceConfigurationDO> existingConfigs = unitPriceConfigurationMapper.findByEnergyIdExcludeId(energyId, excludeId);
+
+        for (UnitPriceConfigurationDO config : existingConfigs) {
+            if (isOverlap(startTime, endTime, config.getStartTime(), config.getEndTime())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // 时间重叠判断工具方法
+    private boolean isOverlap(LocalDateTime start1, LocalDateTime end1,
+                              LocalDateTime start2, LocalDateTime end2) {
+        return start1.isBefore(end2) && end1.isAfter(start2);
+    }
+
     @Override
     public List<Long> updateUnitPriceConfiguration(Long energyId, List<UnitPriceConfigurationSaveReqVO> updateReqVOList) {
         List<Long> ids = new ArrayList<>();
@@ -104,12 +123,10 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
                 updateReqVO.setEndTime(updateReqVO.getTimeRange().get(1));
             }
 
-            // 检查时间冲突
-            if (isTimeConflict(energyId, updateReqVO.getStartTime(), updateReqVO.getEndTime())) {
-                // 时间冲突，抛出异常或处理逻辑
+            // 修改记录时需要排除自身ID
+            if (isTimeConflict(energyId, updateReqVO.getStartTime(), updateReqVO.getEndTime(), updateReqVO.getId())) {
                 throw exception(TIME_CONFLICT);
             }
-
             // 插入
             UnitPriceConfigurationDO unitPriceConfiguration = BeanUtils.toBean(updateReqVO, UnitPriceConfigurationDO.class);
             // 执行更新并获取影响行数
