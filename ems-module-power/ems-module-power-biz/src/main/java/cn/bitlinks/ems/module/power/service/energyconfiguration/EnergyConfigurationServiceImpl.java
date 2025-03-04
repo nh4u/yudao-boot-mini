@@ -75,7 +75,8 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         checkEnergyCodeDuplicate(updateReqVO.getCode(), updateReqVO.getId());
         String energyName = updateReqVO.getEnergyName();
         String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energyName);
-        if (standingbookAttributeMapper.selectStandingbookIdByValue(energyName) != null && unit!= null) {
+        List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(energyName);
+        if (standingbookIds != null && unit!= null) {
             throw new ServiceException(ENERGY_CONFIGURATION_STANDINGBOOK_UNIT);
         }
         // 更新
@@ -110,7 +111,10 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         // 校验存在
         validateEnergyConfigurationExists(id);
         String energyName = energyConfigurationMapper.selectById(id).getEnergyName();
-        if (standingbookAttributeMapper.selectStandingbookIdByValue(energyName) != null) {
+
+        // 使用 selectList 查询所有关联的台账 ID
+        List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(energyName);
+        if (!standingbookIds.isEmpty()) {
             throw exception(ENERGY_CONFIGURATION_STANDINGBOOK_EXISTS);
         }
         // 删除
@@ -123,7 +127,9 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         for (Long id : ids) {
             validateEnergyConfigurationExists(id);
             String energyName = energyConfigurationMapper.selectById(id).getEnergyName();
-            if (standingbookAttributeMapper.selectStandingbookIdByValue(energyName) != null) {
+            // 使用 selectList 查询所有关联的台账 ID
+            List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(energyName);
+            if (!standingbookIds.isEmpty()) {
                 throw exception(ENERGY_CONFIGURATION_STANDINGBOOK_EXISTS);
             }
         }
