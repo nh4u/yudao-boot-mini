@@ -135,6 +135,7 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
             // 仅当数据实际变更时插入历史记录
             if (affectedRows > 0) {
                 // 插入历史记录
+                updateReqVO.setId(null);
                 UnitPriceHistorySaveReqVO unitPriceHistory = BeanUtils.toBean(updateReqVO, UnitPriceHistorySaveReqVO.class);
                 unitPriceHistoryService.createUnitPriceHistory(unitPriceHistory);
                 ids.add(unitPriceConfiguration.getId());
