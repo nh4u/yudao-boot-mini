@@ -76,7 +76,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         String energyName = updateReqVO.getEnergyName();
         String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energyName);
         List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(energyName);
-        if (standingbookIds != null && unit!= null) {
+        if (CollectionUtils.isNotEmpty(standingbookIds) && unit != null) {
             throw new ServiceException(ENERGY_CONFIGURATION_STANDINGBOOK_UNIT);
         }
         // 更新
