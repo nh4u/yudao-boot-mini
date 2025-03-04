@@ -331,6 +331,9 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<StandingbookWithAssociations> result = new ArrayList<>();
 
         for (StandingbookDO standingbookDO : standingbookDOS) {
+            if (standingbookDO == null || standingbookDO.getId() == null) {
+                continue; // 跳过无效记录
+            }
             // 获取关联设备信息
             DeviceAssociationConfigurationDO association = deviceAssociationConfigurationService.getDeviceAssociationConfigurationByMeasurementInstrumentId(standingbookDO.getId());
             Long StandingbookId = standingbookDO.getId();
