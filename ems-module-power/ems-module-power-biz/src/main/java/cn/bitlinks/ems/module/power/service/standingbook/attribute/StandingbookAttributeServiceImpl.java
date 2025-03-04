@@ -168,6 +168,11 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
     }
 
     @Override
+    public List<StandingbookDO> getStandingbookIntersection(List<StandingbookAttributePageReqVO> children, Long typeId) {
+        return standingbookAttributeMapper.selectStandingbookIntersection(children, typeId);
+    }
+
+    @Override
     @Transactional
     public void saveMultiple(List<StandingbookAttributeSaveReqVO> createReqVOs) {
         Long typeId = createReqVOs.get(0).getTypeId();

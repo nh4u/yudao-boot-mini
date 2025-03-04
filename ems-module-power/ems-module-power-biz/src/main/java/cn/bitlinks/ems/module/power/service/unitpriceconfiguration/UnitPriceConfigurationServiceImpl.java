@@ -128,14 +128,22 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
                 throw exception(TIME_CONFLICT);
             }
             // 插入
+            EnergyConfigurationDO energyConfiguration=energyConfigurationService.getEnergyConfiguration(energyId);
+            updateReqVO.setFormula(energyConfiguration.getUnitPriceFormula());
             UnitPriceConfigurationDO unitPriceConfiguration = BeanUtils.toBean(updateReqVO, UnitPriceConfigurationDO.class);
             // 执行更新并获取影响行数
-            int affectedRows = unitPriceConfigurationMapper.updateById(unitPriceConfiguration);
-
-            // 仅当数据实际变更时插入历史记录
-            if (affectedRows > 0) {
-                // 插入历史记录
+            if(updateReqVO.getId() != null) {
+                int affectedRows = unitPriceConfigurationMapper.updateById(unitPriceConfiguration);
+                if (affectedRows > 0) {
+                    // 插入历史记录
+                    updateReqVO.setId(null);
+                    UnitPriceHistorySaveReqVO unitPriceHistory = BeanUtils.toBean(updateReqVO, UnitPriceHistorySaveReqVO.class);
+                    unitPriceHistoryService.createUnitPriceHistory(unitPriceHistory);
+                    ids.add(unitPriceConfiguration.getId());
+                }
+            }else {
                 UnitPriceHistorySaveReqVO unitPriceHistory = BeanUtils.toBean(updateReqVO, UnitPriceHistorySaveReqVO.class);
+                unitPriceConfigurationMapper.insertOrUpdate(unitPriceConfiguration);
                 unitPriceHistoryService.createUnitPriceHistory(unitPriceHistory);
                 ids.add(unitPriceConfiguration.getId());
             }
