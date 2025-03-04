@@ -9,9 +9,9 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.Standingboo
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.enums.ApiConstants;
-import cn.bitlinks.ems.module.power.service.standingbook.StandingbookServiceImpl;
+import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
-import com.alibaba.excel.util.StringUtils;
+import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,7 +37,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
     @Resource
     private StandingbookTypeMapper standingbookTypeMapper;
     @Resource
-    private StandingbookServiceImpl standingbookService;
+    private StandingbookService standingbookService;
     @Resource
     private StandingbookAttributeMapper standingbookAttributeMapper;
 
@@ -52,17 +52,10 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         // 插入
         StandingbookTypeDO standingbookType = BeanUtils.toBean(createReqVO, StandingbookTypeDO.class);
         standingbookTypeMapper.insert(standingbookType);
+        //创建分类的属性
+        createTypeAttrFromParent(standingbookType);
         //此处只对重点设备和计量器具进行属性固定的控制
-        if (StringUtils.isNotBlank(createReqVO.getTopType()) && createReqVO.getTopType().equals("1")) {
-            // 重点设备
-            createKeyEquipment(standingbookType);
-        } else if (StringUtils.isNotBlank(createReqVO.getTopType()) && createReqVO.getTopType().equals("2")) {
-            // 计量器具
-            createMeasuringInstrument(standingbookType);
-        }else {
-            // 其他类型
-            other(standingbookType);
-        }
+
         // 返回
         return standingbookType.getId();
     }
@@ -81,7 +74,8 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         StandingbookTypeDO updateObj = BeanUtils.toBean(updateReqVO, StandingbookTypeDO.class);
         standingbookTypeMapper.updateById(updateObj);
     }
-    void recursiveDeletion(List<Long> ids,Long id){
+
+    void recursiveDeletion(List<Long> ids, Long id) {
         // 校验存在
         validateStandingbookTypeExists(id);
         // 校验是否有子台账类型 一并删了
@@ -91,7 +85,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
             List<StandingbookTypeDO> standingbookTypeDOS = standingbookTypeMapper.selectList(listReqVO);
             if (standingbookTypeDOS != null && standingbookTypeDOS.size() > 0) {
                 for (StandingbookTypeDO standingbookTypeDO : standingbookTypeDOS) {
-                    recursiveDeletion(ids,standingbookTypeDO.getId());
+                    recursiveDeletion(ids, standingbookTypeDO.getId());
                 }
             }
         }
@@ -107,7 +101,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
     @Override
     public void deleteStandingbookType(Long id) {
         ArrayList<Long> ids = new ArrayList<>();
-        recursiveDeletion(ids,id);
+        recursiveDeletion(ids, id);
         for (Long aLong : ids) {
             // 删除
             standingbookTypeMapper.deleteById(aLong);
@@ -160,19 +154,6 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         }
     }
 
-//    private void validateStandingbookTypeNameUnique(Long id, Long superId, String name) {
-//        StandingbookTypeDO standingbookType = standingbookTypeMapper.selectBySuperIdAndName(superId, name);
-//        if (standingbookType == null) {
-//            return;
-//        }
-//        // 如果 id 为空，说明不用比较是否为相同 id 的台账类型
-//        if (id == null) {
-//            throw exception(STANDINGBOOK_TYPE_NAME_DUPLICATE);
-//        }
-//        if (!Objects.equals(standingbookType.getId(), id)) {
-//            throw exception(STANDINGBOOK_TYPE_NAME_DUPLICATE);
-//        }
-//    }
 
     @Override
     public StandingbookTypeDO getStandingbookType(Long id) {
@@ -230,169 +211,23 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         return rootNodes;
 
     }
-    void other(StandingbookTypeDO standingbookTypeDO) {
+
+
+    @Transactional(rollbackFor = Exception.class)
+    public void createTypeAttrFromParent(StandingbookTypeDO standingbookTypeDO) {
         Long superId = standingbookTypeDO.getSuperId();
-        List<StandingbookAttributeDO> savedStandingbookAttributeDOS = findSuperAttributes(superId,standingbookTypeDO.getId(),new ArrayList<>());
-        attributeService.createStandingbookAttributeBatch(savedStandingbookAttributeDOS);
-    }
-
-    void createMeasuringInstrument(StandingbookTypeDO standingbookTypeDO) {
-        Long superId = standingbookTypeDO.getSuperId();
-        StandingbookAttributeDO do1 = new StandingbookAttributeDO();
-        do1.setDescription("系统生成：表类型")
-                .setName("表类型")
-                .setCode("tableType")
-                .setFormat(ApiConstants.SELECT).setOptions("实体表计;虚拟表计")
-                .setIsRequired(ApiConstants.YES)
-                .setNode("计量器具")
-                .setTypeId(standingbookTypeDO.getId())
-                .setAutoGenerated(ApiConstants.YES)
-                .setSort(1L);
-        StandingbookAttributeDO do2 = new StandingbookAttributeDO();
-        do2.setDescription("系统生成：计量器具编号")
-                .setName("计量器具编号")
-                .setCode("measuringInstrumentId")
-                .setFormat(ApiConstants.TEXT)
-                .setIsRequired(ApiConstants.YES)
-                .setNode("计量器具")
-                .setTypeId(standingbookTypeDO.getId())
-                .setAutoGenerated(ApiConstants.YES)
-
-                .setSort(2L);
-        StandingbookAttributeDO do3 = new StandingbookAttributeDO();
-        do3.setDescription("系统生成：计量器具名称")
-                .setName("计量器具名称")
-                .setCode("measuringInstrumentName")
-                .setFormat(ApiConstants.TEXT)
-                .setIsRequired(ApiConstants.YES)
-                .setNode("计量器具")
-                .setTypeId(standingbookTypeDO.getId())
-                .setAutoGenerated(ApiConstants.YES)
-
-                .setSort(3L);
-        StandingbookAttributeDO do4 = new StandingbookAttributeDO();
-        do4.setDescription("系统生成：能源")
-                .setName("能源")
-                .setCode("energy")
-                .setFormat(ApiConstants.SELECT).setOptions("energy")
-                .setIsRequired(ApiConstants.YES)
-                .setAutoGenerated(ApiConstants.YES)
-
-                .setNode("计量器具")
-                .setTypeId(standingbookTypeDO.getId())
-                .setSort(4L);
-        StandingbookAttributeDO do5 = new StandingbookAttributeDO();
-        do5.setDescription("系统生成：数值类型")
-                .setName("数值类型")
-                .setCode("valueType")
-                .setFormat(ApiConstants.SELECT).setOptions("抄表数;用量数")
-                .setIsRequired(ApiConstants.YES)
-                .setAutoGenerated(ApiConstants.YES)
-
-                .setNode("计量器具")
-                .setTypeId(standingbookTypeDO.getId())
-                .setSort(5L);
-
-//        StandingbookAttributeDO do6 = new StandingbookAttributeDO();
-//        do6.setDescription("系统生成：虚拟表计关联台账类型")
-//                .setName("虚拟表计关联台账类型")
-//                .setCode("unionStandingbookId")
-//                .setFormat(ApiConstants.TEXT)
-//                .setAutoGenerated(ApiConstants.YES)
-//                .setIsRequired(ApiConstants.NO)
-//                .setNode("计量器具")
-//                .setTypeId(standingbookTypeDO.getId())
-//                .setSort(6L);
-
-//        StandingbookAttributeDO do7 = new StandingbookAttributeDO();
-//        do7.setDescription("系统生成：环节")
-//                .setName("环节")
-//                .setCode("stage")
-//                .setFormat(ApiConstants.SELECT).setOptions("外购存储;加工转换;传输分配;终端使用;回收利用")
-//                .setAutoGenerated(ApiConstants.YES)
-//                .setIsRequired(ApiConstants.NO)
-//                .setNode("计量器具")
-//                .setTypeId(standingbookTypeDO.getId())
-//                .setSort(7L);
-        StandingbookAttributeDO do6 = new StandingbookAttributeDO();
-        do6.setDescription("系统生成：虚拟表")
-                .setName("虚拟表")
-                .setCode("virtualTable")
-                .setFormat(ApiConstants.TEXT)
-                .setAutoGenerated(ApiConstants.YES)
-                .setIsRequired(ApiConstants.NO)
-                .setNode("计量器具")
-                .setTypeId(standingbookTypeDO.getId())
-                .setSort(6L);
-        ArrayList<StandingbookAttributeDO> standingbookAttributeDOS = new ArrayList<StandingbookAttributeDO>() {{
-            add(do1);
-            add(do2);
-            add(do3);
-            add(do4);
-            add(do5);
-            add(do6);
-        }};
-        List<StandingbookAttributeDO> savedStandingbookAttributeDOS = findSuperAttributes(superId,standingbookTypeDO.getId(),standingbookAttributeDOS);
-        attributeService.createStandingbookAttributeBatch(savedStandingbookAttributeDOS);
-    }
-
-    List<StandingbookAttributeDO> findSuperAttributes(Long superId,Long id,ArrayList<StandingbookAttributeDO> standingbookAttributeDOS) {
-        ArrayList<StandingbookAttributeDO> savedStandingbookAttributeDOS = new ArrayList<>(standingbookAttributeDOS);
         List<StandingbookAttributeDO> superAttributes = standingbookAttributeMapper.selectTypeId(superId);
-        StandingbookTypeDO superStandingbookType = getStandingbookType(superId);
-        if (superAttributes != null) {
-            for (StandingbookAttributeDO superAttribute : superAttributes) {
-                String flag = "0";
-                for (StandingbookAttributeDO attributeDO : standingbookAttributeDOS) {
-                    if (attributeDO.getCode().equals(superAttribute.getCode())) {
-                        flag = "1";
-                        break;
-                    }
-                }
-                if (flag.equals("1")) {
-                    continue;
-                }
-
-                superAttribute
-                        .setTypeId(id)
-                        .setAutoGenerated(ApiConstants.YES)
-                        .setId(null)
-                        .setDescription("父节点属性自动生成")
-                        .setNode(superStandingbookType.getName());
-
-                savedStandingbookAttributeDOS.add(superAttribute);
-            }
+        if (CollUtil.isEmpty(superAttributes)) {
+            return;
         }
-        return savedStandingbookAttributeDOS;
-    }
-
-    void createKeyEquipment(StandingbookTypeDO standingbookTypeDO) {
-        Long superId = standingbookTypeDO.getSuperId();
-        StandingbookAttributeDO do1 = new StandingbookAttributeDO();
-        do1.setDescription("系统生成：设备编号")
-                .setName("设备编号")
-                .setCode("equipmentId")
-                .setFormat(ApiConstants.TEXT)
-                .setIsRequired(ApiConstants.YES)
-                .setAutoGenerated(ApiConstants.YES)
-                .setNode("重点设备")
-                .setTypeId(standingbookTypeDO.getId())
-                .setSort(1L);
-        StandingbookAttributeDO do2 = new StandingbookAttributeDO();
-        do2.setDescription("系统生成：设备名称")
-                .setName("设备名称")
-                .setCode("equipmentName")
-                .setFormat(ApiConstants.TEXT)
-                .setIsRequired(ApiConstants.YES)
-                .setAutoGenerated(ApiConstants.YES)
-                .setNode("重点设备")
-                .setTypeId(standingbookTypeDO.getId())
-                .setSort(2L);
-        ArrayList<StandingbookAttributeDO> standingbookAttributeDOS = new ArrayList<StandingbookAttributeDO>() {{
-            add(do1);
-            add(do2);
-        }};
-        List<StandingbookAttributeDO> superAttributes = findSuperAttributes(superId,standingbookTypeDO.getId(), standingbookAttributeDOS);
+        superAttributes.forEach(attr -> {
+            attr.setTypeId(standingbookTypeDO.getId())
+                    .setAutoGenerated(ApiConstants.YES)
+                    .setDescription("父节点属性自动生成")
+                    .setRawAttrId(attr.getRawAttrId() == null ?attr.getId(): attr.getRawAttrId());
+            ;
+            attr.setId(null);
+        });
         attributeService.createStandingbookAttributeBatch(superAttributes);
     }
 

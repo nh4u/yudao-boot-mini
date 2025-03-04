@@ -49,15 +49,13 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
     @Resource
     private StandingbookMapper standingbookMapper;
 
-    @Autowired
-    private ApplicationContext context;
 
     @Transactional
     @Override
     public Long createStandingbookAttribute(StandingbookAttributeSaveReqVO createReqVO) {
         // 插入
         StandingbookAttributeDO standingbookAttribute = BeanUtils.toBean(createReqVO, StandingbookAttributeDO.class);
-        if ((standingbookAttribute.getId()==null)) {
+        if ((standingbookAttribute.getId() == null)) {
             standingbookAttributeMapper.insert(standingbookAttribute);
         }else {
             standingbookAttributeMapper.updateById(standingbookAttribute);
@@ -170,14 +168,15 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
     }
 
     @Override
+    @Transactional
     public void saveMultiple(List<StandingbookAttributeSaveReqVO> createReqVOs) {
         Long typeId = createReqVOs.get(0).getTypeId();
         StandingbookTypeDO standingbookType = standingbookTypeMapper.selectById(typeId);
-        StandingbookAttributeService proxy = context.getBean(StandingbookAttributeService.class);
 
         for (StandingbookAttributeSaveReqVO createReqVO : createReqVOs) {
-            proxy.createStandingbookAttribute(createReqVO);
+            createStandingbookAttribute(createReqVO);
         }
+
 // 给子节点也添加新的属性
         StandingbookTypeListReqVO standingbookTypeListReqVO = new StandingbookTypeListReqVO();
         standingbookTypeListReqVO.setSuperId(typeId);
@@ -357,18 +356,18 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
                 AttributeTreeNode lastNode = currentNode;
 
                 while (parentId != null && sourceMap.containsKey(parentId)) {
-                    StandingbookTypeDO parentNodeB = sourceMap.get(parentId);
+                    StandingbookTypeDO sourceNode = sourceMap.get(parentId);
                     // 获取或创建父节点
-                    AttributeTreeNode parentNodeA = nodeMap.computeIfAbsent(parentNodeB.getId(),
-                            k -> new AttributeTreeNode(parentNodeB.getSuperId(),parentNodeB.getId(), parentNodeB.getName(), AttributeTreeNodeTypeEnum.SB_TYPE.getCode(), new ArrayList<>()));
+                    AttributeTreeNode pNode = nodeMap.computeIfAbsent(sourceNode.getId(),
+                            k -> new AttributeTreeNode(sourceNode.getSuperId(),sourceNode.getId(), sourceNode.getName(), AttributeTreeNodeTypeEnum.SB_TYPE.getCode(), new ArrayList<>()));
 
                     // 如果父节点的 children 中还没有当前节点，则添加
-                    if (!parentNodeA.getChildren().contains(lastNode)) {
-                        parentNodeA.getChildren().add(lastNode);
+                    if (!pNode.getChildren().contains(lastNode)) {
+                        pNode.getChildren().add(lastNode);
                     }
 
-                    lastNode = parentNodeA;
-                    parentId = parentNodeB.getSuperId();
+                    lastNode = pNode;
+                    parentId = sourceNode.getSuperId();
                 }
             }
 
