@@ -43,5 +43,10 @@ public class ApiConstants {
      */
     public static final String YES = "0";
     public static final String NO = "1";
+
+    public static final String SYSTEM_CREATE ="系统创建";
     //多选下拉框
+
+
+
 }
