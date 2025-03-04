@@ -47,7 +47,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         // 校验父级类型编号的有效性
         validateParentStandingbookType(null, createReqVO.getSuperId());
         // 校验名字的唯一性
-        validateStandingbookTypeNameUnique(null, createReqVO.getSuperId(), createReqVO.getName());
+//        validateStandingbookTypeNameUnique(null, createReqVO.getSuperId(), createReqVO.getName());
 
         // 插入
         StandingbookTypeDO standingbookType = BeanUtils.toBean(createReqVO, StandingbookTypeDO.class);
@@ -75,7 +75,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         // 校验父级类型编号的有效性
         validateParentStandingbookType(updateReqVO.getId(), updateReqVO.getSuperId());
         // 校验名字的唯一性
-        validateStandingbookTypeNameUnique(updateReqVO.getId(), updateReqVO.getSuperId(), updateReqVO.getName());
+//        validateStandingbookTypeNameUnique(updateReqVO.getId(), updateReqVO.getSuperId(), updateReqVO.getName());
 
         // 更新
         StandingbookTypeDO updateObj = BeanUtils.toBean(updateReqVO, StandingbookTypeDO.class);
@@ -160,19 +160,19 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         }
     }
 
-    private void validateStandingbookTypeNameUnique(Long id, Long superId, String name) {
-        StandingbookTypeDO standingbookType = standingbookTypeMapper.selectBySuperIdAndName(superId, name);
-        if (standingbookType == null) {
-            return;
-        }
-        // 如果 id 为空，说明不用比较是否为相同 id 的台账类型
-        if (id == null) {
-            throw exception(STANDINGBOOK_TYPE_NAME_DUPLICATE);
-        }
-        if (!Objects.equals(standingbookType.getId(), id)) {
-            throw exception(STANDINGBOOK_TYPE_NAME_DUPLICATE);
-        }
-    }
+//    private void validateStandingbookTypeNameUnique(Long id, Long superId, String name) {
+//        StandingbookTypeDO standingbookType = standingbookTypeMapper.selectBySuperIdAndName(superId, name);
+//        if (standingbookType == null) {
+//            return;
+//        }
+//        // 如果 id 为空，说明不用比较是否为相同 id 的台账类型
+//        if (id == null) {
+//            throw exception(STANDINGBOOK_TYPE_NAME_DUPLICATE);
+//        }
+//        if (!Objects.equals(standingbookType.getId(), id)) {
+//            throw exception(STANDINGBOOK_TYPE_NAME_DUPLICATE);
+//        }
+//    }
 
     @Override
     public StandingbookTypeDO getStandingbookType(Long id) {
