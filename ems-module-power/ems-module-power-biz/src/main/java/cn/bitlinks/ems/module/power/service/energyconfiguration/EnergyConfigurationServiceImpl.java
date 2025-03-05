@@ -21,6 +21,8 @@ import cn.hutool.core.util.StrUtil;
 import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.alibaba.nacos.common.utils.StringUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -73,15 +75,45 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         validateEnergyConfigurationExists(updateReqVO.getId());
         // 检查能源编码是否重复（排除自身）
         checkEnergyCodeDuplicate(updateReqVO.getCode(), updateReqVO.getId());
-        String energyName = updateReqVO.getEnergyName();
-        String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energyName);
-        List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(energyName);
-        if (CollectionUtils.isNotEmpty(standingbookIds) && unit != null) {
+
+        EnergyConfigurationDO energyConfigurationDO = energyConfigurationMapper.selectById(updateReqVO.getId());
+
+        // 获取原始 energyName 和 energyParameter
+        String originalEnergyName = energyConfigurationDO.getEnergyName();
+        String originalEnergyParameter = energyConfigurationDO.getEnergyParameter();
+
+        // 获取请求中的新值
+        String newEnergyName = updateReqVO.getEnergyName();
+        String newEnergyParameter = updateReqVO.getEnergyParameter();
+
+        try {
+            // 标准化 JSON 字符串
+            String normalizedOriginal = normalizeJson(originalEnergyParameter);
+            String normalizedNew = normalizeJson(newEnergyParameter);
+
+            // 如果 energyName 或 energyParameter 被修改，则触发检查
+            if (!normalizedOriginal.equals(normalizedNew)) {
+                String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(originalEnergyName);
+                List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(originalEnergyName);
+
+                if (CollectionUtils.isNotEmpty(standingbookIds) && unit != null) {
+                    throw new ServiceException(ENERGY_CONFIGURATION_STANDINGBOOK_UNIT);
+                }
+            }
+        } catch (Exception e) {
             throw new ServiceException(ENERGY_CONFIGURATION_STANDINGBOOK_UNIT);
         }
-        // 更新
+
+        // 更新记录
         EnergyConfigurationDO updateObj = BeanUtils.toBean(updateReqVO, EnergyConfigurationDO.class);
         energyConfigurationMapper.updateById(updateObj);
+    }
+
+    // 标准化 JSON 方法
+    private String normalizeJson(String json) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode node = mapper.readTree(json);
+        return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(node);
     }
 
     private void checkEnergyCodeDuplicate(String code, Long id) {
