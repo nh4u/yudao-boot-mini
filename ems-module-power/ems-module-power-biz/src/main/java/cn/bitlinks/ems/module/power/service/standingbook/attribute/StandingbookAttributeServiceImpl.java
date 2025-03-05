@@ -323,7 +323,8 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
         // 删除操作节点属性
         standingbookAttributeMapper.deleteByIds(deleteIds);
         // 删除关联的节点属性
-        standingbookAttributeMapper.delete(StandingbookAttributeDO::getRawAttrId,deleteIds);
+        standingbookAttributeMapper.delete(new LambdaQueryWrapper<StandingbookAttributeDO>()
+                .in(StandingbookAttributeDO::getRawAttrId,deleteIds));
     }
 
     @Override
