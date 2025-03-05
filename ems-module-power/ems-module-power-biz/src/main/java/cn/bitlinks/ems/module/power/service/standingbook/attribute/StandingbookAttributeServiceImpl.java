@@ -5,7 +5,6 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.AttributeTreeNode;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
@@ -14,24 +13,22 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.Standingboo
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.enums.ApiConstants;
 import cn.bitlinks.ems.module.power.enums.standingbook.AttributeTreeNodeTypeEnum;
+import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
 import cn.hutool.core.collection.CollUtil;
-import com.alibaba.excel.util.StringUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.PARENT_ATTR_AUTO;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_ATTRIBUTE_NOT_EXISTS;
 
 /**
@@ -49,6 +46,9 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
     @Resource
     private StandingbookMapper standingbookMapper;
 
+    @Resource
+    @Lazy
+    private StandingbookTypeService standingbookTypeService;
 
     @Transactional
     @Override
@@ -176,61 +176,154 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
     @Transactional
     public void saveMultiple(List<StandingbookAttributeSaveReqVO> createReqVOs) {
         Long typeId = createReqVOs.get(0).getTypeId();
-        StandingbookTypeDO standingbookType = standingbookTypeMapper.selectById(typeId);
+        List<StandingbookAttributeDO> optAttrList = BeanUtils.toBean(createReqVOs, StandingbookAttributeDO.class);
 
-        for (StandingbookAttributeSaveReqVO createReqVO : createReqVOs) {
-            createStandingbookAttribute(createReqVO);
-        }
+        // 找出当前属性列表
+        List<StandingbookAttributeDO> rawAttrList = getStandingbookAttributeByTypeId(typeId);
+        // 级联删除
+        deleteAttrCascade(optAttrList, rawAttrList);
+        // 将数据分为2组，分成 createList 和 updateList
+        // 进行级联创建操作
+        List<StandingbookAttributeDO> createList = optAttrList.stream()
+                .filter(attribute -> attribute.getId() == null)
+                .collect(Collectors.toList());
+        createAttrCascade(createList, typeId);
+        // 进行级联修改操作
+        List<StandingbookAttributeDO> updateList = optAttrList.stream()
+                .filter(attribute -> attribute.getId() != null)
+                .collect(Collectors.toList());
+        updateAttrCascade(updateList);
 
-// 给子节点也添加新的属性
-        StandingbookTypeListReqVO standingbookTypeListReqVO = new StandingbookTypeListReqVO();
-        standingbookTypeListReqVO.setSuperId(typeId);
-        List<StandingbookTypeDO> standingbookTypeList = standingbookTypeMapper.selectList(standingbookTypeListReqVO);
-        if (standingbookTypeList == null || standingbookTypeList.size() == 0) {
+    }
+
+    /**
+     * 级联修改属性列表
+     * @param updateList 修改属性列表
+     */
+    private void updateAttrCascade(List<StandingbookAttributeDO> updateList) {
+        if(CollUtil.isEmpty(updateList)){
             return;
         }
-        for (StandingbookTypeDO standingbookTypeDO : standingbookTypeList) {
-            Long sonId = standingbookTypeDO.getId();
-            List<StandingbookAttributeDO> sonAttributeList = getStandingbookAttributeByTypeId(sonId);
-            List<StandingbookAttributeSaveReqVO> standingbookAttributeSaveReqVOS = new ArrayList<>(createReqVOs);
-            List<StandingbookAttributeSaveReqVO> sonNewList = new ArrayList<>();
-            List<StandingbookAttributeSaveReqVO> sonNewSaveList = new ArrayList<>();
-//新增的属性
-            standingbookAttributeSaveReqVOS.forEach(son -> {
-                son.setTypeId(sonId);
-                String flag = "0";
-                for (StandingbookAttributeDO sonAttribute : sonAttributeList) {
-                    if (son.getCode().equals(sonAttribute.getCode())) {
-                        flag = ("1");
-                        break;
-                    }
-                }
-                if ("0".equals(flag)) {
-                    son.setNode(standingbookType.getName()).setAutoGenerated(ApiConstants.YES).setDescription("父节点属性自动生成");
-                    sonNewList.add(son);
-                }
-            });
-//减少的属性
-            for (StandingbookAttributeDO sonAttribute : sonAttributeList) {
-                String flag = "0";
-                for (StandingbookAttributeSaveReqVO son : createReqVOs) {
-                    if (son.getCode().equals(sonAttribute.getCode())) {
-                        flag = ("1");
-                        break;
-                    }
-                }
-                if ("0".equals(flag) && StringUtils.isNotBlank(sonAttribute.getDescription()) && sonAttribute.getDescription().contains("父节点属性自动生成")) {
-                    continue;
-                }
 
-                StandingbookAttributeSaveReqVO bean = BeanUtils.toBean(sonAttribute, StandingbookAttributeSaveReqVO.class);
-                bean.setId(null);
-                sonNewSaveList.add(bean);
+        // 1. 修改操作节点属性
+        standingbookAttributeMapper.updateBatch(updateList);
+        // 2. 修改影响节点属性
+        Set<Long> updIds = updateList.stream()
+                .map(StandingbookAttributeDO::getId)
+                .collect(Collectors.toSet());
+        // 2.1 获取影响到的节点属性
+        List<StandingbookAttributeDO> attrList = standingbookAttributeMapper.selectList(new LambdaQueryWrapper<StandingbookAttributeDO>()
+                .in(StandingbookAttributeDO::getRawAttrId,updIds));
+        // 2.2 根据 rawAttrId 分组
+        Map<Long, List<StandingbookAttributeDO>> groupedByRawAttrId = attrList.stream()
+                .collect(Collectors.groupingBy(StandingbookAttributeDO::getRawAttrId));
+        groupedByRawAttrId.entrySet().removeIf(entry -> CollUtil.isEmpty(entry.getValue()));
+
+        // 2.3 级联修改操作节点的属性，组成List
+        List<StandingbookAttributeDO> cascadeAttrList = new ArrayList<>();
+        groupedByRawAttrId.forEach((rawAttrId,updAttrList) -> {
+            // 处理新增的属性列表
+            Optional<StandingbookAttributeDO> foundAttribute = updateList.stream().filter(updAttr -> updAttr.getId().equals(rawAttrId)).findFirst();
+            if (foundAttribute.isPresent()) {
+                StandingbookAttributeDO updAttribute = foundAttribute.get();
+                updAttrList.forEach(attribute -> {
+                    attribute.setName(updAttribute.getName())
+                            .setIsRequired(updAttribute.getIsRequired())
+                            .setFormat(updAttribute.getFormat());
+                });
+                cascadeAttrList.addAll(updAttrList);
             }
-            sonNewSaveList.addAll(sonNewList);
-            saveMultiple(sonNewSaveList);
+        });
+        if(CollUtil.isEmpty(cascadeAttrList)){
+            return;
+        }
+        // 2.4 执行修改级联节点属性操作
+        standingbookAttributeMapper.updateBatch(cascadeAttrList);
+    }
+
+    /**
+     * 级联新增属性列表
+     * @param createList 新增属性列表
+     * @param typeId 台账类型id
+     */
+    private void createAttrCascade(List<StandingbookAttributeDO> createList, Long typeId) {
+        if(CollUtil.isEmpty(createList)){
+            return;
+        }
+        // 1.新增当前分类的属性
+        standingbookAttributeMapper.insertBatch(createList);
+        // 2.获取所有级联的typeId
+        List<StandingbookTypeDO> typeList = standingbookTypeService.getStandingbookTypeNode();
+        List<Long> subtreeIds = getSubtreeIds(typeList, typeId);
+
+        if(CollUtil.isEmpty(subtreeIds)){
+            return;
+        }
+        // 3.新增所有级联的typeId的属性
+        List<StandingbookAttributeDO> cascadeAttrList = new ArrayList<>();
+        subtreeIds.forEach(subId->{
+            // 处理新增的属性列表
+            List<StandingbookAttributeDO> subAttrList = new ArrayList<>();
+            createList.forEach(attribute -> {
+                attribute.setDescription(PARENT_ATTR_AUTO)
+                        .setAutoGenerated(ApiConstants.YES)
+                        .setTypeId(subId)
+                        .setRawAttrId(attribute.getId());
+                subAttrList.add(attribute);
+            });
+            cascadeAttrList.addAll(subAttrList);
+        });
+        // 4.执行新增操作
+        standingbookAttributeMapper.insertBatch(cascadeAttrList);
+
+    }
+    // 递归查询子节点 id
+    public static List<Long> getSubtreeIds(List<StandingbookTypeDO> typeList, Long targetId) {
+        List<Long> subtreeIds = new ArrayList<>();
+
+        for (StandingbookTypeDO node : typeList) {
+            if (node.getId().equals(targetId)) {
+                // 找到了目标节点，开始递归遍历子节点
+                getSubtreeIdsRecursive(node, subtreeIds);
+                break; // 找到目标节点后就可以结束循环了
+            }
         }
 
+        return subtreeIds;
+    }
+
+    // 递归遍历子节点
+    private static void getSubtreeIdsRecursive(StandingbookTypeDO node, List<Long> subtreeIds) {
+        if (node == null) {
+            return;
+        }
+        subtreeIds.add(node.getId()); // 添加当前节点 id
+
+        for (StandingbookTypeDO child : node.getChildren()) {
+            getSubtreeIdsRecursive(child, subtreeIds); // 递归遍历子节点
+        }
+    }
+    /**
+     * 级联删除属性列表
+     * @param optAttrList 新属性列表
+     * @param rawAttrList 原属性列表
+     */
+    private void deleteAttrCascade(List<StandingbookAttributeDO> optAttrList, List<StandingbookAttributeDO> rawAttrList) {
+        if(CollUtil.isEmpty(rawAttrList)){
+            return;
+        }
+        // 找出被删除的属性id集合
+        Set<Long> deleteIds = rawAttrList.stream()
+                .map(StandingbookAttributeDO::getId)
+                .filter(id -> optAttrList.stream().noneMatch(reqVO -> reqVO.getId().equals(id)))
+                .collect(Collectors.toSet());
+        if (CollUtil.isEmpty(deleteIds)) {
+            return;
+        }
+        // 删除操作节点属性
+        standingbookAttributeMapper.deleteByIds(deleteIds);
+        // 删除关联的节点属性
+        standingbookAttributeMapper.delete(StandingbookAttributeDO::getRawAttrId,deleteIds);
     }
 
     @Override

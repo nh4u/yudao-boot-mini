@@ -95,6 +95,10 @@ public interface StandingbookAttributeService {
 
     List<StandingbookDO> getStandingbookIntersection(List<StandingbookAttributePageReqVO> children, Long typeId);
 
+    /**
+     * 点击提交（包含删除、修改、新增操作）
+     * @param createReqVOs
+     */
     void saveMultiple(List<StandingbookAttributeSaveReqVO> createReqVOs);
 
     /**

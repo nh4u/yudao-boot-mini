@@ -45,6 +45,8 @@ public class ApiConstants {
     public static final String NO = "1";
 
     public static final String SYSTEM_CREATE ="系统创建";
+    public static final String PARENT_ATTR_AUTO ="父节点属性自动生成";
+
     //多选下拉框
 
 
