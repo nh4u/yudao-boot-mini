@@ -67,7 +67,7 @@ public class StandingbookAttributeRespVO {
     @ExcelProperty("创建时间")
     private LocalDateTime createTime;
     @Schema(description = "创建人名称")
-    private String creatByName;
+    private String createByName;
     @Schema(description = "创建人")
     private String creator;
     @Schema(description = "是否自动生成", example = "0")
