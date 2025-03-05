@@ -6,6 +6,7 @@ import cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo.WarningS
 import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyDO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -21,4 +22,6 @@ public interface WarningStrategyMapper extends BaseMapperX<WarningStrategyDO> {
 
     Long getCount(@Param("reqVO") WarningStrategyPageReqVO reqVO);
 
+    @Select("SELECT site_template_id FROM power_warning_strategy WHERE site_template_id IS NOT NULL UNION ALL SELECT mail_template_id FROM power_warning_strategy WHERE mail_template_id IS NOT NULL")
+    List<Long> getAllTemplateIds();
 }

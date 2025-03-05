@@ -5,6 +5,7 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.warningtemplate.vo.WarningTemplatePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.warningtemplate.vo.WarningTemplateSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warningtemplate.WarningTemplateDO;
+import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningtemplate.WarningTemplateMapper;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjUtil;
@@ -17,6 +18,7 @@ import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
@@ -36,6 +38,8 @@ public class WarningTemplateServiceImpl implements WarningTemplateService {
 
     @Resource
     private WarningTemplateMapper warningTemplateMapper;
+    @Resource
+    private WarningStrategyMapper warningStrategyMapper;
 
     @Override
     public Long createWarningTemplate(WarningTemplateSaveReqVO createReqVO) {
@@ -103,7 +107,16 @@ public class WarningTemplateServiceImpl implements WarningTemplateService {
 
     @Override
     public List<String> queryUsedByStrategy(List<Long> ids) {
-        return warningTemplateMapper.queryUsedByStrategy(ids);
+        List<Long> usedTemplateIds = warningStrategyMapper.getAllTemplateIds();
+        List<Long> result = ids.stream()
+                .filter(usedTemplateIds::contains)
+                .collect(Collectors.toList());
+        if (CollUtil.isEmpty(result)) {
+            return null;
+        }
+        List<WarningTemplateDO> templateList = warningTemplateMapper.selectBatchIds(result);
+
+        return templateList.stream().map(WarningTemplateDO::getCode).collect(Collectors.toList());
     }
 
     @VisibleForTesting
