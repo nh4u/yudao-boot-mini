@@ -80,6 +80,11 @@ public class StandingbookAttributeDO extends BaseDO {
     @Schema(description = "归属节点")
     private String node;
     /**
+     * 归属节点id
+     */
+    @Schema(description = "归属节点id")
+    private String nodeId;
+    /**
      * 简介
      */
     @Schema(description = "简介")
@@ -99,5 +104,9 @@ public class StandingbookAttributeDO extends BaseDO {
      */
     @Schema(description = "源属性id")
     private Long rawAttrId;
-
+    /**
+     * 是否展示筛选 1-否 0-是
+     */
+    @Schema(description = "是否展示筛选 1-否 0-是")
+    private String displayFlag;
 }
