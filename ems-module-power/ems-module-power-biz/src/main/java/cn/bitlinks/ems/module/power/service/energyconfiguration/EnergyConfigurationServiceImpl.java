@@ -28,10 +28,7 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -85,23 +82,24 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         // 获取请求中的新值
         String newEnergyName = updateReqVO.getEnergyName();
         String newEnergyParameter = updateReqVO.getEnergyParameter();
+        String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(originalEnergyName);
+        if (newEnergyParameter != null && unit.trim().isEmpty()) {
 
-        try {
-            // 标准化 JSON 字符串
-            String normalizedOriginal = normalizeJson(originalEnergyParameter);
-            String normalizedNew = normalizeJson(newEnergyParameter);
+            try {
+                // 标准化 JSON 字符串
+                String normalizedOriginal = normalizeJson(originalEnergyParameter);
+                String normalizedNew = normalizeJson(newEnergyParameter);
 
-            // 如果 energyName 或 energyParameter 被修改，则触发检查
-            if (!normalizedOriginal.equals(normalizedNew)) {
-                String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(originalEnergyName);
-                List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(originalEnergyName);
+                if (!normalizedOriginal.equals(normalizedNew)) {
+                    List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(originalEnergyName);
 
-                if (CollectionUtils.isNotEmpty(standingbookIds) && unit != null) {
-                    throw new ServiceException(ENERGY_CONFIGURATION_STANDINGBOOK_UNIT);
+                    if (CollectionUtils.isNotEmpty(standingbookIds) && unit != null) {
+                        throw new ServiceException(ENERGY_CONFIGURATION_STANDINGBOOK_UNIT);
+                    }
                 }
+            } catch (Exception e) {
+                throw new ServiceException(ENERGY_CONFIGURATION_STANDINGBOOK_UNIT);
             }
-        } catch (Exception e) {
-            throw new ServiceException(ENERGY_CONFIGURATION_STANDINGBOOK_UNIT);
         }
 
         // 更新记录
@@ -207,6 +205,11 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
             }
         }
         return pageResult;
+    }
+
+    @Override
+    public List<EnergyConfigurationDO> getAllEnergyConfiguration(EnergyConfigurationSaveReqVO queryVO) {
+        return energyConfigurationMapper.selectList();
     }
 
     @Override

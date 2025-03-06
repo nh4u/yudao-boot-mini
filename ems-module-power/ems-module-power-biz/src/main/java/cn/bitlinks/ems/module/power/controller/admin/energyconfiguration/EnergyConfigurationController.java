@@ -87,6 +87,13 @@ public class EnergyConfigurationController {
         return success(BeanUtils.toBean(pageResult, EnergyConfigurationRespVO.class));
     }
 
+    @GetMapping("/getAll")
+    @Operation(summary = "获得所有能源配置")
+    @PreAuthorize("@ss.hasPermission('power:energy-configuration:getAll')")
+    public CommonResult<List<EnergyConfigurationDO>> getEnergyConfigurationPage(@Valid EnergyConfigurationSaveReqVO queryVO) {
+        return success(energyConfigurationService.getAllEnergyConfiguration(queryVO));
+    }
+
     @GetMapping("/export-excel")
     @Operation(summary = "导出能源配置 Excel")
     @PreAuthorize("@ss.hasPermission('power:energy-configuration:export')")

@@ -17,6 +17,7 @@ import javax.annotation.Resource;
 import java.time.LocalDateTime;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.framework.security.core.util.SecurityFrameworkUtils.getLoginUserNickname;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.COAL_FACTOR_HISTORY_NOT_EXISTS;
 
 /**
@@ -100,10 +101,12 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
         }
 
         // 插入新数据
+        String nickname = getLoginUserNickname();
         CoalFactorHistoryDO coalFactorHistory = BeanUtils.toBean(createReqVO, CoalFactorHistoryDO.class);
         Long energyId = coalFactorHistory.getEnergyId();
         coalFactorHistory.setStartTime(LocalDateTime.now()); // 设置为当前时间
-        coalFactorHistory.setEndTime(null); // null，表示“至今
+        coalFactorHistory.setEndTime(null); // null，表示“至今“
+        coalFactorHistory.setUpdater(nickname);
         EnergyConfigurationDO energyConfiguration=energyConfigurationService.getEnergyConfiguration(energyId);
         coalFactorHistory.setFormula(energyConfiguration.getCoalFormula());
         coalFactorHistoryMapper.insert(coalFactorHistory);

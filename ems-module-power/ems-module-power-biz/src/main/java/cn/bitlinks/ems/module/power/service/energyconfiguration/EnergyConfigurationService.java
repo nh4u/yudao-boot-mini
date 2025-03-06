@@ -61,6 +61,7 @@ public interface EnergyConfigurationService {
      */
     PageResult<EnergyConfigurationDO> getEnergyConfigurationPage(EnergyConfigurationPageReqVO pageReqVO);
 
+    List<EnergyConfigurationDO> getAllEnergyConfiguration(EnergyConfigurationSaveReqVO queryVO);
 
     /**
      * 获得能源配置分页
