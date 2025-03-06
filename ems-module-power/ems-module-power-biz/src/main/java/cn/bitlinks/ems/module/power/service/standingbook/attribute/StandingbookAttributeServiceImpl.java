@@ -236,7 +236,7 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
                             .setIsRequired(updAttribute.getIsRequired())
                             .setFormat(updAttribute.getFormat());
                 });
-                cascadeAttrList.addAll(updAttrList);
+                cascadeAttrList.addAll(optUpdAttrList);
             }
         });
         if(CollUtil.isEmpty(cascadeAttrList)){
