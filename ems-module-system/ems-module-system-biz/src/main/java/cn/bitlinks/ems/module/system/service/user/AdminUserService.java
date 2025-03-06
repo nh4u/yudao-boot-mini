@@ -216,4 +216,9 @@ public interface AdminUserService {
      */
     boolean isPasswordMatch(String rawPassword, String encodedPassword);
 
+    /**
+     * 查询所有用户
+     * @return 用户列表
+     */
+    List<AdminUserDO> getAllUserList();
 }

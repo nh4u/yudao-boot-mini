@@ -55,6 +55,9 @@ public class StandingbookAttributeRespVO {
     @Schema(description = "归属节点")
     @ExcelProperty("归属节点")
     private String node;
+    @Schema(description = "归属节点id")
+    @ExcelProperty("归属节点id")
+    private Long nodeId;
 
     @Schema(description = "下拉框选项")
     private String options;

@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.AttributeTreeNode;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
@@ -14,6 +15,8 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookType
 import cn.bitlinks.ems.module.power.enums.ApiConstants;
 import cn.bitlinks.ems.module.power.enums.standingbook.AttributeTreeNodeTypeEnum;
 import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
+import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
+import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -27,9 +30,11 @@ import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.PARENT_ATTR_AUTO;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.SYSTEM_CREATE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_ATTRIBUTE_NOT_EXISTS;
 
 /**
@@ -46,7 +51,8 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
     private StandingbookTypeMapper standingbookTypeMapper;
     @Resource
     private StandingbookMapper standingbookMapper;
-
+    @Resource
+    private AdminUserApi adminUserApi;
     @Resource
     @Lazy
     private StandingbookTypeService standingbookTypeService;
@@ -409,6 +415,37 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
         //循环中间节点，根据每个节点的pId在standingBookTypeMapper中查询出节点，直到节点的pId为null，构造树形结构
         enhanceTree(centerNodeList,sbTypeAllList);
         return centerNodeList;
+    }
+
+    @Override
+    public List<StandingbookAttributeRespVO> getByTypeId(Long typeId) {
+        List<StandingbookAttributeDO> standingbookAttributes = getStandingbookAttributeByTypeId(typeId);
+        List<StandingbookAttributeRespVO> bean = BeanUtils.toBean(standingbookAttributes, StandingbookAttributeRespVO.class);
+        //查询所有分类
+        Map<Long, StandingbookTypeDO> allTypeMap = standingbookTypeService.getStandingbookTypeIdMap();
+        // 查询所有用户
+        Map<Long, AdminUserRespDTO> allUserMap =  adminUserApi.getAllUserMap();
+        IntStream.range(0, bean.size()).forEach(i -> {
+            String creatorId = standingbookAttributes.get(i).getCreator();
+
+            // 获取归属节点名称
+            StandingbookTypeDO type = allTypeMap.get(bean.get(i).getNodeId());
+            if(type != null){
+                bean.get(i).setNode(type.getName());
+            }
+            if(ApiConstants.YES.equals(bean.get(i).getDisplayFlag())) {
+                bean.get(i).setCreateByName(SYSTEM_CREATE);
+            }else{
+                // 获取创建人名称
+                AdminUserRespDTO user = allUserMap.get(Long.valueOf(creatorId));
+                if(user != null){
+                    bean.get(i).setCreateByName(user.getNickname());
+                }
+            }
+
+        });
+        return bean;
+
     }
 
     /**

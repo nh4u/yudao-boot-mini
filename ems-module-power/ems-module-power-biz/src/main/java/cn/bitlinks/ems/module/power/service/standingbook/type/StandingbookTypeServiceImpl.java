@@ -19,6 +19,7 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.PARENT_ATTR_AUTO;
@@ -180,6 +181,16 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         // 将rootNodes序列化为JSON并发送给前端
 //        log.info("StandingbookTypeNode: " + JSONUtil.toJsonStr(rootNodes));
         return createStandingbookTypeTreeNode(nodes);
+    }
+
+    @Override
+    public Map<Long, StandingbookTypeDO> getStandingbookTypeIdMap() {
+        List<StandingbookTypeDO> allList= standingbookTypeMapper.selectList();
+        if(CollUtil.isEmpty(allList)){
+            return new HashMap<>();
+        }
+        return allList.stream()
+                .collect(Collectors.toMap(StandingbookTypeDO::getId, type -> type));
     }
 
     private List<StandingbookTypeDO> fetchNodesFromDatabase() {

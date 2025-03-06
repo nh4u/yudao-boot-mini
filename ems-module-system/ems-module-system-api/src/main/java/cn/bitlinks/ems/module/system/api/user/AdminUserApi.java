@@ -40,6 +40,10 @@ public interface AdminUserApi extends AutoTransable<AdminUserRespDTO> {
     @Parameter(name = "ids", description = "部门编号数组", example = "1,2", required = true)
     CommonResult<List<AdminUserRespDTO>> getUserList(@RequestParam("ids") Collection<Long> ids);
 
+    @GetMapping(PREFIX + "/all-list")
+    @Operation(summary = "查询所有用户们")
+    CommonResult<List<AdminUserRespDTO>> getAllUserList();
+
     @GetMapping(PREFIX + "/list-by-dept-id")
     @Operation(summary = "获得指定部门的用户数组")
     @Parameter(name = "deptIds", description = "部门编号数组", example = "1,2", required = true)
@@ -49,6 +53,17 @@ public interface AdminUserApi extends AutoTransable<AdminUserRespDTO> {
     @Operation(summary = "获得指定岗位的用户数组")
     @Parameter(name = "postIds", description = "岗位编号数组", example = "2,3", required = true)
     CommonResult<List<AdminUserRespDTO>> getUserListByPostIds(@RequestParam("postIds") Collection<Long> postIds);
+
+    /**
+     * 获得所有用户 Map
+     *
+     * @return 用户 Map
+     */
+    default Map<Long, AdminUserRespDTO> getAllUserMap() {
+        List<AdminUserRespDTO> users = getAllUserList().getCheckedData();
+        return CollectionUtils.convertMap(users, AdminUserRespDTO::getId);
+    }
+
 
     /**
      * 获得用户 Map

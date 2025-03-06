@@ -6,6 +6,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.Standingboo
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 台账类型 Service 接口
@@ -54,4 +55,9 @@ public interface StandingbookTypeService {
     List<StandingbookTypeDO> getStandingbookTypeList(StandingbookTypeListReqVO listReqVO);
     List<StandingbookTypeDO> getStandingbookTypeNode();
 
+    /**
+     * 获得台账类型列表Map<id,DO>
+     * @return map
+     */
+    Map<Long,StandingbookTypeDO> getStandingbookTypeIdMap();
 }

@@ -514,6 +514,11 @@ public class AdminUserServiceImpl implements AdminUserService {
         return passwordEncoder.matches(rawPassword, encodedPassword);
     }
 
+    @Override
+    public List<AdminUserDO> getAllUserList() {
+        return userMapper.selectList();
+    }
+
     /**
      * 对密码进行加密
      *

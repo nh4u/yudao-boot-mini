@@ -38,8 +38,7 @@ public class StandingbookAttributeController {
 
     @Resource
     private StandingbookAttributeService standingbookAttributeService;
-    @Resource
-    private AdminUserApi adminUserApi;
+
     @PostMapping("/create")
     @Operation(summary = "创建台账属性")
     @PreAuthorize("@ss.hasPermission('power:standingbook-attribute:create')")
@@ -90,20 +89,8 @@ public class StandingbookAttributeController {
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
     @PreAuthorize("@ss.hasPermission('power:standingbook-attribute:query')")
     public CommonResult<List<StandingbookAttributeRespVO>> getByTypeId(@RequestParam("typeId") Long typeId) {
-        List<StandingbookAttributeDO> standingbookAttributes = standingbookAttributeService.getStandingbookAttributeByTypeId(typeId);
-      List<StandingbookAttributeRespVO> bean = BeanUtils.toBean(standingbookAttributes, StandingbookAttributeRespVO.class);
 
-      IntStream.range(0, bean.size()).forEach(i -> {
-          String creatorId = standingbookAttributes.get(i).getCreator();
-          AdminUserRespDTO data = adminUserApi.getUser(Long.valueOf(creatorId)).getData();
-          if(ApiConstants.YES.equals(bean.get(i).getDisplayFlag())){
-              bean.get(i).setCreateByName(SYSTEM_CREATE);
-          }else{
-              bean.get(i).setCreateByName(data.getNickname());
-          }
-      });
-
-      return success(bean);
+      return success(standingbookAttributeService.getByTypeId(typeId));
     }
 
     @PostMapping("/treeByTypeAndSb")

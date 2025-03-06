@@ -71,6 +71,12 @@ public class AdminUserApiImpl implements AdminUserApi {
     }
 
     @Override
+    public CommonResult<List<AdminUserRespDTO>> getAllUserList() {
+        List<AdminUserDO> users = userService.getAllUserList();
+        return success(BeanUtils.toBean(users, AdminUserRespDTO.class));
+    }
+
+    @Override
     public CommonResult<List<AdminUserRespDTO>> getUserListByDeptIds(Collection<Long> deptIds) {
         List<AdminUserDO> users = userService.getUserListByDeptIds(deptIds);
         return success(BeanUtils.toBean(users, AdminUserRespDTO.class));
