@@ -45,6 +45,8 @@ public class StandingbookAttributeSaveReqVO {
 
     @Schema(description = "归属节点")
     private String node;
+    @Schema(description = "归属节点id")
+    private Long nodeId;
 
     @Schema(description = "下拉框选项")
     private String options;
