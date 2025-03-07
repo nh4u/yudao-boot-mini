@@ -63,8 +63,8 @@ public class StandingbookController {
     @Operation(summary = "根据台账id获取对应的单位")
     @PreAuthorize("@ss.hasPermission('power:standingbook:update')")
     public CommonResult<String> getUnitById(@RequestParam("id") Long id) {
-        String energy = standingbookTypeMapper.selectAttributeValueByCode(id, "energy");
-        return success(energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energy));
+        String energyId = standingbookTypeMapper.selectAttributeValueByCode(id, "energy");
+        return success(energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energyId));
     }
 
     @DeleteMapping("/delete")

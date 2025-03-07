@@ -80,8 +80,8 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     public List<Long> createAdditionalRecordingByVoucherId(List<Long> voucherIds,Long standingbookId) {
         String nickname = getLoginUserNickname();
         String valueType = standingbookTypeMapper.selectAttributeValueByCode(standingbookId, "valueType");
-        String energy = standingbookTypeMapper.selectAttributeValueByCode(standingbookId, "energy");
-        String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energy);
+        String energyId = standingbookTypeMapper.selectAttributeValueByCode(standingbookId, "energy");
+        String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energyId);
         for(Long voucherId : voucherIds){
             VoucherDO voucherDO = voucherService.getVoucher(voucherId);
             AdditionalRecordingSaveReqVO saveReqVO = new AdditionalRecordingSaveReqVO();

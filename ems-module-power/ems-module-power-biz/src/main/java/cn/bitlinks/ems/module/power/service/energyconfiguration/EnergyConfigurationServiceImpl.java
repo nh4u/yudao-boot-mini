@@ -18,6 +18,8 @@ import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
 import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.alibaba.nacos.common.utils.StringUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -32,6 +34,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.framework.security.core.util.SecurityFrameworkUtils.getLoginUserNickname;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
 /**
@@ -73,38 +76,63 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         // 检查能源编码是否重复（排除自身）
         checkEnergyCodeDuplicate(updateReqVO.getCode(), updateReqVO.getId());
 
+
         EnergyConfigurationDO energyConfigurationDO = energyConfigurationMapper.selectById(updateReqVO.getId());
 
-        // 获取原始 energyName 和 energyParameter
-        String originalEnergyName = energyConfigurationDO.getEnergyName();
+        String nickname = getLoginUserNickname();
         String originalEnergyParameter = energyConfigurationDO.getEnergyParameter();
 
         // 获取请求中的新值
         String newEnergyName = updateReqVO.getEnergyName();
         String newEnergyParameter = updateReqVO.getEnergyParameter();
-        String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(originalEnergyName);
-        if (newEnergyParameter != null && unit.trim().isEmpty()) {
+        String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(String.valueOf(updateReqVO.getId()));
+        String newUnit = parseUnitFromJson(newEnergyParameter);
+        if (newEnergyParameter != null && !unit.trim().isEmpty()&& !newUnit.equals(unit)) {
 
-            try {
-                // 标准化 JSON 字符串
-                String normalizedOriginal = normalizeJson(originalEnergyParameter);
-                String normalizedNew = normalizeJson(newEnergyParameter);
-
-                if (!normalizedOriginal.equals(normalizedNew)) {
-                    List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(originalEnergyName);
-
-                    if (CollectionUtils.isNotEmpty(standingbookIds) && unit != null) {
+                    List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(String.valueOf(updateReqVO.getId()));
+                    if (CollectionUtils.isNotEmpty(standingbookIds)) {
                         throw new ServiceException(ENERGY_CONFIGURATION_STANDINGBOOK_UNIT);
                     }
-                }
-            } catch (Exception e) {
-                throw new ServiceException(ENERGY_CONFIGURATION_STANDINGBOOK_UNIT);
+
             }
-        }
 
         // 更新记录
         EnergyConfigurationDO updateObj = BeanUtils.toBean(updateReqVO, EnergyConfigurationDO.class);
+        updateObj.setUpdater(nickname);
         energyConfigurationMapper.updateById(updateObj);
+    }
+
+    /**
+     * 从 energyParameter JSON 中解析 chinese 为 "用量" 的 unit
+     */
+    private String parseUnitFromJson(String energyParameter) {
+        if (energyParameter == null || energyParameter.trim().isEmpty()) {
+            return "";
+        }
+
+        try {
+            List<Map<String, String>> params = JSON.parseObject(
+                    energyParameter,
+                    new TypeReference<List<Map<String, String>>>() {}
+            );
+
+            if (CollectionUtils.isEmpty(params)) {
+                return "";
+            }
+
+            // 遍历查找 chinese 为 "用量" 的条目
+            for (Map<String, String> param : params) {
+                String chinese = param.getOrDefault("chinese", "");
+                if ("用量".equals(chinese)) {
+                    return param.getOrDefault("unit", "");
+                }
+            }
+
+            // 未找到匹配项
+            return "";
+        } catch (Exception e) {
+            throw new ServiceException();
+        }
     }
 
     // 标准化 JSON 方法
@@ -140,10 +168,9 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     public void deleteEnergyConfiguration(Long id) {
         // 校验存在
         validateEnergyConfigurationExists(id);
-        String energyName = energyConfigurationMapper.selectById(id).getEnergyName();
 
         // 使用 selectList 查询所有关联的台账 ID
-        List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(energyName);
+        List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(String.valueOf(id));
         if (!standingbookIds.isEmpty()) {
             throw exception(ENERGY_CONFIGURATION_STANDINGBOOK_EXISTS);
         }
@@ -156,9 +183,8 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         // 校验存在
         for (Long id : ids) {
             validateEnergyConfigurationExists(id);
-            String energyName = energyConfigurationMapper.selectById(id).getEnergyName();
             // 使用 selectList 查询所有关联的台账 ID
-            List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(energyName);
+            List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(String.valueOf(id));
             if (!standingbookIds.isEmpty()) {
                 throw exception(ENERGY_CONFIGURATION_STANDINGBOOK_EXISTS);
             }
