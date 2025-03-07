@@ -98,5 +98,5 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
             "WHERE id = #{energyId}",
             "LIMIT 1"
     })
-    String selectUnitByEnergyNameAndChinese(@Param("energyName") String energyId);
+    String selectUnitByEnergyNameAndChinese(@Param("energyId") String energyId);
 }
