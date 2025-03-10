@@ -60,8 +60,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_LABEL_INFO;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_TYPE_ID;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_NOT_EXISTS;
 
 /**
@@ -269,20 +268,20 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     public List<StandingbookDO> getStandingbookList(Map<String, String> pageReqVO) {
-        String typeId = pageReqVO.get("typeId");
-        String createTimes = pageReqVO.get("createTime");
+        String typeId = pageReqVO.get(ATTR_TYPE_ID);
+        String createTimes = pageReqVO.get(ATTR_CREATE_TIME);
         List<String> createTimeArr = new ArrayList<>();
         if (Strings.isNotEmpty(createTimes)) {
-            createTimeArr = Arrays.asList(pageReqVO.get("createTime").split(StringPool.COMMA));
+            createTimeArr = Arrays.asList(pageReqVO.get(ATTR_CREATE_TIME).split(StringPool.COMMA));
         }
 
-        pageReqVO.remove("typeId");
-        pageReqVO.remove("createTime");
+        pageReqVO.remove(ATTR_TYPE_ID);
+        pageReqVO.remove(ATTR_CREATE_TIME);
         Map<String, List<String>> childrenConditions = new HashMap<>();
         Map<String, List<String>> labelInfoConditions = new HashMap<>();
         // 使用 entrySet() 遍历键和值
         pageReqVO.forEach((k, v) -> {
-            if (k.startsWith("label_")) {
+            if (k.startsWith(ATTR_LABEL_INFO_PREFIX)) {
                 if (v.contains(StringPool.COMMA)) {
                     labelInfoConditions.put(k, Arrays.asList(v.split(StringPool.COMMA)));
                 }else{

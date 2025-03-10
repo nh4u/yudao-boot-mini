@@ -48,8 +48,9 @@ public class ApiConstants {
     public static final String PARENT_ATTR_AUTO ="父节点属性自动生成";
     // 台账
     public static final String ATTR_TYPE_ID ="typeId";
-
+    public static final String ATTR_CREATE_TIME ="createTime";
     public static final String ATTR_LABEL_INFO ="labelInfo";
+    public static final String ATTR_LABEL_INFO_PREFIX ="label_";
     //多选下拉框
 
 
