@@ -8,6 +8,7 @@ import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.Ener
 import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.mysql.coalfactorhistory.CoalFactorHistoryMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,8 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
     private CoalFactorHistoryMapper coalFactorHistoryMapper;
     @Resource
     private EnergyConfigurationService energyConfigurationService;
+    @Resource
+    private EnergyConfigurationMapper energyConfigurationMapper;
 
 //    @Override
 //    public Long createCoalFactorHistory(CoalFactorHistorySaveReqVO createReqVO) {

@@ -48,4 +48,7 @@ public class CoalFactorHistoryRespVO {
     @ExcelProperty("修改人")
     private String updater;
 
+    @Schema(description = "折标煤单位")
+    @ExcelProperty("折标煤单位")
+    private String unit;
 }

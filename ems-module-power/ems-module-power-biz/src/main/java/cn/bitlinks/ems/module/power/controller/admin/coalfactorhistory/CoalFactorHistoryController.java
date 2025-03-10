@@ -10,6 +10,7 @@ import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFa
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistorySaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
+import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
 import cn.bitlinks.ems.module.power.service.coalfactorhistory.CoalFactorHistoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,6 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
@@ -35,6 +37,8 @@ public class CoalFactorHistoryController {
 
     @Resource
     private CoalFactorHistoryService coalFactorHistoryService;
+    @Resource
+    private EnergyConfigurationMapper energyConfigurationMapper;
 
 //    @PostMapping("/create")
 //    @Operation(summary = "创建折标煤系数历史")
@@ -120,9 +124,28 @@ public class CoalFactorHistoryController {
     @GetMapping("/page")
     @Operation(summary = "获得折标煤系数历史分页")
     @PreAuthorize("@ss.hasPermission('power:coal-factor-history:query')")
-    public CommonResult<PageResult<CoalFactorHistoryRespVO>> getCoalFactorHistoryPage(@Valid CoalFactorHistoryPageReqVO pageReqVO) {
+    public CommonResult<PageResult<CoalFactorHistoryRespVO>> getCoalFactorHistoryPage(@Valid CoalFactorHistoryPageReqVO pageReqVO,Long energyId) {
         PageResult<CoalFactorHistoryDO> pageResult = coalFactorHistoryService.getCoalFactorHistoryPage(pageReqVO);
-        return success(BeanUtils.toBean(pageResult, CoalFactorHistoryRespVO.class));
+        String energyUnit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(String.valueOf(energyId));
+        if (energyUnit == null || energyUnit.isEmpty()) {
+            energyUnit = "";
+        }
+        String unit = "kgce/" + energyUnit;
+        // 3. 转换分页数据并追加单位
+        List<CoalFactorHistoryRespVO> voList = pageResult.getList().stream()
+                .map(doEntity -> {
+                    // 使用 BeanUtils 复制基础属性
+                    CoalFactorHistoryRespVO vo = BeanUtils.toBean(doEntity, CoalFactorHistoryRespVO.class);
+                    // 追加折标煤单位
+                    vo.setUnit(unit);
+                    return vo;
+                })
+                .collect(Collectors.toList());
+
+        // 4. 构建带单位的分页响应
+        PageResult<CoalFactorHistoryRespVO> voPageResult = new PageResult<>(voList, pageResult.getTotal());
+
+        return success(voPageResult);
     }
 
     @GetMapping("/export-excel")
