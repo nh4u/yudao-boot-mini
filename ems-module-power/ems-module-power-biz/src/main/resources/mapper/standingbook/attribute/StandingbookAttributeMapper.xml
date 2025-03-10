@@ -30,6 +30,9 @@
             <if test="typeId!= null">
                 AND standingbook.type_id = #{typeId}
             </if>
+            <if test="createTimeArr != null and createTimeArr.size() > 0">
+                AND standingbook.create_time BETWEEN #{createTimeArr[0]} AND #{createTimeArr[1]}
+            </if>
             AND standingbookattribute.id  IS NOT NULL
         </where>
         GROUP BY standingbook.id,standingbook.update_time
@@ -55,6 +58,8 @@
             <if test="typeId != null">
                 AND s.type_id = #{typeId}
             </if>
+
+
         </where>
     </select>
 

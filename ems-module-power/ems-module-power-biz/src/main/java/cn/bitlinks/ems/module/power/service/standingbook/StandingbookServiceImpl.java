@@ -38,6 +38,7 @@ import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.imgscalr.Scalr;
+import org.mapstruct.ap.internal.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
@@ -54,10 +55,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -271,19 +269,25 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Override
     public List<StandingbookDO> getStandingbookList( Map<String,String> pageReqVO) {
         String typeId = pageReqVO.get("typeId");
+        String createTimes = pageReqVO.get("createTime");
+        List<String> createTimeArr = new ArrayList<>();
+        if(Strings.isNotEmpty(createTimes)){
+            createTimeArr = Arrays.asList(pageReqVO.get("createTime").split(","));
+        }
+
         List<StandingbookAttributePageReqVO> children= new ArrayList<>();
         // 使用 entrySet() 遍历键和值
         for (Map.Entry<String, String> entry : pageReqVO.entrySet()) {
             System.out.println("Key: " + entry.getKey() + ", Value: " + entry.getValue());
             String key = entry.getKey();
             String value = entry.getValue();
-            if (!entry.getKey() .equals("typeId")){
+            if (!entry.getKey() .equals("typeId") && !entry.getKey() .equals("createTime")){
                 StandingbookAttributePageReqVO attribute = new StandingbookAttributePageReqVO();
                 attribute.setCode(key).setValue(value);
                 children.add(attribute);
             }
         }
-        List<StandingbookDO> standingbookDOS = standingbookAttributeService.getStandingbook(children, Long.valueOf(typeId));
+        List<StandingbookDO> standingbookDOS = standingbookAttributeService.getStandingbook(children, Long.valueOf(typeId), createTimeArr);
         List<StandingbookDO> result = new ArrayList<>();
         for (StandingbookDO standingbookDO : standingbookDOS) {
             result.add(getStandingbook(standingbookDO.getId()));

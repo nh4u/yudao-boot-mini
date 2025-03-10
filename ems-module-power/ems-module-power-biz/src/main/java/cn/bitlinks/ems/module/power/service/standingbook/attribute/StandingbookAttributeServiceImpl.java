@@ -170,8 +170,8 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
     }
 
     @Override
-    public List<StandingbookDO> getStandingbook(List<StandingbookAttributePageReqVO> children, Long typeId) {
-        return standingbookAttributeMapper.selectStandingbook(children, typeId);
+    public List<StandingbookDO> getStandingbook(List<StandingbookAttributePageReqVO> children, Long typeId,  List<String> createTimeArr) {
+        return standingbookAttributeMapper.selectStandingbook(children, typeId, createTimeArr);
     }
 
     @Override

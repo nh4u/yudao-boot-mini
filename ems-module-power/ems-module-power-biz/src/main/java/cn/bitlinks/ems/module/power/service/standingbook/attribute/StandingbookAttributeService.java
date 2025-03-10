@@ -92,7 +92,7 @@ public interface StandingbookAttributeService {
     PageResult<StandingbookAttributeDO> getStandingbookAttributePage(StandingbookAttributePageReqVO pageReqVO);
 
 
-    List<StandingbookDO> getStandingbook(List<StandingbookAttributePageReqVO> children,Long typeId);
+    List<StandingbookDO> getStandingbook(List<StandingbookAttributePageReqVO> children,Long typeId, List<String> createTimeArr);
 
     List<StandingbookDO> getStandingbookIntersection(List<StandingbookAttributePageReqVO> children, Long typeId);
 

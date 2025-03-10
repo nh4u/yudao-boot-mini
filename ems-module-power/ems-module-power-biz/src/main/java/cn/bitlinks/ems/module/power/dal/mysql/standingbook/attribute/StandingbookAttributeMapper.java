@@ -54,7 +54,7 @@ public interface StandingbookAttributeMapper extends BaseMapperX<StandingbookAtt
         return delete(StandingbookAttributeDO::getStandingbookId, standingbookId);
     }
 
-    List<StandingbookDO> selectStandingbook(@Param("list")List<StandingbookAttributePageReqVO> list,@Param("typeId")Long typeId);
+    List<StandingbookDO> selectStandingbook(@Param("list")List<StandingbookAttributePageReqVO> list,@Param("typeId")Long typeId, @Param("createTimeArr") List<String> createTimeArr);
 
     List<StandingbookDO> selectStandingbookIntersection(@Param("list") List<StandingbookAttributePageReqVO> list, @Param("typeId") Long typeId);
 }
