@@ -12,6 +12,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 台账属性 Mapper
@@ -54,7 +55,15 @@ public interface StandingbookAttributeMapper extends BaseMapperX<StandingbookAtt
         return delete(StandingbookAttributeDO::getStandingbookId, standingbookId);
     }
 
-    List<StandingbookDO> selectStandingbook(@Param("list")List<StandingbookAttributePageReqVO> list,@Param("typeId")Long typeId, @Param("createTimeArr") List<String> createTimeArr);
+//    List<StandingbookDO> selectStandingbook(@Param("list")List<StandingbookAttributePageReqVO> list,@Param("typeId")Long typeId, @Param("createTimeArr") List<String> createTimeArr);
 
     List<StandingbookDO> selectStandingbookIntersection(@Param("list") List<StandingbookAttributePageReqVO> list, @Param("typeId") Long typeId);
+
+    /**
+     * 根据台账属性条件查询获取台账id
+     * @param children 台账属性
+     * @param sbIds 台账ids
+     * @return
+     */
+    List<Long> selectStandingbookIdByAttrCondition(@Param("children")Map<String, List<String>> children, @Param("sbIds")List<Long> sbIds);
 }

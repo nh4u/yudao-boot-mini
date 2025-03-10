@@ -6,6 +6,10 @@ import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookPageReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * 台账属性 Mapper
@@ -26,4 +30,12 @@ public interface StandingbookMapper extends BaseMapperX<StandingbookDO> {
                 .orderByDesc(StandingbookDO::getId));
     }
 
+    /**
+     * 根据标签条件查询sb id
+     * @param labelInfoConditions 标签条件参数列表
+     * @param typeId 台账分类id
+     * @param createTimeArr 创建时间数组
+     * @return sbId
+     */
+    List<Long> selectStandingbookIdByCondition(@Param("labelInfoConditions") Map<String, List<String>> labelInfoConditions,@Param("typeId") Long typeId, @Param("createTimeArr")List<String> createTimeArr);
 }

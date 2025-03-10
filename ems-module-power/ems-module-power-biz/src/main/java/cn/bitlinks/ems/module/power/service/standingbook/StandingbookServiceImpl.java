@@ -3,7 +3,6 @@ package cn.bitlinks.ems.module.power.service.standingbook;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.bitlinks.ems.module.infra.api.file.FileApi;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.AssociationData;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
@@ -26,10 +25,12 @@ import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
 import cn.bitlinks.ems.module.power.service.deviceassociationconfiguration.DeviceAssociationConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
@@ -111,7 +112,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<Long> typeIdList;
         if (typeId.equals(CommonConstants.OTHER_EQUIPMENT_ID)) {
             // 查询对应所有类型id
-             typeIdList = standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>()
+            typeIdList = standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>()
                             .ne(StandingbookTypeDO::getTopType, CommonConstants.MEASUREMENT_INSTRUMENT_ID)
                             .ne(StandingbookTypeDO::getTopType, CommonConstants.KEY_EQUIPMENT_ID))
                     .stream()
@@ -131,7 +132,7 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
     @Override
-    public List<StandingbookDO> listByBaseTypeId(Map<String, String> pageReqVO ) {
+    public List<StandingbookDO> listByBaseTypeId(Map<String, String> pageReqVO) {
         if (!pageReqVO.containsKey("topType")) {
             throw exception(ErrorCodeConstants.STANDINGBOOK_TYPE_NOT_EXISTS);
         }
@@ -142,11 +143,11 @@ public class StandingbookServiceImpl implements StandingbookService {
         if (standingbookTypeDOS == null || standingbookTypeDOS.size() == 0) {
             throw exception(ErrorCodeConstants.STANDINGBOOK_NOT_EXISTS);
         }
-        List<StandingbookDO> result =new ArrayList<>();
+        List<StandingbookDO> result = new ArrayList<>();
         pageReqVO.remove("topType");
         standingbookTypeDOS.forEach(standingbookTypeDO -> {
             Long sonId = standingbookTypeDO.getId();
-            pageReqVO.put("typeId",String.valueOf(sonId));
+            pageReqVO.put("typeId", String.valueOf(sonId));
             List<StandingbookDO> standingbookDOS = getStandingbookList(pageReqVO);
             result.addAll(standingbookDOS);
         });
@@ -155,7 +156,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     @Transactional
-    public Long createStandingbook(Map <String,String>  createReqVO) {
+    public Long createStandingbook(Map<String, String> createReqVO) {
         // 插入
         if (!createReqVO.containsKey(ATTR_TYPE_ID)) {
             throw exception(ErrorCodeConstants.STANDINGBOOK_TYPE_NOT_EXISTS);
@@ -178,12 +179,12 @@ public class StandingbookServiceImpl implements StandingbookService {
             Optional<StandingbookAttributeDO> rawAttrOptional = standingbookAttributeByTypeId.stream().filter(standingbookAttributeDO -> key.equals(standingbookAttributeDO.getCode())).findFirst();
             if (!rawAttrOptional.isPresent()) {
                 throw exception(ErrorCodeConstants.STANDINGBOOK_ATTRIBUTE_NOT_EXISTS);
-                    }
+            }
             StandingbookAttributeDO attribute = BeanUtils.toBean(rawAttrOptional.get(), StandingbookAttributeDO.class);
             attribute.setValue(value);
             attribute.setId(null);
-                children.add(attribute);
-            });
+            children.add(attribute);
+        });
         // 新增台账属性
         standingbookAttributeMapper.insertBatch(children);
 
@@ -192,7 +193,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     @Transactional
-    public void updateStandingbook(Map <String,String>  updateReqVO) {
+    public void updateStandingbook(Map<String, String> updateReqVO) {
         // 校验存在
         validateStandingbookExists(Long.valueOf(updateReqVO.get("id")));
         // 更新
@@ -200,16 +201,16 @@ public class StandingbookServiceImpl implements StandingbookService {
         standingbook.setTypeId(Long.valueOf(updateReqVO.get("typeId")));
         standingbook.setId(Long.valueOf(updateReqVO.get("id")));
         standingbook.setLabelInfo(updateReqVO.get("labelInfo"));
-        if(updateReqVO.get("stage") != null) {
+        if (updateReqVO.get("stage") != null) {
             standingbook.setStage(Integer.valueOf(updateReqVO.get("stage")));
         }
         standingbookMapper.updateById(standingbook);
         // 使用 entrySet() 遍历键和值
-        List<StandingbookAttributeSaveReqVO> children= new ArrayList<>();
+        List<StandingbookAttributeSaveReqVO> children = new ArrayList<>();
         for (Map.Entry<String, String> entry : updateReqVO.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
-            if (!entry.getKey() .equals("typeId")&&!entry.getKey() .equals("id")&&!entry.getKey().equals("labelInfo")){
+            if (!entry.getKey().equals("typeId") && !entry.getKey().equals("id") && !entry.getKey().equals("labelInfo")) {
                 StandingbookAttributeSaveReqVO attribute = new StandingbookAttributeSaveReqVO();
                 attribute.setCode(key).setValue(value);
                 attribute.setStandingbookId(standingbook.getId());
@@ -267,31 +268,46 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
     @Override
-    public List<StandingbookDO> getStandingbookList( Map<String,String> pageReqVO) {
+    public List<StandingbookDO> getStandingbookList(Map<String, String> pageReqVO) {
         String typeId = pageReqVO.get("typeId");
         String createTimes = pageReqVO.get("createTime");
         List<String> createTimeArr = new ArrayList<>();
-        if(Strings.isNotEmpty(createTimes)){
-            createTimeArr = Arrays.asList(pageReqVO.get("createTime").split(","));
+        if (Strings.isNotEmpty(createTimes)) {
+            createTimeArr = Arrays.asList(pageReqVO.get("createTime").split(StringPool.COMMA));
         }
 
-        List<StandingbookAttributePageReqVO> children= new ArrayList<>();
+        pageReqVO.remove("typeId");
+        pageReqVO.remove("createTime");
+        Map<String, List<String>> childrenConditions = new HashMap<>();
+        Map<String, List<String>> labelInfoConditions = new HashMap<>();
         // 使用 entrySet() 遍历键和值
-        for (Map.Entry<String, String> entry : pageReqVO.entrySet()) {
-            System.out.println("Key: " + entry.getKey() + ", Value: " + entry.getValue());
-            String key = entry.getKey();
-            String value = entry.getValue();
-            if (!entry.getKey() .equals("typeId") && !entry.getKey() .equals("createTime")){
-                StandingbookAttributePageReqVO attribute = new StandingbookAttributePageReqVO();
-                attribute.setCode(key).setValue(value);
-                children.add(attribute);
+        pageReqVO.forEach((k, v) -> {
+            if (k.startsWith("label_")) {
+                if (v.contains(StringPool.COMMA)) {
+                    labelInfoConditions.put(k, Arrays.asList(v.split(StringPool.COMMA)));
+                }else{
+                    labelInfoConditions.put(k, Collections.singletonList(v));
+                }
+            } else {
+                if (v.contains(StringPool.COMMA)) {
+                    childrenConditions.put(k, Arrays.asList(v.split(StringPool.COMMA)));
+                }else{
+                    childrenConditions.put(k, Collections.singletonList(v));
+                }
             }
+        });
+        List<Long> sbIds = standingbookMapper.selectStandingbookIdByCondition(labelInfoConditions, Long.valueOf(typeId), createTimeArr);
+        if(CollUtil.isEmpty(sbIds)){
+            return new ArrayList<>();
         }
-        List<StandingbookDO> standingbookDOS = standingbookAttributeService.getStandingbook(children, Long.valueOf(typeId), createTimeArr);
+        List<Long> attrSbIds = standingbookAttributeService.getStandingbookIdByCondition(childrenConditions, sbIds);
+        if(CollUtil.isEmpty(attrSbIds)){
+            return new ArrayList<>();
+        }
+        // 组装结构，可与上合起来优化，暂不敢动
         List<StandingbookDO> result = new ArrayList<>();
-        for (StandingbookDO standingbookDO : standingbookDOS) {
-            result.add(getStandingbook(standingbookDO.getId()));
-        }
+        attrSbIds.forEach(sbId -> result.add(getStandingbook(sbId)));
+
         return result;
     }
 
@@ -367,24 +383,24 @@ public class StandingbookServiceImpl implements StandingbookService {
                     if (!cleanStr.isEmpty()) {
                         String[] idArray = cleanStr.split(",");
                         for (String idStr : idArray) {
-                                if (!idStr.trim().isEmpty()) {
-                                    Long measurementId = Long.parseLong(idStr.trim());
-                                    StandingbookDO measurementAttribute = getStandingbook(measurementId);
-                                    if (measurementAttribute != null) {
-                                        AssociationData associationData = new AssociationData();
-                                        String name = standingbookTypeMapper.selectAttributeValueByCode(
-                                                measurementAttribute.getId(), "measuringInstrumentName");
-                                        associationData.setStandingbookId(measurementAttribute.getId());
-                                        associationData.setStandingbookName(name);
-                                        String codeValue = standingbookTypeMapper.selectAttributeValueByCode(
-                                                measurementAttribute.getId(), "measuringInstrumentId");
-                                        String stageValue = standingbookTypeMapper.selectAttributeValueByCode(
-                                                measurementAttribute.getId(), "stage");
-                                        associationData.setStandingbookCode(codeValue);
-                                        associationData.setStage(stageValue);
-                                        children.add(associationData);
-                                    }
+                            if (!idStr.trim().isEmpty()) {
+                                Long measurementId = Long.parseLong(idStr.trim());
+                                StandingbookDO measurementAttribute = getStandingbook(measurementId);
+                                if (measurementAttribute != null) {
+                                    AssociationData associationData = new AssociationData();
+                                    String name = standingbookTypeMapper.selectAttributeValueByCode(
+                                            measurementAttribute.getId(), "measuringInstrumentName");
+                                    associationData.setStandingbookId(measurementAttribute.getId());
+                                    associationData.setStandingbookName(name);
+                                    String codeValue = standingbookTypeMapper.selectAttributeValueByCode(
+                                            measurementAttribute.getId(), "measuringInstrumentId");
+                                    String stageValue = standingbookTypeMapper.selectAttributeValueByCode(
+                                            measurementAttribute.getId(), "stage");
+                                    associationData.setStandingbookCode(codeValue);
+                                    associationData.setStage(stageValue);
+                                    children.add(associationData);
                                 }
+                            }
                         }
                     }
                     standingbookWithAssociations.setChildren(children);
@@ -400,7 +416,7 @@ public class StandingbookServiceImpl implements StandingbookService {
                 }
             }
 
-                result.add(standingbookWithAssociations);
+            result.add(standingbookWithAssociations);
         }
 
         return result;
@@ -424,7 +440,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             Sheet sheet = workbook.getSheetAt(0);
             for (int i = 2; i <= sheet.getLastRowNum(); i++) {
                 List<StandingbookAttributeSaveReqVO> children = new ArrayList<>();
-                StandingbookSaveReqVO saveReq  = new StandingbookSaveReqVO(children);
+                StandingbookSaveReqVO saveReq = new StandingbookSaveReqVO(children);
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
                 for (int j = 0; j <= attributes.size(); j++) {
@@ -438,7 +454,7 @@ public class StandingbookServiceImpl implements StandingbookService {
                         System.out.println(cellValue);
                         attribute.setValue(cellValue);
                     } else {
-                       // TODO 读取图片文件
+                        // TODO 读取图片文件
 //                        if (cell.getDrawings() != null) {
 //                            XSSFPicture picture = (XSSFPicture) cell.getDrawingPatriarch().getAllPictures().get(0);
 //                            byte[] pictureData = picture.getPictureData().getData();
@@ -480,8 +496,8 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
     @Override
-    public void exportStandingbookExcel( Map <String,String> pageReqVO, HttpServletResponse response) {
-        List<StandingbookDO> list =getStandingbookList(pageReqVO);
+    public void exportStandingbookExcel(Map<String, String> pageReqVO, HttpServletResponse response) {
+        List<StandingbookDO> list = getStandingbookList(pageReqVO);
         Long typeId = Long.valueOf(pageReqVO.get("typeId"));
         List<StandingbookAttributeDO> attributes = standingbookAttributeService.getStandingbookAttributeByTypeId(typeId);
         StandingbookTypeDO standingbookTypeDO = standingbookTypeMapper.selectById(typeId);
@@ -516,7 +532,7 @@ public class StandingbookServiceImpl implements StandingbookService {
                 if (ApiConstants.YES.equals(column.getIsRequired())) {
                     style.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
                     style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-                }else {
+                } else {
                     style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
                     style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
                 }
@@ -584,7 +600,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             // 当前时间格式化
             DateTime now = DateTime.now();
             String dateStr = now.toString("yyyyMMdd");
-            response.setHeader("Content-Disposition", "attachment; filename="+ URLEncoder.encode(standingbookTypeDO.getName() + "台账数据"+dateStr+".xlsx","UTF-8"));
+            response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(standingbookTypeDO.getName() + "台账数据" + dateStr + ".xlsx", "UTF-8"));
             OutputStream os = response.getOutputStream();
             workbook.write(os);
             os.flush();
@@ -639,24 +655,24 @@ public class StandingbookServiceImpl implements StandingbookService {
 //                 Cell cell = headerRow.createCell(i+1); // 从第二列开始
                 Cell cell = headerRow.createCell(i); // 从第1列开始
                 if (ApiConstants.MULTIPLE.equals(column.getFormat())) {
-                    cell.setCellValue(column.getName()+"("+column.getOptions().replaceAll(";","&")+")");
-                }else {
+                    cell.setCellValue(column.getName() + "(" + column.getOptions().replaceAll(";", "&") + ")");
+                } else {
                     cell.setCellValue(column.getName());
                 }
                 // 设置单元格样式
                 CellStyle style = workbook.createCellStyle();
-                if (ApiConstants.YES.equals(column.getIsRequired())&& !column.getFormat().equals(ApiConstants.FILE) && !column.getFormat().equals(ApiConstants.PICTURE)) {
+                if (ApiConstants.YES.equals(column.getIsRequired()) && !column.getFormat().equals(ApiConstants.FILE) && !column.getFormat().equals(ApiConstants.PICTURE)) {
                     style.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
                     style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
                 }
 //                 CellRangeAddressList addressList = new CellRangeAddressList(2, 1000, i+1 , i+1);
-                CellRangeAddressList addressList = new CellRangeAddressList(2, 1000, i , i);
+                CellRangeAddressList addressList = new CellRangeAddressList(2, 1000, i, i);
                 // 根据format设置数据验证
                 if (ApiConstants.SELECT.equals(column.getFormat())) {
                     XSSFDataValidationHelper validationHelper = new XSSFDataValidationHelper(sheet);
                     String[] options = column.getOptions().split(";");
                     DataValidationConstraint constraint = validationHelper.createExplicitListConstraint(options);
-                    XSSFDataValidation validation = (XSSFDataValidation) validationHelper.createValidation(constraint,addressList);
+                    XSSFDataValidation validation = (XSSFDataValidation) validationHelper.createValidation(constraint, addressList);
                     sheet.addValidationData(validation);
                 }
                 // 注意: Apache POI 目前不支持直接设置为多选下拉框。对于多选，用户需要通过VBA或者手动配置。
@@ -671,7 +687,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
             // 输出
             response.setContentType("application/octet-stream; charset=utf-8");
-            response.setHeader("Content-Disposition", "attachment; filename="+ URLEncoder.encode( standingbookTypeDO.getName() + "导入模板.xlsx","UTF-8"));
+            response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(standingbookTypeDO.getName() + "导入模板.xlsx", "UTF-8"));
 
             OutputStream os = response.getOutputStream();
             workbook.write(os);
@@ -701,6 +717,7 @@ public class StandingbookServiceImpl implements StandingbookService {
                 return "";
         }
     }
+
     /**
      * 缩放图片
      */

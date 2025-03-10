@@ -28,7 +28,6 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -170,8 +169,8 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
     }
 
     @Override
-    public List<StandingbookDO> getStandingbook(List<StandingbookAttributePageReqVO> children, Long typeId,  List<String> createTimeArr) {
-        return standingbookAttributeMapper.selectStandingbook(children, typeId, createTimeArr);
+    public List<Long> getStandingbookIdByCondition(Map<String, List<String>> children, List<Long> sbIds) {
+        return standingbookAttributeMapper.selectStandingbookIdByAttrCondition(children, sbIds);
     }
 
     @Override

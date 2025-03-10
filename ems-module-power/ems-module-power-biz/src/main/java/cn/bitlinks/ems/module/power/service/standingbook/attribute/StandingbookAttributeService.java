@@ -10,6 +10,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.Standi
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 台账属性 Service 接口
@@ -91,8 +92,14 @@ public interface StandingbookAttributeService {
      */
     PageResult<StandingbookAttributeDO> getStandingbookAttributePage(StandingbookAttributePageReqVO pageReqVO);
 
-
-    List<StandingbookDO> getStandingbook(List<StandingbookAttributePageReqVO> children,Long typeId, List<String> createTimeArr);
+    /**
+     * 根据台账属性条件获取台账id
+     *
+     * @param children            台账属性条件参数
+     * @param sbIds              台账id
+     * @return 台账id
+     */
+    List<Long> getStandingbookIdByCondition(Map<String, List<String>> children, List<Long> sbIds);
 
     List<StandingbookDO> getStandingbookIntersection(List<StandingbookAttributePageReqVO> children, Long typeId);
 

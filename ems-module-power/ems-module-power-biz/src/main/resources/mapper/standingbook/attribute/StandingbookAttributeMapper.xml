@@ -9,35 +9,42 @@
         文档可见：https://www.bitlinks.cn/MyBatis/x-plugins/
      -->
 
-    <select id="selectStandingbook" parameterType="java.util.List"  resultType="cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO">
-        SELECT standingbook.id,standingbook.update_time FROM power_standingbook standingbook LEFT JOIN (SELECT * FROM power_standingbook_attribute
-        <where>
-            deleted = 0
-            <if test="list!= null and list.size > 0">
-                AND (
-                <foreach collection="list" item="item"  separator="OR" >
-                       `value` LIKE   CONCAT('%', #{item.value},'%')
-                </foreach>)
-                AND `code` IN
-                <foreach collection="list" item="item" open="(" separator="," close=")">
-                    #{item.code}
-                </foreach>
-            </if>
-        </where>
-        ) standingbookattribute ON standingbook.id = standingbookattribute.standingbook_id
-        <where>
-            standingbook.deleted = 0
-            <if test="typeId!= null">
-                AND standingbook.type_id = #{typeId}
-            </if>
-            <if test="createTimeArr != null and createTimeArr.size() > 0">
-                AND standingbook.create_time BETWEEN #{createTimeArr[0]} AND #{createTimeArr[1]}
-            </if>
-            AND standingbookattribute.id  IS NOT NULL
-        </where>
-        GROUP BY standingbook.id,standingbook.update_time
-        ORDER BY standingbook.update_time DESC
+    <select id="selectStandingbookIdByAttrCondition" parameterType="java.util.Map"  resultType="Long">
+        select standingbook_id from    (
+        SELECT
+        standingbook_id,
+        type_id,update_time
+        <if test="children!= null and children.size > 0">
+            ,
+            <foreach collection="children" item="valueList" index="key" separator=" , ">
+                MAX(CASE WHEN code = #{key} THEN `value` ELSE NULL END) AS ${key}
+            </foreach>
+        </if>
+        FROM
+        power_standingbook_attribute
+        where deleted = 0
+        <if test="sbIds!= null and sbIds.size > 0">
+            and standingbook_id in
+            <foreach collection="sbIds" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
 
+        GROUP BY
+        standingbook_id,type_id,update_time
+        HAVING standingbook_id is not null
+
+        <if test="children!= null and children.size > 0">
+            and
+            <foreach collection="children" item="valueList" index="key" separator=" and ">
+                (
+                <foreach collection="valueList" item="itemValue" separator=" or ">
+                    ${key} LIKE CONCAT('%', #{itemValue}, '%')
+                </foreach>
+                )
+            </foreach>
+        </if>
+        ) r ORDER BY update_time DESC
     </select>
 
     <select id="selectStandingbookIntersection" resultType="StandingbookDO">

@@ -9,4 +9,38 @@
         文档可见：https://www.bitlinks.cn/MyBatis/x-plugins/
      -->
 
+    <select id="selectStandingbookIdByCondition" resultType="java.lang.Long">
+        select id from(
+        select * from(
+        SELECT
+        id
+        <if test="labelInfoConditions!= null and labelInfoConditions.size > 0">
+            ,
+            <foreach collection="labelInfoConditions.keySet()" item="key" separator=",">
+                JSON_EXTRACT(label_info, concat('$.', #{key})) AS ${key}
+            </foreach>
+        </if>
+        FROM
+        power_standingbook
+        where deleted = 0
+        <if test="typeId!= null">
+            AND type_id = #{typeId}
+        </if>
+        <if test="createTimeArr != null and createTimeArr.size() > 0">
+            AND create_time BETWEEN #{createTimeArr[0]} AND #{createTimeArr[1]}
+        </if>
+        ) as r
+        where 1=1
+            <if test="labelInfoConditions!= null and labelInfoConditions.size > 0">
+                and
+                <foreach collection="labelInfoConditions" item="valueList" index="key" separator=" and ">
+                    (
+                    <foreach collection="valueList" item="itemValue" separator=" and ">
+                        ${key} LIKE CONCAT('%', #{itemValue}, '%')
+                    </foreach>
+                    )
+                </foreach>
+            </if>
+        ) AS rr
+    </select>
 </mapper>
