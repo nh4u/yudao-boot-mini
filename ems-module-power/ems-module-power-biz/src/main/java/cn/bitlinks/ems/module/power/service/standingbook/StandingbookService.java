@@ -57,6 +57,12 @@ public interface StandingbookService {
      * @return 台账属性分页
      */
     PageResult<StandingbookDO> getStandingbookPage(StandingbookPageReqVO pageReqVO);
+
+    /**
+     * 条件查询台账
+     * @param pageReqVO 条件map
+     * @return 台账列表
+     */
     List<StandingbookDO> getStandingbookList( Map<String,String> pageReqVO);
 
     List<StandingbookDO> getStandingbookListBy(Map<String,String> pageReqVO);

@@ -36,6 +36,10 @@ public class StandingbookDO extends BaseDO {
      */
     @Schema(description = "类型ID")
     private Long typeId;
+
+    @Schema(description = "所属类型名称")
+    @TableField(exist = false)
+    private String typeName;
     /**
      * 属性名字
      */
