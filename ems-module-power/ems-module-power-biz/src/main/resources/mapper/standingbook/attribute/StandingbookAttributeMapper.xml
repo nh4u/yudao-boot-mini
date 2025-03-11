@@ -13,7 +13,7 @@
         select standingbook_id from    (
         SELECT
         standingbook_id,
-        type_id,update_time
+        type_id
         <if test="children!= null and children.size > 0">
             ,
             <foreach collection="children" item="valueList" index="key" separator=" , ">
@@ -31,7 +31,7 @@
         </if>
 
         GROUP BY
-        standingbook_id,type_id,update_time
+        standingbook_id,type_id
         HAVING standingbook_id is not null
 
         <if test="children!= null and children.size > 0">
@@ -44,7 +44,7 @@
                 )
             </foreach>
         </if>
-        ) r ORDER BY update_time DESC
+        ) r
     </select>
 
     <select id="selectStandingbookIntersection" resultType="StandingbookDO">
