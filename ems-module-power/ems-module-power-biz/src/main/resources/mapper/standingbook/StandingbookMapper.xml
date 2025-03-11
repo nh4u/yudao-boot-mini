@@ -35,7 +35,7 @@
                 and
                 <foreach collection="labelInfoConditions" item="valueList" index="key" separator=" and ">
                     (
-                    <foreach collection="valueList" item="itemValue" separator=" and ">
+                    <foreach collection="valueList" item="itemValue" separator=" or ">
                         ${key} LIKE CONCAT('%', #{itemValue}, '%')
                     </foreach>
                     )
