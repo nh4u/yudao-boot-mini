@@ -181,7 +181,10 @@ public class StandingbookServiceImpl implements StandingbookService {
             }
             StandingbookAttributeDO attribute = BeanUtils.toBean(rawAttrOptional.get(), StandingbookAttributeDO.class);
             attribute.setValue(value);
+            attribute.setStandingbookId(standingbook.getId());
             attribute.setId(null);
+            attribute.setCreateTime(null);
+            attribute.setUpdateTime(null);
             children.add(attribute);
         });
         // 新增台账属性
