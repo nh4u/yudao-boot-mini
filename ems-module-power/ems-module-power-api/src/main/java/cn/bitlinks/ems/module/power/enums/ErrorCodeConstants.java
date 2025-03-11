@@ -38,8 +38,8 @@ public interface ErrorCodeConstants {
     ErrorCode STANDINGBOOK_NOT_EXISTS = new ErrorCode(1_001_202_007, "台账不存在");
     ErrorCode STANDINGBOOK_EXISTS = new ErrorCode(1_001_202_008, "该分类存在设备，不可进行删除");
 
-    ErrorCode STANDINGBOOK_CODE_REPEAT_CHILDREN = new ErrorCode(1_001_202_008, "模板编码与子级台账类型编码重复，请修改后再提交");
-
+    ErrorCode STANDINGBOOK_CODE_REPEAT_CHILDREN = new ErrorCode(1_001_202_009, "模板编码与子级台账类型编码重复，请修改后再提交");
+    ErrorCode STANDINGBOOK_CODE_EXISTS = new ErrorCode(1_001_202_010, "台账编码已存在，请检查后提交");
     // ========== 标签配置 ==========
     ErrorCode LABEL_CONFIG_NOT_EXISTS = new ErrorCode(1_001_401_001, "配置标签不存在");
     ErrorCode LABEL_CONFIG_REACH_LIMIT = new ErrorCode(1_001_401_002, "单层标签超过限制");

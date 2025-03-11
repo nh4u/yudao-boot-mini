@@ -22,6 +22,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookType
 import cn.bitlinks.ems.module.power.enums.ApiConstants;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
+import cn.bitlinks.ems.module.power.enums.standingbook.StandingbookTypeTopEnum;
 import cn.bitlinks.ems.module.power.service.deviceassociationconfiguration.DeviceAssociationConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
@@ -30,6 +31,7 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.apache.poi.ss.usermodel.*;
@@ -160,8 +162,21 @@ public class StandingbookServiceImpl implements StandingbookService {
         if (!createReqVO.containsKey(ATTR_TYPE_ID)) {
             throw exception(ErrorCodeConstants.STANDINGBOOK_TYPE_NOT_EXISTS);
         }
-        Long typeId = Long.valueOf(createReqVO.get(ATTR_TYPE_ID));
 
+        Long typeId = Long.valueOf(createReqVO.get(ATTR_TYPE_ID));
+        StandingbookTypeDO sb = standingbookTypeMapper.selectById(typeId);
+        if (sb == null) {
+            throw exception(ErrorCodeConstants.STANDINGBOOK_TYPE_NOT_EXISTS);
+        }
+        // 判断设备编号/计量器具编号是否重复
+        if (StandingbookTypeTopEnum.EQUIPMENT.getCode().equals(sb.getTopType())) {
+            String attrEquipmentId = createReqVO.get(ATTR_EQUIPMENT_ID);
+            validateSbCodeUnique(attrEquipmentId);
+        } else if (StandingbookTypeTopEnum.MEASURING_INSTRUMENT.getCode().equals(sb.getTopType())) {
+            String measuringInstrumentId = createReqVO.get(ATTR_MEASURING_INSTRUMENT_ID);
+            validateSbCodeUnique(measuringInstrumentId);
+        }
+        // 新增
         StandingbookDO standingbook = new StandingbookDO();
         standingbook.setTypeId(typeId);
         standingbook.setLabelInfo(createReqVO.get(ATTR_LABEL_INFO));
@@ -191,6 +206,22 @@ public class StandingbookServiceImpl implements StandingbookService {
         standingbookAttributeMapper.insertBatch(children);
 
         return standingbook.getId();
+    }
+
+    /**
+     * 台账编码值
+     *
+     * @param codeValue
+     */
+    private void validateSbCodeUnique(String codeValue) {
+        List<StandingbookAttributeDO> exists = standingbookAttributeMapper.selectList(new LambdaQueryWrapper<StandingbookAttributeDO>()
+                .eq(StandingbookAttributeDO::getValue, codeValue)
+                .in(StandingbookAttributeDO::getCode, Arrays.asList(ATTR_MEASURING_INSTRUMENT_ID, ATTR_EQUIPMENT_ID))
+        );
+        if (CollUtil.isNotEmpty(exists)) {
+            throw exception(ErrorCodeConstants.STANDINGBOOK_CODE_EXISTS);
+        }
+
     }
 
     @Override
@@ -287,23 +318,23 @@ public class StandingbookServiceImpl implements StandingbookService {
             if (k.startsWith(ATTR_LABEL_INFO_PREFIX)) {
                 if (v.contains(StringPool.COMMA)) {
                     labelInfoConditions.put(k, Arrays.asList(v.split(StringPool.COMMA)));
-                }else{
+                } else {
                     labelInfoConditions.put(k, Collections.singletonList(v));
                 }
             } else {
                 if (v.contains(StringPool.COMMA)) {
                     childrenConditions.put(k, Arrays.asList(v.split(StringPool.COMMA)));
-                }else{
+                } else {
                     childrenConditions.put(k, Collections.singletonList(v));
                 }
             }
         });
         List<Long> sbIds = standingbookMapper.selectStandingbookIdByCondition(labelInfoConditions, Long.valueOf(typeId), createTimeArr);
-        if(CollUtil.isEmpty(sbIds)){
+        if (CollUtil.isEmpty(sbIds)) {
             return new ArrayList<>();
         }
         List<Long> attrSbIds = standingbookAttributeService.getStandingbookIdByCondition(childrenConditions, sbIds);
-        if(CollUtil.isEmpty(attrSbIds)){
+        if (CollUtil.isEmpty(attrSbIds)) {
             return new ArrayList<>();
         }
         // 组装结构，可与上合起来优化，暂不敢动
