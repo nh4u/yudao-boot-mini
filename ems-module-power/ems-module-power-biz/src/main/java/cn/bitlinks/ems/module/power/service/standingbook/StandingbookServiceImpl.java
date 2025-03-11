@@ -31,6 +31,7 @@ import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
@@ -39,7 +40,6 @@ import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.imgscalr.Scalr;
-import org.mapstruct.ap.internal.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
@@ -271,7 +271,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         String typeId = pageReqVO.get(ATTR_TYPE_ID);
         String createTimes = pageReqVO.get(ATTR_CREATE_TIME);
         List<String> createTimeArr = new ArrayList<>();
-        if (Strings.isNotEmpty(createTimes)) {
+        if (StringUtils.isNotEmpty(createTimes)) {
             createTimeArr = Arrays.asList(pageReqVO.get(ATTR_CREATE_TIME).split(StringPool.COMMA));
         }
 
