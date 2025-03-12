@@ -14,6 +14,7 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.alibaba.cloud.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -25,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
@@ -137,7 +139,172 @@ public class StatisticsStructureServiceImpl implements StatisticsStructureServic
 
     @Override
     public Object standardCoalStructureAnalysisChart(StatisticsParamVO paramVO) {
-        return null;
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        Integer dateType = paramVO.getDateType();
+        if (dateType == null) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        // 保存原始查询类型
+        Integer originalQueryType = paramVO.getQueryType();
+        if (originalQueryType == null) {
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
+        paramVO.setQueryType(0);
+        // 复用表方法的核心逻辑
+        Map<String, Object> tableResult = standardCoalStructureAnalysisTable(paramVO);
+
+        // 获取原始数据列表
+        List<StatisticsStructureResultVO> dataList = (List<StatisticsStructureResultVO>) tableResult.get("data");
+
+        // 构建饼图结果
+        Map<String, Object> result = new HashMap<>();
+
+        switch (originalQueryType) {
+            case 0:
+                result.put("energyPie", buildEnergyPie(dataList, paramVO));
+                result.put("labelPie", buildLabelPie(dataList, paramVO));
+                break;
+            case 1:
+                result.put("energyPies", buildEnergyDimensionPies(dataList, paramVO));
+                break;
+            case 2:
+                result.put("labelPies", buildLabelDimensionPies(dataList, paramVO));
+                break;
+        }
+
+        return result;
+    }
+
+    // 构建能源维度饼图（综合查看）
+    private PieChartVO buildEnergyPie(List<StatisticsStructureResultVO> dataList, StatisticsParamVO paramVO) {
+        // 过滤出选中的能源
+        Set<Long> selectedEnergyIds = new HashSet<>(paramVO.getEnergyIds());
+        Map<String, BigDecimal> energyMap = dataList.stream()
+                .filter(vo -> selectedEnergyIds.contains(vo.getEnergyId()))
+                .collect(Collectors.groupingBy(
+                        vo -> vo.getEnergyId() + "|" + vo.getEnergyName(),
+                        Collectors.reducing(BigDecimal.ZERO, StatisticsStructureResultVO::getSumNum, BigDecimal::add)
+                ));
+
+        return createPieChart("能源用能结构", energyMap);
+    }
+
+    // 构建标签维度饼图（综合查看）
+    private PieChartVO buildLabelPie(List<StatisticsStructureResultVO> dataList, StatisticsParamVO paramVO) {
+        // 过滤出选中的标签
+        Set<Long> selectedLabelIds = new HashSet<>(paramVO.getLabelIds());
+        Map<String, BigDecimal> labelMap = dataList.stream()
+                .filter(vo -> selectedLabelIds.contains(vo.getLabelId()))
+                .collect(Collectors.groupingBy(
+                        vo -> getFullLabelPath(vo),
+                        Collectors.reducing(BigDecimal.ZERO, StatisticsStructureResultVO::getSumNum, BigDecimal::add)
+                ));
+
+        return createPieChart("标签用能结构", labelMap);
+    }
+
+    // 构建能源维度饼图集合（按能源查看）
+    private List<PieChartVO> buildEnergyDimensionPies(List<StatisticsStructureResultVO> dataList, StatisticsParamVO paramVO) {
+        return paramVO.getEnergyIds().stream().map(energyId -> {
+            // 按一级标签聚合数据
+            Map<String, BigDecimal> labelMap = dataList.stream()
+                    .filter(vo -> energyId.equals(vo.getEnergyId()))
+                    .collect(Collectors.groupingBy(
+                            StatisticsStructureResultVO::getLabel1, // 关键修改：使用一级标签分组
+                            Collectors.reducing(BigDecimal.ZERO, StatisticsStructureResultVO::getSumNum, BigDecimal::add)
+                    ));
+
+            String energyName = dataList.stream()
+                    .filter(vo -> energyId.equals(vo.getEnergyId()))
+                    .findFirst()
+                    .map(StatisticsStructureResultVO::getEnergyName)
+                    .orElse("未知能源");
+
+            return createPieChart(energyName, labelMap);
+        }).collect(Collectors.toList());
+    }
+
+    // 构建标签维度饼图集合（按标签查看）
+    private List<PieChartVO> buildLabelDimensionPies(List<StatisticsStructureResultVO> dataList, StatisticsParamVO paramVO) {
+        // 获取所有选中的labelIds
+        Set<Long> selectedLabelIds = new HashSet<>(paramVO.getLabelIds());
+
+        // 过滤出选中标签的数据
+        List<StatisticsStructureResultVO> filteredData = dataList.stream()
+                .filter(vo -> selectedLabelIds.contains(vo.getLabelId()))
+                .collect(Collectors.toList());
+
+        // 按label1分组，每个分组生成一个饼图
+        Map<String, List<StatisticsStructureResultVO>> groupedByLabel1 = filteredData.stream()
+                .collect(Collectors.groupingBy(StatisticsStructureResultVO::getLabel1));
+
+        // 对每个label1生成饼图
+        return groupedByLabel1.entrySet().stream().map(entry -> {
+            String label1 = entry.getKey();
+            List<StatisticsStructureResultVO> labelData = entry.getValue();
+
+            // 按能源分组，计算总用量
+            Map<String, BigDecimal> energyMap = labelData.stream()
+                    .collect(Collectors.groupingBy(
+                            vo -> vo.getEnergyId() + "|" + vo.getEnergyName(),
+                            Collectors.reducing(BigDecimal.ZERO, StatisticsStructureResultVO::getSumNum, BigDecimal::add)
+                    ));
+
+            return createPieChart(label1, energyMap);
+        }).collect(Collectors.toList());
+    }
+
+    // 获取完整标签路径
+    private String getFullLabelPath(StatisticsStructureResultVO vo) {
+        return Stream.of(vo.getLabel1(), vo.getLabel2(), vo.getLabel3())
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.joining("/"));
+    }
+
+    // 安全创建饼图
+    private PieChartVO createPieChart(String title, Map<String, BigDecimal> dataMap) {
+        BigDecimal total = dataMap.values().stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        List<PieItemVO> items = dataMap.entrySet().stream()
+                .map(entry -> {
+                    String[] parts = entry.getKey().split("\\|");
+                    String name = parts.length > 1 ? parts[1] : entry.getKey();
+
+                    return new PieItemVO(
+                            name,
+                            entry.getValue(),
+                            calculateProportion(entry.getValue(), total)
+                    );
+                })
+                .collect(Collectors.toList());
+
+        return new PieChartVO(title, items,total);
+    }
+
+    // 保持与表格相同的占比计算
+    private BigDecimal calculateProportion(BigDecimal value, BigDecimal total) {
+        if (total.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+        return value.divide(total, 4, RoundingMode.HALF_UP)
+                .multiply(new BigDecimal(100))
+                .setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
