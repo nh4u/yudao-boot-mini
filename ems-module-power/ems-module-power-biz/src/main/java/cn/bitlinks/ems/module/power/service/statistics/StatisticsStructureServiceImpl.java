@@ -245,7 +245,6 @@ public class StatisticsStructureServiceImpl implements StatisticsStructureServic
 
         // 过滤出选中标签的数据
         List<StatisticsStructureResultVO> filteredData = dataList.stream()
-                .filter(vo -> selectedLabelIds.contains(vo.getLabelId()))
                 .collect(Collectors.toList());
 
         // 按label1分组，每个分组生成一个饼图
