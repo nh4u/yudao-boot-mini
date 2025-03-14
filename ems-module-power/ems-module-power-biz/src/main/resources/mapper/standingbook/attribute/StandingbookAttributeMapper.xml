@@ -39,7 +39,12 @@
             <foreach collection="children" item="valueList" index="key" separator=" and ">
                 (
                 <foreach collection="valueList" item="itemValue" separator=" or ">
-                    ${key} LIKE CONCAT('%', #{itemValue}, '%')
+                    <if test="key == 'measuringInstrumentId' or key == 'measuringInstrumentName' or key == 'equipmentId' or key == 'equipmentName'">
+                        ${key} LIKE CONCAT('%', #{itemValue}, '%')
+                    </if>
+                    <if test="key != 'measuringInstrumentId' and key != 'measuringInstrumentName' and key != 'equipmentId' and key != 'equipmentName'">
+                        ${key} = #{itemValue}
+                    </if>
                 </foreach>
                 )
             </foreach>
