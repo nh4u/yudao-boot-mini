@@ -189,6 +189,141 @@ public class StatisticsStructureServiceImpl implements StatisticsStructureServic
         return result;
     }
 
+    @Override
+    public Map<String, Object> standardMoneyStructureAnalysisTable(StatisticsParamVO paramVO) {
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        Integer dateType = paramVO.getDateType();
+        if (dateType == null) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        Integer queryType = paramVO.getQueryType();
+        if (queryType == null) {
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
+        // 返回结果map
+        Map<String, Object> result = new HashMap<>(2);
+
+        // 统计结果list
+        List<StatisticsStructureResultVO> list = new ArrayList<>();
+
+        // 表头处理
+        List<String> tableHeader = CommonUtil.getTableHeader(rangeOrigin, dateType);
+
+        if (1 == queryType) {
+            // 1、按能源查看
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+            // 能源结果list
+            List<StatisticsStructureResultVO> statisticsResultVOList = getEnergyList(new StatisticsStructureResultVO(), energyList, range, dateType, queryType);
+            list.addAll(statisticsResultVOList);
+
+        } else if (2 == queryType) {
+            // 2、按标签查看
+            Map<String, BigDecimal> sumMap = new HashMap<>();
+            List<StatisticsStructureResultVO> tempList = new ArrayList<>();
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsStructureResultVO> statisticsResultVOList = getStatisticsResultVONotHaveEnergy(tree, range, dateType, queryType);
+                tempList.addAll(statisticsResultVOList);
+            }
+
+            list = getStructureResultList(sumMap, tempList);
+
+
+            // TODO: 2025/1/10   标签统计时： 如果只展示一级标签的时候，那表数据，只可能展示一级标签数据 大约3~6条数据，是否数据少，
+            //  如果每一级都展示的话，那如何计算占比的问题，怎么划分占比，即怎么归类的问题。如何进行划分归类，目前原型暂时未体现。
+
+
+
+
+
+        } else {
+            // 0、综合查看（默认）
+            // 标签查询条件处理
+            List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+
+            // 能源查询条件处理
+            List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+
+            // TODO: 2024/12/11 多线程处理 labelTree for循环
+            for (Tree<Long> tree : labelTree) {
+                List<StatisticsStructureResultVO> statisticsResultVOList = getStatisticsResultVOHaveEnergy(tree, energyList, range, dateType, queryType);
+                list.addAll(statisticsResultVOList);
+            }
+        }
+
+        result.put("header", tableHeader);
+        result.put("data", list);
+        return result;
+    }
+
+    @Override
+    public Object standardMoneyStructureAnalysisChart(StatisticsParamVO paramVO) {
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+
+        if (ArrayUtil.isEmpty(rangeOrigin)) {
+            throw exception(DATE_RANGE_NOT_EXISTS);
+        }
+
+        LocalDate[] range = new LocalDate[]{rangeOrigin[0].toLocalDate(), rangeOrigin[1].toLocalDate()};
+
+        long between = LocalDateTimeUtil.between(range[0].atStartOfDay(), range[1].atStartOfDay(), ChronoUnit.DAYS);
+        if (CommonConstants.YEAR < between) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        Integer dateType = paramVO.getDateType();
+        if (dateType == null) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        // 保存原始查询类型
+        Integer originalQueryType = paramVO.getQueryType();
+        if (originalQueryType == null) {
+            throw exception(QUERY_TYPE_NOT_EXISTS);
+        }
+        paramVO.setQueryType(0);
+        // 复用表方法的核心逻辑
+        Map<String, Object> tableResult = standardCoalStructureAnalysisTable(paramVO);
+
+        // 获取原始数据列表
+        List<StatisticsStructureResultVO> dataList = (List<StatisticsStructureResultVO>) tableResult.get("data");
+
+        // 构建饼图结果
+        Map<String, Object> result = new HashMap<>();
+
+        switch (originalQueryType) {
+            case 0:
+                result.put("energyPie", buildEnergyPie(dataList, paramVO));
+                result.put("labelPie", buildLabelPie(dataList, paramVO));
+                break;
+            case 1:
+                result.put("energyPies", buildEnergyDimensionPies(dataList, paramVO));
+                break;
+            case 2:
+                result.put("labelPies", buildLabelDimensionPies(dataList, paramVO));
+                break;
+        }
+
+        return result;
+    }
+
     // 构建能源维度饼图（综合查看）
     private PieChartVO buildEnergyPie(List<StatisticsStructureResultVO> dataList, StatisticsParamVO paramVO) {
         // 过滤出选中的能源

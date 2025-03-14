@@ -14,4 +14,8 @@ public interface StatisticsStructureService {
     Map<String, Object> standardCoalStructureAnalysisTable(StatisticsParamVO paramVO);
 
     Object standardCoalStructureAnalysisChart(StatisticsParamVO paramVO);
+
+    Map<String, Object> standardMoneyStructureAnalysisTable(StatisticsParamVO paramVO);
+
+    Object standardMoneyStructureAnalysisChart(StatisticsParamVO paramVO);
 }

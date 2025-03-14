@@ -213,4 +213,17 @@ public class StatisticsController {
     public CommonResult<Object> standardCoalStructureAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
         return success(statisticsStructureService.standardCoalStructureAnalysisChart(paramVO));
     }
+
+    @PostMapping("/standardMoneyStructureAnalysisTable")
+    @Operation(summary = "价格结构分析（表）")
+    public CommonResult<Map<String, Object>> standardMoneyStructureAnalysisTable(@Valid @RequestBody StatisticsParamVO paramVO) {
+        Map<String, Object> jsonObject = statisticsStructureService.standardMoneyStructureAnalysisTable(paramVO);
+        return success(jsonObject);
+    }
+
+    @PostMapping("/standardMoneyStructureAnalysisChart")
+    @Operation(summary = "价格结构分析（图）")
+    public CommonResult<Object> standardMoneyStructureAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+        return success(statisticsStructureService.standardMoneyStructureAnalysisChart(paramVO));
+    }
 }
