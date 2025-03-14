@@ -213,7 +213,7 @@ public class StandingbookServiceImpl implements StandingbookService {
      *
      * @param codeValue
      */
-    private void validateSbCodeUnique(String codeValue) {
+    public void validateSbCodeUnique(String codeValue) {
         List<StandingbookAttributeDO> exists = standingbookAttributeMapper.selectList(new LambdaQueryWrapper<StandingbookAttributeDO>()
                 .eq(StandingbookAttributeDO::getValue, codeValue)
                 .in(StandingbookAttributeDO::getCode, Arrays.asList(ATTR_MEASURING_INSTRUMENT_ID, ATTR_EQUIPMENT_ID))
