@@ -58,7 +58,15 @@
                     FROM power_standingbook_attribute a
                     WHERE a.standingbook_id = s.id
                     AND a.code = #{item.code}
-                    AND a.value = #{item.value}
+                    <!-- 强制模糊查询不区分大小写 -->
+                    <choose>
+                        <when test="item.code == 'measuringInstrumentName'">
+                            AND LOWER(a.value) LIKE LOWER(CONCAT('%', #{item.value}, '%'))
+                        </when>
+                        <otherwise>
+                            AND a.value = #{item.value}
+                        </otherwise>
+                    </choose>
                     )
                 </foreach>
             </if>
