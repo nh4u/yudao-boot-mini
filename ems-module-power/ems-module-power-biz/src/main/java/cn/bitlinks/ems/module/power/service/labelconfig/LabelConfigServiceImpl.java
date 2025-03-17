@@ -57,9 +57,6 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         if (count >= CommonConstants.LABEL_NUM_LIMIT) {
             throw exception(LABEL_CONFIG_REACH_LIMIT);
         }
-        if (StrUtil.isEmpty(createReqVO.getCode())) {
-            throw exception(LABEL_CONFIG_CODE_REQUIRED);
-        }
         Long existCount = labelConfigMapper.selectCount(new LambdaQueryWrapperX<LabelConfigDO>()
                 .eq(LabelConfigDO::getCode, createReqVO.getCode()));
         if (existCount > 0) {
@@ -98,9 +95,6 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         LabelConfigDO currentLabel = labelConfigMapper.selectById(updateReqVO.getId());
         // 校验存在
         validateLabelConfigExists(updateReqVO.getId());
-        if (StrUtil.isEmpty(updateReqVO.getCode())) {
-            throw exception(LABEL_CONFIG_CODE_REQUIRED);
-        }
         // 如果编码被修改，校验新编码是否重复
         if (!currentLabel.getCode().equals(updateReqVO.getCode())) {
             Long existCount = labelConfigMapper.selectCount(new LambdaQueryWrapperX<LabelConfigDO>()
