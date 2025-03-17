@@ -317,7 +317,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         pageReqVO.forEach((k, v) -> {
             if (k.startsWith(ATTR_LABEL_INFO_PREFIX)) {
                 if (v.contains(StringPool.COMMA)) {
-                    labelInfoConditions.put(k, Arrays.asList(v.split(StringPool.COMMA)));
+                    labelInfoConditions.put(k, Arrays.asList(v.split(StringPool.HASH)));
                 } else {
                     labelInfoConditions.put(k, Collections.singletonList(v));
                 }
