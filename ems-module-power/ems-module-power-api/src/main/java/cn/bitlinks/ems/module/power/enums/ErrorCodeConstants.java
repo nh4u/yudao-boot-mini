@@ -45,6 +45,7 @@ public interface ErrorCodeConstants {
     ErrorCode LABEL_CONFIG_REACH_LIMIT = new ErrorCode(1_001_401_002, "单层标签超过限制");
     ErrorCode LABEL_CONFIG_REACH_LAYER_LIMIT = new ErrorCode(1_001_401_003, "标签层数超过限制");
     ErrorCode LABEL_CONFIG_CODE_NOT_UNIQUE = new ErrorCode(1_001_401_004, "标签编码重复");
+    ErrorCode LABEL_CONFIG_CODE_REQUIRED = new ErrorCode(1_001_401_005, "标签编码不能为空");
 
     // ========== 凭证管理 ==========
     ErrorCode VOUCHER_NOT_EXISTS = new ErrorCode(1_001_501_001, "凭证不存在");

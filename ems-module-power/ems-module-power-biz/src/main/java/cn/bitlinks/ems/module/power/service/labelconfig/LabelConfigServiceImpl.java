@@ -57,6 +57,9 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         if (count >= CommonConstants.LABEL_NUM_LIMIT) {
             throw exception(LABEL_CONFIG_REACH_LIMIT);
         }
+        if (StrUtil.isEmpty(createReqVO.getCode())) {
+            throw exception(LABEL_CONFIG_CODE_REQUIRED);
+        }
 
         // 插入
         LabelConfigDO labelConfig = BeanUtils.toBean(createReqVO, LabelConfigDO.class);
@@ -89,6 +92,9 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     public void updateLabelConfig(LabelConfigSaveReqVO updateReqVO) {
         // 校验存在
         validateLabelConfigExists(updateReqVO.getId());
+        if (StrUtil.isEmpty(updateReqVO.getCode())) {
+            throw exception(LABEL_CONFIG_CODE_REQUIRED);
+        }
         // 更新
         LabelConfigDO updateObj = BeanUtils.toBean(updateReqVO, LabelConfigDO.class);
         labelConfigMapper.updateById(updateObj);
