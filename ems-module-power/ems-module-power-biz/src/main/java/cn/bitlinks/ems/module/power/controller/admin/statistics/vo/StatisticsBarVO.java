@@ -10,6 +10,7 @@ import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -33,6 +34,12 @@ public class StatisticsBarVO {
      */
     @Schema(description = "Y轴数据")
     private List<BigDecimal> YData;
+
+    /**
+     * 数据更新时间
+     */
+    @Schema(description = "数据更新时间")
+    private LocalDateTime dataTime;
 
     public List<BigDecimal> getYData() {
         return CollectionUtils.convertList(YData, e -> e.setScale(2, RoundingMode.HALF_UP));

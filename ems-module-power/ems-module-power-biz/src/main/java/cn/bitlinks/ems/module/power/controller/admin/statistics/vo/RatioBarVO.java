@@ -1,7 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.statistics.vo;
 
 
-import cn.bitlinks.ems.framework.common.util.collection.CollectionUtils;
 import com.alibaba.excel.annotation.ExcelProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -9,8 +8,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -41,4 +39,10 @@ public class RatioBarVO {
     @Schema(description = "名称")
     @ExcelProperty("名称")
     private String name;
+
+    /**
+     * 数据更新时间
+     */
+    @Schema(description = "数据更新时间")
+    private LocalDateTime dataTime;
 }

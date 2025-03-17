@@ -131,6 +131,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
         result.put("header", tableHeader);
         result.put("data", list);
+        result.put("dataTime", LocalDateTime.now());
         return result;
     }
 
@@ -211,6 +212,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
         result.put("header", tableHeader);
         result.put("data", list);
+        result.put("dataTime", LocalDateTime.now());
         return result;
     }
 
@@ -291,6 +293,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
         result.put("header", tableHeader);
         result.put("data", list);
+        result.put("dataTime", LocalDateTime.now());
         return result;
     }
 
@@ -362,6 +365,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
         result.put("header", tableHeader);
         result.put("data", list);
+        result.put("dataTime", LocalDateTime.now());
         return result;
     }
 
@@ -433,6 +437,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
         result.put("header", tableHeader);
         result.put("data", list);
+        result.put("dataTime", LocalDateTime.now());
         return result;
     }
 
@@ -504,6 +509,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
         result.put("header", tableHeader);
         result.put("data", list);
+        result.put("dataTime", LocalDateTime.now());
         return result;
     }
 
@@ -563,7 +569,9 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
                         .XData(XData)
                         .YData(YData).build());
             }
-            return list1;
+            return ListDataVO.builder()
+                    .list(list1).
+                    dataTime(LocalDateTime.now()).build();
 
         } else {
             // 0、综合查看（默认）
@@ -627,7 +635,9 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
                         .XData(XData)
                         .YData(YData).build());
             }
-            return list1;
+            return ListDataVO.builder()
+                    .list(list1).
+                    dataTime(LocalDateTime.now()).build();
 
         } else {
             // 0、综合查看（默认）
@@ -691,7 +701,9 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
                         .XData(XData)
                         .YData(YData).build());
             }
-            return list1;
+            return ListDataVO.builder()
+                    .list(list1).
+                    dataTime(LocalDateTime.now()).build();
 
         } else {
             // 0、综合查看（默认）
@@ -758,7 +770,9 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
                         .XData(XData)
                         .YData(YData).build());
             }
-            return list1;
+            return ListDataVO.builder()
+                    .list(list1).
+                    dataTime(LocalDateTime.now()).build();
 
         } else {
             // 0、综合查看（默认）
@@ -824,7 +838,9 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
                         .XData(XData)
                         .YData(YData).build());
             }
-            return list1;
+            return ListDataVO.builder()
+                    .list(list1).
+                    dataTime(LocalDateTime.now()).build();
 
         } else {
             // 0、综合查看（默认）
@@ -890,7 +906,9 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
                         .XData(XData)
                         .YData(YData).build());
             }
-            return list1;
+            return ListDataVO.builder()
+                    .list(list1).
+                    dataTime(LocalDateTime.now()).build();
 
         } else {
             // 0、综合查看（默认）
@@ -977,6 +995,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
         result.put("header", tableHeader);
         result.put("data", list);
+        result.put("dataTime", LocalDateTime.now());
         return result;
     }
 
@@ -1053,6 +1072,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
         result.put("header", tableHeader);
         result.put("data", list);
+        result.put("dataTime", LocalDateTime.now());
         return result;
     }
 
@@ -1129,6 +1149,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
         result.put("header", tableHeader);
         result.put("data", list);
+        result.put("dataTime", LocalDateTime.now());
         return result;
     }
 
@@ -1193,7 +1214,9 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
                         .XData(XData)
                         .YData(YData).build());
             }
-            return list1;
+            return ListDataVO.builder()
+                    .list(list1).
+                    dataTime(LocalDateTime.now()).build();
 
         } else {
             // 0、综合查看（默认）
@@ -1261,7 +1284,9 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
                         .XData(XData)
                         .YData(YData).build());
             }
-            return list1;
+            return ListDataVO.builder()
+                    .list(list1).
+                    dataTime(LocalDateTime.now()).build();
 
         } else {
             // 0、综合查看（默认）
@@ -1330,7 +1355,9 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
                         .XData(XData)
                         .YData(YData).build());
             }
-            return list1;
+            return ListDataVO.builder()
+                    .list(list1).
+                    dataTime(LocalDateTime.now()).build();
 
         } else {
             // 0、综合查看（默认）
@@ -1346,7 +1373,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
      * @param statisticsRatioResultVOList
      * @return
      */
-    private List<RatioBarVO> getChartDataList(LocalDateTime[] rangeOrigin, Integer dateType, List<StatisticsRatioResultVO> statisticsRatioResultVOList, Integer queryType) {
+    private ListDataVO getChartDataList(LocalDateTime[] rangeOrigin, Integer dateType, List<StatisticsRatioResultVO> statisticsRatioResultVOList, Integer queryType) {
 
         List<RatioBarVO> list = new ArrayList<>();
         //X轴数据
@@ -1381,7 +1408,9 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
                     .YData(YData).build());
         }
 
-        return list;
+        return ListDataVO.builder()
+                .list(list)
+                .dataTime(LocalDateTime.now()).build();
     }
 
     /**
@@ -1422,7 +1451,8 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
         return RatioBarVO.builder()
                 .name("总")
                 .XData(XData)
-                .YData(YData).build();
+                .YData(YData)
+                .dataTime(LocalDateTime.now()).build();
 
     }
 

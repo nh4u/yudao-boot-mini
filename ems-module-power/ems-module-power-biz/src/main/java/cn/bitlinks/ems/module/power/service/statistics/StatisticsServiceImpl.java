@@ -239,6 +239,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         result.put("header", tableHeader);
         result.put("data", list);
+        result.put("dataTime", LocalDateTime.now());
         return result;
     }
 
@@ -300,7 +301,8 @@ public class StatisticsServiceImpl implements StatisticsService {
             }
             return StatisticsStackVO.builder()
                     .XData(XData)
-                    .YData(YData).build();
+                    .YData(YData)
+                    .dataTime(LocalDateTime.now()).build();
 
         } else {
             // 0、综合查看（默认）
@@ -340,7 +342,8 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         return StatisticsBarVO.builder()
                 .XData(XData)
-                .YData(YData).build();
+                .YData(YData)
+                .dataTime(LocalDateTime.now()).build();
 
     }
 
@@ -403,7 +406,8 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         return StatisticsStackVO.builder()
                 .XData(XData)
-                .YData(YData).build();
+                .YData(YData)
+                .dataTime(LocalDateTime.now()).build();
     }
 
     @Override
@@ -476,6 +480,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         result.put("header", tableHeader);
         result.put("data", list);
+        result.put("dataTime", LocalDateTime.now());
         return result;
     }
 
