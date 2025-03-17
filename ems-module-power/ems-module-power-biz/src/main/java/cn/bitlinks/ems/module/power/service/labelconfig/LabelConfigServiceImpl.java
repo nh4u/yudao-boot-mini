@@ -60,6 +60,11 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         if (StrUtil.isEmpty(createReqVO.getCode())) {
             throw exception(LABEL_CONFIG_CODE_REQUIRED);
         }
+        Long existCount = labelConfigMapper.selectCount(new LambdaQueryWrapperX<LabelConfigDO>()
+                .eq(LabelConfigDO::getCode, createReqVO.getCode()));
+        if (existCount > 0) {
+            throw exception(LABEL_CONFIG_CODE_DUPLICATE);
+        }
 
         // 插入
         LabelConfigDO labelConfig = BeanUtils.toBean(createReqVO, LabelConfigDO.class);
@@ -90,10 +95,20 @@ public class LabelConfigServiceImpl implements LabelConfigService {
 
     @Override
     public void updateLabelConfig(LabelConfigSaveReqVO updateReqVO) {
+        LabelConfigDO currentLabel = labelConfigMapper.selectById(updateReqVO.getId());
         // 校验存在
         validateLabelConfigExists(updateReqVO.getId());
         if (StrUtil.isEmpty(updateReqVO.getCode())) {
             throw exception(LABEL_CONFIG_CODE_REQUIRED);
+        }
+        // 如果编码被修改，校验新编码是否重复
+        if (!currentLabel.getCode().equals(updateReqVO.getCode())) {
+            Long existCount = labelConfigMapper.selectCount(new LambdaQueryWrapperX<LabelConfigDO>()
+                    .eq(LabelConfigDO::getCode, updateReqVO.getCode())
+                    .ne(LabelConfigDO::getId, updateReqVO.getId())); // 排除自身
+            if (existCount > 0) {
+                throw exception(LABEL_CONFIG_CODE_DUPLICATE);
+            }
         }
         // 更新
         LabelConfigDO updateObj = BeanUtils.toBean(updateReqVO, LabelConfigDO.class);
