@@ -8,8 +8,10 @@ import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigP
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.mysql.coalfactorhistory.CoalFactorHistoryMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.labelconfig.LabelConfigMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.tree.Tree;
@@ -45,6 +47,9 @@ public class LabelConfigServiceImpl implements LabelConfigService {
 
     @Resource
     private CoalFactorHistoryMapper coalFactorHistoryMapper;
+
+    @Resource
+    private StandingbookMapper standingbookMapper;
 
     @Override
     public Long createLabelConfig(LabelConfigSaveReqVO createReqVO) {
@@ -113,6 +118,8 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     public void deleteLabelConfig(Long id) {
         // 校验存在
         validateLabelConfigExists(id);
+        // 2. 校验设备绑定
+        validateLabelDeviceBinding(id);
         // 删除
         labelConfigMapper.deleteById(id);
     }
@@ -341,4 +348,64 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         };
     }
 
+    private void validateDirectBinding(Long labelId) {
+        LambdaQueryWrapperX<StandingbookDO> queryWrapper = new LambdaQueryWrapperX<>();
+        queryWrapper.apply("JSON_SEARCH(label_info, 'one', {0}) IS NOT NULL", labelId);
+
+        Long count = standingbookMapper.selectCount(queryWrapper);
+        if (count > 0) {
+            throw exception(LABEL_CONFIG_HAS_DEVICE); // 错误码示例：父标签作为 Value 被绑定
+        }
+    }
+
+    private void validateChildBinding(List<Long> childIds) {
+        if (CollectionUtil.isEmpty(childIds)) return;
+
+        LambdaQueryWrapperX<StandingbookDO> queryWrapper = new LambdaQueryWrapperX<>();
+        queryWrapper.and(qw -> {
+            childIds.forEach(childId ->
+                    qw.or().apply("JSON_SEARCH(label_info, 'one', {0}) IS NOT NULL", childId)
+            );
+        });
+
+        Long count = standingbookMapper.selectCount(queryWrapper);
+        if (count > 0) {
+            throw exception(LABEL_CONFIG_CHILDREN_HAS_DEVICE);
+        }
+    }
+
+    private void validateLabelDeviceBinding(Long labelId) {
+        // 1. 获取所有子标签ID（排除自身）
+        List<Long> allLabelIds = getAllRelatedLabelIds(labelId);
+        List<Long> childIds = allLabelIds.stream()
+                .filter(id -> !id.equals(labelId))
+                .collect(Collectors.toList());
+
+        // 2. 分层校验
+        validateDirectBinding(labelId);  // 先校验自身是否被绑定
+        validateChildBinding(childIds);  // 再校验子标签是否被绑定
+    }
+
+    // 获取标签及其子标签ID（包含自身）
+    private List<Long> getAllRelatedLabelIds(Long labelId) {
+        List<Tree<Long>> labelTree = getLabelTree(false, labelId, null);
+        if (CollectionUtil.isEmpty(labelTree)) return Collections.emptyList();
+        List<Long> ids = new ArrayList<>();
+        ids.add(labelId);
+        extractTreeIds(labelTree, ids);
+        return ids.stream().distinct().collect(Collectors.toList());
+    }
+
+    // 递归提取树节点ID
+    private void extractTreeIds(List<Tree<Long>> trees, List<Long> ids) {
+        if (CollectionUtil.isEmpty(trees)) return;  // 关键：避免处理空集合
+        for (Tree<Long> tree : trees) {
+            if (tree == null) continue;  // 跳过空节点
+            ids.add(tree.getId());
+            List<Tree<Long>> children = tree.getChildren();
+            if (CollectionUtil.isNotEmpty(children)) {  // 检查子节点是否非空
+                extractTreeIds(children, ids);
+            }
+        }
+    }
 }
