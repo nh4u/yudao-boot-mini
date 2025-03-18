@@ -65,4 +65,8 @@ public class VoucherSaveReqVO {
     @Schema(description = "ids")
     private List<Long> ids;
 
+    public void setAppendix(String appendix) {
+        // 空字符串转为 null
+        this.appendix = (appendix != null && appendix.trim().isEmpty()) ? null : appendix;
+    }
 }
