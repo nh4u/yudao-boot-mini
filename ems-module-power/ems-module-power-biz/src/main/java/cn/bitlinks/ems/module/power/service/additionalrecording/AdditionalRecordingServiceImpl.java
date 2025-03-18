@@ -49,6 +49,11 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
 
         String valueType = standingbookTypeMapper.selectAttributeValueByCode(createReqVO.getStandingbookId(), "valueType");
         createReqVO.setValueType(valueType);
+        if ("抄表数".equals(createReqVO.getValueType())) {
+            checkMeterReadingValue(createReqVO.getStandingbookId(),
+                    createReqVO.getThisCollectTime(),
+                    createReqVO.getThisValue());
+        }
         AdditionalRecordingDO additionalRecording = BeanUtils.toBean(createReqVO, AdditionalRecordingDO.class);
         if(createReqVO.getRecordPerson() == null){
             createReqVO.setRecordPerson(getLoginUserNickname());
@@ -69,6 +74,50 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         queryWrapper.eq("standingbook_id", standingbookId)
                 .eq("this_collect_time", collectTime);
         return additionalRecordingMapper.selectCount(queryWrapper) > 0;
+    }
+
+    /**
+     * 校验抄表数值是否符合规则：本次值 ≥ 上次值 且 ≤ 下次值
+     */
+    private void checkMeterReadingValue(Long standingbookId, LocalDateTime currentCollectTime, BigDecimal currentValue) {
+
+        // 获取上次记录（早于当前时间的最新记录）
+        AdditionalRecordingDO lastRecord = getNeighborRecord(standingbookId, currentCollectTime, false);
+        // 获取下次记录（晚于当前时间的最早记录）
+        AdditionalRecordingDO nextRecord = getNeighborRecord(standingbookId, currentCollectTime, true);
+
+        // 校验：当前值 ≥ 上次值
+        if (lastRecord != null && currentValue.compareTo(lastRecord.getThisValue()) < 0) {
+            throw exception(THIS_VALUE_NOT_LESS);
+        }
+
+        // 校验：当前值 ≤ 下次值
+        if (nextRecord != null && currentValue.compareTo(nextRecord.getThisValue()) > 0) {
+            throw exception(THIS_VALUE_NOT_MORE);
+        }
+    }
+
+    /**
+     * 获取相邻记录（上次或下次）
+     * @param isNext true表示查询下次记录，false表示查询上次记录
+     */
+    private AdditionalRecordingDO getNeighborRecord(Long standingbookId, LocalDateTime currentCollectTime, boolean isNext) {
+        QueryWrapper<AdditionalRecordingDO> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("standingbook_id", standingbookId)
+                .eq("value_type", "抄表数")  // 只处理抄表数类型
+                .select("this_collect_time", "this_value");
+
+        // 时间条件：上次记录（<当前时间）或下次记录（>当前时间）
+        if (isNext) {
+            queryWrapper.gt("this_collect_time", currentCollectTime)
+                    .orderByAsc("this_collect_time");
+        } else {
+            queryWrapper.lt("this_collect_time", currentCollectTime)
+                    .orderByDesc("this_collect_time");
+        }
+
+        queryWrapper.last("LIMIT 1");
+        return additionalRecordingMapper.selectOne(queryWrapper);
     }
 
     @Override
@@ -105,6 +154,11 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             saveReqVO.setRecordPerson(nickname);
             saveReqVO.setStandingbookId(standingbookId);
             saveReqVO.setEnterTime(LocalDateTime.now());
+            if ("抄表数".equals(saveReqVO.getValueType())) {
+                checkMeterReadingValue(saveReqVO.getStandingbookId(),
+                        saveReqVO.getThisCollectTime(),
+                        saveReqVO.getThisValue());
+            }
             AdditionalRecordingDO additionalRecording = BeanUtils.toBean(saveReqVO, AdditionalRecordingDO.class);
             additionalRecordingMapper.insert(additionalRecording);
         }

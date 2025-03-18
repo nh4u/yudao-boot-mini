@@ -27,6 +27,8 @@ public interface ErrorCodeConstants {
     //========== 数采补录 1-001-301-005 ==========
     ErrorCode ADDITIONAL_RECORDING_NOT_EXISTS = new ErrorCode(1_001_301_005, "补录不存在");
     ErrorCode THIS_TIME_EXISTS_DATA = new ErrorCode(1_001_301_007, "该时间点已存在非补录数据，请选择其他时间");
+    ErrorCode THIS_VALUE_NOT_LESS = new ErrorCode(1_001_301_008, "本次数值不可小于上次数值");
+    ErrorCode THIS_VALUE_NOT_MORE = new ErrorCode(1_001_301_008, "本次数值不可大于下次数值");
 
     // ========== 台账类型 ==========
     ErrorCode STANDINGBOOK_TYPE_NOT_EXISTS = new ErrorCode(1_001_202_000, "台账类型不存在");
