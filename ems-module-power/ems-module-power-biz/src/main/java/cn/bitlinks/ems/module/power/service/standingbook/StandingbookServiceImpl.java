@@ -316,7 +316,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         // 使用 entrySet() 遍历键和值
         pageReqVO.forEach((k, v) -> {
             if (k.startsWith(ATTR_LABEL_INFO_PREFIX)) {
-                if (v.contains(StringPool.COMMA)) {
+                if (v.contains(StringPool.HASH)) {
                     labelInfoConditions.put(k, Arrays.asList(v.split(StringPool.HASH)));
                 } else {
                     labelInfoConditions.put(k, Collections.singletonList(v));
