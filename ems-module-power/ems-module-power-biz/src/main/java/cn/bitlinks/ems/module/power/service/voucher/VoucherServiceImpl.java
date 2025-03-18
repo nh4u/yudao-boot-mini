@@ -120,9 +120,17 @@ public class VoucherServiceImpl implements VoucherService {
         for (Long id : ids) {
             validateVoucherExists(id);
         }
-        // 2.批量删除
+        // 2.校验关联补录数据[新增]
+        validateVoucherNotLinked(ids);
+        // 3.批量删除
         voucherMapper.deleteByIds(ids);
     }
 
+    private void validateVoucherNotLinked(List<Long> voucherIds) {
+        Integer count = additionalRecordingMapper.countByVoucherIds(voucherIds);
+        if (count > 0) {
+            throw exception(VOUCHER_HAS_ADDITIONAL_RECORDING);
+        }
+    }
 
 }

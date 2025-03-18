@@ -53,8 +53,9 @@ public interface ErrorCodeConstants {
     ErrorCode VOUCHER_NOT_EXISTS = new ErrorCode(1_001_501_001, "凭证不存在");
     ErrorCode VOUCHER_LIST_IS_EMPTY = new ErrorCode(1_001_501_002, "凭证ID列表为空");
     ErrorCode VOUCHER_USAGE_MODIFIED_ERROR = new ErrorCode(1_001_501_003, "凭证ID已在数据补录中使用，无法修改用量值");
-
+    ErrorCode VOUCHER_HAS_ADDITIONAL_RECORDING = new ErrorCode(1_001_501_004, "该凭证信息已关联补录数据，不可进行删除");
     ErrorCode DA_PARAM_FORMULA_NOT_EXISTS = new ErrorCode(1_001_601_001, "参数公式不存在");
+
 
 
     // ========== 告警管理 ==========
