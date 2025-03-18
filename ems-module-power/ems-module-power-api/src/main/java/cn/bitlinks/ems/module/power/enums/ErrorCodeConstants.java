@@ -24,8 +24,9 @@ public interface ErrorCodeConstants {
     //========== 设备关联配置 1-001-301-004 ==========
     ErrorCode DEVICE_ASSOCIATION_CONFIGURATION_NOT_EXISTS = new ErrorCode(1_001_301_004, "设备关联配置不存在");
 
-    //========== 设备关联配置 1-001-301-005 ==========
+    //========== 数采补录 1-001-301-005 ==========
     ErrorCode ADDITIONAL_RECORDING_NOT_EXISTS = new ErrorCode(1_001_301_005, "补录不存在");
+    ErrorCode THIS_TIME_EXISTS_DATA = new ErrorCode(1_001_301_007, "该时间点已存在非补录数据，请选择其他时间");
 
     // ========== 台账类型 ==========
     ErrorCode STANDINGBOOK_TYPE_NOT_EXISTS = new ErrorCode(1_001_202_000, "台账类型不存在");

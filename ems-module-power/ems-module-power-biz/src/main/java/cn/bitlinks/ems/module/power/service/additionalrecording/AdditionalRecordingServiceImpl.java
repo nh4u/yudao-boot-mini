@@ -43,6 +43,10 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
 
     @Override
     public Long createAdditionalRecording(AdditionalRecordingSaveReqVO createReqVO) {
+        if (isCollectTimeDuplicate(createReqVO.getStandingbookId(), createReqVO.getThisCollectTime())) {
+            throw exception(THIS_TIME_EXISTS_DATA);
+        }
+
         String valueType = standingbookTypeMapper.selectAttributeValueByCode(createReqVO.getStandingbookId(), "valueType");
         createReqVO.setValueType(valueType);
         AdditionalRecordingDO additionalRecording = BeanUtils.toBean(createReqVO, AdditionalRecordingDO.class);
@@ -58,6 +62,13 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         additionalRecordingMapper.insert(additionalRecording);
 
         return additionalRecording.getId();
+    }
+
+    private boolean isCollectTimeDuplicate(Long standingbookId, LocalDateTime collectTime) {
+        QueryWrapper<AdditionalRecordingDO> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("standingbook_id", standingbookId)
+                .eq("this_collect_time", collectTime);
+        return additionalRecordingMapper.selectCount(queryWrapper) > 0;
     }
 
     @Override
