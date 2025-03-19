@@ -27,7 +27,7 @@
         </where>
     </select>
 
-    <select id="selectStandingbookIdByVoucherIds" resultType="java.lang.Long">
+    <select id="selectStandingbookIdsByVoucherId" resultType="java.lang.Long">
         SELECT DISTINCT standingbook_id
         FROM ems_additional_recording
         WHERE voucher_id = #{voucherId}
