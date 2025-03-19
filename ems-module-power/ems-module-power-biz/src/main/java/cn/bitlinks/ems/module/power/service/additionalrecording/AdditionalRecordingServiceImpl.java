@@ -154,6 +154,9 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             saveReqVO.setRecordPerson(nickname);
             saveReqVO.setStandingbookId(standingbookId);
             saveReqVO.setEnterTime(LocalDateTime.now());
+            if (isCollectTimeDuplicate(saveReqVO.getStandingbookId(), saveReqVO.getThisCollectTime())) {
+                throw exception(THIS_TIME_EXISTS_DATA);
+            }
             if ("抄表数".equals(saveReqVO.getValueType())) {
                 checkMeterReadingValue(saveReqVO.getStandingbookId(),
                         saveReqVO.getThisCollectTime(),
