@@ -12,7 +12,8 @@
     <select id="countByVoucherId" resultType="java.lang.Integer">
         select count(0)
         from ems_additional_recording
-        where voucher_id = #{voucherId}
+        where deleted = 0
+          and voucher_id = #{voucherId}
     </select>
 
     <select id="countByVoucherIds" resultType="java.lang.String">
@@ -20,7 +21,9 @@
         from ems_voucher ev
                  left join ems_additional_recording ear on ev.id = ear.voucher_id
         <where>
-            ear.voucher_id in
+            ear.deleted = 0
+              and
+                ear.voucher_id in
             <foreach collection="voucherIds" separator="," item="voucherId" open="(" close=")">
                 #{voucherId}
             </foreach>
@@ -30,6 +33,7 @@
     <select id="selectStandingbookIdsByVoucherId" resultType="java.lang.Long">
         SELECT DISTINCT standingbook_id
         FROM ems_additional_recording
-        WHERE voucher_id = #{voucherId}
+        WHERE deleted = 0
+          and voucher_id = #{voucherId}
     </select>
 </mapper>
