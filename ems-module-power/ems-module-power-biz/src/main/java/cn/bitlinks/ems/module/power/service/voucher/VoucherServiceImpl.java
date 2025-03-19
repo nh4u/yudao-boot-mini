@@ -76,17 +76,8 @@ public class VoucherServiceImpl implements VoucherService {
 
         // Step 3: 判断“用量”是否发生更改
         if (!existingVoucher.getUsage().equals(updateReqVO.getUsage())) {
-            // Step 4: 如果“用量”已修改，检查 `additional_recording` 表中是否使用该凭证记录
-//            boolean isUsedInAdditionalRecording = additionalRecordingMapper.existsByVoucherId(voucherId);
-            Long l = additionalRecordingMapper.selectCount(new LambdaQueryWrapperX<AdditionalRecordingDO>()
-                    .eq(AdditionalRecordingDO::getVoucherId, voucherId)
-                    .eq(AdditionalRecordingDO::getDeleted, 0));
-            if (l > 0) {
-                throw exception(VOUCHER_USAGE_MODIFIED_ERROR);
-            }
 
             List<Long> standingbookIds = additionalRecordingMapper.selectStandingbookIdsByVoucherId(voucherId);
-
 
             StringBuilder strBuilder = new StringBuilder();
             strBuilder.append("请先删除关联的补录数据（");
@@ -108,7 +99,7 @@ public class VoucherServiceImpl implements VoucherService {
             // 添加最后一句话
             strBuilder.append("）");
             ErrorCode errorCode = new ErrorCode(1_001_501_006, strBuilder.toString());
-
+            throw exception(errorCode);
         }
 
         // Step 5: 更新凭证记录
