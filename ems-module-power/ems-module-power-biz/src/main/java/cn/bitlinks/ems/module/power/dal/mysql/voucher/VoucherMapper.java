@@ -24,8 +24,8 @@ public interface VoucherMapper extends BaseMapperX<VoucherDO> {
                 .eqIfPresent(VoucherDO::getEnergyId, reqVO.getEnergyId())
                 .likeIfPresent(VoucherDO::getEnergyName, reqVO.getEnergyName())
                 .betweenIfPresent(VoucherDO::getPurchaseTime, reqVO.getPurchaseTime())
-                .eqIfPresent(VoucherDO::getPrice, reqVO.getPrice())
-                .eqIfPresent(VoucherDO::getUsage, reqVO.getUsage())
+                .betweenIfPresent(VoucherDO::getPrice, reqVO.getPrice())
+                .betweenIfPresent(VoucherDO::getUsage, reqVO.getUsage())
                 .betweenIfPresent(VoucherDO::getUpdateTime, reqVO.getUpdateTime());
 
         // 根据 sortOrder 参数动态排序

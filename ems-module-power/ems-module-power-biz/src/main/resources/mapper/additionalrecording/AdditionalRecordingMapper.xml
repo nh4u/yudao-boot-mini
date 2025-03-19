@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="cn.bitlinks.ems.module.power.dal.mysql.additionalrecording.AdditionalRecordingMapper">
-
     <!--
         一般情况下，尽可能使用 Mapper 进行 CRUD 增删改查即可。
         无法满足的场景，例如说多表关联查询，才使用 XML 编写 SQL。
@@ -10,13 +9,27 @@
      -->
 
 
-    <select id="existsByVoucherId" parameterType="java.lang.Long" resultType="java.lang.Boolean">
-        select * from ems_additional_recording
+    <select id="countByVoucherId" resultType="java.lang.Integer">
+        select count(0)
+        from ems_additional_recording
+        where voucher_id = #{voucherId}
+    </select>
+
+    <select id="countByVoucherIds" resultType="java.lang.String">
+        select ev.code
+        from ems_voucher ev
+                 left join ems_additional_recording ear on ev.id = ear.voucher_id
         <where>
-            <if test="voucherId !=null">
-                voucher_id = #{voucherId}
-            </if>
+            ear.voucher_id in
+            <foreach collection="voucherIds" separator="," item="voucherId" open="(" close=")">
+                #{voucherId}
+            </foreach>
         </where>
     </select>
 
+    <select id="selectStandingbookIdByVoucherIds" resultType="java.lang.Long">
+        SELECT DISTINCT standingbook_id
+        FROM ems_additional_recording
+        WHERE voucher_id = #{voucherId}
+    </select>
 </mapper>

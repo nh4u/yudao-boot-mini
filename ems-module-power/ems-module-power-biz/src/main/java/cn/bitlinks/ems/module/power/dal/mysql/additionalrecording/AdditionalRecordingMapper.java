@@ -35,21 +35,13 @@ public interface AdditionalRecordingMapper extends BaseMapperX<AdditionalRecordi
                 .orderByDesc(AdditionalRecordingDO::getId));
     }
 
-    boolean existsByVoucherId(@Param("voucherId") Long voucherId);
-
     @Select("SELECT DISTINCT voucher_id FROM ems_additional_recording " +
             "WHERE standingbook_id = #{standingbookId} AND deleted = 0")
     List<Long> selectVoucherIdsByStandingbookId(@Param("standingbookId") Long standingbookId);
 
-    @Select({
-            "<script>",
-            "SELECT COUNT(1) FROM ems_additional_recording",
-            "WHERE voucher_id IN ",
-            "<foreach collection='voucherIds' item='id' open='(' separator=',' close=')'>",
-            "   #{id}",
-            "</foreach>",
-            "AND deleted = 0 AND tenant_id = 1",
-            "</script>"
-    })
-    Integer countByVoucherIds(@Param("voucherIds") List<Long> voucherIds);
+    List<Long> selectStandingbookIdsByVoucherId(@Param("voucherId") Long voucherId);
+
+    Integer countByVoucherId(@Param("voucherId") Long voucherId);
+
+    List<String> countByVoucherIds(@Param("voucherIds") List<Long> voucherIds);
 }

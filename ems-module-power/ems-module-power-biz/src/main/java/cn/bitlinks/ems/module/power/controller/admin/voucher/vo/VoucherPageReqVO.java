@@ -24,10 +24,10 @@ public class VoucherPageReqVO extends PageParam {
     @Schema(description = "凭证名称", example = "王五")
     private String name;
 
-    @Schema(description = "能源id", example = "5445")
+    @Schema(description = "能源id/凭证类型id", example = "5445")
     private Long energyId;
 
-    @Schema(description = "能源name", example = "bitlinks")
+    @Schema(description = "能源name/凭证类型名称", example = "bitlinks")
     private String energyName;
 
     @Schema(description = "购入时间")
@@ -35,10 +35,10 @@ public class VoucherPageReqVO extends PageParam {
     private LocalDateTime[] purchaseTime;
 
     @Schema(description = "金额", example = "9217")
-    private BigDecimal price;
+    private BigDecimal[] price;
 
     @Schema(description = "用量")
-    private BigDecimal usage;
+    private BigDecimal[] usage;
 
     @Schema(description = "更新时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)

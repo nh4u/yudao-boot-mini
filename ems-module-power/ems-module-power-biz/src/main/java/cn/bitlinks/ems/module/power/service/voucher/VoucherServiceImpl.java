@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.voucher;
 
+import cn.bitlinks.ems.framework.common.exception.ErrorCode;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
@@ -8,16 +9,17 @@ import cn.bitlinks.ems.module.power.controller.admin.voucher.vo.VoucherSaveReqVO
 import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.voucher.VoucherDO;
 import cn.bitlinks.ems.module.power.dal.mysql.additionalrecording.AdditionalRecordingMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.voucher.VoucherMapper;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.StrPool;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
-import java.util.List;
-//思路1
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-
+import java.util.List;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
@@ -36,6 +38,8 @@ public class VoucherServiceImpl implements VoucherService {
     @Resource
     private AdditionalRecordingMapper additionalRecordingMapper;
 
+    @Resource
+    private StandingbookTypeMapper standingbookTypeMapper;
 
     @Override
     public VoucherDO createVoucher(VoucherSaveReqVO createReqVO) {
@@ -61,7 +65,6 @@ public class VoucherServiceImpl implements VoucherService {
     }
 
 
-
     @Override
     public void updateVoucher(VoucherSaveReqVO updateReqVO) {
         Long voucherId = updateReqVO.getId();
@@ -78,9 +81,34 @@ public class VoucherServiceImpl implements VoucherService {
             Long l = additionalRecordingMapper.selectCount(new LambdaQueryWrapperX<AdditionalRecordingDO>()
                     .eq(AdditionalRecordingDO::getVoucherId, voucherId)
                     .eq(AdditionalRecordingDO::getDeleted, 0));
-            if ( l > 0) {
+            if (l > 0) {
                 throw exception(VOUCHER_USAGE_MODIFIED_ERROR);
             }
+
+            List<Long> standingbookIds = additionalRecordingMapper.selectStandingbookIdsByVoucherId(voucherId);
+
+
+            StringBuilder strBuilder = new StringBuilder();
+            strBuilder.append("请先删除关联的补录数据（");
+            for (Long standingbookId : standingbookIds) {
+
+                String name = standingbookTypeMapper.selectAttributeValueByCode(
+                        standingbookId, "measuringInstrumentName");
+
+                String code = standingbookTypeMapper.selectAttributeValueByCode(
+                        standingbookId, "measuringInstrumentId");
+
+                strBuilder.append(name).append("+").append(code).append(StrPool.COMMA);
+            }
+
+            // 删除多余，号
+            if (strBuilder.length() > 0) {
+                strBuilder.deleteCharAt(strBuilder.length() - 1);
+            }
+            // 添加最后一句话
+            strBuilder.append("）");
+            ErrorCode errorCode = new ErrorCode(1_001_501_006, strBuilder.toString());
+
         }
 
         // Step 5: 更新凭证记录
@@ -93,6 +121,8 @@ public class VoucherServiceImpl implements VoucherService {
     public void deleteVoucher(Long id) {
         // 校验存在
         validateVoucherExists(id);
+        // 是否绑定补录数据
+        validateVoucherBind(id);
         // 删除
         voucherMapper.deleteById(id);
     }
@@ -100,6 +130,13 @@ public class VoucherServiceImpl implements VoucherService {
     private void validateVoucherExists(Long id) {
         if (voucherMapper.selectById(id) == null) {
             throw exception(VOUCHER_NOT_EXISTS);
+        }
+    }
+
+    private void validateVoucherBind(Long id) {
+        Integer count = additionalRecordingMapper.countByVoucherId(id);
+        if (count > 0) {
+            throw exception(VOUCHER_HAS_ADDITIONAL_RECORDING);
         }
     }
 
@@ -127,9 +164,24 @@ public class VoucherServiceImpl implements VoucherService {
     }
 
     private void validateVoucherNotLinked(List<Long> voucherIds) {
-        Integer count = additionalRecordingMapper.countByVoucherIds(voucherIds);
-        if (count > 0) {
-            throw exception(VOUCHER_HAS_ADDITIONAL_RECORDING);
+        List<String> codes = additionalRecordingMapper.countByVoucherIds(voucherIds);
+        if (CollUtil.isNotEmpty(codes)) {
+
+            // 拼接message
+            StringBuilder strBuilder = new StringBuilder();
+
+            for (String code : codes) {
+                strBuilder.append(code).append(StrPool.COMMA);
+            }
+
+            // 删除多余，号
+            if (strBuilder.length() > 0) {
+                strBuilder.deleteCharAt(strBuilder.length() - 1);
+            }
+            // 添加最后一句话
+            strBuilder.append("已关联补录数据，不可进行删除！");
+            ErrorCode errorCode = new ErrorCode(1_001_501_005, strBuilder.toString());
+            throw exception(errorCode);
         }
     }
 
