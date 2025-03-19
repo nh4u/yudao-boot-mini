@@ -37,8 +37,8 @@ public interface AdditionalRecordingMapper extends BaseMapperX<AdditionalRecordi
 
     boolean existsByVoucherId(@Param("voucherId") Long voucherId);
 
-    @Select("SELECT DISTINCT voucher_id FROM ems_additional_recording " +
-            "WHERE standingbook_id = #{standingbookId} AND deleted = 0")
+    @Select("SELECT voucher_id FROM ems_additional_recording " +
+            "WHERE standingbook_id = #{standingbookId} AND deleted = 0 AND voucher_id IS NOT NULL")
     List<Long> selectVoucherIdsByStandingbookId(@Param("standingbookId") Long standingbookId);
 
     @Select({
