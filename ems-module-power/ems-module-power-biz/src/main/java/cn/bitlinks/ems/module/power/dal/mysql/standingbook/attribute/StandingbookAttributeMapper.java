@@ -57,7 +57,7 @@ public interface StandingbookAttributeMapper extends BaseMapperX<StandingbookAtt
 
 //    List<StandingbookDO> selectStandingbook(@Param("list")List<StandingbookAttributePageReqVO> list,@Param("typeId")Long typeId, @Param("createTimeArr") List<String> createTimeArr);
 
-    List<StandingbookDO> selectStandingbookIntersection(@Param("list") List<StandingbookAttributePageReqVO> list, @Param("typeId") Long typeId);
+//    List<StandingbookDO> selectStandingbookIntersection(@Param("list") List<StandingbookAttributePageReqVO> list, @Param("typeId") Long typeId);
 
     /**
      * 根据台账属性条件查询获取台账id

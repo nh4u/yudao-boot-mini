@@ -52,35 +52,35 @@
         ) r
     </select>
 
-    <select id="selectStandingbookIntersection" resultType="StandingbookDO">
-        SELECT s.*
-        FROM power_standingbook s
-        <where>
-            <if test="list != null and list.size() > 0">
-                <foreach collection="list" item="item" separator=" AND ">
-                    EXISTS (
-                    SELECT 1
-                    FROM power_standingbook_attribute a
-                    WHERE a.standingbook_id = s.id
-                    AND a.code = #{item.code}
-                    <!-- 强制模糊查询不区分大小写 -->
-                    <choose>
-                        <when test="item.code == 'measuringInstrumentName'">
-                            AND LOWER(a.value) LIKE LOWER(CONCAT('%', #{item.value}, '%'))
-                        </when>
-                        <otherwise>
-                            AND a.value = #{item.value}
-                        </otherwise>
-                    </choose>
-                    )
-                </foreach>
-            </if>
-            <if test="typeId != null">
-                AND s.type_id = #{typeId}
-            </if>
+<!--    <select id="selectStandingbookIntersection" resultType="StandingbookDO">-->
+<!--        SELECT s.*-->
+<!--        FROM power_standingbook s-->
+<!--        <where>-->
+<!--            <if test="list != null and list.size() > 0">-->
+<!--                <foreach collection="list" item="item" separator=" AND ">-->
+<!--                    EXISTS (-->
+<!--                    SELECT 1-->
+<!--                    FROM power_standingbook_attribute a-->
+<!--                    WHERE a.standingbook_id = s.id-->
+<!--                    AND a.code = #{item.code}-->
+<!--                    &lt;!&ndash; 强制模糊查询不区分大小写 &ndash;&gt;-->
+<!--                    <choose>-->
+<!--                        <when test="item.code == 'measuringInstrumentName'">-->
+<!--                            AND LOWER(a.value) LIKE LOWER(CONCAT('%', #{item.value}, '%'))-->
+<!--                        </when>-->
+<!--                        <otherwise>-->
+<!--                            AND a.value = #{item.value}-->
+<!--                        </otherwise>-->
+<!--                    </choose>-->
+<!--                    )-->
+<!--                </foreach>-->
+<!--            </if>-->
+<!--            <if test="typeId != null">-->
+<!--                AND s.type_id = #{typeId}-->
+<!--            </if>-->
 
 
-        </where>
-    </select>
+<!--        </where>-->
+<!--    </select>-->
 
 </mapper>

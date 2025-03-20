@@ -175,10 +175,10 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
         return standingbookAttributeMapper.selectStandingbookIdByAttrCondition(children, sbIds);
     }
 
-    @Override
-    public List<StandingbookDO> getStandingbookIntersection(List<StandingbookAttributePageReqVO> children, Long typeId) {
-        return standingbookAttributeMapper.selectStandingbookIntersection(children, typeId);
-    }
+//    @Override
+//    public List<StandingbookDO> getStandingbookIntersection(List<StandingbookAttributePageReqVO> children, Long typeId) {
+//        return standingbookAttributeMapper.selectStandingbookIntersection(children, typeId);
+//    }
 
     @Override
     @Transactional

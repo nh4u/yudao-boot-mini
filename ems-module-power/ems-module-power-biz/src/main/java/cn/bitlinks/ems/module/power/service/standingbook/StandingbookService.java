@@ -65,7 +65,7 @@ public interface StandingbookService {
      */
     List<StandingbookDO> getStandingbookList( Map<String,String> pageReqVO);
 
-    List<StandingbookDO> getStandingbookListBy(Map<String,String> pageReqVO);
+//    List<StandingbookDO> getStandingbookListBy(Map<String,String> pageReqVO);
 
     List<StandingbookWithAssociations> getStandingbookListWithAssociations(Map<String, String> pageReqVO);
 
@@ -79,5 +79,10 @@ public interface StandingbookService {
 
     Long count(Long typeId);
 
-    List<StandingbookDO> listByBaseTypeId(Map<String, String> pageReqVO );
+    /**
+     * 获取计量器具/重点设备的台账列表(加top_type)
+     * @param pageReqVO 查询条件
+     * @return 台账列表
+     */
+    List<StandingbookDO> listSbAll(Map<String, String> pageReqVO );
 }

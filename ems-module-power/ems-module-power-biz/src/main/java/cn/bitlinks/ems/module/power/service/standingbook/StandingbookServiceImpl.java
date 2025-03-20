@@ -133,7 +133,7 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
     @Override
-    public List<StandingbookDO> listByBaseTypeId(Map<String, String> pageReqVO) {
+    public List<StandingbookDO> listSbAll(Map<String, String> pageReqVO) {
         if (!pageReqVO.containsKey("topType")) {
             throw exception(ErrorCodeConstants.STANDINGBOOK_TYPE_NOT_EXISTS);
         }
@@ -302,8 +302,13 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     public List<StandingbookDO> getStandingbookList(Map<String, String> pageReqVO) {
+        //过滤空条件
+        pageReqVO.entrySet().removeIf(entry -> StringUtils.isEmpty(entry.getValue()));
+
+        // 取出查询条件
         String typeId = pageReqVO.get(ATTR_TYPE_ID);
         String createTimes = pageReqVO.get(ATTR_CREATE_TIME);
+        String stage = pageReqVO.get(ATTR_STAGE);
         List<String> createTimeArr = new ArrayList<>();
         if (StringUtils.isNotEmpty(createTimes)) {
             createTimeArr = Arrays.asList(pageReqVO.get(ATTR_CREATE_TIME).split(StringPool.COMMA));
@@ -313,7 +318,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         pageReqVO.remove(ATTR_CREATE_TIME);
         Map<String, List<String>> childrenConditions = new HashMap<>();
         Map<String, List<String>> labelInfoConditions = new HashMap<>();
-        // 使用 entrySet() 遍历键和值
+        // 构造标签数组 和 属性表code条件数组
         pageReqVO.forEach((k, v) -> {
             if (k.startsWith(ATTR_LABEL_INFO_PREFIX)) {
                 if (v.contains(StringPool.HASH)) {
@@ -329,51 +334,56 @@ public class StandingbookServiceImpl implements StandingbookService {
                 }
             }
         });
-        List<Long> sbIds = standingbookMapper.selectStandingbookIdByCondition(labelInfoConditions, Long.valueOf(typeId), createTimeArr);
+        // 根据台账属性查询台账id
+        List<Long> sbIds = standingbookMapper.selectStandingbookIdByCondition(labelInfoConditions, Long.valueOf(typeId), Integer.valueOf(stage), createTimeArr);
         if (CollUtil.isEmpty(sbIds)) {
             return new ArrayList<>();
         }
+        // 根据台账id、台账属性条件查询台账属性
         List<Long> attrSbIds = standingbookAttributeService.getStandingbookIdByCondition(childrenConditions, sbIds);
         if (CollUtil.isEmpty(attrSbIds)) {
             return new ArrayList<>();
         }
-        // 组装结构，可与上合起来优化，暂不敢动
+        // 组装每个台账节点结构，可与上合起来优化，暂不敢动
         List<StandingbookDO> result = new ArrayList<>();
         attrSbIds.forEach(sbId -> result.add(getStandingbook(sbId)));
 
         return result;
     }
 
-    @Override
-    public List<StandingbookDO> getStandingbookListBy(Map<String, String> pageReqVO) {
-        List<StandingbookAttributePageReqVO> children = new ArrayList<>();
-        Long typeId = null;
-
-        for (Map.Entry<String, String> entry : pageReqVO.entrySet()) {
-            String key = entry.getKey();
-            String value = entry.getValue();
-            if ("typeId".equals(key)) {
-                typeId = Long.parseLong(value);
-            } else {
-                StandingbookAttributePageReqVO attribute = new StandingbookAttributePageReqVO();
-                attribute.setCode(key).setValue(value);
-                children.add(attribute);
-            }
-        }
-
-        // 调用新方法获取交集结果
-        List<StandingbookDO> standingbookDOS = standingbookAttributeService.getStandingbookIntersection(children, typeId);
-        List<StandingbookDO> result = new ArrayList<>();
-        for (StandingbookDO standingbookDO : standingbookDOS) {
-            result.add(getStandingbook(standingbookDO.getId()));
-        }
-        return result;
-    }
+//    @Override
+//    public List<StandingbookDO> getStandingbookListBy(Map<String, String> pageReqVO) {
+//        List<StandingbookAttributePageReqVO> children = new ArrayList<>();
+//        Long typeId = null;
+//
+//        for (Map.Entry<String, String> entry : pageReqVO.entrySet()) {
+//            String key = entry.getKey();
+//            String value = entry.getValue();
+//            if ("typeId".equals(key)) {
+//                typeId = Long.parseLong(value);
+//            } else {
+//                StandingbookAttributePageReqVO attribute = new StandingbookAttributePageReqVO();
+//                attribute.setCode(key).setValue(value);
+//                children.add(attribute);
+//            }
+//        }
+//
+//        // 调用新方法获取交集结果
+//        List<StandingbookDO> standingbookDOS = standingbookAttributeService.getStandingbookIntersection(children, typeId);
+//        List<StandingbookDO> result = new ArrayList<>();
+//        for (StandingbookDO standingbookDO : standingbookDOS) {
+//            result.add(getStandingbook(standingbookDO.getId()));
+//        }
+//        return result;
+//    }
 
     @Override
     public List<StandingbookWithAssociations> getStandingbookListWithAssociations(Map<String, String> pageReqVO) {
         // 获取台账列表
-        List<StandingbookDO> standingbookDOS = getStandingbookListBy(pageReqVO);
+        // List<StandingbookDO> standingbookDOS = getStandingbookListBy(pageReqVO);
+        List<StandingbookDO> standingbookDOS = getStandingbookList(pageReqVO);
+
+
         List<StandingbookWithAssociations> result = new ArrayList<>();
 
         for (StandingbookDO standingbookDO : standingbookDOS) {

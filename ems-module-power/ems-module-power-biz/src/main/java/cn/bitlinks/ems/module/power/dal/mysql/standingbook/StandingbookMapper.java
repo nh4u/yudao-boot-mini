@@ -31,11 +31,11 @@ public interface StandingbookMapper extends BaseMapperX<StandingbookDO> {
     }
 
     /**
-     * 根据标签条件查询sb id
+     * 根据标签条件、typeId、stage查询sb id
      * @param labelInfoConditions 标签条件参数列表
      * @param typeId 台账分类id
      * @param createTimeArr 创建时间数组
      * @return sbId
      */
-    List<Long> selectStandingbookIdByCondition(@Param("labelInfoConditions") Map<String, List<String>> labelInfoConditions,@Param("typeId") Long typeId, @Param("createTimeArr")List<String> createTimeArr);
+    List<Long> selectStandingbookIdByCondition(@Param("labelInfoConditions") Map<String, List<String>> labelInfoConditions,@Param("typeId") Long typeId, @Param("stage") Integer stage, @Param("createTimeArr")List<String> createTimeArr);
 }

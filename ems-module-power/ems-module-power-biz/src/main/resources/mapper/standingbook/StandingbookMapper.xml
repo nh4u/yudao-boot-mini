@@ -23,11 +23,14 @@
         FROM
         power_standingbook
         where deleted = 0
-        <if test="typeId!= null">
+        <if test="typeId!= null ">
             AND type_id = #{typeId}
         </if>
         <if test="createTimeArr != null and createTimeArr.size() > 0">
             AND create_time BETWEEN #{createTimeArr[0]} AND #{createTimeArr[1]}
+        </if>
+        <if test="stage != null ">
+            AND stage = #{stage}
         </if>
         ORDER BY create_time desc
         ) as r

@@ -101,7 +101,7 @@ public interface StandingbookAttributeService {
      */
     List<Long> getStandingbookIdByCondition(Map<String, List<String>> children, List<Long> sbIds);
 
-    List<StandingbookDO> getStandingbookIntersection(List<StandingbookAttributePageReqVO> children, Long typeId);
+//    List<StandingbookDO> getStandingbookIntersection(List<StandingbookAttributePageReqVO> children, Long typeId);
 
     /**
      * 点击提交（包含删除、修改、新增操作）
