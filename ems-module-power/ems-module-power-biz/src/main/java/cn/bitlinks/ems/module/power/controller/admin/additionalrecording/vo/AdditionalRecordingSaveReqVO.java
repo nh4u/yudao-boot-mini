@@ -25,9 +25,11 @@ public class AdditionalRecordingSaveReqVO {
     private String valueType;
 
     @Schema(description = "本次采集时间")
+    @NotNull(message = "本次采集时间不能为空")
     private LocalDateTime thisCollectTime;
 
     @Schema(description = "本次数值")
+    @NotNull(message = "本次数值数值不能为空")
     private BigDecimal thisValue;
 
     @Schema(description = "单位")
