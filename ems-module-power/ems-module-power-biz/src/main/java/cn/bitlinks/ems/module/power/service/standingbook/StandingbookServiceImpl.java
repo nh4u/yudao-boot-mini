@@ -306,14 +306,26 @@ public class StandingbookServiceImpl implements StandingbookService {
         pageReqVO.entrySet().removeIf(entry -> StringUtils.isEmpty(entry.getValue()));
 
         // 取出查询条件
-        String typeId = pageReqVO.get(ATTR_TYPE_ID);
+        // 分类多选条件(可能为空)
+        List<String> sbTypeIdList = new ArrayList<>();
+        String sbTypeIds = pageReqVO.get(ATTR_SB_TYPE_ID);
+        if (StringUtils.isNotEmpty(sbTypeIds)) {
+            sbTypeIdList = Arrays.asList(sbTypeIds.split(StringPool.COMMA));
+        }
+        // 分类单选条件(可能为空)
+        Long typeId = pageReqVO.get(ATTR_TYPE_ID) != null ? Long.valueOf(pageReqVO.get(ATTR_TYPE_ID)) : null;
+
+
+        // 环节单选条件(可能为空)
+        Integer stage = pageReqVO.get(ATTR_STAGE) != null ? Integer.valueOf(pageReqVO.get(ATTR_STAGE)) : null;
+        // 创建时间条件(可能为空)
         String createTimes = pageReqVO.get(ATTR_CREATE_TIME);
-        String stage = pageReqVO.get(ATTR_STAGE);
         List<String> createTimeArr = new ArrayList<>();
         if (StringUtils.isNotEmpty(createTimes)) {
-            createTimeArr = Arrays.asList(pageReqVO.get(ATTR_CREATE_TIME).split(StringPool.COMMA));
+            createTimeArr = Arrays.asList(createTimes.split(StringPool.COMMA));
         }
-
+        pageReqVO.remove(ATTR_SB_TYPE_ID);
+        pageReqVO.remove(ATTR_STAGE);
         pageReqVO.remove(ATTR_TYPE_ID);
         pageReqVO.remove(ATTR_CREATE_TIME);
         Map<String, List<String>> childrenConditions = new HashMap<>();
@@ -335,7 +347,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             }
         });
         // 根据台账属性查询台账id
-        List<Long> sbIds = standingbookMapper.selectStandingbookIdByCondition(labelInfoConditions, Long.valueOf(typeId), Integer.valueOf(stage), createTimeArr);
+        List<Long> sbIds = standingbookMapper.selectStandingbookIdByCondition(labelInfoConditions, typeId, sbTypeIdList, stage, createTimeArr);
         if (CollUtil.isEmpty(sbIds)) {
             return new ArrayList<>();
         }

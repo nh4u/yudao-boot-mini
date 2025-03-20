@@ -26,6 +26,13 @@
         <if test="typeId!= null ">
             AND type_id = #{typeId}
         </if>
+        <if test="typeIds!= null and typeIds.size > 0">
+            and type_id in
+            <foreach collection="typeIds" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+
         <if test="createTimeArr != null and createTimeArr.size() > 0">
             AND create_time BETWEEN #{createTimeArr[0]} AND #{createTimeArr[1]}
         </if>

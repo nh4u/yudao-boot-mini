@@ -49,6 +49,7 @@ public class ApiConstants {
     // 台账
     public static final String ATTR_STAGE ="stage";
     public static final String ATTR_TYPE_ID ="typeId";
+    public static final String ATTR_SB_TYPE_ID ="standingbookTypeId";
     public static final String ATTR_CREATE_TIME ="createTime";
     public static final String ATTR_LABEL_INFO ="labelInfo";
     public static final String ATTR_LABEL_INFO_PREFIX ="label_";
