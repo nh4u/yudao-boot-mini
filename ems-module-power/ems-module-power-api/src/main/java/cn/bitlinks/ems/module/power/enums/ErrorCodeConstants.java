@@ -68,7 +68,6 @@ public interface ErrorCodeConstants {
     ErrorCode WARNING_TEMPLATE_DELETE_ERROR = new ErrorCode(1_001_701_004, "该模板已关联告警规则，不可删除！");
     ErrorCode WARNING_TEMPLATE_DELETE_BATCH_ERROR = new ErrorCode(1_001_701_005, "{}模板已关联告警规则，不可删除！");
     ErrorCode WARNING_STRATEGY_NOT_EXISTS = new ErrorCode(1_001_701_006, "告警策略不存在");
-    ErrorCode WARNING_STRATEGY_CONDITION_TYPE = new ErrorCode(1_001_701_006, "模板类型不能为空");
     // ========== 其他业务错误 ==========
 
     ErrorCode DATE_RANGE_NOT_EXISTS = new ErrorCode(1_001_601_001, "日期范围不存在");

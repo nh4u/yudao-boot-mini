@@ -13,6 +13,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.warningtemplate.WarningTempla
 import cn.bitlinks.ems.module.power.service.warningtemplate.WarningTemplateService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -86,9 +87,14 @@ public class WarningTemplateController {
     }
 
     @GetMapping("/listByType")
-    @Operation(summary = "站内信/邮件模板列表，模板名称 模糊搜索，type：0-站内信 1-邮件")
+    @Operation(summary = "站内信/邮件模板列表，模板名称 模糊搜索，")
     @PreAuthorize("@ss.hasPermission('power:warning-template:query')")
-    public CommonResult<List<WarningTemplateRespVO>> getWarningTemplateList(@RequestParam Integer type, @RequestParam String name) {
+    @Parameters({
+            @Parameter(name = "type", description = "type：0-站内信 1-邮件", required = true, example = "0"),
+            @Parameter(name = "name", description = "模板名称", required = false, example = "d")
+    })
+    public CommonResult<List<WarningTemplateRespVO>> getWarningTemplateList(@RequestParam Integer type,
+                                                                            @RequestParam(value = "name", required = false) String name) {
         List<WarningTemplateDO> result = warningTemplateService.getWarningTemplateList(type, name);
         return success(BeanUtils.toBean(result, WarningTemplateRespVO.class));
     }

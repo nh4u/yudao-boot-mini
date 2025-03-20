@@ -122,9 +122,6 @@ public class WarningTemplateServiceImpl implements WarningTemplateService {
 
     @Override
     public List<WarningTemplateDO> getWarningTemplateList(Integer type, String name) {
-        if(type == null) {
-            throw exception(WARNING_STRATEGY_CONDITION_TYPE);
-        }
         return warningTemplateMapper.selectList(new LambdaQueryWrapperX<WarningTemplateDO>()
                     .likeIfPresent(WarningTemplateDO::getName, name)
                     .eq(WarningTemplateDO::getType, type)
