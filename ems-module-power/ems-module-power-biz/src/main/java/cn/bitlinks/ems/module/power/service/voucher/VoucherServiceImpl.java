@@ -3,10 +3,8 @@ package cn.bitlinks.ems.module.power.service.voucher;
 import cn.bitlinks.ems.framework.common.exception.ErrorCode;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.voucher.vo.VoucherPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.voucher.vo.VoucherSaveReqVO;
-import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.voucher.VoucherDO;
 import cn.bitlinks.ems.module.power.dal.mysql.additionalrecording.AdditionalRecordingMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
@@ -22,7 +20,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.VOUCHER_HAS_ADDITIONAL_RECORDING;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.VOUCHER_NOT_EXISTS;
 
 /**
  * 凭证管理 Service 实现类
@@ -75,31 +74,33 @@ public class VoucherServiceImpl implements VoucherService {
         VoucherDO existingVoucher = voucherMapper.selectById(voucherId);
 
         // Step 3: 判断“用量”是否发生更改
-        if (!existingVoucher.getUsage().equals(updateReqVO.getUsage())) {
+        if (existingVoucher.getUsage().compareTo(updateReqVO.getUsage()) != 0) {
 
             List<Long> standingbookIds = additionalRecordingMapper.selectStandingbookIdsByVoucherId(voucherId);
 
-            StringBuilder strBuilder = new StringBuilder();
-            strBuilder.append("请先删除关联的补录数据（");
-            for (Long standingbookId : standingbookIds) {
+            if (CollUtil.isNotEmpty(standingbookIds)) {
+                StringBuilder strBuilder = new StringBuilder();
+                strBuilder.append("请先删除关联的补录数据（");
+                for (Long standingbookId : standingbookIds) {
 
-                String name = standingbookTypeMapper.selectAttributeValueByCode(
-                        standingbookId, "measuringInstrumentName");
+                    String name = standingbookTypeMapper.selectAttributeValueByCode(
+                            standingbookId, "measuringInstrumentName");
 
-                String code = standingbookTypeMapper.selectAttributeValueByCode(
-                        standingbookId, "measuringInstrumentId");
+                    String code = standingbookTypeMapper.selectAttributeValueByCode(
+                            standingbookId, "measuringInstrumentId");
 
-                strBuilder.append(name).append("+").append(code).append(StrPool.COMMA);
+                    strBuilder.append(name).append("+").append(code).append(StrPool.COMMA);
+                }
+
+                // 删除多余，号
+                if (strBuilder.length() > 0) {
+                    strBuilder.deleteCharAt(strBuilder.length() - 1);
+                }
+                // 添加最后一句话
+                strBuilder.append("）");
+                ErrorCode errorCode = new ErrorCode(1_001_501_006, strBuilder.toString());
+                throw exception(errorCode);
             }
-
-            // 删除多余，号
-            if (strBuilder.length() > 0) {
-                strBuilder.deleteCharAt(strBuilder.length() - 1);
-            }
-            // 添加最后一句话
-            strBuilder.append("）");
-            ErrorCode errorCode = new ErrorCode(1_001_501_006, strBuilder.toString());
-            throw exception(errorCode);
         }
 
         // Step 5: 更新凭证记录

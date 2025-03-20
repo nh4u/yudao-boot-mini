@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public class VoucherRespVO {
 
     @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "3687")
-    @ExcelProperty("编号")
+//    @ExcelProperty("编号")
     private Long id;
 
     @Schema(description = "凭证编号")
@@ -26,54 +26,56 @@ public class VoucherRespVO {
     private String name;
 
     @Schema(description = "能源id", requiredMode = Schema.RequiredMode.REQUIRED, example = "5445")
-    @ExcelProperty("能源id")
+//    @ExcelProperty("能源id")
     private Long energyId;
 
-    @Schema(description = "能源name", example = "bitlinks")
-    @ExcelProperty("能源name")
+    @Schema(description = "凭证类型", example = "bitlinks")
+    @ExcelProperty("凭证类型")
     private String energyName;
 
-    @Schema(description = "购入时间")
-    @ExcelProperty("购入时间")
-    private LocalDateTime purchaseTime;
+    @Schema(description = "用量(导出时用)")
+    @ExcelProperty("用量")
+    private String usageAndUsage;
 
-    @Schema(description = "经办人")
-    @ExcelProperty("经办人")
-    private String attention;
+    @Schema(description = "用量")
+    private BigDecimal usage;
+
+    @Schema(description = "用量单位")
+    private String usageUnit;
 
     @Schema(description = "金额", example = "9217")
     @ExcelProperty("金额")
     private BigDecimal price;
 
-    @Schema(description = "用量")
-    @ExcelProperty("用量")
-    private BigDecimal usage;
+    @Schema(description = "经办人")
+    @ExcelProperty("经办人")
+    private String attention;
 
-    @Schema(description = "用量单位")
-    @ExcelProperty("用量单位")
-    private String usageUnit;
+    @Schema(description = "购入时间")
+    @ExcelProperty("购入时间")
+    private LocalDateTime purchaseTime;
+
+    @Schema(description = "更新时间", requiredMode = Schema.RequiredMode.REQUIRED)
+    @ExcelProperty("更新时间")
+    private LocalDateTime updateTime;
 
     @Schema(description = "描述", example = "随便")
-    @ExcelProperty("描述")
     private String description;
 
     @Schema(description = "附件名称", example = "王五")
-    @ExcelProperty("附件名称")
     private String appendixName;
 
     @Schema(description = "附件地址", example = "https://www.bitlinks.cn")
-    @ExcelProperty("附件地址")
     private String appendixUrl;
 
     @Schema(description = "识别结果")
-    @ExcelProperty("识别结果")
     private String results;
 
     @Schema(description = "凭证附件")
     private String appendix;
 
-    @Schema(description = "更新时间", requiredMode = Schema.RequiredMode.REQUIRED)
-    @ExcelProperty("更新时间")
-    private LocalDateTime updateTime;
+    public String getUsageAndUsage() {
+        return usage + " " + usageUnit;
+    }
 
 }
