@@ -1,5 +1,8 @@
 package cn.bitlinks.ems.module.system.service.user;
 
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.bitlinks.ems.module.system.controller.admin.dept.vo.dept.DeptListReqVO;
+import cn.bitlinks.ems.module.system.controller.admin.user.vo.user.*;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.IoUtil;
@@ -16,10 +19,6 @@ import cn.bitlinks.ems.module.infra.api.file.FileApi;
 import cn.bitlinks.ems.module.system.controller.admin.auth.vo.AuthRegisterReqVO;
 import cn.bitlinks.ems.module.system.controller.admin.user.vo.profile.UserProfileUpdatePasswordReqVO;
 import cn.bitlinks.ems.module.system.controller.admin.user.vo.profile.UserProfileUpdateReqVO;
-import cn.bitlinks.ems.module.system.controller.admin.user.vo.user.UserImportExcelVO;
-import cn.bitlinks.ems.module.system.controller.admin.user.vo.user.UserImportRespVO;
-import cn.bitlinks.ems.module.system.controller.admin.user.vo.user.UserPageReqVO;
-import cn.bitlinks.ems.module.system.controller.admin.user.vo.user.UserSaveReqVO;
 import cn.bitlinks.ems.module.system.dal.dataobject.dept.DeptDO;
 import cn.bitlinks.ems.module.system.dal.dataobject.dept.UserPostDO;
 import cn.bitlinks.ems.module.system.dal.dataobject.user.AdminUserDO;
@@ -29,6 +28,8 @@ import cn.bitlinks.ems.module.system.service.dept.DeptService;
 import cn.bitlinks.ems.module.system.service.dept.PostService;
 import cn.bitlinks.ems.module.system.service.permission.PermissionService;
 import cn.bitlinks.ems.module.system.service.tenant.TenantService;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.google.common.annotations.VisibleForTesting;
 import com.mzt.logapi.context.LogRecordContext;
 import com.mzt.logapi.service.impl.DiffParseFunction;
@@ -517,6 +518,61 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Override
     public List<AdminUserDO> getAllUserList() {
         return userMapper.selectList();
+    }
+
+    @Override
+    public List<DeptUserTreeNodeVO> getDeptUserTree() {
+        DeptListReqVO deptListReqVO = new DeptListReqVO();
+        deptListReqVO.setStatus(CommonStatusEnum.ENABLE.getStatus());
+        // 查询部门列表
+        List<DeptDO> deptDOList = deptService.getDeptList(deptListReqVO);
+
+        // 查询所有有部门的人员列表
+        List<AdminUserDO> userDOList = userMapper.selectList(new LambdaQueryWrapperX<AdminUserDO>()
+                .eq(AdminUserDO::getStatus,CommonStatusEnum.ENABLE.getStatus())
+                .isNotNull(AdminUserDO::getDeptId).ne(AdminUserDO::getDeptId, StringPool.EMPTY)
+        );
+        // 构建部门节点映射
+        Map<Long, DeptUserTreeNodeVO> deptNodeMap = new HashMap<>();
+        for (DeptDO dept : deptDOList) {
+            DeptUserTreeNodeVO deptNode = new DeptUserTreeNodeVO();
+            deptNode.setId(dept.getId());
+            deptNode.setName(dept.getName());
+            deptNode.setPId(dept.getParentId());
+            deptNode.setType(0);
+            deptNode.setChildren(new ArrayList<>());
+            deptNodeMap.put(dept.getId(), deptNode);
+        }
+
+        // 构建用户节点并添加到相应部门下
+        for (AdminUserDO user : userDOList) {
+            DeptUserTreeNodeVO userNode = new DeptUserTreeNodeVO();
+            userNode.setId(user.getId());
+            userNode.setName(user.getUsername());
+            userNode.setPId(user.getDeptId());
+            userNode.setType(1);
+            userNode.setChildren(new ArrayList<>());
+
+            DeptUserTreeNodeVO parentDeptNode = deptNodeMap.get(user.getDeptId());
+            if (parentDeptNode != null) {
+                parentDeptNode.getChildren().add(userNode);
+            }
+        }
+
+        // 构建树形结构
+        List<DeptUserTreeNodeVO> treeNodes = new ArrayList<>();
+        for (DeptUserTreeNodeVO node : deptNodeMap.values()) {
+            if (node.getPId() == null ||!deptNodeMap.containsKey(node.getPId())) {
+                treeNodes.add(node);
+            } else {
+                DeptUserTreeNodeVO parentNode = deptNodeMap.get(node.getPId());
+                parentNode.getChildren().add(node);
+            }
+        }
+
+
+
+        return treeNodes;
     }
 
     /**

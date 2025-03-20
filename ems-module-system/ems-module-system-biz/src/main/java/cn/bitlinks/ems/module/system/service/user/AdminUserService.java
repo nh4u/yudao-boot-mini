@@ -1,15 +1,12 @@
 package cn.bitlinks.ems.module.system.service.user;
 
+import cn.bitlinks.ems.module.system.controller.admin.user.vo.user.*;
 import cn.hutool.core.collection.CollUtil;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.collection.CollectionUtils;
 import cn.bitlinks.ems.module.system.controller.admin.auth.vo.AuthRegisterReqVO;
 import cn.bitlinks.ems.module.system.controller.admin.user.vo.profile.UserProfileUpdatePasswordReqVO;
 import cn.bitlinks.ems.module.system.controller.admin.user.vo.profile.UserProfileUpdateReqVO;
-import cn.bitlinks.ems.module.system.controller.admin.user.vo.user.UserImportExcelVO;
-import cn.bitlinks.ems.module.system.controller.admin.user.vo.user.UserImportRespVO;
-import cn.bitlinks.ems.module.system.controller.admin.user.vo.user.UserPageReqVO;
-import cn.bitlinks.ems.module.system.controller.admin.user.vo.user.UserSaveReqVO;
 import cn.bitlinks.ems.module.system.dal.dataobject.user.AdminUserDO;
 
 import javax.validation.Valid;
@@ -221,4 +218,10 @@ public interface AdminUserService {
      * @return 用户列表
      */
     List<AdminUserDO> getAllUserList();
+
+    /**
+     * 获取部门-人员树形结构
+     * @return 部门-人员树
+     */
+    List<DeptUserTreeNodeVO> getDeptUserTree();
 }
