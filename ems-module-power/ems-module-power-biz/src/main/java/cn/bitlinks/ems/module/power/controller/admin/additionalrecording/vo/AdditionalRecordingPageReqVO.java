@@ -30,7 +30,7 @@ public class AdditionalRecordingPageReqVO extends PageParam {
     private LocalDateTime[] thisCollectTime;
 
     @Schema(description = "本次数值")
-    private BigDecimal thisValue;
+    private BigDecimal[] thisValue;
 
     @Schema(description = "单位")
     private String unit;
