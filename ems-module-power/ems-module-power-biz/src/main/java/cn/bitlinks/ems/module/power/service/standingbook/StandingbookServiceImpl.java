@@ -134,25 +134,25 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     public List<StandingbookDO> listSbAll(Map<String, String> pageReqVO) {
-        if (!pageReqVO.containsKey("topType")) {
-            throw exception(ErrorCodeConstants.STANDINGBOOK_TYPE_NOT_EXISTS);
+
+        // 根据topType查询所有台账，也可以查询所有台账
+        List<StandingbookTypeDO> sbTypeDOS = standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>()
+                .eqIfPresent(StandingbookTypeDO::getTopType, pageReqVO.get(SB_TYPE_ATTR_TOP_TYPE)));
+        if (CollUtil.isEmpty(sbTypeDOS)) {
+            return new ArrayList<>();
         }
-        String topType = pageReqVO.get("topType");
-        StandingbookTypeListReqVO listReqVO = new StandingbookTypeListReqVO();
-        listReqVO.setTopType(String.valueOf(topType));
-        List<StandingbookTypeDO> standingbookTypeDOS = standingbookTypeMapper.selectList(listReqVO);
-        if (standingbookTypeDOS == null || standingbookTypeDOS.size() == 0) {
-            throw exception(ErrorCodeConstants.STANDINGBOOK_NOT_EXISTS);
-        }
-        List<StandingbookDO> result = new ArrayList<>();
-        pageReqVO.remove("topType");
-        standingbookTypeDOS.forEach(standingbookTypeDO -> {
-            Long sonId = standingbookTypeDO.getId();
-            pageReqVO.put("typeId", String.valueOf(sonId));
-            List<StandingbookDO> standingbookDOS = getStandingbookList(pageReqVO);
-            result.addAll(standingbookDOS);
-        });
-        return result;
+        // 取出分类ids当成条件，去复用的方法中进行条件查询台账。
+        List<Long> sbTypeIds = sbTypeDOS.stream()
+                .map(StandingbookTypeDO::getId)
+                .collect(Collectors.toList());
+        String idsString = sbTypeIds.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(StringPool.COMMA));
+        pageReqVO.put(ATTR_SB_TYPE_ID,idsString);
+        pageReqVO.remove(SB_TYPE_ATTR_TOP_TYPE);
+        // 多条件查询台账
+        return getStandingbookList(pageReqVO);
+
     }
 
     @Override

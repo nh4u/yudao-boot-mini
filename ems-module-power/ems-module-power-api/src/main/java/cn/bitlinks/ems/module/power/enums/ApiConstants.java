@@ -47,6 +47,7 @@ public class ApiConstants {
     public static final String SYSTEM_CREATE ="系统创建";
     public static final String PARENT_ATTR_AUTO ="父节点属性自动生成";
     // 台账
+    public static final String SB_TYPE_ATTR_TOP_TYPE="topType";
     public static final String ATTR_STAGE ="stage";
     public static final String ATTR_TYPE_ID ="typeId";
     public static final String ATTR_SB_TYPE_ID ="standingbookTypeId";
