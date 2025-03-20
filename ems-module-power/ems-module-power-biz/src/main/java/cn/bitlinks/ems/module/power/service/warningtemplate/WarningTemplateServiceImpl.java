@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.warningtemplate;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.warningtemplate.vo.WarningTemplatePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.warningtemplate.vo.WarningTemplateSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warningtemplate.WarningTemplateDO;
@@ -117,6 +118,17 @@ public class WarningTemplateServiceImpl implements WarningTemplateService {
         List<WarningTemplateDO> templateList = warningTemplateMapper.selectBatchIds(result);
 
         return templateList.stream().map(WarningTemplateDO::getCode).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<WarningTemplateDO> getWarningTemplateList(Integer type, String name) {
+        if(type == null) {
+            throw exception(WARNING_STRATEGY_CONDITION_TYPE);
+        }
+        return warningTemplateMapper.selectList(new LambdaQueryWrapperX<WarningTemplateDO>()
+                    .likeIfPresent(WarningTemplateDO::getName, name)
+                    .eq(WarningTemplateDO::getType, type)
+                    .orderByDesc(WarningTemplateDO::getCreateTime));
     }
 
     @VisibleForTesting

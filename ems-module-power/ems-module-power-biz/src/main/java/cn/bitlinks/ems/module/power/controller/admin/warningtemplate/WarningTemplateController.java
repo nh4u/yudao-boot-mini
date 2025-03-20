@@ -85,6 +85,14 @@ public class WarningTemplateController {
         return success(BeanUtils.toBean(pageResult, WarningTemplateRespVO.class));
     }
 
+    @GetMapping("/listByType")
+    @Operation(summary = "站内信/邮件模板列表，模板名称 模糊搜索，type：0-站内信 1-邮件")
+    @PreAuthorize("@ss.hasPermission('power:warning-template:query')")
+    public CommonResult<List<WarningTemplateRespVO>> getWarningTemplateList(@RequestParam Integer type, @RequestParam String name) {
+        List<WarningTemplateDO> result = warningTemplateService.getWarningTemplateList(type, name);
+        return success(BeanUtils.toBean(result, WarningTemplateRespVO.class));
+    }
+
     @GetMapping("/export-excel")
     @Operation(summary = "导出告警模板 Excel")
     @PreAuthorize("@ss.hasPermission('power:warning-template:export')")

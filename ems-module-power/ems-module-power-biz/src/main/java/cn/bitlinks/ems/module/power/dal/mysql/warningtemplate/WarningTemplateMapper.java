@@ -7,6 +7,8 @@ import cn.bitlinks.ems.module.power.controller.admin.warningtemplate.vo.WarningT
 import cn.bitlinks.ems.module.power.dal.dataobject.warningtemplate.WarningTemplateDO;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.List;
+
 /**
  * 告警模板 Mapper
  *
@@ -22,7 +24,7 @@ public interface WarningTemplateMapper extends BaseMapperX<WarningTemplateDO> {
                 .likeIfPresent(WarningTemplateDO::getTitle, reqVO.getTitle())
                 .eq(WarningTemplateDO::getType, reqVO.getType())
                 .betweenIfPresent(WarningTemplateDO::getCreateTime, reqVO.getCreateTime())
-                .orderByDesc(WarningTemplateDO::getId));
+                .orderByDesc(WarningTemplateDO::getCreateTime));
     }
 
     default WarningTemplateDO selectByCode(Integer type, String code) {

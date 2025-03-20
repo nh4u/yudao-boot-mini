@@ -64,4 +64,11 @@ public interface WarningTemplateService {
      */
     List<String> queryUsedByStrategy(List<Long> ids);
 
+    /**
+     * 查询告警模板列表(全部）
+     * @param type 模板类型
+     * @param name 模板名称
+     * @return 列表集合
+     */
+    List<WarningTemplateDO> getWarningTemplateList(Integer type, String name) ;
 }
