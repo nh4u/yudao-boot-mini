@@ -21,6 +21,7 @@ public interface VoucherMapper extends BaseMapperX<VoucherDO> {
         LambdaQueryWrapperX<VoucherDO> queryWrapper = new LambdaQueryWrapperX<VoucherDO>()
                 .eqIfPresent(VoucherDO::getCode, reqVO.getCode())
                 .likeIfPresent(VoucherDO::getName, reqVO.getName())
+                .likeIfPresent(VoucherDO::getAttention, reqVO.getAttention())
                 .eqIfPresent(VoucherDO::getEnergyId, reqVO.getEnergyId())
                 .likeIfPresent(VoucherDO::getEnergyName, reqVO.getEnergyName())
                 .betweenIfPresent(VoucherDO::getPurchaseTime, reqVO.getPurchaseTime())

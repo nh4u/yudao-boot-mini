@@ -40,6 +40,9 @@ public class VoucherPageReqVO extends PageParam {
     @Schema(description = "用量")
     private BigDecimal[] usage;
 
+    @Schema(description = "经办人")
+    private String attention;
+
     @Schema(description = "更新时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] updateTime;
