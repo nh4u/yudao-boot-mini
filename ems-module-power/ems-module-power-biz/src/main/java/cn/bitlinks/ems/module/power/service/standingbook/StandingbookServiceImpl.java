@@ -5,14 +5,15 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.AssociationData;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
-import cn.bitlinks.ems.module.power.dal.dataobject.deviceassociationconfiguration.DeviceAssociationConfigurationDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.measurementdevice.MeasurementDeviceDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
+import cn.bitlinks.ems.module.power.dal.mysql.measurementassociation.MeasurementAssociationMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.measurementdevice.MeasurementDeviceMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
@@ -87,6 +88,10 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Resource
     private StandingbookAttributeMapper standingbookAttributeMapper;
+    @Resource
+    private MeasurementDeviceMapper measurementDeviceMapper;
+    @Resource
+    private MeasurementAssociationMapper measurementAssociationMapper;
 
     @Transactional
     public Long create(StandingbookSaveReqVO createReqVO) {
@@ -145,13 +150,12 @@ public class StandingbookServiceImpl implements StandingbookService {
         String idsString = sbTypeIds.stream()
                 .map(String::valueOf)
                 .collect(Collectors.joining(StringPool.COMMA));
-        pageReqVO.put(ATTR_SB_TYPE_ID,idsString);
+        pageReqVO.put(ATTR_SB_TYPE_ID, idsString);
         pageReqVO.remove(SB_TYPE_ATTR_TOP_TYPE);
         // 多条件查询台账
         return getStandingbookList(pageReqVO);
 
     }
-
 
 
     @Override
@@ -403,86 +407,130 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Override
     public List<StandingbookWithAssociations> getStandingbookListWithAssociations(Map<String, String> pageReqVO) {
         // 获取台账列表
-        // List<StandingbookDO> standingbookDOS = getStandingbookListBy(pageReqVO);
         List<StandingbookDO> standingbookDOS = getStandingbookList(pageReqVO);
 
+        // 查询所有台账id列表
+        List<Long> sbIds = standingbookDOS.stream()
+                .map(StandingbookDO::getId)
+                .collect(Collectors.toList());
+        // 查询所有台账分类id列表
+        List<Long> sbTypeIds = standingbookDOS.stream()
+                .map(StandingbookDO::getTypeId)
+                .collect(Collectors.toList());
+        List<StandingbookTypeDO> typeList = standingbookTypeMapper.selectList(new LambdaQueryWrapper<StandingbookTypeDO>()
+                .in(StandingbookTypeDO::getId, sbTypeIds));
+        Map<Long, StandingbookTypeDO> typeMap = typeList.stream()
+                .collect(Collectors.toMap(
+                        StandingbookTypeDO::getId,
+                        standingbookTypeDO -> standingbookTypeDO
+                ));
 
+        // 查询所有台账关联的下级计量器具
+        List<MeasurementAssociationDO> assosicationSbList = measurementAssociationMapper.selectList(new LambdaQueryWrapper<MeasurementAssociationDO>()
+                .in(MeasurementAssociationDO::getMeasurementInstrumentId, sbIds)
+        );
+        // 所有下级计量器具分组属性map
+        Map<Long, List<StandingbookAttributeDO>> measurementAttrsMap = new HashMap<>();
+        Map<Long, List<MeasurementAssociationDO>> assosicationSbMap = new HashMap<>();
+        if (CollUtil.isNotEmpty(assosicationSbList)) {
+            // 分组 台账id-下级计量器具们
+            assosicationSbMap = assosicationSbList.stream()
+                    .collect(Collectors.groupingBy(MeasurementAssociationDO::getMeasurementInstrumentId));
+            List<Long> measurementIds = assosicationSbList.stream()
+                    .map(MeasurementAssociationDO::getMeasurementId)
+                    .collect(Collectors.toList());
+            measurementAttrsMap = standingbookAttributeService.getAttributesBySbIds(measurementIds);
+
+        }
+        // 查询所有台账关联的上级设备
+        List<MeasurementDeviceDO> assosicationDeviceList = measurementDeviceMapper.selectList(new LambdaQueryWrapper<MeasurementDeviceDO>()
+                .in(MeasurementDeviceDO::getMeasurementInstrumentId, sbIds)
+        );
+        Map<Long, List<StandingbookAttributeDO>> deviceAttrsMap = new HashMap<>();
+        Map<Long, List<MeasurementDeviceDO>> assosicationDeviceMap = new HashMap<>();
+        if (CollUtil.isNotEmpty(assosicationDeviceList)) {
+            // 分组 台账id-下级计量器具们
+            assosicationDeviceMap = assosicationDeviceList.stream()
+                    .collect(Collectors.groupingBy(MeasurementDeviceDO::getMeasurementInstrumentId));
+            List<Long> deviceIds = assosicationDeviceList.stream()
+                    .map(MeasurementDeviceDO::getDeviceId)
+                    .collect(Collectors.toList());
+            deviceAttrsMap = standingbookAttributeService.getAttributesBySbIds(deviceIds);
+        }
+
+        // 返回结果
         List<StandingbookWithAssociations> result = new ArrayList<>();
 
+        // 填充返回结果
         for (StandingbookDO standingbookDO : standingbookDOS) {
-            if (standingbookDO == null || standingbookDO.getId() == null) {
-                continue; // 跳过无效记录
-            }
 
+            List<StandingbookAttributeDO> attributes = standingbookDO.getChildren();
+
+            Optional<StandingbookAttributeDO> measuringInstrumentNameOptional = attributes.stream()
+                    .filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode()))
+                    .findFirst();
+            Optional<StandingbookAttributeDO> measuringInstrumentIdOptional = attributes.stream()
+                    .filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode()))
+                    .findFirst();
+            Optional<StandingbookAttributeDO> tableTypeOptional = attributes.stream()
+                    .filter(attribute -> ATTR_TABLE_TYPE.equals(attribute.getCode()))
+                    .findFirst();
+            Optional<StandingbookAttributeDO> valueTypeOptional = attributes.stream()
+                    .filter(attribute -> ATTR_VALUE_TYPE.equals(attribute.getCode()))
+                    .findFirst();
             Long StandingbookId = standingbookDO.getId();
-            String StandingbookName = standingbookTypeMapper.selectAttributeValueByCode(StandingbookId, "measuringInstrumentName");
-            String measuringInstrumentId = standingbookTypeMapper.selectAttributeValueByCode(StandingbookId, "measuringInstrumentId");
-            String tableType = standingbookTypeMapper.selectAttributeValueByCode(StandingbookId, "tableType");
-            String valueType = standingbookTypeMapper.selectAttributeValueByCode(StandingbookId, "valueType");
-            Integer stage = standingbookDO.getStage();
-            String labelInfo = standingbookDO.getLabelInfo();
 
             StandingbookWithAssociations standingbookWithAssociations = new StandingbookWithAssociations();
             standingbookWithAssociations.setStandingbookId(StandingbookId);
-            standingbookWithAssociations.setStandingbookName(StandingbookName);
+            standingbookWithAssociations.setStandingbookName(measuringInstrumentNameOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
             standingbookWithAssociations.setStandingbookTypeId(standingbookDO.getTypeId());
-            StandingbookTypeDO standingbookType = standingbookTypeMapper.selectById(standingbookDO.getTypeId());
-            standingbookWithAssociations.setStandingbookTypeName(standingbookType.getName());
-            standingbookWithAssociations.setMeasuringInstrumentId(measuringInstrumentId);
-            standingbookWithAssociations.setTableType(tableType);
-            standingbookWithAssociations.setValueType(valueType);
-            standingbookWithAssociations.setStage(stage);
-            standingbookWithAssociations.setLabelInfo(labelInfo);
+            standingbookWithAssociations.setStandingbookTypeName(typeMap.get(standingbookDO.getTypeId()).getName());
+            standingbookWithAssociations.setMeasuringInstrumentId(measuringInstrumentIdOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
+            standingbookWithAssociations.setTableType(tableTypeOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
+            standingbookWithAssociations.setValueType(valueTypeOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
+            standingbookWithAssociations.setStage(standingbookDO.getStage());
+            standingbookWithAssociations.setLabelInfo(standingbookDO.getLabelInfo());
 
             // 获取关联下级计量器具和上级设备
-             DeviceAssociationConfigurationDO association = deviceAssociationConfigurationService.getDeviceAssociationConfigurationByMeasurementInstrumentId(standingbookDO.getId());
-            // 解析 measurement 和 device 字段
-            if (association != null) {
-                if (association.getMeasurementIds() != null) {
-                    String measurementIdList = association.getMeasurementIds();
-                    List<AssociationData> children = new ArrayList<>();
+            List<MeasurementAssociationDO> measurementAssociationDOS = assosicationSbMap.get(StandingbookId);
+            List<AssociationData> children = new ArrayList<>();
+            if (CollUtil.isNotEmpty(measurementAssociationDOS)) {
+                Map<Long, List<StandingbookAttributeDO>> finalMeasurementAttrsMap = measurementAttrsMap;
+                measurementAssociationDOS.forEach(association -> {
+                    AssociationData associationData = new AssociationData();
+                    associationData.setStandingbookId(association.getMeasurementInstrumentId());
 
-                    // 1. 清理非法字符
-                    String cleanStr = measurementIdList.replaceAll("[^\\d,-]", "");
+                    // 查询下级计量器具名称、编码
+                    List<StandingbookAttributeDO> attributeDOS = finalMeasurementAttrsMap.get(association.getMeasurementInstrumentId());
+                    Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream()
+                            .filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode()))
+                            .findFirst();
+                    Optional<StandingbookAttributeDO> codeOptional = attributeDOS.stream()
+                            .filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode()))
+                            .findFirst();
 
-                    // 2. 分割并转换
-                    if (!cleanStr.isEmpty()) {
-                        String[] idArray = cleanStr.split(",");
-                        for (String idStr : idArray) {
-                            if (!idStr.trim().isEmpty()) {
-                                Long measurementId = Long.parseLong(idStr.trim());
-                                StandingbookDO measurementAttribute = getStandingbook(measurementId);
-                                if (measurementAttribute != null) {
-                                    AssociationData associationData = new AssociationData();
-                                    String name = standingbookTypeMapper.selectAttributeValueByCode(
-                                            measurementAttribute.getId(), "measuringInstrumentName");
-                                    associationData.setStandingbookId(measurementAttribute.getId());
-                                    associationData.setStandingbookName(name);
-                                    String codeValue = standingbookTypeMapper.selectAttributeValueByCode(
-                                            measurementAttribute.getId(), "measuringInstrumentId");
-                                    String stageValue = standingbookTypeMapper.selectAttributeValueByCode(
-                                            measurementAttribute.getId(), "stage");
-                                    associationData.setStandingbookCode(codeValue);
-                                    associationData.setStage(stageValue);
-                                    children.add(associationData);
-                                }
-                            }
-                        }
-                    }
-                    standingbookWithAssociations.setChildren(children);
-                }
-
-                if (association.getDeviceId() != null) {
-                    Long deviceId = association.getDeviceId();
-                    String codeValue = standingbookTypeMapper.selectAttributeValueByCode(deviceId, "equipmentId");
-                    String name = standingbookTypeMapper.selectAttributeValueByCode(deviceId, "equipmentName");
-                    standingbookWithAssociations.setDeviceId(deviceId);
-                    standingbookWithAssociations.setDeviceName(name);
-                    standingbookWithAssociations.setDeviceCode(codeValue);
-                }
+                    associationData.setStandingbookName(nameOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
+                    associationData.setStandingbookCode(codeOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
+                    children.add(associationData);
+                });
+                standingbookWithAssociations.setChildren(children);
             }
-
-            result.add(standingbookWithAssociations);
+            List<MeasurementDeviceDO> deviceDOList = assosicationDeviceMap.get(StandingbookId);
+            if (CollUtil.isNotEmpty(deviceDOList)) {
+                // 上级设备-台账id
+                Long deviceId = deviceDOList.get(0).getMeasurementInstrumentId();
+                // 查询上级设备编码
+                List<StandingbookAttributeDO> attributeDOS = deviceAttrsMap.get(deviceId);
+                Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream()
+                        .filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode()))
+                        .findFirst();
+                Optional<StandingbookAttributeDO> codeOptional = attributeDOS.stream()
+                        .filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode()))
+                        .findFirst();
+                standingbookWithAssociations.setDeviceId(deviceId);
+                standingbookWithAssociations.setDeviceName(nameOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
+                standingbookWithAssociations.setDeviceCode(codeOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
+            }
         }
 
         return result;

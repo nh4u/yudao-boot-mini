@@ -122,4 +122,11 @@ public interface StandingbookAttributeService {
      * @return
      */
     List<StandingbookAttributeRespVO> getByTypeId(Long typeId);
+
+    /**
+     * 查询台账关联的台账属性列表
+     * @param sbIds 台账ids
+     * @return 台账属性列表分组列表
+     */
+    Map<Long, List<StandingbookAttributeDO>> getAttributesBySbIds(List<Long> sbIds);
 }

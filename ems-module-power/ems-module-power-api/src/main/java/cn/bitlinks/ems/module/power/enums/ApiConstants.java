@@ -54,6 +54,9 @@ public class ApiConstants {
     public static final String ATTR_CREATE_TIME ="createTime";
     public static final String ATTR_LABEL_INFO ="labelInfo";
     public static final String ATTR_LABEL_INFO_PREFIX ="label_";
+    public static final String ATTR_TABLE_TYPE ="tableType";
+    public static final String ATTR_VALUE_TYPE ="valueType";
+    public static final String ATTR_MEASURING_INSTRUMENT_MAME ="measuringInstrumentName";
     public static final String ATTR_MEASURING_INSTRUMENT_ID ="measuringInstrumentId";
     public static final String ATTR_EQUIPMENT_ID ="equipmentId";
     //多选下拉框
