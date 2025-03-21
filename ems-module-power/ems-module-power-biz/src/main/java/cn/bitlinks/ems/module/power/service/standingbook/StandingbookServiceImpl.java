@@ -21,7 +21,6 @@ import cn.bitlinks.ems.module.power.enums.ApiConstants;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
 import cn.bitlinks.ems.module.power.enums.standingbook.StandingbookTypeTopEnum;
-import cn.bitlinks.ems.module.power.service.deviceassociationconfiguration.DeviceAssociationConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
 import cn.hutool.core.collection.CollUtil;
@@ -83,8 +82,6 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Resource
     private StandingbookTypeMapper standingbookTypeMapper;
 
-    @Resource
-    private DeviceAssociationConfigurationService deviceAssociationConfigurationService;
 
     @Resource
     private StandingbookAttributeMapper standingbookAttributeMapper;
@@ -160,12 +157,54 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     public List<StandingbookDO> listSbAllWithAssociations(StandingbookAssociationReqVO reqVO) {
-        // 查询出可关联的下级计量器具
-        // 妈呀巨难这个表设计！！！！！！！！！！！！！！！！！！！！！！！！！！！
-        //
-        // 查询出可关联的设备
-        // Map<String,String> pageReqVO = reqVO.getPageReqVO();
-        return null;
+
+        Map<String,String> paramMap = reqVO.getPageReqVO();
+        if(CollUtil.isEmpty(paramMap)){
+            paramMap = new HashMap<>();
+        }
+        paramMap.put(SB_TYPE_ATTR_TOP_TYPE, reqVO.getTopType() + "");
+
+        Long sbId = reqVO.getSbId();
+
+        List<StandingbookDO> sbList = listSbAll(paramMap);
+
+
+        // 如果是重点设备的话，可以直接拉出来所有设备，任意关联
+        // 如果是计量器具的话，需要根据已关联的计量器具进行筛选，筛选出该计量器具可关联的计量器具列表
+        List<MeasurementAssociationDO> list = measurementAssociationMapper.selectList();
+        Set<Long> parentIds = new HashSet<>(); // 使用 Set 去重
+        findAllParentsRecursive(sbId, list, parentIds);
+        parentIds.add(sbId);
+
+        // 从 sbList 中筛选掉 id 在 已关联的parentIds 中的元素
+        if (CollUtil.isEmpty(sbList)) {
+            return new ArrayList<>();
+        }
+
+        return sbList.stream()
+                .filter(standingbookDO -> !parentIds.contains(standingbookDO.getId()))
+                .collect(Collectors.toList());
+
+    }
+
+    /**
+     * 递归查询出上级计量器具的id
+     *
+     * @param childId      当前计量器具id
+     * @param associations 所有计量器具关联关系
+     * @param parentIds    上级计量器具id集合
+     */
+    private static void findAllParentsRecursive(Long childId, List<MeasurementAssociationDO> associations, Set<Long> parentIds) {
+        for (MeasurementAssociationDO association : associations) {
+            if (association.getMeasurementId().equals(childId)) {
+                Long parentId = association.getMeasurementInstrumentId();
+                if (parentId != null && !parentIds.contains(parentId)) {
+                    parentIds.add(parentId); // 添加父节点 ID
+                    // 递归查找父节点的父节点
+                    findAllParentsRecursive(parentId, associations, parentIds);
+                }
+            }
+        }
     }
 
     @Override

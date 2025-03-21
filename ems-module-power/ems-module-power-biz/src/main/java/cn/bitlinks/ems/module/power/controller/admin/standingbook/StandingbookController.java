@@ -98,7 +98,7 @@ public class StandingbookController {
         return success(BeanUtils.toBean(list, StandingbookRespVO.class));
     }
     @PostMapping("/listSbAll")
-    @Operation(summary = "获得计量器具（topType=2）或者重点设备（topType=1）或者全部台账列表")
+    @Operation(summary = "获得全部台账列表")
     @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
     public CommonResult<List<StandingbookRespVO>> listSbAll(@RequestBody Map<String, String> pageReqVO) {
         List<StandingbookDO> list = standingbookService.listSbAll(pageReqVO);

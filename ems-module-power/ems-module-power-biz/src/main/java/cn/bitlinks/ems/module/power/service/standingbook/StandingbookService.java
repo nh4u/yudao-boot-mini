@@ -81,7 +81,7 @@ public interface StandingbookService {
     Long count(Long typeId);
 
     /**
-     * 获取计量器具/重点设备/全部的台账列表（topType）（标签、属性、分类ids、分类id、环节、创建时间）
+     * 获取全部的台账列表（标签、属性、分类ids、分类id、环节、创建时间）
      * @param pageReqVO 查询条件
      * @return 台账列表
      */
