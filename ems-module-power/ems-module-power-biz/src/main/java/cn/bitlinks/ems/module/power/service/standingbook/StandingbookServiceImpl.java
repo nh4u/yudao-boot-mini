@@ -8,10 +8,7 @@ import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfigurat
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.ScaledImageDataVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookPageReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.deviceassociationconfiguration.DeviceAssociationConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
@@ -153,6 +150,18 @@ public class StandingbookServiceImpl implements StandingbookService {
         // 多条件查询台账
         return getStandingbookList(pageReqVO);
 
+    }
+
+
+
+    @Override
+    public List<StandingbookDO> listSbAllWithAssociations(StandingbookAssociationReqVO reqVO) {
+        // 查询出可关联的下级计量器具
+        // 妈呀巨难这个表设计！！！！！！！！！！！！！！！！！！！！！！！！！！！
+        //
+        // 查询出可关联的设备
+        // Map<String,String> pageReqVO = reqVO.getPageReqVO();
+        return null;
     }
 
     @Override
@@ -353,12 +362,14 @@ public class StandingbookServiceImpl implements StandingbookService {
         }
         // 根据台账id、台账属性条件查询台账属性
         List<Long> attrSbIds = standingbookAttributeService.getStandingbookIdByCondition(childrenConditions, sbIds);
-        if (CollUtil.isEmpty(attrSbIds)) {
+
+        sbIds.retainAll(attrSbIds);
+        if (CollUtil.isEmpty(sbIds)) {
             return new ArrayList<>();
         }
         // 组装每个台账节点结构，可与上合起来优化，暂不敢动
         List<StandingbookDO> result = new ArrayList<>();
-        attrSbIds.forEach(sbId -> result.add(getStandingbook(sbId)));
+        sbIds.forEach(sbId -> result.add(getStandingbook(sbId)));
 
         return result;
     }
@@ -402,8 +413,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             if (standingbookDO == null || standingbookDO.getId() == null) {
                 continue; // 跳过无效记录
             }
-            // 获取关联设备信息
-            DeviceAssociationConfigurationDO association = deviceAssociationConfigurationService.getDeviceAssociationConfigurationByMeasurementInstrumentId(standingbookDO.getId());
+
             Long StandingbookId = standingbookDO.getId();
             String StandingbookName = standingbookTypeMapper.selectAttributeValueByCode(StandingbookId, "measuringInstrumentName");
             String measuringInstrumentId = standingbookTypeMapper.selectAttributeValueByCode(StandingbookId, "measuringInstrumentId");
@@ -424,7 +434,8 @@ public class StandingbookServiceImpl implements StandingbookService {
             standingbookWithAssociations.setStage(stage);
             standingbookWithAssociations.setLabelInfo(labelInfo);
 
-
+            // 获取关联下级计量器具和上级设备
+             DeviceAssociationConfigurationDO association = deviceAssociationConfigurationService.getDeviceAssociationConfigurationByMeasurementInstrumentId(standingbookDO.getId());
             // 解析 measurement 和 device 字段
             if (association != null) {
                 if (association.getMeasurementIds() != null) {

@@ -40,7 +40,7 @@ public interface DeviceAssociationConfigurationMapper extends BaseMapperX<Device
     }
 
     @Select("SELECT * FROM ems_device_association_configuration WHERE energy_id = #{energyId} AND measurement_instrument_id = #{instrumentId}")
-    DeviceAssociationConfigurationSaveReqVO selectByEnergyAndInstrument(
+    MeasurementAssociationSaveReqVO selectByEnergyAndInstrument(
             @Param("energyId") Long energyId,
             @Param("instrumentId") Long measurementInstrumentId
     );

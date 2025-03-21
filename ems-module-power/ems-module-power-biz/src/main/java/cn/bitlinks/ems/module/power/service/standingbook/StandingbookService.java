@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.standingbook;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookAssociationReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookSaveReqVO;
@@ -85,4 +86,11 @@ public interface StandingbookService {
      * @return 台账列表
      */
     List<StandingbookDO> listSbAll(Map<String, String> pageReqVO );
+
+    /**
+     * 关联下级计量器具/关联设备（需要防止循环嵌套关联）
+     * @param reqVO 查询条件
+     * @return 可关联的台账列表
+     */
+    List<StandingbookDO> listSbAllWithAssociations(StandingbookAssociationReqVO reqVO);
 }

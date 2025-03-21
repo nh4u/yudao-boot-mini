@@ -21,8 +21,8 @@ public interface ErrorCodeConstants {
     ErrorCode ENERGY_CONFIGURATION_STANDINGBOOK_EXISTS = new ErrorCode(1_001_301_008, "该能源关联计量器具，不可进行删除");
     ErrorCode ENERGY_CONFIGURATION_STANDINGBOOK_UNIT = new ErrorCode(1_001_301_009, "该能源已有参数单位，且已关联计量器具，不可进行修改");
 
-    //========== 设备关联配置 1-001-301-004 ==========
-    ErrorCode DEVICE_ASSOCIATION_CONFIGURATION_NOT_EXISTS = new ErrorCode(1_001_301_004, "设备关联配置不存在");
+    //========== 关联下级计量和关联上级设备 配置 1-001-101-000 ==========
+    ErrorCode DEVICE_ASSOCIATION_CONFIGURATION_NOT_EXISTS = new ErrorCode(1_001_101_001, "设备关联配置不存在");
 
     //========== 数采补录 1-001-301-005 ==========
     ErrorCode ADDITIONAL_RECORDING_NOT_EXISTS = new ErrorCode(1_001_301_005, "补录不存在");

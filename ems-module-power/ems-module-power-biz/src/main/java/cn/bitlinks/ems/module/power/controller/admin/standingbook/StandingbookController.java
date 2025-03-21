@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookAssociationReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
@@ -104,6 +105,13 @@ public class StandingbookController {
         return success(BeanUtils.toBean(list, StandingbookRespVO.class));
     }
 
+    @PostMapping("/listSbAllWithAssociations")
+    @Operation(summary = "关联下级计量器具/关联设备接口（topType=2）或者重点设备（topType=1）")
+    @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
+    public CommonResult<List<StandingbookRespVO>> listSbAllWithAssociations(@RequestBody StandingbookAssociationReqVO reqVO) {
+        List<StandingbookDO> list = standingbookService.listSbAllWithAssociations(reqVO);
+        return success(BeanUtils.toBean(list, StandingbookRespVO.class));
+    }
 //    @PostMapping("/listBy")
 //    @Operation(summary = "根据条件获得台账列表")
 //    @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
