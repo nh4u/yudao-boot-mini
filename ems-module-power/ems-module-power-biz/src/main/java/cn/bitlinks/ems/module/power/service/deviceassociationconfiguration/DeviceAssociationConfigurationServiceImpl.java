@@ -41,8 +41,8 @@ public class DeviceAssociationConfigurationServiceImpl implements DeviceAssociat
         if (CollUtil.isEmpty(list)) {
             ids.forEach(id -> {
                 MeasurementAssociationDO measurementAssociationDO = new MeasurementAssociationDO();
-                measurementAssociationDO.setMeasurementId(createReqVO.getMeasurementInstrumentId());
-                measurementAssociationDO.setMeasurementInstrumentId(id);
+                measurementAssociationDO.setMeasurementId(id);
+                measurementAssociationDO.setMeasurementInstrumentId(createReqVO.getMeasurementInstrumentId());
                 list.add(measurementAssociationDO);
             });
             measurementAssociationMapper.insertBatch(list);
@@ -67,8 +67,8 @@ public class DeviceAssociationConfigurationServiceImpl implements DeviceAssociat
         List<MeasurementAssociationDO> toAddList = new ArrayList<>();
         toAddIds.forEach(id -> {
             MeasurementAssociationDO measurementAssociationDO = new MeasurementAssociationDO();
-            measurementAssociationDO.setMeasurementId(createReqVO.getMeasurementInstrumentId());
-            measurementAssociationDO.setMeasurementInstrumentId(id);
+            measurementAssociationDO.setMeasurementId(id);
+            measurementAssociationDO.setMeasurementInstrumentId(createReqVO.getMeasurementInstrumentId());
             toAddList.add(measurementAssociationDO);
         });
         measurementAssociationMapper.insertBatch(toAddList);

@@ -15,5 +15,4 @@ public class MeasurementAssociationSaveReqVO {
     @Schema(description = "关联下级计量")
     private List<Long> measurementIds;
 
-
 }

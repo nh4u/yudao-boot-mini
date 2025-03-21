@@ -498,10 +498,10 @@ public class StandingbookServiceImpl implements StandingbookService {
                 Map<Long, List<StandingbookAttributeDO>> finalMeasurementAttrsMap = measurementAttrsMap;
                 measurementAssociationDOS.forEach(association -> {
                     AssociationData associationData = new AssociationData();
-                    associationData.setStandingbookId(association.getMeasurementInstrumentId());
+                    associationData.setStandingbookId(association.getMeasurementId());
 
                     // 查询下级计量器具名称、编码
-                    List<StandingbookAttributeDO> attributeDOS = finalMeasurementAttrsMap.get(association.getMeasurementInstrumentId());
+                    List<StandingbookAttributeDO> attributeDOS = finalMeasurementAttrsMap.get(association.getMeasurementId());
                     Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream()
                             .filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode()))
                             .findFirst();
@@ -518,19 +518,20 @@ public class StandingbookServiceImpl implements StandingbookService {
             List<MeasurementDeviceDO> deviceDOList = assosicationDeviceMap.get(StandingbookId);
             if (CollUtil.isNotEmpty(deviceDOList)) {
                 // 上级设备-台账id
-                Long deviceId = deviceDOList.get(0).getMeasurementInstrumentId();
+                Long deviceId = deviceDOList.get(0).getDeviceId();
                 // 查询上级设备编码
                 List<StandingbookAttributeDO> attributeDOS = deviceAttrsMap.get(deviceId);
                 Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream()
-                        .filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode()))
+                        .filter(attribute -> ATTR_EQUIPMENT_NAME.equals(attribute.getCode()))
                         .findFirst();
                 Optional<StandingbookAttributeDO> codeOptional = attributeDOS.stream()
-                        .filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode()))
+                        .filter(attribute -> ATTR_EQUIPMENT_ID.equals(attribute.getCode()))
                         .findFirst();
                 standingbookWithAssociations.setDeviceId(deviceId);
                 standingbookWithAssociations.setDeviceName(nameOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
                 standingbookWithAssociations.setDeviceCode(codeOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
             }
+            result.add(standingbookWithAssociations);
         }
 
         return result;
