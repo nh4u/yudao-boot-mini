@@ -297,7 +297,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
                     .formulaScale(StrUtil.isNotEmpty(coalScale) ? Integer.valueOf(coalScale) : null)
                     .formulaType(formulaType).build();
         } else {
-            // 折标煤公式
+            // 用能成本公式
             String unitPriceScale = updateReqVO.getUnitPriceScale();
             daParamFormulaDO = DaParamFormulaDO.builder()
                     .energyFormula(updateReqVO.getUnitPriceFormula())

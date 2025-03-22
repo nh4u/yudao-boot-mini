@@ -31,7 +31,7 @@ public class DaParamFormulaRespVO {
     @ExcelProperty("能源参数计算公式")
     private String energyFormula;
 
-    @Schema(description = "公式类型")
+    @Schema(description = "公式类型 1折标煤公式，2用能成本公式")
     @ExcelProperty("公式类型")
     private Integer formulaType;
 

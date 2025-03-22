@@ -51,6 +51,8 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         // 校验名字的唯一性
 //        validateStandingbookTypeNameUnique(null, createReqVO.getSuperId(), createReqVO.getName());
 
+        // 校验允许最多五层节点
+        validateOnlyFive(createReqVO.getSuperId());
         // 插入
         StandingbookTypeDO standingbookType = BeanUtils.toBean(createReqVO, StandingbookTypeDO.class);
         standingbookTypeMapper.insert(standingbookType);
@@ -156,6 +158,25 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         }
     }
 
+    private void validateOnlyFive(Long superId) {
+
+        if (Objects.isNull(superId)){
+            return;
+        }
+
+        for (int i = 0; i < Short.MAX_VALUE; i++) {
+            StandingbookTypeDO standingbookTypeDO = standingbookTypeMapper.selectById(superId);
+            if (standingbookTypeDO == null) {
+                break;
+            }
+
+            // 允许最多五层节点
+            if (i > 3){
+                throw exception(STANDINGBOOK_TYPE_ONLY_FIVE);
+            }
+            superId = standingbookTypeDO.getSuperId();
+        }
+    }
 
     @Override
     public StandingbookTypeDO getStandingbookType(Long id) {

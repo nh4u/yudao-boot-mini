@@ -27,7 +27,7 @@ public class DaParamFormulaSaveReqVO {
     @Schema(description = "能源参数计算公式")
     private String energyFormula;
 
-    @Schema(description = "公式类型")
+    @Schema(description = "公式类型 1折标煤公式，2用能成本公式")
     private Integer formulaType;
 
     @Schema(description = "公式小数点")

@@ -44,6 +44,7 @@ public interface ErrorCodeConstants {
     ErrorCode STANDINGBOOK_CODE_REPEAT_CHILDREN = new ErrorCode(1_001_202_009, "模板编码与子级台账类型编码重复，请修改后再提交");
     ErrorCode STANDINGBOOK_CODE_EXISTS = new ErrorCode(1_001_202_010, "台账编码已存在，请检查后提交");
     ErrorCode STANDINGBOOK_NO_ATTR = new ErrorCode(1_001_202_011, "台账没有台账属性");
+    ErrorCode STANDINGBOOK_TYPE_ONLY_FIVE = new ErrorCode(1_001_202_002, "最多允许五层节点");
     // ========== 标签配置 ==========
     ErrorCode LABEL_CONFIG_NOT_EXISTS = new ErrorCode(1_001_401_001, "配置标签不存在");
     ErrorCode LABEL_CONFIG_REACH_LIMIT = new ErrorCode(1_001_401_002, "单层标签超过限制");
