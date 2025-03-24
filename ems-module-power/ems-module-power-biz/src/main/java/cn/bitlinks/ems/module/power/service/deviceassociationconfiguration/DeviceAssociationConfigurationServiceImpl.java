@@ -59,7 +59,7 @@ public class DeviceAssociationConfigurationServiceImpl implements DeviceAssociat
 
         // 2. 找出需要新增的关联 ID
         List<Long> toAddIds = ids.stream()
-                .filter(id -> list.stream().noneMatch(association -> association.getId().equals(id)))
+                .filter(id -> list.stream().noneMatch(association -> association.getMeasurementId().equals(id)))
                 .collect(Collectors.toList());
         if (CollUtil.isEmpty(toAddIds)) {
             return;
