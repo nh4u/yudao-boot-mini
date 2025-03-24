@@ -6,6 +6,7 @@ import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.A
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyParameter;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
@@ -500,21 +501,22 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
 
         // 0. 获取所有计量器具关联关系
         List<MeasurementAssociationDO> measurementAssociationDOS = measurementAssociationMapper.selectList();
+        // 0.1 获取所有计量器具属性列表
         List<Long> mIds1 = measurementAssociationDOS.stream().map(MeasurementAssociationDO::getMeasurementId).collect(Collectors.toList());
         List<Long> mIds2 = measurementAssociationDOS.stream().map(MeasurementAssociationDO::getMeasurementInstrumentId).collect(Collectors.toList());
         Set<Long> allAssociationIds = new HashSet<>();
         allAssociationIds.addAll(mIds1);
         allAssociationIds.addAll(mIds2);
+        allAssociationIds.addAll(standingBookIds);
 
-        // 0.1 获取所有计量器具属性列表
-        Map<Long, List<StandingbookAttributeDO>> measureAssociationAttrMap = standingbookAttributeService.getAttributesBySbIds((List<Long>) allAssociationIds);
+        Map<Long, List<StandingbookAttributeDO>> measureAssociationAttrMap = standingbookAttributeService.getAttributesBySbIds(new ArrayList<>( allAssociationIds));
 
         // 1.根据勾引的设备查询是计量器具还是设备，如果是重点设备，找出下边的计量器具；
         List<StandingbookDO> sbs = standingbookMapper.selectList(new LambdaQueryWrapper<StandingbookDO>().in(StandingbookDO::getId, standingBookIds));
         if (CollUtil.isEmpty(sbs)) {
             return Collections.emptyList();
-
         }
+        // 1.1 查询台账对应的台账类型，
         List<Long> sbTypeIds = sbs.stream().map(StandingbookDO::getTypeId).collect(Collectors.toList());
         Map<Long, StandingbookTypeDO> typeIdMap = standingbookTypeService.getStandingbookTypeIdMap(sbTypeIds);
 
@@ -539,8 +541,9 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
     /**
      * 选择重点设备获取参数条件的树形节点
      *
-     * @param measureAssociationAttrMap 树形
+     * @param measureAssociationAttrMap 所有关联计量器具的属性列表
      * @param deviceList                设备配置列表
+     * @param measurementAssociationDOS 计量器具关联下级计量器具列表
      * @param energyConfigurationDOS    所有能源参数配置列表
      * @return 树形节点集合
      */
@@ -596,6 +599,7 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
      * 根据计量器具关联关系和计量器具 组合参数树形结构
      *
      * @param measureAttrMap            所有关联计量器具的属性列表
+     * @param pId                      父级编号
      * @param measureIds                需要构建节点的计量器具id
      * @param measurementAssociationDOS 计量器具关联下级计量器具列表
      * @param energyConfigurationDOS    能源配置列表
