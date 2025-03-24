@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration;
 
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.sun.xml.bind.v2.TODO;
 import lombok.*;
 
@@ -9,6 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -16,7 +18,7 @@ import java.util.List;
  *
  * @author bitlinks
  */
-@TableName("ems_energy_configuration")
+@TableName(value = "ems_energy_configuration", autoResultMap = true)
 @KeySequence("ems_energy_configuration_seq") // 用于 Oracle、PostgreSQL、Kingbase、DB2、H2 数据库的主键自增。如果是 MySQL 等数据库，可不写。
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -46,18 +48,20 @@ public class EnergyConfigurationDO extends BaseDO {
     private String code;
     /**
      * 能源分类
-     *
+     * <p>
      * 枚举 {@link TODO energy_classify 对应的类}
      */
     private Integer energyClassify;
     /**
      * 能源图标
      */
-    private String energyIcon;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private Map<String, String> energyIcon;
     /**
      * 能源参数
      */
-    private String energyParameter;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<EnergyParameter> energyParameter;
     /**
      * 折标煤系数
      */
@@ -80,7 +84,7 @@ public class EnergyConfigurationDO extends BaseDO {
     private LocalDateTime endTime;
     /**
      * 计费方式
-     *
+     * <p>
      * 枚举 {@link TODO billing_method 对应的类}
      */
     private Integer billingMethod;

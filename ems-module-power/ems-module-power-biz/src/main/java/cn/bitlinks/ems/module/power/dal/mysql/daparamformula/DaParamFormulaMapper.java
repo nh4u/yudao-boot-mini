@@ -20,7 +20,6 @@ public interface DaParamFormulaMapper extends BaseMapperX<DaParamFormulaDO> {
                 .eqIfPresent(DaParamFormulaDO::getEnergyId, reqVO.getEnergyId())
                 .eqIfPresent(DaParamFormulaDO::getEnergyFormula, reqVO.getEnergyFormula())
                 .eqIfPresent(DaParamFormulaDO::getFormulaType, reqVO.getFormulaType())
-                .eqIfPresent(DaParamFormulaDO::getEnergyParam, reqVO.getEnergyParam())
                 .betweenIfPresent(DaParamFormulaDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(DaParamFormulaDO::getId));
     }

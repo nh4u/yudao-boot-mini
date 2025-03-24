@@ -1,11 +1,13 @@
 package cn.bitlinks.ems.module.power.controller.admin.daparamformula.vo;
 
+import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyParameter;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * @author liumingqiang
@@ -25,7 +27,7 @@ public class DaParamFormulaRespVO {
 
     @Schema(description = "能源参数名称")
     @ExcelProperty("能源参数名称")
-    private String energyParam;
+    private List<EnergyParameter> energyParam;
 
     @Schema(description = "能源参数计算公式")
     @ExcelProperty("能源参数计算公式")

@@ -23,9 +23,6 @@ public class DaParamFormulaPageReqVO extends PageParam {
     @Schema(description = "能源id", example = "13897")
     private Long energyId;
 
-    @Schema(description = "能源参数名称")
-    private String energyParam;
-
     @Schema(description = "能源参数计算公式")
     private String energyFormula;
 

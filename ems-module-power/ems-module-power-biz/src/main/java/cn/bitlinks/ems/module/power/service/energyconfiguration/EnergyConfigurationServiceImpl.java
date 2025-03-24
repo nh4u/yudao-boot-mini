@@ -8,18 +8,15 @@ import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.Ener
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyParameter;
 import cn.bitlinks.ems.module.power.dal.mysql.daparamformula.DaParamFormulaMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.unitpriceconfiguration.UnitPriceConfigurationMapper;
-import cn.bitlinks.ems.module.power.service.daparamformula.DaParamFormulaService;
-import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.TypeReference;
 import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.alibaba.nacos.common.utils.StringUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -30,7 +27,10 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -51,7 +51,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     @Resource
     private UnitPriceConfigurationMapper unitPriceConfigurationMapper;
     @Resource
-    private StandingbookAttributeMapper standingbookAttributeMapper ;
+    private StandingbookAttributeMapper standingbookAttributeMapper;
 
     @Resource
     private DaParamFormulaMapper daParamFormulaMapper;
@@ -76,25 +76,22 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         // 检查能源编码是否重复（排除自身）
         checkEnergyCodeDuplicate(updateReqVO.getCode(), updateReqVO.getId());
 
-
-        EnergyConfigurationDO energyConfigurationDO = energyConfigurationMapper.selectById(updateReqVO.getId());
-
         String nickname = getLoginUserNickname();
-        String originalEnergyParameter = energyConfigurationDO.getEnergyParameter();
 
         // 获取请求中的新值
-        String newEnergyName = updateReqVO.getEnergyName();
-        String newEnergyParameter = updateReqVO.getEnergyParameter();
+        List<EnergyParameter> energyParameter = updateReqVO.getEnergyParameter();
         String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(String.valueOf(updateReqVO.getId()));
-        String newUnit = parseUnitFromJson(newEnergyParameter);
-        if (newEnergyParameter != null && !unit.trim().isEmpty()&& !newUnit.equals(unit)) {
 
-                    List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(String.valueOf(updateReqVO.getId()));
-                    if (CollectionUtils.isNotEmpty(standingbookIds)) {
-                        throw new ServiceException(ENERGY_CONFIGURATION_STANDINGBOOK_UNIT);
-                    }
-
+        if (CollUtil.isNotEmpty(energyParameter) && !unit.trim().isEmpty()) {
+            String newUnit = parseUnitFromJson(energyParameter);
+            if (!newUnit.equals(unit)) {
+                List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(String.valueOf(updateReqVO.getId()));
+                if (CollectionUtils.isNotEmpty(standingbookIds)) {
+                    throw new ServiceException(ENERGY_CONFIGURATION_STANDINGBOOK_UNIT);
+                }
             }
+
+        }
 
         // 更新记录
         EnergyConfigurationDO updateObj = BeanUtils.toBean(updateReqVO, EnergyConfigurationDO.class);
@@ -105,26 +102,19 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     /**
      * 从 energyParameter JSON 中解析 chinese 为 "用量" 的 unit
      */
-    private String parseUnitFromJson(String energyParameter) {
-        if (energyParameter == null || energyParameter.trim().isEmpty()) {
-            return "";
-        }
-
+    private String parseUnitFromJson(List<EnergyParameter> energyParameter) {
         try {
-            List<Map<String, String>> params = JSON.parseObject(
-                    energyParameter,
-                    new TypeReference<List<Map<String, String>>>() {}
-            );
 
-            if (CollectionUtils.isEmpty(params)) {
+            if (CollectionUtils.isEmpty(energyParameter)) {
                 return "";
             }
 
             // 遍历查找 chinese 为 "用量" 的条目
-            for (Map<String, String> param : params) {
-                String chinese = param.getOrDefault("chinese", "");
+            for (EnergyParameter param : energyParameter) {
+                String chinese = param.getChinese();
                 if ("用量".equals(chinese)) {
-                    return param.getOrDefault("unit", "");
+                    String unit = param.getUnit();
+                    return StrUtil.isNotEmpty(unit) ? unit : "";
                 }
             }
 
@@ -216,7 +206,8 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
                 // 设置单价详情
                 String priceDetails = unitPriceConfigurationMapper.getPriceDetailsByEnergyIdAndTime(energyConfiguration.getId(), currentDateTime);
                 Integer billingMethod = unitPriceConfigurationMapper.getBillingMethodByEnergyIdAndTime(energyConfiguration.getId(), currentDateTime);
-                Integer accountingFrequency = unitPriceConfigurationMapper.getAccountingFrequencyByEnergyIdAndTime(energyConfiguration.getId(), currentDateTime);;
+                Integer accountingFrequency = unitPriceConfigurationMapper.getAccountingFrequencyByEnergyIdAndTime(energyConfiguration.getId(), currentDateTime);
+                ;
                 energyConfiguration.setUnitPrice(priceDetails);
                 energyConfiguration.setBillingMethod(billingMethod);
                 energyConfiguration.setAccountingFrequency(accountingFrequency);

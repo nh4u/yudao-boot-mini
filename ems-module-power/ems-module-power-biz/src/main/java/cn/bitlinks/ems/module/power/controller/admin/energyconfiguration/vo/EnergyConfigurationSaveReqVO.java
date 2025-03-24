@@ -1,13 +1,14 @@
 package cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyParameter;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.*;
-import java.util.*;
-import javax.validation.constraints.*;
-import java.math.BigDecimal;
+import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 
@@ -28,10 +29,10 @@ public class EnergyConfigurationSaveReqVO {
     private Integer energyClassify;
 
     @Schema(description = "能源图标")
-    private String energyIcon;
+    private Map<String, String> energyIcon;
 
     @Schema(description = "能源参数")
-    private String energyParameter;
+    private List<EnergyParameter> energyParameter;
 
     @Schema(description = "折标煤系数")
     private BigDecimal factor;

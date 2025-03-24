@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.daparamformula.vo;
 
+import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyParameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -22,7 +23,7 @@ public class DaParamFormulaSaveReqVO {
     private Long energyId;
 
     @Schema(description = "能源参数名称")
-    private String energyParam;
+    private List<EnergyParameter>  energyParam;
 
     @Schema(description = "能源参数计算公式")
     private String energyFormula;

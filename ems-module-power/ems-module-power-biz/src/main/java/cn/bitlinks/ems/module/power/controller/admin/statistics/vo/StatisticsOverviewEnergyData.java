@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 /**
  * @author liumingqiang
@@ -29,7 +30,7 @@ public class StatisticsOverviewEnergyData {
     private BigDecimal money;
 
     @Schema(description = "能源图标")
-    private String energyIcon;
+    private Map<String, String> energyIcon;
 
 
 }
