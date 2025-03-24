@@ -448,6 +448,9 @@ public class StandingbookServiceImpl implements StandingbookService {
         // 获取台账列表
         List<StandingbookDO> standingbookDOS = getStandingbookList(pageReqVO);
 
+        if(CollUtil.isEmpty(standingbookDOS)){
+            return new ArrayList<>();
+        }
         // 查询所有台账id列表
         List<Long> sbIds = standingbookDOS.stream()
                 .map(StandingbookDO::getId)
@@ -652,6 +655,7 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Override
     public void exportStandingbookExcel(Map<String, String> pageReqVO, HttpServletResponse response) {
         List<StandingbookDO> list = getStandingbookList(pageReqVO);
+        // 判空 todo 等待导入导出功能出好
         Long typeId = Long.valueOf(pageReqVO.get("typeId"));
         List<StandingbookAttributeDO> attributes = standingbookAttributeService.getStandingbookAttributeByTypeId(typeId);
         StandingbookTypeDO standingbookTypeDO = standingbookTypeMapper.selectById(typeId);
