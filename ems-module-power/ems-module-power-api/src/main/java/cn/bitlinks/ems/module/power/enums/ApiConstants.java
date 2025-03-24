@@ -60,6 +60,8 @@ public class ApiConstants {
     public static final String ATTR_MEASURING_INSTRUMENT_ID ="measuringInstrumentId";
     public static final String ATTR_EQUIPMENT_ID ="equipmentId";
     public static final String ATTR_EQUIPMENT_NAME ="equipmentName";
+    public static final String ATTR_ENERGY ="energy";
+
     //多选下拉框
 
 

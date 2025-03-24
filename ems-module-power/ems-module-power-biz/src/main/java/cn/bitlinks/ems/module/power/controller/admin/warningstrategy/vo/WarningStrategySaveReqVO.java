@@ -9,15 +9,15 @@ import javax.validation.constraints.*;
 @Data
 public class WarningStrategySaveReqVO {
 
-    @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "27747")
+    @Schema(description = "编号", example = "27747")
     private Long id;
 
     @Schema(description = "规则名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "zzc")
-    @NotEmpty(message = "规则名称不能为空")
+    @NotNull(message = "规则名称不能为空")
     private String name;
 
     @Schema(description = "描述", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotEmpty(message = "描述不能为空")
+    @NotNull(message = "描述不能为空")
     private String description;
 
     @Schema(description = "设备范围")
@@ -41,17 +41,15 @@ public class WarningStrategySaveReqVO {
     @Schema(description = "邮件模板id", example = "3143")
     private Long mailTemplateId;
 
-    @Schema(description = "站内信人员")
+    @Schema(description = "站内信人员", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotEmpty(message = "站内信人员不能为空")
     private List<Long> siteStaff;
 
     @Schema(description = "邮件人员")
     private List<Long> mailStaff;
 
-    @Schema(description = "公共人员")
-    private List<Long> commonStaff;
-
     @Schema(description = "告警间隔", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotEmpty(message = "告警间隔不能为空")
+    @NotNull(message = "告警间隔不能为空")
     private String interval;
 
     @Schema(description = "告警间隔单位", requiredMode = Schema.RequiredMode.REQUIRED)

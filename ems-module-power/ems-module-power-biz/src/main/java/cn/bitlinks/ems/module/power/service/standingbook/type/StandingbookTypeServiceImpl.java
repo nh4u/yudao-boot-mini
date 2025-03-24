@@ -12,6 +12,7 @@ import cn.bitlinks.ems.module.power.enums.ApiConstants;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
 import cn.hutool.core.collection.CollUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -205,14 +206,21 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
     }
 
     @Override
-    public Map<Long, StandingbookTypeDO> getStandingbookTypeIdMap() {
-        List<StandingbookTypeDO> allList= standingbookTypeMapper.selectList();
+    public Map<Long, StandingbookTypeDO> getStandingbookTypeIdMap(List<Long> typeIds) {
+        List<StandingbookTypeDO> allList;
+        if(CollUtil.isEmpty(typeIds)){
+            allList= standingbookTypeMapper.selectList();
+        }else{
+            allList=standingbookTypeMapper.selectList(new LambdaQueryWrapper<StandingbookTypeDO>().in(StandingbookTypeDO::getId, typeIds));
+        }
+
         if(CollUtil.isEmpty(allList)){
             return new HashMap<>();
         }
         return allList.stream()
                 .collect(Collectors.toMap(StandingbookTypeDO::getId, type -> type));
     }
+
 
     private List<StandingbookTypeDO> fetchNodesFromDatabase() {
         return standingbookTypeMapper.selectNotDelete();
