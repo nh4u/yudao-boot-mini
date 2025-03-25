@@ -3,10 +3,7 @@ package cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy;
 import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
 import cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo.ConditionVO;
-import com.baomidou.mybatisplus.annotation.KeySequence;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.*;
 
@@ -39,16 +36,17 @@ public class WarningStrategyDO extends BaseDO {
     /**
      * 描述
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String description;
     /**
      * 设备范围
      */
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
     private List<Long> deviceScope;
     /**
      * 设备分类范围
      */
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonTypeHandler.class, updateStrategy  = FieldStrategy.ALWAYS)
     private List<Long> deviceTypeScope;
     /**
      * 告警条件
@@ -69,6 +67,7 @@ public class WarningStrategyDO extends BaseDO {
     /**
      * 邮件模板id
      */
+    @TableField(updateStrategy  = FieldStrategy.ALWAYS)
     private Long mailTemplateId;
     /**
      * 站内信人员
@@ -78,7 +77,7 @@ public class WarningStrategyDO extends BaseDO {
     /**
      * 邮件人员
      */
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonTypeHandler.class, updateStrategy  = FieldStrategy.ALWAYS)
     private List<Long> mailStaff;
 
     /**
