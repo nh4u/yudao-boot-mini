@@ -24,12 +24,7 @@ public class WarningStrategySaveReqVO {
 
     @Schema(description = "设备范围选择")
     private List<DeviceScopeVO> selectScope;
-//
-//    @Schema(description = "设备范围")
-//    private List<Long> deviceScope;
-//
-//    @Schema(description = "设备分类范围")
-//    private List<Long> deviceTypeScope;
+
 
     @Schema(description = "告警条件", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotEmpty(message = "告警条件不能为空")
