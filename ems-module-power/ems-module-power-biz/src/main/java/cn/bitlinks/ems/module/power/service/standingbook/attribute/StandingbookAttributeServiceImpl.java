@@ -569,9 +569,9 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
             deviceList.forEach(device -> {
                 // 获取该设备关联的计量器具
                 List<MeasurementDeviceDO> measurementDeviceDOS = groupedByDeviceId.get(device.getId());
-                //
-                List<Long> measureRelIds = measurementDeviceDOS.stream().map(MeasurementDeviceDO::getMeasurementInstrumentId).collect(Collectors.toList());
+
                 if (CollUtil.isNotEmpty(measurementDeviceDOS)) {
+                    List<Long> measureRelIds = measurementDeviceDOS.stream().map(MeasurementDeviceDO::getMeasurementInstrumentId).collect(Collectors.toList());
                     // 构造设备根节点
                     AttributeTreeNode deviceRoot = new AttributeTreeNode();
                     deviceRoot.setPId(0L + EMPTY);
