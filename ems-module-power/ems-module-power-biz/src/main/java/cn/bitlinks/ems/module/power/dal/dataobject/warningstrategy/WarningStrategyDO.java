@@ -80,11 +80,7 @@ public class WarningStrategyDO extends BaseDO {
      */
     @TableField(typeHandler = JacksonTypeHandler.class)
     private List<Long> mailStaff;
-    /**
-     * 公共人员
-     */
-    @TableField(typeHandler = JacksonTypeHandler.class)
-    private List<Long> commonStaff;
+
     /**
      * 告警间隔
      */

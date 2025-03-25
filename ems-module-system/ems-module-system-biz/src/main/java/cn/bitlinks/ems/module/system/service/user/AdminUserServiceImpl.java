@@ -548,7 +548,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         for (AdminUserDO user : userDOList) {
             DeptUserTreeNodeVO userNode = new DeptUserTreeNodeVO();
             userNode.setId(user.getId());
-            userNode.setName(user.getUsername());
+            userNode.setName(user.getNickname());
             userNode.setPId(user.getDeptId());
             userNode.setType(1);
             userNode.setChildren(new ArrayList<>());

@@ -2,9 +2,7 @@ package cn.bitlinks.ems.module.power.controller.admin.warningstrategy;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
-import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo.*;
-import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyDO;
 import cn.bitlinks.ems.module.power.service.warningstrategy.WarningStrategyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -15,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
-
 import java.util.List;
 
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
@@ -43,27 +40,31 @@ public class WarningStrategyController {
         warningStrategyService.updateWarningStrategy(updateReqVO);
         return success(true);
     }
+
     @PutMapping("/statusBatch")
     @Operation(summary = "告警策略(批量启停)")
     @PreAuthorize("@ss.hasPermission('power:warning-strategy:update')")
-    public CommonResult<Boolean> updateWarningStrategyStatusBatch( @RequestBody WarningStrategyBatchUpdStatusReqVO updateReqVO) {
+    public CommonResult<Boolean> updateWarningStrategyStatusBatch(@RequestBody WarningStrategyBatchUpdStatusReqVO updateReqVO) {
         warningStrategyService.updateWarningStrategyStatusBatch(updateReqVO);
         return success(true);
     }
+
     @PutMapping("/intervalBatch")
     @Operation(summary = "告警策略(批量告警间隔)")
     @PreAuthorize("@ss.hasPermission('power:warning-strategy:update')")
-    public CommonResult<Boolean> updateWarningStrategyIntervalBatch( @RequestBody WarningStrategyBatchUpdIntervalReqVO updateReqVO) {
+    public CommonResult<Boolean> updateWarningStrategyIntervalBatch(@RequestBody WarningStrategyBatchUpdIntervalReqVO updateReqVO) {
         warningStrategyService.updateWarningStrategyIntervalBatch(updateReqVO);
         return success(true);
     }
+
     @DeleteMapping("/deleteBatch")
     @Operation(summary = "删除告警策略(批量)")
     @PreAuthorize("@ss.hasPermission('power:warning-strategy:delete')")
-    public CommonResult<Boolean> deleteWarningStrategyBatch( @RequestBody List<Long> ids) {
+    public CommonResult<Boolean> deleteWarningStrategyBatch(@RequestBody List<Long> ids) {
         warningStrategyService.deleteWarningStrategyBatch(ids);
         return success(true);
     }
+
     @DeleteMapping("/delete")
     @Operation(summary = "删除告警策略")
     @Parameter(name = "id", description = "编号", required = true)
@@ -77,16 +78,15 @@ public class WarningStrategyController {
     @Operation(summary = "获得告警策略")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
     @PreAuthorize("@ss.hasPermission('power:warning-strategy:query')")
-    public CommonResult<WarningStrategyDO> getWarningStrategy(@RequestParam("id") Long id) {
-        WarningStrategyDO warningStrategy = warningStrategyService.getWarningStrategy(id);
-        return success(BeanUtils.toBean(warningStrategy, WarningStrategyDO.class));
+    public CommonResult<WarningStrategyRespVO> getWarningStrategy(@RequestParam("id") Long id) {
+        return success(warningStrategyService.getWarningStrategy(id));
     }
 
     @GetMapping("/page")
     @Operation(summary = "获得告警策略分页")
     @PreAuthorize("@ss.hasPermission('power:warning-strategy:query')")
-    public CommonResult<PageResult<WarningStrategyRespVO>> getWarningStrategyPage(@Valid WarningStrategyPageReqVO pageReqVO) {
-        PageResult<WarningStrategyRespVO> pageResult = warningStrategyService.getWarningStrategyPage(pageReqVO);
+    public CommonResult<PageResult<WarningStrategyPageRespVO>> getWarningStrategyPage(@Valid WarningStrategyPageReqVO pageReqVO) {
+        PageResult<WarningStrategyPageRespVO> pageResult = warningStrategyService.getWarningStrategyPage(pageReqVO);
         return success(pageResult);
     }
 

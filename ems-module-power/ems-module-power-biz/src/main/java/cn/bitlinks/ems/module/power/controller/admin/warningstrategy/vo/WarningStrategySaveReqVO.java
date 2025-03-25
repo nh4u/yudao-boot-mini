@@ -1,9 +1,11 @@
 package cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.*;
-import java.util.*;
-import javax.validation.constraints.*;
+import lombok.Data;
+
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import java.util.List;
 
 @Schema(description = "管理后台 - 告警策略新增/修改 Request VO")
 @Data
@@ -20,11 +22,14 @@ public class WarningStrategySaveReqVO {
     @NotNull(message = "描述不能为空")
     private String description;
 
-    @Schema(description = "设备范围")
-    private List<Long> deviceScope;
-
-    @Schema(description = "设备分类范围")
-    private List<Long> deviceTypeScope;
+    @Schema(description = "设备范围选择")
+    private List<DeviceScopeVO> selectScope;
+//
+//    @Schema(description = "设备范围")
+//    private List<Long> deviceScope;
+//
+//    @Schema(description = "设备分类范围")
+//    private List<Long> deviceTypeScope;
 
     @Schema(description = "告警条件", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotEmpty(message = "告警条件不能为空")

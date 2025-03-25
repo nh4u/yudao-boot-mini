@@ -1,27 +1,30 @@
 package cn.bitlinks.ems.module.power.service.warningstrategy;
 
+import cn.bitlinks.ems.framework.common.pojo.PageResult;
+import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.object.PageUtils;
-import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.bitlinks.ems.framework.mybatis.core.query.MPJLambdaWrapperX;
+import cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo.*;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyDO;
+import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyMapper;
+import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
+import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.stereotype.Service;
-import javax.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import java.util.*;
-import cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo.*;
-import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyDO;
-import cn.bitlinks.ems.framework.common.pojo.PageResult;
-import cn.bitlinks.ems.framework.common.pojo.PageParam;
-import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-
-import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyMapper;
+import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_EQUIPMENT_NAME;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_MEASURING_INSTRUMENT_MAME;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.WARNING_STRATEGY_NOT_EXISTS;
 
 /**
  * 告警策略 Service 实现类
@@ -34,14 +37,44 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
 
     @Resource
     private WarningStrategyMapper warningStrategyMapper;
+    @Resource
+    private AdminUserApi adminUserApi;
+
+    @Resource
+    private StandingbookTypeService standingbookTypeService;
+
+    @Resource
+    private StandingbookAttributeService standingbookAttributeService;
 
     @Override
     public Long createWarningStrategy(WarningStrategySaveReqVO createReqVO) {
         // 插入
         WarningStrategyDO warningStrategy = BeanUtils.toBean(createReqVO, WarningStrategyDO.class);
+        buildScope(createReqVO.getSelectScope(), warningStrategy);
+
         warningStrategyMapper.insert(warningStrategy);
         // 返回
         return warningStrategy.getId();
+    }
+
+    /**
+     * 插入/修改 处理设备范围结构
+     *
+     * @param deviceScopeVOS    type+id
+     * @param warningStrategyDO 策略
+     */
+    private void buildScope(List<DeviceScopeVO> deviceScopeVOS, WarningStrategyDO warningStrategyDO) {
+        if (CollUtil.isEmpty(deviceScopeVOS)) {
+            return;
+        }
+        // 处理结构
+        Map<Boolean, List<Long>> groupedMap = deviceScopeVOS.stream()
+                .collect(Collectors.groupingBy(
+                        DeviceScopeVO::getDeviceFlag, // Key：deviceFlag
+                        Collectors.mapping(DeviceScopeVO::getScopeId, Collectors.toList()) // Value: scopeId 列表
+                ));
+        warningStrategyDO.setDeviceScope(groupedMap.get(true));
+        warningStrategyDO.setDeviceTypeScope(groupedMap.get(false));
     }
 
     @Override
@@ -50,6 +83,7 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
         validateWarningStrategyExists(updateReqVO.getId());
         // 更新
         WarningStrategyDO updateObj = BeanUtils.toBean(updateReqVO, WarningStrategyDO.class);
+        buildScope(updateReqVO.getSelectScope(), updateObj);
         warningStrategyMapper.updateById(updateObj);
     }
 
@@ -68,20 +102,84 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
     }
 
     @Override
-    public WarningStrategyDO getWarningStrategy(Long id) {
-        return warningStrategyMapper.selectById(id);
+    public WarningStrategyRespVO getWarningStrategy(Long id) {
+
+        WarningStrategyDO warningStrategyDO = warningStrategyMapper.selectById(id);
+        WarningStrategyRespVO strategyRespVO = BeanUtils.toBean(warningStrategyDO, WarningStrategyRespVO.class);
+        // 1.需要展示勾选的设备名称 和勾引选的分类名称
+        List<Long> sbIds = warningStrategyDO.getDeviceScope();
+
+        List<Long> sbTypeIds = warningStrategyDO.getDeviceTypeScope();
+        List<DeviceScopeVO> deviceScopeList = new ArrayList<>();
+        // 1.1 选择设备
+        if (CollUtil.isNotEmpty(sbIds)) {
+            List<DeviceScopeVO> sbScopeList = new ArrayList<>();
+            Map<Long, List<StandingbookAttributeDO>> sbAttrMap = standingbookAttributeService.getAttributesBySbIds(sbIds);
+            sbIds.forEach(sbId -> {
+                List<StandingbookAttributeDO> sbAttrDOS = sbAttrMap.get(sbId);
+                Optional<StandingbookAttributeDO> measureNameOptional = sbAttrDOS.stream()
+                        .filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode()))
+                        .findFirst();
+                Optional<StandingbookAttributeDO> deviceNameOptional = sbAttrDOS.stream()
+                        .filter(attribute -> ATTR_EQUIPMENT_NAME.equals(attribute.getCode()))
+                        .findFirst();
+                DeviceScopeVO vo = new DeviceScopeVO();
+                vo.setScopeId(sbId);
+                vo.setDeviceFlag(true);
+                measureNameOptional.ifPresent(standingbookAttributeDO -> vo.setScopeName(standingbookAttributeDO.getValue()));
+                deviceNameOptional.ifPresent(standingbookAttributeDO -> vo.setScopeName(standingbookAttributeDO.getValue()));
+                sbScopeList.add(vo);
+            });
+            deviceScopeList.addAll(sbScopeList);
+        }
+        // 1.2 选择设备分类
+        if (CollUtil.isNotEmpty(sbTypeIds)) {
+            List<DeviceScopeVO> typeScopeList = new ArrayList<>();
+            Map<Long, StandingbookTypeDO> standingbookTypeDOMap = standingbookTypeService.getStandingbookTypeIdMap(sbTypeIds);
+            sbTypeIds.forEach(typeId -> {
+                StandingbookTypeDO typeDO = standingbookTypeDOMap.get(typeId);
+                if (typeDO == null) {
+                    return;
+                }
+                DeviceScopeVO vo = new DeviceScopeVO();
+                vo.setScopeId(typeId);
+                vo.setScopeName(typeDO.getName());
+                vo.setDeviceFlag(false);
+                typeScopeList.add(vo);
+            });
+            deviceScopeList.addAll(typeScopeList);
+        }
+        strategyRespVO.setDeviceScopeList(deviceScopeList);
+        // 2.需要展示勾选的人员和人员名称
+        List<Long> siteStaff = warningStrategyDO.getSiteStaff();
+        List<Long> mailStaff = warningStrategyDO.getMailStaff();
+        List<Long> allUserId = new ArrayList<>(siteStaff);
+        allUserId.addAll(mailStaff);
+
+
+        Map<Long, AdminUserRespDTO> allUserMap = adminUserApi.getUserMap(allUserId);
+
+        if (CollUtil.isNotEmpty(siteStaff)) {
+            List<AdminUserRespDTO> siteUserList = siteStaff.stream().map(allUserMap::get).collect(Collectors.toList());
+            strategyRespVO.setSiteStaffList(siteUserList);
+        }
+        if (CollUtil.isNotEmpty(mailStaff)) {
+            List<AdminUserRespDTO> mailUserList = mailStaff.stream().map(allUserMap::get).collect(Collectors.toList());
+            strategyRespVO.setMailStaffList(mailUserList);
+        }
+        return strategyRespVO;
     }
 
     @Override
-    public PageResult<WarningStrategyRespVO> getWarningStrategyPage(WarningStrategyPageReqVO pageReqVO) {
+    public PageResult<WarningStrategyPageRespVO> getWarningStrategyPage(WarningStrategyPageReqVO pageReqVO) {
 
         Long count = warningStrategyMapper.getCount(pageReqVO);
         if (Objects.isNull(count) || count == 0L) {
             return new PageResult<>();
         }
-        List<WarningStrategyRespVO> deviceApiResVOS = warningStrategyMapper.getPage(pageReqVO, PageUtils.getStart(pageReqVO));
+        List<WarningStrategyPageRespVO> deviceApiResVOS = warningStrategyMapper.getPage(pageReqVO, PageUtils.getStart(pageReqVO));
 
-        PageResult<WarningStrategyRespVO> result = new PageResult<>();
+        PageResult<WarningStrategyPageRespVO> result = new PageResult<>();
         result.setList(deviceApiResVOS);
         result.setTotal(count);
         return result;
