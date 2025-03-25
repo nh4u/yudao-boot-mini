@@ -25,7 +25,7 @@ public class VoucherPageReqVO extends PageParam {
     private String name;
 
     @Schema(description = "能源id/凭证类型id", example = "5445")
-    private Long energyId;
+    private Long[] energyId;
 
     @Schema(description = "能源name/凭证类型名称", example = "bitlinks")
     private String energyName;
