@@ -109,8 +109,7 @@ public class StandingbookController {
     @Operation(summary = "关联下级计量器具/关联设备接口（topType=2）或者重点设备（topType=1）")
     @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
     public CommonResult<List<StandingbookRespVO>> listSbAllWithAssociations(@RequestBody StandingbookAssociationReqVO reqVO) {
-        List<StandingbookDO> list = standingbookService.listSbAllWithAssociations(reqVO);
-        return success(BeanUtils.toBean(list, StandingbookRespVO.class));
+        return success(standingbookService.listSbAllWithAssociations(reqVO));
     }
 //    @PostMapping("/listBy")
 //    @Operation(summary = "根据条件获得台账列表")

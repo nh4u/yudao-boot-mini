@@ -27,14 +27,14 @@ public interface StandingbookService {
      * @param createReqVO 创建信息
      * @return 编号
      */
-    Long createStandingbook(@Valid Map <String,String>  createReqVO);
+    Long createStandingbook(@Valid Map<String, String> createReqVO);
 
     /**
      * 更新台账属性
      *
      * @param updateReqVO 更新信息
      */
-    void updateStandingbook(@Valid Map <String,String>  updateReqVO);
+    void updateStandingbook(@Valid Map<String, String> updateReqVO);
 
     /**
      * 删除台账属性
@@ -61,10 +61,11 @@ public interface StandingbookService {
 
     /**
      * 条件查询台账（标签、属性、分类ids、分类id、环节、创建时间）
+     *
      * @param pageReqVO 条件map
      * @return 台账列表
      */
-    List<StandingbookDO> getStandingbookList( Map<String,String> pageReqVO);
+    List<StandingbookDO> getStandingbookList(Map<String, String> pageReqVO);
 
 //    List<StandingbookDO> getStandingbookListBy(Map<String,String> pageReqVO);
 
@@ -72,7 +73,7 @@ public interface StandingbookService {
 
     Object importStandingbook(MultipartFile file, StandingbookRespVO pageReqVO);
 
-    void exportStandingbookExcel(Map <String,String> pageReqVO, HttpServletResponse response);
+    void exportStandingbookExcel(Map<String, String> pageReqVO, HttpServletResponse response);
 
     void template(Long typeId, HttpServletResponse response);
 
@@ -82,15 +83,17 @@ public interface StandingbookService {
 
     /**
      * 获取全部的台账列表（标签、属性、分类ids、分类id、环节、创建时间）
+     *
      * @param pageReqVO 查询条件
      * @return 台账列表
      */
-    List<StandingbookDO> listSbAll(Map<String, String> pageReqVO );
+    List<StandingbookDO> listSbAll(Map<String, String> pageReqVO);
 
     /**
      * 关联下级计量器具/关联设备（需要防止循环嵌套关联）
+     *
      * @param reqVO 查询条件
      * @return 可关联的台账列表
      */
-    List<StandingbookDO> listSbAllWithAssociations(StandingbookAssociationReqVO reqVO);
+    List<StandingbookRespVO> listSbAllWithAssociations(StandingbookAssociationReqVO reqVO);
 }

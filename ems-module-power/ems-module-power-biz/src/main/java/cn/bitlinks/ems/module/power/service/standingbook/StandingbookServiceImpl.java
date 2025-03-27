@@ -156,10 +156,10 @@ public class StandingbookServiceImpl implements StandingbookService {
 
 
     @Override
-    public List<StandingbookDO> listSbAllWithAssociations(StandingbookAssociationReqVO reqVO) {
+    public List<StandingbookRespVO> listSbAllWithAssociations(StandingbookAssociationReqVO reqVO) {
 
-        Map<String,String> paramMap = reqVO.getPageReqVO();
-        if(CollUtil.isEmpty(paramMap)){
+        Map<String, String> paramMap = reqVO.getPageReqVO();
+        if (CollUtil.isEmpty(paramMap)) {
             paramMap = new HashMap<>();
         }
         paramMap.put(SB_TYPE_ATTR_TOP_TYPE, reqVO.getTopType() + "");
@@ -181,9 +181,31 @@ public class StandingbookServiceImpl implements StandingbookService {
             return new ArrayList<>();
         }
 
-        return sbList.stream()
+        List<StandingbookDO> standingbookDOS = sbList.stream()
                 .filter(standingbookDO -> !parentIds.contains(standingbookDO.getId()))
                 .collect(Collectors.toList());
+        // 添加计量器具类型
+        if (CollUtil.isEmpty(standingbookDOS)) {
+            return new ArrayList<>();
+        }
+        // 查询所有台账分类id列表
+        List<Long> sbTypeIds = standingbookDOS.stream()
+                .map(StandingbookDO::getTypeId)
+                .collect(Collectors.toList());
+        List<StandingbookTypeDO> typeList = standingbookTypeMapper.selectList(new LambdaQueryWrapper<StandingbookTypeDO>()
+                .in(StandingbookTypeDO::getId, sbTypeIds));
+        Map<Long, StandingbookTypeDO> typeMap = typeList.stream()
+                .collect(Collectors.toMap(
+                        StandingbookTypeDO::getId,
+                        standingbookTypeDO -> standingbookTypeDO
+                ));
+        List<StandingbookRespVO> result = BeanUtils.toBean(standingbookDOS, StandingbookRespVO.class);
+        result.forEach(sb -> {
+            sb.setStandingbookTypeId(typeMap.get(sb.getTypeId()).getId());
+            sb.setStandingbookTypeName(typeMap.get(sb.getTypeId()).getName());
+        });
+
+        return result;
 
     }
 
@@ -448,7 +470,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         // 获取台账列表
         List<StandingbookDO> standingbookDOS = getStandingbookList(pageReqVO);
 
-        if(CollUtil.isEmpty(standingbookDOS)){
+        if (CollUtil.isEmpty(standingbookDOS)) {
             return new ArrayList<>();
         }
         // 查询所有台账id列表

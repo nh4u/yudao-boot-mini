@@ -66,4 +66,10 @@ public class StandingbookRespVO {
     @ExcelProperty("创建时间")
     private LocalDateTime createTime;
     List<StandingbookAttributeRespVO> children = new ArrayList<>();
+
+
+    @Schema(description = "计量器具类型id")
+    private Long standingbookTypeId;
+    @Schema(description = "计量器具类型名称")
+    private String standingbookTypeName;
 }
