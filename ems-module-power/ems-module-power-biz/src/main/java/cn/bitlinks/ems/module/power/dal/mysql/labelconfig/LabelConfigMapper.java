@@ -7,10 +7,6 @@ import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigP
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import org.apache.ibatis.annotations.Mapper;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 /**
  * 配置标签 Mapper
  *
@@ -29,8 +25,6 @@ public interface LabelConfigMapper extends BaseMapperX<LabelConfigDO> {
                 .eqIfPresent(LabelConfigDO::getIfDefault, reqVO.getIfDefault())
                 .orderByDesc(LabelConfigDO::getId));
     }
-
-    List<Map<String, Objects>> queryData();
 
 
 }

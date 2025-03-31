@@ -67,18 +67,8 @@ public class LabelConfigController {
     @Operation(summary = "获得配置标签")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
     @PreAuthorize("@ss.hasPermission('power:label-config:query')")
-    public CommonResult<LabelConfigRespVO> getLabelConfig(@RequestParam("id") Long id,
-                                                          @RequestParam(value = "database", required = false) Integer database) {
-
-        // TODO: 2024/11/1 多数据源测试后续可删
-        LabelConfigDO labelConfig;
-        if (database != null && database == 3307){
-             labelConfig = labelConfigService.getLabelConfig07(id);
-        }else {
-             labelConfig = labelConfigService.getLabelConfig(id);
-        }
-
-
+    public CommonResult<LabelConfigRespVO> getLabelConfig(@RequestParam("id") Long id) {
+        LabelConfigDO labelConfig = labelConfigService.getLabelConfig(id);
         return success(BeanUtils.toBean(labelConfig, LabelConfigRespVO.class));
     }
 
