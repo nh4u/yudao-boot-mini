@@ -21,20 +21,6 @@ public interface WarningInfoService {
     Long createWarningInfo(@Valid WarningInfoSaveReqVO createReqVO);
 
     /**
-     * 更新告警信息
-     *
-     * @param updateReqVO 更新信息
-     */
-    void updateWarningInfo(@Valid WarningInfoSaveReqVO updateReqVO);
-
-    /**
-     * 删除告警信息
-     *
-     * @param id 编号
-     */
-    void deleteWarningInfo(Long id);
-
-    /**
      * 获得告警信息
      *
      * @param id 编号

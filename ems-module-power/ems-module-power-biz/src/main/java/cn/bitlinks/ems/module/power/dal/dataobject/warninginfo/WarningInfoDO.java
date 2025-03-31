@@ -53,6 +53,10 @@ public class WarningInfoDO extends BaseDO {
      */
     private Long templateId;
     /**
+     * 策略id
+     */
+    private Long strategyId;
+    /**
      * 标题
      */
     private String title;
