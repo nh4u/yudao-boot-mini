@@ -156,6 +156,7 @@ ems:
     ignore-tables:
       - crashdata
       - weatherdata
+      - cjy
 
 
 debug: false
