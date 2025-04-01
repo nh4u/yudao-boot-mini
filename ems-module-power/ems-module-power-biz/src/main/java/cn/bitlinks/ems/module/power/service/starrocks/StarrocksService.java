@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.starrocks;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -20,4 +21,7 @@ public interface StarrocksService {
     void addData(String date);
 
     void deleteData(String date);
+
+//    BigDecimal getEnergyUsage(Long energyId, LocalDateTime startTime, LocalDateTime endTime);
+    BigDecimal getEnergyUsage(LocalDateTime startTime, LocalDateTime endTime);
 }

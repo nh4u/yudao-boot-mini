@@ -26,4 +26,10 @@
         from weatherdata
         where DATE = #{date}
     </delete>
+
+    <select id="selectUsage" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(HourlyDewPointTemperature), 0)
+        FROM weatherdata
+        WHERE DATE BETWEEN #{startTime} AND #{endTime}
+    </select>
 </mapper>

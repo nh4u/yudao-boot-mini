@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -54,5 +56,15 @@ public class StarrocksServiceImpl implements StarrocksService {
             throw exception(message);
         }
         starrocksMapper.deleteData(date);
+    }
+
+    @Override
+    public BigDecimal getEnergyUsage(LocalDateTime startTime, LocalDateTime endTime) {
+        // 转换日期格式（根据StarRocks实际存储格式调整）
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        return starrocksMapper.selectUsage(
+                startTime.format(formatter),
+                endTime.format(formatter)
+        );
     }
 }
