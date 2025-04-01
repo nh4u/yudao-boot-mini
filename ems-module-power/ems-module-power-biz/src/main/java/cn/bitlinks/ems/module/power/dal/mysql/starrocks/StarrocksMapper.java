@@ -27,6 +27,7 @@ public interface StarrocksMapper {
 
     void deleteData(String date);
 
-    BigDecimal selectUsage(@Param("startTime") String startTime,
+    BigDecimal selectUsage(@Param("energyId") Long energyId,
+                           @Param("startTime") String startTime,
                            @Param("endTime") String endTime);
 }

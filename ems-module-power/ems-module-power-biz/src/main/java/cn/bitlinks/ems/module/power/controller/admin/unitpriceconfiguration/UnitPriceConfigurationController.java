@@ -140,7 +140,7 @@ public class UnitPriceConfigurationController {
 //                 处理阶梯电价，需要获取当前用量并计算阶梯价格
 //                 此处需要实现获取用量的逻辑
                 BigDecimal usage = starrocksService.getEnergyUsage(
-//                        energyId,
+                        energyId,
                         dto.getPeriodStart(),
                         targetTime
                 );

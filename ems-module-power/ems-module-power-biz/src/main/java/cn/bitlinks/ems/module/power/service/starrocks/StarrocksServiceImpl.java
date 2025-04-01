@@ -59,10 +59,11 @@ public class StarrocksServiceImpl implements StarrocksService {
     }
 
     @Override
-    public BigDecimal getEnergyUsage(LocalDateTime startTime, LocalDateTime endTime) {
+    public BigDecimal getEnergyUsage(Long energyId, LocalDateTime startTime, LocalDateTime endTime) {
         // 转换日期格式（根据StarRocks实际存储格式调整）
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         return starrocksMapper.selectUsage(
+                energyId,
                 startTime.format(formatter),
                 endTime.format(formatter)
         );

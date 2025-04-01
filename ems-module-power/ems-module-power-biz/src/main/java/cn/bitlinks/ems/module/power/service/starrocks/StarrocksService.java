@@ -22,6 +22,5 @@ public interface StarrocksService {
 
     void deleteData(String date);
 
-//    BigDecimal getEnergyUsage(Long energyId, LocalDateTime startTime, LocalDateTime endTime);
-    BigDecimal getEnergyUsage(LocalDateTime startTime, LocalDateTime endTime);
+    BigDecimal getEnergyUsage(Long energyId, LocalDateTime startTime, LocalDateTime endTime);
 }

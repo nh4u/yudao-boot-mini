@@ -294,9 +294,6 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
                 .collect(Collectors.toList());
 
         result.setLadderPrices(ladderPrices);
-
-        // TODO: 调用用量服务获取当前周期用量
-        // BigDecimal usage = getUsage(config.getEnergyId(), periodStart, targetTime);
     }
 
     private LocalDateTime calculatePeriodStart(Integer accountingFrequency, LocalDateTime dateTime) {
