@@ -4,6 +4,7 @@ package cn.bitlinks.ems.module.power.dal.mysql.warninginfo;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.mybatis.core.mapper.BaseMapperX;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoLatestStrategyRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatisticsRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
@@ -11,6 +12,11 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.web.core.util.WebFrameworkUtils.getLoginUserId;
 
@@ -48,4 +54,20 @@ public interface WarningInfoMapper extends BaseMapperX<WarningInfoDO> {
     default void updateStatusById(Long id, Integer status) {
         update(WarningInfoDO.builder().status(status).build(), new LambdaUpdateWrapper<WarningInfoDO>().eq(WarningInfoDO::getId, id));
     }
+
+    /**
+     * 获取每个策略ID对应的最新告警信息的时间
+     *
+     * @return 一个Map，Key是策略ID，Value是最新告警时间
+     */
+    default Map<Long, LocalDateTime> selectLatestByStrategy() {
+        List<WarningInfoLatestStrategyRespVO> latestWarnings = selectLatestCreateTimeByStrategy();
+
+        return latestWarnings.stream()
+                .collect(Collectors.toMap(
+                        WarningInfoLatestStrategyRespVO::getStrategyId,
+                        WarningInfoLatestStrategyRespVO::getTriggerTime
+                ));
+    }
+    List<WarningInfoLatestStrategyRespVO> selectLatestCreateTimeByStrategy();
 }

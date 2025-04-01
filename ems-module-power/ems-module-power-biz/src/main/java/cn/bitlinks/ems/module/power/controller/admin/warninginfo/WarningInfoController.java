@@ -60,15 +60,6 @@ public class WarningInfoController {
         return success(true);
     }
 
-    @DeleteMapping("/delete")
-    @Operation(summary = "删除告警信息")
-    @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('power:warning-info:delete')")
-    public CommonResult<Boolean> deleteWarningInfo(@RequestParam("id") Long id) {
-        warningInfoService.deleteWarningInfo(id);
-        return success(true);
-    }
-
     @GetMapping("/get")
     @Operation(summary = "获得告警信息")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")

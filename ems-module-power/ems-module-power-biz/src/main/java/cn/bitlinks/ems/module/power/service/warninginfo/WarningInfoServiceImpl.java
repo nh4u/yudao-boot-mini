@@ -38,23 +38,6 @@ public class WarningInfoServiceImpl implements WarningInfoService {
         return warningInfo.getId();
     }
 
-    @Override
-    public void updateWarningInfo(WarningInfoSaveReqVO updateReqVO) {
-        // 校验存在
-        validateWarningInfoExists(updateReqVO.getId());
-        // 更新
-        WarningInfoDO updateObj = BeanUtils.toBean(updateReqVO, WarningInfoDO.class);
-        warningInfoMapper.updateById(updateObj);
-    }
-
-    @Override
-    public void deleteWarningInfo(Long id) {
-        // 校验存在
-        validateWarningInfoExists(id);
-        // 删除
-        warningInfoMapper.deleteById(id);
-    }
-
     private void validateWarningInfoExists(Long id) {
         if (warningInfoMapper.selectById(id) == null) {
             throw exception(WARNING_INFO_NOT_EXISTS);

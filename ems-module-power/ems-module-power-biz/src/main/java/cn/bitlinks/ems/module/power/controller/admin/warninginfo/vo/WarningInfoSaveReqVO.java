@@ -34,6 +34,10 @@ public class WarningInfoSaveReqVO {
     @NotEmpty(message = "设备名称与编号不能为空")
     private String deviceRel;
 
+    @Schema(description = "策略id", requiredMode = Schema.RequiredMode.REQUIRED, example = "3996")
+    @NotNull(message = "策略id不能为空")
+    private Long strategyId;
+
     @Schema(description = "模板id", requiredMode = Schema.RequiredMode.REQUIRED, example = "3996")
     @NotNull(message = "模板id不能为空")
     private Long templateId;
