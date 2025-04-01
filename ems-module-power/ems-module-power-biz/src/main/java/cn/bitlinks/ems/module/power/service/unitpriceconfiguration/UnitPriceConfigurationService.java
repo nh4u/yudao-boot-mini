@@ -61,4 +61,9 @@ public interface UnitPriceConfigurationService {
      * @return 单价配置列表
      */
     List<UnitPriceConfigurationDO> getUnitPriceConfigurationByEnergyId(Long energyId);
+
+    LocalDateTime getLatestEndTime(Long energyId);
+
+    PriceResultDTO getPriceByTime(Long energyId, LocalDateTime targetTime);
+
 }

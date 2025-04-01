@@ -14,13 +14,14 @@ public interface ErrorCodeConstants {
     ErrorCode ENERGY_CONFIGURATION_NOT_EXISTS = new ErrorCode(1_001_301_002, "能源配置不存在");
     ErrorCode UNIT_PRICE_CONFIGURATION_NOT_EXISTS = new ErrorCode(1_001_301_003, "单价配置不存在");
     ErrorCode TIME_CONFLICT = new ErrorCode(1_001_301_004, "与已有单价时间重叠");
-
+    ErrorCode INVALID_PRICE_TYPE = new ErrorCode(1_001_301_010, "无效的价格类型");
+    ErrorCode INVALID_TIME_TYPE = new ErrorCode(1_001_301_011, "无效的时间类型");
     ErrorCode FORMULA_TYPE_NOT_EXISTS = new ErrorCode(1_001_301_004, "公式类型不存在");
     ErrorCode ENERGY_CODE_DUPLICATE = new ErrorCode(1_001_301_006, "能源编码重复");
     ErrorCode ENERGY_NAME_DUPLICATE = new ErrorCode(1_001_301_007, "能源名称重复");
     ErrorCode ENERGY_CONFIGURATION_STANDINGBOOK_EXISTS = new ErrorCode(1_001_301_008, "该能源关联计量器具，不可进行删除");
     ErrorCode ENERGY_CONFIGURATION_STANDINGBOOK_UNIT = new ErrorCode(1_001_301_009, "该能源已有参数单位，且已关联计量器具，不可进行修改");
-
+    ErrorCode FAILED_PRICE_DETAILS = new ErrorCode(1_001_301_012,"解析价格详情失败");
     //========== 关联下级计量和关联上级设备 配置 1-001-101-000 ==========
     ErrorCode DEVICE_ASSOCIATION_CONFIGURATION_NOT_EXISTS = new ErrorCode(1_001_101_001, "设备关联配置不存在");
 

@@ -26,4 +26,11 @@
         from weatherdata
         where DATE = #{date}
     </delete>
+
+    <select id="selectUsage" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(usage), 0)
+        FROM acquisition_data
+        WHERE energy_id = #{energyId}
+          AND created_time BETWEEN #{startTime} AND #{endTime}
+    </select>
 </mapper>
