@@ -5,7 +5,6 @@ import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.A
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 
 import javax.validation.Valid;
@@ -26,6 +25,7 @@ public interface StandingbookAttributeService {
      * @return 编号
      */
     Long createStandingbookAttribute(@Valid StandingbookAttributeSaveReqVO createReqVO);
+
     Long create(StandingbookAttributeSaveReqVO createReqVO);
 
     /**
@@ -34,6 +34,7 @@ public interface StandingbookAttributeService {
      * @param updateReqVO 更新信息
      */
     void updateStandingbookAttribute(@Valid StandingbookAttributeSaveReqVO updateReqVO);
+
     void update(StandingbookAttributeSaveReqVO updateReqVO);
 
     /**
@@ -75,14 +76,14 @@ public interface StandingbookAttributeService {
      * @param id 编号
      * @return 台账属性
      */
-    List<StandingbookAttributeDO>  getStandingbookAttributeByStandingbookId(Long standingbookId);
+    List<StandingbookAttributeDO> getStandingbookAttributeByStandingbookId(Long standingbookId);
    /**
      * 获得台账属性by typeId
      *
      * @param id 编号
      * @return 台账属性
      */
-    List<StandingbookAttributeDO>  getStandingbookAttributeByTypeId(Long typeId);
+    List<StandingbookAttributeDO> getStandingbookAttributeByTypeId(Long typeId);
 
     /**
      * 获得台账属性分页
@@ -95,8 +96,8 @@ public interface StandingbookAttributeService {
     /**
      * 根据台账属性条件获取台账id
      *
-     * @param children            台账属性条件参数
-     * @param sbIds              台账id
+     * @param children 台账属性条件参数
+     * @param sbIds    台账id
      * @return 台账id
      */
     List<Long> getStandingbookIdByCondition(Map<String, List<String>> children, List<Long> sbIds);
@@ -112,7 +113,7 @@ public interface StandingbookAttributeService {
     /**
      * 获取台账属性Tree结构
      * @param standingbookIds 台账ids
-     * @param typeIds 台账类型ids
+     * @param typeIds         台账类型ids
      */
     List<AttributeTreeNode> queryAttributeTreeNodeByTypeAndSb(List<Long> standingbookIds, List<Long> typeIds);
 
@@ -124,7 +125,22 @@ public interface StandingbookAttributeService {
     List<StandingbookAttributeRespVO> getByTypeId(Long typeId);
 
     /**
+     * 根据设备编码查询台账id
+     * @param codes 设备编码
+     * @return 台账id
+     */
+    List<Long> getSbIdBySbCode(List<String> codes);
+    /**
+     * 根据设备编码获取台账id+台账属性
+     *
+     * @param codes 设备编码集合
+     * @return 台账id
+     */
+    Map<Long, List<StandingbookAttributeDO>> getSbAttrBySbCode(List<String> codes);
+
+    /**
      * 查询台账关联的台账属性列表
+     *
      * @param sbIds 台账ids
      * @return 台账属性列表分组列表
      */
