@@ -8,14 +8,20 @@ import cn.bitlinks.ems.module.power.dal.mysql.unitpricehistory.UnitPriceHistoryM
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.unitpricehistory.UnitPriceHistoryService;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.core.type.TypeReference;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
+import java.util.stream.Collectors;
+
 import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.unitpriceconfiguration.UnitPriceConfigurationDO;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
@@ -25,7 +31,9 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.dal.mysql.unitpriceconfiguration.UnitPriceConfigurationMapper;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.framework.common.util.json.JsonUtils.objectMapper;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
+import static javax.xml.bind.DatatypeConverter.parseDecimal;
 
 /**
  * 单价配置 Service 实现类
@@ -177,9 +185,141 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
 
     @Override
     public List<UnitPriceConfigurationDO> getUnitPriceConfigurationByEnergyId(Long energyId) {
-        return unitPriceConfigurationMapper.selectList(Wrappers.<UnitPriceConfigurationDO>lambdaQuery()
-                .eq(UnitPriceConfigurationDO::getEnergyId, energyId)
-                .orderByAsc(UnitPriceConfigurationDO::getStartTime)); // 按开始时间排序
+        return unitPriceConfigurationMapper.selectList(
+                Wrappers.<UnitPriceConfigurationDO>lambdaQuery()
+                        .eq(UnitPriceConfigurationDO::getEnergyId, energyId)
+                        .ge(UnitPriceConfigurationDO::getEndTime, LocalDateTime.now()) // 新增过滤条件[7](@ref)
+                        .orderByAsc(UnitPriceConfigurationDO::getStartTime)
+        );
+    }
+
+    @Override
+    public LocalDateTime getLatestEndTime(Long energyId) {
+        List<UnitPriceConfigurationDO> configs = unitPriceConfigurationMapper.selectList(
+                Wrappers.<UnitPriceConfigurationDO>lambdaQuery()
+                        .eq(UnitPriceConfigurationDO::getEnergyId, energyId)
+                        .orderByDesc(UnitPriceConfigurationDO::getEndTime)  // 按结束时间倒序排列
+                        .last("LIMIT 1")  // 只取最新的一条
+        );
+
+        return configs.isEmpty() ? LocalDateTime.now() : configs.get(0).getEndTime();
+    }
+
+    @Override
+    public PriceResultDTO getPriceByTime(Long energyId, LocalDateTime targetTime) {
+        // 1. 查询有效的价格配置
+        List<UnitPriceConfigurationDO> configs = unitPriceConfigurationMapper.selectList(
+                Wrappers.<UnitPriceConfigurationDO>lambdaQuery()
+                        .eq(UnitPriceConfigurationDO::getEnergyId, energyId)
+                        .le(UnitPriceConfigurationDO::getStartTime, targetTime)
+                        .ge(UnitPriceConfigurationDO::getEndTime, targetTime)
+        );
+
+        if (configs.isEmpty()) {
+            throw exception(UNIT_PRICE_CONFIGURATION_NOT_EXISTS);
+        }
+
+        UnitPriceConfigurationDO config = configs.get(0);
+        PriceResultDTO result = new PriceResultDTO();
+        result.setPriceType(config.getBillingMethod());
+
+        // 解析价格明细JSON
+        List<PriceDetail> priceDetails = parsePriceDetails(config.getPriceDetails());
+
+        switch (config.getBillingMethod()) {
+            case 1: // 固定单价
+                handleFixedPrice(result, priceDetails);
+                break;
+            case 2: // 分时电价
+                handleTimeBasedPrice(result, priceDetails, targetTime);
+                break;
+            case 3: // 阶梯电价
+                handleLadderPrice(result, priceDetails, config, targetTime);
+                break;
+            default:
+                throw exception(INVALID_PRICE_TYPE);
+        }
+
+        return result;
+    }
+
+    private void handleFixedPrice(PriceResultDTO result, List<PriceDetail> priceDetails) {
+        if (!priceDetails.isEmpty()) {
+            result.setFixedPrice(new BigDecimal(priceDetails.get(0).getPrice()));
+        }
+    }
+
+    private void handleTimeBasedPrice(PriceResultDTO result, List<PriceDetail> priceDetails, LocalDateTime targetTime) {
+        Map<String, BigDecimal> timePriceMap = new LinkedHashMap<>();
+        LocalTime queryTime = targetTime.toLocalTime();
+
+        priceDetails.forEach(detail -> {
+            if (detail.getTime().size() == 2) {
+                LocalTime start = LocalTime.parse(detail.getTime().get(0));
+                LocalTime end = LocalTime.parse(detail.getTime().get(1));
+
+                // 处理跨天时间段（如23:00-01:00）
+                boolean isCrossDay = end.isBefore(start);
+                boolean match = isCrossDay ?
+                        queryTime.isAfter(start) || queryTime.isBefore(end) :
+                        queryTime.isAfter(start) && queryTime.isBefore(end);
+
+                if (match) {
+                    timePriceMap.put(
+                            detail.getTime().get(0) + "-" + detail.getTime().get(1),
+                            new BigDecimal(detail.getPrice())
+                    );
+                }
+            }
+        });
+
+        result.setTimePrices(timePriceMap);
+    }
+
+    private void handleLadderPrice(PriceResultDTO result, List<PriceDetail> priceDetails,
+                                   UnitPriceConfigurationDO config, LocalDateTime targetTime) {
+        // 获取核算周期起始时间
+        LocalDateTime periodStart = calculatePeriodStart(config.getAccountingFrequency(), targetTime);
+        result.setPeriodStart(periodStart);
+
+        // 转换阶梯价格配置
+        List<PriceResultDTO.LadderPrice> ladderPrices = priceDetails.stream()
+                .map(detail -> {
+                    PriceResultDTO.LadderPrice lp = new PriceResultDTO.LadderPrice();
+                    lp.setMin(parseDecimal(detail.getMin()));
+                    lp.setMax(parseDecimal(detail.getMax()));
+                    lp.setPrice(new BigDecimal(detail.getPrice()));
+                    return lp;
+                })
+                .collect(Collectors.toList());
+
+        result.setLadderPrices(ladderPrices);
+    }
+
+    private LocalDateTime calculatePeriodStart(Integer accountingFrequency, LocalDateTime dateTime) {
+        switch (accountingFrequency) {
+            case 1: // 按月
+                return dateTime.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
+            case 2: // 按季
+                int quarter = (dateTime.getMonthValue() - 1) / 3;
+                return dateTime.withMonth(quarter * 3 + 1)
+                        .withDayOfMonth(1)
+                        .withHour(0).withMinute(0).withSecond(0);
+            case 3: // 按年
+                return dateTime.withDayOfYear(1)
+                        .withHour(0).withMinute(0).withSecond(0);
+            default:
+                throw exception(INVALID_TIME_TYPE);
+        }
+    }
+
+    // JSON解析辅助方法
+    private List<PriceDetail> parsePriceDetails(String json) {
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<PriceDetail>>() {});
+        } catch (JsonProcessingException e) {
+            throw exception(FAILED_PRICE_DETAILS,e);
+        }
     }
 
 }
