@@ -1,12 +1,10 @@
 package cn.bitlinks.ems.module.power.service.labelconfig;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
-import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigSaveReqVO;
-import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.mysql.coalfactorhistory.CoalFactorHistoryMapper;
@@ -18,7 +16,6 @@ import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.core.lang.tree.TreeNode;
 import cn.hutool.core.lang.tree.TreeUtil;
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.stereotype.Service;
@@ -134,23 +131,6 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     public LabelConfigDO getLabelConfig(Long id) {
         return labelConfigMapper.selectById(id);
     }
-
-    @Override
-    @DS("slave")
-    public LabelConfigDO getLabelConfig07(Long id) {
-
-        List<Map<String, Objects>> map = labelConfigMapper.queryData();
-        map.forEach(System.out::println);
-
-        List<CoalFactorHistoryDO> list = coalFactorHistoryMapper.selectList();
-        // 美化打印
-        System.out.println(JsonUtils.toJsonPrettyString(list));
-
-
-        // TODO: 2024/11/1 多数据源测试后续可删
-        return labelConfigMapper.selectById(id);
-    }
-
 
     @Override
     public PageResult<LabelConfigDO> getLabelConfigPage(LabelConfigPageReqVO pageReqVO) {

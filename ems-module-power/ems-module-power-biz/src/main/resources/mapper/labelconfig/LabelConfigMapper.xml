@@ -9,9 +9,4 @@
         文档可见：https://www.bitlinks.cn/MyBatis/x-plugins/
      -->
 
-
-    <select id="queryData" resultType="map">
-        select * from crashdata limit 10
-    </select>
-
 </mapper>

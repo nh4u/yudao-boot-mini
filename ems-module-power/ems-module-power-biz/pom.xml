@@ -169,6 +169,12 @@
             <groupId>cn.bitlinks.ems</groupId>
             <artifactId>ems-spring-boot-starter-protection</artifactId>
         </dependency>
+        <!-- QLExpress -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>QLExpress</artifactId>
+            <version>3.3.1</version>
+        </dependency>
 
 
     </dependencies>
