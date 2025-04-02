@@ -22,6 +22,13 @@ public interface ErrorCodeConstants {
     ErrorCode ENERGY_CONFIGURATION_STANDINGBOOK_EXISTS = new ErrorCode(1_001_301_008, "该能源关联计量器具，不可进行删除");
     ErrorCode ENERGY_CONFIGURATION_STANDINGBOOK_UNIT = new ErrorCode(1_001_301_009, "该能源已有参数单位，且已关联计量器具，不可进行修改");
     ErrorCode FAILED_PRICE_DETAILS = new ErrorCode(1_001_301_012,"解析价格详情失败");
+    ErrorCode END_TIME_MUST_AFTER_START_TIME = new ErrorCode(1_001_301_013,"结束时间必须大于开始时间");
+    ErrorCode PAST_PERIOD_MODIFY_NOT_ALLOWED = new ErrorCode(1_001_301_014,"过去的应用周期不可修改");
+    ErrorCode CANNOT_MODIFY_START_TIME_OF_CURRENT_PERIOD = new ErrorCode(1_001_301_015,"当前周期的开始时间不可修改");
+    ErrorCode INVALID_END_TIME_FOR_CURRENT_PERIOD = new ErrorCode(1_001_301_016,"结束时间必须大于当前时间且大于开始时间");
+    ErrorCode NEXT_PERIOD_CONFLICT = new ErrorCode(1_001_301_017,"存在后续周期配置，请先清空下一周期时间范围！");
+    ErrorCode CANNOT_DELETE_PAST_PERIOD = new ErrorCode(1_001_301_018,"过去的应用周期不可删除");
+    ErrorCode CANNOT_DELETE_CURRENT_PERIOD = new ErrorCode(1_001_301_019,"当前应用周期不可删除");
     //========== 关联下级计量和关联上级设备 配置 1-001-101-000 ==========
     ErrorCode DEVICE_ASSOCIATION_CONFIGURATION_NOT_EXISTS = new ErrorCode(1_001_101_001, "设备关联配置不存在");
 

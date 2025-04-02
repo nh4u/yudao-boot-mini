@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.unitpricehistory.UnitPriceHis
 import cn.bitlinks.ems.module.power.dal.mysql.unitpricehistory.UnitPriceHistoryMapper;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.unitpricehistory.UnitPriceHistoryService;
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,6 +20,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -65,6 +67,12 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
                 createReqVO.setEndTime(createReqVO.getTimeRange().get(1));
             }
 
+            if (createReqVO.getStartTime() != null && createReqVO.getEndTime() != null
+                    && !createReqVO.getEndTime().isAfter(createReqVO.getStartTime())) {
+                throw exception(END_TIME_MUST_AFTER_START_TIME);
+            }
+
+
             // 检查时间冲突
             if (isTimeConflict(energyId, createReqVO.getStartTime(), createReqVO.getEndTime())) {
                 // 时间冲突，抛出异常或处理逻辑
@@ -75,10 +83,6 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
             // 插入
             UnitPriceConfigurationDO unitPriceConfiguration = BeanUtils.toBean(createReqVO, UnitPriceConfigurationDO.class);
             unitPriceConfigurationMapper.insertOrUpdate(unitPriceConfiguration);
-
-            // 插入历史记录
-            UnitPriceHistorySaveReqVO unitPriceHistory = BeanUtils.toBean(createReqVO, UnitPriceHistorySaveReqVO.class);
-            unitPriceHistoryService.createUnitPriceHistory(unitPriceHistory);
 
             // 添加ID到列表
             ids.add(unitPriceConfiguration.getId());
@@ -121,6 +125,7 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
     @Override
     public List<Long> updateUnitPriceConfiguration(Long energyId, List<UnitPriceConfigurationSaveReqVO> updateReqVOList) {
         List<Long> ids = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
         for (UnitPriceConfigurationSaveReqVO updateReqVO : updateReqVOList) {
             // 设置能源ID
             updateReqVO.setEnergyId(energyId);
@@ -131,46 +136,134 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
                 updateReqVO.setEndTime(updateReqVO.getTimeRange().get(1));
             }
 
-            // 修改记录时需要排除自身ID
+            if (updateReqVO.getStartTime() != null && updateReqVO.getEndTime() != null
+                    && !updateReqVO.getEndTime().isAfter(updateReqVO.getStartTime())) {
+                throw exception(END_TIME_MUST_AFTER_START_TIME);
+            }
+
+            if (updateReqVO.getId() != null) {
+                UnitPriceConfigurationDO existingConfig = unitPriceConfigurationMapper.selectById(updateReqVO.getId());
+                if (existingConfig == null) {
+                    throw exception(UNIT_PRICE_CONFIGURATION_NOT_EXISTS);
+                }
+
+                boolean isModified =
+                        // 时间比较（截断到分钟级）
+                        !Objects.equals(existingConfig.getStartTime().truncatedTo(ChronoUnit.MINUTES),
+                                updateReqVO.getStartTime().truncatedTo(ChronoUnit.MINUTES))
+                                || !Objects.equals(existingConfig.getEndTime().truncatedTo(ChronoUnit.MINUTES),
+                                updateReqVO.getEndTime().truncatedTo(ChronoUnit.MINUTES))
+                                // JSON内容比较（反序列化后比较）
+                                || !comparePriceDetails(existingConfig.getPriceDetails(), updateReqVO.getPriceDetails())
+                                // 其他业务字段
+                                || !Objects.equals(existingConfig.getBillingMethod(), updateReqVO.getBillingMethod())
+                                || !Objects.equals(existingConfig.getAccountingFrequency(), updateReqVO.getAccountingFrequency())
+                                // 隐藏字段（如公式版本）
+                                || !Objects.equals(existingConfig.getFormula(), updateReqVO.getFormula());
+
+                if (!isModified) {
+                    ids.add(existingConfig.getId());
+                    continue; // 无变更直接跳过后续校验
+                }
+
+                // 判断周期状态
+                boolean isPast = existingConfig.getEndTime().isBefore(now);
+                boolean isCurrent = !existingConfig.getStartTime().isAfter(now)
+                        && !existingConfig.getEndTime().isBefore(now);
+                boolean isFuture = existingConfig.getStartTime().isAfter(now);
+
+                if (isPast) {
+                    throw exception(PAST_PERIOD_MODIFY_NOT_ALLOWED);
+                } else if (isCurrent) {
+                    // 新增下一周期存在性检查
+                    UnitPriceConfigurationDO nextPeriod = unitPriceConfigurationMapper.findNextPeriod(
+                            energyId,
+                            existingConfig.getEndTime()
+                    );
+                    if (nextPeriod != null) {
+                        throw exception(NEXT_PERIOD_CONFLICT); // 关联异常提示
+                    }
+                    // 校验当前周期：开始时间不可修改，结束时间需合法
+                    if (!updateReqVO.getStartTime().isEqual(existingConfig.getStartTime())) {
+                        throw exception(CANNOT_MODIFY_START_TIME_OF_CURRENT_PERIOD);
+                    }
+                    if (updateReqVO.getEndTime().isBefore(now)
+                            || !updateReqVO.getEndTime().isAfter(existingConfig.getStartTime())) {
+                        throw exception(INVALID_END_TIME_FOR_CURRENT_PERIOD);
+                    }
+                } else if (isFuture) {
+                    // 检查下一周期冲突（未来周期允许修改开始时间）
+                    checkNextPeriodConflict(energyId, existingConfig.getEndTime(), updateReqVO.getEndTime());
+                }
+            }
+
+            // 原有时间冲突校验
             if (isTimeConflict(energyId, updateReqVO.getStartTime(), updateReqVO.getEndTime(), updateReqVO.getId())) {
                 throw exception(TIME_CONFLICT);
             }
-            // 插入
-            EnergyConfigurationDO energyConfiguration=energyConfigurationService.getEnergyConfiguration(energyId);
-            updateReqVO.setFormula(energyConfiguration.getUnitPriceFormula());
-            UnitPriceConfigurationDO unitPriceConfiguration = BeanUtils.toBean(updateReqVO, UnitPriceConfigurationDO.class);
-            // 执行更新并获取影响行数
-            if(updateReqVO.getId() != null) {
-                int affectedRows = unitPriceConfigurationMapper.updateById(unitPriceConfiguration);
+
+            // 后续保存逻辑...
+            EnergyConfigurationDO energyConfig = energyConfigurationService.getEnergyConfiguration(energyId);
+            updateReqVO.setFormula(energyConfig.getUnitPriceFormula());
+            UnitPriceConfigurationDO unitPriceConfig = BeanUtils.toBean(updateReqVO, UnitPriceConfigurationDO.class);
+
+            if (updateReqVO.getId() != null) {
+                int affectedRows = unitPriceConfigurationMapper.updateById(unitPriceConfig);
                 if (affectedRows > 0) {
                     // 插入历史记录
                     updateReqVO.setId(null);
-                    UnitPriceHistorySaveReqVO unitPriceHistory = BeanUtils.toBean(updateReqVO, UnitPriceHistorySaveReqVO.class);
-                    unitPriceHistoryService.createUnitPriceHistory(unitPriceHistory);
-                    ids.add(unitPriceConfiguration.getId());
+                    ids.add(unitPriceConfig.getId());
                 }
-            }else {
-                UnitPriceHistorySaveReqVO unitPriceHistory = BeanUtils.toBean(updateReqVO, UnitPriceHistorySaveReqVO.class);
-                unitPriceConfigurationMapper.insertOrUpdate(unitPriceConfiguration);
-                unitPriceHistoryService.createUnitPriceHistory(unitPriceHistory);
-                ids.add(unitPriceConfiguration.getId());
+            } else {
+                unitPriceConfigurationMapper.insertOrUpdate(unitPriceConfig);
+                ids.add(unitPriceConfig.getId());
             }
         }
         return ids;
     }
 
+    // 辅助方法：深度比较价格详情
+    private boolean comparePriceDetails(String existingJson, String newJson) {
+        try {
+            List<PriceDetail> existingDetails = JSON.parseArray(existingJson, PriceDetail.class);
+            List<PriceDetail> newDetails = JSON.parseArray(newJson, PriceDetail.class);
+            return Objects.equals(existingDetails, newDetails);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // 检查下一周期冲突
+    private void checkNextPeriodConflict(Long energyId, LocalDateTime originalEndTime, LocalDateTime newEndTime) {
+        UnitPriceConfigurationDO nextPeriod = unitPriceConfigurationMapper.findNextPeriod(energyId, originalEndTime);
+        if (nextPeriod != null && (newEndTime.isAfter(nextPeriod.getStartTime())
+                || newEndTime.isEqual(nextPeriod.getStartTime()))) {
+            throw exception(NEXT_PERIOD_CONFLICT);
+        }
+    }
+
     @Override
     public void deleteUnitPriceConfiguration(Long id) {
-        // 校验存在
-        validateUnitPriceConfigurationExists(id);
-        // 删除
+        UnitPriceConfigurationDO existingConfig = validateUnitPriceConfigurationExists(id);
+        LocalDateTime now = LocalDateTime.now();
+
+        if (existingConfig.getEndTime().isBefore(now)) {
+            throw exception(CANNOT_DELETE_PAST_PERIOD);
+        } else if (!existingConfig.getStartTime().isAfter(now)
+                && !existingConfig.getEndTime().isBefore(now)) {
+            throw exception(CANNOT_DELETE_CURRENT_PERIOD);
+        }
+
         unitPriceConfigurationMapper.deleteById(id);
     }
 
-    private void validateUnitPriceConfigurationExists(Long id) {
-        if (unitPriceConfigurationMapper.selectById(id) == null) {
+
+    private UnitPriceConfigurationDO validateUnitPriceConfigurationExists(Long id) {
+        UnitPriceConfigurationDO config = unitPriceConfigurationMapper.selectById(id);
+        if (config == null) {
             throw exception(UNIT_PRICE_CONFIGURATION_NOT_EXISTS);
         }
+        return config;
     }
 
     @Override

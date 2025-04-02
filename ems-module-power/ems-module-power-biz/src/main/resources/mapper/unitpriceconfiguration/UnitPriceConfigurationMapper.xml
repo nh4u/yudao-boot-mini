@@ -8,5 +8,10 @@
         代码生成器暂时只生成 Mapper XML 文件本身，更多推荐 MybatisX 快速开发插件来生成查询。
         文档可见：https://www.bitlinks.cn/MyBatis/x-plugins/
      -->
+    <select id="findNextPeriod" parameterType="map" resultType="cn.bitlinks.ems.module.power.dal.dataobject.unitpriceconfiguration.UnitPriceConfigurationDO">
+        SELECT * FROM ems_unit_price_configuration
+        WHERE energy_id = #{energyId} AND start_time >= #{endTime}
+        ORDER BY start_time ASC LIMIT 1
+    </select>
 
 </mapper>

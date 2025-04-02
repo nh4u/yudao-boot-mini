@@ -61,4 +61,7 @@ public interface UnitPriceConfigurationMapper extends BaseMapperX<UnitPriceConfi
             "</script>")
     List<UnitPriceConfigurationDO> findByEnergyIdExcludeId(@Param("energyId") Long energyId,
                                                            @Param("excludeId") Long excludeId);
+
+    UnitPriceConfigurationDO findNextPeriod(@Param("energyId") Long energyId,
+                                            @Param("endTime") LocalDateTime endTime);
 }
