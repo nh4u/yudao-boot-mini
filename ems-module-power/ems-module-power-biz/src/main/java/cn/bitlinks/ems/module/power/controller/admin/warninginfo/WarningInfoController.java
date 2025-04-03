@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Operation;
 
-import javax.validation.constraints.*;
 import javax.validation.*;
 import javax.servlet.http.*;
 import java.util.*;
@@ -45,12 +44,6 @@ public class WarningInfoController {
         return success(warningInfoService.statistics());
     }
 
-    @PostMapping("/create")
-    @Operation(summary = "创建告警信息")
-    @PreAuthorize("@ss.hasPermission('power:warning-info:create')")
-    public CommonResult<Long> createWarningInfo(@Valid @RequestBody WarningInfoSaveReqVO createReqVO) {
-        return success(warningInfoService.createWarningInfo(createReqVO));
-    }
 
     @PutMapping("/updateStatus")
     @Operation(summary = "更新告警信息状态：点击处理：1，点击处理完成：2")

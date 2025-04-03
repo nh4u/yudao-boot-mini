@@ -32,10 +32,7 @@ public class WarningInfoDO extends BaseDO {
      * 告警等级：紧急4 重要3 次要2 警告1 提示0
      */
     private Integer level;
-    /**
-     * 用户id
-     */
-    private Long userId;
+
     /**
      * 告警时间
      */

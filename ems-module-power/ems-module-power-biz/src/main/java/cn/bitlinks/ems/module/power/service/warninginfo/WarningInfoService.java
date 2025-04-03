@@ -12,13 +12,6 @@ import cn.bitlinks.ems.framework.common.pojo.PageResult;
  */
 public interface WarningInfoService {
 
-    /**
-     * 创建告警信息
-     *
-     * @param createReqVO 创建信息
-     * @return 编号
-     */
-    Long createWarningInfo(@Valid WarningInfoSaveReqVO createReqVO);
 
     /**
      * 获得告警信息
