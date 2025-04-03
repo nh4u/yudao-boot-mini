@@ -51,8 +51,19 @@ public class WarningStrategyDO extends BaseDO {
     /**
      * 告警条件
      */
-    @TableField(value = "`condition`", typeHandler = JacksonTypeHandler.class)
-    private List<ConditionVO> condition;
+//    @TableField(value = "`condition`", typeHandler = JacksonTypeHandler.class)
+//    private List<ConditionVO> condition;
+
+
+//    /**
+//     * 触发告警的参数编码集合
+//     */
+//    private List<String> paramCodes;
+//
+//    /**
+//     * 触发告警的设备id集合
+//     */
+//    private List<String> sbIds;
     /**
      * 告警等级：紧急4 重要3 次要2 警告1 提示0
      * <p>

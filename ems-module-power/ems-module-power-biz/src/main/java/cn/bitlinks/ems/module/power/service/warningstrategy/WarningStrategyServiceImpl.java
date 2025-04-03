@@ -6,15 +6,21 @@ import cn.bitlinks.ems.framework.common.util.object.PageUtils;
 import cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyConditionDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyDO;
+import cn.bitlinks.ems.module.power.dal.mysql.warninginfo.WarningInfoMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyConditionMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyMapper;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
 import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.collection.CollUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
@@ -24,6 +30,7 @@ import java.util.stream.Collectors;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_EQUIPMENT_NAME;
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_MEASURING_INSTRUMENT_MAME;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.WARNING_STRATEGY_CONDITION_NOT_NULL;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.WARNING_STRATEGY_NOT_EXISTS;
 
 /**
@@ -33,10 +40,15 @@ import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.WARNING_STRA
  */
 @Service
 @Validated
+@Slf4j
 public class WarningStrategyServiceImpl implements WarningStrategyService {
 
     @Resource
     private WarningStrategyMapper warningStrategyMapper;
+    @Resource
+    private WarningStrategyConditionMapper warningStrategyConditionMapper;
+    @Resource
+    private WarningInfoMapper warningInfoMapper;
     @Resource
     private AdminUserApi adminUserApi;
 
@@ -46,16 +58,67 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
     @Resource
     private StandingbookAttributeService standingbookAttributeService;
 
+    private static final Integer batchSize = 2000;
+
+    @Transactional
     @Override
     public Long createWarningStrategy(WarningStrategySaveReqVO createReqVO) {
         // 插入
         WarningStrategyDO warningStrategy = BeanUtils.toBean(createReqVO, WarningStrategyDO.class);
         buildScope(createReqVO.getSelectScope(), warningStrategy);
-
+        // 触发告警的设备参数集合和参数编码集合
+        //        buildParams(warningStrategy.getCondition(), warningStrategy);
         warningStrategyMapper.insert(warningStrategy);
+
+        // 添加条件
+        createCondition(createReqVO.getCondition(), warningStrategy.getId());
+
         // 返回
         return warningStrategy.getId();
     }
+
+    /**
+     * 创建关联条件数据
+     *
+     * @param conditionVOS 条件
+     * @param strategyId   策略id
+     */
+    private void createCondition(List<ConditionVO> conditionVOS, Long strategyId) {
+        List<WarningStrategyConditionDO> warningStrategyConditionDOS = new ArrayList<>();
+        if (CollUtil.isEmpty(conditionVOS)) {
+            throw exception(WARNING_STRATEGY_CONDITION_NOT_NULL);
+        }
+        conditionVOS.forEach(conditionVO -> {
+            WarningStrategyConditionDO warningStrategyConditionDO = BeanUtils.toBean(conditionVO, WarningStrategyConditionDO.class);
+            warningStrategyConditionDO.setStrategyId(strategyId);
+            warningStrategyConditionDOS.add(warningStrategyConditionDO);
+        });
+        warningStrategyConditionMapper.insertBatch(warningStrategyConditionDOS);
+    }
+
+//    /**
+//     * 插入/修改 触发告警的设备参数集合和参数编码集合（暂不需要）
+//     *
+//     * @param warningStrategyDO 策略
+//     */
+//    private void buildParams(List<ConditionVO> conditionVOS, WarningStrategyDO warningStrategyDO) {
+//        List<String> paramCodes = new ArrayList<>();
+//        List<String> deviceIds = new ArrayList<>();
+//        if (CollUtil.isNotEmpty(conditionVOS)) {
+//            for (ConditionVO conditionVO : conditionVOS) {
+//                List<String> paramIdList = conditionVO.getParamId();
+//                if (paramIdList != null && paramIdList.size() >= 2) {  // Ensure there are at least 2 elements
+//                    int size = paramIdList.size();
+//                    String paramCode = paramIdList.get(size - 1);   // Last element
+//                    String deviceId = paramIdList.get(size - 2);    // Second to last element
+//                    paramCodes.add(paramCode);
+//                    deviceIds.add(deviceId);
+//                }
+//            }
+//            warningStrategyDO.setParamCodes(paramCodes);
+//            warningStrategyDO.setSbIds(deviceIds);
+//        }
+//    }
 
     /**
      * 插入/修改 处理设备范围结构
@@ -77,6 +140,7 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
         warningStrategyDO.setDeviceTypeScope(groupedMap.get(false));
     }
 
+    @Transactional
     @Override
     public void updateWarningStrategy(WarningStrategySaveReqVO updateReqVO) {
         // 校验存在
@@ -84,7 +148,13 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
         // 更新
         WarningStrategyDO updateObj = BeanUtils.toBean(updateReqVO, WarningStrategyDO.class);
         buildScope(updateReqVO.getSelectScope(), updateObj);
+//        buildParams(updateObj.getCondition(), updateObj);
         warningStrategyMapper.updateById(updateObj);
+        // 删除条件
+        warningStrategyConditionMapper.delete(new LambdaQueryWrapper<WarningStrategyConditionDO>()
+                .eq(WarningStrategyConditionDO::getStrategyId, updateReqVO.getId()));
+        // 重新添加条件
+        createCondition(updateReqVO.getCondition(), updateReqVO.getId());
     }
 
     @Override
@@ -105,7 +175,13 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
     public WarningStrategyRespVO getWarningStrategy(Long id) {
 
         WarningStrategyDO warningStrategyDO = warningStrategyMapper.selectById(id);
+
         WarningStrategyRespVO strategyRespVO = BeanUtils.toBean(warningStrategyDO, WarningStrategyRespVO.class);
+        // 0.关联条件
+        List<WarningStrategyConditionDO> warningStrategyConditionDO = warningStrategyConditionMapper.selectList(new LambdaQueryWrapper<WarningStrategyConditionDO>()
+                .eq(WarningStrategyConditionDO::getStrategyId,warningStrategyDO.getId()));
+        List<ConditionVO> conditionVOS = BeanUtils.toBean(warningStrategyConditionDO, ConditionVO.class);
+        strategyRespVO.setCondition(conditionVOS);
         // 1.需要展示勾选的设备名称 和勾引选的分类名称
         List<Long> sbIds = warningStrategyDO.getDeviceScope();
 
@@ -206,5 +282,6 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
                 .set(WarningStrategyDO::getIntervalUnit, updateReqVO.getIntervalUnit())
         );
     }
+
 
 }

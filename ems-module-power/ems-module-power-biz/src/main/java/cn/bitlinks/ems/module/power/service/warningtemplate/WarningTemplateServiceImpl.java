@@ -137,7 +137,7 @@ public class WarningTemplateServiceImpl implements WarningTemplateService {
         // 存在 template 记录的情况下
         if (id == null // 新增时，说明重复
                 || ObjUtil.notEqual(id, template.getId())) { // 更新时，如果 id 不一致，说明重复
-            throw exception(WARNING_TEMPLATE_CODE_EXISTS);
+            throw exception(WARNING_TEMPLATE_CODE_EXISTS, code);
         }
     }
 
