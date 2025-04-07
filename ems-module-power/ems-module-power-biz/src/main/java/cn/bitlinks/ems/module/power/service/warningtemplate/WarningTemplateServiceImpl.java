@@ -8,6 +8,7 @@ import cn.bitlinks.ems.module.power.controller.admin.warningtemplate.vo.WarningT
 import cn.bitlinks.ems.module.power.dal.dataobject.warningtemplate.WarningTemplateDO;
 import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningtemplate.WarningTemplateMapper;
+import cn.bitlinks.ems.module.power.enums.warninginfo.WarningTemplateKeyWordEnum;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.ReUtil;
@@ -46,10 +47,13 @@ public class WarningTemplateServiceImpl implements WarningTemplateService {
     public Long createWarningTemplate(WarningTemplateSaveReqVO createReqVO) {
         // 校验 code 是否唯一
         validateCodeUnique(null, createReqVO.getType(), createReqVO.getCode());
+
         // 插入
         WarningTemplateDO warningTemplate = BeanUtils.toBean(createReqVO, WarningTemplateDO.class)
                 .setParams(parseTemplateContentParams(createReqVO.getContent()))
                 .setTParams(parseTemplateContentParams(createReqVO.getTitle()));
+        // 校验 关键字是否合法
+        validTemplateIllegal(warningTemplate);
         warningTemplateMapper.insert(warningTemplate);
         // 返回
         return warningTemplate.getId();
@@ -65,7 +69,25 @@ public class WarningTemplateServiceImpl implements WarningTemplateService {
         WarningTemplateDO updateObj = BeanUtils.toBean(updateReqVO, WarningTemplateDO.class)
                 .setParams(parseTemplateContentParams(updateReqVO.getContent()))
                 .setTParams(parseTemplateContentParams(updateReqVO.getTitle()));
+        // 校验 关键字是否合法
+        validTemplateIllegal(updateObj);
         warningTemplateMapper.updateById(updateObj);
+    }
+
+    /**
+     * 校验 参数中的关键字是否合法
+     *
+     * @param warningTemplateDO 模板实体
+     */
+    private void validTemplateIllegal(WarningTemplateDO warningTemplateDO) {
+        boolean contentValid = WarningTemplateKeyWordEnum.areAnyKeywordsOutsideRange(warningTemplateDO.getParams());
+        if (contentValid) {
+            throw exception(WARNING_TEMPLATE_CONTENT_ILLEGAL);
+        }
+        boolean titleValid = WarningTemplateKeyWordEnum.areAnyKeywordsOutsideRange(warningTemplateDO.getTParams());
+        if (titleValid) {
+            throw exception(WARNING_TEMPLATE_TITLE_ILLEGAL);
+        }
     }
 
     @Override
@@ -123,9 +145,9 @@ public class WarningTemplateServiceImpl implements WarningTemplateService {
     @Override
     public List<WarningTemplateDO> getWarningTemplateList(Integer type, String name) {
         return warningTemplateMapper.selectList(new LambdaQueryWrapperX<WarningTemplateDO>()
-                    .likeIfPresent(WarningTemplateDO::getName, name)
-                    .eq(WarningTemplateDO::getType, type)
-                    .orderByDesc(WarningTemplateDO::getCreateTime));
+                .likeIfPresent(WarningTemplateDO::getName, name)
+                .eq(WarningTemplateDO::getType, type)
+                .orderByDesc(WarningTemplateDO::getCreateTime));
     }
 
     @VisibleForTesting
@@ -140,6 +162,7 @@ public class WarningTemplateServiceImpl implements WarningTemplateService {
             throw exception(WARNING_TEMPLATE_CODE_EXISTS, code);
         }
     }
+
 
     @VisibleForTesting
     public List<String> parseTemplateContentParams(String content) {
