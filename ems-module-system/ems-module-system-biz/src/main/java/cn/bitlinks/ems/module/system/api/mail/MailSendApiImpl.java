@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.system.api.mail;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
+import cn.bitlinks.ems.module.system.api.mail.dto.MailSendSingleToUserCustomReqDTO;
 import cn.bitlinks.ems.module.system.api.mail.dto.MailSendSingleToUserReqDTO;
 import cn.bitlinks.ems.module.system.service.mail.MailSendService;
 import org.springframework.validation.annotation.Validated;
@@ -29,4 +30,9 @@ public class MailSendApiImpl implements MailSendApi {
                 reqDTO.getTemplateCode(), reqDTO.getTemplateParams()));
     }
 
+    @Override
+    public CommonResult<Long> sendSingleMailToAdminCustom(MailSendSingleToUserCustomReqDTO reqDTO) {
+        return success(mailSendService.sendSingleMailToAdminCustom(reqDTO.getMail(), reqDTO.getUserId(),
+                reqDTO.getTitle(), reqDTO.getContent(), reqDTO.getTemplateId(), reqDTO.getTemplateCode(), reqDTO.getTemplateName()));
+    }
 }
