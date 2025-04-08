@@ -52,7 +52,7 @@ public enum WarningStrategyConnectorEnum {
      * @param warningStrategyConnectorEnum 连接符
      * @return 是否符合条件
      */
-    public static boolean evaluate(WarningStrategyConnectorEnum warningStrategyConnectorEnum, String conditionValue, String value) {
+    public static boolean evaluateCondition(WarningStrategyConnectorEnum warningStrategyConnectorEnum, String conditionValue, String value) {
         BiFunction<String, String, Boolean> strategy = strategyMap.get(warningStrategyConnectorEnum);
         return strategy != null ? strategy.apply(conditionValue, value) : false;
     }

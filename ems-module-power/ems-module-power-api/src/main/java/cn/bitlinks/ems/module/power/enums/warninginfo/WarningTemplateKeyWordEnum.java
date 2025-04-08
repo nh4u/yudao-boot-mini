@@ -45,19 +45,22 @@ public enum WarningTemplateKeyWordEnum {
 
     /**
      * 判断参数列表中是否超出设定
+     *
      * @param params 外来参数列表
      * @return 是否超出设定关键字
      */
     public static boolean areAnyKeywordsOutsideRange(List<String> params) {
         return params.stream().anyMatch(param -> keyWordOf(param) == null);
     }
+
     /**
      * 判断参数列表中是否都是唯一的关键字
+     *
      * @param params 外来参数列表
      * @return 是否超出唯一关键字
      */
     public static boolean areAnyKeywordsOutsideUniqueRange(List<String> params) {
-        return params.stream().anyMatch(param -> uniqueKeyWordOf(param) == null);
+        return params.stream().anyMatch(param -> uniqueKeyWordOf(param) != null);
     }
 }
 
