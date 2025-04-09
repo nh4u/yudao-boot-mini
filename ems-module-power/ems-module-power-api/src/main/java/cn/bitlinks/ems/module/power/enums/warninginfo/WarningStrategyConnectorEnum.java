@@ -34,14 +34,14 @@ public enum WarningStrategyConnectorEnum {
     private static final Map<WarningStrategyConnectorEnum, BiFunction<String, String, Boolean>> strategyMap = new EnumMap<>(WarningStrategyConnectorEnum.class);
 
     static {
-        strategyMap.put(WarningStrategyConnectorEnum.NOT_CONTAINS, (conditionValue, value) -> !conditionValue.equals(value));
+        strategyMap.put(WarningStrategyConnectorEnum.NOT_CONTAINS, (value, conditionValue) -> !conditionValue.equals(value));
         strategyMap.put(WarningStrategyConnectorEnum.CONTAINS, String::equals);
-        strategyMap.put(WarningStrategyConnectorEnum.NE, (conditionValue, value) -> !new BigDecimal(conditionValue).equals(new BigDecimal(value)));
-        strategyMap.put(WarningStrategyConnectorEnum.EQUALS, (conditionValue, value) -> new BigDecimal(conditionValue).equals(new BigDecimal(value)));
-        strategyMap.put(WarningStrategyConnectorEnum.LTE, (conditionValue, value) -> new BigDecimal(conditionValue).compareTo(new BigDecimal(value)) <= 0);
-        strategyMap.put(WarningStrategyConnectorEnum.GTE, (conditionValue, value) -> new BigDecimal(conditionValue).compareTo(new BigDecimal(value)) >= 0);
-        strategyMap.put(WarningStrategyConnectorEnum.LT, (conditionValue, value) -> new BigDecimal(conditionValue).compareTo(new BigDecimal(value)) < 0);
-        strategyMap.put(WarningStrategyConnectorEnum.GT, (conditionValue, value) -> new BigDecimal(conditionValue).compareTo(new BigDecimal(value)) > 0);
+        strategyMap.put(WarningStrategyConnectorEnum.NE, (value, conditionValue) -> !new BigDecimal(conditionValue).equals(new BigDecimal(value)));
+        strategyMap.put(WarningStrategyConnectorEnum.EQUALS, (value, conditionValue) -> new BigDecimal(conditionValue).equals(new BigDecimal(value)));
+        strategyMap.put(WarningStrategyConnectorEnum.LTE, (value, conditionValue) -> new BigDecimal(conditionValue).compareTo(new BigDecimal(value)) <= 0);
+        strategyMap.put(WarningStrategyConnectorEnum.GTE, (value, conditionValue) -> new BigDecimal(conditionValue).compareTo(new BigDecimal(value)) >= 0);
+        strategyMap.put(WarningStrategyConnectorEnum.LT, (value, conditionValue) -> new BigDecimal(conditionValue).compareTo(new BigDecimal(value)) < 0);
+        strategyMap.put(WarningStrategyConnectorEnum.GT, (value, conditionValue) -> new BigDecimal(conditionValue).compareTo(new BigDecimal(value)) > 0);
     }
 
     /**

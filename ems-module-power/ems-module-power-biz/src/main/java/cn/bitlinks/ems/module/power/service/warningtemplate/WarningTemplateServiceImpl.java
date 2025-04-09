@@ -180,6 +180,9 @@ public class WarningTemplateServiceImpl implements WarningTemplateService {
             // 如果模板中参数都是唯一的，那么不需要循环，直接按照模板填充一次即可，否则，需要循环内容，
             StringBuilder sb = new StringBuilder();
             //没有系统关键字，则不需要填充参数，直接返回模板的字符串
+            if(CollUtil.isEmpty(keyWord)){
+                return templateStr;
+            }
             boolean isNoKey = WarningTemplateKeyWordEnum.areAnyKeywordsOutsideRange(keyWord);
             if (isNoKey) {
                 return templateStr;

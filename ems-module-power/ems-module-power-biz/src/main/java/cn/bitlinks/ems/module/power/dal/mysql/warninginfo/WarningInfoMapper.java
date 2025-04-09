@@ -36,7 +36,7 @@ public interface WarningInfoMapper extends BaseMapperX<WarningInfoDO> {
                 .eqIfPresent(WarningInfoDO::getStatus, reqVO.getStatus())
                 .likeIfPresent(WarningInfoDO::getDeviceRel, reqVO.getDeviceRel())
                 .eq(WarningInfoDO::getUserId, getLoginUserId())
-                .betweenIfPresent(WarningInfoDO::getCreateTime, reqVO.getCreateTime())
+                //.betweenIfPresent(WarningInfoDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(WarningInfoDO::getWarningTime));
     }
 //    @Select("SELECT " +
@@ -51,13 +51,13 @@ public interface WarningInfoMapper extends BaseMapperX<WarningInfoDO> {
 //            "WHERE wiu.user_id = #{userId}")
 //    WarningInfoStatisticsRespVO countWarningsByLevel(@Param("userId") long userId);
     @Select("SELECT " +
-            "COUNT(1) AS total, " +
-            "SUM(CASE WHEN level = 0 THEN 1 ELSE 0 END) AS count0, " +
-            "SUM(CASE WHEN level = 1 THEN 1 ELSE 0 END) AS count1, " +
-            "SUM(CASE WHEN level = 2 THEN 1 ELSE 0 END) AS count2, " +
-            "SUM(CASE WHEN level = 3 THEN 1 ELSE 0 END) AS count3, " +
-            "SUM(CASE WHEN level = 4 THEN 1 ELSE 0 END) AS count4 " +
-            "FROM power_warning_info where user_id = #{userId}")
+        "COUNT(1) AS total, " +
+        "COALESCE(SUM(CASE WHEN level = 0 THEN 1 ELSE 0 END), 0) AS count0, " +
+        "COALESCE(SUM(CASE WHEN level = 1 THEN 1 ELSE 0 END), 0) AS count1, " +
+        "COALESCE(SUM(CASE WHEN level = 2 THEN 1 ELSE 0 END), 0) AS count2, " +
+        "COALESCE(SUM(CASE WHEN level = 3 THEN 1 ELSE 0 END), 0) AS count3, " +
+        "COALESCE(SUM(CASE WHEN level = 4 THEN 1 ELSE 0 END), 0) AS count4 " +
+        "FROM power_warning_info where user_id = #{userId} and deleted=0")
     WarningInfoStatisticsRespVO countWarningsByLevel(@Param("userId") long userId);
 
 //    default void updateStatusById(Long id, Integer status) {

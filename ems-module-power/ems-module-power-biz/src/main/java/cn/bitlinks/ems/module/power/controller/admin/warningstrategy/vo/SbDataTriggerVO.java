@@ -12,8 +12,10 @@ import java.time.LocalDateTime;
 @Data
 public class SbDataTriggerVO {
 
-    @NotBlank(message = "设备编码不能为空")
-    private String sbCode;
+//    @NotBlank(message = "设备编码不能为空")
+//    private String sbCode;
+    @NotNull(message = "设备id不能为空")
+    private Long sbId;
 
     @NotBlank(message = "设备参数编码不能为空")
     private String paramCode;

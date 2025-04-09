@@ -10,18 +10,19 @@
      -->
     <select id="selectLatestCreateTimeByStrategy" resultType="cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoLatestStrategyRespVO">
         SELECT
+            distinct
             pwi.strategy_id AS strategyId,
-            pwi.warning_time AS triggerTime,
+            pwi.warning_time AS triggerTime
         FROM
             power_warning_info pwi
                 INNER JOIN (
                 SELECT
-                    policy_id,
+                    strategy_id,
                     MAX(warning_time) AS max_warning_time
                 FROM
                     power_warning_info
                 GROUP BY
-                    policy_id
-            ) AS latest ON pwi.policy_id = latest.policy_id AND pwi.warning_time = latest.max_warning_time
+                    strategy_id
+            ) AS latest ON pwi.strategy_id = latest.strategy_id AND pwi.warning_time = latest.max_warning_time
     </select>
 </mapper>

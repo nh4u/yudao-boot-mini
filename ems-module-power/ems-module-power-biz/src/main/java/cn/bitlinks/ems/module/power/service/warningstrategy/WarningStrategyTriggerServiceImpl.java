@@ -84,12 +84,15 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
             return;
         }
         /* ---------------------------- 实体设备触发告警 ---------------------------------------- */
+        // todo 欠缺数采设备编码和设备id的转换、系统中能源参数编码和数采参数编码的转换，可能需要将接口参数再一一处理一层
         // 获取设备编码和设备参数
-        Map<String, List<SbDataTriggerVO>> codeParamMap = sbDataTriggerVOList.stream()
-                .collect(Collectors.groupingBy(SbDataTriggerVO::getSbCode));
+        Map<Long, List<SbDataTriggerVO>> codeParamMap = sbDataTriggerVOList.stream()
+                .collect(Collectors.groupingBy(SbDataTriggerVO::getSbId));
         // 获取对应台账信息-所有的设备id
-        Map<Long, List<StandingbookAttributeDO>> attrsMap = standingbookAttributeService.getSbAttrBySbCode(new ArrayList<>(codeParamMap.keySet()));
-
+        Map<Long, List<StandingbookAttributeDO>> attrsMap = standingbookAttributeService.getAttributesBySbIds(new ArrayList<>(codeParamMap.keySet()));
+        if(CollUtil.isEmpty(attrsMap)){
+            return;
+        }
         // 查询所有能源 todo 等能源设置好之后，再填充能源参数相关的问题。
 //        List<EnergyConfigurationDO> energyConfigurationDOS = energyConfigurationService.getAllEnergyConfiguration(null);
 //        Map<Long, List<WarningStrategyConditionDO>> energyConfigurationMap = energyConfigurationDOS.stream()
@@ -156,17 +159,17 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                         String conditionCode = paramIds.get(paramIds.size() - 1);
                         // 获取设备id
                         String conditionSbId = paramIds.get(paramIds.size() - 2);
-                        List<SbDataTriggerVO> sbDataTriggerVOS = codeParamMap.get(conditionSbId);
+                        List<SbDataTriggerVO> sbDataTriggerVOS = codeParamMap.get(Long.valueOf(conditionSbId));
                         if (CollUtil.isEmpty(sbDataTriggerVOS)) {
-                            // 设备id不存在，跳出此策略
+                            // 该条件对应的设备id不存在，跳出此策略
                             return;
                         }
                         // 查找匹配的参数编码
                         Optional<SbDataTriggerVO> foundParamData = sbDataTriggerVOS.stream()
-                                .filter(vo -> vo.getParamCode().equals(conditionCode))
+                                .filter(vo -> vo.getParamCode().equals(conditionCode) )
                                 .findFirst();
                         if (!foundParamData.isPresent()) {
-                            // 未找到匹配的参数编码，跳出此策略
+                            // 该条件对应的参数编码不存在，跳出此策略
                             return;
                         }
                         SbDataTriggerVO sbDataTriggerVO = foundParamData.get();
