@@ -11,6 +11,7 @@ import cn.bitlinks.ems.module.power.controller.admin.voucher.vo.VoucherRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.voucher.vo.VoucherSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.voucher.VoucherDO;
 import cn.bitlinks.ems.module.power.service.voucher.VoucherService;
+import cn.hutool.json.JSONObject;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -43,7 +44,7 @@ public class VoucherController {
         VoucherDO voucher = voucherService.createVoucher(createReqVO);
         return success(BeanUtils.toBean(voucher, VoucherRespVO.class));
     }
-    
+
 //    voucherService.createVoucher(createReqVO)
 
     @PutMapping("/update")
@@ -101,5 +102,13 @@ public class VoucherController {
         return success(true);
     }
 
+    @GetMapping("/recognition")
+    @Operation(summary = "凭证识别")
+    @Parameter(name = "url", description = "文件地址", required = true, example = "xxx.jpg")
+    @PreAuthorize("@ss.hasPermission('power:voucher:query')")
+    public CommonResult<JSONObject> recognition(@RequestParam("url") String url) {
+        JSONObject result = voucherService.recognition(url);
+        return success(result);
+    }
 
 }
