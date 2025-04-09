@@ -29,6 +29,13 @@ public interface ErrorCodeConstants {
     ErrorCode NEXT_PERIOD_CONFLICT = new ErrorCode(1_001_301_017,"存在后续周期配置，请先清空下一周期时间范围！");
     ErrorCode CANNOT_DELETE_PAST_PERIOD = new ErrorCode(1_001_301_018,"过去的应用周期不可删除");
     ErrorCode CANNOT_DELETE_CURRENT_PERIOD = new ErrorCode(1_001_301_019,"当前应用周期不可删除");
+    ErrorCode PRICE_DETAIL_NOT_EXISTS = new ErrorCode(1_001_301_020,"单价详细不存在");
+    ErrorCode INVALID_FIXED_PRICE_DETAILS = new ErrorCode(1_001_301_021,"统一计价模式下必须且只能设置一个全局单价");
+    ErrorCode INVALID_LADDER_CONTINUITY = new ErrorCode(1_001_301_022,"阶梯计价连续性无效，请确保用量范围连续");
+    ErrorCode FIXED_PRICE_DETAILS_NOT_FOUND = new ErrorCode(1_001_301_023,"单价详细不存在");
+    ErrorCode NO_MATCHING_TIME_PERIOD = new ErrorCode(1_001_301_024,"该时间段不存在");
+    ErrorCode ACCOUNTING_FREQUENCY_NOT_SET = new ErrorCode(1_001_301_025,"核算频率为空");
+    ErrorCode ENERGY_PARAMETERS_NOT_EXISTS = new ErrorCode(1_001_301_026,"能源参数不存在");
     //========== 关联下级计量和关联上级设备 配置 1-001-101-000 ==========
     ErrorCode DEVICE_ASSOCIATION_CONFIGURATION_NOT_EXISTS = new ErrorCode(1_001_101_001, "设备关联配置不存在");
 

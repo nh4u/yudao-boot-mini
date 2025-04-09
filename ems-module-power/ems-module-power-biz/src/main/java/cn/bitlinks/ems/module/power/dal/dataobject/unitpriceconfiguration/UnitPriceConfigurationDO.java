@@ -1,11 +1,9 @@
 package cn.bitlinks.ems.module.power.dal.dataobject.unitpriceconfiguration;
 
+import cn.bitlinks.ems.module.power.dal.dataobject.pricedetail.PriceDetailDO;
 import com.sun.xml.bind.v2.TODO;
 import lombok.*;
 import java.util.*;
-import java.time.LocalDateTime;
-import java.time.LocalDateTime;
-import java.time.LocalDateTime;
 import java.time.LocalDateTime;
 import com.baomidou.mybatisplus.annotation.*;
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
@@ -49,15 +47,16 @@ public class UnitPriceConfigurationDO extends BaseDO {
      */
     private Integer billingMethod;
     /**
+     * 单价详细
+     */
+    @TableField(exist = false)
+    private List<PriceDetailDO> priceDetails;
+    /**
      * 核算频率
      *
      * 枚举 {@link TODO accounting_frequency 对应的类}
      */
     private Integer accountingFrequency;
-    /**
-     * 单价详细
-     */
-    private String priceDetails;
     /**
      * 计算公式
      */

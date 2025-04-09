@@ -8,7 +8,7 @@ import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.S
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyParameter;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementdevice.MeasurementDeviceDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
@@ -666,7 +666,7 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
             return Collections.emptyList();
         }
         EnergyConfigurationDO energyConfigurationDO = energyOptional.get();
-        List<EnergyParameter> energyParameters = energyConfigurationDO.getEnergyParameter();
+        List<EnergyParametersDO> energyParameters = energyConfigurationDO.getEnergyParameters();
         List<AttributeTreeNode> result = new ArrayList<>();
         energyParameters.forEach(energyParameter -> {
             AttributeTreeNode energyNode = new AttributeTreeNode();

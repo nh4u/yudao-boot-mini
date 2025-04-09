@@ -2,7 +2,7 @@ package cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo;
 
 import cn.bitlinks.ems.framework.excel.core.annotations.DictFormat;
 import cn.bitlinks.ems.framework.excel.core.convert.DictConvert;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyParameter;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -43,7 +43,7 @@ public class EnergyConfigurationRespVO {
 
     @Schema(description = "能源参数")
     @ExcelProperty("能源参数")
-    private List<EnergyParameter> energyParameter;
+    private List<EnergyParametersDO> energyParameters;
 
     @Schema(description = "折标煤系数")
     @ExcelProperty("折标煤系数")
