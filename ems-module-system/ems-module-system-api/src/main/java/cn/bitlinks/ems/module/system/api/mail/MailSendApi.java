@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.system.api.mail;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
+import cn.bitlinks.ems.module.system.api.mail.dto.MailSendSingleToUserCustomReqDTO;
 import cn.bitlinks.ems.module.system.api.mail.dto.MailSendSingleToUserReqDTO;
 import cn.bitlinks.ems.module.system.enums.ApiConstants;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,5 +26,10 @@ public interface MailSendApi {
     @PostMapping(PREFIX + "/send-single-member")
     @Operation(summary = "发送单条邮件给 Member 用户", description = "在 mail 为空时，使用 userId 加载对应 Member 的邮箱")
     CommonResult<Long> sendSingleMailToMember(@Valid @RequestBody MailSendSingleToUserReqDTO reqDTO);
+
+    @PostMapping(PREFIX + "/send-single-admin/warning")
+    @Operation(summary = "发送单条邮件给 Admin 用户(自定义告警信息)", description = "在 mail 为空时，使用 userId 加载对应 Admin 的邮箱")
+    CommonResult<Long> sendSingleMailToAdminCustom(@Valid @RequestBody MailSendSingleToUserCustomReqDTO reqDTO);
+
 
 }

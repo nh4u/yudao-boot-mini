@@ -1,8 +1,5 @@
 package cn.bitlinks.ems.module.system.service.mail;
 
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.extra.mail.MailAccount;
-import cn.hutool.extra.mail.MailUtil;
 import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.common.enums.UserTypeEnum;
 import cn.bitlinks.ems.module.system.dal.dataobject.mail.MailAccountDO;
@@ -12,6 +9,9 @@ import cn.bitlinks.ems.module.system.mq.message.mail.MailSendMessage;
 import cn.bitlinks.ems.module.system.mq.producer.mail.MailProducer;
 import cn.bitlinks.ems.module.system.service.member.MemberService;
 import cn.bitlinks.ems.module.system.service.user.AdminUserService;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.mail.MailAccount;
+import cn.hutool.extra.mail.MailUtil;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -50,6 +50,22 @@ public class MailSendServiceImpl implements MailSendService {
     private MailProducer mailProducer;
 
     @Override
+    public Long sendSingleMailToAdminCustom(String mail, Long userId,
+                                            String title, String content,
+                                            Long templateId, String templateCode, String templateName) {
+        // 如果 mail 为空，则加载用户编号对应的邮箱
+        if (StrUtil.isEmpty(mail)) {
+            AdminUserDO user = adminUserService.getUser(userId);
+            if (user != null) {
+                mail = user.getEmail();
+            }
+        }
+        // 执行发送
+        return sendSingleMailCustom(mail, userId, UserTypeEnum.ADMIN.getValue(), title, content, templateId, templateCode, templateName);
+
+    }
+
+    @Override
     public Long sendSingleMailToAdmin(String mail, Long userId,
                                       String templateCode, Map<String, Object> templateParams) {
         // 如果 mail 为空，则加载用户编号对应的邮箱
@@ -72,6 +88,29 @@ public class MailSendServiceImpl implements MailSendService {
         }
         // 执行发送
         return sendSingleMail(mail, userId, UserTypeEnum.MEMBER.getValue(), templateCode, templateParams);
+    }
+
+    @Override
+    public Long sendSingleMailCustom(String mail, Long userId, Integer userType, String title, String content,
+                                     Long templateId, String templateCode, String templateName) {
+
+        MailAccountDO account = validateMailAccount(1L);
+
+        // 校验邮箱是否存在
+        mail = validateMail(mail);
+
+        MailTemplateDO mailTemplateDO = new MailTemplateDO();
+        mailTemplateDO.setId(templateId);
+        mailTemplateDO.setCode(templateCode);
+        mailTemplateDO.setNickname(templateName);
+        mailTemplateDO.setTitle(title);
+        mailTemplateDO.setContent(content);
+        Long sendLogId = mailLogService.createMailLogCustom(userId, userType, mail,
+                account, mailTemplateDO, true);
+        // 发送 MQ 消息，异步执行发送短信
+        mailProducer.sendMailSendMessage(sendLogId, mail, account.getId(),
+                templateName, title, content);
+        return sendLogId;
     }
 
     @Override
@@ -100,11 +139,12 @@ public class MailSendServiceImpl implements MailSendService {
         return sendLogId;
     }
 
+
     @Override
     public void doSendMail(MailSendMessage message) {
         // 1. 创建发送账号
         MailAccountDO account = validateMailAccount(message.getAccountId());
-        MailAccount mailAccount  = buildMailAccount(account, message.getNickname());
+        MailAccount mailAccount = buildMailAccount(account, message.getNickname());
         // 2. 发送邮件
         try {
             String messageId = MailUtil.send(mailAccount, message.getMail(),
@@ -158,7 +198,7 @@ public class MailSendServiceImpl implements MailSendService {
     /**
      * 校验邮件参数是否确实
      *
-     * @param template 邮箱模板
+     * @param template       邮箱模板
      * @param templateParams 参数列表
      */
     @VisibleForTesting
