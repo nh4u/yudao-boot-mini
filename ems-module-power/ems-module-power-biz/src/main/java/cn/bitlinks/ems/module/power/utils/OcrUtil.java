@@ -20,7 +20,7 @@ import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUt
 
 public class OcrUtil {
 
-    public static JSONObject ocrRecognition(String url, OcrProperties ocrProperties) {
+    public static String ocrRecognition(String url, OcrProperties ocrProperties) {
         try {
             // 下载网络文件到临时文件
             byte[] fileBytes = HttpUtil.downloadBytes(url);
@@ -35,7 +35,7 @@ public class OcrUtil {
 
             // 返回响应内容
 
-            return JSONUtil.parseObj(response.body());
+            return (String) JSONUtil.parseObj(response.body()).get("html");
 
         } catch (Exception e) {
             e.printStackTrace();

@@ -168,7 +168,7 @@ public class VoucherServiceImpl implements VoucherService {
      * @return
      */
     @Override
-    public JSONObject recognition(String url) {
+    public String recognition(String url) {
 
         return OcrUtil.ocrRecognition(url,ocrProperties);
     }

@@ -62,5 +62,5 @@ public interface VoucherService {
     void deleteVouchers(List<Long> ids);
 
 
-    JSONObject recognition(String url);
+    String recognition(String url);
 }

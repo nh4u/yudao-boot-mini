@@ -106,8 +106,8 @@ public class VoucherController {
     @Operation(summary = "凭证识别")
     @Parameter(name = "url", description = "文件地址", required = true, example = "xxx.jpg")
     @PreAuthorize("@ss.hasPermission('power:voucher:query')")
-    public CommonResult<JSONObject> recognition(@RequestParam("url") String url) {
-        JSONObject result = voucherService.recognition(url);
+    public CommonResult<String> recognition(@RequestParam("url") String url) {
+        String result = voucherService.recognition(url);
         return success(result);
     }
 
