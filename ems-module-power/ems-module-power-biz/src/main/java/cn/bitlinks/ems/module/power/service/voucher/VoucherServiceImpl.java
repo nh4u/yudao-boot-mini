@@ -3,14 +3,17 @@ package cn.bitlinks.ems.module.power.service.voucher;
 import cn.bitlinks.ems.framework.common.exception.ErrorCode;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.module.power.config.OcrProperties;
 import cn.bitlinks.ems.module.power.controller.admin.voucher.vo.VoucherPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.voucher.vo.VoucherSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.voucher.VoucherDO;
 import cn.bitlinks.ems.module.power.dal.mysql.additionalrecording.AdditionalRecordingMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.voucher.VoucherMapper;
+import cn.bitlinks.ems.module.power.utils.OcrUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.StrPool;
+import cn.hutool.json.JSONObject;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -39,6 +42,9 @@ public class VoucherServiceImpl implements VoucherService {
 
     @Resource
     private StandingbookTypeMapper standingbookTypeMapper;
+
+    @Resource
+    private OcrProperties ocrProperties;
 
     @Override
     public VoucherDO createVoucher(VoucherSaveReqVO createReqVO) {
@@ -153,6 +159,18 @@ public class VoucherServiceImpl implements VoucherService {
         validateVoucherNotLinked(ids);
         // 3.批量删除
         voucherMapper.deleteByIds(ids);
+    }
+
+    /**
+     * 根据文件地址获取识别结果
+     *
+     * @param url
+     * @return
+     */
+    @Override
+    public String recognition(String url) {
+
+        return OcrUtil.ocrRecognition(url,ocrProperties);
     }
 
     private void validateVoucherNotLinked(List<Long> voucherIds) {
