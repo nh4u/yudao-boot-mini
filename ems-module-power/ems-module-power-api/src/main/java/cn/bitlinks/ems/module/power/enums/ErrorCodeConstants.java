@@ -73,6 +73,8 @@ public interface ErrorCodeConstants {
     ErrorCode WARNING_STRATEGY_NOT_EXISTS = new ErrorCode(1_001_701_006, "告警策略不存在");
     ErrorCode WARNING_STRATEGY_CONDITION_NOT_NULL = new ErrorCode(1_001_701_007, "告警策略条件不能为空");
     ErrorCode WARNING_INFO_NO_CONTENT = new ErrorCode(1_001_701_008, "该告警信息无内容");
+    ErrorCode WARNING_TEMPLATE_CONTENT_ILLEGAL = new ErrorCode(1_001_701_009, "模板内容关键字不正确");
+    ErrorCode WARNING_TEMPLATE_TITLE_ILLEGAL = new ErrorCode(1_001_701_010, "模板主题关键字不正确");
     // ========== 其他业务错误 ==========
 
     ErrorCode DATE_RANGE_NOT_EXISTS = new ErrorCode(1_001_601_001, "日期范围不存在");

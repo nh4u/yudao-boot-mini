@@ -1,14 +1,12 @@
 package cn.bitlinks.ems.module.power.service.warninginfo;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
-import cn.bitlinks.ems.framework.mybatis.core.query.MPJLambdaWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatisticsRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatusUpdReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoUserDO;
 import cn.bitlinks.ems.module.power.dal.mysql.warninginfo.WarningInfoMapper;
-import cn.bitlinks.ems.module.power.dal.mysql.warninginfo.WarningInfoUserMapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -29,8 +27,8 @@ public class WarningInfoServiceImpl implements WarningInfoService {
 
     @Resource
     private WarningInfoMapper warningInfoMapper;
-    @Resource
-    private WarningInfoUserMapper warningInfoUserMapper;
+//    @Resource
+//    private WarningInfoUserMapper warningInfoUserMapper;
 
 
     private void validateWarningInfoExists(Long id) {
@@ -47,18 +45,19 @@ public class WarningInfoServiceImpl implements WarningInfoService {
 
     @Override
     public PageResult<WarningInfoDO> getWarningInfoPage(WarningInfoPageReqVO pageReqVO) {
-        // 连表用户id查询分页
-        MPJLambdaWrapperX<WarningInfoDO> query = new MPJLambdaWrapperX<WarningInfoDO>()
-                .selectAll(WarningInfoDO.class)
-                .eqIfPresent(WarningInfoDO::getLevel, pageReqVO.getLevel())
-                .betweenIfPresent(WarningInfoDO::getWarningTime, pageReqVO.getWarningTime())
-                .eqIfPresent(WarningInfoDO::getStatus, pageReqVO.getStatus())
-                .likeIfPresent(WarningInfoDO::getDeviceRel, pageReqVO.getDeviceRel())
-                .orderByDesc(WarningInfoDO::getWarningTime);
-        query.rightJoin(WarningInfoUserDO.class, WarningInfoUserDO::getInfoId, WarningInfoDO::getId)
-                .eq(WarningInfoUserDO::getUserId, getLoginUserId());
-
-        return warningInfoMapper.selectJoinPage(pageReqVO, WarningInfoDO.class, query);
+//        // 连表用户id查询分页
+//        MPJLambdaWrapperX<WarningInfoDO> query = new MPJLambdaWrapperX<WarningInfoDO>()
+//                .selectAll(WarningInfoDO.class)
+//                .eqIfPresent(WarningInfoDO::getLevel, pageReqVO.getLevel())
+//                .betweenIfPresent(WarningInfoDO::getWarningTime, pageReqVO.getWarningTime())
+//                .eqIfPresent(WarningInfoDO::getStatus, pageReqVO.getStatus())
+//                .likeIfPresent(WarningInfoDO::getDeviceRel, pageReqVO.getDeviceRel())
+//                .orderByDesc(WarningInfoDO::getWarningTime);
+//        query.rightJoin(WarningInfoUserDO.class, WarningInfoUserDO::getInfoId, WarningInfoDO::getId)
+//                .eq(WarningInfoUserDO::getUserId, getLoginUserId());
+//
+//        return warningInfoMapper.selectJoinPage(pageReqVO, WarningInfoDO.class, query);
+        return warningInfoMapper.selectPage(pageReqVO);
     }
 
     @Override
@@ -70,8 +69,13 @@ public class WarningInfoServiceImpl implements WarningInfoService {
     public void updateWarningInfoStatus(WarningInfoStatusUpdReqVO updateReqVO) {
         // 校验存在
         validateWarningInfoExists(updateReqVO.getId());
-        // 更新处理状态
-        warningInfoMapper.updateStatusById(updateReqVO.getId(), updateReqVO.getStatus());
+        // 与产品协定修改逻辑：1.不同用户的告警消息，按照告警时间和告警规则一起更新处理状态，2. 过去时间的相同策略的告警信息如果未处理不需要更新处理状态。
+        WarningInfoDO warningInfo = warningInfoMapper.selectById(updateReqVO.getId());
+
+        warningInfoMapper.update(new LambdaQueryWrapper<WarningInfoDO>()
+                .eq(WarningInfoDO::getWarningTime, warningInfo.getWarningTime())
+                .eq(WarningInfoDO::getStrategyId, warningInfo.getStrategyId()));
+
     }
 
 

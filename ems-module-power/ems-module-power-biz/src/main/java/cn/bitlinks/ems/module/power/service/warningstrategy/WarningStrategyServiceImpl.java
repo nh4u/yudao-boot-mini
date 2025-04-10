@@ -8,7 +8,6 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.Standi
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyConditionDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyDO;
-import cn.bitlinks.ems.module.power.dal.mysql.warninginfo.WarningInfoMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyConditionMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyMapper;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
@@ -48,9 +47,8 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
     @Resource
     private WarningStrategyConditionMapper warningStrategyConditionMapper;
     @Resource
-    private WarningInfoMapper warningInfoMapper;
-    @Resource
     private AdminUserApi adminUserApi;
+
 
     @Resource
     private StandingbookTypeService standingbookTypeService;
@@ -58,7 +56,6 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
     @Resource
     private StandingbookAttributeService standingbookAttributeService;
 
-    private static final Integer batchSize = 2000;
 
     @Transactional
     @Override
@@ -66,8 +63,8 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
         // 插入
         WarningStrategyDO warningStrategy = BeanUtils.toBean(createReqVO, WarningStrategyDO.class);
         buildScope(createReqVO.getSelectScope(), warningStrategy);
-        // 触发告警的设备参数集合和参数编码集合
-        //        buildParams(warningStrategy.getCondition(), warningStrategy);
+        // 触发告警的设备参数集合和参数编码集合冗余字段
+//        buildParams(createReqVO.getCondition(), warningStrategy);
         warningStrategyMapper.insert(warningStrategy);
 
         // 添加条件
@@ -148,7 +145,7 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
         // 更新
         WarningStrategyDO updateObj = BeanUtils.toBean(updateReqVO, WarningStrategyDO.class);
         buildScope(updateReqVO.getSelectScope(), updateObj);
-//        buildParams(updateObj.getCondition(), updateObj);
+//        buildParams(updateReqVO.getCondition(), updateObj);
         warningStrategyMapper.updateById(updateObj);
         // 删除条件
         warningStrategyConditionMapper.delete(new LambdaQueryWrapper<WarningStrategyConditionDO>()
@@ -179,7 +176,7 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
         WarningStrategyRespVO strategyRespVO = BeanUtils.toBean(warningStrategyDO, WarningStrategyRespVO.class);
         // 0.关联条件
         List<WarningStrategyConditionDO> warningStrategyConditionDO = warningStrategyConditionMapper.selectList(new LambdaQueryWrapper<WarningStrategyConditionDO>()
-                .eq(WarningStrategyConditionDO::getStrategyId,warningStrategyDO.getId()));
+                .eq(WarningStrategyConditionDO::getStrategyId, warningStrategyDO.getId()));
         List<ConditionVO> conditionVOS = BeanUtils.toBean(warningStrategyConditionDO, ConditionVO.class);
         strategyRespVO.setCondition(conditionVOS);
         // 1.需要展示勾选的设备名称 和勾引选的分类名称

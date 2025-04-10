@@ -71,4 +71,6 @@ public interface WarningStrategyService {
      * @param updateReqVO updateReqVO
      */
     void updateWarningStrategyIntervalBatch(WarningStrategyBatchUpdIntervalReqVO updateReqVO);
+
+
 }

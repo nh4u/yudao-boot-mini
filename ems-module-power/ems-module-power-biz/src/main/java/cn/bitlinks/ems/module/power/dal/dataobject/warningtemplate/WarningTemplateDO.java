@@ -15,7 +15,7 @@ import java.util.List;
  *
  * @author bitlinks
  */
-@TableName("power_warning_template")
+@TableName(value = "power_warning_template", autoResultMap = true)
 @KeySequence("power_warning_template_seq") // 用于 Oracle、PostgreSQL、Kingbase、DB2、H2 数据库的主键自增。如果是 MySQL 等数据库，可不写。
 @Data
 @EqualsAndHashCode(callSuper = true)
