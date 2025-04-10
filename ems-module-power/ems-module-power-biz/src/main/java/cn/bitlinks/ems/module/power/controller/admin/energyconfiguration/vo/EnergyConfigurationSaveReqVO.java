@@ -1,6 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo;
 
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyParameter;
+import cn.bitlinks.ems.module.power.controller.admin.energyparameters.vo.EnergyParametersSaveReqVO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -32,7 +32,7 @@ public class EnergyConfigurationSaveReqVO {
     private Map<String, String> energyIcon;
 
     @Schema(description = "能源参数")
-    private List<EnergyParameter> energyParameter;
+    private List<EnergyParametersSaveReqVO> energyParameters;
 
     @Schema(description = "折标煤系数")
     private BigDecimal factor;

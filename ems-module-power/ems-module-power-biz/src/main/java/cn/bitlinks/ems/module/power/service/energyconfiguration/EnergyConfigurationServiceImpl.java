@@ -6,13 +6,16 @@ import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.energyparameters.vo.EnergyParametersSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyParameter;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
 import cn.bitlinks.ems.module.power.dal.mysql.daparamformula.DaParamFormulaMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.energyparameters.EnergyParametersMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.unitpriceconfiguration.UnitPriceConfigurationMapper;
+import cn.bitlinks.ems.module.power.service.energyparameters.EnergyParametersService;
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.collection.CollUtil;
@@ -20,17 +23,17 @@ import cn.hutool.core.util.StrUtil;
 import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.alibaba.nacos.common.utils.StringUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+import java.util.*;
+import java.util.function.Function;
+
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -57,69 +60,133 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     private DaParamFormulaMapper daParamFormulaMapper;
     @Resource
     private AdminUserApi adminUserApi;
-
+    @Resource
+    private EnergyParametersService energyParametersService;
+    @Resource
+    private EnergyParametersMapper energyParametersMapper;
     @Override
     public Long createEnergyConfiguration(EnergyConfigurationSaveReqVO createReqVO) {
-        // 检查能源编码是否重复
+        // 1. 检查能源编码是否重复
         checkEnergyCodeDuplicate(createReqVO.getCode(), null);
-        // 插入
+
+        // 2. 插入能源配置主表
         EnergyConfigurationDO energyConfiguration = BeanUtils.toBean(createReqVO, EnergyConfigurationDO.class);
         energyConfigurationMapper.insert(energyConfiguration);
-        // 返回
-        return energyConfiguration.getId();
+        Long energyId = energyConfiguration.getId();
+
+        // 3. 插入能源参数子表
+        if (CollectionUtils.isNotEmpty(createReqVO.getEnergyParameters())) {
+            List<EnergyParametersSaveReqVO> params = createReqVO.getEnergyParameters().stream()
+                    .peek(param -> param.setEnergyId(energyId)) // 设置能源ID
+                    .collect(Collectors.toList());
+            energyParametersService.batchCreateEnergyParameters(params);
+        }
+
+        return energyId;
     }
 
     @Override
     public void updateEnergyConfiguration(EnergyConfigurationSaveReqVO updateReqVO) {
-        // 校验存在
-        validateEnergyConfigurationExists(updateReqVO.getId());
-        // 检查能源编码是否重复（排除自身）
-        checkEnergyCodeDuplicate(updateReqVO.getCode(), updateReqVO.getId());
+        Long energyId = updateReqVO.getId();
+        // 1. 校验主表存在性
+        validateEnergyConfigurationExists(energyId);
+        // 2. 检查能源编码重复性（排除自身）
+        checkEnergyCodeDuplicate(updateReqVO.getCode(), energyId);
 
+        // 3. 处理单位变更校验（原有逻辑保留）
         String nickname = getLoginUserNickname();
-
-        // 获取请求中的新值
-        List<EnergyParameter> energyParameter = updateReqVO.getEnergyParameter();
-        String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(String.valueOf(updateReqVO.getId()));
-
-        if (CollUtil.isNotEmpty(energyParameter) && !unit.trim().isEmpty()) {
-            String newUnit = parseUnitFromJson(energyParameter);
-            if (!newUnit.equals(unit)) {
-                List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(String.valueOf(updateReqVO.getId()));
+        List<EnergyParametersSaveReqVO> newParameters = updateReqVO.getEnergyParameters();
+        String oldUnit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(String.valueOf(energyId));
+        if (CollUtil.isNotEmpty(newParameters) && StringUtils.isNotBlank(oldUnit)) {
+            String newUnit = parseUnitFromJson(newParameters);
+            if (!newUnit.equals(oldUnit)) {
+                List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(String.valueOf(energyId));
                 if (CollectionUtils.isNotEmpty(standingbookIds)) {
                     throw new ServiceException(ENERGY_CONFIGURATION_STANDINGBOOK_UNIT);
                 }
             }
-
         }
 
-        // 更新记录
+        // 4. 更新主表记录
         EnergyConfigurationDO updateObj = BeanUtils.toBean(updateReqVO, EnergyConfigurationDO.class);
         updateObj.setUpdater(nickname);
         energyConfigurationMapper.updateById(updateObj);
+
+        // 5. 处理子表参数（核心逻辑）
+        handleEnergyParameters(energyId, newParameters);
+    }
+
+    private void handleEnergyParameters(Long energyId, List<EnergyParametersSaveReqVO> newParams) {
+        if (newParams == null) {
+            return;
+        }
+
+        // 获取数据库中现有参数
+        List<EnergyParametersDO> oldParams = energyParametersMapper.selectList(
+                Wrappers.<EnergyParametersDO>lambdaQuery()
+                        .eq(EnergyParametersDO::getEnergyId, energyId)
+        );
+
+        // 将参数分为三类：需新增、需更新、需删除
+        Map<Long, EnergyParametersSaveReqVO> newParamMap = newParams.stream()
+                .filter(p -> p.getId() != null)
+                .collect(Collectors.toMap(EnergyParametersSaveReqVO::getId, Function.identity()));
+
+        List<EnergyParametersDO> toDelete = new ArrayList<>();
+        List<EnergyParametersSaveReqVO> toUpdate = new ArrayList<>();
+        List<EnergyParametersSaveReqVO> toAdd = new ArrayList<>();
+
+        // 遍历旧参数，识别删除或更新
+        for (EnergyParametersDO oldParam : oldParams) {
+            Long paramId = oldParam.getId();
+            if (newParamMap.containsKey(paramId)) {
+                // 更新操作
+                EnergyParametersSaveReqVO updateVO = newParamMap.get(paramId);
+                updateVO.setEnergyId(energyId); // 确保关联正确
+                toUpdate.add(updateVO);
+            } else {
+                // 删除操作
+                toDelete.add(oldParam);
+            }
+        }
+
+        // 识别新增参数（ID为null或不在旧参数ID列表中）
+        toAdd = newParams.stream()
+                .filter(p -> p.getId() == null || !newParamMap.containsKey(p.getId()))
+                .peek(p -> p.setEnergyId(energyId)) // 绑定能源ID
+                .collect(Collectors.toList());
+
+        // 执行批量操作
+        if (!toDelete.isEmpty()) {
+            List<Long> deleteIds = toDelete.stream().map(EnergyParametersDO::getId).collect(Collectors.toList());
+            energyParametersMapper.deleteByIds(deleteIds);
+        }
+        if (!toUpdate.isEmpty()) {
+            List<EnergyParametersDO> updateDOs = BeanUtils.toBean(toUpdate, EnergyParametersDO.class);
+            energyParametersMapper.updateBatch(updateDOs);
+        }
+        if (!toAdd.isEmpty()) {
+            List<EnergyParametersDO> addDOs = BeanUtils.toBean(toAdd, EnergyParametersDO.class);
+            energyParametersMapper.insertBatch(addDOs);
+        }
+
     }
 
     /**
      * 从 energyParameter JSON 中解析 chinese 为 "用量" 的 unit
      */
-    private String parseUnitFromJson(List<EnergyParameter> energyParameter) {
-        try {
-
-            if (CollectionUtils.isEmpty(energyParameter)) {
-                return "";
-            }
-
-            // 遍历查找 chinese 为 "用量" 的条目
-            for (EnergyParameter param : energyParameter) {
-                String chinese = param.getChinese();
-                if ("用量".equals(chinese)) {
-                    String unit = param.getUnit();
-                    return StrUtil.isNotEmpty(unit) ? unit : "";
-                }
-            }
-
-            // 未找到匹配项
+    private String parseUnitFromJson(List<EnergyParametersSaveReqVO> parameters) {
+        if (CollectionUtils.isEmpty(parameters)) {
             return "";
+        }
+        try {
+            // 使用 Stream API 简化查找逻辑
+            return parameters.stream()
+                    .filter(param -> "用量".equals(param.getChinese()))
+                    .map(EnergyParametersSaveReqVO::getUnit)
+                    .filter(StrUtil::isNotBlank)
+                    .findFirst()
+                    .orElse("");
         } catch (Exception e) {
             throw new ServiceException();
         }
@@ -159,12 +226,16 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         // 校验存在
         validateEnergyConfigurationExists(id);
 
-        // 使用 selectList 查询所有关联的台账 ID
+        // 2. 检查是否存在关联台账
         List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(String.valueOf(id));
         if (!standingbookIds.isEmpty()) {
             throw exception(ENERGY_CONFIGURATION_STANDINGBOOK_EXISTS);
         }
-        // 删除
+
+        // 3. 先删除子表（能源参数）
+        energyParametersMapper.deleteByEnergyId(id); // 需要新增的Mapper方法
+
+        // 4. 删除主表
         energyConfigurationMapper.deleteById(id);
     }
 
@@ -173,13 +244,20 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         // 校验存在
         for (Long id : ids) {
             validateEnergyConfigurationExists(id);
-            // 使用 selectList 查询所有关联的台账 ID
-            List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(String.valueOf(id));
-            if (!standingbookIds.isEmpty()) {
-                throw exception(ENERGY_CONFIGURATION_STANDINGBOOK_EXISTS);
-            }
+        }
+
+        // 2. 检查是否存在关联台账（任一配置有台账则阻断删除）
+        List<Long> invalidIds = ids.stream()
+                .filter(id -> {
+                    List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(String.valueOf(id));
+                    return CollectionUtils.isNotEmpty(standingbookIds);
+                })
+                .collect(Collectors.toList());
+        if (!invalidIds.isEmpty()) {
+            throw exception(ENERGY_CONFIGURATION_STANDINGBOOK_EXISTS, invalidIds.get(0));
         }
         // 删除
+        energyParametersMapper.deleteByEnergyIds(ids);
         energyConfigurationMapper.deleteByIds(ids);
     }
 
@@ -191,42 +269,84 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
 
     @Override
     public EnergyConfigurationDO getEnergyConfiguration(Long id) {
-        return energyConfigurationMapper.selectById(id);
+        // 1. 查询主表
+        EnergyConfigurationDO mainDO = energyConfigurationMapper.selectById(id);
+        if (mainDO == null) {
+            return null;
+        }
+
+        // 2. 查询子表（能源参数）
+        List<EnergyParametersDO> parameters = energyParametersMapper.selectByEnergyId(id);
+
+        // 3. 组装响应 VO
+        EnergyConfigurationDO respVO = BeanUtils.toBean(mainDO, EnergyConfigurationDO.class);
+        respVO.setEnergyParameters(parameters);
+        return respVO;
     }
 
     @Override
     public PageResult<EnergyConfigurationDO> getEnergyConfigurationPage(EnergyConfigurationPageReqVO pageReqVO) {
-        // 获取当前时间
-        LocalDateTime currentDateTime = LocalDateTime.now();
-        // 查询分页数据
+        // 1. 查询主表分页数据
         PageResult<EnergyConfigurationDO> pageResult = energyConfigurationMapper.selectPage(pageReqVO);
-        // 遍历结果集，设置 unitPrice 和 creator 昵称
-        if (pageResult != null && CollectionUtils.isNotEmpty(pageResult.getList())) {
-            for (EnergyConfigurationDO energyConfiguration : pageResult.getList()) {
-                // 设置单价详情
-                String priceDetails = unitPriceConfigurationMapper.getPriceDetailsByEnergyIdAndTime(energyConfiguration.getId(), currentDateTime);
-                Integer billingMethod = unitPriceConfigurationMapper.getBillingMethodByEnergyIdAndTime(energyConfiguration.getId(), currentDateTime);
-                Integer accountingFrequency = unitPriceConfigurationMapper.getAccountingFrequencyByEnergyIdAndTime(energyConfiguration.getId(), currentDateTime);
-                ;
-                energyConfiguration.setUnitPrice(priceDetails);
-                energyConfiguration.setBillingMethod(billingMethod);
-                energyConfiguration.setAccountingFrequency(accountingFrequency);
-
-                // 设置创建人昵称
-                if (energyConfiguration.getCreator() != null) {
-                    CommonResult<AdminUserRespDTO> user = adminUserApi.getUser(Long.valueOf(energyConfiguration.getCreator()));
-                    if (user.getData() != null) {
-                        energyConfiguration.setCreator(user.getData().getNickname());
-                    }
-                }
-            }
+        if (pageResult == null || CollectionUtils.isEmpty(pageResult.getList())) {
+            return new PageResult<>(Collections.emptyList(), 0L);
         }
-        return pageResult;
+
+        // 2. 收集所有能源配置ID
+        List<Long> energyIds = pageResult.getList().stream()
+                .map(EnergyConfigurationDO::getId)
+                .collect(Collectors.toList());
+
+        // 3. 批量查询关联的能源参数（一次性查询）
+        Map<Long, List<EnergyParametersDO>> paramsMap = energyParametersMapper.selectListByEnergyIds(energyIds)
+                .stream()
+                .collect(Collectors.groupingBy(EnergyParametersDO::getEnergyId));
+
+        // 4. 转换VO并填充参数
+        List<EnergyConfigurationDO> voList = pageResult.getList().stream().map(doObj -> {
+            // 转换为VO
+            EnergyConfigurationDO vo = BeanUtils.toBean(doObj, EnergyConfigurationDO.class);
+
+            // 设置能源参数
+            vo.setEnergyParameters(paramsMap.getOrDefault(doObj.getId(), Collections.emptyList()));
+
+            // 原有逻辑：设置单价和创建人昵称
+            LocalDateTime currentDateTime = LocalDateTime.now();
+            vo.setUnitPrice(unitPriceConfigurationMapper.getPriceDetailsByEnergyIdAndTime(doObj.getId(), currentDateTime));
+            vo.setBillingMethod(unitPriceConfigurationMapper.getBillingMethodByEnergyIdAndTime(doObj.getId(), currentDateTime));
+            vo.setAccountingFrequency(unitPriceConfigurationMapper.getAccountingFrequencyByEnergyIdAndTime(doObj.getId(), currentDateTime));
+
+            if (vo.getCreator() != null) {
+                CommonResult<AdminUserRespDTO> user = adminUserApi.getUser(Long.valueOf(vo.getCreator()));
+                vo.setCreator(user.getData() != null ? user.getData().getNickname() : vo.getCreator());
+            }
+
+            return vo;
+        }).collect(Collectors.toList());
+
+        // 5. 返回新的分页结果
+        return new PageResult<>(voList, pageResult.getTotal());
     }
 
     @Override
     public List<EnergyConfigurationDO> getAllEnergyConfiguration(EnergyConfigurationSaveReqVO queryVO) {
-        return energyConfigurationMapper.selectList();
+        List<EnergyConfigurationDO> mainList = energyConfigurationMapper.selectList();
+        if (CollectionUtils.isEmpty(mainList)) {
+            return Collections.emptyList();
+        }
+        List<Long> energyIds = mainList.stream()
+                .map(EnergyConfigurationDO::getId)
+                .collect(Collectors.toList());
+        Map<Long, List<EnergyParametersDO>> paramsMap = energyParametersMapper.selectListByEnergyIds(energyIds)
+                .stream()
+                .collect(Collectors.groupingBy(EnergyParametersDO::getEnergyId));
+        return mainList.stream()
+                .map(doObj -> {
+                    EnergyConfigurationDO vo = BeanUtils.toBean(doObj, EnergyConfigurationDO.class);
+                    vo.setEnergyParameters(paramsMap.getOrDefault(doObj.getId(), Collections.emptyList()));
+                    return vo;
+                })
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -236,19 +356,40 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
 
     @Override
     public List<EnergyConfigurationDO> selectByCondition(String energyName, String energyClassify, String code) {
+// 1. 构建查询条件
         QueryWrapper<EnergyConfigurationDO> queryWrapper = new QueryWrapper<>();
-
-        if (energyName != null && !energyName.isEmpty()) {
+        if (StrUtil.isNotBlank(energyName)) {
             queryWrapper.eq("energy_name", energyName);
         }
-        if (energyClassify != null && !energyClassify.isEmpty()) {
+        if (StrUtil.isNotBlank(energyClassify)) {
             queryWrapper.eq("energy_classify", energyClassify);
         }
-        if (code != null && !code.isEmpty()) {
+        if (StrUtil.isNotBlank(code)) {
             queryWrapper.eq("code", code);
         }
 
-        return energyConfigurationMapper.selectList(queryWrapper);
+        // 2. 查询主表数据
+        List<EnergyConfigurationDO> mainList = energyConfigurationMapper.selectList(queryWrapper);
+        if (CollectionUtils.isEmpty(mainList)) {
+            return Collections.emptyList();
+        }
+
+        // 3. 批量查询关联参数
+        List<Long> energyIds = mainList.stream()
+                .map(EnergyConfigurationDO::getId)
+                .collect(Collectors.toList());
+        Map<Long, List<EnergyParametersDO>> paramsMap = energyParametersMapper.selectListByEnergyIds(energyIds)
+                .stream()
+                .collect(Collectors.groupingBy(EnergyParametersDO::getEnergyId));
+
+        // 4. 组装 VO
+        return mainList.stream()
+                .map(doObj -> {
+                    EnergyConfigurationDO vo = BeanUtils.toBean(doObj, EnergyConfigurationDO.class);
+                    vo.setEnergyParameters(paramsMap.getOrDefault(doObj.getId(), Collections.emptyList()));
+                    return vo;
+                })
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -283,7 +424,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
             daParamFormulaDO = DaParamFormulaDO.builder()
                     .energyFormula(updateReqVO.getCoalFormula())
                     .energyId(updateReqVO.getId())
-                    .energyParam(updateReqVO.getEnergyParameter())
+                    .energyParam(updateReqVO.getEnergyParameters())
                     .startEffectiveTime(now)
                     .formulaScale(StrUtil.isNotEmpty(coalScale) ? Integer.valueOf(coalScale) : null)
                     .formulaType(formulaType).build();
@@ -293,7 +434,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
             daParamFormulaDO = DaParamFormulaDO.builder()
                     .energyFormula(updateReqVO.getUnitPriceFormula())
                     .energyId(updateReqVO.getId())
-                    .energyParam(updateReqVO.getEnergyParameter())
+                    .energyParam(updateReqVO.getEnergyParameters())
                     .startEffectiveTime(now)
                     .formulaScale(StrUtil.isNotEmpty(unitPriceScale) ? Integer.valueOf(unitPriceScale) : null)
                     .formulaType(formulaType).build();

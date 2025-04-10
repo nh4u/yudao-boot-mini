@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo;
 
+import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
 import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -26,7 +27,7 @@ public class EnergyConfigurationPageReqVO extends PageParam {
     private Integer energyClassify;
 
     @Schema(description = "能源参数")
-    private String energyParameter;
+    private List<EnergyParametersDO> energyParameters;
 
     @Schema(description = "折标煤系数")
     private BigDecimal factor;

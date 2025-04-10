@@ -27,7 +27,6 @@ public interface UnitPriceConfigurationMapper extends BaseMapperX<UnitPriceConfi
                 .betweenIfPresent(UnitPriceConfigurationDO::getEndTime, reqVO.getEndTime())
                 .eqIfPresent(UnitPriceConfigurationDO::getBillingMethod, reqVO.getBillingMethod())
                 .eqIfPresent(UnitPriceConfigurationDO::getAccountingFrequency, reqVO.getAccountingFrequency())
-                .eqIfPresent(UnitPriceConfigurationDO::getPriceDetails, reqVO.getPriceDetails())
                 .eqIfPresent(UnitPriceConfigurationDO::getFormula, reqVO.getFormula())
                 .betweenIfPresent(UnitPriceConfigurationDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(UnitPriceConfigurationDO::getId));
@@ -61,4 +60,7 @@ public interface UnitPriceConfigurationMapper extends BaseMapperX<UnitPriceConfi
             "</script>")
     List<UnitPriceConfigurationDO> findByEnergyIdExcludeId(@Param("energyId") Long energyId,
                                                            @Param("excludeId") Long excludeId);
+
+    UnitPriceConfigurationDO findNextPeriod(@Param("energyId") Long energyId,
+                                            @Param("endTime") LocalDateTime endTime);
 }

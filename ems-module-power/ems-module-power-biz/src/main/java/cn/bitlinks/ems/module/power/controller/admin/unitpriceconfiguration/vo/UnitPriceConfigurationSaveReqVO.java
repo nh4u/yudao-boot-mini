@@ -1,10 +1,9 @@
 package cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo;
 
+import cn.bitlinks.ems.module.power.controller.admin.pricedetail.vo.PriceDetailSaveReqVO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
-import javax.validation.constraints.*;
-import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
 
 @Schema(description = "管理后台 - 单价配置新增/修改 Request VO")
@@ -33,7 +32,7 @@ public class UnitPriceConfigurationSaveReqVO {
     private Integer accountingFrequency;
 
     @Schema(description = "单价详细")
-    private String priceDetails;
+    private List<PriceDetailSaveReqVO> priceDetails;
 
     @Schema(description = "计算公式")
     private String formula;

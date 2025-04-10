@@ -80,13 +80,13 @@ public class UnitPriceConfigurationController {
         return success(BeanUtils.toBean(unitPriceConfiguration, UnitPriceConfigurationRespVO.class));
     }
 
-    @GetMapping("/get-by-energy-id")
+    @GetMapping("/getByEnergyId")
     @Operation(summary = "根据能源ID获得单价配置列表")
     @Parameter(name = "energyId", description = "能源ID", required = true, example = "1024")
     @PreAuthorize("@ss.hasPermission('power:unit-price-configuration:query')")
-    public CommonResult<List<UnitPriceConfigurationRespVO>> getUnitPriceConfigurationByEnergyId(@RequestParam("energyId") Long energyId) {
-        List<UnitPriceConfigurationDO> unitPriceConfigurations = unitPriceConfigurationService.getUnitPriceConfigurationByEnergyId(energyId);
-        List<UnitPriceConfigurationRespVO> result = BeanUtils.toBean(unitPriceConfigurations, UnitPriceConfigurationRespVO.class);
+    public CommonResult<List<UnitPriceConfigurationDO>> getUnitPriceConfigurationByEnergyId(@RequestParam("energyId") Long energyId) {
+        List<UnitPriceConfigurationDO> result =
+                unitPriceConfigurationService.getUnitPriceConfigurationVOByEnergyId(energyId);
         return success(result);
     }
 
@@ -94,8 +94,9 @@ public class UnitPriceConfigurationController {
     @Operation(summary = "获得单价配置分页")
     @PreAuthorize("@ss.hasPermission('power:unit-price-configuration:query')")
     public CommonResult<PageResult<UnitPriceConfigurationRespVO>> getUnitPriceConfigurationPage(@Valid UnitPriceConfigurationPageReqVO pageReqVO) {
-        PageResult<UnitPriceConfigurationDO> pageResult = unitPriceConfigurationService.getUnitPriceConfigurationPage(pageReqVO);
-        return success(BeanUtils.toBean(pageResult, UnitPriceConfigurationRespVO.class));
+        PageResult<UnitPriceConfigurationRespVO> pageResult =
+                unitPriceConfigurationService.getUnitPriceConfigurationPage(pageReqVO);
+        return success(pageResult);
     }
 
     @GetMapping("/export-excel")
@@ -105,13 +106,13 @@ public class UnitPriceConfigurationController {
     public void exportUnitPriceConfigurationExcel(@Valid UnitPriceConfigurationPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
         pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
-        List<UnitPriceConfigurationDO> list = unitPriceConfigurationService.getUnitPriceConfigurationPage(pageReqVO).getList();
+        List<UnitPriceConfigurationRespVO> list = unitPriceConfigurationService.getUnitPriceConfigurationPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "单价配置.xls", "数据", UnitPriceConfigurationRespVO.class,
                         BeanUtils.toBean(list, UnitPriceConfigurationRespVO.class));
     }
 
-    @GetMapping("/latest-end-time")
+    @GetMapping("/latestEndTime")
     @Operation(summary = "获取最新结束时间")
     public CommonResult<LocalDateTime> getLatestEndTime(@RequestParam("energyId") Long energyId) {
         return CommonResult.success(
@@ -119,7 +120,7 @@ public class UnitPriceConfigurationController {
         );
     }
 
-    @GetMapping("/current-price")
+    @GetMapping("/currentPrice")
     @Operation(summary = "获取当前生效单价")
     public CommonResult<SimplePriceResult> getCurrentPrice(
             @RequestParam Long energyId,
