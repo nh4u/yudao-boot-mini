@@ -29,7 +29,7 @@ public interface UnitPriceConfigurationMapper extends BaseMapperX<UnitPriceConfi
                 .eqIfPresent(UnitPriceConfigurationDO::getAccountingFrequency, reqVO.getAccountingFrequency())
                 .eqIfPresent(UnitPriceConfigurationDO::getFormula, reqVO.getFormula())
                 .betweenIfPresent(UnitPriceConfigurationDO::getCreateTime, reqVO.getCreateTime())
-                .orderByDesc(UnitPriceConfigurationDO::getId));
+                .orderByDesc(UnitPriceConfigurationDO::getStartTime));
     }
 
     @Select("SELECT price_details FROM ems_unit_price_configuration " +

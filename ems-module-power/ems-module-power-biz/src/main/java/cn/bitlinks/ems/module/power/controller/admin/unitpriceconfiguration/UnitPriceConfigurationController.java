@@ -48,50 +48,28 @@ public class UnitPriceConfigurationController {
     @Resource
     private StarrocksService starrocksService;
 
-    @PostMapping("/create")
-    @Operation(summary = "创建单价配置")
-    @PreAuthorize("@ss.hasPermission('power:unit-price-configuration:create')")
-    public CommonResult<List<Long>> createUnitPriceConfigurations(@Valid @RequestBody UnitPriceConfigurationBatchSaveReqVO batchSaveReqVO) {
-        return success(unitPriceConfigurationService.createUnitPriceConfigurations(batchSaveReqVO.getEnergyId(), batchSaveReqVO.getList()));
-    }
+
 
     @PutMapping("/update")
     @Operation(summary = "更新单价配置")
     @PreAuthorize("@ss.hasPermission('power:unit-price-configuration:update')")
-    public CommonResult<List<Long>> updateUnitPriceConfiguration(@Valid @RequestBody UnitPriceConfigurationBatchSaveReqVO batchSaveReqVO) {
-        return success(unitPriceConfigurationService.updateUnitPriceConfiguration(batchSaveReqVO.getEnergyId(), batchSaveReqVO.getList()));
-    }
-
-    @DeleteMapping("/delete")
-    @Operation(summary = "删除单价配置")
-    @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('power:unit-price-configuration:delete')")
-    public CommonResult<Boolean> deleteUnitPriceConfiguration(@RequestParam("id") Long id) {
-        unitPriceConfigurationService.deleteUnitPriceConfiguration(id);
+    public CommonResult<Boolean> updateUnitPriceConfiguration(@Valid @RequestBody UnitPriceConfigurationBatchSaveReqVO batchSaveReqVO) {
+        unitPriceConfigurationService.updateUnitPriceConfiguration(batchSaveReqVO.getEnergyId(), batchSaveReqVO.getList());
         return success(true);
     }
 
-    @GetMapping("/get")
-    @Operation(summary = "获得单价配置")
-    @Parameter(name = "id", description = "编号", required = true, example = "1024")
-    @PreAuthorize("@ss.hasPermission('power:unit-price-configuration:query')")
-    public CommonResult<UnitPriceConfigurationRespVO> getUnitPriceConfiguration(@RequestParam("id") Long id) {
-        UnitPriceConfigurationDO unitPriceConfiguration = unitPriceConfigurationService.getUnitPriceConfiguration(id);
-        return success(BeanUtils.toBean(unitPriceConfiguration, UnitPriceConfigurationRespVO.class));
-    }
-
     @GetMapping("/getByEnergyId")
-    @Operation(summary = "根据能源ID获得单价配置列表")
+    @Operation(summary = "根据能源ID获得单价配置列表(当前周期和未来周期)")
     @Parameter(name = "energyId", description = "能源ID", required = true, example = "1024")
     @PreAuthorize("@ss.hasPermission('power:unit-price-configuration:query')")
     public CommonResult<List<UnitPriceConfigurationDO>> getUnitPriceConfigurationByEnergyId(@RequestParam("energyId") Long energyId) {
         List<UnitPriceConfigurationDO> result =
-                unitPriceConfigurationService.getUnitPriceConfigurationVOByEnergyId(energyId);
+                unitPriceConfigurationService.getUnitPriceConfigurationByEnergyId(energyId);
         return success(result);
     }
 
     @GetMapping("/page")
-    @Operation(summary = "获得单价配置分页")
+    @Operation(summary = "获得单价配置分页(过去周期-计价历史分页)")
     @PreAuthorize("@ss.hasPermission('power:unit-price-configuration:query')")
     public CommonResult<PageResult<UnitPriceConfigurationRespVO>> getUnitPriceConfigurationPage(@Valid UnitPriceConfigurationPageReqVO pageReqVO) {
         PageResult<UnitPriceConfigurationRespVO> pageResult =
@@ -127,7 +105,7 @@ public class UnitPriceConfigurationController {
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime targetTime) {
         PriceResultDTO priceResult = unitPriceConfigurationService.getPriceByTime(energyId, targetTime);
         SimplePriceResult result = new SimplePriceResult();
-        result.setPrice(extractPrice(priceResult,energyId,targetTime));
+        result.setPrice(extractPrice(priceResult, energyId, targetTime));
         return CommonResult.success(result);
     }
 

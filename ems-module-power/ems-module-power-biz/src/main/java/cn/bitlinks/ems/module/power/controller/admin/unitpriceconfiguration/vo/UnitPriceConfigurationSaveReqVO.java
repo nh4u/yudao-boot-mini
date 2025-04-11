@@ -10,11 +10,11 @@ import java.time.LocalDateTime;
 @Data
 public class UnitPriceConfigurationSaveReqVO {
 
-    @Schema(description = "id", requiredMode = Schema.RequiredMode.REQUIRED, example = "21056")
-    private Long id;
+//    @Schema(description = "id", requiredMode = Schema.RequiredMode.REQUIRED, example = "21056")
+//    private Long id;
 
-    @Schema(description = "能源id", example = "29649")
-    private Long energyId;
+//    @Schema(description = "能源id", example = "29649")
+//    private Long energyId;
 
     @Schema(description = "开始时间")
     private LocalDateTime startTime;
@@ -22,8 +22,8 @@ public class UnitPriceConfigurationSaveReqVO {
     @Schema(description = "结束时间")
     private LocalDateTime endTime;
 
-    @Schema(description = "时间范围")
-    private List<LocalDateTime> timeRange;
+//    @Schema(description = "时间范围")
+//    private List<LocalDateTime> timeRange;
 
     @Schema(description = "计费方式")
     private Integer billingMethod;

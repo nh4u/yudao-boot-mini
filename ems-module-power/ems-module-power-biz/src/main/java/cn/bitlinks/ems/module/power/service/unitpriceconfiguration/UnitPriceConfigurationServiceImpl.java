@@ -1,37 +1,37 @@
 package cn.bitlinks.ems.module.power.service.unitpriceconfiguration;
 
+import cn.bitlinks.ems.framework.common.pojo.PageResult;
+import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.pricedetail.vo.PriceDetailRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.pricedetail.vo.PriceDetailSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.PriceResultDTO;
+import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.UnitPriceConfigurationPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.UnitPriceConfigurationRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.UnitPriceConfigurationSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.pricedetail.PriceDetailDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.unitpriceconfiguration.UnitPriceConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.mysql.pricedetail.PriceDetailMapper;
-import cn.bitlinks.ems.module.power.dal.mysql.unitpricehistory.UnitPriceHistoryMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.unitpriceconfiguration.UnitPriceConfigurationMapper;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.pricedetail.PriceDetailService;
-import cn.bitlinks.ems.module.power.service.unitpricehistory.UnitPriceHistoryService;
-import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.collection.CollUtil;
 import com.alibaba.nacos.client.naming.utils.CollectionUtils;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import javax.annotation.Resource;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.*;
-import cn.bitlinks.ems.module.power.dal.dataobject.unitpriceconfiguration.UnitPriceConfigurationDO;
-import cn.bitlinks.ems.framework.common.pojo.PageResult;
-import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-
-import cn.bitlinks.ems.module.power.dal.mysql.unitpriceconfiguration.UnitPriceConfigurationMapper;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
@@ -47,206 +47,105 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
 
     @Resource
     private UnitPriceConfigurationMapper unitPriceConfigurationMapper;
-    @Resource
-    private UnitPriceHistoryService unitPriceHistoryService;
-    @Resource
-    private UnitPriceHistoryMapper unitPriceHistoryMapper;
+    //    @Resource
+//    private UnitPriceHistoryService unitPriceHistoryService;
+//    @Resource
+//    private UnitPriceHistoryMapper unitPriceHistoryMapper;
     @Resource
     private EnergyConfigurationService energyConfigurationService;
     @Resource
     private PriceDetailService priceDetailService;
-    @Autowired
+    @Resource
     private PriceDetailMapper priceDetailMapper;
 
-    @Override
-    public List<Long> createUnitPriceConfigurations(Long energyId, List<UnitPriceConfigurationSaveReqVO> createReqVOList) {
-        List<Long> ids = new ArrayList<>();
-        for (UnitPriceConfigurationSaveReqVO createReqVO : createReqVOList) {
-            // 设置能源ID
-            createReqVO.setEnergyId(energyId);
-
-            // 处理时间范围
-            if (createReqVO.getTimeRange() != null && createReqVO.getTimeRange().size() == 2) {
-                createReqVO.setStartTime(createReqVO.getTimeRange().get(0));
-                createReqVO.setEndTime(createReqVO.getTimeRange().get(1));
+    private void insertBatch(Long energyId, List<UnitPriceConfigurationSaveReqVO> updateReqVOList) {
+        EnergyConfigurationDO energyConfig = energyConfigurationService.getEnergyConfiguration(energyId);
+        updateReqVOList.forEach(updReqVO -> {
+            updReqVO.setFormula(energyConfig.getUnitPriceFormula());
+        });
+        List<UnitPriceConfigurationDO> unitPriceConfigList = BeanUtils.toBean(updateReqVOList, UnitPriceConfigurationDO.class);
+        unitPriceConfigList.forEach(unitPriceConfigurationDO -> {
+            unitPriceConfigurationDO.setEnergyId(energyId);
+        });
+        // 批量插入单价配置(周期)
+        unitPriceConfigurationMapper.insertBatch(unitPriceConfigList);
+        List<PriceDetailDO> priceDetailDOList = new ArrayList<>();
+        unitPriceConfigList.forEach(unitPriceConfigurationDO -> {
+            // 新增价格详情（子表）
+            if (unitPriceConfigurationDO.getPriceDetails() != null && !unitPriceConfigurationDO.getPriceDetails().isEmpty()) {
+                List<PriceDetailDO> priceDetails = unitPriceConfigurationDO.getPriceDetails().stream()
+                        .map(d -> {
+                            PriceDetailDO detail = BeanUtils.toBean(d, PriceDetailDO.class);
+                            detail.setPriceId(unitPriceConfigurationDO.getId()); // 关联主表 ID
+                            return detail;
+                        })
+                        .collect(Collectors.toList());
+                priceDetailDOList.addAll(priceDetails);
             }
-
-            if (createReqVO.getStartTime() != null && createReqVO.getEndTime() != null
-                    && !createReqVO.getEndTime().isAfter(createReqVO.getStartTime())) {
-                throw exception(END_TIME_MUST_AFTER_START_TIME);
-            }
-
-
-            // 检查时间冲突
-            if (isTimeConflict(energyId, createReqVO.getStartTime(), createReqVO.getEndTime())) {
-                // 时间冲突，抛出异常或处理逻辑
-                throw exception(TIME_CONFLICT);
-            }
-            EnergyConfigurationDO energyConfiguration=energyConfigurationService.getEnergyConfiguration(energyId);
-            createReqVO.setFormula(energyConfiguration.getUnitPriceFormula());
-            // 插入主表
-            UnitPriceConfigurationDO unitPriceConfig = BeanUtils.toBean(createReqVO, UnitPriceConfigurationDO.class);
-            unitPriceConfigurationMapper.insertOrUpdate(unitPriceConfig);
-            ids.add(unitPriceConfig.getId());
-
-            // 插入子表价格详情
-            if (CollectionUtil.isNotEmpty(createReqVO.getPriceDetails())) {
-                createReqVO.getPriceDetails().forEach(detail -> {
-                    detail.setPriceId(unitPriceConfig.getId()); // 关联主表ID
-                    priceDetailService.createPriceDetail(detail);
-                });
-            }
-        }
-        return ids;
-    }
-
-    private boolean isTimeConflict(Long energyId, LocalDateTime startTime, LocalDateTime endTime) {
-        List<UnitPriceConfigurationDO> existingConfigs = unitPriceConfigurationMapper.findByEnergyId(energyId);
-        for (UnitPriceConfigurationDO config : existingConfigs) {
-            if ((startTime.isBefore(config.getEndTime()) && endTime.isAfter(config.getStartTime())) ||
-                    startTime.equals(config.getStartTime()) || endTime.equals(config.getEndTime())) {
-                // 时间范围重叠
-                return true;
-            }
-        }
-        // 没有发现时间冲突
-        return false;
-    }
-
-    // 修改后的时间冲突检查方法（增加 excludeId 参数）
-    private boolean isTimeConflict(Long energyId, LocalDateTime startTime, LocalDateTime endTime, Long excludeId) {
-        // 查询时排除指定ID
-        List<UnitPriceConfigurationDO> existingConfigs = unitPriceConfigurationMapper.findByEnergyIdExcludeId(energyId, excludeId);
-
-        for (UnitPriceConfigurationDO config : existingConfigs) {
-            if (isOverlap(startTime, endTime, config.getStartTime(), config.getEndTime())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // 时间重叠判断工具方法
-    private boolean isOverlap(LocalDateTime start1, LocalDateTime end1,
-                              LocalDateTime start2, LocalDateTime end2) {
-        return start1.isBefore(end2) && end1.isAfter(start2);
+        });
+        // 批量插入单价详情(收费)
+        priceDetailMapper.insertBatch(priceDetailDOList);
     }
 
     @Override
-    public List<Long> updateUnitPriceConfiguration(Long energyId, List<UnitPriceConfigurationSaveReqVO> updateReqVOList) {
-        List<Long> ids = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
-        for (UnitPriceConfigurationSaveReqVO updateReqVO : updateReqVOList) {
-            // 设置能源ID
-            updateReqVO.setEnergyId(energyId);
+    @Transactional
+    public void updateUnitPriceConfiguration(Long energyId, List<UnitPriceConfigurationSaveReqVO> updateReqVOList) {
+        // 当前时间
+        LocalDateTime currentTime = LocalDateTime.now();
 
-            // 处理时间范围
-            if (updateReqVO.getTimeRange() != null && updateReqVO.getTimeRange().size() == 2) {
-                updateReqVO.setStartTime(updateReqVO.getTimeRange().get(0));
-                updateReqVO.setEndTime(updateReqVO.getTimeRange().get(1));
-            }
-
-            if (updateReqVO.getStartTime() != null && updateReqVO.getEndTime() != null
-                    && !updateReqVO.getEndTime().isAfter(updateReqVO.getStartTime())) {
-                throw exception(END_TIME_MUST_AFTER_START_TIME);
-            }
-
-            if (updateReqVO.getId() != null) {
-                UnitPriceConfigurationDO existingConfig = unitPriceConfigurationMapper.selectById(updateReqVO.getId());
-                if (existingConfig == null) {
-                    throw exception(UNIT_PRICE_CONFIGURATION_NOT_EXISTS);
-                }
-                // 检查价格详情变更
-                boolean isPriceDetailsModified = isPriceDetailsModified(updateReqVO.getId(), updateReqVO.getPriceDetails());
-
-                boolean isModified =
-                        // 时间比较（截断到分钟级）
-                        !Objects.equals(existingConfig.getStartTime().truncatedTo(ChronoUnit.MINUTES),
-                                updateReqVO.getStartTime().truncatedTo(ChronoUnit.MINUTES))
-                                || !Objects.equals(existingConfig.getEndTime().truncatedTo(ChronoUnit.MINUTES),
-                                updateReqVO.getEndTime().truncatedTo(ChronoUnit.MINUTES))
-                                || !Objects.equals(existingConfig.getBillingMethod(), updateReqVO.getBillingMethod())
-                                || !Objects.equals(existingConfig.getAccountingFrequency(), updateReqVO.getAccountingFrequency())
-                                || !Objects.equals(existingConfig.getFormula(), updateReqVO.getFormula())
-                                || isPriceDetailsModified;
-
-                if (!isModified) {
-                    ids.add(existingConfig.getId());
-                    continue; // 无变更直接跳过后续校验
-                }
-
-                // 判断周期状态
-                boolean isPast = existingConfig.getEndTime().isBefore(now);
-                boolean isCurrent = !existingConfig.getStartTime().isAfter(now)
-                        && !existingConfig.getEndTime().isBefore(now);
-                boolean isFuture = existingConfig.getStartTime().isAfter(now);
-
-                if (isPast) {
-                    throw exception(PAST_PERIOD_MODIFY_NOT_ALLOWED);
-                } else if (isCurrent) {
-                    // 新增下一周期存在性检查
-                    UnitPriceConfigurationDO nextPeriod = unitPriceConfigurationMapper.findNextPeriod(
-                            energyId,
-                            existingConfig.getEndTime()
-                    );
-                    if (nextPeriod != null) {
-                        throw exception(NEXT_PERIOD_CONFLICT); // 关联异常提示
-                    }
-                    // 校验当前周期：开始时间不可修改，结束时间需合法
-                    if (!updateReqVO.getStartTime().isEqual(existingConfig.getStartTime())) {
-                        throw exception(CANNOT_MODIFY_START_TIME_OF_CURRENT_PERIOD);
-                    }
-                    if (updateReqVO.getEndTime().isBefore(now)
-                            || !updateReqVO.getEndTime().isAfter(existingConfig.getStartTime())) {
-                        throw exception(INVALID_END_TIME_FOR_CURRENT_PERIOD);
-                    }
-                } else if (isFuture) {
-                    checkNextPeriodConflict(energyId, existingConfig.getEndTime(), updateReqVO.getEndTime());
-                }
-
-                // 更新子表价格详情
-                if (isPriceDetailsModified) {
-                    updatePriceDetails(existingConfig.getId(), updateReqVO.getPriceDetails());
-                }
-            }
-
-            // 原有时间冲突校验
-            if (isTimeConflict(energyId, updateReqVO.getStartTime(), updateReqVO.getEndTime(), updateReqVO.getId())) {
-                throw exception(TIME_CONFLICT);
-            }
-
-
-            // 后续保存逻辑...
-            EnergyConfigurationDO energyConfig = energyConfigurationService.getEnergyConfiguration(energyId);
-            updateReqVO.setFormula(energyConfig.getUnitPriceFormula());
-            UnitPriceConfigurationDO unitPriceConfig = BeanUtils.toBean(updateReqVO, UnitPriceConfigurationDO.class);
-
-            if (updateReqVO.getId() != null) {
-                int affectedRows = unitPriceConfigurationMapper.updateById(unitPriceConfig);
-                if (affectedRows > 0) {
-                    // 插入历史记录
-                    updateReqVO.setId(null);
-                    ids.add(unitPriceConfig.getId());
-                }
-            } else {
-                unitPriceConfigurationMapper.insertOrUpdate(unitPriceConfig);
-                Long newConfigId = unitPriceConfig.getId();
-                ids.add(unitPriceConfig.getId());
-
-                // 新增价格详情（子表）
-                if (updateReqVO.getPriceDetails() != null && !updateReqVO.getPriceDetails().isEmpty()) {
-                    List<PriceDetailDO> priceDetails = updateReqVO.getPriceDetails().stream()
-                            .map(d -> {
-                                PriceDetailDO detail = BeanUtils.toBean(d, PriceDetailDO.class);
-                                detail.setPriceId(newConfigId); // 关联主表 ID
-                                return detail;
-                            })
-                            .collect(Collectors.toList());
-                    priceDetailMapper.insertBatch(priceDetails); // 批量插入子表
-                }
-            }
+        // 0.获取新配置的最小周期(当前周期,只会修改结束时间)  2025-03-01 - 2025-04-11 15 02 01
+        updateReqVOList.sort(Comparator.comparing(UnitPriceConfigurationSaveReqVO::getStartTime));
+        UnitPriceConfigurationSaveReqVO currentUpdConfig = updateReqVOList.get(0);
+        // 存在情况当前周期的结束时间小于当前时间(极端情况,提交的当前时间和后端接收到的当前时间可能会不一致,可能会导致提交的配置的当前周期的结束时间会早于提交时的时间.)
+        if (currentUpdConfig.getEndTime().isBefore(currentTime)) {
+            throw exception(PAST_PERIOD_MODIFY_NOT_ALLOWED);
         }
-        return ids;
+
+        // 1.获取原有的当前周期和未来周期
+        List<UnitPriceConfigurationDO> rawConfigList = unitPriceConfigurationMapper.selectList(
+                Wrappers.<UnitPriceConfigurationDO>lambdaQuery()
+                        .eq(UnitPriceConfigurationDO::getEnergyId, energyId)
+                        .ge(UnitPriceConfigurationDO::getEndTime, currentTime)
+                        .orderByAsc(UnitPriceConfigurationDO::getStartTime)
+        );
+
+        if (CollUtil.isEmpty(rawConfigList)) {
+            // 1.1 没有找到.直接新增所有
+            insertBatch(energyId, updateReqVOList);
+            return;
+        }
+
+        UnitPriceConfigurationDO existingConfig = rawConfigList.get(0);
+        // 2.找到了, 做单价的数据对比
+        // 检查价格详情变更
+        boolean changePrice =
+                !Objects.equals(existingConfig.getBillingMethod(), currentUpdConfig.getBillingMethod())
+                        || !Objects.equals(existingConfig.getAccountingFrequency(), currentUpdConfig.getAccountingFrequency())
+                        || isPriceDetailsModified(existingConfig.getId(), currentUpdConfig.getPriceDetails());
+        // 2.1 当前周期单价有改变,则把原有周期直接修改结束时间为当前时间,修改到数据库中
+        if (changePrice) {
+            // 修改原有当前周期的结束时间为当前时间,单价详细不变
+            existingConfig.setEndTime(currentTime);
+            unitPriceConfigurationMapper.update(new LambdaUpdateWrapper<UnitPriceConfigurationDO>()
+                    .set(UnitPriceConfigurationDO::getEndTime, currentTime)
+                    .eq(UnitPriceConfigurationDO::getId, existingConfig.getId())
+            );
+            // 删除结束时间
+            rawConfigList.removeIf(rawConfig -> rawConfig.getId().equals(existingConfig.getId()));
+            // 删除结束时间大于当前时间的
+            // 修改当前周期的起始时间为当前时间的下一秒
+            currentUpdConfig.setStartTime(currentTime.plusSeconds(1L));
+        }
+        //删除当前周期和未来周期,
+        List<Long> rawConfigIds = rawConfigList.stream()
+                .map(UnitPriceConfigurationDO::getId)
+                .collect(Collectors.toList());
+        unitPriceConfigurationMapper.deleteByIds(rawConfigIds);
+        priceDetailMapper.delete(new LambdaQueryWrapper<PriceDetailDO>()
+                .in(PriceDetailDO::getPriceId, rawConfigIds));
+        // 新增变动周期 (拆分的当前周期和没拆分的当前周期)
+        insertBatch(energyId, updateReqVOList);
+
     }
 
     // 判断价格详情是否变更
@@ -276,91 +175,22 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
             BigDecimal usageMax = d.getUsageMax();
 
             if (usageMin != null) {
-                detail.setUsageMin(usageMin.setScale(5, RoundingMode.HALF_UP));
+                detail.setUsageMin(usageMin.setScale(6, RoundingMode.HALF_UP));
             } else {
                 detail.setUsageMin(null);
             }
 
             if (usageMax != null) {
-                detail.setUsageMax(usageMax.setScale(5, RoundingMode.HALF_UP));
+                detail.setUsageMax(usageMax.setScale(6, RoundingMode.HALF_UP));
             } else {
                 detail.setUsageMax(null);
             }
             BigDecimal price = d.getUnitPrice();
-            detail.setUnitPrice(price.setScale(5,RoundingMode.HALF_UP));
+            detail.setUnitPrice(price.setScale(6, RoundingMode.HALF_UP));
             return detail;
         }).collect(Collectors.toList());
 
         return !CollectionUtils.isEqualCollection(existingDetailsForCompare, newDetailsDO);
-    }
-
-    // 更新子表数据
-    private void updatePriceDetails(Long priceId, List<PriceDetailSaveReqVO> details) {
-        // 清空原有数据
-        priceDetailService.deleteByPriceId(priceId);
-
-        // 插入新数据
-        details.forEach(detail -> {
-            detail.setPriceId(priceId);
-            priceDetailService.createPriceDetail(detail);
-        });
-    }
-
-    // 检查下一周期冲突
-    private void checkNextPeriodConflict(Long energyId, LocalDateTime originalEndTime, LocalDateTime newEndTime) {
-        UnitPriceConfigurationDO nextPeriod = unitPriceConfigurationMapper.findNextPeriod(energyId, originalEndTime);
-        if (nextPeriod != null && (newEndTime.isAfter(nextPeriod.getStartTime())
-                || newEndTime.isEqual(nextPeriod.getStartTime()))) {
-            throw exception(NEXT_PERIOD_CONFLICT);
-        }
-    }
-
-    @Override
-    public void deleteUnitPriceConfiguration(Long id) {
-        UnitPriceConfigurationDO existingConfig = validateUnitPriceConfigurationExists(id);
-        LocalDateTime now = LocalDateTime.now();
-
-        if (existingConfig.getEndTime().isBefore(now)) {
-            throw exception(CANNOT_DELETE_PAST_PERIOD);
-        } else if (!existingConfig.getStartTime().isAfter(now)
-                && !existingConfig.getEndTime().isBefore(now)) {
-            throw exception(CANNOT_DELETE_CURRENT_PERIOD);
-        }
-        priceDetailService.deleteByPriceId(id);
-        unitPriceConfigurationMapper.deleteById(id);
-    }
-
-
-    private UnitPriceConfigurationDO validateUnitPriceConfigurationExists(Long id) {
-        UnitPriceConfigurationDO config = unitPriceConfigurationMapper.selectById(id);
-        if (config == null) {
-            throw exception(UNIT_PRICE_CONFIGURATION_NOT_EXISTS);
-        }
-        return config;
-    }
-
-    @Override
-    public UnitPriceConfigurationDO getUnitPriceConfiguration(Long id) {
-        return unitPriceConfigurationMapper.selectById(id);
-    }
-
-    @Override
-    public List<UnitPriceConfigurationDO> getUnitPriceConfigurationVOByEnergyId(Long energyId) {
-        // 获取主表数据（已关联子表）
-        List<UnitPriceConfigurationDO> configs = this.getUnitPriceConfigurationByEnergyId(energyId);
-
-        return configs.stream().map(config -> {
-            // 转换主表字段
-            UnitPriceConfigurationDO vo = BeanUtils.toBean(config, UnitPriceConfigurationDO.class);
-
-            // 手动转换子表数据（DO -> VO）
-            List<PriceDetailDO> detailVOs = config.getPriceDetails().stream()
-                    .map(detail -> BeanUtils.toBean(detail, PriceDetailDO.class))
-                    .collect(Collectors.toList());
-
-            vo.setPriceDetails(detailVOs);
-            return vo;
-        }).collect(Collectors.toList());
     }
 
     @Override
@@ -372,7 +202,6 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
         if (configs.isEmpty()) {
             return new PageResult<>(Collections.emptyList(), pageResult.getTotal());
         }
-
         // 2. 批量加载子表数据
         List<Long> configIds = configs.stream()
                 .map(UnitPriceConfigurationDO::getId)
@@ -408,20 +237,21 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
         );
 
         // 2. 批量加载子表数据并关联到主表
-        if (!configs.isEmpty()) {
-            // 提取主表 ID 列表
-            List<Long> configIds = configs.stream()
-                    .map(UnitPriceConfigurationDO::getId)
-                    .collect(Collectors.toList());
-
-            // 批量查询子表数据（按 price_id 分组）
-            Map<Long, List<PriceDetailDO>> priceDetailsMap = priceDetailService.getDetailsByPriceIds(configIds);
-
-            // 将子表数据设置到主表 DO 中
-            configs.forEach(config ->
-                    config.setPriceDetails(priceDetailsMap.getOrDefault(config.getId(), Collections.emptyList()))
-            );
+        if (CollUtil.isEmpty(configs)) {
+            return configs;
         }
+        // 提取主表 ID 列表
+        List<Long> configIds = configs.stream()
+                .map(UnitPriceConfigurationDO::getId)
+                .collect(Collectors.toList());
+
+        // 批量查询子表数据（按 price_id 分组）
+        Map<Long, List<PriceDetailDO>> priceDetailsMap = priceDetailService.getDetailsByPriceIds(configIds);
+
+        // 将子表数据设置到主表 DO 中
+        configs.forEach(config ->
+                config.setPriceDetails(priceDetailsMap.getOrDefault(config.getId(), Collections.emptyList()))
+        );
 
         return configs;
     }
@@ -572,7 +402,7 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
     // 阶梯连续性校验
     private void validateLadderContinuity(List<PriceResultDTO.LadderPrice> ladderPrices) {
         for (int i = 1; i < ladderPrices.size(); i++) {
-            BigDecimal prevMax = ladderPrices.get(i-1).getMax();
+            BigDecimal prevMax = ladderPrices.get(i - 1).getMax();
             BigDecimal currMin = ladderPrices.get(i).getMin();
             if (prevMax.compareTo(currMin) != 0) {
                 throw exception(INVALID_LADDER_CONTINUITY);
