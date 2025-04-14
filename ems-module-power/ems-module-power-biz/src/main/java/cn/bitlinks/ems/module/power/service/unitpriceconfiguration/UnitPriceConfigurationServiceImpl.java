@@ -96,10 +96,6 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
         // 0.获取新配置的最小周期(当前周期,只会修改结束时间)  2025-03-01 - 2025-04-11 15 02 01
         updateReqVOList.sort(Comparator.comparing(UnitPriceConfigurationSaveReqVO::getStartTime));
         UnitPriceConfigurationSaveReqVO currentUpdConfig = updateReqVOList.get(0);
-        // 存在情况当前周期的结束时间小于当前时间(极端情况,提交的当前时间和后端接收到的当前时间可能会不一致,可能会导致提交的配置的当前周期的结束时间会早于提交时的时间.)
-        if (currentUpdConfig.getEndTime().isBefore(currentTime)) {
-            throw exception(PAST_PERIOD_MODIFY_NOT_ALLOWED);
-        }
 
         // 1.获取原有的当前周期和未来周期
         List<UnitPriceConfigurationDO> rawConfigList = unitPriceConfigurationMapper.selectList(
@@ -113,6 +109,10 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
             // 1.1 没有找到.直接新增所有
             insertBatch(energyId, updateReqVOList);
             return;
+        }
+        // 存在情况当前周期的结束时间小于当前时间(极端情况,提交的当前时间和后端接收到的当前时间可能会不一致,可能会导致提交的配置的当前周期的结束时间会早于提交时的时间.)
+        if (currentUpdConfig.getEndTime().isBefore(currentTime)) {
+            throw exception(PAST_PERIOD_MODIFY_NOT_ALLOWED);
         }
 
         UnitPriceConfigurationDO existingConfig = rawConfigList.get(0);
@@ -227,6 +227,27 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
     }
 
     @Override
+    public UnitPriceConfigurationDO getCurrentUnitConfigByEnergyId(Long energyId) {
+        // 1. 查询主表列表（不带子表数据）
+        UnitPriceConfigurationDO config = unitPriceConfigurationMapper.selectOne(
+                Wrappers.<UnitPriceConfigurationDO>lambdaQuery()
+                        .eq(UnitPriceConfigurationDO::getEnergyId, energyId)
+                        .le(UnitPriceConfigurationDO::getStartTime, LocalDateTime.now())
+                        .ge(UnitPriceConfigurationDO::getEndTime, LocalDateTime.now())
+        );
+
+        if (Objects.isNull(config)) {
+            return null;
+        }
+
+        List<PriceDetailDO> priceDetails = priceDetailService.getDetailsByPriceId(config.getId());
+
+        config.setPriceDetails(priceDetails);
+
+        return config;
+    }
+
+    @Override
     public List<UnitPriceConfigurationDO> getUnitPriceConfigurationByEnergyId(Long energyId) {
         // 1. 查询主表列表（不带子表数据）
         List<UnitPriceConfigurationDO> configs = unitPriceConfigurationMapper.selectList(
@@ -264,8 +285,11 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
                         .orderByDesc(UnitPriceConfigurationDO::getEndTime)  // 按结束时间倒序排列
                         .last("LIMIT 1")  // 只取最新的一条
         );
+        if (CollUtil.isEmpty(configs)) {
+            return null;
+        }
 
-        return configs.isEmpty() ? LocalDateTime.now() : configs.get(0).getEndTime();
+        return configs.get(0).getEndTime();
     }
 
     @Override
