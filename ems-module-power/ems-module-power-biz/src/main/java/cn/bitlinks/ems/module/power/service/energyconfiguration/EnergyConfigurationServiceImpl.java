@@ -318,8 +318,8 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
 
             // 原有逻辑：设置单价和创建人昵称
             LocalDateTime currentDateTime = LocalDateTime.now();
-            List<UnitPriceConfigurationDO> unitPriceConfigurationDOS = unitPriceConfigurationService.getUnitPriceConfigurationByEnergyId(doObj.getId());
-            vo.setUnitPrice(unitPriceConfigurationDOS);
+            UnitPriceConfigurationDO unitPriceConfigurationDO = unitPriceConfigurationService.getCurrentUnitConfigByEnergyId(doObj.getId());
+            vo.setUnitPrice(unitPriceConfigurationDO);
             vo.setBillingMethod(unitPriceConfigurationMapper.getBillingMethodByEnergyIdAndTime(doObj.getId(), currentDateTime));
             vo.setAccountingFrequency(unitPriceConfigurationMapper.getAccountingFrequencyByEnergyIdAndTime(doObj.getId(), currentDateTime));
 

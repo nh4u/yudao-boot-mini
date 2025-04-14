@@ -227,6 +227,27 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
     }
 
     @Override
+    public UnitPriceConfigurationDO getCurrentUnitConfigByEnergyId(Long energyId) {
+        // 1. 查询主表列表（不带子表数据）
+        UnitPriceConfigurationDO config = unitPriceConfigurationMapper.selectOne(
+                Wrappers.<UnitPriceConfigurationDO>lambdaQuery()
+                        .eq(UnitPriceConfigurationDO::getEnergyId, energyId)
+                        .le(UnitPriceConfigurationDO::getStartTime, LocalDateTime.now())
+                        .ge(UnitPriceConfigurationDO::getEndTime, LocalDateTime.now())
+        );
+
+        if (Objects.isNull(config)) {
+            return null;
+        }
+
+        List<PriceDetailDO> priceDetails = priceDetailService.getDetailsByPriceId(config.getId());
+
+        config.setPriceDetails(priceDetails);
+
+        return config;
+    }
+
+    @Override
     public List<UnitPriceConfigurationDO> getUnitPriceConfigurationByEnergyId(Long energyId) {
         // 1. 查询主表列表（不带子表数据）
         List<UnitPriceConfigurationDO> configs = unitPriceConfigurationMapper.selectList(
@@ -264,7 +285,7 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
                         .orderByDesc(UnitPriceConfigurationDO::getEndTime)  // 按结束时间倒序排列
                         .last("LIMIT 1")  // 只取最新的一条
         );
-        if(CollUtil.isEmpty(configs)){
+        if (CollUtil.isEmpty(configs)) {
             return null;
         }
 

@@ -43,6 +43,13 @@ public interface UnitPriceConfigurationService {
     List<UnitPriceConfigurationDO> getUnitPriceConfigurationByEnergyId(Long energyId);
 
     /**
+     * 获取当前的单价配置
+     * @param energyId 能源ID
+     * @return 单价配置
+     */
+    UnitPriceConfigurationDO getCurrentUnitConfigByEnergyId(Long energyId);
+
+    /**
      * 获取当前能源配置的单价配置的周期结束时间
      *
      * @param energyId 能源id

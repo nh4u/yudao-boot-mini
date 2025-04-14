@@ -99,7 +99,7 @@ public class EnergyConfigurationDO extends BaseDO {
      */
     //private String unitPrice;
     @TableField(exist = false)
-    private List<UnitPriceConfigurationDO> unitPrice;
+    private UnitPriceConfigurationDO unitPrice;
     /**
      * 用能成本公式
      */
