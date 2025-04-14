@@ -1,13 +1,15 @@
 package cn.bitlinks.ems.module.power.service.unitpriceconfiguration;
 
-import java.time.LocalDateTime;
-import java.util.*;
-import javax.validation.*;
-import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.*;
-import cn.bitlinks.ems.module.power.controller.admin.unitpricehistory.vo.UnitPriceHistorySaveReqVO;
-import cn.bitlinks.ems.module.power.dal.dataobject.unitpriceconfiguration.UnitPriceConfigurationDO;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
-import cn.bitlinks.ems.framework.common.pojo.PageParam;
+import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.PriceResultDTO;
+import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.UnitPriceConfigurationPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.UnitPriceConfigurationRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.UnitPriceConfigurationSaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.unitpriceconfiguration.UnitPriceConfigurationDO;
+
+import javax.validation.Valid;
+import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 单价配置 Service 接口
@@ -17,36 +19,12 @@ import cn.bitlinks.ems.framework.common.pojo.PageParam;
 public interface UnitPriceConfigurationService {
 
     /**
-     * 创建单价配置
-     *
-     * @param createReqVOList  创建信息
-     * @return 编号
-     */
-    List<Long> createUnitPriceConfigurations(@Valid Long energyId, List<UnitPriceConfigurationSaveReqVO> createReqVOList);
-
-    /**
      * 更新单价配置
      *
      * @param updateReqVOList 更新信息
      */
-    List<Long> updateUnitPriceConfiguration(@Valid Long energyId, List<UnitPriceConfigurationSaveReqVO> updateReqVOList);
+    void updateUnitPriceConfiguration(@Valid Long energyId, List<UnitPriceConfigurationSaveReqVO> updateReqVOList);
 
-    /**
-     * 删除单价配置
-     *
-     * @param id 编号
-     */
-    void deleteUnitPriceConfiguration(Long id);
-
-    /**
-     * 获得单价配置
-     *
-     * @param id 编号
-     * @return 单价配置
-     */
-    UnitPriceConfigurationDO getUnitPriceConfiguration(Long id);
-
-    List<UnitPriceConfigurationDO> getUnitPriceConfigurationVOByEnergyId(Long energyId);
 
     /**
      * 获得单价配置分页
@@ -64,8 +42,21 @@ public interface UnitPriceConfigurationService {
      */
     List<UnitPriceConfigurationDO> getUnitPriceConfigurationByEnergyId(Long energyId);
 
+    /**
+     * 获取当前能源配置的单价配置的周期结束时间
+     *
+     * @param energyId 能源id
+     * @return 当前能源配置的单价配置的周期结束时间
+     */
     LocalDateTime getLatestEndTime(Long energyId);
 
+    /**
+     * 获取当前生效单价
+     *
+     * @param energyId   能源id
+     * @param targetTime 指定时间
+     * @return 价格详细
+     */
     PriceResultDTO getPriceByTime(Long energyId, LocalDateTime targetTime);
 
 }

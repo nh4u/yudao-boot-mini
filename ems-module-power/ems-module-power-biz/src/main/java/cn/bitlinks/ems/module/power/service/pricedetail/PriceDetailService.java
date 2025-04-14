@@ -1,11 +1,11 @@
 package cn.bitlinks.ems.module.power.service.pricedetail;
 
-import java.util.*;
-import javax.validation.*;
-import cn.bitlinks.ems.module.power.controller.admin.pricedetail.vo.*;
-import cn.bitlinks.ems.module.power.dal.dataobject.pricedetail.PriceDetailDO;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
-import cn.bitlinks.ems.framework.common.pojo.PageParam;
+import cn.bitlinks.ems.module.power.controller.admin.pricedetail.vo.PriceDetailPageReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.pricedetail.PriceDetailDO;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * 单价详细 Service 接口
@@ -14,20 +14,6 @@ import cn.bitlinks.ems.framework.common.pojo.PageParam;
  */
 public interface PriceDetailService {
 
-    /**
-     * 创建单价详细
-     *
-     * @param createReqVO 创建信息
-     * @return 编号
-     */
-    Long createPriceDetail(@Valid PriceDetailSaveReqVO createReqVO);
-
-    /**
-     * 更新单价详细
-     *
-     * @param updateReqVO 更新信息
-     */
-    void updatePriceDetail(@Valid PriceDetailSaveReqVO updateReqVO);
 
     /**
      * 删除单价详细

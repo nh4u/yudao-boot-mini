@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.warningstrategy;
 
 import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
+import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
 import cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo.SbDataTriggerVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
@@ -11,6 +12,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.warninginfo.WarningInfoMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyConditionMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningtemplate.WarningTemplateMapper;
+import cn.bitlinks.ems.module.power.enums.DictTypeConstants;
 import cn.bitlinks.ems.module.power.enums.warninginfo.WarningIntervalUnitEnum;
 import cn.bitlinks.ems.module.power.enums.warninginfo.WarningStrategyConnectorEnum;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
@@ -99,7 +101,7 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
 //                .collect(Collectors.groupingBy(EnergyConfigurationDO::get));
 
 
-        // 1.获取未触发的告警策略
+        // 1.获取所有启动的告警策略
         List<WarningStrategyDO> warningStrategyDOList = warningStrategyMapper.selectList(new LambdaQueryWrapper<WarningStrategyDO>()
                 .eq(WarningStrategyDO::getStatus, CommonStatusEnum.ENABLE.getStatus())
                 .eq(WarningStrategyDO::getDeleted, CommonStatusEnum.ENABLE.getStatus())
@@ -107,6 +109,18 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
         if (CollUtil.isEmpty(warningStrategyDOList)) {
             return;
         }
+        // 1.2 获取告警信息中策略触发最新时间，筛选掉触发过的策略
+        Map<Long, LocalDateTime> strategyTimeMap = warningInfoMapper.selectLatestByStrategy();
+        warningStrategyDOList.removeIf(warningStrategyDO -> {
+            // 1）每条策略，检查时间间隔是否触发过
+            LocalDateTime latestTime = strategyTimeMap.get(warningStrategyDO.getId());
+            // 时间间隔内触发过了，不必考虑此策略
+            return checkStrategyTrigger(warningStrategyDO.getInterval(), warningStrategyDO.getIntervalUnit(), latestTime, triggerTime);
+        });
+        if (CollUtil.isEmpty(warningStrategyDOList)) {
+            return;
+        }
+        // 获取策略对应的策略条件
         List<Long> strategyIds = warningStrategyDOList.stream().map(WarningStrategyDO::getId).collect(Collectors.toList());
 
         List<WarningStrategyConditionDO> conditionDOS = warningStrategyConditionMapper.selectList(new LambdaQueryWrapper<WarningStrategyConditionDO>()
@@ -114,6 +128,7 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
         );
         Map<Long, List<WarningStrategyConditionDO>> strategyConditionMap = conditionDOS.stream()
                 .collect(Collectors.groupingBy(WarningStrategyConditionDO::getStrategyId));
+
         // 获取所有模板信息
         List<Long> siteTemplateId = warningStrategyDOList.stream().map(WarningStrategyDO::getSiteTemplateId).collect(Collectors.toList());
         if (CollUtil.isEmpty(siteTemplateId)) {
@@ -128,21 +143,15 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
         }
         Map<Long, WarningTemplateDO> templatesMap = templateDOS.stream()
                 .collect(Collectors.toMap(WarningTemplateDO::getId, template -> template));
-        // 1.1 策略分批处理
+        // 策略分批处理
         List<List<WarningStrategyDO>> batches = Lists.partition(warningStrategyDOList, batchSize);
-        // 1.2 获取告警信息中策略触发最新时间。
-        Map<Long, LocalDateTime> strategyTimeMap = warningInfoMapper.selectLatestByStrategy();
+
+        // 过滤掉时间间隔触发过的。
+
         for (List<WarningStrategyDO> batchStrategy : batches) {
             batchStrategy.forEach(warningStrategyDO -> {
 
-                // 1）每条策略，检查时间间隔是否触发过
-                LocalDateTime latestTime = strategyTimeMap.get(warningStrategyDO.getId());
-                boolean isTrigger = checkStrategyTrigger(warningStrategyDO.getInterval(), warningStrategyDO.getIntervalUnit(), latestTime, triggerTime);
-                // 时间间隔内触发过了，不必考虑此策略
-                if (isTrigger) {
-                    return;
-                }
-                // 3）循环策略中每个条件，检查设备、参数是否包含，如果包含，根据关键字生成告警信息
+                // 1）循环策略中每个条件，检查设备、参数是否包含，如果包含，根据关键字生成告警信息
                 List<WarningStrategyConditionDO> conditionVOS = strategyConditionMap.get(warningStrategyDO.getId());
                 if (CollUtil.isEmpty(conditionVOS)) {
                     return;
@@ -181,13 +190,12 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                         // 条件符合，填充所有关键字参数
                         Map<String, String> conditionParamsMap = new HashMap<>();
                         conditionParamsMap.put(WARNING_TIME.getKeyWord(), triggerTime.format(NORM_DATETIME_FORMATTER));
-                        conditionParamsMap.put(WARNING_LEVEL.getKeyWord(), warningStrategyDO.getLevel() + "");
+                        conditionParamsMap.put(WARNING_LEVEL.getKeyWord(), DictFrameworkUtils.getDictDataLabel(DictTypeConstants.WARNING_INFO_LEVEL, warningStrategyDO.getLevel()));
                         conditionParamsMap.put(WARNING_EXCEPTION_TIME.getKeyWord(), sbDataTriggerVO.getDataTime().format(NORM_DATETIME_FORMATTER));
                         conditionParamsMap.put(WARNING_VALUE.getKeyWord(), sbDataTriggerVO.getValue());
 
-
-                        conditionParamsMap.put(WARNING_PARAM.getKeyWord(), sbDataTriggerVO.getParamCode());
                         // todo 等能源参数补充好之后，再进行填充的修改
+                        conditionParamsMap.put(WARNING_PARAM.getKeyWord(), StringPool.EMPTY);
                         conditionParamsMap.put(WARNING_UNIT.getKeyWord(), StringPool.EMPTY);
                         conditionParamsMap.put(WARNING_CONDITION_VALUE.getKeyWord(), conditionVO.getValue());
 
@@ -218,9 +226,11 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                 if (CollUtil.isEmpty(conditionParamsMapList)) {
                     return;
                 }
+                //if(conditionParamsMapList.size() != conditionVOS.size)
                 if (CollUtil.isEmpty(deviceRelList)) {
                     return;
                 }
+
                 //------------------------------（还差收件人、标题、内容未填充）------------------------
                 // 一、发送站内信
                 //站内信模板通知人员

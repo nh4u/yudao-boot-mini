@@ -10,12 +10,14 @@ import cn.bitlinks.ems.module.power.controller.admin.energyparameters.vo.EnergyP
 import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.unitpriceconfiguration.UnitPriceConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.mysql.daparamformula.DaParamFormulaMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.energyparameters.EnergyParametersMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.unitpriceconfiguration.UnitPriceConfigurationMapper;
 import cn.bitlinks.ems.module.power.service.energyparameters.EnergyParametersService;
+import cn.bitlinks.ems.module.power.service.unitpriceconfiguration.UnitPriceConfigurationService;
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.collection.CollUtil;
@@ -26,14 +28,14 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
-import java.util.*;
-import java.util.function.Function;
-
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -52,6 +54,9 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     @Resource
     private EnergyConfigurationMapper energyConfigurationMapper;
     @Resource
+    @Lazy
+    private UnitPriceConfigurationService unitPriceConfigurationService;
+    @Resource
     private UnitPriceConfigurationMapper unitPriceConfigurationMapper;
     @Resource
     private StandingbookAttributeMapper standingbookAttributeMapper;
@@ -64,6 +69,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     private EnergyParametersService energyParametersService;
     @Resource
     private EnergyParametersMapper energyParametersMapper;
+
     @Override
     public Long createEnergyConfiguration(EnergyConfigurationSaveReqVO createReqVO) {
         // 1. 检查能源编码是否重复
@@ -312,7 +318,8 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
 
             // 原有逻辑：设置单价和创建人昵称
             LocalDateTime currentDateTime = LocalDateTime.now();
-            vo.setUnitPrice(unitPriceConfigurationMapper.getPriceDetailsByEnergyIdAndTime(doObj.getId(), currentDateTime));
+            List<UnitPriceConfigurationDO> unitPriceConfigurationDOS = unitPriceConfigurationService.getUnitPriceConfigurationByEnergyId(doObj.getId());
+            vo.setUnitPrice(unitPriceConfigurationDOS);
             vo.setBillingMethod(unitPriceConfigurationMapper.getBillingMethodByEnergyIdAndTime(doObj.getId(), currentDateTime));
             vo.setAccountingFrequency(unitPriceConfigurationMapper.getAccountingFrequencyByEnergyIdAndTime(doObj.getId(), currentDateTime));
 
