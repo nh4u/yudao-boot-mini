@@ -60,7 +60,7 @@ public interface StandingbookService {
     PageResult<StandingbookDO> getStandingbookPage(StandingbookPageReqVO pageReqVO);
 
     /**
-     * 条件查询台账（标签、属性、分类ids、分类id、环节、创建时间）
+     * 条件查询台账（标签、属性、分类ids、分类id、topType、环节、创建时间）
      *
      * @param pageReqVO 条件map
      * @return 台账列表
@@ -81,13 +81,6 @@ public interface StandingbookService {
 
     Long count(Long typeId);
 
-    /**
-     * 获取全部的台账列表（标签、属性、分类ids、分类id、环节、创建时间）
-     *
-     * @param pageReqVO 查询条件
-     * @return 台账列表
-     */
-    List<StandingbookDO> listSbAll(Map<String, String> pageReqVO);
 
     /**
      * 关联下级计量器具/关联设备（需要防止循环嵌套关联）

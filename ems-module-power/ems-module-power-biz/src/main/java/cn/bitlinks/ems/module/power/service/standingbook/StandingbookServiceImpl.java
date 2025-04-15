@@ -112,46 +112,13 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<Long> typeIdList;
         if (typeId.equals(CommonConstants.OTHER_EQUIPMENT_ID)) {
             // 查询对应所有类型id
-            typeIdList = standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>()
-                            .ne(StandingbookTypeDO::getTopType, CommonConstants.MEASUREMENT_INSTRUMENT_ID)
-                            .ne(StandingbookTypeDO::getTopType, CommonConstants.KEY_EQUIPMENT_ID))
-                    .stream()
-                    .map(StandingbookTypeDO::getId)
-                    .collect(Collectors.toList());
+            typeIdList = standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>().ne(StandingbookTypeDO::getTopType, CommonConstants.MEASUREMENT_INSTRUMENT_ID).ne(StandingbookTypeDO::getTopType, CommonConstants.KEY_EQUIPMENT_ID)).stream().map(StandingbookTypeDO::getId).collect(Collectors.toList());
         } else {
 
             // 差对应id
-            typeIdList = standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>()
-                            .eq(StandingbookTypeDO::getTopType, typeId))
-                    .stream()
-                    .map(StandingbookTypeDO::getId)
-                    .collect(Collectors.toList());
+            typeIdList = standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>().eq(StandingbookTypeDO::getTopType, typeId)).stream().map(StandingbookTypeDO::getId).collect(Collectors.toList());
         }
-        return typeIdList.size() > 0 ? standingbookMapper.selectCount(new LambdaQueryWrapperX<StandingbookDO>()
-                .in(StandingbookDO::getTypeId, typeIdList)) : 0;
-    }
-
-    @Override
-    public List<StandingbookDO> listSbAll(Map<String, String> pageReqVO) {
-
-        // 根据topType查询所有台账，也可以查询所有台账
-        List<StandingbookTypeDO> sbTypeDOS = standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>()
-                .eqIfPresent(StandingbookTypeDO::getTopType, pageReqVO.get(SB_TYPE_ATTR_TOP_TYPE)));
-        if (CollUtil.isEmpty(sbTypeDOS)) {
-            return new ArrayList<>();
-        }
-        // 取出分类ids当成条件，去复用的方法中进行条件查询台账。
-        List<Long> sbTypeIds = sbTypeDOS.stream()
-                .map(StandingbookTypeDO::getId)
-                .collect(Collectors.toList());
-        String idsString = sbTypeIds.stream()
-                .map(String::valueOf)
-                .collect(Collectors.joining(StringPool.COMMA));
-        pageReqVO.put(ATTR_SB_TYPE_ID, idsString);
-        pageReqVO.remove(SB_TYPE_ATTR_TOP_TYPE);
-        // 多条件查询台账
-        return getStandingbookList(pageReqVO);
-
+        return typeIdList.size() > 0 ? standingbookMapper.selectCount(new LambdaQueryWrapperX<StandingbookDO>().in(StandingbookDO::getTypeId, typeIdList)) : 0;
     }
 
 
@@ -166,7 +133,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
         Long sbId = reqVO.getSbId();
 
-        List<StandingbookDO> sbList = listSbAll(paramMap);
+        List<StandingbookDO> sbList = getStandingbookList(paramMap);
 
 
         // 如果是重点设备的话，可以直接拉出来所有设备，任意关联
@@ -181,24 +148,15 @@ public class StandingbookServiceImpl implements StandingbookService {
             return new ArrayList<>();
         }
 
-        List<StandingbookDO> standingbookDOS = sbList.stream()
-                .filter(standingbookDO -> !parentIds.contains(standingbookDO.getId()))
-                .collect(Collectors.toList());
+        List<StandingbookDO> standingbookDOS = sbList.stream().filter(standingbookDO -> !parentIds.contains(standingbookDO.getId())).collect(Collectors.toList());
         // 添加计量器具类型
         if (CollUtil.isEmpty(standingbookDOS)) {
             return new ArrayList<>();
         }
         // 查询所有台账分类id列表
-        List<Long> sbTypeIds = standingbookDOS.stream()
-                .map(StandingbookDO::getTypeId)
-                .collect(Collectors.toList());
-        List<StandingbookTypeDO> typeList = standingbookTypeMapper.selectList(new LambdaQueryWrapper<StandingbookTypeDO>()
-                .in(StandingbookTypeDO::getId, sbTypeIds));
-        Map<Long, StandingbookTypeDO> typeMap = typeList.stream()
-                .collect(Collectors.toMap(
-                        StandingbookTypeDO::getId,
-                        standingbookTypeDO -> standingbookTypeDO
-                ));
+        List<Long> sbTypeIds = standingbookDOS.stream().map(StandingbookDO::getTypeId).collect(Collectors.toList());
+        List<StandingbookTypeDO> typeList = standingbookTypeMapper.selectList(new LambdaQueryWrapper<StandingbookTypeDO>().in(StandingbookTypeDO::getId, sbTypeIds));
+        Map<Long, StandingbookTypeDO> typeMap = typeList.stream().collect(Collectors.toMap(StandingbookTypeDO::getId, standingbookTypeDO -> standingbookTypeDO));
         List<StandingbookRespVO> result = BeanUtils.toBean(standingbookDOS, StandingbookRespVO.class);
         result.forEach(sb -> {
             sb.setStandingbookTypeId(typeMap.get(sb.getTypeId()).getId());
@@ -288,10 +246,7 @@ public class StandingbookServiceImpl implements StandingbookService {
      * @param codeValue
      */
     private void validateSbCodeUnique(String codeValue) {
-        List<StandingbookAttributeDO> exists = standingbookAttributeMapper.selectList(new LambdaQueryWrapper<StandingbookAttributeDO>()
-                .eq(StandingbookAttributeDO::getValue, codeValue)
-                .in(StandingbookAttributeDO::getCode, Arrays.asList(ATTR_MEASURING_INSTRUMENT_ID, ATTR_EQUIPMENT_ID))
-        );
+        List<StandingbookAttributeDO> exists = standingbookAttributeMapper.selectList(new LambdaQueryWrapper<StandingbookAttributeDO>().eq(StandingbookAttributeDO::getValue, codeValue).in(StandingbookAttributeDO::getCode, Arrays.asList(ATTR_MEASURING_INSTRUMENT_ID, ATTR_EQUIPMENT_ID)));
         if (CollUtil.isNotEmpty(exists)) {
             throw exception(ErrorCodeConstants.STANDINGBOOK_CODE_EXISTS);
         }
@@ -386,6 +341,12 @@ public class StandingbookServiceImpl implements StandingbookService {
         if (StringUtils.isNotEmpty(sbTypeIds)) {
             sbTypeIdList = Arrays.asList(sbTypeIds.split(StringPool.COMMA));
         }
+        // 根据分类和topType查询台账
+        List<StandingbookTypeDO> sbTypeDOS = standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>().inIfPresent(StandingbookTypeDO::getId, sbTypeIdList).eqIfPresent(StandingbookTypeDO::getTopType, pageReqVO.get(SB_TYPE_ATTR_TOP_TYPE)));
+        if (CollUtil.isEmpty(sbTypeDOS)) {
+            return Collections.emptyList();
+        }
+        List<Long> sbTypeIdLongList = sbTypeDOS.stream().map(StandingbookTypeDO::getId).collect(Collectors.toList());
         // 分类单选条件(可能为空)
         Long typeId = pageReqVO.get(ATTR_TYPE_ID) != null ? Long.valueOf(pageReqVO.get(ATTR_TYPE_ID)) : null;
 
@@ -398,6 +359,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         if (StringUtils.isNotEmpty(createTimes)) {
             createTimeArr = Arrays.asList(createTimes.split(StringPool.COMMA));
         }
+        pageReqVO.remove(SB_TYPE_ATTR_TOP_TYPE);
         pageReqVO.remove(ATTR_SB_TYPE_ID);
         pageReqVO.remove(ATTR_STAGE);
         pageReqVO.remove(ATTR_TYPE_ID);
@@ -421,7 +383,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             }
         });
         // 根据台账属性查询台账id
-        List<Long> sbIds = standingbookMapper.selectStandingbookIdByCondition(labelInfoConditions, typeId, sbTypeIdList, stage, createTimeArr);
+        List<Long> sbIds = standingbookMapper.selectStandingbookIdByCondition(labelInfoConditions, typeId, sbTypeIdLongList, stage, createTimeArr);
         if (CollUtil.isEmpty(sbIds)) {
             return new ArrayList<>();
         }
@@ -474,51 +436,32 @@ public class StandingbookServiceImpl implements StandingbookService {
             return new ArrayList<>();
         }
         // 查询所有台账id列表
-        List<Long> sbIds = standingbookDOS.stream()
-                .map(StandingbookDO::getId)
-                .collect(Collectors.toList());
+        List<Long> sbIds = standingbookDOS.stream().map(StandingbookDO::getId).collect(Collectors.toList());
         // 查询所有台账分类id列表
-        List<Long> sbTypeIds = standingbookDOS.stream()
-                .map(StandingbookDO::getTypeId)
-                .collect(Collectors.toList());
-        List<StandingbookTypeDO> typeList = standingbookTypeMapper.selectList(new LambdaQueryWrapper<StandingbookTypeDO>()
-                .in(StandingbookTypeDO::getId, sbTypeIds));
-        Map<Long, StandingbookTypeDO> typeMap = typeList.stream()
-                .collect(Collectors.toMap(
-                        StandingbookTypeDO::getId,
-                        standingbookTypeDO -> standingbookTypeDO
-                ));
+        List<Long> sbTypeIds = standingbookDOS.stream().map(StandingbookDO::getTypeId).collect(Collectors.toList());
+        List<StandingbookTypeDO> typeList = standingbookTypeMapper.selectList(new LambdaQueryWrapper<StandingbookTypeDO>().in(StandingbookTypeDO::getId, sbTypeIds));
+        Map<Long, StandingbookTypeDO> typeMap = typeList.stream().collect(Collectors.toMap(StandingbookTypeDO::getId, standingbookTypeDO -> standingbookTypeDO));
 
         // 查询所有台账关联的下级计量器具
-        List<MeasurementAssociationDO> assosicationSbList = measurementAssociationMapper.selectList(new LambdaQueryWrapper<MeasurementAssociationDO>()
-                .in(MeasurementAssociationDO::getMeasurementInstrumentId, sbIds)
-        );
+        List<MeasurementAssociationDO> assosicationSbList = measurementAssociationMapper.selectList(new LambdaQueryWrapper<MeasurementAssociationDO>().in(MeasurementAssociationDO::getMeasurementInstrumentId, sbIds));
         // 所有下级计量器具分组属性map
         Map<Long, List<StandingbookAttributeDO>> measurementAttrsMap = new HashMap<>();
         Map<Long, List<MeasurementAssociationDO>> assosicationSbMap = new HashMap<>();
         if (CollUtil.isNotEmpty(assosicationSbList)) {
             // 分组 台账id-下级计量器具们
-            assosicationSbMap = assosicationSbList.stream()
-                    .collect(Collectors.groupingBy(MeasurementAssociationDO::getMeasurementInstrumentId));
-            List<Long> measurementIds = assosicationSbList.stream()
-                    .map(MeasurementAssociationDO::getMeasurementId)
-                    .collect(Collectors.toList());
+            assosicationSbMap = assosicationSbList.stream().collect(Collectors.groupingBy(MeasurementAssociationDO::getMeasurementInstrumentId));
+            List<Long> measurementIds = assosicationSbList.stream().map(MeasurementAssociationDO::getMeasurementId).collect(Collectors.toList());
             measurementAttrsMap = standingbookAttributeService.getAttributesBySbIds(measurementIds);
 
         }
         // 查询所有台账关联的上级设备
-        List<MeasurementDeviceDO> assosicationDeviceList = measurementDeviceMapper.selectList(new LambdaQueryWrapper<MeasurementDeviceDO>()
-                .in(MeasurementDeviceDO::getMeasurementInstrumentId, sbIds)
-        );
+        List<MeasurementDeviceDO> assosicationDeviceList = measurementDeviceMapper.selectList(new LambdaQueryWrapper<MeasurementDeviceDO>().in(MeasurementDeviceDO::getMeasurementInstrumentId, sbIds));
         Map<Long, List<StandingbookAttributeDO>> deviceAttrsMap = new HashMap<>();
         Map<Long, List<MeasurementDeviceDO>> assosicationDeviceMap = new HashMap<>();
         if (CollUtil.isNotEmpty(assosicationDeviceList)) {
             // 分组 台账id-下级计量器具们
-            assosicationDeviceMap = assosicationDeviceList.stream()
-                    .collect(Collectors.groupingBy(MeasurementDeviceDO::getMeasurementInstrumentId));
-            List<Long> deviceIds = assosicationDeviceList.stream()
-                    .map(MeasurementDeviceDO::getDeviceId)
-                    .collect(Collectors.toList());
+            assosicationDeviceMap = assosicationDeviceList.stream().collect(Collectors.groupingBy(MeasurementDeviceDO::getMeasurementInstrumentId));
+            List<Long> deviceIds = assosicationDeviceList.stream().map(MeasurementDeviceDO::getDeviceId).collect(Collectors.toList());
             deviceAttrsMap = standingbookAttributeService.getAttributesBySbIds(deviceIds);
         }
 
@@ -530,18 +473,10 @@ public class StandingbookServiceImpl implements StandingbookService {
 
             List<StandingbookAttributeDO> attributes = standingbookDO.getChildren();
 
-            Optional<StandingbookAttributeDO> measuringInstrumentNameOptional = attributes.stream()
-                    .filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode()))
-                    .findFirst();
-            Optional<StandingbookAttributeDO> measuringInstrumentIdOptional = attributes.stream()
-                    .filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode()))
-                    .findFirst();
-            Optional<StandingbookAttributeDO> tableTypeOptional = attributes.stream()
-                    .filter(attribute -> ATTR_TABLE_TYPE.equals(attribute.getCode()))
-                    .findFirst();
-            Optional<StandingbookAttributeDO> valueTypeOptional = attributes.stream()
-                    .filter(attribute -> ATTR_VALUE_TYPE.equals(attribute.getCode()))
-                    .findFirst();
+            Optional<StandingbookAttributeDO> measuringInstrumentNameOptional = attributes.stream().filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode())).findFirst();
+            Optional<StandingbookAttributeDO> measuringInstrumentIdOptional = attributes.stream().filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode())).findFirst();
+            Optional<StandingbookAttributeDO> tableTypeOptional = attributes.stream().filter(attribute -> ATTR_TABLE_TYPE.equals(attribute.getCode())).findFirst();
+            Optional<StandingbookAttributeDO> valueTypeOptional = attributes.stream().filter(attribute -> ATTR_VALUE_TYPE.equals(attribute.getCode())).findFirst();
             Long StandingbookId = standingbookDO.getId();
 
             StandingbookWithAssociations standingbookWithAssociations = new StandingbookWithAssociations();
@@ -566,12 +501,8 @@ public class StandingbookServiceImpl implements StandingbookService {
 
                     // 查询下级计量器具名称、编码
                     List<StandingbookAttributeDO> attributeDOS = finalMeasurementAttrsMap.get(association.getMeasurementId());
-                    Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream()
-                            .filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode()))
-                            .findFirst();
-                    Optional<StandingbookAttributeDO> codeOptional = attributeDOS.stream()
-                            .filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode()))
-                            .findFirst();
+                    Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream().filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode())).findFirst();
+                    Optional<StandingbookAttributeDO> codeOptional = attributeDOS.stream().filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode())).findFirst();
 
                     associationData.setStandingbookName(nameOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
                     associationData.setStandingbookCode(codeOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
@@ -585,12 +516,8 @@ public class StandingbookServiceImpl implements StandingbookService {
                 Long deviceId = deviceDOList.get(0).getDeviceId();
                 // 查询上级设备编码
                 List<StandingbookAttributeDO> attributeDOS = deviceAttrsMap.get(deviceId);
-                Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream()
-                        .filter(attribute -> ATTR_EQUIPMENT_NAME.equals(attribute.getCode()))
-                        .findFirst();
-                Optional<StandingbookAttributeDO> codeOptional = attributeDOS.stream()
-                        .filter(attribute -> ATTR_EQUIPMENT_ID.equals(attribute.getCode()))
-                        .findFirst();
+                Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream().filter(attribute -> ATTR_EQUIPMENT_NAME.equals(attribute.getCode())).findFirst();
+                Optional<StandingbookAttributeDO> codeOptional = attributeDOS.stream().filter(attribute -> ATTR_EQUIPMENT_ID.equals(attribute.getCode())).findFirst();
                 standingbookWithAssociations.setDeviceId(deviceId);
                 standingbookWithAssociations.setDeviceName(nameOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
                 standingbookWithAssociations.setDeviceCode(codeOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
@@ -613,8 +540,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         String labelInfo = pageReqVO.getLabelInfo();
         JSONObject labelJson = JSONUtil.parseObj(labelInfo); // 使用JSONUtil解析JSON字符串
 
-        try (InputStream inputStream = file.getInputStream();
-             Workbook workbook = new XSSFWorkbook(inputStream)) {
+        try (InputStream inputStream = file.getInputStream(); Workbook workbook = new XSSFWorkbook(inputStream)) {
 
             Sheet sheet = workbook.getSheetAt(0);
             for (int i = 2; i <= sheet.getLastRowNum(); i++) {
