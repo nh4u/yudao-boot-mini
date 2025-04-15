@@ -39,5 +39,5 @@ public interface StandingbookMapper extends BaseMapperX<StandingbookDO> {
      * @param createTimeArr 创建时间数组
      * @return sbId
      */
-    List<Long> selectStandingbookIdByCondition(@Param("labelInfoConditions") Map<String, List<String>> labelInfoConditions,@Param("typeId") Long typeId, @Param("typeIds") List<String> typeIds,@Param("stage") Integer stage, @Param("createTimeArr")List<String> createTimeArr);
+    List<Long> selectStandingbookIdByCondition(@Param("labelInfoConditions") Map<String, List<String>> labelInfoConditions,@Param("typeId") Long typeId, @Param("typeIds") List<Long> typeIds,@Param("stage") Integer stage, @Param("createTimeArr")List<String> createTimeArr);
 }
