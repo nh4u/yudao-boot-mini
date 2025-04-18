@@ -25,6 +25,9 @@ import java.util.List;
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 
+/**
+ * @author liumingqiang
+ */
 @Tag(name = "管理后台 - 能源分组")
 @RestController
 @RequestMapping("/power/energyGroup")
