@@ -3,17 +3,14 @@ package cn.bitlinks.ems.module.power.controller.admin.energygroup;
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageParam;
-import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.excel.core.util.ExcelUtils;
 import cn.bitlinks.ems.module.power.controller.admin.energygroup.vo.EnergyGroupPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.energygroup.vo.EnergyGroupRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.energygroup.vo.EnergyGroupSaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energygroup.EnergyGroupDO;
 import cn.bitlinks.ems.module.power.service.energygroup.EnergyGroupService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -48,8 +45,8 @@ public class EnergyGroupController {
     @Operation(summary = "获取能源分组list")
     @PreAuthorize("@ss.hasPermission('power:energy-group:create')")
     public CommonResult<List<EnergyGroupRespVO>> getEnergyGroups() {
-        List<EnergyGroupDO> energyGroups = energyGroupService.getEnergyGroups();
-        return success(BeanUtils.toBean(energyGroups, EnergyGroupRespVO.class));
+        List<EnergyGroupRespVO> energyGroups = energyGroupService.getEnergyGroups();
+        return success(energyGroups);
     }
 
 

@@ -1,6 +1,8 @@
 package cn.bitlinks.ems.module.power.service.energygroup;
 
+import cn.bitlinks.ems.framework.common.exception.ErrorCode;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.text.StrPool;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -55,12 +57,11 @@ public class EnergyGroupServiceImpl implements EnergyGroupService {
                 updateEnergyGroup(energyGroup);
             }
 
-            // 删除操作
-            if (CollectionUtil.isNotEmpty(ids)) {
-                deleteEnergyGroups(ids);
-            }
+        }
 
-
+        // 删除操作
+        if (CollectionUtil.isNotEmpty(ids)) {
+            deleteEnergyGroups(ids);
         }
 
         return true;
@@ -98,6 +99,32 @@ public class EnergyGroupServiceImpl implements EnergyGroupService {
 
     @Override
     public void deleteEnergyGroups(List<Long> ids) {
+
+        // 删除时需要校验是否已经绑定了能源  如果绑定了则不能删除，
+        List<EnergyGroupRespVO> energyGroups = energyGroupMapper.getEnergyGroups(ids);
+
+        StringBuilder strBuilder = new StringBuilder();
+        for (EnergyGroupRespVO energyGroup : energyGroups) {
+            Boolean edited = energyGroup.getEdited();
+            if (edited == null || !edited) {
+                // 如果不可编辑 说明有绑定能源，那么需要报异常
+                strBuilder.append(energyGroup.getName()).append(StrPool.COMMA);
+            }
+
+        }
+
+        // 如何有报错信息
+        if (strBuilder.length() > 0) {
+            // 删除多余，号
+            strBuilder.deleteCharAt(strBuilder.length() - 1);
+
+            //组装一下
+            strBuilder.insert(0, "【");
+            strBuilder.append("】已绑定能源，不能删除！");
+            ErrorCode errorCode = new ErrorCode(1_001_301_104, strBuilder.toString());
+            throw exception(errorCode);
+        }
+
         // 删除
         energyGroupMapper.deleteByIds(ids);
     }
@@ -113,9 +140,8 @@ public class EnergyGroupServiceImpl implements EnergyGroupService {
     }
 
     @Override
-    public List<EnergyGroupDO> getEnergyGroups() {
-
-        return energyGroupMapper.selectList();
+    public List<EnergyGroupRespVO> getEnergyGroups() {
+        return energyGroupMapper.getEnergyGroups(null);
     }
 
     private void validateEnergyGroupExists(Long id) {

@@ -10,6 +10,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.apache.ibatis.annotations.Mapper;
 import cn.bitlinks.ems.module.power.controller.admin.energygroup.vo.*;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 能源分组 Mapper
@@ -28,6 +29,7 @@ public interface EnergyGroupMapper extends BaseMapperX<EnergyGroupDO> {
 
     /**
      * 获取是否重复
+     *
      * @param reqVO
      * @return
      */
@@ -45,4 +47,11 @@ public interface EnergyGroupMapper extends BaseMapperX<EnergyGroupDO> {
      */
     List<Long> selectIds();
 
+    /**
+     * 带有是否可编辑状态的返回体
+     *
+     * @param ids 能源分组ids
+     * @return
+     */
+    List<EnergyGroupRespVO> getEnergyGroups(@Param("ids") List<Long> ids);
 }

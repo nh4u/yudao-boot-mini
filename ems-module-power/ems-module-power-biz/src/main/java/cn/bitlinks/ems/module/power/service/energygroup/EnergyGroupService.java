@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.energygroup;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.module.power.controller.admin.energygroup.vo.EnergyGroupPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.energygroup.vo.EnergyGroupRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.energygroup.vo.EnergyGroupSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energygroup.EnergyGroupDO;
 
@@ -72,5 +73,5 @@ public interface EnergyGroupService {
      * 获取能源分组list
      * @return
      */
-    List<EnergyGroupDO>  getEnergyGroups();
+    List<EnergyGroupRespVO>  getEnergyGroups();
 }
