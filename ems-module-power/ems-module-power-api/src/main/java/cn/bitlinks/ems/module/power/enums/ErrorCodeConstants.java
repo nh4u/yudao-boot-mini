@@ -70,7 +70,7 @@ public interface ErrorCodeConstants {
     ErrorCode STANDINGBOOK_EXISTS = new ErrorCode(1_001_202_008, "该分类存在设备，不可进行删除");
 
     ErrorCode STANDINGBOOK_CODE_REPEAT_CHILDREN = new ErrorCode(1_001_202_009, "模板编码与子级台账类型编码重复，请修改后再提交");
-    ErrorCode STANDINGBOOK_CODE_EXISTS = new ErrorCode(1_001_202_010, "台账编码已存在，请检查后提交");
+    ErrorCode STANDINGBOOK_CODE_EXISTS = new ErrorCode(1_001_202_010, "编号已存在，请重新输入！");
     ErrorCode STANDINGBOOK_NO_ATTR = new ErrorCode(1_001_202_011, "台账没有台账属性");
     ErrorCode STANDINGBOOK_TYPE_ONLY_FIVE = new ErrorCode(1_001_202_002, "最多允许五层节点");
     // ========== 标签配置 ==========

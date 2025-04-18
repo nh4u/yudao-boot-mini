@@ -1,7 +1,7 @@
 package cn.bitlinks.ems.module.power.dal.mysql.standingbook.templ;
 
 import cn.bitlinks.ems.framework.mybatis.core.mapper.BaseMapperX;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.templ.StandingbookTemplDaqAttrDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
@@ -10,7 +10,7 @@ import org.apache.ibatis.annotations.Mapper;
  * @author bitlinks
  */
 @Mapper
-public interface StandingbookTemplDaqAttrMapper extends BaseMapperX<StandingbookTemplDaqAttrDO> {
+public interface StandingbookTmplDaqAttrMapper extends BaseMapperX<StandingbookTmplDaqAttrDO> {
 
 
 }
