@@ -27,7 +27,6 @@ public interface StandingbookTypeMapper extends BaseMapperX<StandingbookTypeDO> 
 
                 .eqIfPresent(StandingbookTypeDO::getTopType, reqVO.getTopType())
                 .eqIfPresent(StandingbookTypeDO::getSort, reqVO.getSort())
-                .eqIfPresent(StandingbookTypeDO::getLevel, reqVO.getLevel())
                 .eqIfPresent(StandingbookTypeDO::getCode, reqVO.getCode())
                 .eqIfPresent(StandingbookTypeDO::getDescription, reqVO.getDescription())
                 .betweenIfPresent(StandingbookTypeDO::getCreateTime, reqVO.getCreateTime())

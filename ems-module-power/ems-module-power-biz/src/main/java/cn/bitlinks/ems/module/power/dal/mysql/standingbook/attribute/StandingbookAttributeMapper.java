@@ -33,7 +33,6 @@ public interface StandingbookAttributeMapper extends BaseMapperX<StandingbookAtt
                 .eqIfPresent(StandingbookAttributeDO::getCode, reqVO.getCode())
                 .eqIfPresent(StandingbookAttributeDO::getSort, reqVO.getSort())
                 .eqIfPresent(StandingbookAttributeDO::getFormat, reqVO.getFormat())
-                .eqIfPresent(StandingbookAttributeDO::getNode, reqVO.getNode())
                 .eqIfPresent(StandingbookAttributeDO::getDescription, reqVO.getDescription())
                 .betweenIfPresent(StandingbookAttributeDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(StandingbookAttributeDO::getId));
