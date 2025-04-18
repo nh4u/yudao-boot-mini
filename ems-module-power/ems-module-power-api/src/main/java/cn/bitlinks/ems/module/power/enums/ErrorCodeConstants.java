@@ -36,6 +36,10 @@ public interface ErrorCodeConstants {
     ErrorCode NO_MATCHING_TIME_PERIOD = new ErrorCode(1_001_301_024,"该时间段不存在");
     ErrorCode ACCOUNTING_FREQUENCY_NOT_SET = new ErrorCode(1_001_301_025,"核算频率为空");
     ErrorCode ENERGY_PARAMETERS_NOT_EXISTS = new ErrorCode(1_001_301_026,"能源参数不存在");
+    ErrorCode USAGE_MORE_THAN_ONE = new ErrorCode(1_001_301_027,"每个能源只能有一个用量参数");
+    ErrorCode ENERGY_CONFIGURATION_STANDINGBOOK_DELETE = new ErrorCode(1_001_301_027,"该能源已关联计量器具，不可删除能源参数");
+    ErrorCode ENERGY_CONFIGURATION_STANDINGBOOK_UPDATE = new ErrorCode(1_001_301_027,"该能源已关联计量器具，不可修改能源参数");
+    ErrorCode ENERGY_PARAMETER_CODE_DUPLICATE = new ErrorCode(1_001_301_028,"能源参数不可重复");
     //========== 关联下级计量和关联上级设备 配置 1-001-101-000 ==========
     ErrorCode DEVICE_ASSOCIATION_CONFIGURATION_NOT_EXISTS = new ErrorCode(1_001_101_001, "设备关联配置不存在");
 
@@ -43,7 +47,9 @@ public interface ErrorCodeConstants {
     ErrorCode ADDITIONAL_RECORDING_NOT_EXISTS = new ErrorCode(1_001_301_005, "补录不存在");
     ErrorCode THIS_TIME_EXISTS_DATA = new ErrorCode(1_001_301_007, "该时间点已存在非补录数据，请选择其他时间");
     ErrorCode THIS_VALUE_NOT_LESS = new ErrorCode(1_001_301_008, "本次数值不可小于上次数值");
-    ErrorCode THIS_VALUE_NOT_MORE = new ErrorCode(1_001_301_008, "本次数值不可大于下次数值");
+    ErrorCode THIS_VALUE_NOT_MORE = new ErrorCode(1_001_301_009, "本次数值不可大于下次数值");
+    ErrorCode VALUE_TYPE_REQUIRED = new ErrorCode(1_001_301_010, "该计量器具能源用量的数值特征为累积值，需要指定数据是全量还是增量");
+    ErrorCode PURCHASE_TIME_OVER_CURRENT = new ErrorCode(1_001_301_011, "购入时间不可大于当前时间");
 
     // ========== 台账类型 ==========
     ErrorCode STANDINGBOOK_TYPE_NOT_EXISTS = new ErrorCode(1_001_202_000, "台账类型不存在");

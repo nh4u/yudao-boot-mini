@@ -19,6 +19,9 @@ public class EnergyConfigurationSaveReqVO {
     @Schema(description = "id", requiredMode = Schema.RequiredMode.REQUIRED, example = "14490")
     private Long id;
 
+    @Schema(description = "分組id", example = "26887")
+    private Long groupId;
+
     @Schema(description = "能源名称", example = "赵六")
     private String energyName;
 
