@@ -5,7 +5,11 @@ import cn.bitlinks.ems.framework.mybatis.core.mapper.BaseMapperX;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.daparamformula.vo.DaParamFormulaPageReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
+import java.util.Objects;
 
 /**
  * 数据来源为关联计量器具时的参数公式 Mapper
@@ -25,10 +29,23 @@ public interface DaParamFormulaMapper extends BaseMapperX<DaParamFormulaDO> {
     }
 
     default DaParamFormulaDO getLatestOne(DaParamFormulaDO daParamFormulaDO) {
-        return selectOne( new LambdaQueryWrapperX<DaParamFormulaDO>()
+        return selectOne(new LambdaQueryWrapperX<DaParamFormulaDO>()
                 .eqIfPresent(DaParamFormulaDO::getEnergyId, daParamFormulaDO.getEnergyId())
                 .eqIfPresent(DaParamFormulaDO::getFormulaType, daParamFormulaDO.getFormulaType())
                 .orderByDesc(DaParamFormulaDO::getStartEffectiveTime)
                 .last("limit 1"));
+    }
+
+    /**
+     * 获取对应能源下指定类型的公式
+     *
+     * @param pageReqVO
+     * @return
+     */
+    default List<DaParamFormulaDO> getDaParamFormulaList(DaParamFormulaPageReqVO pageReqVO) {
+        return selectList(new LambdaQueryWrapper<DaParamFormulaDO>()
+                .eq(!Objects.isNull(pageReqVO.getEnergyId()), DaParamFormulaDO::getEnergyId, pageReqVO.getEnergyId())
+                .eq(!Objects.isNull(pageReqVO.getFormulaType()), DaParamFormulaDO::getFormulaType, pageReqVO.getFormulaType())
+                .orderBy(DaParamFormulaDO::getFormulaStatus).orderByDesc(DaParamFormulaDO::getCreateTime));
     }
 }

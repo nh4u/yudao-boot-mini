@@ -25,9 +25,9 @@ public class DaParamFormulaRespVO {
     @ExcelProperty("能源id")
     private Long energyId;
 
-    @Schema(description = "能源参数名称")
-    @ExcelProperty("能源参数名称")
-    private List<EnergyParameter> energyParam;
+    @Schema(description = "公式状态【0:未使用；1：使用中；2：已使用】")
+    @ExcelProperty("公式状态【0:未使用；1：使用中；2：已使用】")
+    private Integer formulaStatus;
 
     @Schema(description = "能源参数计算公式")
     @ExcelProperty("能源参数计算公式")

@@ -80,6 +80,14 @@ public class DaParamFormulaController {
         return success(BeanUtils.toBean(pageResult, DaParamFormulaRespVO.class));
     }
 
+    @GetMapping("/getFormulaList")
+    @Operation(summary = "获取公式list")
+    @PreAuthorize("@ss.hasPermission('power:da-param-formula:query')")
+    public CommonResult<List<DaParamFormulaRespVO>> getDaParamFormulaList(DaParamFormulaPageReqVO pageReqVO) {
+        List<DaParamFormulaDO> list = daParamFormulaService.getDaParamFormulaList(pageReqVO);
+        return success(BeanUtils.toBean(list, DaParamFormulaRespVO.class));
+    }
+
     @GetMapping("/export-excel")
     @Operation(summary = "导出参数公式 Excel")
     @PreAuthorize("@ss.hasPermission('power:da-param-formula:export')")

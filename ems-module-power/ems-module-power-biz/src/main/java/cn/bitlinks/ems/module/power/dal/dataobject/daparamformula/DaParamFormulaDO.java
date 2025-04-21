@@ -34,10 +34,9 @@ public class DaParamFormulaDO extends BaseDO {
      */
     private Long energyId;
     /**
-     * 能源参数名称
+     * 公式状态【0:未使用；1：使用中；2：已使用】
      */
-    @TableField(typeHandler = JacksonTypeHandler.class)
-    private List<EnergyParametersSaveReqVO> energyParam;
+    private Integer formulaStatus;
     /**
      * 能源参数计算公式
      */

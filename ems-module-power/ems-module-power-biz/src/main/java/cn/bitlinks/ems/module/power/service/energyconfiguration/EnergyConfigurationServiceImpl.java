@@ -431,7 +431,6 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
             daParamFormulaDO = DaParamFormulaDO.builder()
                     .energyFormula(updateReqVO.getCoalFormula())
                     .energyId(updateReqVO.getId())
-                    .energyParam(updateReqVO.getEnergyParameters())
                     .startEffectiveTime(now)
                     .formulaScale(StrUtil.isNotEmpty(coalScale) ? Integer.valueOf(coalScale) : null)
                     .formulaType(formulaType).build();
@@ -441,7 +440,6 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
             daParamFormulaDO = DaParamFormulaDO.builder()
                     .energyFormula(updateReqVO.getUnitPriceFormula())
                     .energyId(updateReqVO.getId())
-                    .energyParam(updateReqVO.getEnergyParameters())
                     .startEffectiveTime(now)
                     .formulaScale(StrUtil.isNotEmpty(unitPriceScale) ? Integer.valueOf(unitPriceScale) : null)
                     .formulaType(formulaType).build();
