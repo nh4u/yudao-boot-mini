@@ -34,9 +34,9 @@ public interface EnergyGroupMapper extends BaseMapperX<EnergyGroupDO> {
      * @return
      */
     default EnergyGroupDO selectOne(EnergyGroupSaveReqVO reqVO) {
-        return selectOne(new LambdaQueryWrapper<EnergyGroupDO>()
-                .eq(StrUtil.isNotEmpty(reqVO.getName()), EnergyGroupDO::getName, reqVO.getName())
-                .ne(!Objects.isNull(reqVO.getId()), EnergyGroupDO::getId, reqVO.getId())
+        return selectOne(new LambdaQueryWrapperX<EnergyGroupDO>()
+                .eqIfPresent(EnergyGroupDO::getName, reqVO.getName())
+                .neIfPresent(EnergyGroupDO::getId, reqVO.getId())
                 .last("limit 1"));
     }
 

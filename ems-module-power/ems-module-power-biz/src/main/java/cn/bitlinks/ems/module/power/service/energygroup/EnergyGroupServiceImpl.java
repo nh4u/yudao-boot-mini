@@ -82,7 +82,15 @@ public class EnergyGroupServiceImpl implements EnergyGroupService {
     @Override
     public void updateEnergyGroup(EnergyGroupSaveReqVO updateReqVO) {
         // 校验存在
-        validateEnergyGroupExists(updateReqVO.getId());
+        EnergyGroupDO one = validateEnergyGroupExists(updateReqVO.getId());
+
+        // 校验是否修改
+        if (one.getId().equals(updateReqVO.getId()) && one.getName().equals(updateReqVO.getName())) {
+
+            // 如果id和name一样，则直接跳过不需要进行下面操作操作
+            return;
+        }
+
         // 校验是否重复
         validateEnergyGroupDuplicate(updateReqVO);
         // 校验是否已经绑定
@@ -124,10 +132,14 @@ public class EnergyGroupServiceImpl implements EnergyGroupService {
         return energyGroupMapper.getEnergyGroups(null);
     }
 
-    private void validateEnergyGroupExists(Long id) {
-        if (energyGroupMapper.selectById(id) == null) {
+    private EnergyGroupDO validateEnergyGroupExists(Long id) {
+        EnergyGroupDO one = energyGroupMapper.selectById(id);
+        if (one == null) {
             throw exception(ENERGY_GROUP_NOT_EXISTS);
+        } else {
+            return one;
         }
+
     }
 
     private void validateEnergyGroupDuplicate(EnergyGroupSaveReqVO reqVO) {
