@@ -45,10 +45,7 @@ public class StandingbookTypeDO extends BaseDO {
      * 排序
      */
     private Long sort;
-    /**
-     * 当前层级
-     */
-    private Long level;
+
     /**
      * 编码
      */

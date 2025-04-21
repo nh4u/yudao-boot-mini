@@ -43,8 +43,6 @@ public class StandingbookAttributeSaveReqVO {
     @Schema(description = "格式")
     private String format;
 
-    @Schema(description = "归属节点")
-    private String node;
     @Schema(description = "归属节点id")
     private Long nodeId;
 

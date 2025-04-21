@@ -40,16 +40,23 @@ public interface ErrorCodeConstants {
     ErrorCode ENERGY_CONFIGURATION_STANDINGBOOK_DELETE = new ErrorCode(1_001_301_027,"该能源已关联计量器具，不可删除能源参数");
     ErrorCode ENERGY_CONFIGURATION_STANDINGBOOK_UPDATE = new ErrorCode(1_001_301_027,"该能源已关联计量器具，不可修改能源参数");
     ErrorCode ENERGY_PARAMETER_CODE_DUPLICATE = new ErrorCode(1_001_301_028,"能源参数不可重复");
+
+    // ========== 能源分组 ==========
+    ErrorCode ENERGY_GROUP_NOT_EXISTS = new ErrorCode(1_001_301_101, "能源分组不存在");
+    ErrorCode ENERGY_GROUP_LIST_NOT_EXISTS = new ErrorCode(1_001_301_102, "能源分组list不存在");
+
+    ErrorCode ENERGY_GROUP_EXISTS = new ErrorCode(1_001_301_103, "能源分组已存在");
+
     //========== 关联下级计量和关联上级设备 配置 1-001-101-000 ==========
     ErrorCode DEVICE_ASSOCIATION_CONFIGURATION_NOT_EXISTS = new ErrorCode(1_001_101_001, "设备关联配置不存在");
 
     //========== 数采补录 1-001-301-005 ==========
-    ErrorCode ADDITIONAL_RECORDING_NOT_EXISTS = new ErrorCode(1_001_301_005, "补录不存在");
-    ErrorCode THIS_TIME_EXISTS_DATA = new ErrorCode(1_001_301_007, "该时间点已存在非补录数据，请选择其他时间");
-    ErrorCode THIS_VALUE_NOT_LESS = new ErrorCode(1_001_301_008, "本次数值不可小于上次数值");
-    ErrorCode THIS_VALUE_NOT_MORE = new ErrorCode(1_001_301_009, "本次数值不可大于下次数值");
-    ErrorCode VALUE_TYPE_REQUIRED = new ErrorCode(1_001_301_010, "该计量器具能源用量的数值特征为累积值，需要指定数据是全量还是增量");
-    ErrorCode PURCHASE_TIME_OVER_CURRENT = new ErrorCode(1_001_301_011, "购入时间不可大于当前时间");
+    ErrorCode ADDITIONAL_RECORDING_NOT_EXISTS = new ErrorCode(1_001_301_015, "补录不存在");
+    ErrorCode THIS_TIME_EXISTS_DATA = new ErrorCode(1_001_301_201, "该时间点已存在非补录数据，请选择其他时间");
+    ErrorCode THIS_VALUE_NOT_LESS = new ErrorCode(1_001_301_202, "本次数值不可小于上次数值");
+    ErrorCode THIS_VALUE_NOT_MORE = new ErrorCode(1_001_301_203, "本次数值不可大于下次数值");
+    ErrorCode VALUE_TYPE_REQUIRED = new ErrorCode(1_001_301_204, "该计量器具能源用量的数值特征为累积值，需要指定数据是全量还是增量");
+    ErrorCode PURCHASE_TIME_OVER_CURRENT = new ErrorCode(1_001_301_205, "购入时间不可大于当前时间");
 
     // ========== 台账类型 ==========
     ErrorCode STANDINGBOOK_TYPE_NOT_EXISTS = new ErrorCode(1_001_202_000, "台账类型不存在");
