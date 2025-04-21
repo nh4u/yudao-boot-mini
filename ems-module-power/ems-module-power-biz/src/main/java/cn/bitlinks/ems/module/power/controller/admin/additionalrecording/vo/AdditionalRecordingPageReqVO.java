@@ -22,7 +22,7 @@ public class AdditionalRecordingPageReqVO extends PageParam {
     @Schema(description = "计量器具id", example = "21597")
     private Long standingbookId;
 
-    @Schema(description = "数值类型", example = "1")
+    @Schema(description = "增量/全量")
     private String valueType;
 
     @Schema(description = "本次采集时间")

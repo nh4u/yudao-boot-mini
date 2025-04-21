@@ -17,6 +17,9 @@ import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_M
 @ToString(callSuper = true)
 public class EnergyConfigurationPageReqVO extends PageParam {
 
+    @Schema(description = "分組id", example = "26887")
+    private Long groupId;
+
     @Schema(description = "能源名称", example = "赵六")
     private String energyName;
 

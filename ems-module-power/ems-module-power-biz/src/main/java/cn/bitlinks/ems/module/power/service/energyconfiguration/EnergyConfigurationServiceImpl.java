@@ -72,15 +72,16 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
 
     @Override
     public Long createEnergyConfiguration(EnergyConfigurationSaveReqVO createReqVO) {
-        // 1. 检查能源编码是否重复
+        //  检查能源编码是否重复
         checkEnergyCodeDuplicate(createReqVO.getCode(), null);
-
-        // 2. 插入能源配置主表
+        //  子表编码查重（新增逻辑）
+        checkEnergyParameterCodeDuplicate(createReqVO.getEnergyParameters());
+        //  插入能源配置主表
         EnergyConfigurationDO energyConfiguration = BeanUtils.toBean(createReqVO, EnergyConfigurationDO.class);
         energyConfigurationMapper.insert(energyConfiguration);
         Long energyId = energyConfiguration.getId();
 
-        // 3. 插入能源参数子表
+        //  插入能源参数子表
         if (CollectionUtils.isNotEmpty(createReqVO.getEnergyParameters())) {
             List<EnergyParametersSaveReqVO> params = createReqVO.getEnergyParameters().stream()
                     .peek(param -> param.setEnergyId(energyId)) // 设置能源ID
@@ -98,7 +99,8 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         validateEnergyConfigurationExists(energyId);
         // 2. 检查能源编码重复性（排除自身）
         checkEnergyCodeDuplicate(updateReqVO.getCode(), energyId);
-
+        // 2. 子表编码查重（新增逻辑）
+        checkEnergyParameterCodeDuplicate(updateReqVO.getEnergyParameters());
         // 3. 处理单位变更校验（原有逻辑保留）
         String nickname = getLoginUserNickname();
         List<EnergyParametersSaveReqVO> newParameters = updateReqVO.getEnergyParameters();
@@ -122,49 +124,107 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         handleEnergyParameters(energyId, newParameters);
     }
 
+    private void checkEnergyParameterCodeDuplicate(List<EnergyParametersSaveReqVO> params) {
+        if (CollUtil.isEmpty(params)) {
+            return;
+        }
+
+        List<String> duplicateCodes = params.stream()
+                .map(EnergyParametersSaveReqVO::getCode)
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                .entrySet().stream()
+                .filter(e -> e.getValue() > 1)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+        if (CollUtil.isNotEmpty(duplicateCodes)) {
+            throw exception(ENERGY_PARAMETER_CODE_DUPLICATE);
+        }
+
+        // --- 原有逻辑：检查数据库重复（更新后代码）---
+        // 收集所有参数ID（包含新增参数的临时ID，如果有）
+        Set<Long> excludeIds = params.stream()
+                .map(EnergyParametersSaveReqVO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        // 提取所有待校验的 code
+        List<String> codes = params.stream()
+                .map(EnergyParametersSaveReqVO::getCode)
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.toList());
+        if (CollUtil.isEmpty(codes)) {
+            return;
+        }
+
+        // 查询是否存在重复 code（排除自身）
+        Long count = energyParametersMapper.selectCount(
+                Wrappers.<EnergyParametersDO>lambdaQuery()
+                        .in(EnergyParametersDO::getCode, codes)
+                        .notIn(CollUtil.isNotEmpty(excludeIds), EnergyParametersDO::getId, excludeIds)
+                        .eq(EnergyParametersDO::getDeleted, 0)
+        );
+        if (count > 0) {
+            throw exception(ENERGY_PARAMETER_CODE_DUPLICATE);
+        }
+    }
+
     private void handleEnergyParameters(Long energyId, List<EnergyParametersSaveReqVO> newParams) {
         if (newParams == null) {
             return;
         }
 
-        // 获取数据库中现有参数
+        // 1. 校验用量唯一性（原有逻辑）
+        long usageCount = newParams.stream()
+                .filter(p -> p.getUsage() != null && p.getUsage() == 1)
+                .count();
+        if (usageCount > 1) {
+            throw exception(USAGE_MORE_THAN_ONE);
+        }
+
+        // 2. 获取数据库中现有参数
         List<EnergyParametersDO> oldParams = energyParametersMapper.selectList(
                 Wrappers.<EnergyParametersDO>lambdaQuery()
                         .eq(EnergyParametersDO::getEnergyId, energyId)
         );
 
-        // 将参数分为三类：需新增、需更新、需删除
-        Map<Long, EnergyParametersSaveReqVO> newParamMap = newParams.stream()
-                .filter(p -> p.getId() != null)
-                .collect(Collectors.toMap(EnergyParametersSaveReqVO::getId, Function.identity()));
+        // 3. 收集所有新参数的ID（排除新增的无ID参数）
+        Set<Long> newParamIds = newParams.stream()
+                .map(EnergyParametersSaveReqVO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
-        List<EnergyParametersDO> toDelete = new ArrayList<>();
-        List<EnergyParametersSaveReqVO> toUpdate = new ArrayList<>();
-        List<EnergyParametersSaveReqVO> toAdd = new ArrayList<>();
-
-        // 遍历旧参数，识别删除或更新
-        for (EnergyParametersDO oldParam : oldParams) {
-            Long paramId = oldParam.getId();
-            if (newParamMap.containsKey(paramId)) {
-                // 更新操作
-                EnergyParametersSaveReqVO updateVO = newParamMap.get(paramId);
-                updateVO.setEnergyId(energyId); // 确保关联正确
-                toUpdate.add(updateVO);
-            } else {
-                // 删除操作
-                toDelete.add(oldParam);
-            }
-        }
-
-        // 识别新增参数（ID为null或不在旧参数ID列表中）
-        toAdd = newParams.stream()
-                .filter(p -> p.getId() == null || !newParamMap.containsKey(p.getId()))
-                .peek(p -> p.setEnergyId(energyId)) // 绑定能源ID
+        // 4. 标记待删除的旧参数（不在新参数ID列表中）
+        List<EnergyParametersDO> toDelete = oldParams.stream()
+                .filter(oldParam -> !newParamIds.contains(oldParam.getId()))
                 .collect(Collectors.toList());
 
-        // 执行批量操作
+        // 5. 删除前检查关联
+        toDelete.forEach(oldParam -> {
+            List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(
+                    String.valueOf(oldParam.getId())
+            );
+            if (CollectionUtils.isNotEmpty(standingbookIds)) {
+                throw exception(ENERGY_CONFIGURATION_STANDINGBOOK_DELETE);
+            }
+        });
+
+        // 6. 处理更新和新增参数
+        List<EnergyParametersSaveReqVO> toUpdate = newParams.stream()
+                .filter(p -> p.getId() != null)
+                .peek(p -> p.setEnergyId(energyId))
+                .collect(Collectors.toList());
+
+        List<EnergyParametersSaveReqVO> toAdd = newParams.stream()
+                .filter(p -> p.getId() == null)
+                .peek(p -> p.setEnergyId(energyId))
+                .collect(Collectors.toList());
+
+        // 7. 执行删除、更新、新增
         if (!toDelete.isEmpty()) {
-            List<Long> deleteIds = toDelete.stream().map(EnergyParametersDO::getId).collect(Collectors.toList());
+            List<Long> deleteIds = toDelete.stream()
+                    .map(EnergyParametersDO::getId)
+                    .collect(Collectors.toList());
             energyParametersMapper.deleteByIds(deleteIds);
         }
         if (!toUpdate.isEmpty()) {
@@ -175,27 +235,24 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
             List<EnergyParametersDO> addDOs = BeanUtils.toBean(toAdd, EnergyParametersDO.class);
             energyParametersMapper.insertBatch(addDOs);
         }
-
     }
 
-    /**
-     * 从 energyParameter JSON 中解析 chinese 为 "用量" 的 unit
-     */
     private String parseUnitFromJson(List<EnergyParametersSaveReqVO> parameters) {
         if (CollectionUtils.isEmpty(parameters)) {
             return "";
         }
-        try {
-            // 使用 Stream API 简化查找逻辑
-            return parameters.stream()
-                    .filter(param -> "用量".equals(param.getChinese()))
-                    .map(EnergyParametersSaveReqVO::getUnit)
-                    .filter(StrUtil::isNotBlank)
-                    .findFirst()
-                    .orElse("");
-        } catch (Exception e) {
-            throw new ServiceException();
-        }
+        // 使用 Stream API 按新规则过滤
+        return parameters.stream()
+                // 过滤出标记为用量的参数（usage=1）
+                .filter(param -> Integer.valueOf(1).equals(param.getUsage()))
+                // 提取单位字段
+                .map(EnergyParametersSaveReqVO::getUnit)
+                // 过滤空值
+                .filter(StrUtil::isNotBlank)
+                // 取第一个符合条件的参数
+                .findFirst()
+                // 无结果返回空字符串
+                .orElse("");
     }
 
     // 标准化 JSON 方法
@@ -212,7 +269,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         // 查询是否存在重复编码
         int count = energyConfigurationMapper.countByCodeAndNotId(code, id);
         if (count > 0) {
-            throw new ServiceException(ENERGY_CODE_DUPLICATE);
+            throw exception(ENERGY_CODE_DUPLICATE);
         }
     }
 
@@ -223,7 +280,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         // 查询是否存在重复名称
         int count = energyConfigurationMapper.countByEnergyNameAndNotId(energyName, id);
         if (count > 0) {
-            throw new ServiceException(ENERGY_NAME_DUPLICATE);
+            throw exception(ENERGY_NAME_DUPLICATE);
         }
     }
 

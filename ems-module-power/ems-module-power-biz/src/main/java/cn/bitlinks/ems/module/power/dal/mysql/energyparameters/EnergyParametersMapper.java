@@ -21,12 +21,12 @@ public interface EnergyParametersMapper extends BaseMapperX<EnergyParametersDO> 
     default PageResult<EnergyParametersDO> selectPage(EnergyParametersPageReqVO reqVO) {
         return selectPage(reqVO, new LambdaQueryWrapperX<EnergyParametersDO>()
                 .eqIfPresent(EnergyParametersDO::getEnergyId, reqVO.getEnergyId())
-                .eqIfPresent(EnergyParametersDO::getChinese, reqVO.getChinese())
+                .eqIfPresent(EnergyParametersDO::getParameter, reqVO.getParameter())
                 .eqIfPresent(EnergyParametersDO::getCode, reqVO.getCode())
-                .eqIfPresent(EnergyParametersDO::getCharacteristic, reqVO.getCharacteristic())
+                .eqIfPresent(EnergyParametersDO::getDataFeature, reqVO.getDataFeature())
                 .eqIfPresent(EnergyParametersDO::getUnit, reqVO.getUnit())
-                .eqIfPresent(EnergyParametersDO::getType, reqVO.getType())
-                .eqIfPresent(EnergyParametersDO::getAcquisition, reqVO.getAcquisition())
+                .eqIfPresent(EnergyParametersDO::getDataType, reqVO.getDataType())
+                .eqIfPresent(EnergyParametersDO::getUsage, reqVO.getUsage())
                 .betweenIfPresent(EnergyParametersDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(EnergyParametersDO::getId));
     }
