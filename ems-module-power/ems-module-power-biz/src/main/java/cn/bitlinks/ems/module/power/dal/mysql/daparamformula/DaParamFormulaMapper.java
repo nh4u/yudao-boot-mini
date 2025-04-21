@@ -47,6 +47,7 @@ public interface DaParamFormulaMapper extends BaseMapperX<DaParamFormulaDO> {
         return selectList(new LambdaQueryWrapperX<DaParamFormulaDO>()
                 .eqIfPresent(DaParamFormulaDO::getEnergyId, reqVO.getEnergyId())
                 .eqIfPresent(DaParamFormulaDO::getFormulaType, reqVO.getFormulaType())
+                .eqIfPresent(DaParamFormulaDO::getFormulaStatus, reqVO.getFormulaStatus())
                 .orderByAsc(DaParamFormulaDO::getFormulaStatus).orderByDesc(DaParamFormulaDO::getCreateTime));
     }
 }
