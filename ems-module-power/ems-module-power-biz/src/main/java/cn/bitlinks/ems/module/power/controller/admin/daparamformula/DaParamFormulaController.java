@@ -83,7 +83,7 @@ public class DaParamFormulaController {
     @GetMapping("/getFormulaList")
     @Operation(summary = "获取公式list")
     @PreAuthorize("@ss.hasPermission('power:da-param-formula:query')")
-    public CommonResult<List<DaParamFormulaRespVO>> getDaParamFormulaList(DaParamFormulaPageReqVO pageReqVO) {
+    public CommonResult<List<DaParamFormulaRespVO>> getDaParamFormulaList(DaParamFormulaSaveReqVO pageReqVO) {
         List<DaParamFormulaDO> list = daParamFormulaService.getDaParamFormulaList(pageReqVO);
         return success(BeanUtils.toBean(list, DaParamFormulaRespVO.class));
     }

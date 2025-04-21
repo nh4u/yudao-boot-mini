@@ -96,9 +96,9 @@ public class DaParamFormulaServiceImpl implements DaParamFormulaService {
     }
 
     @Override
-    public List<DaParamFormulaDO> getDaParamFormulaList(DaParamFormulaPageReqVO pageReqVO) {
+    public List<DaParamFormulaDO> getDaParamFormulaList(DaParamFormulaSaveReqVO reqVO) {
 
-        return daParamFormulaMapper.getDaParamFormulaList(pageReqVO);
+        return daParamFormulaMapper.getDaParamFormulaList(reqVO);
     }
 
 }
