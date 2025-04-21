@@ -36,6 +36,10 @@ public class EnergyConfigurationDO extends BaseDO {
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
+     * 分組id
+     */
+    private Long groupId;
+    /**
      * 能源名称
      */
     private String energyName;

@@ -673,7 +673,7 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
             energyNode.setPId(measureId + EMPTY);
             energyNode.setType(AttributeTreeNodeTypeEnum.ATTR.getCode());
             energyNode.setId(energyParameter.getCode());
-            energyNode.setName(energyParameter.getChinese());
+            energyNode.setName(energyParameter.getParameter());
             result.add(energyNode);
         });
         return result;

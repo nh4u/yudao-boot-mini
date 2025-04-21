@@ -15,26 +15,26 @@ import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_M
 @ToString(callSuper = true)
 public class EnergyParametersPageReqVO extends PageParam {
 
-    @Schema(description = "能源id", example = "10576")
+    @Schema(description = "能源id", example = "2682")
     private Long energyId;
 
-    @Schema(description = "中文名")
-    private String chinese;
+    @Schema(description = "参数名称")
+    private String parameter;
 
     @Schema(description = "编码")
     private String code;
 
-    @Schema(description = "数据特征值")
-    private Integer characteristic;
+    @Schema(description = "数据特征")
+    private Integer dataFeature;
 
     @Schema(description = "单位")
     private String unit;
 
-    @Schema(description = "数据类型", example = "2")
-    private Integer type;
+    @Schema(description = "数据类型")
+    private Integer dataType;
 
-    @Schema(description = "对应数采参数")
-    private String acquisition;
+    @Schema(description = "用量")
+    private Integer usage;
 
     @Schema(description = "创建时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)

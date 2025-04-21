@@ -13,7 +13,6 @@ import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
  * @author bitlinks
  */
 @TableName("ems_energy_parameters")
-@KeySequence("ems_energy_parameters_seq") // 用于 Oracle、PostgreSQL、Kingbase、DB2、H2 数据库的主键自增。如果是 MySQL 等数据库，可不写。
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
@@ -32,17 +31,17 @@ public class EnergyParametersDO extends BaseDO {
      */
     private Long energyId;
     /**
-     * 中文名
+     * 参数名称
      */
-    private String chinese;
+    private String parameter;
     /**
      * 编码
      */
     private String code;
     /**
-     * 数据特征值
+     * 数据特征
      */
-    private Integer characteristic;
+    private Integer dataFeature;
     /**
      * 单位
      */
@@ -50,10 +49,11 @@ public class EnergyParametersDO extends BaseDO {
     /**
      * 数据类型
      */
-    private Integer type;
+    private Integer dataType;
     /**
-     * 对应数采参数
+     * 用量
      */
-    private String acquisition;
+    @TableField("`usage`")
+    private Integer usage;
 
 }

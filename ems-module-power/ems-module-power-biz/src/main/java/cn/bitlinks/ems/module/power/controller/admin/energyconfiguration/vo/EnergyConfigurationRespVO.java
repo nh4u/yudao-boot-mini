@@ -25,6 +25,10 @@ public class EnergyConfigurationRespVO {
     @ExcelProperty("id")
     private Long id;
 
+    @Schema(description = "分組id", example = "26887")
+    @ExcelProperty("分組id")
+    private Long groupId;
+
     @Schema(description = "能源名称", example = "赵六")
     @ExcelProperty("能源名称")
     private String energyName;
