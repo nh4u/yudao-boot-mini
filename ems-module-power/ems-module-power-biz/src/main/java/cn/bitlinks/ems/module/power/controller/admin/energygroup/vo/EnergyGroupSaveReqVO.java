@@ -12,10 +12,10 @@ import javax.validation.constraints.*;
 @Data
 public class EnergyGroupSaveReqVO {
 
-    @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "3495")
+    @Schema(description = "编号", example = "3495")
     private Long id;
 
-    @Schema(description = "分组名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "王五")
+    @Schema(description = "分组名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "水")
     @NotEmpty(message = "分组名称不能为空")
     private String name;
 
