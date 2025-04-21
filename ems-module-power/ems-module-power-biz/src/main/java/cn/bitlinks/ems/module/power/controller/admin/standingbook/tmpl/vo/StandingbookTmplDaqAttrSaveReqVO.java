@@ -1,8 +1,7 @@
 package cn.bitlinks.ems.module.power.controller.admin.standingbook.tmpl.vo;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
-
-import javax.validation.constraints.NotEmpty;
 
 @Schema(description = "管理后台 - 台账属性新增/修改 Request VO")
 @Data
@@ -10,9 +9,9 @@ public class StandingbookTmplDaqAttrSaveReqVO {
 
     @Schema(description = "编号", example = "14000")
     private Long id;
-    @Schema(description = "类型编号",  requiredMode = Schema.RequiredMode.REQUIRED, example = "16688")
+    @Schema(description = "类型编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "16688")
     private Long typeId;
-    @Schema(description = "能源id", requiredMode = Schema.RequiredMode.REQUIRED,  example = "16688")
+    @Schema(description = "能源id", requiredMode = Schema.RequiredMode.REQUIRED, example = "16688")
     private Long energyId;
     @Schema(description = "是否能源数采参数", requiredMode = Schema.RequiredMode.REQUIRED, example = "李四")
     private Boolean energyFlag;
@@ -22,23 +21,20 @@ public class StandingbookTmplDaqAttrSaveReqVO {
     private String code;
 
     @Schema(description = "数据特征", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotEmpty(message = "数据特征不能为空")
     private Integer dataFeature;
     @Schema(description = "单位", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotEmpty(message = "单位不能为空")
     private String unit;
 
-    @Schema(description = "数据类型")
+    @Schema(description = "数据类型", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer dataType;
 
-    @NotEmpty(message = "用量不能为空")
-    @Schema(description = "是否用量")
+    @Schema(description = "是否用量", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer usage;
 
-//    @Schema(description = "数采源属性id")
+    //    @Schema(description = "数采源属性id")
 //    private Long rawAttrId;
 //
-    @Schema(description = "归属节点id")
+    @Schema(description = "归属节点id", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long nodeId;
 
     @Schema(description = "是否自动生成", example = "0")
@@ -47,7 +43,7 @@ public class StandingbookTmplDaqAttrSaveReqVO {
     @Schema(description = "是否启用", example = "你说的对")
     private Boolean status;
 
-    @Schema(description = "排序")
+    @Schema(description = "排序", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer sort;
 
 }

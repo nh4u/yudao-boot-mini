@@ -72,7 +72,8 @@ public interface ErrorCodeConstants {
     ErrorCode STANDINGBOOK_CODE_REPEAT_CHILDREN = new ErrorCode(1_001_202_009, "模板编码与子级台账类型编码重复，请修改后再提交");
     ErrorCode STANDINGBOOK_CODE_EXISTS = new ErrorCode(1_001_202_010, "编号已存在，请重新输入！");
     ErrorCode STANDINGBOOK_NO_ATTR = new ErrorCode(1_001_202_011, "台账没有台账属性");
-    ErrorCode STANDINGBOOK_TYPE_ONLY_FIVE = new ErrorCode(1_001_202_002, "最多允许五层节点");
+    ErrorCode STANDINGBOOK_TYPE_ONLY_FIVE = new ErrorCode(1_001_202_012, "最多允许五层节点");
+    ErrorCode STANDINGBOOK_EXIST_NOT_SUPPORT_UPD_DEL = new ErrorCode(1_001_202_013, "该分类或其子分类下存在设备，不可删除和修改！");
     // ========== 标签配置 ==========
     ErrorCode LABEL_CONFIG_NOT_EXISTS = new ErrorCode(1_001_401_001, "配置标签不存在");
     ErrorCode LABEL_CONFIG_REACH_LIMIT = new ErrorCode(1_001_401_002, "单层标签超过限制");
