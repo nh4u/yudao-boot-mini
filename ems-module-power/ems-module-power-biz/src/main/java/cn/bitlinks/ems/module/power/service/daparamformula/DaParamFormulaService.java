@@ -53,5 +53,5 @@ public interface DaParamFormulaService {
      */
     PageResult<DaParamFormulaDO> getDaParamFormulaPage(DaParamFormulaPageReqVO pageReqVO);
 
-    List<DaParamFormulaDO> getDaParamFormulaList(DaParamFormulaPageReqVO pageReqVO);
+    List<DaParamFormulaDO> getDaParamFormulaList(DaParamFormulaSaveReqVO pageReqVO);
 }
