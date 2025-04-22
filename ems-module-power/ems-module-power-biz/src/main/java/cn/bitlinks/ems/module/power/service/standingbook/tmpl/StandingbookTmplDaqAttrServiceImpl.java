@@ -115,7 +115,7 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
     public static void filterModifiedDaqAttributes(List<StandingbookTmplDaqAttrDO> updateList,
                                                  List<StandingbookTmplDaqAttrDO> rawAttrList) {
         updateList.removeIf(updatedAttr -> rawAttrList.stream()
-                .noneMatch(rawAttr -> updatedAttr.getId().equals(rawAttr.getId()) &&
+                .anyMatch(rawAttr -> updatedAttr.getId().equals(rawAttr.getId()) &&
                         Objects.equals(updatedAttr.getParameter(), rawAttr.getParameter()) &&
                         Objects.equals(updatedAttr.getCode(), rawAttr.getCode()) &&
                         Objects.equals(updatedAttr.getDataType(), rawAttr.getDataType()) &&
