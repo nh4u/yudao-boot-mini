@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistorySaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
@@ -110,7 +111,7 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
         coalFactorHistory.setStartTime(LocalDateTime.now()); // 设置为当前时间
         coalFactorHistory.setEndTime(null); // null，表示“至今“
         coalFactorHistory.setUpdater(nickname);
-        EnergyConfigurationDO energyConfiguration=energyConfigurationService.getEnergyConfiguration(energyId);
+        EnergyConfigurationRespVO energyConfiguration=energyConfigurationService.getEnergyConfiguration(energyId);
         coalFactorHistory.setFormula(energyConfiguration.getCoalFormula());
         coalFactorHistoryMapper.insert(coalFactorHistory);
 

@@ -74,15 +74,15 @@ public class EnergyConfigurationController {
     @Operation(summary = "获得能源配置")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
     @PreAuthorize("@ss.hasPermission('power:energy-configuration:query')")
-    public CommonResult<EnergyConfigurationDO> getEnergyConfiguration(@RequestParam("id") Long id) {
+    public CommonResult<EnergyConfigurationRespVO> getEnergyConfiguration(@RequestParam("id") Long id) {
         return success(energyConfigurationService.getEnergyConfiguration(id));
     }
 
     @GetMapping("/page")
     @Operation(summary = "获得能源配置分页")
     @PreAuthorize("@ss.hasPermission('power:energy-configuration:query')")
-    public CommonResult<PageResult<EnergyConfigurationDO>> getEnergyConfigurationPage(@Valid EnergyConfigurationPageReqVO pageReqVO) {
-        PageResult<EnergyConfigurationDO> pageResult = energyConfigurationService.getEnergyConfigurationPage(pageReqVO);
+    public CommonResult<PageResult<EnergyConfigurationRespVO>> getEnergyConfigurationPage(@Valid EnergyConfigurationPageReqVO pageReqVO) {
+        PageResult<EnergyConfigurationRespVO> pageResult = energyConfigurationService.getEnergyConfigurationPage(pageReqVO);
         return success(pageResult);
     }
 
@@ -100,7 +100,7 @@ public class EnergyConfigurationController {
     public void exportEnergyConfigurationExcel(@Valid EnergyConfigurationPageReqVO pageReqVO,
                                                HttpServletResponse response) throws IOException {
         pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
-        List<EnergyConfigurationDO> list = energyConfigurationService.getEnergyConfigurationPage(pageReqVO).getList();
+        List<EnergyConfigurationRespVO> list = energyConfigurationService.getEnergyConfigurationPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "能源配置.xls", "数据", EnergyConfigurationRespVO.class,
                 BeanUtils.toBean(list, EnergyConfigurationRespVO.class));
@@ -111,7 +111,7 @@ public class EnergyConfigurationController {
     @Operation(summary = "根据条件查询能源配置")
     @PreAuthorize("@ss.hasPermission('power:energy-configuration:searchEnergyConfigurations')")
     @ApiAccessLog(operateType = EXPORT)
-    public CommonResult<List<EnergyConfigurationDO>> searchEnergyConfigurations(
+    public CommonResult<List<EnergyConfigurationRespVO>> searchEnergyConfigurations(
             @RequestParam(required = false) String energyName,
             @RequestParam(required = false) String energyClassify,
             @RequestParam(required = false) String code) {
