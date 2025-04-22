@@ -40,51 +40,20 @@ public class CoalFactorHistoryController {
     @Resource
     private EnergyConfigurationMapper energyConfigurationMapper;
 
-//    @PostMapping("/create")
-//    @Operation(summary = "创建折标煤系数历史")
-//    @PreAuthorize("@ss.hasPermission('power:coal-factor-history:create')")
-//    public CommonResult<Long> createCoalFactorHistory(@Valid @RequestBody CoalFactorHistorySaveReqVO createReqVO) {
-//        return success(coalFactorHistoryService.createCoalFactorHistory07(createReqVO));
-//    }
-
     @PostMapping("/create")
     @Operation(summary = "创建折标煤系数历史")
     @PreAuthorize("@ss.hasPermission('power:coal-factor-history:create')")
-    public CommonResult<Long> createCoalFactorHistory(
-            @Valid @RequestBody CoalFactorHistorySaveReqVO createReqVO,
-            @RequestParam(value = "use3307", required = false, defaultValue = "false") boolean use3307) {
-        Long id;
-        if (use3307) {
-            // 切换到 3307 数据源进行创建
-            id = coalFactorHistoryService.createCoalFactorHistory07(createReqVO);
-        } else {
-            // 默认数据源创建
-            id = coalFactorHistoryService.createCoalFactorHistory(createReqVO);
-        }
+    public CommonResult<Long> createCoalFactorHistory(@Valid @RequestBody CoalFactorHistorySaveReqVO createReqVO) {
+        Long id = coalFactorHistoryService.createCoalFactorHistory(createReqVO);
         return success(id);
     }
-
-
-//    @PutMapping("/update")
-//    @Operation(summary = "更新折标煤系数历史")
-//    @PreAuthorize("@ss.hasPermission('power:coal-factor-history:update')")
-//    public CommonResult<Boolean> updateCoalFactorHistory(@Valid @RequestBody CoalFactorHistorySaveReqVO updateReqVO) {
-//        coalFactorHistoryService.updateCoalFactorHistory(updateReqVO);
-//        return success(true);
-//    }
 
     @PutMapping("/update")
     @Operation(summary = "更新折标煤系数历史")
     @PreAuthorize("@ss.hasPermission('power:coal-factor-history:update')")
-    public CommonResult<Boolean> updateCoalFactorHistory(@Valid @RequestBody CoalFactorHistorySaveReqVO updateReqVO,
-                                                         @RequestParam(value = "use3307", required = false, defaultValue = "false") boolean use3307) {
-        if (use3307) {
-            // 切换到 3307 数据源更新
-            coalFactorHistoryService.updateCoalFactorHistory07(updateReqVO);
-        } else {
-            // 默认数据源更新
-            coalFactorHistoryService.updateCoalFactorHistory(updateReqVO);
-        }
+    public CommonResult<Boolean> updateCoalFactorHistory(@Valid @RequestBody CoalFactorHistorySaveReqVO updateReqVO) {
+        // 默认数据源更新
+        coalFactorHistoryService.updateCoalFactorHistory(updateReqVO);
         return success(true);
     }
 
@@ -92,15 +61,9 @@ public class CoalFactorHistoryController {
     @Operation(summary = "删除折标煤系数历史")
     @Parameter(name = "id", description = "编号", required = true)
     @PreAuthorize("@ss.hasPermission('power:coal-factor-history:delete')")
-    public CommonResult<Boolean> deleteCoalFactorHistory(@RequestParam("id") Long id,
-                                                         @RequestParam(value = "use3307", required = false, defaultValue = "false") boolean use3307) {
-        if (use3307) {
-            //切换到 3307 数据源
-            coalFactorHistoryService.deleteCoalFactorHistory07(id);
-        } else {
-            //正常删除
-            coalFactorHistoryService.deleteCoalFactorHistory(id);
-        }
+    public CommonResult<Boolean> deleteCoalFactorHistory(@RequestParam("id") Long id) {
+        //正常删除
+        coalFactorHistoryService.deleteCoalFactorHistory(id);
         return success(true);
     }
 
@@ -108,23 +71,15 @@ public class CoalFactorHistoryController {
     @Operation(summary = "获得折标煤系数历史")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
     @PreAuthorize("@ss.hasPermission('power:coal-factor-history:query')")
-    public CommonResult<CoalFactorHistoryRespVO> getCoalFactorHistory(@RequestParam("id") Long id,
-                                                                      @RequestParam(value = "use3307", required = false, defaultValue = "false") boolean use3307) {
-        CoalFactorHistoryDO coalFactorHistory;
-        if (use3307) {
-            //切换到 3307 数据源
-            coalFactorHistory =coalFactorHistoryService.getCoalFactorHistory07(id);
-        } else {
-            //正常删除
-            coalFactorHistory =coalFactorHistoryService.getCoalFactorHistory(id);
-        }
+    public CommonResult<CoalFactorHistoryRespVO> getCoalFactorHistory(@RequestParam("id") Long id) {
+        CoalFactorHistoryDO coalFactorHistory = coalFactorHistoryService.getCoalFactorHistory(id);
         return success(BeanUtils.toBean(coalFactorHistory, CoalFactorHistoryRespVO.class));
     }
 
     @GetMapping("/page")
     @Operation(summary = "获得折标煤系数历史分页")
     @PreAuthorize("@ss.hasPermission('power:coal-factor-history:query')")
-    public CommonResult<PageResult<CoalFactorHistoryRespVO>> getCoalFactorHistoryPage(@Valid CoalFactorHistoryPageReqVO pageReqVO,Long energyId) {
+    public CommonResult<PageResult<CoalFactorHistoryRespVO>> getCoalFactorHistoryPage(@Valid CoalFactorHistoryPageReqVO pageReqVO, Long energyId) {
         PageResult<CoalFactorHistoryDO> pageResult = coalFactorHistoryService.getCoalFactorHistoryPage(pageReqVO);
         String energyUnit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(String.valueOf(energyId));
         if (energyUnit == null || energyUnit.isEmpty()) {
@@ -153,12 +108,12 @@ public class CoalFactorHistoryController {
     @PreAuthorize("@ss.hasPermission('power:coal-factor-history:export')")
     @ApiAccessLog(operateType = EXPORT)
     public void exportCoalFactorHistoryExcel(@Valid CoalFactorHistoryPageReqVO pageReqVO,
-              HttpServletResponse response) throws IOException {
+                                             HttpServletResponse response) throws IOException {
         pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
         List<CoalFactorHistoryDO> list = coalFactorHistoryService.getCoalFactorHistoryPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "折标煤系数历史.xls", "数据", CoalFactorHistoryRespVO.class,
-                        BeanUtils.toBean(list, CoalFactorHistoryRespVO.class));
+                BeanUtils.toBean(list, CoalFactorHistoryRespVO.class));
     }
 
 }

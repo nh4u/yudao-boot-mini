@@ -6,17 +6,14 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.daparamformula.vo.DaParamFormulaPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.daparamformula.vo.DaParamFormulaSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.mysql.daparamformula.DaParamFormulaMapper;
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
-import cn.hutool.core.collection.CollUtil;
 import com.alibaba.nacos.common.utils.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
-
 import java.util.List;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -40,6 +37,11 @@ public class DaParamFormulaServiceImpl implements DaParamFormulaService {
     public Long createDaParamFormula(DaParamFormulaSaveReqVO createReqVO) {
         // 插入
         DaParamFormulaDO daParamFormula = BeanUtils.toBean(createReqVO, DaParamFormulaDO.class);
+
+        // TODO: 2025/4/18  点击“加入公式列表”时若判断为重复则系统弹出提示“已存在相同的公式，不可重复添加”
+        
+        // 设置未使用
+        daParamFormula.setFormulaStatus(0);
         daParamFormulaMapper.insert(daParamFormula);
         // 返回
         return daParamFormula.getId();
@@ -91,6 +93,12 @@ public class DaParamFormulaServiceImpl implements DaParamFormulaService {
             }
         }
         return pageResult;
+    }
+
+    @Override
+    public List<DaParamFormulaDO> getDaParamFormulaList(DaParamFormulaSaveReqVO reqVO) {
+
+        return daParamFormulaMapper.getDaParamFormulaList(reqVO);
     }
 
 }

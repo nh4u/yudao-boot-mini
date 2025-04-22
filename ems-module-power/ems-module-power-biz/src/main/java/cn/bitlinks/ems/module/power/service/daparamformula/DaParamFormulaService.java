@@ -6,6 +6,7 @@ import cn.bitlinks.ems.module.power.controller.admin.daparamformula.vo.DaParamFo
 import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
 
 import javax.validation.Valid;
+import java.util.List;
 
 /**
  * 数据来源为关联计量器具时的参数公式 Service 接口
@@ -51,4 +52,6 @@ public interface DaParamFormulaService {
      * @return 数据来源为关联计量器具时的参数公式分页
      */
     PageResult<DaParamFormulaDO> getDaParamFormulaPage(DaParamFormulaPageReqVO pageReqVO);
+
+    List<DaParamFormulaDO> getDaParamFormulaList(DaParamFormulaSaveReqVO pageReqVO);
 }
