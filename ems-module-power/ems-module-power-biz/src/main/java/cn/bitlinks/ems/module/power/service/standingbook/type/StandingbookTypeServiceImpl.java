@@ -272,4 +272,49 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         attributeService.createStandingbookAttributeBatch(superAttributes);
     }
 
+    /**
+     * 递归查询子节点 id
+      */
+    @Override
+    public List<Long> getSubtreeIds(List<StandingbookTypeDO> typeList, Long targetId) {
+        List<Long> subtreeIds = new ArrayList<>();
+
+        StandingbookTypeDO node = findNode(typeList, targetId);
+        getSubtreeIdsRecursive(node, subtreeIds);
+
+        return subtreeIds;
+    }
+
+    // 树状结构中查询当前节点
+    private StandingbookTypeDO findNode(List<StandingbookTypeDO> typeList, Long targetId) {
+        if (typeList == null || typeList.isEmpty()) {
+            return null;
+        }
+
+        for (StandingbookTypeDO node : typeList) {
+            if (node.getId().equals(targetId)) {
+                return node; // 找到目标节点
+            }
+
+            // 递归查找子节点
+            StandingbookTypeDO foundInChildren = findNode(node.getChildren(), targetId);
+            if (foundInChildren != null) {
+                return foundInChildren; // 在子节点中找到目标节点
+            }
+        }
+
+        return null; // 没有找到目标节点
+    }
+
+    // 递归遍历子节点
+    private void getSubtreeIdsRecursive(StandingbookTypeDO node, List<Long> subtreeIds) {
+        if (node == null) {
+            return;
+        }
+        subtreeIds.add(node.getId()); // 添加当前节点 id
+
+        for (StandingbookTypeDO child : node.getChildren()) {
+            getSubtreeIdsRecursive(child, subtreeIds); // 递归遍历子节点
+        }
+    }
 }

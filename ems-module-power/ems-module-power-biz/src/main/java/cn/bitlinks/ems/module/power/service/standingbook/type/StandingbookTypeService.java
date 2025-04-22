@@ -61,4 +61,11 @@ public interface StandingbookTypeService {
      */
     Map<Long,StandingbookTypeDO> getStandingbookTypeIdMap(List<Long> typeIds);
 
+    /**
+     * 递归查询子节点 id
+     * @param typeList
+     * @param targetId
+     * @return
+     */
+    List<Long> getSubtreeIds(List<StandingbookTypeDO> typeList, Long targetId);
 }
