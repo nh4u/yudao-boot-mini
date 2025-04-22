@@ -5,10 +5,12 @@ import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyparameters.vo.EnergyParametersSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energygroup.EnergyGroupDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.unitpriceconfiguration.UnitPriceConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.mysql.daparamformula.DaParamFormulaMapper;
@@ -16,6 +18,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigur
 import cn.bitlinks.ems.module.power.dal.mysql.energyparameters.EnergyParametersMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.unitpriceconfiguration.UnitPriceConfigurationMapper;
+import cn.bitlinks.ems.module.power.service.energygroup.EnergyGroupService;
 import cn.bitlinks.ems.module.power.service.energyparameters.EnergyParametersService;
 import cn.bitlinks.ems.module.power.service.unitpriceconfiguration.UnitPriceConfigurationService;
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
@@ -69,6 +72,8 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     private EnergyParametersService energyParametersService;
     @Resource
     private EnergyParametersMapper energyParametersMapper;
+    @Resource
+    private EnergyGroupService energyGroupService;
 
     @Override
     public Long createEnergyConfiguration(EnergyConfigurationSaveReqVO createReqVO) {
@@ -331,9 +336,10 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     }
 
     @Override
-    public EnergyConfigurationDO getEnergyConfiguration(Long id) {
+    public EnergyConfigurationRespVO getEnergyConfiguration(Long id) {
         // 1. 查询主表
         EnergyConfigurationDO mainDO = energyConfigurationMapper.selectById(id);
+
         if (mainDO == null) {
             return null;
         }
@@ -342,13 +348,13 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         List<EnergyParametersDO> parameters = energyParametersMapper.selectByEnergyId(id);
 
         // 3. 组装响应 VO
-        EnergyConfigurationDO respVO = BeanUtils.toBean(mainDO, EnergyConfigurationDO.class);
+        EnergyConfigurationRespVO respVO = BeanUtils.toBean(mainDO, EnergyConfigurationRespVO.class);
         respVO.setEnergyParameters(parameters);
         return respVO;
     }
 
     @Override
-    public PageResult<EnergyConfigurationDO> getEnergyConfigurationPage(EnergyConfigurationPageReqVO pageReqVO) {
+    public PageResult<EnergyConfigurationRespVO> getEnergyConfigurationPage(EnergyConfigurationPageReqVO pageReqVO) {
         // 1. 查询主表分页数据
         PageResult<EnergyConfigurationDO> pageResult = energyConfigurationMapper.selectPage(pageReqVO);
         if (pageResult == null || CollectionUtils.isEmpty(pageResult.getList())) {
@@ -366,9 +372,9 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
                 .collect(Collectors.groupingBy(EnergyParametersDO::getEnergyId));
 
         // 4. 转换VO并填充参数
-        List<EnergyConfigurationDO> voList = pageResult.getList().stream().map(doObj -> {
+        List<EnergyConfigurationRespVO> voList = pageResult.getList().stream().map(doObj -> {
             // 转换为VO
-            EnergyConfigurationDO vo = BeanUtils.toBean(doObj, EnergyConfigurationDO.class);
+            EnergyConfigurationRespVO vo = BeanUtils.toBean(doObj, EnergyConfigurationRespVO.class);
 
             // 设置能源参数
             vo.setEnergyParameters(paramsMap.getOrDefault(doObj.getId(), Collections.emptyList()));
@@ -376,10 +382,15 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
             // 原有逻辑：设置单价和创建人昵称
             LocalDateTime currentDateTime = LocalDateTime.now();
             UnitPriceConfigurationDO unitPriceConfigurationDO = unitPriceConfigurationService.getCurrentUnitConfigByEnergyId(doObj.getId());
+            Long groupId = vo.getGroupId();
+            EnergyGroupDO energyGroupDO = energyGroupService.getEnergyGroup(groupId);
+            if (energyGroupDO != null) {
+                String groupName = energyGroupDO.getName();
+                vo.setGroupName(groupName);
+            }
             vo.setUnitPrice(unitPriceConfigurationDO);
             vo.setBillingMethod(unitPriceConfigurationMapper.getBillingMethodByEnergyIdAndTime(doObj.getId(), currentDateTime));
             vo.setAccountingFrequency(unitPriceConfigurationMapper.getAccountingFrequencyByEnergyIdAndTime(doObj.getId(), currentDateTime));
-
             if (vo.getCreator() != null) {
                 CommonResult<AdminUserRespDTO> user = adminUserApi.getUser(Long.valueOf(vo.getCreator()));
                 vo.setCreator(user.getData() != null ? user.getData().getNickname() : vo.getCreator());
@@ -419,7 +430,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     }
 
     @Override
-    public List<EnergyConfigurationDO> selectByCondition(String energyName, String energyClassify, String code) {
+    public List<EnergyConfigurationRespVO> selectByCondition(String energyName, String energyClassify, String code) {
 // 1. 构建查询条件
         QueryWrapper<EnergyConfigurationDO> queryWrapper = new QueryWrapper<>();
         if (StrUtil.isNotBlank(energyName)) {
@@ -449,7 +460,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         // 4. 组装 VO
         return mainList.stream()
                 .map(doObj -> {
-                    EnergyConfigurationDO vo = BeanUtils.toBean(doObj, EnergyConfigurationDO.class);
+                    EnergyConfigurationRespVO vo = BeanUtils.toBean(doObj, EnergyConfigurationRespVO.class);
                     vo.setEnergyParameters(paramsMap.getOrDefault(doObj.getId(), Collections.emptyList()));
                     return vo;
                 })

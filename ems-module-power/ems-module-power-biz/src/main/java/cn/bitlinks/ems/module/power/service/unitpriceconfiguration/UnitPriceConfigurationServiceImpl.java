@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.unitpriceconfiguration;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.pricedetail.vo.PriceDetailRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.pricedetail.vo.PriceDetailSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.PriceResultDTO;
@@ -59,7 +60,7 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
     private PriceDetailMapper priceDetailMapper;
 
     private void insertBatch(Long energyId, List<UnitPriceConfigurationSaveReqVO> updateReqVOList) {
-        EnergyConfigurationDO energyConfig = energyConfigurationService.getEnergyConfiguration(energyId);
+        EnergyConfigurationRespVO energyConfig = energyConfigurationService.getEnergyConfiguration(energyId);
         updateReqVOList.forEach(updReqVO -> {
             updReqVO.setFormula(energyConfig.getUnitPriceFormula());
         });
