@@ -20,6 +20,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.Standingboo
 import cn.bitlinks.ems.module.power.dal.mysql.unitpriceconfiguration.UnitPriceConfigurationMapper;
 import cn.bitlinks.ems.module.power.service.energygroup.EnergyGroupService;
 import cn.bitlinks.ems.module.power.service.energyparameters.EnergyParametersService;
+import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.bitlinks.ems.module.power.service.unitpriceconfiguration.UnitPriceConfigurationService;
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
@@ -74,6 +75,8 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     private EnergyParametersMapper energyParametersMapper;
     @Resource
     private EnergyGroupService energyGroupService;
+    @Resource
+    private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
 
     @Override
     public Long createEnergyConfiguration(EnergyConfigurationSaveReqVO createReqVO) {
@@ -109,16 +112,6 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         // 3. 处理单位变更校验（原有逻辑保留）
         String nickname = getLoginUserNickname();
         List<EnergyParametersSaveReqVO> newParameters = updateReqVO.getEnergyParameters();
-        String oldUnit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(String.valueOf(energyId));
-        if (CollUtil.isNotEmpty(newParameters) && StringUtils.isNotBlank(oldUnit)) {
-            String newUnit = parseUnitFromJson(newParameters);
-            if (!newUnit.equals(oldUnit)) {
-                List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(String.valueOf(energyId));
-                if (CollectionUtils.isNotEmpty(standingbookIds)) {
-                    throw new ServiceException(ENERGY_CONFIGURATION_STANDINGBOOK_UNIT);
-                }
-            }
-        }
 
         // 4. 更新主表记录
         EnergyConfigurationDO updateObj = BeanUtils.toBean(updateReqVO, EnergyConfigurationDO.class);
@@ -204,17 +197,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
                 .filter(oldParam -> !newParamIds.contains(oldParam.getId()))
                 .collect(Collectors.toList());
 
-        // 5. 删除前检查关联
-        toDelete.forEach(oldParam -> {
-            List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(
-                    String.valueOf(oldParam.getId())
-            );
-            if (CollectionUtils.isNotEmpty(standingbookIds)) {
-                throw exception(ENERGY_CONFIGURATION_STANDINGBOOK_DELETE);
-            }
-        });
-
-        // 6. 处理更新和新增参数
+        // 5. 处理更新和新增参数
         List<EnergyParametersSaveReqVO> toUpdate = newParams.stream()
                 .filter(p -> p.getId() != null)
                 .peek(p -> p.setEnergyId(energyId))
@@ -224,6 +207,15 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
                 .filter(p -> p.getId() == null)
                 .peek(p -> p.setEnergyId(energyId))
                 .collect(Collectors.toList());
+
+        // 6.检查模板关联状态
+        boolean isTemplateAssociated = standingbookTmplDaqAttrService.isAssociationWithEnergyId(energyId);
+        if (isTemplateAssociated) {
+            // 有关联模板时禁止删除和更新操作
+            if (!toDelete.isEmpty() || !toUpdate.isEmpty()) {
+                throw exception(ENERGY_CONFIGURATION_TEMPLATE_ASSOCIATED); // 使用新的异常码
+            }
+        }
 
         // 7. 执行删除、更新、新增
         if (!toDelete.isEmpty()) {
@@ -239,6 +231,9 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         if (!toAdd.isEmpty()) {
             List<EnergyParametersDO> addDOs = BeanUtils.toBean(toAdd, EnergyParametersDO.class);
             energyParametersMapper.insertBatch(addDOs);
+            if (isTemplateAssociated) {
+                standingbookTmplDaqAttrService.cascadeAddDaqAttrByEnergyParams(energyId, addDOs);
+            }
         }
     }
 
@@ -294,10 +289,10 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         // 校验存在
         validateEnergyConfigurationExists(id);
 
-        // 2. 检查是否存在关联台账
-        List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(String.valueOf(id));
-        if (!standingbookIds.isEmpty()) {
-            throw exception(ENERGY_CONFIGURATION_STANDINGBOOK_EXISTS);
+        // 2. 检查是否关联模板
+        boolean isTemplateAssociated = standingbookTmplDaqAttrService.isAssociationWithEnergyId(id);
+        if (isTemplateAssociated) {
+            throw exception(ENERGY_CONFIGURATION_TEMPLATE_ASSOCIATED);
         }
 
         // 3. 先删除子表（能源参数）
@@ -314,15 +309,12 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
             validateEnergyConfigurationExists(id);
         }
 
-        // 2. 检查是否存在关联台账（任一配置有台账则阻断删除）
+        // 2. 检查是否存在模板关联（任一配置关联模板则阻断删除）
         List<Long> invalidIds = ids.stream()
-                .filter(id -> {
-                    List<Long> standingbookIds = standingbookAttributeMapper.selectStandingbookIdByValue(String.valueOf(id));
-                    return CollectionUtils.isNotEmpty(standingbookIds);
-                })
+                .filter(id -> standingbookTmplDaqAttrService.isAssociationWithEnergyId(id))
                 .collect(Collectors.toList());
-        if (!invalidIds.isEmpty()) {
-            throw exception(ENERGY_CONFIGURATION_STANDINGBOOK_EXISTS, invalidIds.get(0));
+        if (CollUtil.isNotEmpty(invalidIds)) {
+            throw exception(ENERGY_CONFIGURATION_TEMPLATE_ASSOCIATED, invalidIds.get(0));
         }
         // 删除
         energyParametersMapper.deleteByEnergyIds(ids);

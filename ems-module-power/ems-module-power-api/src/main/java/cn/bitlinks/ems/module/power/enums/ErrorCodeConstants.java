@@ -40,6 +40,8 @@ public interface ErrorCodeConstants {
     ErrorCode ENERGY_CONFIGURATION_STANDINGBOOK_DELETE = new ErrorCode(1_001_301_027,"该能源已关联计量器具，不可删除能源参数");
     ErrorCode ENERGY_CONFIGURATION_STANDINGBOOK_UPDATE = new ErrorCode(1_001_301_027,"该能源已关联计量器具，不可修改能源参数");
     ErrorCode ENERGY_PARAMETER_CODE_DUPLICATE = new ErrorCode(1_001_301_028,"能源参数不可重复");
+    ErrorCode ENERGY_CONFIGURATION_TEMPLATE_ASSOCIATED = new ErrorCode(1_001_301_029,"该能源参数已关联计量器具模板，不可删除或更新");
+
 
     // ========== 能源分组 ==========
     ErrorCode ENERGY_GROUP_NOT_EXISTS = new ErrorCode(1_001_301_101, "能源分组不存在");
