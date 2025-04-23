@@ -14,6 +14,7 @@ import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeSe
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,7 @@ import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK
  */
 @Service
 @Validated
+@Slf4j
 public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAttrService {
     @Resource
     private StandingbookTmplDaqAttrMapper standingbookTmplDaqAttrMapper;
@@ -99,7 +101,8 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
                 .filter(attribute -> attribute.getId() != null)
                 .collect(Collectors.toList());
         // 进行级联创建操作
-        createAttrCascade(createList, typeId,subtreeIds,energyFlag);
+        subtreeIds.removeIf(typeId::equals);
+        createAttrCascade(createList, subtreeIds, energyFlag);
         // 进行级联修改操作
         updateAttrCascade(updateList, rawAttrList, isUpdateAndDeleteForbidden);
 
@@ -113,7 +116,7 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
      * @param rawAttrList 原始分类属性列表
      */
     public static void filterModifiedDaqAttributes(List<StandingbookTmplDaqAttrDO> updateList,
-                                                 List<StandingbookTmplDaqAttrDO> rawAttrList) {
+                                                   List<StandingbookTmplDaqAttrDO> rawAttrList) {
         updateList.removeIf(updatedAttr -> rawAttrList.stream()
                 .anyMatch(rawAttr -> updatedAttr.getId().equals(rawAttr.getId()) &&
                         Objects.equals(updatedAttr.getParameter(), rawAttr.getParameter()) &&
@@ -128,8 +131,8 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
     /**
      * 级联修改属性列表
      *
-     * @param updateList  修改属性列表
-     * @param rawAttrList 原属性列表
+     * @param updateList                 修改属性列表
+     * @param rawAttrList                原属性列表
      * @param isUpdateAndDeleteForbidden 是否禁止修改和删除
      */
     @Transactional
@@ -195,10 +198,11 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
      * 级联新增属性列表（分类编码重复）
      *
      * @param createList 新增属性列表
-     * @param typeId     台账类型id
+     * @param subtreeIds 台账类型子级节点
+     * @param energyFlag 是否能源
      */
     @Transactional
-    public void createAttrCascade(List<StandingbookTmplDaqAttrDO> createList, Long typeId,List<Long> subtreeIds,
+    public void createAttrCascade(List<StandingbookTmplDaqAttrDO> createList, List<Long> subtreeIds,
                                   Boolean energyFlag) {
         if (CollUtil.isEmpty(createList)) {
             return;
@@ -207,13 +211,13 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
         standingbookTmplDaqAttrMapper.insertBatch(createList);
 
         // 2. 获取所有typeId tree，查询所有的子级节点的typeId
-        subtreeIds.removeIf(typeId::equals);
+
         if (CollUtil.isEmpty(subtreeIds)) {
             return;
         }
         // 3. 校验编码是否与子孙分类编码重复
         // (只需要判断自定义数采是否重复即可，能源数采参数在能源处做校验即可))
-        if(!energyFlag){
+        if (!energyFlag) {
             Set<String> codeSet = createList.stream()
                     .map(StandingbookTmplDaqAttrDO::getCode)
                     .collect(Collectors.toSet());
@@ -252,12 +256,11 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
     }
 
 
-
     /**
      * 级联删除属性列表
      *
-     * @param optAttrList 新属性列表
-     * @param rawAttrList 原属性列表
+     * @param optAttrList                新属性列表
+     * @param rawAttrList                原属性列表
      * @param isUpdateAndDeleteForbidden 是否禁止更新和删除
      */
     @Transactional(rollbackFor = Exception.class)
@@ -308,9 +311,35 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
     @Override
     @Transactional
     public void cascadeAddDaqAttrByEnergyParams(Long energyId, List<EnergyParametersDO> energyParams) {
+        if (CollUtil.isEmpty(energyParams)) {
+            return;
+        }
+        // 根据能源查询绑定的台账分类(原始节点)
+        List<Long> typeIds =
+                standingbookTmplDaqAttrMapper.selectSbTypeIdsByEnergyId(energyId);
+        if (CollUtil.isEmpty(typeIds)) {
+            return;
+        }
+        List<StandingbookTmplDaqAttrSaveReqVO> saveReqVOList = BeanUtils.toBean(energyParams, StandingbookTmplDaqAttrSaveReqVO.class);
+        // 查询所有台账分类
+        List<StandingbookTypeDO> typeList = standingbookTypeService.getStandingbookTypeNode();
 
-
-
+        // 新增能源数采参数
+        typeIds.forEach(typeId -> {
+            List<StandingbookTmplDaqAttrDO> createList = BeanUtils.toBean(saveReqVOList, StandingbookTmplDaqAttrDO.class);
+            createList.forEach(attribute -> {
+                attribute.setId(null);
+                attribute.setEnergyId(energyId);
+                attribute.setEnergyFlag(true);
+                attribute.setTypeId(typeId);
+                attribute.setNodeId(typeId);
+            });
+            // 该台账分类影响的所有分类节点
+            List<Long> subtreeIds = standingbookTypeService.getSubtreeIds(typeList, typeId);
+            //组装
+            subtreeIds.removeIf(typeId::equals);
+            createAttrCascade(createList, subtreeIds, true);
+        });
     }
 
     @Override
