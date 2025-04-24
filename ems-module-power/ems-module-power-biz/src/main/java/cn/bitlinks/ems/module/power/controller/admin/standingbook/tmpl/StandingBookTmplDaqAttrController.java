@@ -40,4 +40,12 @@ public class StandingBookTmplDaqAttrController {
                                                                                     @RequestParam("energyFlag") Boolean energyFlag) {
         return success(standingbookTemplAttrService.getByTypeIdAndEnergyFlag(typeId, energyFlag));
     }
+
+    @GetMapping("/getUsageAttrBySbId")
+    @Operation(summary = "根据台账id获取对应的用量的单位")
+    @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
+    public CommonResult<StandingbookTmplDaqAttrRespVO> getUsageAttrBySbId(@RequestParam("id") Long id) {
+        return success(standingbookTemplAttrService.getUsageAttrBySbId(id));
+    }
+
 }

@@ -1,26 +1,14 @@
 package cn.bitlinks.ems.module.power.service.standingbook.attribute;
 
-import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.AttributeTreeNode;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributePageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.measurementdevice.MeasurementDeviceDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
-import cn.bitlinks.ems.module.power.dal.mysql.measurementassociation.MeasurementAssociationMapper;
-import cn.bitlinks.ems.module.power.dal.mysql.measurementdevice.MeasurementDeviceMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.enums.ApiConstants;
-import cn.bitlinks.ems.module.power.enums.standingbook.AttributeTreeNodeTypeEnum;
-import cn.bitlinks.ems.module.power.enums.standingbook.StandingbookTypeTopEnum;
-import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
@@ -28,7 +16,6 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +27,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.PARENT_ATTR_AUTO;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.SYSTEM_CREATE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static com.baomidou.mybatisplus.core.toolkit.StringPool.EMPTY;
 
@@ -63,56 +51,6 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
     @Lazy
     private StandingbookTypeService standingbookTypeService;
 
-    @Resource
-    @Lazy
-    private EnergyConfigurationService EnergyConfigurationService;
-    @Resource
-    @Lazy
-    private StandingbookAttributeService standingbookAttributeService;
-    @Resource
-    private MeasurementAssociationMapper measurementAssociationMapper;
-    @Resource
-    private MeasurementDeviceMapper measurementDeviceMapper;
-
-    @Transactional
-    @Override
-    public Long createStandingbookAttribute(StandingbookAttributeSaveReqVO createReqVO) {
-        // 插入
-        StandingbookAttributeDO standingbookAttribute = BeanUtils.toBean(createReqVO, StandingbookAttributeDO.class);
-        if ((standingbookAttribute.getId() == null)) {
-            standingbookAttributeMapper.insert(standingbookAttribute);
-        } else {
-            standingbookAttributeMapper.updateById(standingbookAttribute);
-        }
-        // 返回
-        return standingbookAttribute.getId();
-    }
-
-    @Transactional
-    @Override
-    public Long create(StandingbookAttributeSaveReqVO createReqVO) {
-        // 插入
-        StandingbookAttributeDO standingbookAttribute = BeanUtils.toBean(createReqVO, StandingbookAttributeDO.class);
-        standingbookAttributeMapper.insert(standingbookAttribute);
-        // 返回
-        return standingbookAttribute.getId();
-    }
-
-    @Transactional
-    @Override
-    public void createStandingbookAttributeBatch(List<StandingbookAttributeDO> dos) {
-        standingbookAttributeMapper.insertBatch(dos);
-    }
-
-    @Transactional
-    @Override
-    public void updateStandingbookAttribute(StandingbookAttributeSaveReqVO updateReqVO) {
-        // 校验存在
-        validateStandingbookAttributeExists(updateReqVO.getId());
-        // 更新
-        StandingbookAttributeDO updateObj = BeanUtils.toBean(updateReqVO, StandingbookAttributeDO.class);
-        standingbookAttributeMapper.updateById(updateObj);
-    }
 
     @Transactional
     @Override
@@ -124,77 +62,18 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
         standingbookAttributeMapper.update(updateObj, updateWrapper);
     }
 
-    @Override
-    public void deleteStandingbookAttribute(Long id) {
-        // 校验存在
-        validateStandingbookAttributeExists(id);
-        // 删除
-        standingbookAttributeMapper.deleteById(id);
-    }
-
-    @Override
-    public void deleteStandingbookAttributeByTypeId(Long typeId) {
-        // 校验存在
-        validateStandingbookAttributeExistsByTypeId(typeId);
-        // 删除
-        standingbookAttributeMapper.deleteTypeId(typeId);
-    }
-
-    @Override
-    public void deleteStandingbookAttributeByStandingbookId(Long standingbookId) {
-        // 校验存在
-        validateStandingbookAttributeExistsByStandingbookId(standingbookId);
-        // 删除
-        standingbookAttributeMapper.deleteStandingbookId(standingbookId);
-    }
-
-    private void validateStandingbookAttributeExists(Long id) {
-        if (standingbookAttributeMapper.selectById(id) == null) {
-            throw exception(STANDINGBOOK_ATTRIBUTE_NOT_EXISTS);
-        }
-    }
-
-    private void validateStandingbookAttributeExistsByStandingbookId(Long standingbookId) {
-        if (standingbookAttributeMapper.selectStandingbookId(standingbookId) == null) {
-            throw exception(STANDINGBOOK_ATTRIBUTE_NOT_EXISTS);
-        }
-    }
-
-    private void validateStandingbookAttributeExistsByTypeId(Long typeId) {
-        if (standingbookAttributeMapper.selectTypeId(typeId) == null) {
-            throw exception(STANDINGBOOK_ATTRIBUTE_NOT_EXISTS);
-        }
-    }
-
-    @Override
-    public StandingbookAttributeDO getStandingbookAttribute(Long id) {
-        return standingbookAttributeMapper.selectById(id);
-    }
-
-    @Override
-    public List<StandingbookAttributeDO> getStandingbookAttributeByStandingbookId(Long standingbookId) {
-        return standingbookAttributeMapper.selectStandingbookId(standingbookId);
-    }
 
     @Override
     public List<StandingbookAttributeDO> getStandingbookAttributeByTypeId(Long typeId) {
         return standingbookAttributeMapper.selectTypeId(typeId);
     }
 
-    @Override
-    public PageResult<StandingbookAttributeDO> getStandingbookAttributePage(StandingbookAttributePageReqVO pageReqVO) {
-        return standingbookAttributeMapper.selectPage(pageReqVO);
-    }
 
     @Override
     public List<Long> getStandingbookIdByCondition(Map<String, List<String>> children, List<Long> sbIds) {
         return standingbookAttributeMapper.selectStandingbookIdByAttrCondition(children, sbIds);
     }
 
-//    @Override
-//    public List<StandingbookDO> getStandingbookIntersection(List<StandingbookAttributePageReqVO> children, Long typeId) {
-//        return standingbookAttributeMapper.selectStandingbookIntersection(children, typeId);
-//    }
 
     @Override
     @Transactional
@@ -344,7 +223,7 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
      * @param typeId     台账类型id
      */
     @Transactional
-    public void createAttrCascade(List<StandingbookAttributeDO> createList, Long typeId,List<Long> subtreeIds) {
+    public void createAttrCascade(List<StandingbookAttributeDO> createList, Long typeId, List<Long> subtreeIds) {
         if (CollUtil.isEmpty(createList)) {
             return;
         }
@@ -472,192 +351,6 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
                 .in(StandingbookAttributeDO::getRawAttrId, deleteIds));
     }
 
-    @Override
-    public List<AttributeTreeNode> queryAttributeTreeNodeByTypeAndSb(List<Long> standingBookIds, List<Long> typeIds) {
-
-        // 0.0 查询能源-参数全部列表
-        List<EnergyConfigurationDO> energyConfigurationDOS = EnergyConfigurationService.getAllEnergyConfiguration(null);
-
-        // 0. 获取所有计量器具关联关系
-        List<MeasurementAssociationDO> measurementAssociationDOS = measurementAssociationMapper.selectList();
-        // 0.1 获取所有计量器具属性列表
-        List<Long> mIds1 = measurementAssociationDOS.stream().map(MeasurementAssociationDO::getMeasurementId).collect(Collectors.toList());
-        List<Long> mIds2 = measurementAssociationDOS.stream().map(MeasurementAssociationDO::getMeasurementInstrumentId).collect(Collectors.toList());
-        Set<Long> allAssociationIds = new HashSet<>();
-        allAssociationIds.addAll(mIds1);
-        allAssociationIds.addAll(mIds2);
-        allAssociationIds.addAll(standingBookIds);
-
-        Map<Long, List<StandingbookAttributeDO>> measureAssociationAttrMap = standingbookAttributeService.getAttributesBySbIds(new ArrayList<>(allAssociationIds));
-
-        // 1.根据勾引的设备查询是计量器具还是设备，如果是重点设备，找出下边的计量器具；
-        List<StandingbookDO> sbs = standingbookMapper.selectList(new LambdaQueryWrapper<StandingbookDO>().in(StandingbookDO::getId, standingBookIds));
-        if (CollUtil.isEmpty(sbs)) {
-            return Collections.emptyList();
-        }
-        // 1.1 查询台账对应的台账类型，
-        List<Long> sbTypeIds = sbs.stream().map(StandingbookDO::getTypeId).collect(Collectors.toList());
-        Map<Long, StandingbookTypeDO> typeIdMap = standingbookTypeService.getStandingbookTypeIdMap(sbTypeIds);
-
-        // 2.根据台账类型将sbs分为两组
-        Map<Boolean, List<StandingbookDO>> groupSb = sbs.stream().collect(Collectors.groupingBy(sb ->
-                StandingbookTypeTopEnum.EQUIPMENT.getCode().equals(typeIdMap.get(sb.getTypeId()).getTopType())
-        ));
-        // 1.1 选中的重点设备
-        List<StandingbookDO> deviceList = groupSb.get(true);
-        List<AttributeTreeNode> deviceNode = getDeviceNode(measureAssociationAttrMap, deviceList, measurementAssociationDOS, energyConfigurationDOS);
-        List<AttributeTreeNode> result = new ArrayList<>(deviceNode);
-        // 1.2 选中的计量器具
-        List<StandingbookDO> measureList = groupSb.get(false);
-        List<Long> mIds = measureList.stream().map(StandingbookDO::getId).collect(Collectors.toList());
-        List<AttributeTreeNode> measureNode = getMeasureRelNode(measureAssociationAttrMap, 0L, mIds, measurementAssociationDOS, energyConfigurationDOS);
-        result.addAll(measureNode);
-
-        return result;
-
-    }
-
-    /**
-     * 选择重点设备获取参数条件的树形节点
-     *
-     * @param measureAssociationAttrMap 所有关联计量器具的属性列表
-     * @param deviceList                设备配置列表
-     * @param measurementAssociationDOS 计量器具关联下级计量器具列表
-     * @param energyConfigurationDOS    所有能源参数配置列表
-     * @return 树形节点集合
-     */
-    private List<AttributeTreeNode> getDeviceNode(Map<Long, List<StandingbookAttributeDO>> measureAssociationAttrMap, List<StandingbookDO> deviceList, List<MeasurementAssociationDO> measurementAssociationDOS, List<EnergyConfigurationDO> energyConfigurationDOS) {
-
-        if (CollUtil.isEmpty(deviceList)) {
-            return Collections.emptyList();
-        }
-
-        List<AttributeTreeNode> result = new ArrayList<>();
-        List<Long> deviceIds = deviceList.stream().map(StandingbookDO::getId).collect(Collectors.toList());
-        // 设备与下级计量器具关联关系
-        List<MeasurementDeviceDO> deviceRelList = measurementDeviceMapper.selectList(new LambdaQueryWrapper<MeasurementDeviceDO>()
-                .in(MeasurementDeviceDO::getDeviceId, deviceIds));
-
-        if (CollUtil.isNotEmpty(deviceRelList)) {
-            // 获取所有的计量器具id
-            List<Long> measureIds = deviceRelList.stream().map(MeasurementDeviceDO::getMeasurementInstrumentId).collect(Collectors.toList());
-            Map<Long, List<StandingbookAttributeDO>> deviceAttrsMap = standingbookAttributeService.getAttributesBySbIds(deviceIds);
-            // 按照设备id分组
-            Map<Long, List<MeasurementDeviceDO>> groupedByDeviceId = deviceRelList.stream()
-                    .collect(Collectors.groupingBy(MeasurementDeviceDO::getDeviceId));
-            deviceList.forEach(device -> {
-                // 获取该设备关联的计量器具
-                List<MeasurementDeviceDO> measurementDeviceDOS = groupedByDeviceId.get(device.getId());
-
-                if (CollUtil.isNotEmpty(measurementDeviceDOS)) {
-                    List<Long> measureRelIds = measurementDeviceDOS.stream().map(MeasurementDeviceDO::getMeasurementInstrumentId).collect(Collectors.toList());
-                    // 构造设备根节点
-                    AttributeTreeNode deviceRoot = new AttributeTreeNode();
-                    deviceRoot.setPId(0L + EMPTY);
-                    deviceRoot.setType(AttributeTreeNodeTypeEnum.SB_TYPE.getCode());
-                    deviceRoot.setId(device.getId() + EMPTY);
-
-                    List<StandingbookAttributeDO> attributeDOS = deviceAttrsMap.get(device.getId());
-                    Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream()
-                            .filter(attribute -> ATTR_EQUIPMENT_NAME.equals(attribute.getCode()))
-                            .findFirst();
-                    deviceRoot.setName(nameOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
-                    // 构造下级计量器具节点
-                    List<AttributeTreeNode> measureNode = getMeasureRelNode(measureAssociationAttrMap, device.getId(), measureRelIds, measurementAssociationDOS, energyConfigurationDOS);
-                    if (CollUtil.isNotEmpty(measureNode)) {
-                        deviceRoot.setChildren(measureNode);
-                        result.add(deviceRoot);
-                    }
-                }
-            });
-        }
-        return result;
-    }
-
-    /**
-     * 根据计量器具关联关系和计量器具 组合参数树形结构
-     *
-     * @param measureAttrMap            所有关联计量器具的属性列表
-     * @param pId                       父级编号
-     * @param measureIds                需要构建节点的计量器具id
-     * @param measurementAssociationDOS 计量器具关联下级计量器具列表
-     * @param energyConfigurationDOS    能源配置列表
-     * @return 参数树形结构 List<AttributeTreeNode>
-     */
-    private List<AttributeTreeNode> getMeasureRelNode(Map<Long, List<StandingbookAttributeDO>> measureAttrMap, Long pId, List<Long> measureIds, List<MeasurementAssociationDO> measurementAssociationDOS, List<EnergyConfigurationDO> energyConfigurationDOS) {
-        if (CollUtil.isEmpty(measureIds)) {
-            return Collections.emptyList();
-        }
-
-        List<AttributeTreeNode> result = new ArrayList<>();
-        // 按照计量器具id分组
-        Map<Long, List<MeasurementAssociationDO>> groupedByMeasureId = measurementAssociationDOS.stream()
-                .collect(Collectors.groupingBy(MeasurementAssociationDO::getMeasurementInstrumentId));
-        measureIds.forEach(measureId -> {
-            // 构造id
-            AttributeTreeNode measureNode = new AttributeTreeNode();
-            measureNode.setPId(pId + EMPTY);
-            measureNode.setType(AttributeTreeNodeTypeEnum.SB_TYPE.getCode());
-            measureNode.setId(measureId + EMPTY);
-            List<StandingbookAttributeDO> measureAttrDOS = measureAttrMap.get(measureId);
-            Optional<StandingbookAttributeDO> measureNameOptional = measureAttrDOS.stream()
-                    .filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode()))
-                    .findFirst();
-            measureNode.setName(measureNameOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
-            List<AttributeTreeNode> allChildren = new ArrayList<>();
-            Optional<StandingbookAttributeDO> energyOptional = measureAttrDOS.stream()
-                    .filter(attribute -> ATTR_ENERGY.equals(attribute.getCode()))
-                    .findFirst();
-            String energy = energyOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY);
-            // 构建能源参数节点（多个）这是它本身的能源参数节点
-            allChildren.addAll(buildEnergyNode(measureId, Long.valueOf(energy), energyConfigurationDOS));
-            // 1.获取关联的id
-            List<MeasurementAssociationDO> measureAssociationList = groupedByMeasureId.get(measureId);
-            if (CollUtil.isNotEmpty(measureAssociationList)) {
-                List<Long> measureRelIds = measureAssociationList.stream().map(MeasurementAssociationDO::getMeasurementId).collect(Collectors.toList());
-                // 把下一级的计量器具节点补充完整
-                List<AttributeTreeNode> childList = getMeasureRelNode(measureAttrMap, measureId, measureRelIds, measurementAssociationDOS, energyConfigurationDOS);
-                allChildren.addAll(childList);
-            }
-            // 添加子节点（包含能源参数节点和）
-            if (CollUtil.isNotEmpty(allChildren)) {
-                measureNode.setChildren(allChildren);
-                result.add(measureNode);
-            }
-        });
-        return result;
-    }
-
-    /**
-     * 根据计量器具id构造能源参数节点
-     *
-     * @param measureId              计量器具id
-     * @param energyId               能源id
-     * @param energyConfigurationDOS 能源配置列表
-     * @return 节点列表
-     */
-    private List<AttributeTreeNode> buildEnergyNode(Long measureId, Long energyId, List<EnergyConfigurationDO> energyConfigurationDOS) {
-
-        Optional<EnergyConfigurationDO> energyOptional = energyConfigurationDOS.stream()
-                .filter(energyConfigurationDO -> energyId.equals(energyConfigurationDO.getId()))
-                .findFirst();
-        if (!energyOptional.isPresent()) {
-            return Collections.emptyList();
-        }
-        EnergyConfigurationDO energyConfigurationDO = energyOptional.get();
-        List<EnergyParametersDO> energyParameters = energyConfigurationDO.getEnergyParameters();
-        List<AttributeTreeNode> result = new ArrayList<>();
-        energyParameters.forEach(energyParameter -> {
-            AttributeTreeNode energyNode = new AttributeTreeNode();
-            energyNode.setPId(measureId + EMPTY);
-            energyNode.setType(AttributeTreeNodeTypeEnum.ATTR.getCode());
-            energyNode.setId(energyParameter.getCode());
-            energyNode.setName(energyParameter.getParameter());
-            result.add(energyNode);
-        });
-        return result;
-    }
-
 
     @Override
     public List<StandingbookAttributeRespVO> getByTypeId(Long typeId) {
@@ -690,29 +383,6 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
 
     }
 
-    @Override
-    public List<Long> getSbIdBySbCode(List<String> codes) {
-        List<StandingbookAttributeDO> attrs = standingbookAttributeMapper.selectList(new LambdaQueryWrapper<StandingbookAttributeDO>()
-                .in(StandingbookAttributeDO::getCode, ATTR_EQUIPMENT_ID, ATTR_MEASURING_INSTRUMENT_ID)
-                .in(StandingbookAttributeDO::getValue, codes));
-        if (CollUtil.isEmpty(attrs)) {
-            return null;
-        }
-        // 提取id
-        return attrs.stream().map(StandingbookAttributeDO::getStandingbookId).collect(Collectors.toList());
-    }
-
-    @Override
-    public Map<Long, List<StandingbookAttributeDO>> getSbAttrBySbCode(List<String> codes) {
-        List<StandingbookAttributeDO> attrs = standingbookAttributeMapper.selectList(new LambdaQueryWrapper<StandingbookAttributeDO>()
-                .in(StandingbookAttributeDO::getCode, ATTR_EQUIPMENT_ID, ATTR_MEASURING_INSTRUMENT_ID)
-                .in(StandingbookAttributeDO::getValue, codes));
-        if (CollUtil.isEmpty(attrs)) {
-            return null;
-        }
-        return attrs.stream()
-                .collect(Collectors.groupingBy(StandingbookAttributeDO::getStandingbookId));
-    }
 
     @Override
     public Map<Long, List<StandingbookAttributeDO>> getAttributesBySbIds(List<Long> sbIds) {

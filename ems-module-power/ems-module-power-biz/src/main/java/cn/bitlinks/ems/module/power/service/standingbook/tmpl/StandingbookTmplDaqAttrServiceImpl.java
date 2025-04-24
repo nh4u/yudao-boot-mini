@@ -352,5 +352,23 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
         return CollUtil.isNotEmpty(daqAttrDOS);
     }
 
+    @Override
+    public StandingbookTmplDaqAttrRespVO getUsageAttrBySbId(Long id) {
+        // 查询台账分类
+        StandingbookDO standingbookDO = standingbookMapper.selectById(id);
+        Long typeId = standingbookDO.getTypeId();
+        // 根据分类查询分类的数采属性
+        StandingbookTmplDaqAttrDO daqAttrDO =
+                standingbookTmplDaqAttrMapper.selectOne(new LambdaQueryWrapper<StandingbookTmplDaqAttrDO>()
+                        .eq(StandingbookTmplDaqAttrDO::getEnergyFlag, true)
+                        .eq(StandingbookTmplDaqAttrDO::getUsage, 1)
+                        .eq(StandingbookTmplDaqAttrDO::getTypeId, typeId)
+                );
+        if (daqAttrDO == null) {
+            return null;
+        }
+        return BeanUtils.toBean(daqAttrDO, StandingbookTmplDaqAttrRespVO.class);
+    }
+
 
 }

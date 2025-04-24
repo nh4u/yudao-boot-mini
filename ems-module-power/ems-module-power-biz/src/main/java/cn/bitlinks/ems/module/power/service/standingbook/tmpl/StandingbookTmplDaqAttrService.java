@@ -45,4 +45,11 @@ public interface StandingbookTmplDaqAttrService {
      * @return 是否关联
      */
     boolean isAssociationWithEnergyId(Long energyId);
+
+    /**
+     * 获取台账对应的用量数采参数
+     * @param id 台账id
+     * @return 用量数采参数
+     */
+    StandingbookTmplDaqAttrRespVO getUsageAttrBySbId(Long id);
 }
