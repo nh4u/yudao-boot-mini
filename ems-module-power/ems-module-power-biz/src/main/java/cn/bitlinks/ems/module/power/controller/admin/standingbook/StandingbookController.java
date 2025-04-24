@@ -51,13 +51,6 @@ public class StandingbookController {
         return success(true);
     }
 
-    @GetMapping("/getUnitById")
-    @Operation(summary = "根据台账id获取对应的单位")
-    @PreAuthorize("@ss.hasPermission('power:standingbook:update')")
-    public CommonResult<String> getUnitById(@RequestParam("id") Long id) {
-        String energyId = standingbookTypeMapper.selectAttributeValueByCode(id, "energy");
-        return success(energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energyId));
-    }
 
     @DeleteMapping("/delete")
     @Operation(summary = "删除台账")
@@ -86,14 +79,6 @@ public class StandingbookController {
     @Operation(summary = "获得台账列表")
     @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
     public CommonResult<List<StandingbookRespVO>> getStandingbookPage(@Valid @RequestBody Map<String, String> pageReqVO) {
-        List<StandingbookDO> list = standingbookService.getStandingbookList(pageReqVO);
-        return success(BeanUtils.toBean(list, StandingbookRespVO.class));
-    }
-
-    @PostMapping("/listSbAll")
-    @Operation(summary = "获得全部台账列表")
-    @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
-    public CommonResult<List<StandingbookRespVO>> listSbAll(@RequestBody Map<String, String> pageReqVO) {
         List<StandingbookDO> list = standingbookService.getStandingbookList(pageReqVO);
         return success(BeanUtils.toBean(list, StandingbookRespVO.class));
     }
