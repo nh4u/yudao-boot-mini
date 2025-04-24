@@ -313,7 +313,9 @@ public class StandingbookServiceImpl implements StandingbookService {
         if (standingbookDO == null) {
             return null;
         } else {
-            addChildAll(standingbookDO);
+            List<StandingbookAttributeDO> standingbookAttributeDOList =
+                    standingbookAttributeMapper.selectStandingbookId(standingbookDO.getId());
+            standingbookDO.addChildAll(standingbookAttributeDOList);
         }
         return standingbookDO;
     }
