@@ -55,4 +55,6 @@ public interface EnergyParametersService {
      */
     PageResult<EnergyParametersDO> getEnergyParametersPage(EnergyParametersPageReqVO pageReqVO);
 
+    List<EnergyParametersDO> getEnergyParametersByEnergyId(Long energyId);
+
 }
