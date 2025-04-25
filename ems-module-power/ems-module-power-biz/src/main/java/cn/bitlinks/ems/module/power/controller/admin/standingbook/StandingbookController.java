@@ -6,8 +6,6 @@ import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfigurat
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookAssociationReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
-import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
-import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,10 +29,7 @@ import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 public class StandingbookController {
     @Resource
     private StandingbookService standingbookService;
-    @Resource
-    private EnergyConfigurationMapper energyConfigurationMapper;
-    @Resource
-    private StandingbookTypeMapper standingbookTypeMapper;
+
 
     @PostMapping("/create")
     @Operation(summary = "创建台账")
