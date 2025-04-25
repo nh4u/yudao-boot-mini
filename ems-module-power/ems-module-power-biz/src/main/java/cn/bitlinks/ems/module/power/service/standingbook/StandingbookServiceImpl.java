@@ -370,7 +370,13 @@ public class StandingbookServiceImpl implements StandingbookService {
             }
         });
         // 根据台账属性查询台账id
-        List<Long> sbIds = standingbookMapper.selectStandingbookIdByCondition(labelInfoConditions, typeId, sbTypeIdLongList, stage, createTimeArr);
+        List<Long> sbIds = standingbookMapper.selectStandingbookIdByCondition(typeId, sbTypeIdLongList, stage, createTimeArr);
+        if (CollUtil.isEmpty(sbIds)) {
+            return new ArrayList<>();
+        }
+        // 根据标签属性查询台账id
+        List<Long> labelSbIds = standingbookLabelInfoMapper.selectStandingbookIdByLabelCondition(labelInfoConditions, sbIds);
+        sbIds.retainAll(labelSbIds);
         if (CollUtil.isEmpty(sbIds)) {
             return new ArrayList<>();
         }
