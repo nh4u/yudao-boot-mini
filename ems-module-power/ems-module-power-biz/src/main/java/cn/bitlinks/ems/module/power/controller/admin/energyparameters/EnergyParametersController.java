@@ -92,4 +92,13 @@ public class EnergyParametersController {
                         BeanUtils.toBean(list, EnergyParametersRespVO.class));
     }
 
+    @GetMapping("/getByEnergyId")
+    @Operation(summary = "根据能源id获得能源参数")
+    @Parameter(name = "energyId", description = "能源id", required = true, example = "1024")
+    @PreAuthorize("@ss.hasPermission('power:energy-parameters:getByEnergyId')")
+    public CommonResult<List<EnergyParametersRespVO>> getEnergyParametersByEnergyId(@RequestParam("energyId") Long energyId) {
+        List<EnergyParametersDO> energyParameters = energyParametersService.getEnergyParametersByEnergyId(energyId);
+        return success(BeanUtils.toBean(energyParameters, EnergyParametersRespVO.class));
+    }
+
 }

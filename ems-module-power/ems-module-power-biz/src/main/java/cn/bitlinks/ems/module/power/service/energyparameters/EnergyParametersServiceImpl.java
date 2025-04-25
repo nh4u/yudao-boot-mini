@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.energyparameters;
 
 import com.alibaba.nacos.client.naming.utils.CollectionUtils;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -81,6 +82,13 @@ public class EnergyParametersServiceImpl implements EnergyParametersService {
     @Override
     public PageResult<EnergyParametersDO> getEnergyParametersPage(EnergyParametersPageReqVO pageReqVO) {
         return energyParametersMapper.selectPage(pageReqVO);
+    }
+
+    @Override
+    public List<EnergyParametersDO> getEnergyParametersByEnergyId(Long energyId) {
+        LambdaQueryWrapper<EnergyParametersDO> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(EnergyParametersDO::getEnergyId, energyId);
+        return energyParametersMapper.selectList(queryWrapper);
     }
 
 }
