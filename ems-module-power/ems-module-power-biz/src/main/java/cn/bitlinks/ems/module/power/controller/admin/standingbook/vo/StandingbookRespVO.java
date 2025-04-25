@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.controller.admin.standingbook.vo;
 
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeRespVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -30,7 +31,7 @@ public class StandingbookRespVO {
 
     @Schema(description = "标签信息")
     @ExcelProperty("标签信息")
-    private String labelInfo;
+    private List<StandingbookLabelInfoDO> labelInfo;
 
     @Schema(description = "环节 | 1：外购存储  2：加工转换 3：传输分配 4：终端使用 5：回收利用")
     @ExcelProperty("环节 | 1：外购存储  2：加工转换 3：传输分配 4：终端使用 5：回收利用")

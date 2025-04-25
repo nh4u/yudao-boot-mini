@@ -32,15 +32,24 @@ public interface StandingbookTmplDaqAttrService {
 
     /**
      * 能源新增属性关联添加数采参数（默认启用）
-     * @param energyId 能源id
-     * @param energyParamIds 能源参数ids
+     *
+     * @param energyId     能源id
+     * @param energyParams 能源参数集合
      */
-    void cascadeAddDaqAttrByEnergyParams(Long energyId,List<EnergyParametersDO> energyParamIds);
+    void cascadeAddDaqAttrByEnergyParams(Long energyId, List<EnergyParametersDO> energyParams);
 
     /**
      * 判断能源id是否关联模板
+     *
      * @param energyId 能源id
      * @return 是否关联
      */
     boolean isAssociationWithEnergyId(Long energyId);
+
+    /**
+     * 获取台账对应的用量数采参数
+     * @param id 台账id
+     * @return 用量数采参数
+     */
+    StandingbookTmplDaqAttrRespVO getUsageAttrBySbId(Long id);
 }
