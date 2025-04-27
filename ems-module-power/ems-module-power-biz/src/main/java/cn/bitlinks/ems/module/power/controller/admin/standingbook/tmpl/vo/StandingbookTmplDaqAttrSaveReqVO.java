@@ -15,6 +15,8 @@ public class StandingbookTmplDaqAttrSaveReqVO {
     private Long energyId;
     @Schema(description = "是否能源数采参数", requiredMode = Schema.RequiredMode.REQUIRED, example = "李四")
     private Boolean energyFlag;
+    @Schema(description = "参数id", requiredMode = Schema.RequiredMode.REQUIRED, example = "16688")
+    private Long parameterId;
     @Schema(description = "参数名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "李四")
     private String parameter;
     @Schema(description = "编码", requiredMode = Schema.RequiredMode.REQUIRED)
