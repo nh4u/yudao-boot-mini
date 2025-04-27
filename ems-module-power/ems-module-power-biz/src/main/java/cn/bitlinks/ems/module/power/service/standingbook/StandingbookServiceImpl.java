@@ -374,11 +374,13 @@ public class StandingbookServiceImpl implements StandingbookService {
         if (CollUtil.isEmpty(sbIds)) {
             return new ArrayList<>();
         }
-        // 根据标签属性查询台账id
-        List<Long> labelSbIds = standingbookLabelInfoMapper.selectStandingbookIdByLabelCondition(labelInfoConditions, sbIds);
-        sbIds.retainAll(labelSbIds);
-        if (CollUtil.isEmpty(sbIds)) {
-            return new ArrayList<>();
+        if(CollUtil.isNotEmpty(labelInfoConditions)){
+            // 根据标签属性查询台账id
+            List<Long> labelSbIds = standingbookLabelInfoMapper.selectStandingbookIdByLabelCondition(labelInfoConditions, sbIds);
+            sbIds.retainAll(labelSbIds);
+            if (CollUtil.isEmpty(sbIds)) {
+                return new ArrayList<>();
+            }
         }
         // 根据台账id、台账属性条件查询台账属性
         List<Long> attrSbIds = standingbookAttributeService.getStandingbookIdByCondition(childrenConditions, sbIds);
