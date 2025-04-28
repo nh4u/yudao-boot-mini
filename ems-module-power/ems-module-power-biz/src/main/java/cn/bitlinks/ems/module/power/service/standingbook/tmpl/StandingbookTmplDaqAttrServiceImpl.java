@@ -1,8 +1,11 @@
 package cn.bitlinks.ems.module.power.service.standingbook.tmpl;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.bitlinks.ems.framework.mybatis.core.query.MPJLambdaWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.tmpl.vo.StandingbookTmplDaqAttrRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.tmpl.vo.StandingbookTmplDaqAttrSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.tmpl.vo.StandingbookTmplDaqAttrSbRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
@@ -26,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.SQL_SB_ID;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_CODE_REPEAT_CHILDREN;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_EXIST_NOT_SUPPORT_UPD_DEL;
 
@@ -368,6 +372,52 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
             return null;
         }
         return BeanUtils.toBean(daqAttrDO, StandingbookTmplDaqAttrRespVO.class);
+    }
+
+    @Override
+    public Map<Long, List<StandingbookTmplDaqAttrDO>> getDaqAttrsByTypeIds(List<Long> typeIds) {
+        List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS =
+                standingbookTmplDaqAttrMapper.selectList(new LambdaQueryWrapperX<StandingbookTmplDaqAttrDO>()
+                        .eq(StandingbookTmplDaqAttrDO::getStatus, true)
+                        .inIfPresent(StandingbookTmplDaqAttrDO::getTypeId, typeIds)
+                        .orderByDesc(StandingbookTmplDaqAttrDO::getSort));
+
+        if (CollUtil.isEmpty(standingbookTmplDaqAttrDOS)) {
+            return Collections.emptyMap();
+        }
+
+        return standingbookTmplDaqAttrDOS.stream()
+                .collect(Collectors.groupingBy(StandingbookTmplDaqAttrDO::getTypeId));
+    }
+
+    @Override
+    public Map<Long, List<StandingbookTmplDaqAttrDO>> getDaqAttrsBySbIds(List<Long> sbIds) {
+
+        MPJLambdaWrapperX<StandingbookTmplDaqAttrDO> query = new MPJLambdaWrapperX<StandingbookTmplDaqAttrDO>()
+                .selectAll(StandingbookTmplDaqAttrDO.class)
+                .selectAs(StandingbookDO::getId, SQL_SB_ID)
+                .eq(StandingbookTmplDaqAttrDO::getStatus, true)
+                .orderByDesc(StandingbookTmplDaqAttrDO::getSort);
+
+        query.rightJoin(StandingbookDO.class, StandingbookDO::getTypeId, StandingbookTmplDaqAttrDO::getTypeId)
+                .in(StandingbookDO::getId, sbIds);
+
+        List<StandingbookTmplDaqAttrSbRespVO> standingbookTmplDaqAttrDOS =
+                standingbookTmplDaqAttrMapper.selectJoinList(StandingbookTmplDaqAttrSbRespVO.class, query);
+        if (CollUtil.isEmpty(standingbookTmplDaqAttrDOS)) {
+            return Collections.emptyMap();
+        }
+        Map<Long, List<StandingbookTmplDaqAttrSbRespVO>> originalMap = standingbookTmplDaqAttrDOS.stream().collect(Collectors.groupingBy(StandingbookTmplDaqAttrSbRespVO::getSbId));
+
+        return originalMap.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().stream()
+                                .map(respVO -> BeanUtil.toBean(respVO, StandingbookTmplDaqAttrDO.class))
+                                .collect(Collectors.toList())
+                ));
+
+
     }
 
 

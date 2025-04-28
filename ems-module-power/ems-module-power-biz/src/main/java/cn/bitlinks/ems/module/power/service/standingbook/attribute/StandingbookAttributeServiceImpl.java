@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.standingbook.attribute;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
@@ -386,7 +387,9 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
 
     @Override
     public Map<Long, List<StandingbookAttributeDO>> getAttributesBySbIds(List<Long> sbIds) {
-        List<StandingbookAttributeDO> attrs = standingbookAttributeMapper.selectList(new LambdaQueryWrapper<StandingbookAttributeDO>().in(StandingbookAttributeDO::getStandingbookId, sbIds));
+        List<StandingbookAttributeDO> attrs =
+                standingbookAttributeMapper.selectList(new LambdaQueryWrapperX<StandingbookAttributeDO>()
+                .inIfPresent(StandingbookAttributeDO::getStandingbookId, sbIds));
 
         if (CollUtil.isEmpty(attrs)) {
             throw exception(STANDINGBOOK_NO_ATTR);

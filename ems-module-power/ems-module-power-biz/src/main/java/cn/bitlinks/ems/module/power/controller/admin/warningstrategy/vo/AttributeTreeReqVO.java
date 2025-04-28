@@ -1,4 +1,4 @@
-package cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo;
+package cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
