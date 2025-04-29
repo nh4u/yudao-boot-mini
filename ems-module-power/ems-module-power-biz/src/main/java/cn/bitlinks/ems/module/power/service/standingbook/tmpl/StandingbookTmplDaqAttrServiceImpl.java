@@ -322,7 +322,7 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
         }
         // 根据能源查询绑定的台账分类(原始节点)
         List<Long> typeIds =
-                standingbookTmplDaqAttrMapper.selectSbTypeIdsByEnergyId(energyId);
+                standingbookTmplDaqAttrMapper.selectRawSbTypeIdsByEnergyId(energyId);
         if (CollUtil.isEmpty(typeIds)) {
             return;
         }

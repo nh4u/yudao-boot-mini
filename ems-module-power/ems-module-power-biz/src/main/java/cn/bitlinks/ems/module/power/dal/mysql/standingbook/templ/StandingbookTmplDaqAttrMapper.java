@@ -16,8 +16,21 @@ import java.util.List;
 @Mapper
 public interface StandingbookTmplDaqAttrMapper extends BaseMapperX<StandingbookTmplDaqAttrDO> {
 
-
+    /**
+     * 查询绑定的台账分类ids
+     * @param energyId 能源id
+     * @return 台账分类ids
+     */
     @Select("SELECT distinct type_id FROM power_standingbook_tmpl_daq_attr  " +
             "WHERE energy_id = #{energyId} AND raw_attr_id is null AND deleted = 0")
+    List<Long> selectRawSbTypeIdsByEnergyId(@Param("energyId") Long energyId);
+    /**
+     * 查询能源相关的台账分类ids
+     * @param energyId 能源id
+     * @return 台账分类ids
+     */
+    @Select("SELECT distinct type_id FROM power_standingbook_tmpl_daq_attr  " +
+            "WHERE energy_id = #{energyId} AND deleted = 0")
     List<Long> selectSbTypeIdsByEnergyId(@Param("energyId") Long energyId);
+
 }
