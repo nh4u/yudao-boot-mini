@@ -297,7 +297,7 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
                 return;
             }
             List<MeasurementAssociationDO> measureAssociationList =
-                    measurementAssociationDOS.stream().filter(measurementAssociationDO -> measureId.equals(measurementAssociationDO.getMeasurementId())).collect(Collectors.toList());
+                    measurementAssociationDOS.stream().filter(measurementAssociationDO -> measureId.equals(measurementAssociationDO.getMeasurementInstrumentId())).collect(Collectors.toList());
             if (CollUtil.isEmpty(measureAssociationList)) {
                 result.add(measureNode);
                 return;
