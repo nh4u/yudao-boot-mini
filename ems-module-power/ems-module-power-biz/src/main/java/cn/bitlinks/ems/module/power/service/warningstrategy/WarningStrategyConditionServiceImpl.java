@@ -193,7 +193,7 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
             // 组装设备节点
             AttributeTreeNode deviceRoot = new AttributeTreeNode();
             deviceRoot.setPId(0L);
-            deviceRoot.setType(AttributeTreeNodeTypeEnum.SB.getCode());
+            deviceRoot.setType(AttributeTreeNodeTypeEnum.EQUIPMENT.getCode());
             deviceRoot.setId(device.getId());
             deviceRoot.setAttrChildren(attrDOS);
             List<StandingbookAttributeDO> attributeDOS = allAttrMap.get(device.getId());
@@ -256,7 +256,7 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
             // 组装计量器具节点
             AttributeTreeNode measureNode = new AttributeTreeNode();
             measureNode.setPId(pId);
-            measureNode.setType(AttributeTreeNodeTypeEnum.SB.getCode());
+            measureNode.setType(AttributeTreeNodeTypeEnum.MEASURING.getCode());
             measureNode.setId(measureId);
             measureNode.setAttrChildren(attrDOS);
 

@@ -22,7 +22,7 @@ public class AttributeTreeNode {
     private Long id;
     @Schema(description = "名称")
     private String name;
-    @Schema(description = "节点类型0-台账分类 1-台账")
+    @Schema(description = "节点类型0-设备分类 1-重点设备 2-计量器具")
     private Integer type;
     @Schema(description = "下一级节点")
     private List<AttributeTreeNode> children;
