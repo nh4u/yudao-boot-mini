@@ -126,6 +126,7 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
                         Objects.equals(updatedAttr.getParameter(), rawAttr.getParameter()) &&
                         Objects.equals(updatedAttr.getCode(), rawAttr.getCode()) &&
                         Objects.equals(updatedAttr.getDataType(), rawAttr.getDataType()) &&
+                        Objects.equals(updatedAttr.getStatus(), rawAttr.getStatus()) &&
                         Objects.equals(updatedAttr.getDataFeature(), rawAttr.getDataFeature()) &&
                         Objects.equals(updatedAttr.getSort(), rawAttr.getSort()) &&
                         Objects.equals(updatedAttr.getUnit(), rawAttr.getUnit())));
@@ -185,6 +186,7 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
                             .setUnit(updAttribute.getUnit())
                             .setSort(updAttribute.getSort())
                             .setDataType(updAttribute.getDataType())
+                            .setStatus(updAttribute.getStatus())
                             .setDataFeature(updAttribute.getDataFeature());
 
                 });

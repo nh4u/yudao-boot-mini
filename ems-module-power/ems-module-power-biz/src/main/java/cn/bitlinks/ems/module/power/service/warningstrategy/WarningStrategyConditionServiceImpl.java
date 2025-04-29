@@ -52,8 +52,9 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
     public List<AttributeTreeNode> queryDaqTreeNodeByTypeAndSb(List<Long> standingBookIds, List<Long> typeIds) {
         List<AttributeTreeNode> sbNodes = buildAllNodeBySbIds(standingBookIds);
         List<AttributeTreeNode> typeNodes = buildAllNodeByTypeIds(typeIds);
-        sbNodes.addAll(typeNodes);
-        return sbNodes;
+        List<AttributeTreeNode> result = new ArrayList<>(sbNodes);
+        result.addAll(typeNodes);
+        return result;
     }
 
     /**
@@ -150,12 +151,13 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
         List<AttributeTreeNode> result = new ArrayList<>(deviceNode);
         // 1.2 选中的计量器具
         List<StandingbookDO> measureList = groupSb.get(false);
-        if (CollUtil.isEmpty(measureList)) {
+        if (CollUtil.isNotEmpty(measureList)) {
             List<Long> mIds = measureList.stream().map(StandingbookDO::getId).collect(Collectors.toList());
             List<AttributeTreeNode> measureNode = getMeasureRelNode(0L, mIds, allAttrMap, allDaqAttrMap,
                     measurementAssociationDOS);
             result.addAll(measureNode);
         }
+
 
         return result;
     }
