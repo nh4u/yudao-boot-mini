@@ -1,7 +1,5 @@
 package cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo;
 
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.tmpl.vo.StandingbookTmplDaqAttrSbRespVO;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,12 +20,12 @@ public class AttributeTreeNode {
     private Long id;
     @Schema(description = "名称")
     private String name;
-    @Schema(description = "节点类型0-设备分类 1-重点设备 2-计量器具")
+    @Schema(description = "节点类型0-设备分类 1-重点设备 2-计量器具 3-能源数采参数 4-自定义数采参数")
     private Integer type;
     @Schema(description = "下一级节点")
     private List<AttributeTreeNode> children;
 
     @Schema(description = "数采参数节点")
-    private List<StandingbookTmplDaqAttrDO> attrChildren;
+    private List<AttributeTreeNode> attrChildren;
 
 }

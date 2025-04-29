@@ -87,8 +87,33 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
             typeNode.setType(AttributeTreeNodeTypeEnum.SB_TYPE.getCode());
             typeNode.setId(typeId);
             typeNode.setName(Objects.isNull(standingbookTypeDO) ? StringPool.EMPTY : standingbookTypeDO.getName());
-            typeNode.setAttrChildren(attrDOS);
+            typeNode.setAttrChildren(convertDaqAttrNode(typeId, attrDOS));
             result.add(typeNode);
+        });
+        return result;
+    }
+
+    /**
+     * 数采参数转成树形节点
+     *
+     * @param pId     父级节点
+     * @param attrDOS 数采参数节点列表
+     * @return 树形节点
+     */
+    private List<AttributeTreeNode> convertDaqAttrNode(Long pId, List<StandingbookTmplDaqAttrDO> attrDOS) {
+        if (CollUtil.isEmpty(attrDOS)) {
+            return Collections.emptyList();
+        }
+        List<AttributeTreeNode> result = new ArrayList<>();
+        attrDOS.forEach(attrDO -> {
+            AttributeTreeNode daqNode = new AttributeTreeNode();
+            daqNode.setPId(pId);
+            daqNode.setName(attrDO.getParameter());
+            Integer type = attrDO.getEnergyFlag() ? AttributeTreeNodeTypeEnum.ENERGY_DAQ_ATTR.getCode() :
+                    AttributeTreeNodeTypeEnum.CUSTOMIZE_DAQ_ATTR.getCode();
+            daqNode.setType(type);
+            daqNode.setId(attrDO.getId());
+            result.add(daqNode);
         });
         return result;
     }
@@ -195,7 +220,7 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
             deviceRoot.setPId(0L);
             deviceRoot.setType(AttributeTreeNodeTypeEnum.EQUIPMENT.getCode());
             deviceRoot.setId(device.getId());
-            deviceRoot.setAttrChildren(attrDOS);
+            deviceRoot.setAttrChildren(convertDaqAttrNode(deviceRoot.getId(), attrDOS));
             List<StandingbookAttributeDO> attributeDOS = allAttrMap.get(device.getId());
             Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream()
                     .filter(attribute -> ATTR_EQUIPMENT_NAME.equals(attribute.getCode()))
@@ -258,7 +283,7 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
             measureNode.setPId(pId);
             measureNode.setType(AttributeTreeNodeTypeEnum.MEASURING.getCode());
             measureNode.setId(measureId);
-            measureNode.setAttrChildren(attrDOS);
+            measureNode.setAttrChildren(convertDaqAttrNode(measureId, attrDOS));
 
             List<StandingbookAttributeDO> measureAttrDOS = allAttrMap.get(measureId);
             Optional<StandingbookAttributeDO> measureNameOptional = measureAttrDOS.stream()
