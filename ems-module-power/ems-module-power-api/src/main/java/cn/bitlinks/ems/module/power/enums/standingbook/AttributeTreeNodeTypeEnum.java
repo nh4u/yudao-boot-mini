@@ -10,9 +10,9 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum AttributeTreeNodeTypeEnum {
 
-    SB_TYPE(0, "台账类型"),
-    SB(1, "台账"),
-    ATTR(2, "属性"),
+    SB_TYPE(0, "设备分类"),
+    EQUIPMENT(1, "重点设备"),
+    MEASURING(2, "计量器具"),
     ;
 
     private final Integer code;
