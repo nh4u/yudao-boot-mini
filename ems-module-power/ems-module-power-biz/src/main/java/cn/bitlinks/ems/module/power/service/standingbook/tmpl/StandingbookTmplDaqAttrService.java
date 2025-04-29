@@ -71,4 +71,6 @@ public interface StandingbookTmplDaqAttrService {
      * @return sbId-attrList
      */
     Map<Long, List<StandingbookTmplDaqAttrDO>> getDaqAttrsBySbIds(List<Long> sbIds);
+
+
 }
