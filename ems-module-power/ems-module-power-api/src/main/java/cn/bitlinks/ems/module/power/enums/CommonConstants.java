@@ -25,8 +25,10 @@ public interface CommonConstants {
      * 标签树根节点
      */
     Long LABEL_TREE_ROOT_ID = 0L;
-
-    Long LABEL_NUM_LIMIT = 10L;
+    /**
+     * 10个->25个
+     */
+    Long LABEL_NUM_LIMIT = 25L;
 
     Long LABEL_LAYER_LIMIT = 3L;
 
