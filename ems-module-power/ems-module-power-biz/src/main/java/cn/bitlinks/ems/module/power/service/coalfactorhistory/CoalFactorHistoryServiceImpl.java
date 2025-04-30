@@ -2,7 +2,6 @@ package cn.bitlinks.ems.module.power.service.coalfactorhistory;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistorySaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
@@ -56,12 +55,6 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
         if (latestCoalFactorHistory != null) {
             latestCoalFactorHistory.setEndTime(LocalDateTime.now()); // 设置为当前时间
             coalFactorHistoryMapper.updateEndTime(latestCoalFactorHistory);
-
-            // 更新旧公式状态
-            daParamFormulaMapper.update(new LambdaUpdateWrapper<DaParamFormulaDO>()
-                    // 已使用
-                    .set(DaParamFormulaDO::getFormulaStatus, 2)
-                    .eq(DaParamFormulaDO::getId,latestCoalFactorHistory.getFormulaId()));
         }
 
         // 插入新数据
@@ -75,11 +68,21 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
         coalFactorHistory.setUpdater(nickname);
         coalFactorHistoryMapper.insert(coalFactorHistory);
 
-        // 处理一下新公式状态问题。
-        daParamFormulaMapper.update(new LambdaUpdateWrapper<DaParamFormulaDO>()
-                // 使用中
-                .set(DaParamFormulaDO::getFormulaStatus, 1)
-                .eq(DaParamFormulaDO::getId,formulaId));
+
+        // 更新公式状态
+        if (latestCoalFactorHistory != null) {
+            Long formulaIdOld = latestCoalFactorHistory.getFormulaId();
+            if (!formulaId.equals(formulaIdOld)){
+                // 公式变化 处理新旧公式； 公式未变化 不做处理;
+                // 旧公式变成已使用
+                updateFormulaStatus(formulaIdOld, 2);
+                // 新公式变成使用中
+                updateFormulaStatus(formulaId, 1);
+            }
+        } else {
+            // 使用中
+            updateFormulaStatus(formulaId, 1);
+        }
 
         updateEnergyConfiguration(energyId, coalFactorHistory.getFactor());
 
@@ -140,4 +143,15 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
         return coalFactorHistoryMapper.selectPage(pageReqVO);
     }
 
+    /**
+     * 更新公式状态
+     *
+     * @param formulaId 公式id
+     * @param status    公式状态
+     */
+    private void updateFormulaStatus(Long formulaId, Integer status) {
+        daParamFormulaMapper.update(new LambdaUpdateWrapper<DaParamFormulaDO>()
+                .set(DaParamFormulaDO::getFormulaStatus, status)
+                .eq(DaParamFormulaDO::getId, formulaId));
+    }
 }
