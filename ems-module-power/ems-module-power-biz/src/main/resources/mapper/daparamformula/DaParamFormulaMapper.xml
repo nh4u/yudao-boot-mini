@@ -7,4 +7,62 @@
         代码生成器暂时只生成 Mapper XML 文件本身，更多推荐 MybatisX 快速开发插件来生成查询。
         文档可见：https://www.bitlinks.cn/MyBatis/x-plugins/
      -->
+
+    <select id="getDaParamFormulaList"
+            resultType="cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO">
+        select edpf.id,
+               edpf.energy_formula,
+        <choose>
+            <!-- 1折标煤公式-->
+            <when test="vo.formulaType != null and vo.formulaType == 1">
+                (
+                    ifnull(
+                            (select 1
+                             from ems_coal_factor_history ecfh
+                             where ecfh.deleted = 0
+                               and ecfh.formula_id = edpf.id
+                               and ecfh.end_time is null
+                             limit 1),
+                            ifnull(
+                                    (select 2
+                                     from ems_coal_factor_history ecfh
+                                     where ecfh.deleted = 0
+                                       and ecfh.formula_id = edpf.id
+                                       and ecfh.start_time is not null
+                                       and ecfh.end_time is not null
+                                     limit 1),
+                                    0)
+                        ))
+            </when>
+            <!--2用能成本公式-->
+            <when test="vo.formulaType != null and vo.formulaType == 2">
+                (if((select 1
+                from ems_unit_price_configuration eupc
+                where eupc.deleted = 0
+                and eupc.formula_id = edpf.id
+                limit 1), (ifnull(
+                (select 2
+                from ems_unit_price_configuration eupc
+                where eupc.deleted = 0
+                and eupc.formula_id = edpf.id
+                and eupc.end_time &lt; now()
+                limit 1),
+                1)), 0)
+                )
+
+            </when>
+        </choose>
+        as formulaStatus
+        from ems_da_param_formula edpf
+        <where>
+            edpf.deleted = 0
+            <if test="vo.energyId != null">
+                and edpf.energy_id = #{vo.energyId}
+            </if>
+            <if test="vo.formulaType != null">
+                and edpf.formula_type = #{vo.formulaType}
+            </if>
+        </where>
+    </select>
+
 </mapper>

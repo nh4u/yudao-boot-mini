@@ -16,7 +16,6 @@ public interface ErrorCodeConstants {
     ErrorCode TIME_CONFLICT = new ErrorCode(1_001_301_004, "与已有单价时间重叠");
     ErrorCode INVALID_PRICE_TYPE = new ErrorCode(1_001_301_010, "无效的价格类型");
     ErrorCode INVALID_TIME_TYPE = new ErrorCode(1_001_301_011, "无效的时间类型");
-    ErrorCode FORMULA_TYPE_NOT_EXISTS = new ErrorCode(1_001_301_004, "公式类型不存在");
     ErrorCode ENERGY_CODE_DUPLICATE = new ErrorCode(1_001_301_006, "能源编码重复");
     ErrorCode ENERGY_NAME_DUPLICATE = new ErrorCode(1_001_301_007, "能源名称重复");
     ErrorCode ENERGY_CONFIGURATION_STANDINGBOOK_EXISTS = new ErrorCode(1_001_301_008, "该能源关联计量器具，不可进行删除");
@@ -41,8 +40,7 @@ public interface ErrorCodeConstants {
     ErrorCode ENERGY_CONFIGURATION_STANDINGBOOK_UPDATE = new ErrorCode(1_001_301_027,"该能源已关联计量器具，不可修改能源参数");
     ErrorCode ENERGY_PARAMETER_CODE_DUPLICATE = new ErrorCode(1_001_301_028,"能源参数不可重复");
     ErrorCode ENERGY_CONFIGURATION_TEMPLATE_ASSOCIATED = new ErrorCode(1_001_301_029,"该能源参数已关联计量器具模板，不可删除或更新");
-
-
+    ErrorCode ENERGY_ID_NOT_EXISTS = new ErrorCode(1_001_301_030, "能源id不存在");
     // ========== 能源分组 ==========
     ErrorCode ENERGY_GROUP_NOT_EXISTS = new ErrorCode(1_001_301_101, "能源分组不存在");
     ErrorCode ENERGY_GROUP_LIST_NOT_EXISTS = new ErrorCode(1_001_301_102, "能源分组list不存在");
@@ -90,7 +88,6 @@ public interface ErrorCodeConstants {
     ErrorCode VOUCHER_LIST_IS_EMPTY = new ErrorCode(1_001_501_002, "凭证ID列表为空");
     ErrorCode VOUCHER_USAGE_MODIFIED_ERROR = new ErrorCode(1_001_501_003, "凭证ID已在数据补录中使用，无法修改用量值");
     ErrorCode VOUCHER_HAS_ADDITIONAL_RECORDING = new ErrorCode(1_001_501_004, "该凭证信息已关联补录数据，不可进行删除！");
-    ErrorCode DA_PARAM_FORMULA_NOT_EXISTS = new ErrorCode(1_001_601_001, "参数公式不存在");
 
 
 
@@ -105,6 +102,15 @@ public interface ErrorCodeConstants {
     ErrorCode WARNING_INFO_NO_CONTENT = new ErrorCode(1_001_701_008, "该告警信息无内容");
     ErrorCode WARNING_TEMPLATE_CONTENT_ILLEGAL = new ErrorCode(1_001_701_009, "模板内容关键字不正确");
     ErrorCode WARNING_TEMPLATE_TITLE_ILLEGAL = new ErrorCode(1_001_701_010, "模板主题关键字不正确");
+
+    // ========== 公式模块 ==========
+    ErrorCode FORMULA_TYPE_NOT_EXISTS = new ErrorCode(1_001_801_001, "公式类型不存在");
+    ErrorCode FORMULA_NOT_EXISTS = new ErrorCode(1_001_801_002, "参数公式不存在");
+    ErrorCode FORMULA_LIST_NOT_EXISTS = new ErrorCode(1_001_801_003, "公式list不存在");
+    ErrorCode FORMULA_HAVE_EXISTS = new ErrorCode(1_001_801_004, "已存在相同的公式，不可重复添加");
+    ErrorCode FORMULA_ID_NOT_EXISTS = new ErrorCode(1_001_801_005, "公式id不存在");
+    ErrorCode FORMULA_HAVE_BIND_DELETE = new ErrorCode(1_001_801_006, "公式已使用，不可删除！");
+    ErrorCode FORMULA_HAVE_BIND_UPDATE = new ErrorCode(1_001_801_006, "公式已使用，不可更新！");
     // ========== 其他业务错误 ==========
 
     ErrorCode DATE_RANGE_NOT_EXISTS = new ErrorCode(1_001_601_001, "日期范围不存在");
