@@ -2,7 +2,6 @@ package cn.bitlinks.ems.module.power.dal.dataobject.standingbook;
 
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
-import com.alibaba.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -50,11 +49,16 @@ public class StandingbookDO extends BaseDO {
      */
     @Schema(description = "简介")
     private String description;
+
+    @Schema(description = "标签信息")
+    @TableField(exist = false)
+    private List<StandingbookLabelInfoDO> labelInfo;
     /**
      * 标签信息
      */
-    @Schema(description = "标签信息")
-    private String labelInfo;
+//    @Schema(description = "标签信息")
+//    @TableField(exist = false)
+//    private String labelInfo;
     /**
      * 环节 | 1：外购存储  2：加工转换 3：传输分配 4：终端使用 5：回收利用
      */

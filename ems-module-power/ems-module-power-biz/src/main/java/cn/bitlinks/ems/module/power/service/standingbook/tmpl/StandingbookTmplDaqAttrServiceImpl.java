@@ -1,8 +1,11 @@
 package cn.bitlinks.ems.module.power.service.standingbook.tmpl;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.bitlinks.ems.framework.mybatis.core.query.MPJLambdaWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.tmpl.vo.StandingbookTmplDaqAttrRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.tmpl.vo.StandingbookTmplDaqAttrSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.tmpl.vo.StandingbookTmplDaqAttrSbRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
@@ -14,6 +17,7 @@ import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeSe
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.SQL_SB_ID;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_CODE_REPEAT_CHILDREN;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_EXIST_NOT_SUPPORT_UPD_DEL;
 
@@ -35,6 +40,7 @@ import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK
  */
 @Service
 @Validated
+@Slf4j
 public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAttrService {
     @Resource
     private StandingbookTmplDaqAttrMapper standingbookTmplDaqAttrMapper;
@@ -99,7 +105,8 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
                 .filter(attribute -> attribute.getId() != null)
                 .collect(Collectors.toList());
         // 进行级联创建操作
-        createAttrCascade(createList, typeId,subtreeIds,energyFlag);
+        subtreeIds.removeIf(typeId::equals);
+        createAttrCascade(createList, subtreeIds, energyFlag);
         // 进行级联修改操作
         updateAttrCascade(updateList, rawAttrList, isUpdateAndDeleteForbidden);
 
@@ -113,12 +120,13 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
      * @param rawAttrList 原始分类属性列表
      */
     public static void filterModifiedDaqAttributes(List<StandingbookTmplDaqAttrDO> updateList,
-                                                 List<StandingbookTmplDaqAttrDO> rawAttrList) {
+                                                   List<StandingbookTmplDaqAttrDO> rawAttrList) {
         updateList.removeIf(updatedAttr -> rawAttrList.stream()
                 .anyMatch(rawAttr -> updatedAttr.getId().equals(rawAttr.getId()) &&
                         Objects.equals(updatedAttr.getParameter(), rawAttr.getParameter()) &&
                         Objects.equals(updatedAttr.getCode(), rawAttr.getCode()) &&
                         Objects.equals(updatedAttr.getDataType(), rawAttr.getDataType()) &&
+                        Objects.equals(updatedAttr.getStatus(), rawAttr.getStatus()) &&
                         Objects.equals(updatedAttr.getDataFeature(), rawAttr.getDataFeature()) &&
                         Objects.equals(updatedAttr.getSort(), rawAttr.getSort()) &&
                         Objects.equals(updatedAttr.getUnit(), rawAttr.getUnit())));
@@ -128,8 +136,8 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
     /**
      * 级联修改属性列表
      *
-     * @param updateList  修改属性列表
-     * @param rawAttrList 原属性列表
+     * @param updateList                 修改属性列表
+     * @param rawAttrList                原属性列表
      * @param isUpdateAndDeleteForbidden 是否禁止修改和删除
      */
     @Transactional
@@ -178,6 +186,7 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
                             .setUnit(updAttribute.getUnit())
                             .setSort(updAttribute.getSort())
                             .setDataType(updAttribute.getDataType())
+                            .setStatus(updAttribute.getStatus())
                             .setDataFeature(updAttribute.getDataFeature());
 
                 });
@@ -195,10 +204,11 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
      * 级联新增属性列表（分类编码重复）
      *
      * @param createList 新增属性列表
-     * @param typeId     台账类型id
+     * @param subtreeIds 台账类型子级节点
+     * @param energyFlag 是否能源
      */
     @Transactional
-    public void createAttrCascade(List<StandingbookTmplDaqAttrDO> createList, Long typeId,List<Long> subtreeIds,
+    public void createAttrCascade(List<StandingbookTmplDaqAttrDO> createList, List<Long> subtreeIds,
                                   Boolean energyFlag) {
         if (CollUtil.isEmpty(createList)) {
             return;
@@ -207,13 +217,13 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
         standingbookTmplDaqAttrMapper.insertBatch(createList);
 
         // 2. 获取所有typeId tree，查询所有的子级节点的typeId
-        subtreeIds.removeIf(typeId::equals);
+
         if (CollUtil.isEmpty(subtreeIds)) {
             return;
         }
         // 3. 校验编码是否与子孙分类编码重复
         // (只需要判断自定义数采是否重复即可，能源数采参数在能源处做校验即可))
-        if(!energyFlag){
+        if (!energyFlag) {
             Set<String> codeSet = createList.stream()
                     .map(StandingbookTmplDaqAttrDO::getCode)
                     .collect(Collectors.toSet());
@@ -252,12 +262,11 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
     }
 
 
-
     /**
      * 级联删除属性列表
      *
-     * @param optAttrList 新属性列表
-     * @param rawAttrList 原属性列表
+     * @param optAttrList                新属性列表
+     * @param rawAttrList                原属性列表
      * @param isUpdateAndDeleteForbidden 是否禁止更新和删除
      */
     @Transactional(rollbackFor = Exception.class)
@@ -308,9 +317,35 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
     @Override
     @Transactional
     public void cascadeAddDaqAttrByEnergyParams(Long energyId, List<EnergyParametersDO> energyParams) {
+        if (CollUtil.isEmpty(energyParams)) {
+            return;
+        }
+        // 根据能源查询绑定的台账分类(原始节点)
+        List<Long> typeIds =
+                standingbookTmplDaqAttrMapper.selectRawSbTypeIdsByEnergyId(energyId);
+        if (CollUtil.isEmpty(typeIds)) {
+            return;
+        }
+        List<StandingbookTmplDaqAttrSaveReqVO> saveReqVOList = BeanUtils.toBean(energyParams, StandingbookTmplDaqAttrSaveReqVO.class);
+        // 查询所有台账分类
+        List<StandingbookTypeDO> typeList = standingbookTypeService.getStandingbookTypeNode();
 
-
-
+        // 新增能源数采参数
+        typeIds.forEach(typeId -> {
+            List<StandingbookTmplDaqAttrDO> createList = BeanUtils.toBean(saveReqVOList, StandingbookTmplDaqAttrDO.class);
+            createList.forEach(attribute -> {
+                attribute.setId(null);
+                attribute.setEnergyId(energyId);
+                attribute.setEnergyFlag(true);
+                attribute.setTypeId(typeId);
+                attribute.setNodeId(typeId);
+            });
+            // 该台账分类影响的所有分类节点
+            List<Long> subtreeIds = standingbookTypeService.getSubtreeIds(typeList, typeId);
+            //组装
+            subtreeIds.removeIf(typeId::equals);
+            createAttrCascade(createList, subtreeIds, true);
+        });
     }
 
     @Override
@@ -321,6 +356,70 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
                         .eq(StandingbookTmplDaqAttrDO::getEnergyId, energyId)
                 );
         return CollUtil.isNotEmpty(daqAttrDOS);
+    }
+
+    @Override
+    public StandingbookTmplDaqAttrRespVO getUsageAttrBySbId(Long id) {
+        // 查询台账分类
+        StandingbookDO standingbookDO = standingbookMapper.selectById(id);
+        Long typeId = standingbookDO.getTypeId();
+        // 根据分类查询分类的数采属性
+        StandingbookTmplDaqAttrDO daqAttrDO =
+                standingbookTmplDaqAttrMapper.selectOne(new LambdaQueryWrapper<StandingbookTmplDaqAttrDO>()
+                        .eq(StandingbookTmplDaqAttrDO::getEnergyFlag, true)
+                        .eq(StandingbookTmplDaqAttrDO::getUsage, 1)
+                        .eq(StandingbookTmplDaqAttrDO::getTypeId, typeId)
+                );
+        if (daqAttrDO == null) {
+            return null;
+        }
+        return BeanUtils.toBean(daqAttrDO, StandingbookTmplDaqAttrRespVO.class);
+    }
+
+    @Override
+    public Map<Long, List<StandingbookTmplDaqAttrDO>> getDaqAttrsByTypeIds(List<Long> typeIds) {
+        List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS =
+                standingbookTmplDaqAttrMapper.selectList(new LambdaQueryWrapperX<StandingbookTmplDaqAttrDO>()
+                        .eq(StandingbookTmplDaqAttrDO::getStatus, true)
+                        .inIfPresent(StandingbookTmplDaqAttrDO::getTypeId, typeIds)
+                        .orderByDesc(StandingbookTmplDaqAttrDO::getSort));
+
+        if (CollUtil.isEmpty(standingbookTmplDaqAttrDOS)) {
+            return Collections.emptyMap();
+        }
+
+        return standingbookTmplDaqAttrDOS.stream()
+                .collect(Collectors.groupingBy(StandingbookTmplDaqAttrDO::getTypeId));
+    }
+
+    @Override
+    public Map<Long, List<StandingbookTmplDaqAttrDO>> getDaqAttrsBySbIds(List<Long> sbIds) {
+
+        MPJLambdaWrapperX<StandingbookTmplDaqAttrDO> query = new MPJLambdaWrapperX<StandingbookTmplDaqAttrDO>()
+                .selectAll(StandingbookTmplDaqAttrDO.class)
+                .selectAs(StandingbookDO::getId, SQL_SB_ID)
+                .eq(StandingbookTmplDaqAttrDO::getStatus, true)
+                .orderByDesc(StandingbookTmplDaqAttrDO::getSort);
+
+        query.rightJoin(StandingbookDO.class, StandingbookDO::getTypeId, StandingbookTmplDaqAttrDO::getTypeId)
+                .in(StandingbookDO::getId, sbIds);
+
+        List<StandingbookTmplDaqAttrSbRespVO> standingbookTmplDaqAttrDOS =
+                standingbookTmplDaqAttrMapper.selectJoinList(StandingbookTmplDaqAttrSbRespVO.class, query);
+        if (CollUtil.isEmpty(standingbookTmplDaqAttrDOS)) {
+            return Collections.emptyMap();
+        }
+        Map<Long, List<StandingbookTmplDaqAttrSbRespVO>> originalMap = standingbookTmplDaqAttrDOS.stream().collect(Collectors.groupingBy(StandingbookTmplDaqAttrSbRespVO::getSbId));
+
+        return originalMap.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().stream()
+                                .map(respVO -> BeanUtil.toBean(respVO, StandingbookTmplDaqAttrDO.class))
+                                .collect(Collectors.toList())
+                ));
+
+
     }
 
 

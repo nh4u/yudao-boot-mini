@@ -61,6 +61,7 @@ public class ApiConstants {
     public static final String ATTR_EQUIPMENT_ID ="equipmentId";
     public static final String ATTR_EQUIPMENT_NAME ="equipmentName";
     public static final String ATTR_ENERGY ="energy";
+    public static final String SQL_SB_ID ="sbId";
 
     // 告警管理-查看详情（跳转设备）todo 设备监控设备跳转链接待完善
     public static final String SB_MONITOR_DETAIL ="<a href=\"/aa/aa?id=%s\">查看详情</a>";
