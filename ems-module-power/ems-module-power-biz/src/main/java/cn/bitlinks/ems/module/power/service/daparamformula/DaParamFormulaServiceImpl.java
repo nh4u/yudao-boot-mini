@@ -59,14 +59,13 @@ public class DaParamFormulaServiceImpl implements DaParamFormulaService {
      */
     @Override
     public void updateDaParamFormula(DaParamFormulaSaveReqVO updateReqVO) {
+        Long id = updateReqVO.getId();
         // 校验存在
-        DaParamFormulaDO daParamFormulaDO = validateDaParamFormulaExists(updateReqVO.getId());
-        // 根据数据库中公式状态判断是否能更新 （已使用、使用中是不允许修改的）
-        if (daParamFormulaDO.getFormulaStatus() != 0) {
-            throw exception(FORMULA_HAVE_BIND_UPDATE);
-        }
+        validateDaParamFormulaExists(id);
+        // 判断是否能更新 （已使用、使用中是不允许修改的）
+        validateFormulaBind(Collections.singletonList(id));
         // 校验是否重复
-        isDuplicate(updateReqVO.getId(),
+        isDuplicate(id,
                 updateReqVO.getEnergyId(),
                 updateReqVO.getFormulaType(),
                 updateReqVO.getEnergyFormula());
@@ -159,7 +158,7 @@ public class DaParamFormulaServiceImpl implements DaParamFormulaService {
         }
 
         List<DaParamFormulaDO> list = daParamFormulaMapper.getDuplicateFormulas(id, energyId, formulaType, energyFormula);
-        if (CollUtil.isEmpty(list)) {
+        if (!CollUtil.isEmpty(list)) {
             throw exception(FORMULA_HAVE_EXISTS);
         } else {
             return true;
@@ -179,16 +178,11 @@ public class DaParamFormulaServiceImpl implements DaParamFormulaService {
         if (Objects.isNull(id)) {
             throw exception(FORMULA_ID_NOT_EXISTS);
         }
-        DaParamFormulaDO formula = daParamFormulaMapper.selectById(id);
 
-        // 判断公式的状态
-        Integer formulaStatus = formula.getFormulaStatus();
-        if (formulaStatus.equals(0)) {
-            // 未使用，则可以删除
-            return true;
-        } else {
-            throw exception(FORMULA_HAVE_BIND_DELETE);
-        }
+        // 判断是否能删除 （已使用、使用中是不允许删除的）
+        validateFormulaBind(Collections.singletonList(id));
+
+        return true;
 
     }
 
@@ -206,19 +200,16 @@ public class DaParamFormulaServiceImpl implements DaParamFormulaService {
         daParamFormulaMapper.deleteByIds(formulaIds);
     }
 
-    private DaParamFormulaDO validateDaParamFormulaExists(Long id) {
-        DaParamFormulaDO daParamFormulaDO = daParamFormulaMapper.selectById(id);
-        if (daParamFormulaDO == null) {
+    private void validateDaParamFormulaExists(Long id) {
+        if (daParamFormulaMapper.selectById(id) == null) {
             throw exception(FORMULA_NOT_EXISTS);
-        } else {
-            return daParamFormulaDO;
         }
     }
 
     private void validateFormulaBind(List<Long> formulaIds) {
         StringBuilder strBuilder = new StringBuilder();
         // 校验是否已经绑定
-        List<DaParamFormulaDO> list = daParamFormulaMapper.selectBatchIds(formulaIds);
+        List<DaParamFormulaDO> list = daParamFormulaMapper.getFormulaListByIds(formulaIds);
         // 删除时需要校验是否已经绑定了能源  如果绑定了则不能删除，
         for (DaParamFormulaDO formula : list) {
             if (formula.getFormulaStatus() != 0) {

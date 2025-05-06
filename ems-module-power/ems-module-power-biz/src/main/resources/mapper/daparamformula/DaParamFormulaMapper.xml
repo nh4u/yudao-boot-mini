@@ -65,4 +65,65 @@
         </where>
     </select>
 
+    <select id="getFormulaListByIds"
+            resultType="cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO">
+        select edpf.id,
+               edpf.energy_formula,
+        <!-- 1折标煤公式-->
+        (
+            ifnull(
+                    (select 1
+                     from ems_coal_factor_history ecfh
+                     where ecfh.deleted = 0
+                       and ecfh.formula_id = edpf.id
+                       and ecfh.end_time is null
+                     limit 1),
+                    ifnull(
+                            (select 2
+                             from ems_coal_factor_history ecfh
+                             where ecfh.deleted = 0
+                               and ecfh.formula_id = edpf.id
+                               and ecfh.start_time is not null
+                               and ecfh.end_time is not null
+                             limit 1),
+                            0)
+                ))
+            as formulaStatus
+        from ems_da_param_formula edpf
+        <where>
+            edpf.deleted = 0
+              and edpf.id in
+            <foreach collection="ids" separator="," item="id" open="(" close=")">
+                #{id}
+            </foreach>
+        </where>
+
+        union
+
+        select edpf.id,
+               edpf.energy_formula,
+        <!--2用能成本公式-->
+        (if((select 1
+             from ems_unit_price_configuration eupc
+             where eupc.deleted = 0
+               and eupc.formula_id = edpf.id
+             limit 1), (ifnull(
+                (select 2
+                 from ems_unit_price_configuration eupc
+                 where eupc.deleted = 0
+                   and eupc.formula_id = edpf.id
+                   and eupc.end_time &lt; now()
+                 limit 1),
+                1)), 0)
+            )
+            as formulaStatus
+        from ems_da_param_formula edpf
+        <where>
+            edpf.deleted = 0
+              and edpf.id in
+            <foreach collection="ids" separator="," item="id" open="(" close=")">
+                #{id}
+            </foreach>
+        </where>
+    </select>
 </mapper>
