@@ -46,6 +46,13 @@ public interface DaParamFormulaMapper extends BaseMapperX<DaParamFormulaDO> {
     List<DaParamFormulaDO> getDaParamFormulaList(@Param("vo") DaParamFormulaSaveReqVO reqVO);
 
     /**
+     * 根据公式id获取对应公式
+     * @param formulaIds ids
+     * @return
+     */
+    List<DaParamFormulaDO> getFormulaListByIds(@Param("ids") List<Long> formulaIds);
+
+    /**
      * 根据能源id和公式类别来获取所有公式
      *
      * @param energyId    能源id

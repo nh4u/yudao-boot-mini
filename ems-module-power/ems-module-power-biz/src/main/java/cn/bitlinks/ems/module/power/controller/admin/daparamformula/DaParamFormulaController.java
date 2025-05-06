@@ -110,7 +110,7 @@ public class DaParamFormulaController {
     }
 
     @GetMapping("/isDelete")
-    @Operation(summary = "公式是否重复")
+    @Operation(summary = "公式是否可删除")
     @Parameter(name = "id", description = "公式id", required = true, example = "1024")
     @PreAuthorize("@ss.hasPermission('power:da-param-formula:query')")
     public CommonResult<Boolean> isDelete(@RequestParam(value = "id") Long id) {
