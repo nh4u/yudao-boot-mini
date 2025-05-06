@@ -118,4 +118,6 @@ public interface ErrorCodeConstants {
     ErrorCode QUERY_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_003, "查看类型不存在");
     ErrorCode DATE_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_004, "时间类型不存在");
     ErrorCode BENCH_MARK_NOT_EXISTS = new ErrorCode(1_001_601_005, "基准年限不存在");
+    // ========== 服务设置  ==========
+    ErrorCode SERVICE_SETTINGS_NOT_EXISTS = new ErrorCode(1_001_901_005, "服务设置不存在");
 }
