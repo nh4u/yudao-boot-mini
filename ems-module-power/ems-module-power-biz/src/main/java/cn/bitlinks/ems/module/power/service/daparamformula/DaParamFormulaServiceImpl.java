@@ -213,7 +213,7 @@ public class DaParamFormulaServiceImpl implements DaParamFormulaService {
         // 删除时需要校验是否已经绑定了能源  如果绑定了则不能删除，
         for (DaParamFormulaDO formula : list) {
             if (formula.getFormulaStatus() != 0) {
-                strBuilder.append(formula.getFormulaScale()).append(StrPool.COMMA);
+                strBuilder.append(formula.getEnergyFormula()).append(StrPool.COMMA);
             }
         }
         dealMessage(strBuilder);
