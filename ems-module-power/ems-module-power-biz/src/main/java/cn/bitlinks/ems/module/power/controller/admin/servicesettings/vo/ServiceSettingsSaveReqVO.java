@@ -23,8 +23,8 @@ public class ServiceSettingsSaveReqVO {
     @NotEmpty(message = "IP地址不能为空")
     private String ipAddress;
 
-    @Schema(description = "SMTP 服务器端口", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "SMTP 服务器端口不能为空")
+    @Schema(description = "端口", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "端口不能为空")
     private Integer port;
 
     @Schema(description = "重试次数，默认3", requiredMode = Schema.RequiredMode.REQUIRED, example = "19528")

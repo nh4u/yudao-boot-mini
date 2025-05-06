@@ -25,7 +25,7 @@ public class ServiceSettingsDO extends BaseDO {
     /**
      * id
      */
-    @TableId
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
      * 服务名称
@@ -40,7 +40,7 @@ public class ServiceSettingsDO extends BaseDO {
      */
     private String ipAddress;
     /**
-     * SMTP 服务器端口
+     * 端口
      */
     private Integer port;
     /**

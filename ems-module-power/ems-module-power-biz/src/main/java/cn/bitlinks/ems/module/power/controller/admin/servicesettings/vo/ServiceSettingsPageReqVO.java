@@ -24,7 +24,7 @@ public class ServiceSettingsPageReqVO extends PageParam {
     @Schema(description = "IP地址")
     private String ipAddress;
 
-    @Schema(description = "SMTP 服务器端口")
+    @Schema(description = "端口")
     private Integer port;
 
     @Schema(description = "重试次数，默认3", example = "19528")
