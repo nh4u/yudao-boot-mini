@@ -32,7 +32,7 @@ public class ServiceSettingsDO extends BaseDO {
      */
     private String serviceName;
     /**
-     * 协议类型(0：OPCDA 1:MODBUS-TCP)
+     * 协议类型(0：OPC-DA 1:MODBUS-TCP)
      */
     private Integer protocol;
     /**
@@ -50,7 +50,7 @@ public class ServiceSettingsDO extends BaseDO {
     /**
      * 注册表ID
      */
-    private String registryId;
+    private String clsid;
     /**
      * 用户名
      */

@@ -119,5 +119,9 @@ public interface ErrorCodeConstants {
     ErrorCode DATE_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_004, "时间类型不存在");
     ErrorCode BENCH_MARK_NOT_EXISTS = new ErrorCode(1_001_601_005, "基准年限不存在");
     // ========== 服务设置  ==========
-    ErrorCode SERVICE_SETTINGS_NOT_EXISTS = new ErrorCode(1_001_901_005, "服务设置不存在");
+    ErrorCode SERVICE_SETTINGS_NOT_EXISTS = new ErrorCode(1_001_901_001, "服务设置不存在");
+    ErrorCode SERVICE_SETTINGS_ADD_ERROR = new ErrorCode(1_001_901_002, "服务设置添加失败，请检查服务设置信息是否正确");
+    ErrorCode SERVICE_SETTINGS_IP_REPEAT = new ErrorCode(1_001_901_003, "服务设置IP已存在");
+    ErrorCode SERVICE_SETTINGS_REFUSE_DELETE = new ErrorCode(1_001_901_004, "服务设置已关联设备数采，不可删除");
+    ErrorCode SERVICE_SETTINGS_REFUSE_UPD = new ErrorCode(1_001_901_005, "服务设置已关联设备数采，只可修改服务名称和重试次数");
 }

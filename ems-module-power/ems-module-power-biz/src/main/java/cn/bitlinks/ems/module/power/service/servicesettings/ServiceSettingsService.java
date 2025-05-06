@@ -52,4 +52,10 @@ public interface ServiceSettingsService {
      */
     PageResult<ServiceSettingsDO> getServiceSettingsPage(ServiceSettingsPageReqVO pageReqVO);
 
+    /**
+     * 测试服务连通
+     * @param createReqVO 服务数据
+     * @return 是否连通
+     */
+    Boolean testLink(ServiceSettingsTestReqVO createReqVO);
 }

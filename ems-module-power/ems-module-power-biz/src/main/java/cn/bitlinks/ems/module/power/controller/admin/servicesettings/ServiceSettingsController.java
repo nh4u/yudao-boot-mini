@@ -45,6 +45,13 @@ public class ServiceSettingsController {
         return success(serviceSettingsService.createServiceSettings(createReqVO));
     }
 
+    @PostMapping("/test")
+    @Operation(summary = "测试服务连通")
+    @PreAuthorize("@ss.hasPermission('power:service-settings:create')")
+    public CommonResult<Boolean> testLink(@Valid @RequestBody ServiceSettingsTestReqVO createReqVO) {
+        return success(serviceSettingsService.testLink(createReqVO));
+    }
+
     @PutMapping("/update")
     @Operation(summary = "更新服务设置")
     @PreAuthorize("@ss.hasPermission('power:service-settings:update')")
@@ -70,6 +77,14 @@ public class ServiceSettingsController {
         ServiceSettingsDO serviceSettings = serviceSettingsService.getServiceSettings(id);
         return success(BeanUtils.toBean(serviceSettings, ServiceSettingsRespVO.class));
     }
+
+//    @GetMapping("/list")
+//    @Operation(summary = "获得服务设置全部列表")
+//    @PreAuthorize("@ss.hasPermission('power:service-settings:query')")
+//    public CommonResult<List<ServiceSettingsRespVO>> getServiceSettingsList() {
+//        return success(serviceSettingsService.getServiceSettingsList());
+//    }
+
 
     @GetMapping("/page")
     @Operation(summary = "获得服务设置分页")
