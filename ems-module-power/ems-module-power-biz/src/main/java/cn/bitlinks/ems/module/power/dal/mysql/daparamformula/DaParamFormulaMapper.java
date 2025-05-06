@@ -8,9 +8,9 @@ import cn.bitlinks.ems.module.power.controller.admin.daparamformula.vo.DaParamFo
 import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * 数据来源为关联计量器具时的参数公式 Mapper
@@ -43,11 +43,39 @@ public interface DaParamFormulaMapper extends BaseMapperX<DaParamFormulaDO> {
      * @param reqVO
      * @return
      */
-    default List<DaParamFormulaDO> getDaParamFormulaList(DaParamFormulaSaveReqVO reqVO) {
-        return selectList(new LambdaQueryWrapperX<DaParamFormulaDO>()
-                .eqIfPresent(DaParamFormulaDO::getEnergyId, reqVO.getEnergyId())
-                .eqIfPresent(DaParamFormulaDO::getFormulaType, reqVO.getFormulaType())
-                .eqIfPresent(DaParamFormulaDO::getFormulaStatus, reqVO.getFormulaStatus())
-                .orderByAsc(DaParamFormulaDO::getFormulaStatus).orderByDesc(DaParamFormulaDO::getCreateTime));
+    List<DaParamFormulaDO> getDaParamFormulaList(@Param("vo") DaParamFormulaSaveReqVO reqVO);
+
+    /**
+     * 根据能源id和公式类别来获取所有公式
+     *
+     * @param energyId    能源id
+     * @param formulaType 公式类别
+     * @return
+     */
+
+    default List<Long> getFormulaIdList(Long energyId, Integer formulaType) {
+        return selectObjs(new LambdaQueryWrapper<DaParamFormulaDO>()
+                .select(DaParamFormulaDO::getId)
+                .eq(DaParamFormulaDO::getEnergyId, energyId)
+                .eq(DaParamFormulaDO::getFormulaType, formulaType));
     }
+
+    /**
+     * 获取重复的公式
+     *
+     * @param id            公式id
+     * @param energyId      能源id
+     * @param formulaType   公式类型 1折标煤公式，2用能成本公式
+     * @param energyFormula 公式
+     * @return
+     */
+    default List<DaParamFormulaDO> getDuplicateFormulas(Long id, Long energyId, Integer formulaType, String energyFormula) {
+        return selectList(new LambdaQueryWrapperX<DaParamFormulaDO>()
+                .neIfPresent(DaParamFormulaDO::getId, id)
+                .eqIfPresent(DaParamFormulaDO::getEnergyId, energyId)
+                .eqIfPresent(DaParamFormulaDO::getFormulaType, formulaType)
+                .eqIfPresent(DaParamFormulaDO::getEnergyFormula, energyFormula));
+    }
+
+
 }

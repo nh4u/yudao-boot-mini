@@ -14,10 +14,12 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.security.core.util.SecurityFrameworkUtils.getLoginUserNickname;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.COAL_FACTOR_HISTORY_NOT_EXISTS;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.FORMULA_ID_NOT_EXISTS;
 
 /**
  * 折标煤系数历史 Service 实现类
@@ -35,6 +37,11 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
 
     @Override
     public Long createCoalFactorHistory(CoalFactorHistorySaveReqVO createReqVO) {
+        Long formulaId = createReqVO.getFormulaId();
+        if (Objects.isNull(formulaId)) {
+            throw exception(FORMULA_ID_NOT_EXISTS);
+        }
+
         // 查询当前能源ID下最新的折标煤系数记录
         CoalFactorHistoryDO latestCoalFactorHistory = coalFactorHistoryMapper.findLatestByEnergyId(createReqVO.getEnergyId());
 
@@ -48,8 +55,10 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
         String nickname = getLoginUserNickname();
         CoalFactorHistoryDO coalFactorHistory = BeanUtils.toBean(createReqVO, CoalFactorHistoryDO.class);
         Long energyId = coalFactorHistory.getEnergyId();
-        coalFactorHistory.setStartTime(LocalDateTime.now()); // 设置为当前时间
-        coalFactorHistory.setEndTime(null); // null，表示“至今“
+        // 设置为当前时间
+        coalFactorHistory.setStartTime(LocalDateTime.now());
+        // null，表示“至今“
+        coalFactorHistory.setEndTime(null);
         coalFactorHistory.setUpdater(nickname);
         coalFactorHistoryMapper.insert(coalFactorHistory);
 

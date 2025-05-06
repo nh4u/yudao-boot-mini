@@ -63,4 +63,14 @@ public interface UnitPriceConfigurationMapper extends BaseMapperX<UnitPriceConfi
 
     UnitPriceConfigurationDO findNextPeriod(@Param("energyId") Long energyId,
                                             @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 获取单价绑定的公式记录
+     *
+     * @param formulaIds 公式Ids
+     * @return
+     */
+    default List<UnitPriceConfigurationDO> getUnitPriceConfigurations(List<Long> formulaIds) {
+        return null;
+    }
 }
