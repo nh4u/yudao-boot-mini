@@ -10,7 +10,6 @@ import cn.bitlinks.ems.framework.common.exception.ErrorCode;
 public interface ErrorCodeConstants {
     // ========== 能源配置 1-001-301-000 ==========
     ErrorCode COAL_FACTOR_HISTORY_NOT_EXISTS = new ErrorCode(1_001_301_000, "折标煤系数历史不存在");
-    ErrorCode UNIT_PRICE_HISTORY_NOT_EXISTS = new ErrorCode(1_001_301_001, "单价历史不存在");
     ErrorCode ENERGY_CONFIGURATION_NOT_EXISTS = new ErrorCode(1_001_301_002, "能源配置不存在");
     ErrorCode UNIT_PRICE_CONFIGURATION_NOT_EXISTS = new ErrorCode(1_001_301_003, "单价配置不存在");
     ErrorCode TIME_CONFLICT = new ErrorCode(1_001_301_004, "与已有单价时间重叠");
