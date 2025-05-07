@@ -54,6 +54,11 @@ public interface StandingbookService {
      */
     List<StandingbookDO> getStandingbookList(Map<String, String> pageReqVO);
 
+    /**
+     * 关联计量器具：根据条件获得台账列表和计量器具联系
+     * @param pageReqVO 查询条件
+     * @return 台账列表
+     */
     List<StandingbookWithAssociations> getStandingbookListWithAssociations(Map<String, String> pageReqVO);
 
     Long count(Long typeId);

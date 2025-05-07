@@ -10,7 +10,9 @@ import cn.bitlinks.ems.module.power.controller.admin.servicesettings.vo.ServiceS
 import cn.bitlinks.ems.module.power.controller.admin.servicesettings.vo.ServiceSettingsSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.servicesettings.vo.ServiceSettingsTestReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.servicesettings.ServiceSettingsDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.acquisition.StandingbookAcquisitionDO;
 import cn.bitlinks.ems.module.power.dal.mysql.servicesettings.ServiceSettingsMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.StandingbookAcquisitionMapper;
 import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +24,7 @@ import java.util.*;
 import java.util.function.Predicate;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.ACQUISITION_PROTOCOL;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
@@ -38,15 +41,11 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
     @Resource
     private ServiceSettingsMapper serviceSettingsMapper;
 
+    @Resource
+    private StandingbookAcquisitionMapper standingbookAcquisitionMapper;
     @Value("${spring.profiles.active}")
     private String env;
-    private static final String active = "prod";
-    // 成功概率
-    private static final double successProbability = 0.8;
-    /**
-     * 服务名称（IP地址：端口号）协议
-     */
-    private static final String serviceNameFormat = "%s（%s：%s）%s";
+
 
     @Override
     public Long createServiceSettings(ServiceSettingsSaveReqVO createReqVO) {
@@ -83,12 +82,20 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
     @Override
     public void updateServiceSettings(ServiceSettingsSaveReqVO updateReqVO) {
         // 校验存在
-        validateServiceSettingsExists(updateReqVO.getId());
+        ServiceSettingsDO existDO = serviceSettingsMapper.selectById(updateReqVO.getId());
+        if (existDO == null) {
+            throw exception(SERVICE_SETTINGS_NOT_EXISTS);
+        }
         ServiceSettingsDO updateObj = BeanUtils.toBean(updateReqVO, ServiceSettingsDO.class);
-        // 设备数采引用后不可编辑（ip、端口、协议、用户名、密码、注册id）todo
-//        if(notChangeProperties(updateObj, serviceSettingsMapper.selectById(updateReqVO.getId()))){
-//            throw exception(SERVICE_SETTINGS_REFUSE_UPD);
-//        }
+        // 设备数采引用后不可编辑（ip、端口、协议、用户名、密码、注册id）
+        if (changeProperties(updateObj, existDO)) {
+            List<StandingbookAcquisitionDO> existStandingbookAcquisitionDO =
+                    standingbookAcquisitionMapper.selectList(StandingbookAcquisitionDO::getServiceSettingsId, updateReqVO.getId());
+            if (CollUtil.isNotEmpty(existStandingbookAcquisitionDO)) {
+                throw exception(SERVICE_SETTINGS_REFUSE_UPD);
+            }
+        }
+
         // 校验 IP 地址是否重复
         validIpAddressRepeat(updateReqVO.getIpAddress(), updateReqVO.getId());
         // 必须连通才可以修改服务设置 todo 待产品确认
@@ -107,7 +114,7 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
      * @param rawDO     原始
      * @return 是否被修改
      */
-    private boolean notChangeProperties(ServiceSettingsDO updateObj, ServiceSettingsDO rawDO) {
+    private boolean changeProperties(ServiceSettingsDO updateObj, ServiceSettingsDO rawDO) {
         Predicate<ServiceSettingsDO> isSame = updatedAttr -> updatedAttr.getIpAddress().equals(rawDO.getIpAddress()) &&
                 Objects.equals(updatedAttr.getPort(), rawDO.getPort()) &&
                 Objects.equals(updatedAttr.getProtocol(), rawDO.getProtocol()) &&
@@ -115,15 +122,19 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
                 Objects.equals(updatedAttr.getUsername(), rawDO.getUsername()) &&
                 Objects.equals(updatedAttr.getPassword(), rawDO.getPassword());
 
-        return isSame.test(updateObj);
+        return !isSame.test(updateObj);
     }
 
     @Override
     public void deleteServiceSettings(Long id) {
         // 校验存在
         validateServiceSettingsExists(id);
-        // 设备数采引用后不可编辑（ip、端口、协议、用户名、密码、注册id）todo
-        // throw exception(SERVICE_SETTINGS_REFUSE_DELETE);
+        // 设备数采引用后不可删除
+        List<StandingbookAcquisitionDO> existStandingbookAcquisitionDO =
+                standingbookAcquisitionMapper.selectList(StandingbookAcquisitionDO::getServiceSettingsId, id);
+        if (CollUtil.isNotEmpty(existStandingbookAcquisitionDO)) {
+            throw exception(SERVICE_SETTINGS_REFUSE_DELETE);
+        }
         // 删除
         serviceSettingsMapper.deleteById(id);
     }
@@ -157,7 +168,7 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
         boolean testResult;
         for (int i = 0; i <= retryCount; i++) { // 注意循环条件，包含第一次尝试
 
-            if (env.equals(active)) {
+            if (env.equals(SPRING_PROFILES_ACTIVE_PROD)) {
                 testResult = OpcDaUtils.testLink(ipAddress, username, password, clsid);
             } else {
                 testResult = mockTestLink();
@@ -191,7 +202,7 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
         list.forEach(serviceSettingsDO -> {
             ServiceSettingsOptionsRespVO respVO = BeanUtils.toBean(serviceSettingsDO, ServiceSettingsOptionsRespVO.class);
             // 服务名称（IP地址：端口号）协议
-            respVO.setServiceFormatName(String.format(serviceNameFormat, serviceSettingsDO.getServiceName(),
+            respVO.setServiceFormatName(String.format(SERVICE_NAME_FORMAT, serviceSettingsDO.getServiceName(),
                     serviceSettingsDO.getIpAddress(), serviceSettingsDO.getPort(),
                     DictFrameworkUtils.getDictDataLabel(ACQUISITION_PROTOCOL,
                             serviceSettingsDO.getProtocol())));
@@ -209,7 +220,7 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
         Random random = new Random();
         double randomNumber = random.nextDouble();
 
-        return randomNumber < successProbability;
+        return randomNumber < SUCCESS_PROBABILITY;
     }
 
 }
