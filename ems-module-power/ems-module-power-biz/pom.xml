@@ -46,39 +46,7 @@
             <groupId>cn.bitlinks.ems</groupId>
             <artifactId>ems-spring-boot-starter-biz-tenant</artifactId>
         </dependency>
-        <!-- 数采服务 -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk16</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jinterop</groupId>
-            <artifactId>j-interop</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jinterop</groupId>
-            <artifactId>j-interopdeps</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.openscada.external</groupId>
-            <artifactId>org.openscada.external.jcifs</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.bouncycastle</groupId>
-                    <artifactId>bcprov-jdk15on</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.openscada.utgard</groupId>
-            <artifactId>org.openscada.opc.lib</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.openscada.jinterop</groupId>
-                    <artifactId>org.openscada.jinterop.deps</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+
         <!-- Web 相关 -->
         <dependency>
             <groupId>cn.bitlinks.ems</groupId>

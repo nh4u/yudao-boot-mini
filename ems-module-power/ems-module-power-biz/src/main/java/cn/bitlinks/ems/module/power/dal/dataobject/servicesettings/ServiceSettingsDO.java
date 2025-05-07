@@ -25,14 +25,14 @@ public class ServiceSettingsDO extends BaseDO {
     /**
      * id
      */
-    @TableId
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
      * 服务名称
      */
     private String serviceName;
     /**
-     * 协议类型(0：OPCDA 1:MODBUS-TCP)
+     * 协议类型(0：OPC-DA 1:MODBUS-TCP)
      */
     private Integer protocol;
     /**
@@ -40,7 +40,7 @@ public class ServiceSettingsDO extends BaseDO {
      */
     private String ipAddress;
     /**
-     * SMTP 服务器端口
+     * 端口
      */
     private Integer port;
     /**
@@ -50,7 +50,7 @@ public class ServiceSettingsDO extends BaseDO {
     /**
      * 注册表ID
      */
-    private String registryId;
+    private String clsid;
     /**
      * 用户名
      */

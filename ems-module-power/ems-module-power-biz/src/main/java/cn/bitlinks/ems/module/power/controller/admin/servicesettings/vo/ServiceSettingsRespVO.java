@@ -20,16 +20,16 @@ public class ServiceSettingsRespVO {
     @ExcelProperty("服务名称")
     private String serviceName;
 
-    @Schema(description = "协议类型(0：OPCDA 1:MODBUS-TCP)")
-    @ExcelProperty("协议类型(0：OPCDA 1:MODBUS-TCP)")
+    @Schema(description = "协议类型(0：OPC-DA 1:MODBUS-TCP)")
+    @ExcelProperty("协议类型(0：OPC-DA 1:MODBUS-TCP)")
     private Integer protocol;
 
     @Schema(description = "IP地址", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("IP地址")
     private String ipAddress;
 
-    @Schema(description = "SMTP 服务器端口", requiredMode = Schema.RequiredMode.REQUIRED)
-    @ExcelProperty("SMTP 服务器端口")
+    @Schema(description = "端口", requiredMode = Schema.RequiredMode.REQUIRED)
+    @ExcelProperty("端口")
     private Integer port;
 
     @Schema(description = "重试次数，默认3", requiredMode = Schema.RequiredMode.REQUIRED, example = "19528")
@@ -38,7 +38,7 @@ public class ServiceSettingsRespVO {
 
     @Schema(description = "注册表ID", example = "3042")
     @ExcelProperty("注册表ID")
-    private String registryId;
+    private String clsid;
 
     @Schema(description = "用户名", example = "赵六")
     @ExcelProperty("用户名")
