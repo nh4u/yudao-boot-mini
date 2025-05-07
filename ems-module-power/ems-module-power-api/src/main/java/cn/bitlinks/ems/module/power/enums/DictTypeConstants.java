@@ -17,5 +17,6 @@ public interface DictTypeConstants {
 
     String OPERATE_TYPE = "infra_operate_type"; // 操作类型
     String WARNING_INFO_LEVEL = "warning_info_level"; // 告警等级
+    String ACQUISITION_PROTOCOL = "acquisition_protocol"; // 告警等级
 
 }

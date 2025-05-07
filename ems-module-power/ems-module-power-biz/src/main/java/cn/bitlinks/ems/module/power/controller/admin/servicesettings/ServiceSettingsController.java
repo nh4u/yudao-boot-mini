@@ -1,33 +1,23 @@
 package cn.bitlinks.ems.module.power.controller.admin.servicesettings;
 
-import org.springframework.web.bind.annotation.*;
-import javax.annotation.Resource;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.security.access.prepost.PreAuthorize;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.Operation;
-
-import javax.validation.constraints.*;
-import javax.validation.*;
-import javax.servlet.http.*;
-import java.util.*;
-import java.io.IOException;
-
-import cn.bitlinks.ems.framework.common.pojo.PageParam;
-import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
+import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
-
-import cn.bitlinks.ems.framework.excel.core.util.ExcelUtils;
-
-import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
-import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.*;
-
 import cn.bitlinks.ems.module.power.controller.admin.servicesettings.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.servicesettings.ServiceSettingsDO;
 import cn.bitlinks.ems.module.power.service.servicesettings.ServiceSettingsService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import javax.annotation.Resource;
+import javax.validation.Valid;
+import java.util.List;
+
+import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 服务设置")
 @RestController
@@ -78,12 +68,12 @@ public class ServiceSettingsController {
         return success(BeanUtils.toBean(serviceSettings, ServiceSettingsRespVO.class));
     }
 
-//    @GetMapping("/list")
-//    @Operation(summary = "获得服务设置全部列表")
-//    @PreAuthorize("@ss.hasPermission('power:service-settings:query')")
-//    public CommonResult<List<ServiceSettingsRespVO>> getServiceSettingsList() {
-//        return success(serviceSettingsService.getServiceSettingsList());
-//    }
+    @GetMapping("/list")
+    @Operation(summary = "获得服务设置全部列表")
+    @PreAuthorize("@ss.hasPermission('power:service-settings:query')")
+    public CommonResult<List<ServiceSettingsOptionsRespVO>> getServiceSettingsList() {
+        return success(serviceSettingsService.getServiceSettingsList());
+    }
 
 
     @GetMapping("/page")

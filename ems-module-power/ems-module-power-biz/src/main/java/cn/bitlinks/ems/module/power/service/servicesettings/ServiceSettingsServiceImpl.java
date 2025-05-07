@@ -3,23 +3,26 @@ package cn.bitlinks.ems.module.power.service.servicesettings;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.opcda.OpcDaUtils;
+import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.bitlinks.ems.module.power.controller.admin.servicesettings.vo.ServiceSettingsOptionsRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.servicesettings.vo.ServiceSettingsPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.servicesettings.vo.ServiceSettingsSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.servicesettings.vo.ServiceSettingsTestReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.servicesettings.ServiceSettingsDO;
 import cn.bitlinks.ems.module.power.dal.mysql.servicesettings.ServiceSettingsMapper;
+import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
-import java.util.Objects;
-import java.util.Random;
+import java.util.*;
 import java.util.function.Predicate;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.ACQUISITION_PROTOCOL;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
 /**
@@ -40,6 +43,10 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
     private static final String active = "prod";
     // 成功概率
     private static final double successProbability = 0.8;
+    /**
+     * 服务名称（IP地址：端口号）协议
+     */
+    private static final String serviceNameFormat = "%s（%s：%s）%s";
 
     @Override
     public Long createServiceSettings(ServiceSettingsSaveReqVO createReqVO) {
@@ -171,6 +178,26 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
         }
 
         return false; // 所有重试都失败，返回 false
+    }
+
+
+    @Override
+    public List<ServiceSettingsOptionsRespVO> getServiceSettingsList() {
+        List<ServiceSettingsDO> list = serviceSettingsMapper.selectList();
+        if (CollUtil.isEmpty(list)) {
+            return Collections.emptyList();
+        }
+        List<ServiceSettingsOptionsRespVO> respVOList = new ArrayList<>();
+        list.forEach(serviceSettingsDO -> {
+            ServiceSettingsOptionsRespVO respVO = BeanUtils.toBean(serviceSettingsDO, ServiceSettingsOptionsRespVO.class);
+            // 服务名称（IP地址：端口号）协议
+            respVO.setServiceFormatName(String.format(serviceNameFormat, serviceSettingsDO.getServiceName(),
+                    serviceSettingsDO.getIpAddress(), serviceSettingsDO.getPort(),
+                    DictFrameworkUtils.getDictDataLabel(ACQUISITION_PROTOCOL,
+                            serviceSettingsDO.getProtocol())));
+            respVOList.add(respVO);
+        });
+        return respVOList;
     }
 
     /**
