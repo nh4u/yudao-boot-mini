@@ -9,8 +9,10 @@ import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.P
 import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.UnitPriceConfigurationPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.UnitPriceConfigurationRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.UnitPriceConfigurationSaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.pricedetail.PriceDetailDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.unitpriceconfiguration.UnitPriceConfigurationDO;
+import cn.bitlinks.ems.module.power.dal.mysql.daparamformula.DaParamFormulaMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.pricedetail.PriceDetailMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.unitpriceconfiguration.UnitPriceConfigurationMapper;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
@@ -58,10 +60,17 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
     @Resource
     private PriceDetailMapper priceDetailMapper;
 
+    @Resource
+    private DaParamFormulaMapper daParamFormulaMapper;
+
     private void insertBatch(Long energyId, List<UnitPriceConfigurationSaveReqVO> updateReqVOList) {
         EnergyConfigurationRespVO energyConfig = energyConfigurationService.getEnergyConfiguration(energyId);
         updateReqVOList.forEach(updReqVO -> {
-            updReqVO.setFormula(energyConfig.getUnitPriceFormula());
+            // 沟通过 前端只能传一个值 所以就让传id  然后我们再后端查一遍
+            DaParamFormulaDO formula = daParamFormulaMapper.selectById(updReqVO.getFormulaId());
+            if (formula != null){
+                updReqVO.setFormula(formula.getEnergyFormula());
+            }
         });
         List<UnitPriceConfigurationDO> unitPriceConfigList = BeanUtils.toBean(updateReqVOList, UnitPriceConfigurationDO.class);
         unitPriceConfigList.forEach(unitPriceConfigurationDO -> {
