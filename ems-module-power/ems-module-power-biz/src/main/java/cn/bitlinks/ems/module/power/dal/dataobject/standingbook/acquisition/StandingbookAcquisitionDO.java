@@ -26,7 +26,7 @@ public class StandingbookAcquisitionDO extends BaseDO {
     /**
      * 编号
      */
-    @TableId
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
      * 设备数采启停开关（0：关；1开。）
