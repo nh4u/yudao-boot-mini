@@ -6,7 +6,9 @@ import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFa
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistorySaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
 import cn.bitlinks.ems.module.power.dal.mysql.coalfactorhistory.CoalFactorHistoryMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.daparamformula.DaParamFormulaMapper;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -18,8 +20,7 @@ import java.util.Objects;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.security.core.util.SecurityFrameworkUtils.getLoginUserNickname;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.COAL_FACTOR_HISTORY_NOT_EXISTS;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.FORMULA_ID_NOT_EXISTS;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
 /**
  * 折标煤系数历史 Service 实现类
@@ -35,11 +36,20 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
     @Resource
     private EnergyConfigurationService energyConfigurationService;
 
+    @Resource
+    private DaParamFormulaMapper daParamFormulaMapper;
+
     @Override
     public Long createCoalFactorHistory(CoalFactorHistorySaveReqVO createReqVO) {
         Long formulaId = createReqVO.getFormulaId();
         if (Objects.isNull(formulaId)) {
             throw exception(FORMULA_ID_NOT_EXISTS);
+        }
+
+        DaParamFormulaDO formula = daParamFormulaMapper.selectById(formulaId);
+
+        if (Objects.isNull(formula)) {
+            throw exception(FORMULA_NOT_EXISTS);
         }
 
         // 查询当前能源ID下最新的折标煤系数记录
@@ -60,6 +70,7 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
         // null，表示“至今“
         coalFactorHistory.setEndTime(null);
         coalFactorHistory.setUpdater(nickname);
+        coalFactorHistory.setFormula(formula.getEnergyFormula());
         coalFactorHistoryMapper.insert(coalFactorHistory);
 
         updateEnergyConfiguration(energyId, coalFactorHistory.getFactor());
