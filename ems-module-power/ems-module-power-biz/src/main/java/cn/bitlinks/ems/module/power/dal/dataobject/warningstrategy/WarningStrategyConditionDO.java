@@ -2,10 +2,7 @@ package cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy;
 
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
 import cn.bitlinks.ems.framework.mybatis.core.type.StringListTypeHandler;
-import com.baomidou.mybatisplus.annotation.KeySequence;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.*;
 
 import java.util.List;
@@ -29,7 +26,7 @@ public class WarningStrategyConditionDO extends BaseDO {
     /**
      * 编号
      */
-    @TableId
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
      * 策略id

@@ -54,7 +54,7 @@ public interface StandingbookTmplDaqAttrService {
      * @param id 台账id
      * @return 用量数采参数
      */
-    StandingbookTmplDaqAttrRespVO getUsageAttrBySbId(Long id);
+    StandingbookTmplDaqAttrDO getUsageAttrBySbId(Long id);
 
     /**
      * 根据台账分类ids获取数采属性列表
@@ -72,5 +72,10 @@ public interface StandingbookTmplDaqAttrService {
      */
     Map<Long, List<StandingbookTmplDaqAttrDO>> getDaqAttrsBySbIds(List<Long> sbIds);
 
-
+    /**
+     * 获取台账
+     * @param standingbookId
+     * @return
+     */
+    List<StandingbookTmplDaqAttrDO> getDaqAttrsByStandingbookId(Long standingbookId);
 }
