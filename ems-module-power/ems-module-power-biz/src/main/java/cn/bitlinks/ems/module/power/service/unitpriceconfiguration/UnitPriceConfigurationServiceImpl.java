@@ -139,12 +139,15 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
             currentUpdConfig.setStartTime(currentTime.plusSeconds(1L));
         }
         //删除当前周期和未来周期,
-        List<Long> rawConfigIds = rawConfigList.stream()
-                .map(UnitPriceConfigurationDO::getId)
-                .collect(Collectors.toList());
-        unitPriceConfigurationMapper.deleteByIds(rawConfigIds);
-        priceDetailMapper.delete(new LambdaQueryWrapper<PriceDetailDO>()
-                .in(PriceDetailDO::getPriceId, rawConfigIds));
+        if(CollUtil.isNotEmpty(rawConfigList)){
+            List<Long> rawConfigIds = rawConfigList.stream()
+                    .map(UnitPriceConfigurationDO::getId)
+                    .collect(Collectors.toList());
+            unitPriceConfigurationMapper.deleteByIds(rawConfigIds);
+            priceDetailMapper.delete(new LambdaQueryWrapper<PriceDetailDO>()
+                    .in(PriceDetailDO::getPriceId, rawConfigIds));
+        }
+
         // 新增变动周期 (拆分的当前周期和没拆分的当前周期)
         insertBatch(energyId, updateReqVOList);
 
