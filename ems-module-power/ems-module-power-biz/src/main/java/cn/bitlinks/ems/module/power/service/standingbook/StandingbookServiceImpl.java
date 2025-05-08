@@ -65,8 +65,8 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Resource
     private StandingbookTypeMapper standingbookTypeMapper;
-
-
+    @Resource
+    private  StandingbookTmplDaqAttrMapper standingbookTmplDaqAttrMapper;
     @Resource
     private StandingbookAttributeMapper standingbookAttributeMapper;
     @Resource
@@ -322,14 +322,25 @@ public class StandingbookServiceImpl implements StandingbookService {
         pageReqVO.entrySet().removeIf(entry -> StringUtils.isEmpty(entry.getValue()));
 
         // 取出查询条件
+        // 能源条件（可能为空）
+        String energy = pageReqVO.get(ATTR_ENERGY);
+        List<Long> energyTypeIds = new ArrayList<>();
+        if (StringUtils.isNotEmpty(energy)) {
+            energyTypeIds = standingbookTmplDaqAttrMapper.selectSbTypeIdsByEnergyId(Long.valueOf(energy));
+        }
+
         // 分类多选条件(可能为空)
         List<String> sbTypeIdList = new ArrayList<>();
         String sbTypeIds = pageReqVO.get(ATTR_SB_TYPE_ID);
         if (StringUtils.isNotEmpty(sbTypeIds)) {
             sbTypeIdList = Arrays.asList(sbTypeIds.split(StringPool.COMMA));
         }
+
         // 根据分类和topType查询台账
-        List<StandingbookTypeDO> sbTypeDOS = standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>().inIfPresent(StandingbookTypeDO::getId, sbTypeIdList).eqIfPresent(StandingbookTypeDO::getTopType, pageReqVO.get(SB_TYPE_ATTR_TOP_TYPE)));
+        List<StandingbookTypeDO> sbTypeDOS = standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>()
+                .inIfPresent(StandingbookTypeDO::getId, sbTypeIdList)
+                .inIfPresent(StandingbookTypeDO::getId, energyTypeIds)
+                .eqIfPresent(StandingbookTypeDO::getTopType, pageReqVO.get(SB_TYPE_ATTR_TOP_TYPE)));
         if (CollUtil.isEmpty(sbTypeDOS)) {
             return Collections.emptyList();
         }
@@ -346,6 +357,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         if (StringUtils.isNotEmpty(createTimes)) {
             createTimeArr = Arrays.asList(createTimes.split(StringPool.COMMA));
         }
+        pageReqVO.remove(ATTR_ENERGY);
         pageReqVO.remove(SB_TYPE_ATTR_TOP_TYPE);
         pageReqVO.remove(ATTR_SB_TYPE_ID);
         pageReqVO.remove(ATTR_STAGE);
@@ -370,9 +382,17 @@ public class StandingbookServiceImpl implements StandingbookService {
             }
         });
         // 根据台账属性查询台账id
-        List<Long> sbIds = standingbookMapper.selectStandingbookIdByCondition(labelInfoConditions, typeId, sbTypeIdLongList, stage, createTimeArr);
+        List<Long> sbIds = standingbookMapper.selectStandingbookIdByCondition(typeId, sbTypeIdLongList, stage, createTimeArr);
         if (CollUtil.isEmpty(sbIds)) {
             return new ArrayList<>();
+        }
+        if(CollUtil.isNotEmpty(labelInfoConditions)){
+            // 根据标签属性查询台账id
+            List<Long> labelSbIds = standingbookLabelInfoMapper.selectStandingbookIdByLabelCondition(labelInfoConditions, sbIds);
+            sbIds.retainAll(labelSbIds);
+            if (CollUtil.isEmpty(sbIds)) {
+                return new ArrayList<>();
+            }
         }
         // 根据台账id、台账属性条件查询台账属性
         List<Long> attrSbIds = standingbookAttributeService.getStandingbookIdByCondition(childrenConditions, sbIds);

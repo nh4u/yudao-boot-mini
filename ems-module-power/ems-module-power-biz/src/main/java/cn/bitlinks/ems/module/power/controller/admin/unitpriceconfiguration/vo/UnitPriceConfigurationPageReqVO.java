@@ -39,6 +39,9 @@ public class UnitPriceConfigurationPageReqVO extends PageParam {
     @Schema(description = "计算公式")
     private String formula;
 
+    @Schema(description = "关联计算公式id")
+    private Long formulaId;
+
     @Schema(description = "创建时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] createTime;

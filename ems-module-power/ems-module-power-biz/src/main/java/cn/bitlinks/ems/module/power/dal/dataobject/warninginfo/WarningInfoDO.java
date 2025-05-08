@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.dal.dataobject.warninginfo;
 
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -26,7 +27,7 @@ public class WarningInfoDO extends BaseDO {
     /**
      * 编号
      */
-    @TableId
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
      * 告警等级：紧急4 重要3 次要2 警告1 提示0

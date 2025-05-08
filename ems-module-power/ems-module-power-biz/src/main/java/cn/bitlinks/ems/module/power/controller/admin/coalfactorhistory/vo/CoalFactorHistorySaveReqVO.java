@@ -30,6 +30,9 @@ public class CoalFactorHistorySaveReqVO {
     @Schema(description = "关联计算公式")
     private String formula;
 
+    @Schema(description = "关联计算公式id")
+    private Long formulaId;
+
     @Schema(description = "修改人")
     private String updater;
 

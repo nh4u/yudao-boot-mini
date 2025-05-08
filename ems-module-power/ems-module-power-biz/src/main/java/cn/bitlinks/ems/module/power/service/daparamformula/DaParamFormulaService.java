@@ -53,5 +53,32 @@ public interface DaParamFormulaService {
      */
     PageResult<DaParamFormulaDO> getDaParamFormulaPage(DaParamFormulaPageReqVO pageReqVO);
 
-    List<DaParamFormulaDO> getDaParamFormulaList(DaParamFormulaSaveReqVO pageReqVO);
+    List<DaParamFormulaDO> getDaParamFormulaList(DaParamFormulaSaveReqVO reqVO);
+
+    /**
+     * 公式 增删改
+     *
+     * @param formulas
+     * @return
+     */
+    Boolean change(List<DaParamFormulaSaveReqVO> formulas);
+
+    /**
+     * 判断公式是否重复
+     *
+     * @param id          公式id
+     * @param energyId    能源id
+     * @param formulaType 公式类型 1折标煤公式，2用能成本公式
+     * @param energyFormula 公式
+     * @return
+     */
+    Boolean isDuplicate(Long id, Long energyId, Integer formulaType,String energyFormula);
+
+    /**
+     * 判断公式是否已经使用绑定
+     *
+     * @param id
+     * @return
+     */
+    Boolean isDelete(Long id);
 }

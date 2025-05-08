@@ -38,6 +38,10 @@ public class StandingbookTmplDaqAttrDO extends BaseDO {
      */
     private Boolean energyFlag;
     /**
+     * 能源参数id
+     */
+    private Long parameterId;
+    /**
      * 参数名称
      */
     private String parameter;

@@ -82,6 +82,13 @@
         <justauth.version>1.0.8</justauth.version>
         <jimureport.version>1.7.8</jimureport.version>
         <weixin-java.version>4.6.5.B</weixin-java.version>
+        <!--        数采服务-->
+        <bcprov.jdk16.version>1.46</bcprov.jdk16.version>
+        <jinterop.version>2.0.4</jinterop.version>
+        <jinterop.interopdeps.version>2.0.4</jinterop.interopdeps.version>
+        <org.openscada.external.jcifs.version>1.2.25</org.openscada.external.jcifs.version>
+        <org.openscada.opc.lib.version>1.5.0</org.openscada.opc.lib.version>
+
         <!-- 专属于 JDK8 安全漏洞升级 -->
         <logback.version>1.2.13</logback.version> <!-- 无法使用 1.3.X 版本，启动会报错 -->
     </properties>
@@ -133,6 +140,31 @@
             </dependency>
 
             <!-- 业务组件 -->
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk16</artifactId>
+                <version>${bcprov.jdk16.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jinterop</groupId>
+                <artifactId>j-interop</artifactId>
+                <version>${jinterop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jinterop</groupId>
+                <artifactId>j-interopdeps</artifactId>
+                <version>${jinterop.interopdeps.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openscada.external</groupId>
+                <artifactId>org.openscada.external.jcifs</artifactId>
+                <version>${org.openscada.external.jcifs.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openscada.utgard</groupId>
+                <artifactId>org.openscada.opc.lib</artifactId>
+                <version>${org.openscada.opc.lib.version}</version>
+            </dependency>
             <dependency>
                 <groupId>io.github.mouzt</groupId>
                 <artifactId>bizlog-sdk</artifactId>

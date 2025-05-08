@@ -16,4 +16,7 @@ public class ConditionVO {
 
     @Schema(description = "条件值")
     private String value;
+
+    @Schema(description = "设备范围选择 true-1 设备 false-0 设备分类")
+    private Boolean deviceFlag;
 }

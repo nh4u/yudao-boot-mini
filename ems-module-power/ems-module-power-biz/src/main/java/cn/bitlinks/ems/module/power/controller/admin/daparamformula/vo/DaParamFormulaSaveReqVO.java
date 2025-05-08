@@ -1,12 +1,10 @@
 package cn.bitlinks.ems.module.power.controller.admin.daparamformula.vo;
 
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyParameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * @author liumingqiang
@@ -29,6 +27,7 @@ public class DaParamFormulaSaveReqVO {
     private String energyFormula;
 
     @Schema(description = "公式类型 1折标煤公式，2用能成本公式")
+    @NotNull(message = "公式类型不能为空")
     private Integer formulaType;
 
     @Schema(description = "公式小数点")

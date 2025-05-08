@@ -9,7 +9,6 @@ import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.P
 import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.UnitPriceConfigurationPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.UnitPriceConfigurationRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.UnitPriceConfigurationSaveReqVO;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.pricedetail.PriceDetailDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.unitpriceconfiguration.UnitPriceConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.mysql.pricedetail.PriceDetailMapper;
@@ -89,7 +88,7 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void updateUnitPriceConfiguration(Long energyId, List<UnitPriceConfigurationSaveReqVO> updateReqVOList) {
         // 当前时间
         LocalDateTime currentTime = LocalDateTime.now();
@@ -118,11 +117,13 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
 
         UnitPriceConfigurationDO existingConfig = rawConfigList.get(0);
         // 2.找到了, 做单价的数据对比
-        // 检查价格详情变更
+        // 检查价格详情变更和公式是否变更
         boolean changePrice =
                 !Objects.equals(existingConfig.getBillingMethod(), currentUpdConfig.getBillingMethod())
                         || !Objects.equals(existingConfig.getAccountingFrequency(), currentUpdConfig.getAccountingFrequency())
-                        || isPriceDetailsModified(existingConfig.getId(), currentUpdConfig.getPriceDetails());
+                        || isPriceDetailsModified(existingConfig.getId(), currentUpdConfig.getPriceDetails())
+                        || !Objects.equals(existingConfig.getFormulaId(), currentUpdConfig.getFormulaId());
+
         // 2.1 当前周期单价有改变,则把原有周期直接修改结束时间为当前时间,修改到数据库中
         if (changePrice) {
             // 修改原有当前周期的结束时间为当前时间,单价详细不变
@@ -138,12 +139,15 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
             currentUpdConfig.setStartTime(currentTime.plusSeconds(1L));
         }
         //删除当前周期和未来周期,
-        List<Long> rawConfigIds = rawConfigList.stream()
-                .map(UnitPriceConfigurationDO::getId)
-                .collect(Collectors.toList());
-        unitPriceConfigurationMapper.deleteByIds(rawConfigIds);
-        priceDetailMapper.delete(new LambdaQueryWrapper<PriceDetailDO>()
-                .in(PriceDetailDO::getPriceId, rawConfigIds));
+        if(CollUtil.isNotEmpty(rawConfigList)){
+            List<Long> rawConfigIds = rawConfigList.stream()
+                    .map(UnitPriceConfigurationDO::getId)
+                    .collect(Collectors.toList());
+            unitPriceConfigurationMapper.deleteByIds(rawConfigIds);
+            priceDetailMapper.delete(new LambdaQueryWrapper<PriceDetailDO>()
+                    .in(PriceDetailDO::getPriceId, rawConfigIds));
+        }
+
         // 新增变动周期 (拆分的当前周期和没拆分的当前周期)
         insertBatch(energyId, updateReqVOList);
 
