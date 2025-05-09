@@ -116,4 +116,12 @@ public class CoalFactorHistoryController {
                 BeanUtils.toBean(list, CoalFactorHistoryRespVO.class));
     }
 
+    @GetMapping("/getAvailableCoalFactor")
+    @Operation(summary = "获取当前生效的折标煤系数")
+    @Parameter(name = "energyId", description = "能源ID", required = true)
+    @PreAuthorize("@ss.hasPermission('power:coal-factor-history:query')")
+    public CommonResult<CoalFactorHistoryRespVO> getAvailableCoalFactor(
+            @RequestParam("energyId") Long energyId) {
+        return success(coalFactorHistoryService.getAvailableCoalFactor(energyId));
+    }
 }

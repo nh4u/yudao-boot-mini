@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.coalfactorhistory;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistorySaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
 
@@ -52,4 +53,11 @@ public interface CoalFactorHistoryService {
      */
     PageResult<CoalFactorHistoryDO> getCoalFactorHistoryPage(CoalFactorHistoryPageReqVO pageReqVO);
 
+
+    /**
+     * 根据能源ID获取当前生效的折标煤系数
+     * @param energyId 能源ID
+     * @return 折标煤系数详细信息
+     */
+    CoalFactorHistoryRespVO getAvailableCoalFactor(Long energyId);
 }

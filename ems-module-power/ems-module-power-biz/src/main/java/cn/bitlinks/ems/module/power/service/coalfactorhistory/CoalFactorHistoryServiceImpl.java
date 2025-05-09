@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.coalfactorhistory;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistorySaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
@@ -132,4 +133,17 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
         return coalFactorHistoryMapper.selectPage(pageReqVO);
     }
 
+    @Override
+    public CoalFactorHistoryRespVO getAvailableCoalFactor(Long energyId) {
+        // 1. 参数校验
+        if (energyId == null) {
+            throw new IllegalArgumentException("能源ID不能为空");
+        }
+
+        // 2. 查询数据库
+        CoalFactorHistoryDO entity = coalFactorHistoryMapper.selectCurrentByEnergyId(energyId);
+
+        // 3. 转换VO并返回
+        return BeanUtils.toBean(entity, CoalFactorHistoryRespVO.class);
+    }
 }
