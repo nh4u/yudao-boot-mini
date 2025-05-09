@@ -1,10 +1,9 @@
 package cn.bitlinks.ems.module.power.service.standingbook.acquisition;
 
-import javax.validation.*;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.*;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.acquisition.StandingbookAcquisitionDO;
-import cn.bitlinks.ems.framework.common.pojo.PageResult;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.StandingbookAcquisitionRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.StandingbookAcquisitionVO;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.Map;
 
@@ -15,43 +14,28 @@ import java.util.Map;
  */
 public interface StandingbookAcquisitionService {
 
-//    /**
-//     * 创建台账-数采设置
-//     *
-//     * @param createReqVO 创建信息
-//     * @return 编号
-//     */
-//    Long createStandingbookAcquisition(@Valid StandingbookAcquisitionSaveReqVO createReqVO);
-//
-//    /**
-//     * 更新台账-数采设置
-//     *
-//     * @param updateReqVO 更新信息
-//     */
-//    void updateStandingbookAcquisition(@Valid StandingbookAcquisitionSaveReqVO updateReqVO);
-//
-//    /**
-//     * 删除台账-数采设置
-//     *
-//     * @param id 编号
-//     */
-//    void deleteStandingbookAcquisition(Long id);
-//
-//    /**
-//     * 获得台账-数采设置
-//     *
-//     * @param id 编号
-//     * @return 台账-数采设置
-//     */
-//    StandingbookAcquisitionDO getStandingbookAcquisition(Long id);
-//
-//    /**
-//     * 获得台账-数采设置分页
-//     *
-//     * @param pageReqVO 分页查询
-//     * @return 台账-数采设置分页
-//     */
-//    PageResult<StandingbookAcquisitionDO> getStandingbookAcquisitionPage(StandingbookAcquisitionPageReqVO pageReqVO);
+    /**
+     * 创建/更新台账-数采设置
+     *
+     * @param updateReqVO 创建/修改信息
+     * @return 编号
+     */
+    Long createOrUpdateStandingbookAcquisition(@Valid StandingbookAcquisitionVO updateReqVO);
 
+    /**
+     * 数采设置列表页
+     *
+     * @param queryReqVO 台账查询条件（标签和台账属性）
+     * @return
+     */
     List<StandingbookAcquisitionRespVO> getStandingbookAcquisitionList(Map<String, String> queryReqVO);
+
+
+    /**
+     * 根据台账id获取数采设置
+     *
+     * @param standingbookId 台账id
+     * @return 数采设置
+     */
+    StandingbookAcquisitionVO getAcquisitionByStandingbookId(Long standingbookId);
 }

@@ -6,7 +6,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@Schema(description = "管理后台 - 台账-数采设置 Response VO")
+@Schema(description = "管理后台 - 台账-数采设置列表页 Response VO")
 @Data
 public class StandingbookAcquisitionRespVO extends StandingbookRespVO {
 
@@ -22,16 +22,18 @@ public class StandingbookAcquisitionRespVO extends StandingbookRespVO {
     @Schema(description = "采集频率单位(秒、分钟、小时、天)")
     private Integer frequencyUnit;
 
-    @Schema(description = "采集频率(展示)")
-    private String frequencyLabel;
-
     @Schema(description = "服务设置id")
     private Long serviceSettingsId;
+
+    @Schema(description = "开始时间")
+    private LocalDateTime startTime;
+
+
+    @Schema(description = "采集频率(展示)")
+    private String frequencyLabel;
 
     @Schema(description = "数据连接服务(展示)")
     private String serviceSettingsLabel;
 
-    @Schema(description = "开始时间")
-    private LocalDateTime startTime;
 
 }

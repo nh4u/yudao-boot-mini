@@ -39,7 +39,7 @@ public class StandingbookAcquisitionDetailDO extends BaseDO {
     /**
      * OPCDA：io地址/MODBUS：
      */
-    private String dataId;
+    private String dataSite;
     /**
      * 公式
      */
@@ -51,10 +51,11 @@ public class StandingbookAcquisitionDetailDO extends BaseDO {
     /**
      * 参数编码
      */
-    private String paramCode;
+    private String code;
     /**
-     * 参数类型（能源数采1/自定义数采0）
+     * 是否能源数采参数 0自定义数采 1能源数采
      */
-    private Integer paramType;
+    private Boolean energyFlag;
+
 
 }
