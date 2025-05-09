@@ -24,11 +24,11 @@ public interface UnitPriceConfigurationMapper extends BaseMapperX<UnitPriceConfi
         return selectPage(reqVO, new LambdaQueryWrapperX<UnitPriceConfigurationDO>()
                 .eqIfPresent(UnitPriceConfigurationDO::getEnergyId, reqVO.getEnergyId())
                 .betweenIfPresent(UnitPriceConfigurationDO::getStartTime, reqVO.getStartTime())
-                .betweenIfPresent(UnitPriceConfigurationDO::getEndTime, reqVO.getEndTime())
                 .eqIfPresent(UnitPriceConfigurationDO::getBillingMethod, reqVO.getBillingMethod())
                 .eqIfPresent(UnitPriceConfigurationDO::getAccountingFrequency, reqVO.getAccountingFrequency())
                 .eqIfPresent(UnitPriceConfigurationDO::getFormula, reqVO.getFormula())
                 .betweenIfPresent(UnitPriceConfigurationDO::getCreateTime, reqVO.getCreateTime())
+                .lt(UnitPriceConfigurationDO::getEndTime, LocalDateTime.now())
                 .orderByDesc(UnitPriceConfigurationDO::getStartTime));
     }
 
