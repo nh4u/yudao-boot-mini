@@ -65,7 +65,7 @@ public interface StandingbookTmplDaqAttrService {
     Map<Long, List<StandingbookTmplDaqAttrDO>> getDaqAttrsByTypeIds(List<Long> typeIds);
 
     /**
-     * 根据台账ids获取数采属性列表
+     * 根据台账ids获取数采属性列表（启用的）
      *
      * @param sbIds 台账id
      * @return sbId-attrList
@@ -73,9 +73,9 @@ public interface StandingbookTmplDaqAttrService {
     Map<Long, List<StandingbookTmplDaqAttrDO>> getDaqAttrsBySbIds(List<Long> sbIds);
 
     /**
-     * 获取台账
-     * @param standingbookId
-     * @return
+     * 获取台账数采属性（启用的）
+     * @param standingbookId 台账id
+     * @return 数采属性列表
      */
     List<StandingbookTmplDaqAttrDO> getDaqAttrsByStandingbookId(Long standingbookId);
 }
