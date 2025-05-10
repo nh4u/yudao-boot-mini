@@ -16,6 +16,8 @@
 
 package cn.bitlinks.ems.module.power.enums;
 
+import java.util.regex.Pattern;
+
 /**
  * @author liumingqiang
  */
@@ -72,4 +74,8 @@ public interface CommonConstants {
      * 服务名称（IP地址：端口号）协议
      */
     String SERVICE_NAME_FORMAT = "%s（%s：%s）%s";
+    /**
+     *
+     */
+    Pattern PATTERN_PARAMS = Pattern.compile("\\{(.*?)}");
 }

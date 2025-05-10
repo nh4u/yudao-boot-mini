@@ -23,10 +23,10 @@ import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.PATTERN_PARAMS;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
 /**
@@ -38,10 +38,7 @@ import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 @Validated
 @Slf4j
 public class WarningTemplateServiceImpl implements WarningTemplateService {
-    /**
-     * 正则表达式，匹配 {} 中的变量
-     */
-    private static final Pattern PATTERN_PARAMS = Pattern.compile("\\{(.*?)}");
+
 
     @Resource
     private WarningTemplateMapper warningTemplateMapper;
@@ -180,7 +177,7 @@ public class WarningTemplateServiceImpl implements WarningTemplateService {
             // 如果模板中参数都是唯一的，那么不需要循环，直接按照模板填充一次即可，否则，需要循环内容，
             StringBuilder sb = new StringBuilder();
             //没有系统关键字，则不需要填充参数，直接返回模板的字符串
-            if(CollUtil.isEmpty(keyWord)){
+            if (CollUtil.isEmpty(keyWord)) {
                 return templateStr;
             }
             boolean isNoKey = WarningTemplateKeyWordEnum.areAnyKeywordsOutsideRange(keyWord);
