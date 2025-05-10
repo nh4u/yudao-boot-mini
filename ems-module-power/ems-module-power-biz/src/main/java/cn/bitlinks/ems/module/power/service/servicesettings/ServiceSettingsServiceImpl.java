@@ -49,11 +49,7 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
 
     @Override
     public Long createServiceSettings(ServiceSettingsSaveReqVO createReqVO) {
-        // 必须连通才可以添加服务设置 todo 待产品确认
-        Boolean result = testLink(createReqVO);
-        if (!result) {
-            throw exception(SERVICE_SETTINGS_ADD_ERROR);
-        }
+        // 不通也可以添加服务设置
         // 校验 IP 地址是否重复
         validIpAddressRepeat(createReqVO.getIpAddress(), null);
         // 插入
@@ -98,11 +94,7 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
 
         // 校验 IP 地址是否重复
         validIpAddressRepeat(updateReqVO.getIpAddress(), updateReqVO.getId());
-        // 必须连通才可以修改服务设置 todo 待产品确认
-        Boolean result = testLink(updateReqVO);
-        if (!result) {
-            throw exception(SERVICE_SETTINGS_ADD_ERROR);
-        }
+        // 不通也可以添加服务设置
         // 更新
         serviceSettingsMapper.updateById(updateObj);
     }
@@ -168,11 +160,11 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
         boolean testResult;
         for (int i = 0; i <= retryCount; i++) { // 注意循环条件，包含第一次尝试
 
-            if (env.equals(SPRING_PROFILES_ACTIVE_PROD)) {
+        if (env.equals(SPRING_PROFILES_ACTIVE_PROD)) {
                 testResult = OpcDaUtils.testLink(ipAddress, username, password, clsid);
-            } else {
+        } else {
                 testResult = mockTestLink();
-            }
+        }
 
             if (testResult) {
                 return true; // 连接成功，立即返回
@@ -218,7 +210,7 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
      */
     private boolean mockTestLink() {
         Random random = new Random();
-        double randomNumber = random.nextDouble();
+            double randomNumber = random.nextDouble();
 
         return randomNumber < SUCCESS_PROBABILITY;
     }

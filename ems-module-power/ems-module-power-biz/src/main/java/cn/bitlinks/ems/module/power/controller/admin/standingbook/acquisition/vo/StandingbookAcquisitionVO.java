@@ -27,11 +27,9 @@ public class StandingbookAcquisitionVO {
     private Integer frequencyUnit;
 
     @Schema(description = "服务设置id", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "服务设置id不能为空")
     private Long serviceSettingsId;
 
     @Schema(description = "开始时间", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "开始时间不能为空")
     private LocalDateTime startTime;
 
     @Schema(description = "设备参数配置详细", requiredMode = Schema.RequiredMode.REQUIRED)

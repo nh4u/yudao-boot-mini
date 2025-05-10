@@ -2,10 +2,7 @@ package cn.bitlinks.ems.module.power.service.standingbook.acquisition;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.StandingbookAcquisitionDetailAttrDTO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.StandingbookAcquisitionDetailVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.StandingbookAcquisitionRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.StandingbookAcquisitionVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.servicesettings.ServiceSettingsDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.acquisition.StandingbookAcquisitionDO;
@@ -17,7 +14,11 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.Standingb
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.ReUtil;
+import io.swagger.v3.oas.annotations.media.Schema;
+import org.mapstruct.ap.internal.util.Strings;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
@@ -25,6 +26,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.PATTERN_PARAMS;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.SERVICE_NAME_FORMAT;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.ACQUISITION_FREQUENCY;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.ACQUISITION_PROTOCOL;
@@ -157,6 +159,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                     serviceSettingsDO.getIpAddress(), serviceSettingsDO.getPort(),
                     DictFrameworkUtils.getDictDataLabel(ACQUISITION_PROTOCOL,
                             serviceSettingsDO.getProtocol())));
+            result.add(standingbookAcquisitionRespVO);
         }
         return result;
     }
@@ -228,5 +231,35 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         standingbookAcquisitionVO.setDetails(detailVOS);
         return standingbookAcquisitionVO;
     }
+
+//    @Override
+//    public String testData(StandingbookAcquisitionTestReqVO testReqVO) {
+//        return null;
+//    }
+//
+//    @Override
+//    public Boolean checkFormula(StandingbookAcquisitionFormulaVO formulaVO) {
+//        // 当前公式
+//        String currentFormula = formulaVO.getCurrentFormula();
+//        // 其他公式
+//        List<String> otherFormula = formulaVO.getOtherFormula();
+//        // 先检查公式是否合规，有{}的参数
+//        return ReUtil.findAllGroup1(PATTERN_PARAMS, currentFormula);
+//        if (CollUtil.isEmpty(otherFormula)) {
+//            return true;
+//        }
+//
+//    }
+//    private
+
+//    @Override
+//    public String testData(StandingbookAcquisitionTestReqVO testReqVO) {
+//        String dataSite = testReqVO.getDataSite();
+//        String formula = testReqVO.getFormula();
+//        if(Strings.isEmpty(dataSite) && Strings.isEmpty(formula)){
+//            throw exception();
+//        }
+//        return null;
+//    }
 
 }
