@@ -68,6 +68,7 @@ spring:
           lazy: true # 开启懒加载，保证启动速度
           url: jdbc:mysql://192.168.2.26:9030/quickstart?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
           username: root
+          password: BitlinkStarrocks@2025
   # Redis 配置。Redisson 默认的配置足够使用，一般不需要进行调优
   redis:
     host: 192.168.2.31 # 地址
