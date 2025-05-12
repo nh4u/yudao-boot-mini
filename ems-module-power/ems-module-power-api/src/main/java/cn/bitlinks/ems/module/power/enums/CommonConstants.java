@@ -75,7 +75,9 @@ public interface CommonConstants {
      */
     String SERVICE_NAME_FORMAT = "%s（%s：%s）%s";
     /**
-     *
+     * 模板字符串中获取{}中参数
      */
     Pattern PATTERN_PARAMS = Pattern.compile("\\{(.*?)}");
+
+
 }

@@ -19,8 +19,11 @@ public class StandingbookAcquisitionDetailVO {
     @Schema(description = "OPCDA：io地址/MODBUS：")
     private String dataSite;
 
-    @Schema(description = "公式")
+    @Schema(description = "公式{[\"A\",true]}*4.2+{[\"B\",false]}格式")
     private String formula;
+
+    @Schema(description = "实际公式,无嵌套")
+    private String actualFormula;
 
     @Schema(description = "全量/增量（0：全量；1增量。）")
     private Integer fullIncrement;

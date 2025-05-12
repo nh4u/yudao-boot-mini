@@ -1,7 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.StandingbookAcquisitionFormulaVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.StandingbookAcquisitionRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.StandingbookAcquisitionTestReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.StandingbookAcquisitionVO;
@@ -43,19 +42,13 @@ public class StandingbookAcquisitionController {
         return success(standingbookAcquisitionService.getAcquisitionByStandingbookId(standingbookId));
     }
 
-//    @PostMapping("/test")
-//    @Operation(summary = "数采根据公式进行采集测试")
-//    @PreAuthorize("@ss.hasPermission('power:standingbook-acquisition:query')")
-//    public CommonResult<String> testData(StandingbookAcquisitionTestReqVO testReqVO) {
-//        return success(standingbookAcquisitionService.testData(testReqVO));
-//    }
-//
-//    @PostMapping("/checkFormula")
-//    @Operation(summary = "数采根据公式检查循环引用")
-//    @PreAuthorize("@ss.hasPermission('power:standingbook-acquisition:query')")
-//    public CommonResult<Boolean> checkFormula(StandingbookAcquisitionFormulaVO formulaVO) {
-//        return success(standingbookAcquisitionService.checkFormula(formulaVO));
-//    }
+    @PostMapping("/test")
+    @Operation(summary = "数采根据公式进行采集测试")
+    @PreAuthorize("@ss.hasPermission('power:standingbook-acquisition:query')")
+    public CommonResult<String> testData(StandingbookAcquisitionTestReqVO testReqVO) {
+        return success(standingbookAcquisitionService.testData(testReqVO));
+    }
+
 
 
     @PostMapping("/list")

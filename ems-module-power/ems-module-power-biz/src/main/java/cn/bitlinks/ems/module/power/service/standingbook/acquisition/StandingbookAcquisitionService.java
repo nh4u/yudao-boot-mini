@@ -1,6 +1,5 @@
 package cn.bitlinks.ems.module.power.service.standingbook.acquisition;
 
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.StandingbookAcquisitionFormulaVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.StandingbookAcquisitionRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.StandingbookAcquisitionTestReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.StandingbookAcquisitionVO;
@@ -40,16 +39,12 @@ public interface StandingbookAcquisitionService {
      * @return 数采设置
      */
     StandingbookAcquisitionVO getAcquisitionByStandingbookId(Long standingbookId);
-//
-//    /**
-//     * 测试连接，获取采集结果
-//     * @param testReqVO 参数数采相关
-//     * @return 采集结果
-//     */
-//    String testData(StandingbookAcquisitionTestReqVO testReqVO);
-//
-//    /**
-//     * 校验公式是否有循环引用
-//     */
-//    Boolean checkFormula(StandingbookAcquisitionFormulaVO formulaVO);
+
+    /**
+     * 测试连接，获取采集结果
+     * @param testReqVO 参数数采相关
+     * @return 采集结果
+     */
+    String testData(StandingbookAcquisitionTestReqVO testReqVO);
+
 }

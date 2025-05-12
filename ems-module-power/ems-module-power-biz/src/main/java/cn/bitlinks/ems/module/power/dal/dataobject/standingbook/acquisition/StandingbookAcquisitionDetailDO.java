@@ -44,6 +44,13 @@ public class StandingbookAcquisitionDetailDO extends BaseDO {
      * 公式
      */
     private String formula;
+
+    /**
+     * 实际的公式，到io级别的
+     */
+    private String actualFormula;
+
+
     /**
      * 全量/增量（0：全量；1增量。）
      */
