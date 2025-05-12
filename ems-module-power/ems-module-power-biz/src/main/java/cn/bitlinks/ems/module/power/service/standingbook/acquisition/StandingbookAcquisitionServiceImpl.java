@@ -147,6 +147,8 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         List<StandingbookAcquisitionRespVO> result = new ArrayList<>();
         for (StandingbookDO standingbookDO : standingbookDOS) {
             // 查询关联的数采设置主要信息
+           // StandingbookAcquisitionRespVO standingbookAcquisitionRespVO = BeanUtils.toBean(standingbookDO,
+           //         StandingbookAcquisitionRespVO.class);
             StandingbookAcquisitionRespVO standingbookAcquisitionRespVO = BeanUtils.toBean(standingbookDO, StandingbookAcquisitionRespVO.class);
             StandingbookAcquisitionDO standingbookAcquisitionDO = standingbookAcquisitionMap.get(standingbookDO.getId());
             if (Objects.isNull(standingbookAcquisitionDO)) {
@@ -156,7 +158,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
 
             BeanUtils.copyProperties(standingbookAcquisitionDO, standingbookAcquisitionRespVO);
             standingbookAcquisitionRespVO.setAcquisitionId(standingbookAcquisitionDO.getId());
-
+            standingbookAcquisitionRespVO.setId(standingbookDO.getId());
             // 采集频率(展示)
             standingbookAcquisitionRespVO.setFrequencyLabel(
                     standingbookAcquisitionRespVO.getFrequency() + DictFrameworkUtils.getDictDataLabel(ACQUISITION_FREQUENCY,
