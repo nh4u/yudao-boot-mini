@@ -25,9 +25,11 @@ import cn.bitlinks.ems.module.power.service.unitpriceconfiguration.UnitPriceConf
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.alibaba.nacos.common.utils.StringUtils;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -543,5 +545,19 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
 
         list.add(parent);
         return list;
+    }
+
+    @Override
+    public List<EnergyConfigurationDO> getByEnergyClassify(Set<Long> energyIds, Integer energyClassify) {
+        if(ArrayUtil.isNotEmpty(energyIds) && Objects.isNull(energyClassify)){
+            return Collections.emptyList();
+        }
+        LambdaQueryWrapper<EnergyConfigurationDO> wrapper = new LambdaQueryWrapper<>();
+        if(ArrayUtil.isNotEmpty(energyIds)){
+            wrapper.in(EnergyConfigurationDO::getId, energyIds);
+            return energyConfigurationMapper.selectList(wrapper);
+        }
+        wrapper.eq(EnergyConfigurationDO::getEnergyClassify, energyClassify);
+        return energyConfigurationMapper.selectList(wrapper);
     }
 }

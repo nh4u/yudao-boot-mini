@@ -15,6 +15,7 @@ import cn.bitlinks.ems.framework.common.pojo.PageParam;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 
 import cn.bitlinks.ems.module.power.dal.mysql.energyparameters.EnergyParametersMapper;
+import cn.hutool.core.util.ArrayUtil;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
@@ -88,6 +89,17 @@ public class EnergyParametersServiceImpl implements EnergyParametersService {
     public List<EnergyParametersDO> getEnergyParametersByEnergyId(Long energyId) {
         LambdaQueryWrapper<EnergyParametersDO> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(EnergyParametersDO::getEnergyId, energyId);
+        return energyParametersMapper.selectList(queryWrapper);
+    }
+
+    @Override
+    public List<EnergyParametersDO> getUsageParamsByEnergyIds(List<Long> energyIds, Boolean usage) {
+        if(ArrayUtil.isEmpty(energyIds) || Objects.isNull(usage)){
+            return new ArrayList<>();
+        }
+        LambdaQueryWrapper<EnergyParametersDO> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(EnergyParametersDO::getUsage, usage);
+        queryWrapper.in(EnergyParametersDO::getEnergyId, energyIds);
         return energyParametersMapper.selectList(queryWrapper);
     }
 

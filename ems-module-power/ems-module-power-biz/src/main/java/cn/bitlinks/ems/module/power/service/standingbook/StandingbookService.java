@@ -66,4 +66,10 @@ public interface StandingbookService {
      * @return 可关联的台账列表
      */
     List<StandingbookRespVO> listSbAllWithAssociations(StandingbookAssociationReqVO reqVO);
+
+
+    /**
+     * 根据分类ID查询台账ID
+     */
+    List<StandingbookDO> getByTypeIds(List<Long> typeIds);
 }

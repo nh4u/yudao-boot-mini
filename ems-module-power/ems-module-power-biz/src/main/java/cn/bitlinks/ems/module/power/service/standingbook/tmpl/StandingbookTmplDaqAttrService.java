@@ -72,5 +72,12 @@ public interface StandingbookTmplDaqAttrService {
      */
     Map<Long, List<StandingbookTmplDaqAttrDO>> getDaqAttrsBySbIds(List<Long> sbIds);
 
+    /**
+     * 根据能源ids获取台账模板数据
+     * @param energyIds
+     * @return
+     */
+    List<StandingbookTmplDaqAttrDO> getByEnergyIds(List<Long> energyIds);
+
 
 }
