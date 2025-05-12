@@ -1,17 +1,17 @@
 package cn.bitlinks.ems.module.power.controller.admin.statistics.vo;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 
@@ -25,7 +25,7 @@ import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_M
 @Data
 @EqualsAndHashCode(callSuper = false)
 @ToString(callSuper = true)
-public class StatisticsParamVO {
+public class StatisticsParamV2VO {
 
     @Schema(description = "统计周期,最长不超1年", example = "[1734451200000, 1735315200000]")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
@@ -33,7 +33,7 @@ public class StatisticsParamVO {
     private LocalDateTime[] range;
 
     @Schema(description = "统计标签-下级标签（需去重）", example = "[1,2,3,4]")
-    private List<Long> labelIds;
+    private String childLabels;
 
     @Schema(description = "统计标签-顶级标签", example = "[1,2,3,4]")
     private String topLabel;
@@ -45,6 +45,7 @@ public class StatisticsParamVO {
     @NotNull(message = "查看类型不能为空")
     private Integer queryType;
 
+    //
     @Schema(description = "时间类型 0：日；1：月；2：年；3：时。")
     @NotNull(message = "时间类型不能为空")
     private Integer dateType;
@@ -53,7 +54,5 @@ public class StatisticsParamVO {
     @NotNull(message = "能源类型不能为空")
     private Integer energyClassify;
 
-    @Schema(description = "基准年限", example = "2025")
-    private Integer benchmark;
 
 }
