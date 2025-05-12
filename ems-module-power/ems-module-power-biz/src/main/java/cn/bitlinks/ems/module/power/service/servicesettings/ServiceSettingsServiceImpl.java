@@ -2,7 +2,7 @@ package cn.bitlinks.ems.module.power.service.servicesettings;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import cn.bitlinks.ems.framework.common.util.opcda.OpcDaUtils;
+import cn.bitlinks.ems.framework.common.util.opcda.OpcConnectionTester;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.servicesettings.vo.ServiceSettingsOptionsRespVO;
@@ -149,38 +149,11 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
 
     @Override
     public Boolean testLink(ServiceSettingsTestReqVO createReqVO) {
-
-        String ipAddress = createReqVO.getIpAddress();
-        String username = createReqVO.getUsername();
-        String password = createReqVO.getPassword();
-        String clsid = createReqVO.getClsid();
-
-        Integer retryCount = createReqVO.getRetryCount();  // 获取重试次数
-
-        boolean testResult;
-        for (int i = 0; i <= retryCount; i++) { // 注意循环条件，包含第一次尝试
-
         if (env.equals(SPRING_PROFILES_ACTIVE_PROD)) {
-                testResult = OpcDaUtils.testLink(ipAddress, username, password, clsid);
+            return OpcConnectionTester.testLink(createReqVO.getIpAddress(), createReqVO.getUsername(), createReqVO.getPassword(), createReqVO.getClsid(), createReqVO.getRetryCount());
         } else {
-                testResult = mockTestLink();
+            return mockTestLink();
         }
-
-            if (testResult) {
-                return true; // 连接成功，立即返回
-            } else {
-                if (i < retryCount) {
-                    try {
-                        Thread.sleep(1000); // 等待一段时间再重试, 这里可以根据实际情况调整
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt(); // 重新设置中断标志
-                        return false; // 如果线程被中断，停止重试
-                    }
-                }
-            }
-        }
-
-        return false; // 所有重试都失败，返回 false
     }
 
 
@@ -210,7 +183,7 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
      */
     private boolean mockTestLink() {
         Random random = new Random();
-            double randomNumber = random.nextDouble();
+        double randomNumber = random.nextDouble();
 
         return randomNumber < SUCCESS_PROBABILITY;
     }

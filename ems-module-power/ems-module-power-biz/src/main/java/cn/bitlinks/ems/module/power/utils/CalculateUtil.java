@@ -21,6 +21,38 @@ import java.math.RoundingMode;
 public class CalculateUtil {
 
     public static final int SCALE = 30;
+    public static final String FORMUlA_SUM = "SUM";
+    public static final String FORMUlA_AVG = "AVG";
+    /**
+     * 数采公式计算(存在非数值型返回)
+     *
+     * @param formula 填充值后的公式带符号
+     */
+    public static Object calcAcquisitionFormula(String formula) {
+        try {
+            ExpressRunner runner = new ExpressRunner(true, false);
+            return runner.execute(formula, null, null, false, false);
+        } catch (Exception e) {
+            log.error("CalculateUtil error : 表达式【{}】", formula, e);
+        }
+        return null;
+    }
+
+    /**
+     * 数采公式计算(存在非数值型返回)
+     *
+     * @param formula 填充值后的公式带符号
+     * @param context 填充参数
+     */
+    public static Object calcAcquisitionFormula(String formula, IExpressContext<String, Object> context) {
+        try {
+            ExpressRunner runner = new ExpressRunner(true, false);
+            return runner.execute(formula, context, null, false, false);
+        } catch (Exception e) {
+            log.error("CalculateUtil error : 表达式【{}】", formula, e);
+        }
+        return null;
+    }
 
     /**
      * 将数据总量、碳排因子值代入碳排因子公式进行计算  公式示例：$value*$factor
@@ -47,6 +79,7 @@ public class CalculateUtil {
         return result;
 
     }
+
 
     /**
      * sum 和 avg 测试 max min 本身自带有在 OperatorMinMax类中

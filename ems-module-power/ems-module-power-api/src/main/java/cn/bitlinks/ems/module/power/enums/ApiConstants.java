@@ -2,6 +2,8 @@ package cn.bitlinks.ems.module.power.enums;
 
 import cn.bitlinks.ems.framework.common.enums.RpcConstants;
 
+import java.util.regex.Pattern;
+
 /**
  * API 相关的枚举
  *
@@ -65,8 +67,24 @@ public class ApiConstants {
 
     // 告警管理-查看详情（跳转设备）todo 设备监控设备跳转链接待完善
     public static final String SB_MONITOR_DETAIL ="<a href=\"/aa/aa?id=%s\">查看详情</a>";
-    //多选下拉框
-
+    /**
+     * 数采公式：匹配格式获取公式中的参数
+     */
+    public static final Pattern PATTERN_ACQUISITION_FORMULA_PARAM = Pattern.compile("\\{\\[\"([^\"]+)\"," +
+            "(true|false|\"[^\"]+\")\\]\\}");
+    /**
+     * 数采公式：填充参数格式 code、energyFlag
+     */
+    public static final String  PATTERN_ACQUISITION_FORMULA_FILL =
+            "{[\"%s\",%s]}";
+    /**
+     * 数采测试连接失败
+     */
+    public static final String  STANDINGBOOK_ACQUISITION_FAIL =  "采集失败";
+    /**
+     * 数采测试连接成功
+     */
+    public static final String  STANDINGBOOK_ACQUISITION_SUCCESS =  "采集成功：%s";
 
 
 }

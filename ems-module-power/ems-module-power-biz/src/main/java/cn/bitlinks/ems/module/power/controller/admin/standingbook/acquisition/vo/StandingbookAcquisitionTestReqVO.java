@@ -3,18 +3,13 @@ package cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.v
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import javax.validation.constraints.NotNull;
+
 @Schema(description = "管理后台 - 台账-数采设置测试部分 Request VO")
 @Data
-public class StandingbookAcquisitionTestReqVO {
+public class StandingbookAcquisitionTestReqVO extends StandingbookAcquisitionVO {
 
-    @Schema(description = "服务设置id", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Long serviceSettingsId;
-
-    @Schema(description = "OPCDA：io地址/MODBUS：")
-    private String dataSite;
-
-    @Schema(description = "公式")
-    private String formula;
-
-
+    @Schema(description = "当前设备的参数设置", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "当前设备的参数设置不能为空")
+    StandingbookAcquisitionDetailVO currentDetail;
 }

@@ -125,4 +125,6 @@ public interface ErrorCodeConstants {
     ErrorCode SERVICE_SETTINGS_REFUSE_UPD = new ErrorCode(1_001_901_005, "服务设置已关联设备数采，只可修改服务名称和重试次数");
     // ========== 数采设置  ==========
     ErrorCode STANDINGBOOK_ACQUISITION_NOT_EXISTS = new ErrorCode(1_002_101_001, "台账-数采设置不存在");
+    ErrorCode STANDINGBOOK_ACQUISITION_FORMULA_SET = new ErrorCode(1_002_101_002,"公式配置有误，无法进行数据采集，请检查");
+    ErrorCode STANDINGBOOK_ACQUISITION_CYCLE_RELY =  new ErrorCode(1_002_101_003,"公式配置存在循环依赖");
 }
