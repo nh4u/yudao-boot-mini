@@ -31,6 +31,8 @@ public class CalculateUtil {
     public static Object calcAcquisitionFormula(String formula) {
         try {
             ExpressRunner runner = new ExpressRunner(true, false);
+            runner.addFunction(FORMUlA_SUM, new SumOperator());
+            runner.addFunction(FORMUlA_AVG, new AvgOperator());
             return runner.execute(formula, null, null, false, false);
         } catch (Exception e) {
             log.error("CalculateUtil error : 表达式【{}】", formula, e);
@@ -47,6 +49,8 @@ public class CalculateUtil {
     public static Object calcAcquisitionFormula(String formula, IExpressContext<String, Object> context) {
         try {
             ExpressRunner runner = new ExpressRunner(true, false);
+            runner.addFunction(FORMUlA_SUM, new SumOperator());
+            runner.addFunction(FORMUlA_AVG, new AvgOperator());
             return runner.execute(formula, context, null, false, false);
         } catch (Exception e) {
             log.error("CalculateUtil error : 表达式【{}】", formula, e);
