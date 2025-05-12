@@ -21,18 +21,22 @@ import cn.hutool.core.collection.CollUtil;
 import com.ql.util.express.DefaultContext;
 import com.ql.util.express.IExpressContext;
 import org.mapstruct.ap.internal.util.Strings;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.*;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.SERVICE_NAME_FORMAT;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.SPRING_PROFILES_ACTIVE_PROD;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.ACQUISITION_FREQUENCY;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.ACQUISITION_PROTOCOL;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
@@ -56,6 +60,8 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
     private StandingbookService standingbookService;
     @Resource
     private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
+    @Value("${spring.profiles.active}")
+    private String env;
 
     @Override
     public Long createOrUpdateStandingbookAcquisition(StandingbookAcquisitionVO updateReqVO) {
@@ -147,8 +153,8 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         List<StandingbookAcquisitionRespVO> result = new ArrayList<>();
         for (StandingbookDO standingbookDO : standingbookDOS) {
             // 查询关联的数采设置主要信息
-           // StandingbookAcquisitionRespVO standingbookAcquisitionRespVO = BeanUtils.toBean(standingbookDO,
-           //         StandingbookAcquisitionRespVO.class);
+            // StandingbookAcquisitionRespVO standingbookAcquisitionRespVO = BeanUtils.toBean(standingbookDO,
+            //         StandingbookAcquisitionRespVO.class);
             StandingbookAcquisitionRespVO standingbookAcquisitionRespVO = BeanUtils.toBean(standingbookDO, StandingbookAcquisitionRespVO.class);
             StandingbookAcquisitionDO standingbookAcquisitionDO = standingbookAcquisitionMap.get(standingbookDO.getId());
             if (Objects.isNull(standingbookAcquisitionDO)) {
@@ -264,10 +270,16 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             // 1. 配置了io，配置了公式/未配置公式
             if (Strings.isNotEmpty(dataSite)) {
                 // 采集参数
-                Map<String, ItemStatus> itemStatusMap = OpcDaUtils.batchGetValue(serviceSettingsDO.getIpAddress(),
-                        serviceSettingsDO.getUsername(),
-                        serviceSettingsDO.getPassword(),
-                        serviceSettingsDO.getClsid(), Collections.singletonList(dataSite));
+                Map<String, ItemStatus> itemStatusMap;
+                if (env.equals(SPRING_PROFILES_ACTIVE_PROD)) {
+                    itemStatusMap = OpcDaUtils.batchGetValue(serviceSettingsDO.getIpAddress(),
+                            serviceSettingsDO.getUsername(),
+                            serviceSettingsDO.getPassword(),
+                            serviceSettingsDO.getClsid(), Collections.singletonList(dataSite));
+                } else {
+                    itemStatusMap = mockItemStatus(Collections.singletonList(dataSite));
+                }
+
                 if (CollUtil.isEmpty(itemStatusMap)) {
                     return STANDINGBOOK_ACQUISITION_FAIL;
                 }
@@ -309,10 +321,16 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             List<String> dataSites = relyParamMap.values().stream().map(StandingbookAcquisitionDetailVO::getDataSite).collect(Collectors.toList());
             // 2.2 采集这些参数，
             // 采集参数
-            Map<String, ItemStatus> itemStatusMap = OpcDaUtils.batchGetValue(serviceSettingsDO.getIpAddress(),
-                    serviceSettingsDO.getUsername(),
-                    serviceSettingsDO.getPassword(),
-                    serviceSettingsDO.getClsid(), dataSites);
+            Map<String, ItemStatus> itemStatusMap;
+            if (env.equals(SPRING_PROFILES_ACTIVE_PROD)) {
+                itemStatusMap = OpcDaUtils.batchGetValue(serviceSettingsDO.getIpAddress(),
+                        serviceSettingsDO.getUsername(),
+                        serviceSettingsDO.getPassword(),
+                        serviceSettingsDO.getClsid(), dataSites);
+            } else {
+                itemStatusMap = mockItemStatus(dataSites);
+            }
+
             if (CollUtil.isEmpty(itemStatusMap)) {
                 return STANDINGBOOK_ACQUISITION_FAIL;
             }
@@ -328,6 +346,28 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         } catch (Exception e) {
             return STANDINGBOOK_ACQUISITION_FAIL;
         }
+    }
+
+    /**
+     * 用于非生产环境，测试数据
+     *
+     * @return 参数值为下标值，参与公式计算
+     */
+    private Map<String, ItemStatus> mockItemStatus(List<String> dataSites) {
+        if (CollUtil.isEmpty(dataSites)) {
+            return Collections.emptyMap();
+        }
+        Map<String, ItemStatus> itemStatusMap = new HashMap<>();
+        // 设置索引值
+        IntStream.range(0, dataSites.size())
+                .forEach(index -> {
+                    ItemStatus itemStatus = new ItemStatus();
+                    itemStatus.setItemId(dataSites.get(index));
+                    itemStatus.setValue(Integer.toString(index + 1));
+                    itemStatus.setTime(LocalDateTime.now());
+                    itemStatusMap.put(dataSites.get(index), itemStatus);
+                });
+        return itemStatusMap;
     }
 
 
