@@ -13,9 +13,9 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
-import org.mapstruct.ap.internal.util.Strings;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -203,13 +203,13 @@ public class WarningTemplateServiceImpl implements WarningTemplateService {
             String part1 = templateStr.substring(0, firstTableIndex);
             String part2 = templateStr.substring(firstTableIndex, lastTableIndex + "</table>".length());
             String part3 = templateStr.substring(lastTableIndex + "</table>".length());
-            if (Strings.isNotEmpty(part1)) {
+            if (StringUtils.isNotEmpty(part1)) {
                 // part1当作文本主题，需要查询此部分的关键字，是否唯一，是否有，如果有，则，
                 List<String> part1Key = parseTemplateContentParams(part1);
                 sb.append(buildTitleOrContentByParams(part1Key, part1, conditionParamsMapList));
             }
             //处理表格内容，需要重复tr部分的字符串，补充完成的表格。只处理tbody下第一个tr/tr之间的重复，其他忽视，其他不处理，倒反天罡而已。
-            if (Strings.isNotEmpty(part2)) {
+            if (StringUtils.isNotEmpty(part2)) {
                 int tbodyIndex = part2.indexOf("<tbody>");
                 int firstTrIndex = part2.indexOf("<tr>", tbodyIndex);
                 int firstTrCloseIndex = part2.indexOf("</tr>", firstTrIndex);
@@ -220,7 +220,7 @@ public class WarningTemplateServiceImpl implements WarningTemplateService {
                 sb.append(part2.substring(firstTrCloseIndex + "</tr>".length()));
                 // sb.append(part23);
             }
-            if (Strings.isNotEmpty(part3)) {
+            if (StringUtils.isNotEmpty(part3)) {
                 // part3当作文本主题，需要查询此部分的关键字，是否唯一，是否有，如果有，则，
                 List<String> part3Key = parseTemplateContentParams(part3);
                 sb.append(buildTitleOrContentByParams(part3Key, part3, conditionParamsMapList));

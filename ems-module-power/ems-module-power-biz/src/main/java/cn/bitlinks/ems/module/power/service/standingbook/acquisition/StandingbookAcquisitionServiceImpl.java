@@ -18,9 +18,9 @@ import cn.bitlinks.ems.module.power.service.standingbook.acquisition.dto.Paramet
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.bitlinks.ems.module.power.utils.CalculateUtil;
 import cn.hutool.core.collection.CollUtil;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.ql.util.express.DefaultContext;
 import com.ql.util.express.IExpressContext;
-import org.mapstruct.ap.internal.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -258,7 +258,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         String dataSite = currentDetail.getDataSite();
         String formula = currentDetail.getFormula();
         // 0.未配置io未配置公式
-        if (Strings.isEmpty(dataSite) && Strings.isEmpty(formula)) {
+        if (StringUtils.isEmpty(dataSite) && StringUtils.isEmpty(formula)) {
             return STANDINGBOOK_ACQUISITION_FAIL;
         }
         // 0.获取服务设置
@@ -268,7 +268,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         }
         try {
             // 1. 配置了io，配置了公式/未配置公式
-            if (Strings.isNotEmpty(dataSite)) {
+            if (StringUtils.isNotEmpty(dataSite)) {
                 // 采集参数
                 Map<String, ItemStatus> itemStatusMap;
                 if (env.equals(SPRING_PROFILES_ACTIVE_PROD)) {
@@ -284,7 +284,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                     return STANDINGBOOK_ACQUISITION_FAIL;
                 }
                 // 1.1 未配置公式
-                if (Strings.isEmpty(formula)) {
+                if (StringUtils.isEmpty(formula)) {
                     return String.format(STANDINGBOOK_ACQUISITION_SUCCESS, itemStatusMap.get(dataSite).getValue());
                 }
                 // 1.2 配置了公式，替换自身参数部分进行计算
@@ -412,7 +412,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         // 复制原始对象，避免修改原始列表
         StandingbookAcquisitionDetailVO expandedDetail = BeanUtils.toBean(detail, StandingbookAcquisitionDetailVO.class);
 
-        if (Strings.isEmpty(expandedDetail.getFormula())) {
+        if (StringUtils.isEmpty(expandedDetail.getFormula())) {
             return expandedDetail; // 公式为空，无需展开
         }
 
@@ -436,13 +436,13 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                 // 递归展开依赖参数的公式
                 StandingbookAcquisitionDetailVO fullyExpandedDependency = expandFormula(dependencyDetail, paramMap, visited);
                 String dataSite = fullyExpandedDependency.getDataSite();
-                if (Strings.isEmpty(dataSite)) {
+                if (StringUtils.isEmpty(dataSite)) {
                     throw exception(STANDINGBOOK_ACQUISITION_FORMULA_SET);
                 }
 
                 // 如果依赖参数也有公式，则使用其展开后的公式进行替换。
                 String replacement = fullyExpandedDependency.getFormula();
-                if (Strings.isNotEmpty(replacement)) {
+                if (StringUtils.isNotEmpty(replacement)) {
                     // 将公式中的参数引用替换为实际的公式
                     expandedFormula = expandedFormula.replace(String.format(PATTERN_ACQUISITION_FORMULA_FILL, dependency.getCode(), dependency.getEnergyFlag()), replacement);
 //                    expandedFormula = expandedFormula.replace("{[\"" + dependency.getCode() + "\"," + dependency.getEnergyFlag() + "]}", replacement);
