@@ -8,5 +8,21 @@
         代码生成器暂时只生成 Mapper XML 文件本身，更多推荐 MybatisX 快速开发插件来生成查询。
         文档可见：https://www.bitlinks.cn/MyBatis/x-plugins/
      -->
-
+    <select id="selectLatestCreateTimeByStrategy" resultType="cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoLatestStrategyRespVO">
+        SELECT
+            distinct
+            pwi.strategy_id AS strategyId,
+            pwi.warning_time AS triggerTime
+        FROM
+            power_warning_info pwi
+                INNER JOIN (
+                SELECT
+                    strategy_id,
+                    MAX(warning_time) AS max_warning_time
+                FROM
+                    power_warning_info
+                GROUP BY
+                    strategy_id
+            ) AS latest ON pwi.strategy_id = latest.strategy_id AND pwi.warning_time = latest.max_warning_time
+    </select>
 </mapper>

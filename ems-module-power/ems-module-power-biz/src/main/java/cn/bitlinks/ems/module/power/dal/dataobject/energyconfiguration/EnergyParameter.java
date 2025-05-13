@@ -10,6 +10,7 @@ import lombok.Data;
  **/
 
 @Data
+@Deprecated
 public class EnergyParameter {
 
     private String code;

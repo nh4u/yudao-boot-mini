@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.module.power.controller.admin.voucher.vo.VoucherPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.voucher.vo.VoucherSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.voucher.VoucherDO;
+import cn.hutool.json.JSONObject;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -61,5 +62,5 @@ public interface VoucherService {
     void deleteVouchers(List<Long> ids);
 
 
-
+    String recognition(String url);
 }

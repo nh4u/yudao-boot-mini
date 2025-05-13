@@ -26,4 +26,14 @@
         WHERE id = #{id}
     </update>
 
+    <!-- 在对应的 XML 文件中 -->
+    <select id="selectCurrentByEnergyId" resultType="CoalFactorHistoryDO">
+        SELECT *
+        FROM ems_coal_factor_history
+        WHERE energy_id = #{energyId}
+        AND end_time IS NULL
+        AND deleted = 0  <!-- 假设逻辑删除字段 -->
+        order by create_time desc
+        LIMIT 1  <!-- 确保只返回一条有效记录 -->
+    </select>
 </mapper>

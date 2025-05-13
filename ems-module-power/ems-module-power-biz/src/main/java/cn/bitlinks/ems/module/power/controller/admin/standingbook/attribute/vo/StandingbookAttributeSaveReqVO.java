@@ -25,9 +25,6 @@ public class StandingbookAttributeSaveReqVO {
     @Schema(description = "台账编号", example = "28937")
     private Long standingbookId;
 
-    @Schema(description = "文件编号", example = "28264")
-    private Long fileId;
-
     @Schema(description = "是否必填", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotEmpty(message = "是否必填不能为空")
     private String isRequired;
@@ -43,8 +40,6 @@ public class StandingbookAttributeSaveReqVO {
     @Schema(description = "格式")
     private String format;
 
-    @Schema(description = "归属节点")
-    private String node;
     @Schema(description = "归属节点id")
     private Long nodeId;
 

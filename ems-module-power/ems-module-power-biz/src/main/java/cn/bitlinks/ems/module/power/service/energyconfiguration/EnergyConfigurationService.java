@@ -2,12 +2,14 @@ package cn.bitlinks.ems.module.power.service.energyconfiguration;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 能源配置 Service 接口
@@ -51,7 +53,7 @@ public interface EnergyConfigurationService {
      * @param id 编号
      * @return 能源配置
      */
-    EnergyConfigurationDO getEnergyConfiguration(Long id);
+    EnergyConfigurationRespVO getEnergyConfiguration(Long id);
 
     /**
      * 获得能源配置分页
@@ -59,7 +61,7 @@ public interface EnergyConfigurationService {
      * @param pageReqVO 分页查询
      * @return 能源配置分页
      */
-    PageResult<EnergyConfigurationDO> getEnergyConfigurationPage(EnergyConfigurationPageReqVO pageReqVO);
+    PageResult<EnergyConfigurationRespVO> getEnergyConfigurationPage(EnergyConfigurationPageReqVO pageReqVO);
 
     List<EnergyConfigurationDO> getAllEnergyConfiguration(EnergyConfigurationSaveReqVO queryVO);
 
@@ -79,7 +81,7 @@ public interface EnergyConfigurationService {
      * @param code           编码
      * @return 符合条件的能源配置记录列表，如果没有找到任何记录则返回空列表。
      */
-    List<EnergyConfigurationDO> selectByCondition(String energyName, String energyClassify, String code);
+    List<EnergyConfigurationRespVO> selectByCondition(String energyName, String energyClassify, String code);
 
     Map<Integer, List<EnergyConfigurationDO>> getEnergyMenu();
 
@@ -92,4 +94,12 @@ public interface EnergyConfigurationService {
     void submitFormula(EnergyConfigurationSaveReqVO updateReqVO);
 
     List<EnergyConfigurationDO> getEnergyTree();
+
+    /**
+     * 根据能源ID或能源类型查询能源，优先能源ID
+     * @param energyIds
+     * @param energyClassify
+     * @return
+     */
+    List<EnergyConfigurationDO> getByEnergyClassify(Set<Long> energyIds, Integer energyClassify);
 }

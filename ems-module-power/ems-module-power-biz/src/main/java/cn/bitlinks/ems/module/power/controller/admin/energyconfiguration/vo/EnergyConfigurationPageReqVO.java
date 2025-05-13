@@ -1,5 +1,7 @@
 package cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo;
 
+import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.unitpriceconfiguration.UnitPriceConfigurationDO;
 import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,6 +18,12 @@ import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_M
 @ToString(callSuper = true)
 public class EnergyConfigurationPageReqVO extends PageParam {
 
+    @Schema(description = "分組id", example = "26887")
+    private Long groupId;
+
+    @Schema(description = "分组名称", example = "王五")
+    private String groupName;
+
     @Schema(description = "能源名称", example = "赵六")
     private String energyName;
 
@@ -26,7 +34,7 @@ public class EnergyConfigurationPageReqVO extends PageParam {
     private Integer energyClassify;
 
     @Schema(description = "能源参数")
-    private String energyParameter;
+    private List<EnergyParametersDO> energyParameters;
 
     @Schema(description = "折标煤系数")
     private BigDecimal factor;
@@ -52,7 +60,7 @@ public class EnergyConfigurationPageReqVO extends PageParam {
     private Integer accountingFrequency;
 
     @Schema(description = "单价详细", example = "11713")
-    private String unitPrice;
+    private UnitPriceConfigurationDO unitPrice;
 
     @Schema(description = "用能成本公式")
     private String unitPriceFormula;

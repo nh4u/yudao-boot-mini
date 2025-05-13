@@ -6,6 +6,7 @@ import cn.bitlinks.ems.module.power.controller.admin.daparamformula.vo.DaParamFo
 import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
 
 import javax.validation.Valid;
+import java.util.List;
 
 /**
  * 数据来源为关联计量器具时的参数公式 Service 接口
@@ -51,4 +52,33 @@ public interface DaParamFormulaService {
      * @return 数据来源为关联计量器具时的参数公式分页
      */
     PageResult<DaParamFormulaDO> getDaParamFormulaPage(DaParamFormulaPageReqVO pageReqVO);
+
+    List<DaParamFormulaDO> getDaParamFormulaList(DaParamFormulaSaveReqVO reqVO);
+
+    /**
+     * 公式 增删改
+     *
+     * @param formulas
+     * @return
+     */
+    Boolean change(List<DaParamFormulaSaveReqVO> formulas);
+
+    /**
+     * 判断公式是否重复
+     *
+     * @param id          公式id
+     * @param energyId    能源id
+     * @param formulaType 公式类型 1折标煤公式，2用能成本公式
+     * @param energyFormula 公式
+     * @return
+     */
+    Boolean isDuplicate(Long id, Long energyId, Integer formulaType,String energyFormula);
+
+    /**
+     * 判断公式是否已经使用绑定
+     *
+     * @param id
+     * @return
+     */
+    Boolean isDelete(Long id);
 }

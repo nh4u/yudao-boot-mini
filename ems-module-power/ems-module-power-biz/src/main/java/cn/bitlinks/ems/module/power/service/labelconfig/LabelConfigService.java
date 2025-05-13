@@ -62,4 +62,11 @@ public interface LabelConfigService {
     List<Tree<Long>> getLabelTreeByParam(List<Long> labelIdList);
 
     ImmutablePair<List<LabelConfigDO>, List<Tree<Long>>> getLabelPairByParam(List<Long> labelIdList);
+
+
+    /**
+     * 获取所有的配置标签
+     * @return 配置标签
+     */
+    List<LabelConfigDO> getAllLabelConfig();
 }

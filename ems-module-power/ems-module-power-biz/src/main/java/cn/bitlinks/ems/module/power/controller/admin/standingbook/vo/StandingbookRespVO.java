@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.controller.admin.standingbook.vo;
 
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeRespVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -30,37 +31,12 @@ public class StandingbookRespVO {
 
     @Schema(description = "标签信息")
     @ExcelProperty("标签信息")
-    private String labelInfo;
+    private List<StandingbookLabelInfoDO> labelInfo;
 
     @Schema(description = "环节 | 1：外购存储  2：加工转换 3：传输分配 4：终端使用 5：回收利用")
     @ExcelProperty("环节 | 1：外购存储  2：加工转换 3：传输分配 4：终端使用 5：回收利用")
     private Integer stage;
 
-    /**
-     * 采集频率
-     */
-    @Schema(description = "采集频率", example = "1")
-    private Integer frequency;
-    /**
-     * 采集频率单位
-     */
-    @Schema(description = "采集频率单位", example = "秒")
-    private String frequencyUnit;
-    /**
-     * 数据来源分类
-     */
-    @Schema(description = "数据来源分类", example = "1")
-    private Integer sourceType;
-    /**
-     * 数据来源分类=关联计量器具时 相关信息json
-     */
-    @Schema(description = "数据来源分类=关联计量器具时 相关信息json", example = "json")
-    private String associationMeasurementJson;
-    /**
-     * 开关（0：关；1开。）
-     */
-    @Schema(description = "开关（0：关；1开。）", example = "0")
-    private Boolean status;
 
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("创建时间")

@@ -14,6 +14,7 @@ import java.util.Arrays;
  */
 @Getter
 @AllArgsConstructor
+@Deprecated
 public enum DateIntervalEnum implements IntArrayValuable {
 
     DAY(1, "天"),

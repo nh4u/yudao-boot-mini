@@ -155,6 +155,10 @@ ems:
       - /admin-api/power/test/get
     ignore-tables:
       - crashdata
+      - weatherdata
+  ocr:
+    uploadUrl: http://192.168.2.248:8090/api/ocr_table
+    token: 11
 
 
 debug: false

@@ -1,6 +1,8 @@
 package cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration;
 
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.unitpriceconfiguration.UnitPriceConfigurationDO;
 import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.sun.xml.bind.v2.TODO;
@@ -34,6 +36,10 @@ public class EnergyConfigurationDO extends BaseDO {
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
+     * 分組id
+     */
+    private Long groupId;
+    /**
      * 能源名称
      */
     private String energyName;
@@ -60,8 +66,8 @@ public class EnergyConfigurationDO extends BaseDO {
     /**
      * 能源参数
      */
-    @TableField(typeHandler = JacksonTypeHandler.class)
-    private List<EnergyParameter> energyParameter;
+    @TableField(exist = false)
+    private List<EnergyParametersDO> energyParameters;
     /**
      * 折标煤系数
      */
@@ -95,7 +101,9 @@ public class EnergyConfigurationDO extends BaseDO {
     /**
      * 单价详细
      */
-    private String unitPrice;
+    //private String unitPrice;
+    @TableField(exist = false)
+    private UnitPriceConfigurationDO unitPrice;
     /**
      * 用能成本公式
      */

@@ -1,9 +1,15 @@
 package cn.bitlinks.ems.module.power.service.additionalrecording;
 
+import cn.bitlinks.ems.module.power.controller.admin.energyparameters.vo.EnergyParametersSaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.voucher.VoucherDO;
 import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.energyparameters.EnergyParametersMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.service.voucher.VoucherService;
+import cn.hutool.core.util.StrUtil;
+import com.alibaba.cloud.commons.lang.StringUtils;
+import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
@@ -40,16 +46,26 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     private VoucherService voucherService;
     @Resource
     private EnergyConfigurationMapper energyConfigurationMapper;
+    @Resource
+    private EnergyParametersMapper energyParametersMapper;
 
     @Override
     public Long createAdditionalRecording(AdditionalRecordingSaveReqVO createReqVO) {
         if (isCollectTimeDuplicate(createReqVO.getStandingbookId(), createReqVO.getThisCollectTime())) {
             throw exception(THIS_TIME_EXISTS_DATA);
         }
+        String energyId = standingbookTypeMapper.selectAttributeValueByCode(createReqVO.getStandingbookId(),"energy");
 
-        String valueType = standingbookTypeMapper.selectAttributeValueByCode(createReqVO.getStandingbookId(), "valueType");
-        createReqVO.setValueType(valueType);
-        if ("抄表数".equals(createReqVO.getValueType())) {
+        List<EnergyParametersDO> parameters = energyParametersMapper.selectByEnergyId(Long.valueOf(energyId));
+        Integer dataFeature = parseDataFeatureFromParams(parameters);
+
+        if (dataFeature != null && dataFeature == 1) { // 1表示累积值
+            if (StringUtils.isBlank(createReqVO.getValueType())) {
+                throw exception(VALUE_TYPE_REQUIRED);
+            }
+        }
+
+        if ("全量".equals(createReqVO.getValueType())) {
             checkMeterReadingValue(createReqVO.getStandingbookId(),
                     createReqVO.getThisCollectTime(),
                     createReqVO.getThisValue());
@@ -59,10 +75,11 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             createReqVO.setRecordPerson(getLoginUserNickname());
         }
 
+        String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energyId);
         // 设置录入时间为当前时间
         additionalRecording.setEnterTime(LocalDateTime.now());
         additionalRecording.setRecordMethod(1); // 手动录入
-
+        additionalRecording.setUnit(unit);
         // 插入数据库
         additionalRecordingMapper.insert(additionalRecording);
 
@@ -74,6 +91,14 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         queryWrapper.eq("standingbook_id", standingbookId)
                 .eq("this_collect_time", collectTime);
         return additionalRecordingMapper.selectCount(queryWrapper) > 0;
+    }
+
+    private Integer parseDataFeatureFromParams(List<EnergyParametersDO> parameters) {
+        return parameters.stream()
+                .filter(p -> p.getUsage() != null && p.getUsage() == 1) // 用量参数
+                .findFirst()
+                .map(EnergyParametersDO::getDataFeature)
+                .orElse(null); // 无用量参数返回null
     }
 
     /**
@@ -104,7 +129,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     private AdditionalRecordingDO getNeighborRecord(Long standingbookId, LocalDateTime currentCollectTime, boolean isNext) {
         QueryWrapper<AdditionalRecordingDO> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("standingbook_id", standingbookId)
-                .eq("value_type", "抄表数")  // 只处理抄表数类型
+                .eq("value_type", "全量")  // 只处理全量数据
                 .select("this_collect_time", "this_value");
 
         // 时间条件：上次记录（<当前时间）或下次记录（>当前时间）
@@ -139,14 +164,15 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     @Override
     public List<Long> createAdditionalRecordingByVoucherId(List<Long> voucherIds,Long standingbookId) {
         String nickname = getLoginUserNickname();
-        String valueType = standingbookTypeMapper.selectAttributeValueByCode(standingbookId, "valueType");
         String energyId = standingbookTypeMapper.selectAttributeValueByCode(standingbookId, "energy");
         String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energyId);
         for(Long voucherId : voucherIds){
             VoucherDO voucherDO = voucherService.getVoucher(voucherId);
+            if (voucherDO.getPurchaseTime().isAfter(LocalDateTime.now())) {
+                throw exception(PURCHASE_TIME_OVER_CURRENT); // 替换为你的具体业务异常
+            }
             AdditionalRecordingSaveReqVO saveReqVO = new AdditionalRecordingSaveReqVO();
             saveReqVO.setRecordMethod(2); //凭证补录
-            saveReqVO.setValueType(valueType);
             saveReqVO.setThisValue(voucherDO.getUsage());
             saveReqVO.setThisCollectTime(voucherDO.getPurchaseTime());
             saveReqVO.setVoucherId(voucherId);
@@ -157,7 +183,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             if (isCollectTimeDuplicate(saveReqVO.getStandingbookId(), saveReqVO.getThisCollectTime())) {
                 throw exception(THIS_TIME_EXISTS_DATA);
             }
-            if ("抄表数".equals(saveReqVO.getValueType())) {
+            if ("全量".equals(saveReqVO.getValueType())) {
                 checkMeterReadingValue(saveReqVO.getStandingbookId(),
                         saveReqVO.getThisCollectTime(),
                         saveReqVO.getThisValue());
@@ -181,8 +207,24 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         // 校验存在
         validateAdditionalRecordingExists(updateReqVO.getId());
         updateReqVO.setEnterTime(LocalDateTime.now());
-        // 更新
+
+        if ("全量".equals(updateReqVO.getValueType())) {
+            checkMeterReadingValue(updateReqVO.getStandingbookId(),
+                    updateReqVO.getThisCollectTime(),
+                    updateReqVO.getThisValue());
+        }
         AdditionalRecordingDO updateObj = BeanUtils.toBean(updateReqVO, AdditionalRecordingDO.class);
+        if(updateReqVO.getRecordPerson() == null){
+            updateReqVO.setRecordPerson(getLoginUserNickname());
+        }
+        String energyId = standingbookTypeMapper.selectAttributeValueByCode(updateReqVO.getStandingbookId(),"energy");
+        String unit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energyId);
+        // 设置录入时间为当前时间
+        updateObj.setEnterTime(LocalDateTime.now());
+        updateObj.setRecordMethod(1); // 手动录入
+        updateObj.setUnit(unit);
+
+        // 更新
         additionalRecordingMapper.updateById(updateObj);
     }
 
