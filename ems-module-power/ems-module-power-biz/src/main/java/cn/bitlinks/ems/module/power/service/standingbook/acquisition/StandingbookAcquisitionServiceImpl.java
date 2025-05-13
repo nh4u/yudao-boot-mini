@@ -32,7 +32,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.PATTERN_ACQUISITION_FORMULA_FILL;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.PATTERN_ACQUISITION_FORMULA_PARAM;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.SERVICE_NAME_FORMAT;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.SPRING_PROFILES_ACTIVE_PROD;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.ACQUISITION_FREQUENCY;
@@ -258,87 +259,87 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         String formula = currentDetail.getFormula();
         // 0.未配置io未配置公式
         if (StringUtils.isEmpty(dataSite) && StringUtils.isEmpty(formula)) {
-            return STANDINGBOOK_ACQUISITION_FAIL;
+            throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
         }
         // 0.获取服务设置
         ServiceSettingsDO serviceSettingsDO = serviceSettingsMapper.selectById(testReqVO.getServiceSettingsId());
         if (Objects.isNull(serviceSettingsDO)) {
             throw exception(SERVICE_SETTINGS_NOT_EXISTS);
         }
-        try {
-            // 1. 配置了io，配置了公式/未配置公式
-            if (StringUtils.isNotEmpty(dataSite)) {
-                // 采集参数
-                Map<String, ItemStatus> itemStatusMap;
-                if (env.equals(SPRING_PROFILES_ACTIVE_PROD)) {
-                    itemStatusMap = OpcDaUtils.batchGetValue(serviceSettingsDO.getIpAddress(),
-                            serviceSettingsDO.getUsername(),
-                            serviceSettingsDO.getPassword(),
-                            serviceSettingsDO.getClsid(), Collections.singletonList(dataSite));
-                } else {
-                    itemStatusMap = mockItemStatus(Collections.singletonList(dataSite));
-                }
-
-                if (CollUtil.isEmpty(itemStatusMap)) {
-                    return STANDINGBOOK_ACQUISITION_FAIL;
-                }
-                // 1.1 未配置公式
-                if (StringUtils.isEmpty(formula)) {
-                    return String.format(STANDINGBOOK_ACQUISITION_SUCCESS, itemStatusMap.get(dataSite).getValue());
-                }
-                // 1.2 配置了公式，替换自身参数部分进行计算
-                String currenParam = String.format(PATTERN_ACQUISITION_FORMULA_FILL, currentDetail.getCode(),
-                        currentDetail.getEnergyFlag());
-                // 1.2.1 替换自身参数部分进行计算
-                formula = formula.replace(currenParam, itemStatusMap.get(dataSite).getValue());
-                Object result = CalculateUtil.calcAcquisitionFormula(formula);
-                if (Objects.isNull(result)) {
-                    return STANDINGBOOK_ACQUISITION_FAIL;
-                }
-                return String.format(STANDINGBOOK_ACQUISITION_SUCCESS, result);
-            }
-            // 2. 未配置io配置了公式, 需要计算出本身的公式
-
-            // 创建一个 Map，用于存储参数的唯一标识 (ParameterKey) 到 StandingbookAcquisitionDetailVO 对象的映射
-            Map<ParameterKey, StandingbookAcquisitionDetailVO> paramMap = new HashMap<>();
-            for (StandingbookAcquisitionDetailVO detail : testReqVO.getDetails()) {
-                ParameterKey key = new ParameterKey(detail.getCode(), detail.getEnergyFlag());
-                detail.setActualFormula(detail.getFormula());
-                paramMap.put(key, detail);
-            }
-
-            // 计算当前公式的真实公式
-            StandingbookAcquisitionDetailVO currentFormulaDetail = expandFormula(currentDetail, paramMap, new HashSet<>());
-            // 2.1 需要找到当前的参数设置的真实公式，然后找到依赖的参数，获取他们的dataSite，
-            Set<ParameterKey> parameterKeys = getDependencies(currentFormulaDetail.getActualFormula());
-            // 配置了公式但不需要依赖任何参数，公式必须包含参数，所以公式不对。
-            if (CollUtil.isEmpty(parameterKeys)) {
-                return STANDINGBOOK_ACQUISITION_FAIL;
-            }
-
-            Map<ParameterKey, StandingbookAcquisitionDetailVO> relyParamMap = paramMap.entrySet().stream()
-                    .filter(entry -> parameterKeys.contains(entry.getKey()))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-            if (CollUtil.isEmpty(relyParamMap)) {
-                return STANDINGBOOK_ACQUISITION_FAIL;
-            }
-            List<String> dataSites = relyParamMap.values().stream().map(StandingbookAcquisitionDetailVO::getDataSite).collect(Collectors.toList());
-            // 2.2 采集这些参数，
+        //try {
+        // 1. 配置了io，配置了公式/未配置公式
+        if (StringUtils.isNotEmpty(dataSite)) {
             // 采集参数
             Map<String, ItemStatus> itemStatusMap;
             if (env.equals(SPRING_PROFILES_ACTIVE_PROD)) {
                 itemStatusMap = OpcDaUtils.batchGetValue(serviceSettingsDO.getIpAddress(),
                         serviceSettingsDO.getUsername(),
                         serviceSettingsDO.getPassword(),
-                        serviceSettingsDO.getClsid(), dataSites);
+                        serviceSettingsDO.getClsid(), Collections.singletonList(dataSite));
             } else {
-                itemStatusMap = mockItemStatus(dataSites);
+                itemStatusMap = mockItemStatus(Collections.singletonList(dataSite));
             }
 
             if (CollUtil.isEmpty(itemStatusMap)) {
-                return STANDINGBOOK_ACQUISITION_FAIL;
+                throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
             }
-            // 将计算后的数值替换到公式中，
+            // 1.1 未配置公式
+            if (StringUtils.isEmpty(formula)) {
+                return itemStatusMap.get(dataSite).getValue();
+            }
+            // 1.2 配置了公式，替换自身参数部分进行计算
+            String currenParam = String.format(PATTERN_ACQUISITION_FORMULA_FILL, currentDetail.getCode(),
+                    currentDetail.getEnergyFlag());
+            // 1.2.1 替换自身参数部分进行计算
+            formula = formula.replace(currenParam, itemStatusMap.get(dataSite).getValue());
+            Object result = CalculateUtil.calcAcquisitionFormula(formula);
+            if (Objects.isNull(result)) {
+                throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+            }
+            return result.toString();
+        }
+        // 2. 未配置io配置了公式, 需要计算出本身的公式
+
+        // 创建一个 Map，用于存储参数的唯一标识 (ParameterKey) 到 StandingbookAcquisitionDetailVO 对象的映射
+        Map<ParameterKey, StandingbookAcquisitionDetailVO> paramMap = new HashMap<>();
+        for (StandingbookAcquisitionDetailVO detail : testReqVO.getDetails()) {
+            ParameterKey key = new ParameterKey(detail.getCode(), detail.getEnergyFlag());
+            detail.setActualFormula(detail.getFormula());
+            paramMap.put(key, detail);
+        }
+
+        // 计算当前公式的真实公式
+        StandingbookAcquisitionDetailVO currentFormulaDetail = expandFormula(currentDetail, paramMap, new HashSet<>());
+        // 2.1 需要找到当前的参数设置的真实公式，然后找到依赖的参数，获取他们的dataSite，
+        Set<ParameterKey> parameterKeys = getDependencies(currentFormulaDetail.getActualFormula());
+        // 配置了公式但不需要依赖任何参数，公式必须包含参数，所以公式不对。
+        if (CollUtil.isEmpty(parameterKeys)) {
+            throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+        }
+
+        Map<ParameterKey, StandingbookAcquisitionDetailVO> relyParamMap = paramMap.entrySet().stream()
+                .filter(entry -> parameterKeys.contains(entry.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        if (CollUtil.isEmpty(relyParamMap)) {
+            throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+        }
+        List<String> dataSites = relyParamMap.values().stream().map(StandingbookAcquisitionDetailVO::getDataSite).collect(Collectors.toList());
+        // 2.2 采集这些参数，
+        // 采集参数
+        Map<String, ItemStatus> itemStatusMap;
+        if (env.equals(SPRING_PROFILES_ACTIVE_PROD)) {
+            itemStatusMap = OpcDaUtils.batchGetValue(serviceSettingsDO.getIpAddress(),
+                    serviceSettingsDO.getUsername(),
+                    serviceSettingsDO.getPassword(),
+                    serviceSettingsDO.getClsid(), dataSites);
+        } else {
+            itemStatusMap = mockItemStatus(dataSites);
+        }
+
+        if (CollUtil.isEmpty(itemStatusMap)) {
+            throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+        }
+        // 将计算后的数值替换到公式中，
 //            IExpressContext<String, Object> context = new DefaultContext<>();
 //            relyParamMap.forEach((parameterKey, detailVO) -> {
 //                String relyParam = String.format(PATTERN_ACQUISITION_FORMULA_FILL, detailVO.getCode(), currentDetail.getEnergyFlag());
@@ -347,25 +348,22 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
 //            // 根据公式进行计算返回结果
 //            return String.format(STANDINGBOOK_ACQUISITION_SUCCESS, CalculateUtil.calcAcquisitionFormula(formula, context));
 
-            String actualFormula = currentFormulaDetail.getActualFormula();
-            String finalFormula = relyParamMap.entrySet().stream()
-                    .map(entry -> {
-                        String relyParam = String.format(PATTERN_ACQUISITION_FORMULA_FILL, entry.getValue().getCode(), currentDetail.getEnergyFlag());
-                        return actualFormula.replace(relyParam, itemStatusMap.get(entry.getValue().getDataSite()).getValue());
-                    })
-                    .reduce((prev, curr) -> curr)
-                    .orElse(actualFormula);
+        String actualFormula = currentFormulaDetail.getActualFormula();
+        String finalFormula = relyParamMap.entrySet().stream()
+                .map(entry -> {
+                    String relyParam = String.format(PATTERN_ACQUISITION_FORMULA_FILL, entry.getValue().getCode(), currentDetail.getEnergyFlag());
+                    return actualFormula.replace(relyParam, itemStatusMap.get(entry.getValue().getDataSite()).getValue());
+                })
+                .reduce((prev, curr) -> curr)
+                .orElse(actualFormula);
 
-            // 根据公式进行计算返回结果
-            Object result = CalculateUtil.calcAcquisitionFormula(finalFormula);
-            if (Objects.isNull(result)) {
-                return STANDINGBOOK_ACQUISITION_FAIL;
-            }
-            return String.format(STANDINGBOOK_ACQUISITION_SUCCESS, result);
-
-        } catch (Exception e) {
-            return STANDINGBOOK_ACQUISITION_FAIL;
+        // 根据公式进行计算返回结果
+        Object result = CalculateUtil.calcAcquisitionFormula(finalFormula);
+        if (Objects.isNull(result)) {
+            throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
         }
+        return result.toString();
+
     }
 
     /**
@@ -449,7 +447,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         String expandedFormula = expandedDetail.getActualFormula();
         Set<ParameterKey> dependencies = getDependencies(expandedFormula);
         // 如果当前参数没有依赖其他参数，则直接返回
-        if(dependencies.contains(currentKey) && dependencies.size() == 1){
+        if (dependencies.contains(currentKey) && dependencies.size() == 1) {
             expandedDetail.setActualFormula(expandedFormula);
             visited.remove(currentKey);
 
@@ -473,7 +471,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                 if (StringUtils.isNotEmpty(replacement)) {
                     // 将公式中的参数引用替换为实际的公式
                     expandedFormula = expandedFormula.replace(String.format(PATTERN_ACQUISITION_FORMULA_FILL,
-                                    dependency.getCode(), dependency.getEnergyFlag()), "("+replacement+")");
+                            dependency.getCode(), dependency.getEnergyFlag()), "(" + replacement + ")");
 //                    expandedFormula = expandedFormula.replace("{[\"" + dependency.getCode() + "\"," + dependency.getEnergyFlag() + "]}", replacement);
                 }
             }

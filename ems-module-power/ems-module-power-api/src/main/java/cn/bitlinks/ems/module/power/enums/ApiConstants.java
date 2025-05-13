@@ -77,14 +77,7 @@ public class ApiConstants {
      */
     public static final String  PATTERN_ACQUISITION_FORMULA_FILL =
             "{[\"%s\", %s]}";
-    /**
-     * 数采测试连接失败
-     */
-    public static final String  STANDINGBOOK_ACQUISITION_FAIL =  "采集失败";
-    /**
-     * 数采测试连接成功
-     */
-    public static final String  STANDINGBOOK_ACQUISITION_SUCCESS =  "采集成功：%s";
+
 
 
 }
