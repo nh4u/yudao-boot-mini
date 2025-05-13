@@ -1,5 +1,7 @@
 package cn.bitlinks.ems.module.power.service.standingbook.label;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -7,6 +9,7 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookLabelInfoMapper;
 
@@ -31,5 +34,12 @@ public class StandingbookLabelInfoServiceImpl implements StandingbookLabelInfoSe
     @Override
     public List<StandingbookLabelInfoDO> getByValues(List<String> values) {
         return standingbookLabelInfoMapper.getByValues(values);
+    }
+
+    @Override
+    public List<StandingbookLabelInfoDO> getByStandingBookIds(List<Long> standingBookIdList) {
+        LambdaQueryWrapper<StandingbookLabelInfoDO> wrapper = new LambdaQueryWrapper();
+        wrapper.in(StandingbookLabelInfoDO::getStandingbookId, standingBookIdList);
+        return standingbookLabelInfoMapper.selectList(wrapper);
     }
 }

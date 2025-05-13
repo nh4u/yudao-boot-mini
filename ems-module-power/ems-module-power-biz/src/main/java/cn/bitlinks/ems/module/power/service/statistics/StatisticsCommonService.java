@@ -63,9 +63,9 @@ public class StatisticsCommonService {
      *
      * @return
      */
-    public List<StandingbookLabelInfoDO> getStandingbookIdsByLabel(String topLabel, String childLabels) {
+    public List<StandingbookLabelInfoDO> getStandingbookIdsByLabel(String topLabel, String childLabels, List<Long> standingBookIdList) {
         if(StrUtil.isBlank(topLabel) && StrUtil.isBlank(childLabels)){
-            return Collections.emptyList();
+            return standingbookLabelInfoService.getByStandingBookIds(standingBookIdList);
         }
 
         //根据标签获取台账
