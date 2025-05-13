@@ -16,6 +16,8 @@
 
 package cn.bitlinks.ems.module.power.enums;
 
+import java.util.regex.Pattern;
+
 /**
  * @author liumingqiang
  */
@@ -25,8 +27,10 @@ public interface CommonConstants {
      * 标签树根节点
      */
     Long LABEL_TREE_ROOT_ID = 0L;
-
-    Long LABEL_NUM_LIMIT = 10L;
+    /**
+     * 10个->25个
+     */
+    Long LABEL_NUM_LIMIT = 25L;
 
     Long LABEL_LAYER_LIMIT = 3L;
 
@@ -58,4 +62,22 @@ public interface CommonConstants {
      * 利用率
      */
     Integer RATIO = 3;
+    /**
+     * 正式环境
+     */
+    String SPRING_PROFILES_ACTIVE_PROD = "prod";
+    /**
+     * 随机成功概率
+      */
+    double SUCCESS_PROBABILITY = 0.8;
+    /**
+     * 服务名称（IP地址：端口号）协议
+     */
+    String SERVICE_NAME_FORMAT = "%s（%s：%s）%s";
+    /**
+     * 模板字符串中获取{}中参数
+     */
+    Pattern PATTERN_PARAMS = Pattern.compile("\\{(.*?)}");
+
+
 }

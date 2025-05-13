@@ -47,6 +47,9 @@ public class UnitPriceConfigurationRespVO {
     @ExcelProperty("计算公式")
     private String formula;
 
+    @Schema(description = "关联计算公式id")
+    private Long formulaId;
+
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("创建时间")
     private LocalDateTime createTime;

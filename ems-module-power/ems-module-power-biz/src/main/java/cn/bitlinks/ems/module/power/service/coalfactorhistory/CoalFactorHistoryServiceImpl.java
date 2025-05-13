@@ -3,10 +3,13 @@ package cn.bitlinks.ems.module.power.service.coalfactorhistory;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistorySaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
 import cn.bitlinks.ems.module.power.dal.mysql.coalfactorhistory.CoalFactorHistoryMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.daparamformula.DaParamFormulaMapper;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -14,10 +17,11 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.security.core.util.SecurityFrameworkUtils.getLoginUserNickname;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.COAL_FACTOR_HISTORY_NOT_EXISTS;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
 /**
  * 折标煤系数历史 Service 实现类
@@ -33,8 +37,22 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
     @Resource
     private EnergyConfigurationService energyConfigurationService;
 
+    @Resource
+    private DaParamFormulaMapper daParamFormulaMapper;
+
     @Override
     public Long createCoalFactorHistory(CoalFactorHistorySaveReqVO createReqVO) {
+        Long formulaId = createReqVO.getFormulaId();
+        if (Objects.isNull(formulaId)) {
+            throw exception(FORMULA_ID_NOT_EXISTS);
+        }
+
+        DaParamFormulaDO formula = daParamFormulaMapper.selectById(formulaId);
+
+        if (Objects.isNull(formula)) {
+            throw exception(FORMULA_NOT_EXISTS);
+        }
+
         // 查询当前能源ID下最新的折标煤系数记录
         CoalFactorHistoryDO latestCoalFactorHistory = coalFactorHistoryMapper.findLatestByEnergyId(createReqVO.getEnergyId());
 
@@ -48,9 +66,12 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
         String nickname = getLoginUserNickname();
         CoalFactorHistoryDO coalFactorHistory = BeanUtils.toBean(createReqVO, CoalFactorHistoryDO.class);
         Long energyId = coalFactorHistory.getEnergyId();
-        coalFactorHistory.setStartTime(LocalDateTime.now()); // 设置为当前时间
-        coalFactorHistory.setEndTime(null); // null，表示“至今“
+        // 设置为当前时间
+        coalFactorHistory.setStartTime(LocalDateTime.now());
+        // null，表示“至今“
+        coalFactorHistory.setEndTime(null);
         coalFactorHistory.setUpdater(nickname);
+        coalFactorHistory.setFormula(formula.getEnergyFormula());
         coalFactorHistoryMapper.insert(coalFactorHistory);
 
         updateEnergyConfiguration(energyId, coalFactorHistory.getFactor());
@@ -112,4 +133,17 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
         return coalFactorHistoryMapper.selectPage(pageReqVO);
     }
 
+    @Override
+    public CoalFactorHistoryRespVO getAvailableCoalFactor(Long energyId) {
+        // 1. 参数校验
+        if (energyId == null) {
+            throw new IllegalArgumentException("能源ID不能为空");
+        }
+
+        // 2. 查询数据库
+        CoalFactorHistoryDO entity = coalFactorHistoryMapper.selectCurrentByEnergyId(energyId);
+
+        // 3. 转换VO并返回
+        return BeanUtils.toBean(entity, CoalFactorHistoryRespVO.class);
+    }
 }

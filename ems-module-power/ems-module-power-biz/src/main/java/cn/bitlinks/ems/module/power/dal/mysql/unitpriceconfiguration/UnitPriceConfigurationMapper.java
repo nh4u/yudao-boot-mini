@@ -24,11 +24,11 @@ public interface UnitPriceConfigurationMapper extends BaseMapperX<UnitPriceConfi
         return selectPage(reqVO, new LambdaQueryWrapperX<UnitPriceConfigurationDO>()
                 .eqIfPresent(UnitPriceConfigurationDO::getEnergyId, reqVO.getEnergyId())
                 .betweenIfPresent(UnitPriceConfigurationDO::getStartTime, reqVO.getStartTime())
-                .betweenIfPresent(UnitPriceConfigurationDO::getEndTime, reqVO.getEndTime())
                 .eqIfPresent(UnitPriceConfigurationDO::getBillingMethod, reqVO.getBillingMethod())
                 .eqIfPresent(UnitPriceConfigurationDO::getAccountingFrequency, reqVO.getAccountingFrequency())
                 .eqIfPresent(UnitPriceConfigurationDO::getFormula, reqVO.getFormula())
                 .betweenIfPresent(UnitPriceConfigurationDO::getCreateTime, reqVO.getCreateTime())
+                .lt(UnitPriceConfigurationDO::getEndTime, LocalDateTime.now())
                 .orderByDesc(UnitPriceConfigurationDO::getStartTime));
     }
 
@@ -37,13 +37,12 @@ public interface UnitPriceConfigurationMapper extends BaseMapperX<UnitPriceConfi
     String getPriceDetailsByEnergyIdAndTime(@Param("energyId") Long energyId, @Param("currentDateTime") LocalDateTime currentDateTime);
 
     @Select("SELECT billing_method FROM ems_unit_price_configuration " +
-            "WHERE energy_id = #{energyId} AND start_time <= #{currentDateTime} AND end_time >= #{currentDateTime}")
+            "WHERE energy_id = #{energyId} AND start_time <= #{currentDateTime} AND end_time >= #{currentDateTime} AND deleted = '0'")
     Integer getBillingMethodByEnergyIdAndTime(@Param("energyId") Long energyId, @Param("currentDateTime") LocalDateTime currentDateTime);
 
     @Select("SELECT accounting_frequency FROM ems_unit_price_configuration " +
-            "WHERE energy_id = #{energyId} AND start_time <= #{currentDateTime} AND end_time >= #{currentDateTime}")
+            "WHERE energy_id = #{energyId} AND start_time <= #{currentDateTime} AND end_time >= #{currentDateTime} AND deleted = '0'")
     Integer getAccountingFrequencyByEnergyIdAndTime(@Param("energyId") Long energyId, @Param("currentDateTime") LocalDateTime currentDateTime);
-
     // 根据 energyId 查找单价配置记录
     @Select("SELECT id, energy_id, start_time, end_time, billing_method, accounting_frequency, price_details, formula " +
             "FROM ems_unit_price_configuration " +
@@ -63,4 +62,14 @@ public interface UnitPriceConfigurationMapper extends BaseMapperX<UnitPriceConfi
 
     UnitPriceConfigurationDO findNextPeriod(@Param("energyId") Long energyId,
                                             @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 获取单价绑定的公式记录
+     *
+     * @param formulaIds 公式Ids
+     * @return
+     */
+    default List<UnitPriceConfigurationDO> getUnitPriceConfigurations(List<Long> formulaIds) {
+        return null;
+    }
 }

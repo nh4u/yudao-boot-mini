@@ -61,5 +61,9 @@ public class UnitPriceConfigurationDO extends BaseDO {
      * 计算公式
      */
     private String formula;
+    /**
+     * 公式id
+     */
+    private  Long formulaId;
 
 }

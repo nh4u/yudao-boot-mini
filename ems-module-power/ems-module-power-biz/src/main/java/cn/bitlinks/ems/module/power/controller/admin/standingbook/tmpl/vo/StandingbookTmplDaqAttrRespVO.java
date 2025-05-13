@@ -32,13 +32,13 @@ public class StandingbookTmplDaqAttrRespVO {
     @Schema(description = "排序")
     private Integer sort;
 
-    @Schema(description = "数据特征")
+    @Schema(description = "数据特征（字典：data_feature）：累积值1")
     private Integer dataFeature;
 
     @Schema(description = "单位")
     private String unit;
 
-    @Schema(description = "数据类型")
+    @Schema(description = "数据类型（字典：data_type）")
     private Integer dataType;
 
     @Schema(description = "用量")
