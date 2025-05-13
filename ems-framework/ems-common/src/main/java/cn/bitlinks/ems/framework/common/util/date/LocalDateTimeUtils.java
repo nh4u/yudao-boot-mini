@@ -1,5 +1,7 @@
 package cn.bitlinks.ems.framework.common.util.date;
 
+import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
+import cn.bitlinks.ems.framework.common.exception.ErrorCode;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.LocalDateTimeUtil;
@@ -8,11 +10,14 @@ import cn.hutool.core.util.StrUtil;
 import cn.bitlinks.ems.framework.common.enums.DateIntervalEnum;
 
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
+
+import static cn.bitlinks.ems.framework.common.exception.enums.GlobalErrorCodeConstants.BAD_REQUEST;
 
 /**
  * 时间工具类，用于 {@link java.time.LocalDateTime}
@@ -50,6 +55,9 @@ public class LocalDateTimeUtils {
         return LocalDateTime.now().minus(duration);
     }
 
+    public static boolean before(LocalDateTime start, LocalDateTime end){
+        return start.isBefore(end);
+    }
     public static boolean beforeNow(LocalDateTime date) {
         return date.isBefore(LocalDateTime.now());
     }
@@ -304,6 +312,67 @@ public class LocalDateTimeUtils {
             default:
                 throw new IllegalArgumentException("Invalid interval: " + interval);
         }
+    }
+
+    /**
+     * 判断两个时间之间相差的天数是否不超过指定天数
+     *
+     * @param start 起始时间
+     * @param end 结束时间
+     * @param maxDays 最大允许天数
+     * @return true：不超过 maxDays；false：超过了
+     */
+    public static boolean isWithinDays(LocalDateTime start, LocalDateTime end, int maxDays) {
+        if (start == null || end == null) {
+            throw new IllegalArgumentException("时间不能为空");
+        }
+
+        long daysBetween = ChronoUnit.DAYS.between(start, end);
+        return Math.abs(daysBetween) <= maxDays;
+    }
+
+
+    /**
+     * 生成时间范围列表
+     *
+     * @param startDateTime 开始时间
+     * @param endDateTime   结束时间
+     * @return 时间范围字符串列表
+     */
+    public static List<String> getTimeRangeList(LocalDateTime startDateTime, LocalDateTime endDateTime, DataTypeEnum dataTypeEnum) {
+        List<String> result = new ArrayList<>();
+        LocalDateTime current = startDateTime;
+        // 1. 找到枚举
+        switch (dataTypeEnum) {
+            case DAY:
+                while (!current.isAfter(endDateTime)) {
+                    result.add(LocalDateTimeUtil.format(current, DatePattern.NORM_DATE_PATTERN));
+                    current = current.plusDays(1);
+                }
+                break;
+            case MONTH:
+                while (!current.isAfter(endDateTime)) {
+                    result.add(LocalDateTimeUtil.format(current, DatePattern.NORM_MONTH_PATTERN));
+                    current = current.plusMonths(1);
+                }
+                break;
+            case YEAR:
+                while (!current.isAfter(endDateTime)) {
+                    result.add(LocalDateTimeUtil.format(current, DatePattern.NORM_YEAR_PATTERN));
+                    current = current.plusYears(1);
+                }
+                break;
+            case HOUR:
+                while (!current.isAfter(endDateTime)) {
+                    result.add(LocalDateTimeUtil.format(current, "yyyy-MM-dd HH"));
+                    current = current.plusHours(1);
+                }
+                break;
+            default:
+                throw new IllegalArgumentException("时间类型不存在");
+        }
+
+        return result;
     }
 
 }

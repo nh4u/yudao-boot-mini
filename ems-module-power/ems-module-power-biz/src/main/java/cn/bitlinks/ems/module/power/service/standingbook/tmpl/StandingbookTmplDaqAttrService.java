@@ -78,4 +78,12 @@ public interface StandingbookTmplDaqAttrService {
      * @return 数采属性列表
      */
     List<StandingbookTmplDaqAttrDO> getDaqAttrsByStandingbookId(Long standingbookId);
+    /**
+     * 根据能源ids获取台账模板数据
+     * @param energyIds
+     * @return
+     */
+    List<StandingbookTmplDaqAttrDO> getByEnergyIds(List<Long> energyIds);
+
+
 }

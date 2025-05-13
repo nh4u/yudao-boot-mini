@@ -57,4 +57,12 @@ public interface EnergyParametersService {
 
     List<EnergyParametersDO> getEnergyParametersByEnergyId(Long energyId);
 
+    /**
+     * 根据能源id列表和是否是用量查询能源参数
+     * @param energyIds
+     * @param usage
+     * @return
+     */
+    List<EnergyParametersDO> getUsageParamsByEnergyIds(List<Long> energyIds, Boolean usage);
+
 }

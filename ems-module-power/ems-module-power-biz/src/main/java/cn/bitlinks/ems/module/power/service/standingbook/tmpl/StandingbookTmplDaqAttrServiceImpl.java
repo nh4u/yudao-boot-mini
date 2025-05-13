@@ -430,5 +430,12 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
                 .eq(StandingbookTmplDaqAttrDO::getTypeId, standingbookDO.getTypeId())
                 .orderByDesc(StandingbookTmplDaqAttrDO::getSort));
     }
+    @Override
+    public List<StandingbookTmplDaqAttrDO> getByEnergyIds(List<Long> energyIds) {
+        LambdaQueryWrapper<StandingbookTmplDaqAttrDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(StandingbookTmplDaqAttrDO::getEnergyId, energyIds);
+        return standingbookTmplDaqAttrMapper.selectList(wrapper);
+    }
+
 
 }

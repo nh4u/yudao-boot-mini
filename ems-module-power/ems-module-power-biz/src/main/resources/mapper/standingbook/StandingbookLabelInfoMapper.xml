@@ -46,4 +46,13 @@
         </if>
         ) AS r
     </select>
+
+
+    <select id="getByValues" resultType="cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO">
+        select * from `power_standingbook_label_info` where
+        `value` IN
+        <foreach collection="valueList" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
 </mapper>

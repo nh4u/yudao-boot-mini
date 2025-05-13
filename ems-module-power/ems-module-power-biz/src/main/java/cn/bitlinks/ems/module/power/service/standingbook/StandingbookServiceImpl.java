@@ -137,6 +137,13 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     }
 
+    @Override
+    public List<StandingbookDO> getByTypeIds(List<Long> typeIds) {
+        LambdaQueryWrapper<StandingbookDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(StandingbookDO::getTypeId, typeIds);
+        return standingbookMapper.selectList(wrapper);
+    }
+
     /**
      * 递归查询出上级计量器具的id
      *

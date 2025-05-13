@@ -9,6 +9,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyCon
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 能源配置 Service 接口
@@ -93,4 +94,12 @@ public interface EnergyConfigurationService {
     void submitFormula(EnergyConfigurationSaveReqVO updateReqVO);
 
     List<EnergyConfigurationDO> getEnergyTree();
+
+    /**
+     * 根据能源ID或能源类型查询能源，优先能源ID
+     * @param energyIds
+     * @param energyClassify
+     * @return
+     */
+    List<EnergyConfigurationDO> getByEnergyClassify(Set<Long> energyIds, Integer energyClassify);
 }
