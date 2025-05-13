@@ -34,9 +34,5 @@ public interface StandingbookLabelInfoMapper extends BaseMapperX<StandingbookLab
         return selectList(wrapper);
     }
 
-    default List<StandingbookLabelInfoDO> getByValues(List<String> values){
-        LambdaQueryWrapper<StandingbookLabelInfoDO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.in(StandingbookLabelInfoDO::getValue, values);
-        return selectList(wrapper);
-    }
+     List<StandingbookLabelInfoDO> getByValues(@Param("valueList") List<String> values);
 }

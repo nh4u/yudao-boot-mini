@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.dal.dataobject.standingbook;
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.KeySequence;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
@@ -38,6 +39,7 @@ public class StandingbookLabelInfoDO extends BaseDO {
     /**
      * 标签值
      */
+    @TableField(value = "value")
     private String value;
 
 }

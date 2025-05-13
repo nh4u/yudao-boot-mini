@@ -326,12 +326,7 @@ public class LocalDateTimeUtils {
         if (start == null || end == null) {
             throw new IllegalArgumentException("时间不能为空");
         }
-        if (!start.isBefore(end)) {
-            throw new IllegalArgumentException("开始时间必须早于结束时间");
-        }
-        if (maxDays < 0) {
-            throw new IllegalArgumentException("最大天数不能为负数");
-        }
+
         long daysBetween = ChronoUnit.DAYS.between(start, end);
         return Math.abs(daysBetween) <= maxDays;
     }

@@ -48,13 +48,7 @@ public class StatisticsCommonService {
      *
      * @return
      */
-    public List<StandingbookDO> getStandingbookIdsByEnergy(Integer energyClassify, List<Long> energyIds) {
-
-        if (ArrayUtil.isEmpty(energyIds)) {
-            List<EnergyConfigurationDO> byEnergyClassify = energyConfigurationService.getByEnergyClassify(null ,energyClassify);
-            List<Long> ids = byEnergyClassify.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
-            energyIds.addAll(ids);
-        }
+    public List<StandingbookDO> getStandingbookIdsByEnergy(List<Long> energyIds) {
         //根据能源类型+id从power_standingbook_tmpl_daq_attr查询分类ID，根据分类ID查询台账ID
         List<StandingbookTmplDaqAttrDO> tmplList = standingbookTmplDaqAttrService.getByEnergyIds(energyIds);
         //分类ID列表
@@ -70,6 +64,9 @@ public class StatisticsCommonService {
      * @return
      */
     public List<StandingbookLabelInfoDO> getStandingbookIdsByLabel(String topLabel, String childLabels) {
+        if(StrUtil.isBlank(topLabel) && StrUtil.isBlank(childLabels)){
+            return Collections.emptyList();
+        }
 
         //根据标签获取台账
         //只选择顶级标签
@@ -87,7 +84,7 @@ public class StatisticsCommonService {
         }
         //台账不一定会有标签
         if (ArrayUtil.isEmpty(labelInfoDOList)) {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
         return labelInfoDOList;
     }

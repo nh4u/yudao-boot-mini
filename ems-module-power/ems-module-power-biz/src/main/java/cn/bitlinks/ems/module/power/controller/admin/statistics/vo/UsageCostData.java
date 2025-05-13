@@ -4,12 +4,14 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * @author wangl
  * @date 2025年05月10日 16:35
  */
 @Data
+@NoArgsConstructor
 public class UsageCostData {
     /**
      * 台账ID，综合查看和按标签查看
@@ -17,7 +19,7 @@ public class UsageCostData {
     private Long standingbookId;
 
     /**
-     * 能源，按能源查看
+     * 能源，按能源查看才有此字段
      */
     private Long energyId;
 
@@ -25,7 +27,7 @@ public class UsageCostData {
     /**
      * 时间
      */
-    private LocalDateTime time;
+    private String time;
 
     /**
      * 当前用量

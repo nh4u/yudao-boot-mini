@@ -262,6 +262,13 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         return ImmutablePair.of(list, TreeUtil.build(collect, CommonConstants.LABEL_TREE_ROOT_ID));
     }
 
+    @Override
+    public List<LabelConfigDO> getAllLabelConfig() {
+        LambdaQueryWrapperX<LabelConfigDO> wrapper = new LambdaQueryWrapperX<>();
+        wrapper.select(LabelConfigDO::getId, LabelConfigDO::getParentId, LabelConfigDO::getLabelName);
+        return labelConfigMapper.selectList(wrapper);
+    }
+
     /**
      * 获取父节点到顶
      *

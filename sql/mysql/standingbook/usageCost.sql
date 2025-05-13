@@ -7,7 +7,8 @@ CREATE TABLE usage_cost (
     discount DECIMAL(20, 10) NOT NULL DEFAULT '0.0' COMMENT '折价',
     energy_id BIGINT NOT NULL COMMENT '能源类型ID'
 )
-    UNIQUE KEY (standingbook_id, aggregate_time)
+ UNIQUE KEY (standingbook_id, aggregate_time)
+    COMMENT "用量成本计算结果"
 PARTITION BY RANGE (aggregate_time)
 (
     PARTITION p2018 VALUES LESS THAN ('2019-01-01'),

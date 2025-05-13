@@ -32,13 +32,13 @@ public class StatisticsParamV2VO {
     @Size(min = 2, max = 2, message = "统计周期不能为空")
     private LocalDateTime[] range;
 
-    @Schema(description = "统计标签-下级标签（需去重）", example = "[1,2,3,4]")
+    @Schema(description = "统计标签-下级标签（需去重）", example = "131#132,153#131,143，多个用#号分割")
     private String childLabels;
 
-    @Schema(description = "统计标签-顶级标签", example = "[1,2,3,4]")
+    @Schema(description = "统计标签-顶级标签", example = "label_130")
     private String topLabel;
 
-    @Schema(description = "统计能源", example = "[1,2,3,4]")
+    @Schema(description = "统计能源", example = "当能源ID不为空时，优先以能源ID统计")
     private List<Long> energyIds;
 
     @Schema(description = "查看类型 0：综合查看；1：按能源查看；2：按标签查看。 默认0")

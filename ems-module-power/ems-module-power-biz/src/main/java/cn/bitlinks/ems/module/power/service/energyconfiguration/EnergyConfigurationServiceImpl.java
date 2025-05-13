@@ -25,6 +25,7 @@ import cn.bitlinks.ems.module.power.service.unitpriceconfiguration.UnitPriceConf
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.nacos.common.utils.CollectionUtils;
@@ -549,11 +550,11 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
 
     @Override
     public List<EnergyConfigurationDO> getByEnergyClassify(Set<Long> energyIds, Integer energyClassify) {
-        if(ArrayUtil.isNotEmpty(energyIds) && Objects.isNull(energyClassify)){
+        if(CollectionUtil.isEmpty(energyIds) && Objects.isNull(energyClassify)){
             return Collections.emptyList();
         }
         LambdaQueryWrapper<EnergyConfigurationDO> wrapper = new LambdaQueryWrapper<>();
-        if(ArrayUtil.isNotEmpty(energyIds)){
+        if(CollectionUtil.isNotEmpty(energyIds)){
             wrapper.in(EnergyConfigurationDO::getId, energyIds);
             return energyConfigurationMapper.selectList(wrapper);
         }
