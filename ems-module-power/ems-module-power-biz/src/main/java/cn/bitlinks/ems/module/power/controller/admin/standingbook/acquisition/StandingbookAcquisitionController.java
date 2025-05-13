@@ -45,7 +45,7 @@ public class StandingbookAcquisitionController {
     @PostMapping("/test")
     @Operation(summary = "数采根据公式进行采集测试")
     @PreAuthorize("@ss.hasPermission('power:standingbook-acquisition:query')")
-    public CommonResult<String> testData(StandingbookAcquisitionTestReqVO testReqVO) {
+    public CommonResult<String> testData(@RequestBody StandingbookAcquisitionTestReqVO testReqVO) {
         return success(standingbookAcquisitionService.testData(testReqVO));
     }
 

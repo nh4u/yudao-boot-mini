@@ -19,8 +19,6 @@ import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDa
 import cn.bitlinks.ems.module.power.utils.CalculateUtil;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.ql.util.express.DefaultContext;
-import com.ql.util.express.IExpressContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -255,6 +253,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
 
         // 获取当前的参数设置
         StandingbookAcquisitionDetailVO currentDetail = testReqVO.getCurrentDetail();
+        currentDetail.setActualFormula(currentDetail.getFormula());
         String dataSite = currentDetail.getDataSite();
         String formula = currentDetail.getFormula();
         // 0.未配置io未配置公式
@@ -290,9 +289,13 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                 // 1.2 配置了公式，替换自身参数部分进行计算
                 String currenParam = String.format(PATTERN_ACQUISITION_FORMULA_FILL, currentDetail.getCode(),
                         currentDetail.getEnergyFlag());
-                IExpressContext<String, Object> context = new DefaultContext<>();
-                context.put(currenParam, itemStatusMap.get(dataSite).getValue());
-                return String.format(STANDINGBOOK_ACQUISITION_SUCCESS, CalculateUtil.calcAcquisitionFormula(formula, context));
+                // 1.2.1 替换自身参数部分进行计算
+                formula = formula.replace(currenParam, itemStatusMap.get(dataSite).getValue());
+                Object result = CalculateUtil.calcAcquisitionFormula(formula);
+                if (Objects.isNull(result)) {
+                    return STANDINGBOOK_ACQUISITION_FAIL;
+                }
+                return String.format(STANDINGBOOK_ACQUISITION_SUCCESS, result);
             }
             // 2. 未配置io配置了公式, 需要计算出本身的公式
 
@@ -300,6 +303,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             Map<ParameterKey, StandingbookAcquisitionDetailVO> paramMap = new HashMap<>();
             for (StandingbookAcquisitionDetailVO detail : testReqVO.getDetails()) {
                 ParameterKey key = new ParameterKey(detail.getCode(), detail.getEnergyFlag());
+                detail.setActualFormula(detail.getFormula());
                 paramMap.put(key, detail);
             }
 
@@ -335,13 +339,29 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                 return STANDINGBOOK_ACQUISITION_FAIL;
             }
             // 将计算后的数值替换到公式中，
-            IExpressContext<String, Object> context = new DefaultContext<>();
-            relyParamMap.forEach((parameterKey, detailVO) -> {
-                String relyParam = String.format(PATTERN_ACQUISITION_FORMULA_FILL, detailVO.getCode(), currentDetail.getEnergyFlag());
-                context.put(relyParam, itemStatusMap.get(detailVO.getDataSite()).getValue());
-            });
+//            IExpressContext<String, Object> context = new DefaultContext<>();
+//            relyParamMap.forEach((parameterKey, detailVO) -> {
+//                String relyParam = String.format(PATTERN_ACQUISITION_FORMULA_FILL, detailVO.getCode(), currentDetail.getEnergyFlag());
+//                context.put(relyParam, itemStatusMap.get(detailVO.getDataSite()).getValue());
+//            });
+//            // 根据公式进行计算返回结果
+//            return String.format(STANDINGBOOK_ACQUISITION_SUCCESS, CalculateUtil.calcAcquisitionFormula(formula, context));
+
+            String actualFormula = currentFormulaDetail.getActualFormula();
+            String finalFormula = relyParamMap.entrySet().stream()
+                    .map(entry -> {
+                        String relyParam = String.format(PATTERN_ACQUISITION_FORMULA_FILL, entry.getValue().getCode(), currentDetail.getEnergyFlag());
+                        return actualFormula.replace(relyParam, itemStatusMap.get(entry.getValue().getDataSite()).getValue());
+                    })
+                    .reduce((prev, curr) -> curr)
+                    .orElse(actualFormula);
+
             // 根据公式进行计算返回结果
-            return String.format(STANDINGBOOK_ACQUISITION_SUCCESS, CalculateUtil.calcAcquisitionFormula(formula, context));
+            Object result = CalculateUtil.calcAcquisitionFormula(finalFormula);
+            if (Objects.isNull(result)) {
+                return STANDINGBOOK_ACQUISITION_FAIL;
+            }
+            return String.format(STANDINGBOOK_ACQUISITION_SUCCESS, result);
 
         } catch (Exception e) {
             return STANDINGBOOK_ACQUISITION_FAIL;
@@ -387,6 +407,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         Map<ParameterKey, StandingbookAcquisitionDetailVO> paramMap = new HashMap<>();
         for (StandingbookAcquisitionDetailVO detail : details) {
             ParameterKey key = new ParameterKey(detail.getCode(), detail.getEnergyFlag());
+            detail.setActualFormula(detail.getFormula());
             paramMap.put(key, detail);
         }
 
@@ -412,7 +433,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         // 复制原始对象，避免修改原始列表
         StandingbookAcquisitionDetailVO expandedDetail = BeanUtils.toBean(detail, StandingbookAcquisitionDetailVO.class);
 
-        if (StringUtils.isEmpty(expandedDetail.getFormula())) {
+        if (StringUtils.isEmpty(expandedDetail.getActualFormula())) {
             return expandedDetail; // 公式为空，无需展开
         }
 
@@ -425,8 +446,15 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
 
         visited.add(currentKey);
 
-        String expandedFormula = expandedDetail.getFormula();
+        String expandedFormula = expandedDetail.getActualFormula();
         Set<ParameterKey> dependencies = getDependencies(expandedFormula);
+        // 如果当前参数没有依赖其他参数，则直接返回
+        if(dependencies.contains(currentKey) && dependencies.size() == 1){
+            expandedDetail.setActualFormula(expandedFormula);
+            visited.remove(currentKey);
+
+            return expandedDetail;
+        }
 
         // 替换公式中的参数引用
         for (ParameterKey dependency : dependencies) {
@@ -441,16 +469,17 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                 }
 
                 // 如果依赖参数也有公式，则使用其展开后的公式进行替换。
-                String replacement = fullyExpandedDependency.getFormula();
+                String replacement = fullyExpandedDependency.getActualFormula();
                 if (StringUtils.isNotEmpty(replacement)) {
                     // 将公式中的参数引用替换为实际的公式
-                    expandedFormula = expandedFormula.replace(String.format(PATTERN_ACQUISITION_FORMULA_FILL, dependency.getCode(), dependency.getEnergyFlag()), replacement);
+                    expandedFormula = expandedFormula.replace(String.format(PATTERN_ACQUISITION_FORMULA_FILL,
+                                    dependency.getCode(), dependency.getEnergyFlag()), "("+replacement+")");
 //                    expandedFormula = expandedFormula.replace("{[\"" + dependency.getCode() + "\"," + dependency.getEnergyFlag() + "]}", replacement);
                 }
             }
         }
 
-        expandedDetail.setFormula(expandedFormula);
+        expandedDetail.setActualFormula(expandedFormula);
         visited.remove(currentKey);
 
         return expandedDetail;
@@ -470,7 +499,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         }
 
         // 使用正则表达式匹配公式中的参数引用，例如 String aa = "{[\"C\",\"true\"]}*3";
-        //Pattern pattern = Pattern.compile("\\{\\[\"([^\"]+)\",(true|false|\"[^\"]+\")\\]\\}");
+        //Pattern pattern = Pattern.compile("\\{\\[\"([^\"]+)\", (true|false|\"[^\"]+\")\\]\\}");
         Matcher matcher = PATTERN_ACQUISITION_FORMULA_PARAM.matcher(formula);
 
         while (matcher.find()) {
