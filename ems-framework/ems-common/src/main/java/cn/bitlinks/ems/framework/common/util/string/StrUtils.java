@@ -1,14 +1,19 @@
 package cn.bitlinks.ems.framework.common.util.string;
 
-import cn.hutool.core.text.StrPool;
-import cn.hutool.core.util.ArrayUtil;
-import cn.hutool.core.util.StrUtil;
-
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+
+import cn.hutool.core.text.StrPool;
+import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.StrUtil;
 
 /**
  * 字符串工具类
@@ -64,7 +69,7 @@ public class StrUtils {
     /**
      * 移除字符串中，包含指定字符串的行
      *
-     * @param content 字符串
+     * @param content  字符串
      * @param sequence 包含的字符串
      * @return 移除后的字符串
      */
@@ -75,6 +80,65 @@ public class StrUtils {
         return Arrays.stream(content.split("\n"))
                 .filter(line -> !line.contains(sequence))
                 .collect(Collectors.joining("\n"));
+    }
+
+    /**
+     * 压缩，也可使用Snappy
+     *
+     * @param str
+     * @return
+     */
+    public static byte[] compressGzip(String str) {
+        if (str == null || str.isEmpty()) return null;
+
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+             GZIPOutputStream gzip = new GZIPOutputStream(out)) {
+
+            gzip.write(str.getBytes("UTF-8"));
+            gzip.finish();
+
+            return out.toByteArray();
+
+        } catch (IOException e) {
+            throw new RuntimeException("数据压缩失败", e);
+        }
+
+    }
+
+    /**
+     * 解压缩
+     *
+     * @param compressed
+     * @return
+     */
+    public static String decompressGzip(byte[] compressed) {
+
+        if (compressed == null || compressed.length == 0) return null;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try {
+            GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(compressed));
+            byte[] buffer = new byte[256];
+            int n;
+            while ((n = gzip.read(buffer)) > 0) {
+                out.write(buffer, 0, n);
+            }
+
+            return out.toString("UTF-8");
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("数据解压缩失败");
+        }
+
+    }
+
+    public static void main(String[] args) {
+
+        String str = "test";
+        byte[] compressed = compressGzip(str);
+        String decompressed = decompressGzip(compressed);
+        System.out.println("原始：" + str);
+        System.out.println("压缩后：" + new String(compressed));
+        System.out.println("解压缩后：" + decompressed);
     }
 
 }

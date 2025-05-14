@@ -21,4 +21,9 @@ public interface UsageCostMapper {
                                 @Param("startDate") LocalDateTime startDate,
                                 @Param("endDate") LocalDateTime endDate,
                                 @Param("standingBookIds") List<Long> standingBookIds);
+    LocalDateTime getLastTime(@Param("queryParam") StatisticsParamV2VO paramVO,
+                                @Param("startDate") LocalDateTime startDate,
+                                @Param("endDate") LocalDateTime endDate,
+                                @Param("standingBookIds") List<Long> standingBookIds);
+
 }
