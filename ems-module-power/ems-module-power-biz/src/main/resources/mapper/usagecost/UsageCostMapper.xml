@@ -114,4 +114,81 @@
 
 
     </select>
+
+
+    <select id="getDiscountList" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostDiscountData">
+        <!-- 参数说明：
+          - dateType (聚合类型，0: 按日, 1: 按月, 2: 按年, 3: 按时)
+          - queryType (分组字段，0: 按 standingbook_id, 1: 按 energy_id, 2: 按 tag_id)
+          - startDate (起始日期)
+          - endDate (结束日期)
+        -->
+        SELECT
+        <choose>
+            <!-- 根据 queryType 选择分组字段 -->
+            <when test="queryParam.queryType == 0 || queryParam.queryType == 2">
+                standingbook_id,energy_id
+            </when>
+            <when test="queryParam.queryType == 1">
+                energy_id
+            </when>
+
+        </choose>
+        ,
+        <choose>
+            <!-- 根据 dateType 选择聚合字段 -->
+            <when test="queryParam.dateType == 0">
+                DATE(aggregate_time) AS time
+            </when>
+            <when test="queryParam.dateType == 1">
+                DATE_FORMAT(aggregate_time, '%Y-%m') AS time
+            </when>
+            <when test="queryParam.dateType == 2">
+                YEAR(aggregate_time) AS time
+            </when>
+            <when test="queryParam.dateType == 3">
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00') AS time
+            </when>
+        </choose>
+        ,
+
+        SUM(discount) AS totalDiscount
+        FROM
+        usage_cost
+        WHERE
+        aggregate_time BETWEEN #{startDate} AND #{endDate}
+        AND standingbook_id IN
+        <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        GROUP BY
+        <choose>
+            <!-- 根据 queryType 选择分组字段 -->
+            <when test="queryParam.queryType == 0 || queryParam.queryType == 2">
+                standingbook_id,energy_id
+            </when>
+            <when test="queryParam.queryType == 1">
+                energy_id
+            </when>
+        </choose>
+        ,
+
+        <choose>
+            <!-- 根据 dateType 选择聚合字段 -->
+            <when test="queryParam.dateType == 0">
+                DATE(aggregate_time)
+            </when>
+            <when test="queryParam.dateType == 1">
+                DATE_FORMAT(aggregate_time, '%Y-%m')
+            </when>
+            <when test="queryParam.dateType == 2">
+                YEAR(aggregate_time)
+            </when>
+            <when test="queryParam.dateType == 3">
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00')
+            </when>
+        </choose>
+
+    </select>
 </mapper>
+

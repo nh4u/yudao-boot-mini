@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.usagecost;
 
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostDiscountData;
 import com.baomidou.dynamic.datasource.annotation.DS;
 
 import org.springframework.stereotype.Service;
@@ -37,5 +38,11 @@ public class UsageCostServiceImpl implements UsageCostService{
     @TenantIgnore
     public LocalDateTime getLastTime(StatisticsParamV2VO paramVO, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
         return usageCostMapper.getLastTime(paramVO, startDate, endDate, standingBookIds);
+    }
+
+    @Override
+    @TenantIgnore
+    public List<UsageCostDiscountData> getDiscountList(StatisticsParamV2VO paramVO, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getDiscountList(paramVO, startDate, endDate, standingBookIds);
     }
 }

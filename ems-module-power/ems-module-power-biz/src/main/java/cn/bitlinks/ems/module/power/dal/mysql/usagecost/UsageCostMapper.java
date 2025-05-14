@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.dal.mysql.usagecost;
 
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostDiscountData;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -26,4 +27,9 @@ public interface UsageCostMapper {
                                 @Param("endDate") LocalDateTime endDate,
                                 @Param("standingBookIds") List<Long> standingBookIds);
 
+
+    List<UsageCostDiscountData> getDiscountList(@Param("queryParam") StatisticsParamV2VO paramVO,
+                                        @Param("startDate") LocalDateTime startDate,
+                                        @Param("endDate") LocalDateTime endDate,
+                                        @Param("standingBookIds") List<Long> standingBookIds);
 }

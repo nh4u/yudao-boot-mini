@@ -5,6 +5,7 @@ import java.util.List;
 
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostDiscountData;
 
 /**
  * @author wangl
@@ -20,4 +21,11 @@ public interface UsageCostService {
                                 LocalDateTime startDate,
                                 LocalDateTime endDate,
                                 List<Long> standingBookIds);
+
+    List<UsageCostDiscountData> getDiscountList(StatisticsParamV2VO paramVO,
+                                                LocalDateTime startDate,
+                                                LocalDateTime endDate,
+                                                List<Long> standingBookIds);
+
+
 }
