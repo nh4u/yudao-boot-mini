@@ -42,4 +42,25 @@ public class EmsRedisAutoConfiguration {
         return json;
     }
 
+    @Bean
+    public RedisTemplate<String, byte[]> byteArrayRedisTemplate(RedisConnectionFactory factory) {
+        RedisTemplate<String, byte[]> template = new RedisTemplate<>();
+        template.setConnectionFactory(factory);
+        template.setKeySerializer(RedisSerializer.string());
+        // 重点：直接保存 byte[]，不再 JSON 序列化
+        template.setValueSerializer(new RedisSerializer<byte[]>() {
+            @Override
+            public byte[] serialize(byte[] bytes) {
+                return bytes;
+            }
+
+            @Override
+            public byte[] deserialize(byte[] bytes) {
+                return bytes;
+            }
+        });
+        return template;
+    }
+
+
 }

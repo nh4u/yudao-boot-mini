@@ -49,7 +49,7 @@ public class StatisticsV2Controller {
  /*   @PostMapping("/moneyAnalysisChart")
     @Operation(summary = "折价分析（图）")
     public CommonResult<Object> moneyAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
-        return success(statisticsV2Service.moneyAnalysisTable(paramVO));
+        return success(statisticsV2Service.moneyAnalysisChart(paramVO));
     }*/
 
 }
