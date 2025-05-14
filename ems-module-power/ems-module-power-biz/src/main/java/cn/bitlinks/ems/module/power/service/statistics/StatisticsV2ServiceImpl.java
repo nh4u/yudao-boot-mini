@@ -93,7 +93,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], dataTypeEnum);
 
         //返回结果
-        StatisticsResultV2VO resultVO = new StatisticsResultV2VO();
+        StatisticsResultV2VO<StatisticsInfoV2> resultVO = new StatisticsResultV2VO<>();
         resultVO.setHeader(tableHeader);
 
         //能源列表
