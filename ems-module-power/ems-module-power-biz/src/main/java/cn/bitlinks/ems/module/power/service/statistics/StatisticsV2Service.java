@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
+import java.io.IOException;
 import java.util.Map;
 
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsBarVO;
@@ -22,4 +23,5 @@ public interface StatisticsV2Service {
      */
     StatisticsResultV2VO moneyAnalysisTable(StatisticsParamV2VO paramVO);
 
+    void moneyAnalysisChart(StatisticsParamVO paramVO);
 }

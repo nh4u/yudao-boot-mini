@@ -92,4 +92,26 @@
         </choose>
 
     </select>
+
+
+    <select id="getLastTime" resultType="java.time.LocalDateTime">
+        <!-- 参数说明：
+          - dateType (聚合类型，0: 按日, 1: 按月, 2: 按年, 3: 按时)
+          - queryType (分组字段，0: 按 standingbook_id, 1: 按 energy_id, 2: 按 tag_id)
+          - startDate (起始日期)
+          - endDate (结束日期)
+        -->
+        SELECT
+        MAX(aggregate_time) AS lastTime
+        FROM
+        usage_cost
+        WHERE
+        aggregate_time BETWEEN #{startDate} AND #{endDate}
+        AND standingbook_id IN
+        <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+
+
+    </select>
 </mapper>

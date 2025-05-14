@@ -2,9 +2,12 @@ package cn.bitlinks.ems.module.power.service.statistics;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 
+import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -13,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -21,9 +25,11 @@ import javax.annotation.Resource;
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
+import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticInfoDataV2;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsInfoV2;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
@@ -38,6 +44,11 @@ import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.digest.MD5;
+import cn.hutool.json.JSONUtil;
+import lombok.extern.slf4j.Slf4j;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_RANGE_EXCEED_LIMIT;
@@ -51,6 +62,7 @@ import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.END_TIME_MUS
  */
 @Service
 @Validated
+@Slf4j
 public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
     @Resource
@@ -66,9 +78,13 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
     @Resource
     private UsageCostService usageCostService;
 
+    @Resource
+    private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
+
+
 
     @Override
-    public StatisticsResultV2VO moneyAnalysisTable(StatisticsParamV2VO paramVO) {
+    public StatisticsResultV2VO moneyAnalysisTable(StatisticsParamV2VO paramVO){
 
         // 校验时间范围是否存在
         LocalDateTime[] rangeOrigin = paramVO.getRange();
@@ -87,6 +103,13 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         //时间类型不存在
         if (Objects.isNull(dataTypeEnum)) {
             throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+        String cacheKey = SecureUtil.md5(paramVO.toString());
+        byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
+        String cacheRes = StrUtils.decompressGzip(compressed);
+        if(StrUtil.isNotEmpty(cacheRes)){
+            log.info("缓存结果");
+            return JSONUtil.toBean(cacheRes, StatisticsResultV2VO.class);
         }
 
         // 表头处理
@@ -116,6 +139,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             List<StandingbookDO> collect = standingbookIdsByEnergy.stream().filter(s -> sids.contains(s.getId())).collect(Collectors.toList());
             //能源管理计量器具，标签可能关联重点设备，当不存在交集时，则无需查询
             if (ArrayUtil.isEmpty(collect)) {
+                resultVO.setDataTime(LocalDateTime.now());
                 return resultVO;
             }
             List<Long> collect1 = collect.stream().map(StandingbookDO::getId).collect(Collectors.toList());
@@ -125,6 +149,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             standingBookIds.addAll(collect);
         }
         if(CollectionUtil.isEmpty(standingBookIds)){
+            resultVO.setDataTime(LocalDateTime.now());
             return resultVO;
         }
 
@@ -132,6 +157,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         //能源参数
         //根据台账ID查询用量跟成本
         List<UsageCostData> usageCostDataList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
+        LocalDateTime lastTime = usageCostService.getLastTime(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
 
         List<StatisticsInfoV2> statisticsInfoList = new ArrayList<>();
         // 1、按能源查看
@@ -172,10 +198,16 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             statisticsInfoList.addAll(statisticsInfoV2s);
         }
         resultVO.setStatisticsInfoList(statisticsInfoList);
-        //数据最后更新时间 TODO
-        resultVO.setDataTime(LocalDateTime.now());
-
+        resultVO.setDataTime(lastTime);
+        String jsonStr = JSONUtil.toJsonStr(resultVO);
+        byte[] bytes = StrUtils.compressGzip(jsonStr);
+        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return resultVO;
+    }
+
+    @Override
+    public void moneyAnalysisChart(StatisticsParamVO paramVO) {
+
     }
 
     public List<StatisticsInfoV2> queryDefault(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped,

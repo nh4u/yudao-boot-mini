@@ -32,4 +32,10 @@ public class UsageCostServiceImpl implements UsageCostService{
     public List<UsageCostData> getList(StatisticsParamV2VO paramVO, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
         return usageCostMapper.getList(paramVO, startDate, endDate, standingBookIds);
     }
+
+    @Override
+    @TenantIgnore
+    public LocalDateTime getLastTime(StatisticsParamV2VO paramVO, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getLastTime(paramVO, startDate, endDate, standingBookIds);
+    }
 }
