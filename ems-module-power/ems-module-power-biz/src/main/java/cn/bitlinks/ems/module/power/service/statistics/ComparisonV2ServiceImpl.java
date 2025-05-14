@@ -3,17 +3,24 @@ package cn.bitlinks.ems.module.power.service.statistics;
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
+import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
+import cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
+import cn.hutool.json.JSONUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -22,6 +29,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -35,6 +43,7 @@ import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
  */
 @Service
 @Validated
+@Slf4j
 public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
     @Resource
@@ -48,6 +57,10 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
     @Resource
     private UsageCostService usageCostService;
+
+    @Resource
+    private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
+
 
     @Override
     public StatisticsResultV2VO<ComparisonItemVO> discountAnalysisTable(StatisticsParamV2VO paramVO) {
@@ -67,6 +80,14 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         DataTypeEnum dataTypeEnum = DataTypeEnum.codeOf(paramVO.getDateType());
         if (Objects.isNull(dataTypeEnum)) {
             throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        String cacheKey = StatisticsCacheConstants.COMPARISON_DISCOUNT_TABLE + SecureUtil.md5(paramVO.toString());
+        byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
+        String cacheRes = StrUtils.decompressGzip(compressed);
+        if(StrUtil.isNotEmpty(cacheRes)){
+            log.info("缓存结果");
+            return JSONUtil.toBean(cacheRes, StatisticsResultV2VO.class);
         }
 
         // 构建表头
@@ -116,9 +137,11 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
         List<ComparisonItemVO> statisticsInfoList = new ArrayList<>();
 
+        LocalDateTime lastTime = usageCostService.getLastTime(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
+
         if (QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)) {
             // 按能源查看，无需构建标签分组
-            statisticsInfoList.addAll(queryByEnergy(energyList, usageCostDataList, lastUsageCostDataList));
+            statisticsInfoList.addAll(queryByEnergy(energyList, usageCostDataList, lastUsageCostDataList,dataTypeEnum));
         } else {
             // 构建标签分组结构：一级标签名 -> 二级/三级值 -> 对应标签列表
             Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
@@ -129,16 +152,19 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
             if (QueryDimensionEnum.LABEL_REVIEW.getCode().equals(queryType)) {
                 // 按标签查看
-                statisticsInfoList.addAll(queryByLabel(grouped, usageCostDataList, lastUsageCostDataList));
+                statisticsInfoList.addAll(queryByLabel(grouped, usageCostDataList, lastUsageCostDataList,dataTypeEnum));
             } else {
                 // 综合默认查看
-                statisticsInfoList.addAll(queryDefault(grouped, usageCostDataList, lastUsageCostDataList));
+                statisticsInfoList.addAll(queryDefault(grouped, usageCostDataList, lastUsageCostDataList,dataTypeEnum));
             }
         }
 
         // 设置最终返回值
         resultVO.setStatisticsInfoList(statisticsInfoList);
-        resultVO.setDataTime(LocalDateTime.now());
+        resultVO.setDataTime(lastTime);
+        String jsonStr = JSONUtil.toJsonStr(resultVO);
+        byte[] bytes = StrUtils.compressGzip(jsonStr);
+        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return resultVO;
     }
 
@@ -148,8 +174,10 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
     /**
      * 按能源维度统计：以 energyId 为主键，构建环比统计数据
      */
-    private List<ComparisonItemVO> queryByEnergy(List<EnergyConfigurationDO> energyList, List<UsageCostDiscountData> usageCostDataList,
-                                                 List<UsageCostDiscountData> lastUsageCostDataList) {
+    private List<ComparisonItemVO> queryByEnergy(List<EnergyConfigurationDO> energyList,
+                                                 List<UsageCostDiscountData> usageCostDataList,
+                                                 List<UsageCostDiscountData> lastUsageCostDataList,
+                                                 DataTypeEnum dataTypeEnum) {
         // 按能源ID分组当前周期数据
         Map<Long, List<UsageCostDiscountData>> energyUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostDiscountData::getEnergyId));
@@ -171,7 +199,9 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                     // 构造环比详情数据列表
                     List<ComparisonDetailVO> detailList = usageList.stream()
                             .map(current -> {
-                                String key = current.getEnergyId() + "_" + current.getTime();
+                                // 使用当前时间推算上期时间来构建 key
+                                String lastTime = LocalDateTimeUtils.getPreviousTime(current.getTime(), dataTypeEnum);
+                                String key = current.getEnergyId() + "_" + lastTime;
                                 UsageCostDiscountData previous = lastDataMap.get(key);
                                 BigDecimal now = current.getTotalDiscount();
                                 BigDecimal last = previous != null ? previous.getTotalDiscount() : null;
@@ -203,7 +233,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
     /**
      * 按标签维度统计：以 standingbookId 和标签结构为基础构建环比对比数据
      */
-    private List<ComparisonItemVO> queryByLabel(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped, List<UsageCostDiscountData> usageCostDataList, List<UsageCostDiscountData> lastUsageCostDataList) {
+    private List<ComparisonItemVO> queryByLabel(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped, List<UsageCostDiscountData> usageCostDataList,
+                                                List<UsageCostDiscountData> lastUsageCostDataList, DataTypeEnum dateTypeEnum) {
         // 当前周期数据按 standingbookId 分组
         Map<Long, List<UsageCostDiscountData>> currentMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostDiscountData::getStandingbookId));
@@ -240,7 +271,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                     // 构造环比详情列表
                     List<ComparisonDetailVO> dataList = usageList.stream()
                             .map(current -> {
-                                String key = current.getStandingbookId() + "_" + current.getTime();
+                                String previousTime = LocalDateTimeUtils.getPreviousTime(current.getTime(), dateTypeEnum);
+                                String key = current.getStandingbookId() + "_" + previousTime;
                                 UsageCostDiscountData previous = lastMap.get(key);
                                 BigDecimal now = current.getTotalDiscount();
                                 BigDecimal last = previous != null ? previous.getTotalDiscount() : null;
@@ -276,7 +308,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
     /**
      * 综合默认统计：标签 + energyId 双维度聚合构建对比数据
      */
-    private List<ComparisonItemVO> queryDefault(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped, List<UsageCostDiscountData> usageCostDataList, List<UsageCostDiscountData> lastUsageCostDataList) {
+    private List<ComparisonItemVO> queryDefault(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped, List<UsageCostDiscountData> usageCostDataList,
+                                                List<UsageCostDiscountData> lastUsageCostDataList, DataTypeEnum dateTypeEnum) {
         // 提取所有能源ID
         Set<Long> energyIdSet = usageCostDataList.stream().map(UsageCostDiscountData::getEnergyId).collect(Collectors.toSet());
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(energyIdSet, null);
@@ -327,7 +360,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                         // 构造明细列表
                         List<ComparisonDetailVO> dataList = usageCostList.stream()
                                 .map(current -> {
-                                    String key = current.getStandingbookId() + "_" + energyId + "_" + current.getTime();
+                                    String previousTime = LocalDateTimeUtils.getPreviousTime(current.getTime(), dateTypeEnum);
+                                    String key = current.getStandingbookId() + "_" + energyId + "_" + previousTime;
                                     UsageCostDiscountData previous = lastMap.get(key);
                                     BigDecimal now = current.getTotalDiscount();
                                     BigDecimal last = previous != null ? previous.getTotalDiscount() : null;
