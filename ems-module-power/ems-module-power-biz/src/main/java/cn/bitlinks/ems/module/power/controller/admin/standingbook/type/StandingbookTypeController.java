@@ -5,8 +5,11 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeSaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
+import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
+import cn.hutool.core.collection.CollUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,9 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 
@@ -30,6 +31,8 @@ public class StandingbookTypeController {
 
     @Resource
     private StandingbookTypeService standingbookTypeService;
+    @Resource
+    private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
 
     @PostMapping("/create")
     @Operation(summary = "创建台账类型")
@@ -95,6 +98,9 @@ public class StandingbookTypeController {
     @Parameter(name = "id", description = "编号", example = "1024")
     public CommonResult<List<StandingbookTypeRespVO>> getStandingbookTree(@RequestParam(value = "id", required = false) Long id) {
         List<StandingbookTypeDO> nodes = standingbookTypeService.getStandingbookTypeNode();
+
+        Map<Long, Long> typeEnergyIdMap =
+                standingbookTmplDaqAttrService.getEnergyMapping();
         if (id != null) {
             List<StandingbookTypeDO> result = new ArrayList<>();
             for (StandingbookTypeDO node : nodes) {
@@ -105,7 +111,17 @@ public class StandingbookTypeController {
             }
             nodes = result;
         }
-        return success(BeanUtils.toBean(nodes, StandingbookTypeRespVO.class));
+        if(CollUtil.isEmpty(nodes)){
+            return success(Collections.emptyList());
+        }
+        List<StandingbookTypeRespVO> result = new ArrayList<>();
+        nodes.forEach(node->{
+            StandingbookTypeRespVO respVO = BeanUtils.toBean(node, StandingbookTypeRespVO.class);
+            respVO.setEnergyId(typeEnergyIdMap.get(node.getId()));
+            result.add(respVO);
+        });
+
+        return success(result);
     }
 
 
