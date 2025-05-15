@@ -1,5 +1,10 @@
 package cn.bitlinks.ems.module.power.controller.admin.statistics.vo;
 
+/**
+ * @author wangl
+ * @date 2025年05月15日 10:57
+ */
+
 import java.time.LocalDateTime;
 import java.util.List;
 

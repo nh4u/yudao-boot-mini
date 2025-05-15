@@ -6,7 +6,7 @@ import lombok.Data;
 
 /**
  * @author wangl
- * @date 2025年05月14日 16:11
+ * @date 2025年05月15日 10:58
  */
 @Data
 public class StatsResult {

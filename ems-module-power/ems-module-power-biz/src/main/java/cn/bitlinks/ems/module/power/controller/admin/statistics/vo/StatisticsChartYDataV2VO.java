@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.statistics.vo;
 
+
 import java.math.BigDecimal;
 
 import io.swagger.v3.oas.annotations.media.Schema;
