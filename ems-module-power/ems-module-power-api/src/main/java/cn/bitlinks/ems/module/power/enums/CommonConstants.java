@@ -85,6 +85,4 @@ public interface CommonConstants {
      */
     String LABEL_NAME_PREFIX = "label_";
 
-
-    String DEVICE_JOB_PREFIX = "device_job_%s";
 }

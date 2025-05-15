@@ -32,10 +32,6 @@ public class CollectRawDataDO {
      */
     private Boolean energyFlag;
     /**
-     * 参数类型
-     */
-    private Integer paramType;
-    /**
      * 台账id
      */
     private String standingbookId;

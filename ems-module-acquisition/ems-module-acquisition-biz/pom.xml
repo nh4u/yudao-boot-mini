@@ -35,6 +35,7 @@
             <version>${revision}</version>
         </dependency>
 
+
         <!-- 业务组件 -->
         <dependency>
             <groupId>cn.bitlinks.ems</groupId>
@@ -57,7 +58,10 @@
             <groupId>cn.bitlinks.ems</groupId>
             <artifactId>ems-spring-boot-starter-mybatis</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-generator</artifactId> <!-- 代码生成器，使用它解析表结构 -->
+        </dependency>
 
         <dependency>
             <groupId>cn.bitlinks.ems</groupId>
@@ -83,6 +87,64 @@
         </dependency>
 
 
+        <!-- Test 测试相关 -->
+        <dependency>
+            <groupId>cn.bitlinks.ems</groupId>
+            <artifactId>ems-spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- 工具类相关 -->
+        <dependency>
+            <groupId>cn.bitlinks.ems</groupId>
+            <artifactId>ems-spring-boot-starter-excel</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.velocity</groupId>
+            <artifactId>velocity-engine-core</artifactId> <!-- 实现代码生成 -->
+        </dependency>
+
+        <!-- 监控相关 -->
+        <dependency>
+            <groupId>cn.bitlinks.ems</groupId>
+            <artifactId>ems-spring-boot-starter-monitor</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>de.codecentric</groupId>
+            <artifactId>spring-boot-admin-starter-server</artifactId> <!-- 实现 Spring Boot Admin Server 服务端 -->
+        </dependency>
+
+        <!-- 三方云服务相关 -->
+        <dependency>
+            <groupId>commons-net</groupId>
+            <artifactId>commons-net</artifactId> <!-- 文件客户端：解决 ftp 连接 -->
+        </dependency>
+        <dependency>
+            <groupId>com.jcraft</groupId>
+            <artifactId>jsch</artifactId> <!-- 文件客户端：解决 sftp 连接 -->
+        </dependency>
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId> <!-- 文件客户端：解决阿里云、腾讯云、minio 等 S3 连接 -->
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId> <!-- 文件客户端：文件类型的识别 -->
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.imgscalr</groupId>
+            <artifactId>imgscalr-lib</artifactId>
+            <version>4.2</version>
+        </dependency>
+
         <dependency>
             <groupId>com.github.ulisesbocchio</groupId>
             <artifactId>jasypt-spring-boot-starter</artifactId>
@@ -92,6 +154,15 @@
             <groupId>cn.bitlinks.ems</groupId>
             <artifactId>ems-spring-boot-starter-protection</artifactId>
         </dependency>
+
+
+        <!-- QLExpress -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>QLExpress</artifactId>
+        </dependency>
+
+
         <!--        定时任务-->
         <dependency>
             <groupId>org.springframework.boot</groupId>

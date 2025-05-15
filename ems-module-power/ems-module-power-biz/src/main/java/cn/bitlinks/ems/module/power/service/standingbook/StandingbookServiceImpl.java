@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.standingbook;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.bitlinks.ems.module.acquisition.api.job.QuartzApi;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.AssociationData;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
@@ -23,17 +24,13 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookType
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
 import cn.bitlinks.ems.module.power.enums.standingbook.StandingbookTypeTopEnum;
-import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
-import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -66,7 +63,7 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Resource
     private StandingbookTypeMapper standingbookTypeMapper;
     @Resource
-    private  StandingbookTmplDaqAttrMapper standingbookTmplDaqAttrMapper;
+    private StandingbookTmplDaqAttrMapper standingbookTmplDaqAttrMapper;
     @Resource
     private StandingbookAttributeMapper standingbookAttributeMapper;
     @Resource
@@ -74,6 +71,8 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Resource
     private MeasurementAssociationMapper measurementAssociationMapper;
 
+    @Resource
+    private QuartzApi quartzApi;
 
     @Override
     public Long count(Long typeId) {
@@ -294,7 +293,8 @@ public class StandingbookServiceImpl implements StandingbookService {
         standingbookLabelInfoMapper.delete(StandingbookLabelInfoDO::getStandingbookId, id);
         // 删除属性
         standingbookAttributeMapper.deleteStandingbookId(id);
-
+        // 删除数采任务
+        quartzApi.deleteJob(id);
     }
 
     private void validateStandingbookExists(Long id) {
@@ -320,7 +320,6 @@ public class StandingbookServiceImpl implements StandingbookService {
         standingbookDO.setLabelInfo(standingbookLabelInfoDOList);
         return standingbookDO;
     }
-
 
 
     @Override
@@ -393,7 +392,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         if (CollUtil.isEmpty(sbIds)) {
             return new ArrayList<>();
         }
-        if(CollUtil.isNotEmpty(labelInfoConditions)){
+        if (CollUtil.isNotEmpty(labelInfoConditions)) {
             // 根据标签属性查询台账id
             List<Long> labelSbIds = standingbookLabelInfoMapper.selectStandingbookIdByLabelCondition(labelInfoConditions, sbIds);
             sbIds.retainAll(labelSbIds);

@@ -40,6 +40,11 @@
             <artifactId>ems-module-infra-api</artifactId>
             <version>${revision}</version>
         </dependency>
+        <dependency>
+            <groupId>cn.bitlinks.ems</groupId>
+            <artifactId>ems-module-acquisition-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
 
         <!-- 业务组件 -->
         <dependency>
@@ -177,8 +182,8 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>QLExpress</artifactId>
-            <version>3.3.1</version>
         </dependency>
+
 
 
     </dependencies>
