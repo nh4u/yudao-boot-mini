@@ -1,5 +1,8 @@
 package cn.bitlinks.ems.module.power.utils;
 
+import com.google.common.math.Stats;
+
+import cn.bitlinks.ems.framework.common.pojo.StatsResult;
 import cn.hutool.core.util.ArrayUtil;
 import com.ql.util.express.DefaultContext;
 import com.ql.util.express.ExpressRunner;
@@ -9,6 +12,14 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @Title: ydme-ems
@@ -136,6 +147,112 @@ public class CalculateUtil {
             return avg;
         }
     }
+    /**
+     * 通用分组统计方法
+     * @param list 原始数据列表
+     * @param groupKeyFunc 分组 key 提取函数（例如：r -> r.getType()）
+     * @param valueExtractor 参与统计字段提取函数（必须是 BigDecimal）
+     * @param <T> 数据类型
+     * @param <K> 分组 key 类型
+     * @return 每个 groupKey 对应的 Stats 统计信息
+     */
+    public static <T, K> Map<K, StatsResult> calculateGroupStats(List<T> list,
+                                                                 Function<T, K> groupKeyFunc,
+                                                                 Function<T, BigDecimal> valueExtractor) {
+        Map<K, List<T>> grouped = list.stream()
+                .collect(Collectors.groupingBy(groupKeyFunc));
+
+        Map<K, StatsResult> result = new HashMap<>();
+
+        for (Map.Entry<K, List<T>> entry : grouped.entrySet()) {
+            K key = entry.getKey();
+            List<T> items = entry.getValue();
+
+            List<BigDecimal> values = items.stream()
+                    .map(valueExtractor)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            BigDecimal sum = values.stream()
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal avg = values.isEmpty() ? BigDecimal.ZERO :
+                    sum.divide(BigDecimal.valueOf(values.size()), 2, RoundingMode.HALF_UP);
+
+            BigDecimal max = values.stream()
+                    .max(Comparator.naturalOrder())
+                    .orElse(BigDecimal.ZERO);
+
+            BigDecimal min = values.stream()
+                    .min(Comparator.naturalOrder())
+                    .orElse(BigDecimal.ZERO);
+            StatsResult statsResult = new StatsResult();
+            statsResult.setAvg(avg);
+            statsResult.setSum(sum);
+            statsResult.setMax(max);
+            statsResult.setMin(min);
+            result.put(key,statsResult);
+        }
+
+        return result;
+    }
+
+    /**
+     * 多字段分组，多个字段统计（sum / avg / max / min）
+     *
+     * @param list 原始数据列表
+     * @param groupKeyFunc 多字段分组 key 提取函数（可用字符串拼接或 Map 封装等方式）
+     * @param valueExtractors 统计字段提取函数 Map（key 为字段名，value 为提取函数）
+     * @param <T> 数据类型
+     * @param <K> 分组 key 类型（如：String 或 List<String> 等）
+     * @return 每组分组对应的统计字段结果 Map
+     */
+    public static <T, K> Map<K, Map<String, StatsResult>> calculateMultiFieldGroupStats(
+            List<T> list,
+            Function<T, K> groupKeyFunc,
+            Map<String, Function<T, BigDecimal>> valueExtractors
+    ) {
+        Map<K, List<T>> grouped = list.stream()
+                .collect(Collectors.groupingBy(groupKeyFunc));
+
+        Map<K, Map<String, StatsResult>> result = new LinkedHashMap<>();
+
+        for (Map.Entry<K, List<T>> entry : grouped.entrySet()) {
+            K groupKey = entry.getKey();
+            List<T> items = entry.getValue();
+
+            Map<String, StatsResult> statsMap = new LinkedHashMap<>();
+
+            for (Map.Entry<String, Function<T, BigDecimal>> fieldEntry : valueExtractors.entrySet()) {
+                String fieldName = fieldEntry.getKey();
+                Function<T, BigDecimal> extractor = fieldEntry.getValue();
+
+                List<BigDecimal> values = items.stream()
+                        .map(extractor)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+
+                BigDecimal sum = values.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal avg = values.isEmpty() ? BigDecimal.ZERO :
+                        sum.divide(BigDecimal.valueOf(values.size()), 2, RoundingMode.HALF_UP);
+                BigDecimal max = values.stream().max(Comparator.naturalOrder()).orElse(BigDecimal.ZERO);
+                BigDecimal min = values.stream().min(Comparator.naturalOrder()).orElse(BigDecimal.ZERO);
+
+                StatsResult stats = new StatsResult();
+                stats.setSum(sum);
+                stats.setAvg(avg);
+                stats.setMax(max);
+                stats.setMin(min);
+
+                statsMap.put(fieldName, stats);
+            }
+
+            result.put(groupKey, statsMap);
+        }
+
+        return result;
+    }
+
 }
 
 
