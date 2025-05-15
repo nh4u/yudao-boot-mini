@@ -1,16 +1,14 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
-
-import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -24,36 +22,40 @@ import javax.annotation.Resource;
 
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
+import cn.bitlinks.ems.framework.common.pojo.StatsResult;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticInfoDataV2;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsChartResultV2VO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsChartYDataV2VO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsChartYInfoV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsInfoV2;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
-import cn.bitlinks.ems.module.power.dal.mysql.usagecost.UsageCostMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
+import cn.bitlinks.ems.module.power.utils.CalculateUtil;
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
-import cn.hutool.crypto.digest.MD5;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.LABEL_NAME_PREFIX;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_RANGE_EXCEED_LIMIT;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_TYPE_NOT_EXISTS;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.END_TIME_MUST_AFTER_START_TIME;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_CHART;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_TABLE;
 
 /**
  * 用能分析 Service 实现类
@@ -82,9 +84,8 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
 
 
-
     @Override
-    public StatisticsResultV2VO moneyAnalysisTable(StatisticsParamV2VO paramVO){
+    public StatisticsResultV2VO<StatisticsInfoV2> moneyAnalysisTable(StatisticsParamV2VO paramVO) {
 
         // 校验时间范围是否存在
         LocalDateTime[] rangeOrigin = paramVO.getRange();
@@ -104,10 +105,10 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         if (Objects.isNull(dataTypeEnum)) {
             throw exception(DATE_TYPE_NOT_EXISTS);
         }
-        String cacheKey = SecureUtil.md5(paramVO.toString());
+        String cacheKey = USAGE_COST_TABLE + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
-        if(StrUtil.isNotEmpty(cacheRes)){
+        if (StrUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
             return JSONUtil.toBean(cacheRes, StatisticsResultV2VO.class);
         }
@@ -116,11 +117,11 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], dataTypeEnum);
 
         //返回结果
-        StatisticsResultV2VO<StatisticsInfoV2> resultVO = new StatisticsResultV2VO<>();
+        StatisticsResultV2VO<StatisticsInfoV2> resultVO = new StatisticsResultV2VO<StatisticsInfoV2>();
         resultVO.setHeader(tableHeader);
 
         //能源列表
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(new HashSet<>(paramVO.getEnergyIds()) ,paramVO.getEnergyClassify());
+        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(new HashSet<>(paramVO.getEnergyIds()), paramVO.getEnergyClassify());
         //能源ID energyIds
         List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
 
@@ -144,11 +145,11 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             }
             List<Long> collect1 = collect.stream().map(StandingbookDO::getId).collect(Collectors.toList());
             standingBookIds.addAll(collect1);
-        }else {
+        } else {
             List<Long> collect = standingbookIdsByEnergy.stream().map(StandingbookDO::getId).collect(Collectors.toList());
             standingBookIds.addAll(collect);
         }
-        if(CollectionUtil.isEmpty(standingBookIds)){
+        if (CollectionUtil.isEmpty(standingBookIds)) {
             resultVO.setDataTime(LocalDateTime.now());
             return resultVO;
         }
@@ -205,10 +206,6 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         return resultVO;
     }
 
-    @Override
-    public void moneyAnalysisChart(StatisticsParamVO paramVO) {
-
-    }
 
     public List<StatisticsInfoV2> queryDefault(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped,
                                                List<UsageCostData> usageCostDataList, DataTypeEnum dataType) {
@@ -399,6 +396,209 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 用能成本分析图
+     *
+     * @param paramVO
+     */
+    @Override
+    public StatisticsChartResultV2VO moneyAnalysisChart(StatisticsParamV2VO paramVO) {
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+        LocalDateTime startTime = rangeOrigin[0];
+        LocalDateTime endTime = rangeOrigin[1];
+        if (!startTime.isBefore(endTime)) {
+            throw exception(END_TIME_MUST_AFTER_START_TIME);
+        }
+        //时间不能相差1年
+        if (!LocalDateTimeUtils.isWithinDays(startTime, endTime, CommonConstants.YEAR)) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        DataTypeEnum dataTypeEnum = DataTypeEnum.codeOf(paramVO.getDateType());
+        //时间类型不存在
+        if (Objects.isNull(dataTypeEnum)) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+        String cacheKey = USAGE_COST_CHART + SecureUtil.md5(paramVO.toString());
+        byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
+        String cacheRes = StrUtils.decompressGzip(compressed);
+        if (StrUtil.isNotEmpty(cacheRes)) {
+            log.info("缓存结果");
+            return JSONUtil.toBean(cacheRes, StatisticsChartResultV2VO.class);
+        }
+
+
+        //能源列表
+        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(new HashSet<>(paramVO.getEnergyIds()), paramVO.getEnergyClassify());
+        //能源ID energyIds
+        List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
+
+
+        //根据能源查询台账
+        List<StandingbookDO> standingbookIdsByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIds);
+
+        //根据标签查询
+        List<Long> standingBookIdList = standingbookIdsByEnergy.stream().map(StandingbookDO::getId).collect(Collectors.toList());
+        List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByLabel(paramVO.getTopLabel(), paramVO.getChildLabels(), standingBookIdList);
+
+        List<Long> standingBookIds = new ArrayList<>();
+        StatisticsChartResultV2VO resultV2VO = new StatisticsChartResultV2VO();
+        if (CollectionUtil.isNotEmpty(standingbookIdsByLabel)) {
+            List<Long> sids = standingbookIdsByLabel.stream().map(StandingbookLabelInfoDO::getStandingbookId).collect(Collectors.toList());
+            List<StandingbookDO> collect = standingbookIdsByEnergy.stream().filter(s -> sids.contains(s.getId())).collect(Collectors.toList());
+            //能源管理计量器具，标签可能关联重点设备，当不存在交集时，则无需查询
+            if (ArrayUtil.isEmpty(collect)) {
+                resultV2VO.setDataTime(LocalDateTime.now());
+                return resultV2VO;
+            }
+            List<Long> collect1 = collect.stream().map(StandingbookDO::getId).collect(Collectors.toList());
+            standingBookIds.addAll(collect1);
+        } else {
+            List<Long> collect = standingbookIdsByEnergy.stream().map(StandingbookDO::getId).collect(Collectors.toList());
+            standingBookIds.addAll(collect);
+        }
+
+
+        if (CollectionUtil.isEmpty(standingBookIds)) {
+            resultV2VO.setDataTime(LocalDateTime.now());
+            return resultV2VO;
+        }
+        //能源参数
+        //根据台账ID查询用量跟成本
+        List<UsageCostData> usageCostDataList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
+        LocalDateTime lastTime = usageCostService.getLastTime(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
+        Integer queryType = paramVO.getQueryType();
+
+        // x轴
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], dataTypeEnum);
+        resultV2VO.setXdata(xdata);
+
+        resultV2VO.setDataTime(lastTime);
+
+        // 按能源查看
+        if (QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)) {
+            Map<Long, Map<String, BigDecimal>> energyTimeCostMap = usageCostDataList.stream()
+                    .collect(Collectors.groupingBy(
+                            UsageCostData::getEnergyId,
+                            Collectors.toMap(
+                                    UsageCostData::getTime,
+                                    UsageCostData::getTotalCost
+                            )
+                    ));
+            Map<Long, EnergyConfigurationDO> energyMap = energyList.stream().collect(Collectors.toMap(EnergyConfigurationDO::getId, Function.identity()));
+            List<StatisticsChartYInfoV2VO> ydata = energyMap.entrySet().stream()
+                    .filter(entry -> energyTimeCostMap.containsKey(entry.getKey())) // 仅处理有数据的 energy
+                    .map(entry -> {
+                        Long energyId = entry.getKey();
+                        EnergyConfigurationDO energy = entry.getValue();
+                        Map<String, BigDecimal> timeCostMap = energyTimeCostMap.getOrDefault(energyId, Collections.emptyMap());
+
+                        List<StatisticsChartYDataV2VO> dataList = xdata.stream().map(time -> {
+                            StatisticsChartYDataV2VO vo = new StatisticsChartYDataV2VO();
+                            vo.setCost(timeCostMap.getOrDefault(time, null));
+                            return vo;
+                        }).collect(Collectors.toList());
+
+                        StatisticsChartYInfoV2VO yInfo = new StatisticsChartYInfoV2VO();
+                        yInfo.setId(energyId);
+                        yInfo.setName(energy.getEnergyName());
+                        yInfo.setData(dataList);
+                        return yInfo;
+                    })
+                    .collect(Collectors.toList());
+
+            resultV2VO.setYdata(ydata);
+
+        } else if (QueryDimensionEnum.LABEL_REVIEW.getCode().equals(queryType)) {//按标签
+            //涉及到的标签
+            //key是一级标签
+            // 过滤并按标签名分组
+            Map<String, List<StandingbookLabelInfoDO>> labelGrouped = standingbookIdsByLabel.stream()
+                    .filter(label -> standingBookIds.contains(label.getStandingbookId()))
+                    .collect(Collectors.groupingBy(StandingbookLabelInfoDO::getName));
+
+            // 提取一级标签ID
+            List<Long> topLabelIds = labelGrouped.keySet().stream()
+                    .map(s -> s.substring(s.indexOf("_") + 1))
+                    .map(Long::valueOf)
+                    .collect(Collectors.toList());
+
+            // 获取标签信息
+            List<LabelConfigDO> labelList = labelConfigService.getByIds(topLabelIds);
+            Map<String, LabelConfigDO> labelMap = labelList.stream()
+                    .collect(Collectors.toMap(s -> LABEL_NAME_PREFIX + s.getId(), Function.identity()));
+
+            // 构造 standingbookId -> labelKey 映射
+            Map<Long, String> standingbookIdToLabel = new HashMap<>();
+            labelGrouped.forEach((labelKey, list) ->
+                    list.forEach(item -> standingbookIdToLabel.put(item.getStandingbookId(), labelKey))
+            );
+
+            // 构造 (labelKey, time) -> cost 的二维映射
+            Map<String, Map<String, BigDecimal>> labelTimeCostMap = new HashMap<>();
+            for (UsageCostData data : usageCostDataList) {
+                Long standingbookId = data.getStandingbookId();
+                String time = data.getTime();
+                BigDecimal cost = data.getTotalCost();
+
+                String labelKey = standingbookIdToLabel.get(standingbookId);
+                if (labelKey == null) continue;
+
+                labelTimeCostMap
+                        .computeIfAbsent(labelKey, k -> new HashMap<>())
+                        .merge(time, cost, BigDecimal::add);
+            }
+
+            //构建结果
+            List<StatisticsChartYInfoV2VO> infoV2VOS = new ArrayList<>();
+            labelTimeCostMap.forEach((labelKey, timeCostMap) -> {
+                LabelConfigDO labelConfigDO = labelMap.get(labelKey);
+                if (labelConfigDO == null) return;
+
+                List<StatisticsChartYDataV2VO> ydata = xdata.stream().map(x -> {
+                    BigDecimal cost = timeCostMap.getOrDefault(x, BigDecimal.ZERO);
+                    StatisticsChartYDataV2VO vo = new StatisticsChartYDataV2VO();
+                    vo.setCost(cost.compareTo(BigDecimal.ZERO) > 0 ? cost : null);
+                    return vo;
+                }).collect(Collectors.toList());
+
+                StatisticsChartYInfoV2VO yInfo = new StatisticsChartYInfoV2VO();
+                yInfo.setId(labelConfigDO.getId());
+                yInfo.setName(labelConfigDO.getLabelName());
+                yInfo.setData(ydata);
+                infoV2VOS.add(yInfo);
+            });
+
+            resultV2VO.setYdata(infoV2VOS);
+        } else {//综合查看
+            //根据日期计算最大 / 最小 / 平均 / 总和
+            Map<String, StatsResult> statsResultMap = CalculateUtil.calculateGroupStats(usageCostDataList, UsageCostData::getTime, UsageCostData::getTotalCost);
+            List<StatisticsChartYInfoV2VO> ydata = new ArrayList<>();
+            xdata.forEach(s -> {
+                StatsResult statsResult = statsResultMap.get(s);
+                if (Objects.nonNull(statsResult)) {
+                    StatisticsChartYInfoV2VO yInfoV2VO = new StatisticsChartYInfoV2VO();
+                    StatisticsChartYDataV2VO dataV2VO = new StatisticsChartYDataV2VO();
+                    dataV2VO.setAvg(statsResult.getAvg());
+                    dataV2VO.setMax(statsResult.getMax());
+                    dataV2VO.setMin(statsResult.getMin());
+                    dataV2VO.setCost(statsResult.getSum());
+                    yInfoV2VO.setData(Collections.singletonList(dataV2VO));
+                    ydata.add(yInfoV2VO);
+                } else {
+                    ydata.add(null);
+                }
+            });
+            resultV2VO.setYdata(ydata);
+        }
+        String jsonStr = JSONUtil.toJsonStr(resultV2VO);
+        byte[] bytes = StrUtils.compressGzip(jsonStr);
+        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+        return resultV2VO;
+
     }
 
 }
