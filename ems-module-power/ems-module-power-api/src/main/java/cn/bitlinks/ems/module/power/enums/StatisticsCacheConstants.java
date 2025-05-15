@@ -8,6 +8,8 @@ public class StatisticsCacheConstants {
 
     // 用能分析-环比分析-折旧分析-表格
     public static final String COMPARISON_DISCOUNT_TABLE = "statistics:comparison:discount:table:";
+    public static final String USAGE_COST_TABLE = "statistics:usage:cost:table:";
+    public static final String USAGE_COST_CHART = "statistics:usage:cost:chart:";
 
 
 

@@ -5,6 +5,7 @@ import java.util.Map;
 
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsBarVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsChartResultV2VO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsInfoV2;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
@@ -22,7 +23,7 @@ public interface StatisticsV2Service {
      * @param paramVO
      * @return
      */
-    StatisticsResultV2VO moneyAnalysisTable(StatisticsParamV2VO paramVO);
+    StatisticsResultV2VO<StatisticsInfoV2> moneyAnalysisTable(StatisticsParamV2VO paramVO);
 
     StatisticsChartResultV2VO moneyAnalysisChart(StatisticsParamV2VO paramVO);
 }

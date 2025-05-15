@@ -13,6 +13,7 @@ import javax.validation.Valid;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsChartResultV2VO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsInfoV2;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsOverviewResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
@@ -42,7 +43,7 @@ public class StatisticsV2Controller {
 
     @PostMapping("/moneyAnalysisTable")
     @Operation(summary = "折价分析（表）")
-    public CommonResult<StatisticsResultV2VO> moneyAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO) {
+    public CommonResult<StatisticsResultV2VO<StatisticsInfoV2>> moneyAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO) {
         return success(statisticsV2Service.moneyAnalysisTable(paramVO));
     }
 

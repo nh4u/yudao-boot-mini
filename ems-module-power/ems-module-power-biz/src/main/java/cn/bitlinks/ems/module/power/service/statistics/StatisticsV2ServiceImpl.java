@@ -54,6 +54,8 @@ import static cn.bitlinks.ems.module.power.enums.CommonConstants.LABEL_NAME_PREF
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_RANGE_EXCEED_LIMIT;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_TYPE_NOT_EXISTS;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.END_TIME_MUST_AFTER_START_TIME;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_CHART;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_TABLE;
 
 /**
  * 用能分析 Service 实现类
@@ -83,7 +85,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
 
     @Override
-    public StatisticsResultV2VO moneyAnalysisTable(StatisticsParamV2VO paramVO) {
+    public StatisticsResultV2VO<StatisticsInfoV2> moneyAnalysisTable(StatisticsParamV2VO paramVO) {
 
         // 校验时间范围是否存在
         LocalDateTime[] rangeOrigin = paramVO.getRange();
@@ -103,7 +105,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         if (Objects.isNull(dataTypeEnum)) {
             throw exception(DATE_TYPE_NOT_EXISTS);
         }
-        String cacheKey = SecureUtil.md5(paramVO.toString());
+        String cacheKey = USAGE_COST_TABLE + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (StrUtil.isNotEmpty(cacheRes)) {
@@ -115,7 +117,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], dataTypeEnum);
 
         //返回结果
-        StatisticsResultV2VO resultVO = new StatisticsResultV2VO();
+        StatisticsResultV2VO<StatisticsInfoV2> resultVO = new StatisticsResultV2VO<StatisticsInfoV2>();
         resultVO.setHeader(tableHeader);
 
         //能源列表
@@ -420,7 +422,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         if (Objects.isNull(dataTypeEnum)) {
             throw exception(DATE_TYPE_NOT_EXISTS);
         }
-        String cacheKey = SecureUtil.md5(paramVO.toString());
+        String cacheKey = USAGE_COST_CHART + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (StrUtil.isNotEmpty(cacheRes)) {
