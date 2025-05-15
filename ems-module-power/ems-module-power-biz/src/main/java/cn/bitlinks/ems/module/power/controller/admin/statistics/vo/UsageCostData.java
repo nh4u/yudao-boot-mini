@@ -39,8 +39,10 @@ public class UsageCostData {
      * 成本
      */
     private BigDecimal totalCost;
-
-
+    /**
+     * 折标煤
+     */
+    private BigDecimal totalStandardCoalEquivalent;
 
 
 }

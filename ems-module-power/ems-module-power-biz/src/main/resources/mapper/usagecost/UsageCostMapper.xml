@@ -54,7 +54,8 @@
         ,
 
         SUM(cost) AS totalCost,
-        SUM(current_usage) AS currentTotalUsage
+        SUM(current_usage) AS currentTotalUsage,
+        SUM(standard_coal_equivalent) AS totalStandardCoalEquivalent
         FROM
         usage_cost
         WHERE

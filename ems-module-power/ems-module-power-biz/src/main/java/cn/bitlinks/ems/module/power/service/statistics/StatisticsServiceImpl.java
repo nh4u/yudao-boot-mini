@@ -325,6 +325,9 @@ public class StatisticsServiceImpl implements StatisticsService {
         List<StatisticsResultVO> list = new ArrayList<>();
         // 标签查询条件处理
         List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
+        if (CollectionUtil.isEmpty(labelTree)){
+            throw exception(LABEL_CONFIG_NOT_EXISTS);
+        }
         // 能源查询条件处理
         List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
 
