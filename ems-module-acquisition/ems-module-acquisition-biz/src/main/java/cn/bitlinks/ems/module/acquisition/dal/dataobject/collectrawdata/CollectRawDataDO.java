@@ -1,18 +1,59 @@
-//package cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata;
-//
-///**
-// * 实时数据
-// */
-//public class CollectRawDataDO {
-//}
-//    CREATE TABLE `collect_raw_data` (
-//        `data_site` varchar(255) NOT NULL COMMENT "OPC_DA:IO地址/",
-//        `sync_time` datetime NOT NULL COMMENT "数据同步时间",
-//        `param_code` varchar(255) NOT NULL COMMENT "参数 code",
-//        `energy_flag` tinyint(4) NOT NULL COMMENT "是否能源数采参数 0自定义 1能源参数",
-//        `param_type` int(11) NOT NULL COMMENT "参数类型",
-//        `standingbook_id` bigint(20) NOT NULL COMMENT "台账id",
-//        `calc_value` varchar(255) NULL COMMENT "公式计算值",
-//        `raw_value` varchar(255) NULL COMMENT "采集值（原始）",
-//        `collect_time` datetime NOT NULL COMMENT "数据采集时间（原始）",
-//        `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "创建时间"
+package cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata;
+
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+/**
+ * 实时数据
+ */
+@TableName(value = "collect_raw_data", autoResultMap = true)
+@Data
+@ToString(callSuper = true)
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CollectRawDataDO {
+    /**
+     * OPC_DA:IO地址/
+     */
+    private String dataSite;
+    /**
+     * 数据同步时间
+     */
+    private LocalDateTime syncTime;
+    /**
+     * 参数 code
+     */
+    private String paramCode;
+    /**
+     * 是否能源数采参数 0自定义 1能源参数
+     */
+    private Boolean energyFlag;
+    /**
+     * 参数类型
+     */
+    private Integer paramType;
+    /**
+     * 台账id
+     */
+    private String standingbookId;
+    /**
+     * 公式计算值
+     */
+    private String calcValue;
+    /**
+     * 采集值（原始）
+     */
+    private String rawValue;
+    /**
+     * 数据采集时间（原始）
+     */
+    private LocalDateTime collectTime;
+    /**
+     * 创建时间
+     */
+    private LocalDateTime createTime;
+
+}
