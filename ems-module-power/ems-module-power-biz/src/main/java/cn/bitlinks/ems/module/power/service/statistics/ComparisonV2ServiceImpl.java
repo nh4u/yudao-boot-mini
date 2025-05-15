@@ -129,11 +129,11 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         }
 
         // 查询当前周期折扣数据
-        List<UsageCostDiscountData> usageCostDataList = usageCostService.getDiscountList(paramVO, startTime, endTime, standingBookIds);
+        List<UsageCostData> usageCostDataList = usageCostService.getList(paramVO, startTime, endTime, standingBookIds);
 
         // 查询上一个周期折扣数据
         LocalDateTime[] lastRange = LocalDateTimeUtils.getPreviousRange(rangeOrigin, dataTypeEnum);
-        List<UsageCostDiscountData> lastUsageCostDataList = usageCostService.getDiscountList(paramVO, lastRange[0], lastRange[1], standingBookIds);
+        List<UsageCostData> lastUsageCostDataList = usageCostService.getList(paramVO, lastRange[0], lastRange[1], standingBookIds);
 
         List<ComparisonItemVO> statisticsInfoList = new ArrayList<>();
 
@@ -175,15 +175,15 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
      * 按能源维度统计：以 energyId 为主键，构建环比统计数据
      */
     private List<ComparisonItemVO> queryByEnergy(List<EnergyConfigurationDO> energyList,
-                                                 List<UsageCostDiscountData> usageCostDataList,
-                                                 List<UsageCostDiscountData> lastUsageCostDataList,
+                                                 List<UsageCostData> usageCostDataList,
+                                                 List<UsageCostData> lastUsageCostDataList,
                                                  DataTypeEnum dataTypeEnum) {
         // 按能源ID分组当前周期数据
-        Map<Long, List<UsageCostDiscountData>> energyUsageMap = usageCostDataList.stream()
-                .collect(Collectors.groupingBy(UsageCostDiscountData::getEnergyId));
+        Map<Long, List<UsageCostData>> energyUsageMap = usageCostDataList.stream()
+                .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
 
         // 上期数据以 energyId + time 为key构建map，便于查找
-        Map<String, UsageCostDiscountData> lastDataMap = lastUsageCostDataList.stream()
+        Map<String, UsageCostData> lastDataMap = lastUsageCostDataList.stream()
                 .collect(Collectors.toMap(
                         d -> d.getEnergyId() + "_" + d.getTime(),
                         Function.identity(),
@@ -193,7 +193,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         return energyList.stream()
                 .filter(energy -> energyUsageMap.containsKey(energy.getId()))
                 .map(energy -> {
-                    List<UsageCostDiscountData> usageList = energyUsageMap.get(energy.getId());
+                    List<UsageCostData> usageList = energyUsageMap.get(energy.getId());
                     if (CollectionUtil.isEmpty(usageList)) return null;
 
                     // 构造环比详情数据列表
@@ -202,9 +202,9 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                                 // 使用当前时间推算上期时间来构建 key
                                 String lastTime = LocalDateTimeUtils.getPreviousTime(current.getTime(), dataTypeEnum);
                                 String key = current.getEnergyId() + "_" + lastTime;
-                                UsageCostDiscountData previous = lastDataMap.get(key);
-                                BigDecimal now = current.getTotalDiscount();
-                                BigDecimal last = previous != null ? previous.getTotalDiscount() : null;
+                                UsageCostData previous = lastDataMap.get(key);
+                                BigDecimal now = current.getTotalCost();
+                                BigDecimal last = previous != null ? previous.getTotalCost() : null;
                                 BigDecimal ratio = calculateRatio(now, last);
                                 return new ComparisonDetailVO(current.getTime(), now, last, ratio);
                             })
@@ -233,14 +233,14 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
     /**
      * 按标签维度统计：以 standingbookId 和标签结构为基础构建环比对比数据
      */
-    private List<ComparisonItemVO> queryByLabel(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped, List<UsageCostDiscountData> usageCostDataList,
-                                                List<UsageCostDiscountData> lastUsageCostDataList, DataTypeEnum dateTypeEnum) {
+    private List<ComparisonItemVO> queryByLabel(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped, List<UsageCostData> usageCostDataList,
+                                                List<UsageCostData> lastUsageCostDataList, DataTypeEnum dateTypeEnum) {
         // 当前周期数据按 standingbookId 分组
-        Map<Long, List<UsageCostDiscountData>> currentMap = usageCostDataList.stream()
-                .collect(Collectors.groupingBy(UsageCostDiscountData::getStandingbookId));
+        Map<Long, List<UsageCostData>> currentMap = usageCostDataList.stream()
+                .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
 
         // 上期数据以 standingbookId + time 为key 构建map
-        Map<String, UsageCostDiscountData> lastMap = lastUsageCostDataList.stream()
+        Map<String, UsageCostData> lastMap = lastUsageCostDataList.stream()
                 .collect(Collectors.toMap(
                         d -> d.getStandingbookId() + "_" + d.getTime(),
                         Function.identity(),
@@ -265,7 +265,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                 String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : "/";
 
                 labelInfoList.forEach(labelInfo -> {
-                    List<UsageCostDiscountData> usageList = currentMap.get(labelInfo.getStandingbookId());
+                    List<UsageCostData> usageList = currentMap.get(labelInfo.getStandingbookId());
                     if (CollectionUtil.isEmpty(usageList)) return;
 
                     // 构造环比详情列表
@@ -273,9 +273,9 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                             .map(current -> {
                                 String previousTime = LocalDateTimeUtils.getPreviousTime(current.getTime(), dateTypeEnum);
                                 String key = current.getStandingbookId() + "_" + previousTime;
-                                UsageCostDiscountData previous = lastMap.get(key);
-                                BigDecimal now = current.getTotalDiscount();
-                                BigDecimal last = previous != null ? previous.getTotalDiscount() : null;
+                                UsageCostData previous = lastMap.get(key);
+                                BigDecimal now = current.getTotalCost();
+                                BigDecimal last = previous != null ? previous.getTotalCost() : null;
                                 BigDecimal ratio = calculateRatio(now, last);
                                 return new ComparisonDetailVO(current.getTime(), now, last, ratio);
                             })
@@ -308,10 +308,10 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
     /**
      * 综合默认统计：标签 + energyId 双维度聚合构建对比数据
      */
-    private List<ComparisonItemVO> queryDefault(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped, List<UsageCostDiscountData> usageCostDataList,
-                                                List<UsageCostDiscountData> lastUsageCostDataList, DataTypeEnum dateTypeEnum) {
+    private List<ComparisonItemVO> queryDefault(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped, List<UsageCostData> usageCostDataList,
+                                                List<UsageCostData> lastUsageCostDataList, DataTypeEnum dateTypeEnum) {
         // 提取所有能源ID
-        Set<Long> energyIdSet = usageCostDataList.stream().map(UsageCostDiscountData::getEnergyId).collect(Collectors.toSet());
+        Set<Long> energyIdSet = usageCostDataList.stream().map(UsageCostData::getEnergyId).collect(Collectors.toSet());
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(energyIdSet, null);
         Map<Long, EnergyConfigurationDO> energyMap = energyList.stream()
                 .collect(Collectors.toMap(EnergyConfigurationDO::getId, Function.identity()));
@@ -321,11 +321,11 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                 .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
 
         // 当前周期数据按 standingbookId 分组
-        Map<Long, List<UsageCostDiscountData>> energyUsageMap = usageCostDataList.stream()
-                .collect(Collectors.groupingBy(UsageCostDiscountData::getStandingbookId));
+        Map<Long, List<UsageCostData>> energyUsageMap = usageCostDataList.stream()
+                .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
 
         // 上期数据构建 key = standingbookId_energyId_time 的 map
-        Map<String, UsageCostDiscountData> lastMap = lastUsageCostDataList.stream()
+        Map<String, UsageCostData> lastMap = lastUsageCostDataList.stream()
                 .collect(Collectors.toMap(
                         d -> d.getStandingbookId() + "_" + d.getEnergyId() + "_" + d.getTime(),
                         Function.identity(),
@@ -346,12 +346,12 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                 String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : "/";
 
                 labelInfoList.forEach(labelInfo -> {
-                    List<UsageCostDiscountData> usageList = energyUsageMap.get(labelInfo.getStandingbookId());
+                    List<UsageCostData> usageList = energyUsageMap.get(labelInfo.getStandingbookId());
                     if (CollectionUtil.isEmpty(usageList)) return;
 
                     // 当前计量器具下按 energyId 再分组
-                    Map<Long, List<UsageCostDiscountData>> energyUsageCostMap = usageList.stream()
-                            .collect(Collectors.groupingBy(UsageCostDiscountData::getEnergyId));
+                    Map<Long, List<UsageCostData>> energyUsageCostMap = usageList.stream()
+                            .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
 
                     energyUsageCostMap.forEach((energyId, usageCostList) -> {
                         EnergyConfigurationDO energyConfigurationDO = energyMap.get(energyId);
@@ -362,9 +362,9 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                                 .map(current -> {
                                     String previousTime = LocalDateTimeUtils.getPreviousTime(current.getTime(), dateTypeEnum);
                                     String key = current.getStandingbookId() + "_" + energyId + "_" + previousTime;
-                                    UsageCostDiscountData previous = lastMap.get(key);
-                                    BigDecimal now = current.getTotalDiscount();
-                                    BigDecimal last = previous != null ? previous.getTotalDiscount() : null;
+                                    UsageCostData previous = lastMap.get(key);
+                                    BigDecimal now = current.getTotalCost();
+                                    BigDecimal last = previous != null ? previous.getTotalCost() : null;
                                     BigDecimal ratio = calculateRatio(now, last);
                                     return new ComparisonDetailVO(current.getTime(), now, last, ratio);
                                 })
