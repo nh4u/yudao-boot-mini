@@ -64,6 +64,14 @@ public class StandingbookTypeController {
         return success(BeanUtils.toBean(standingbookType, StandingbookTypeRespVO.class));
     }
 
+    @GetMapping("/checkRelStandingbook")
+    @Operation(summary = "台账类型是否关联台账")
+    @Parameter(name = "id", description = "编号", required = true, example = "1024")
+    @PreAuthorize("@ss.hasPermission('power:standingbook-type:query')")
+    public CommonResult<Boolean> checkRelStandingbook(@RequestParam("id") Long id) {
+        return success(standingbookTypeService.checkRelStandingbook(id));
+    }
+
     @GetMapping("/getByName")
     @Operation(summary = "获得台账类型根据名称")
     @Parameter(name = "name", description = "名称", required = true, example = "锅炉")
