@@ -69,4 +69,7 @@ public interface LabelConfigService {
      * @return 配置标签
      */
     List<LabelConfigDO> getAllLabelConfig();
+
+
+    List<LabelConfigDO> getByIds(List<Long> ids);
 }

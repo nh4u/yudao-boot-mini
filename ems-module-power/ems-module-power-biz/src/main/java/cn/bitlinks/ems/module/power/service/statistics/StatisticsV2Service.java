@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsBarVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsChartResultV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
@@ -23,5 +24,5 @@ public interface StatisticsV2Service {
      */
     StatisticsResultV2VO moneyAnalysisTable(StatisticsParamV2VO paramVO);
 
-    void moneyAnalysisChart(StatisticsParamVO paramVO);
+    StatisticsChartResultV2VO moneyAnalysisChart(StatisticsParamV2VO paramVO);
 }

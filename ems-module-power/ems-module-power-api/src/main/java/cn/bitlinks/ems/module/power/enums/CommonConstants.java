@@ -80,4 +80,10 @@ public interface CommonConstants {
     Pattern PATTERN_PARAMS = Pattern.compile("\\{(.*?)}");
 
 
+    /**
+     * 服务名称（IP地址：端口号）协议
+     */
+    String LABEL_NAME_PREFIX = "label_";
+
+
 }

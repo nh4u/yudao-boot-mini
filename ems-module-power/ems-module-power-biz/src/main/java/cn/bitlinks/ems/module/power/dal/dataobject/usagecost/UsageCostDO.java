@@ -49,9 +49,9 @@ public class UsageCostDO {
     private BigDecimal cost;
 
     /**
-     * 折价
+     * 折标煤
      */
-    private BigDecimal discount;
+    private BigDecimal standardCoalEquivalent;
 
     /**
      * 能源
