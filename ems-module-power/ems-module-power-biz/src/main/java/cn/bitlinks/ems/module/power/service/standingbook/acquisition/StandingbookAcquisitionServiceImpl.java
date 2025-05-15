@@ -19,6 +19,8 @@ import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDa
 import cn.bitlinks.ems.module.power.utils.CalculateUtil;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -83,6 +85,8 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                     StandingbookAcquisitionDetailDO.class);
             detailDOS.forEach(detailDO -> detailDO.setAcquisitionId(standingbookAcquisition.getId()));
             standingbookAcquisitionDetailMapper.insertBatch(detailDOS);
+            // ***需要创建【定时任务】 todo
+
             // 返回
             return standingbookAcquisition.getId();
         }
@@ -110,12 +114,16 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         if (CollUtil.isNotEmpty(newDetails)) {
             newDetails.forEach(detailDO -> detailDO.setAcquisitionId(standingbookAcquisition.getId()));
             standingbookAcquisitionDetailMapper.insertBatch(newDetails);
+            // ***【修改任务】，新增任务数据参数 todo
         }
 
         // 2.2.2更新
         if (CollUtil.isNotEmpty(updatedDetails)) {
             standingbookAcquisitionDetailMapper.updateBatch(updatedDetails);
+            // ***【修改该设备对应的任务】，任务数据参数 todo
         }
+        // 3. 对比频率和频率单位是否修改，如果修改的话，【修改定时任务】
+
 
         // 返回
         return updateReqVO.getId();
