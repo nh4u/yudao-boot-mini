@@ -31,6 +31,12 @@ public interface StandingbookAttributeService {
     List<StandingbookAttributeDO> getStandingbookAttributeByTypeId(Long typeId);
 
     /**
+     * 获取台账私有属性 by typeId
+     * @param typeId 编号
+     * @return 台账属性
+     */
+    List<StandingbookAttributeDO> getPrivateStandingbookAttributeByTypeId(Long typeId);
+    /**
      * 根据台账属性条件获取台账id
      *
      * @param children 台账属性条件参数
