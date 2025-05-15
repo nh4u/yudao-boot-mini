@@ -290,6 +290,12 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         return subtreeIds;
     }
 
+    @Override
+    public Boolean checkRelStandingbook(Long id) {
+        List<StandingbookDO> standingbookDOList = standingbookService.getByTypeIds(Collections.singletonList(id));
+        return CollUtil.isNotEmpty(standingbookDOList);
+    }
+
     // 树状结构中查询当前节点
     private StandingbookTypeDO findNode(List<StandingbookTypeDO> typeList, Long targetId) {
         if (typeList == null || typeList.isEmpty()) {

@@ -68,4 +68,11 @@ public interface StandingbookTypeService {
      * @return
      */
     List<Long> getSubtreeIds(List<StandingbookTypeDO> typeList, Long targetId);
+
+    /**
+     * 查询是否关联台账
+     * @param id 分类id
+     * @return
+     */
+    Boolean checkRelStandingbook(Long id);
 }
