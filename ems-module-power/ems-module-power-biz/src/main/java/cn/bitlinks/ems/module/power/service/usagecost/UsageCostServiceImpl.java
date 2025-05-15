@@ -1,20 +1,16 @@
 package cn.bitlinks.ems.module.power.service.usagecost;
 
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostDiscountData;
-import com.baomidou.dynamic.datasource.annotation.DS;
-
-import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
-
-import java.time.LocalDateTime;
-import java.util.List;
-
-import javax.annotation.Resource;
-
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
 import cn.bitlinks.ems.module.power.dal.mysql.usagecost.UsageCostMapper;
+import com.baomidou.dynamic.datasource.annotation.DS;
+import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
+
+import javax.annotation.Resource;
+import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * @author wangl
@@ -40,9 +36,4 @@ public class UsageCostServiceImpl implements UsageCostService{
         return usageCostMapper.getLastTime(paramVO, startDate, endDate, standingBookIds);
     }
 
-    @Override
-    @TenantIgnore
-    public List<UsageCostDiscountData> getDiscountList(StatisticsParamV2VO paramVO, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
-        return usageCostMapper.getDiscountList(paramVO, startDate, endDate, standingBookIds);
-    }
 }
