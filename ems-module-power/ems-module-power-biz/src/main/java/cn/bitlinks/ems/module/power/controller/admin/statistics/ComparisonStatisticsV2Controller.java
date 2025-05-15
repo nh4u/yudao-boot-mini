@@ -1,8 +1,7 @@
 package cn.bitlinks.ems.module.power.controller.admin.statistics;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.service.statistics.ComparisonV2Service;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -34,5 +33,11 @@ public class ComparisonStatisticsV2Controller {
         return success(comparisonV2Service.discountAnalysisTable(paramVO));
     }
 
+    @PostMapping("/discountAnalysisChart")
+    @Operation(summary = "折价环比分析（图）")
+    public CommonResult<ComparisonChartResultVO> discountAnalysisChart(@Valid @RequestBody StatisticsParamV2VO paramVO) {
+        return success(comparisonV2Service.discountAnalysisChart(paramVO));
+
+    }
 
 }
