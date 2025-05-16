@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.controller.admin.statistics;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
+import cn.bitlinks.ems.module.power.service.statistics.StandardCoalStructureV2Service;
 import cn.bitlinks.ems.module.power.service.statistics.StandardCoalV2Service;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
+
+import java.util.Map;
 
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 
@@ -28,6 +31,9 @@ public class StandardCoalStatisticsV2Controller {
     @Resource
     private StandardCoalV2Service standardCoalV2Service;
 
+    @Resource
+    private StandardCoalStructureV2Service standardCoalStructureV2Service;
+
 
     @PostMapping("/standardCoalAnalysisTable")
     @Operation(summary = "折标煤分析（表）V2")
@@ -42,4 +48,16 @@ public class StandardCoalStatisticsV2Controller {
         return success(standardCoalV2Service.standardCoalAnalysisChart(paramVO));
     }
 
+
+    @PostMapping("/standardCoalStructureAnalysisTable")
+    @Operation(summary = "用能结构分析（表）V2")
+    public CommonResult<StatisticsResultV2VO<StandardCoalInfo>> standardCoalStructureAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO) {
+        return success(standardCoalStructureV2Service.standardCoalStructureAnalysisTable(paramVO));
+    }
+
+    @PostMapping("/standardCoalStructureAnalysisChart")
+    @Operation(summary = "用能结构分析（图）V2")
+    public CommonResult<StatisticsChartResultV2VO> standardCoalStructureAnalysisChart(@Valid @RequestBody StatisticsParamV2VO paramVO) {
+        return success(standardCoalStructureV2Service.standardCoalStructureAnalysisChart(paramVO));
+    }
 }
