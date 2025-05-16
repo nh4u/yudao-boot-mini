@@ -20,7 +20,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.Standingb
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.acquisition.dto.ParameterKey;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
-import cn.bitlinks.ems.module.power.utils.CornUtils;
+import cn.bitlinks.ems.module.power.utils.CronUtils;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -145,7 +145,8 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         AcquisitionJobDTO acquisitionJobDTO = new AcquisitionJobDTO();
         acquisitionJobDTO.setStandingbookId(updateReqVO.getStandingbookId());
         acquisitionJobDTO.setJobStartTime(updateReqVO.getStartTime());
-        acquisitionJobDTO.setCornExpression(CornUtils.getCorn(updateReqVO.getFrequency(), updateReqVO.getFrequencyUnit()));
+        acquisitionJobDTO.setCronExpression(CronUtils.getCron(updateReqVO.getFrequency(),
+                updateReqVO.getFrequencyUnit()));
         acquisitionJobDTO.setDetails(BeanUtils.toBean(detailVOS, StandingbookAcquisitionDetailDTO.class));
         quartzApi.createOrUpdateJob(acquisitionJobDTO);
     }
@@ -369,13 +370,6 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
         }
         // 将计算后的数值替换到公式中，
-//            IExpressContext<String, Object> context = new DefaultContext<>();
-//            relyParamMap.forEach((parameterKey, detailVO) -> {
-//                String relyParam = String.format(PATTERN_ACQUISITION_FORMULA_FILL, detailVO.getCode(), currentDetail.getEnergyFlag());
-//                context.put(relyParam, itemStatusMap.get(detailVO.getDataSite()).getValue());
-//            });
-//            // 根据公式进行计算返回结果
-//            return String.format(STANDINGBOOK_ACQUISITION_SUCCESS, CalculateUtil.calcAcquisitionFormula(formula, context));
 
         String actualFormula = currentFormulaDetail.getActualFormula();
         String finalFormula = relyParamMap.entrySet().stream()
@@ -405,7 +399,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         StandingbookAcquisitionDO standingbookAcquisitionDO =
                 standingbookAcquisitionMapper.selectOne(StandingbookAcquisitionDO::getStandingbookId,
                         standingbookId);
-        if(Objects.isNull(standingbookAcquisitionDO)){
+        if (Objects.isNull(standingbookAcquisitionDO)) {
             return;
         }
         // 删除数采设置明细

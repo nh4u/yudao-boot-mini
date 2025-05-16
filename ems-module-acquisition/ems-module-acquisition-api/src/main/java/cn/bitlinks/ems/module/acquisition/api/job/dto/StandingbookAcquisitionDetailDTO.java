@@ -2,15 +2,21 @@ package cn.bitlinks.ems.module.acquisition.api.job.dto;
 
 import lombok.Data;
 
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import java.io.Serializable;
+
 /**
- * 管理后台 - 台账-数采设置详细 VO
+ * 管理后台 - 台账-数采设置详细
  */
 @Data
-public class StandingbookAcquisitionDetailDTO {
+public class StandingbookAcquisitionDetailDTO implements Serializable {
+    private static final long serialVersionUID = 1L; // 推荐指定序列化版本
 
     /**
      * 设备数采启停开关（0：关；1开。）
      **/
+    @NotNull
     private Boolean status;
 
     /**
@@ -31,17 +37,16 @@ public class StandingbookAcquisitionDetailDTO {
     /**
      * 参数编码
      **/
+    @NotEmpty
     private String code;
 
     /**
      * 是否能源数采参数 0自定义数采 1能源数采
      **/
+    @NotNull
     private Boolean energyFlag;
 
     /* 参数部分START */
-    /**
-     * 参数名称
-     */
     /**
      * 参数名称
      **/
@@ -64,6 +69,7 @@ public class StandingbookAcquisitionDetailDTO {
     /**
      * 用量
      **/
+    @NotNull
     private Integer usage;
 
 }

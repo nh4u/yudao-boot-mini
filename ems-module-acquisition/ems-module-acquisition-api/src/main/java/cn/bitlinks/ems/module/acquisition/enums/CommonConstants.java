@@ -5,6 +5,10 @@ public interface CommonConstants {
      * 数据采集任务前缀
      */
     String ACQUISITION_JOB_NAME_PREFIX = "ACQUISITION_JOB_%s";
+    /**
+     * 数据采集任务,数据map 键
+     */
+    String ACQUISITION_JOB_DATA_MAP_KEY = "acquisitionDetails";
 }
 
 
