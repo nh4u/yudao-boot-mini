@@ -24,6 +24,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookType
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
 import cn.bitlinks.ems.module.power.enums.standingbook.StandingbookTypeTopEnum;
+import cn.bitlinks.ems.module.power.service.standingbook.acquisition.StandingbookAcquisitionService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONObject;
@@ -72,7 +73,7 @@ public class StandingbookServiceImpl implements StandingbookService {
     private MeasurementAssociationMapper measurementAssociationMapper;
 
     @Resource
-    private QuartzApi quartzApi;
+    private StandingbookAcquisitionService standingbookAcquisitionService;
 
     @Override
     public Long count(Long typeId) {
@@ -293,8 +294,8 @@ public class StandingbookServiceImpl implements StandingbookService {
         standingbookLabelInfoMapper.delete(StandingbookLabelInfoDO::getStandingbookId, id);
         // 删除属性
         standingbookAttributeMapper.deleteStandingbookId(id);
-        // 删除数采任务
-        quartzApi.deleteJob(id);
+        // 删除数采相关
+        standingbookAcquisitionService.deleteAcquisitionByStandingbookId(id);
     }
 
     private void validateStandingbookExists(Long id) {

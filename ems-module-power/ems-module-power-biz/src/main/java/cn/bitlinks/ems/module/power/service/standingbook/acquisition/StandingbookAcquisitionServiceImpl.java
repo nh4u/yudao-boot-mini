@@ -25,6 +25,7 @@ import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
@@ -392,6 +393,24 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         }
         return result.toString();
 
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteAcquisitionByStandingbookId(Long standingbookId) {
+        // 删除数采设置
+        standingbookAcquisitionMapper.delete(StandingbookAcquisitionDO::getStandingbookId,
+                standingbookId);
+        // 查询台账关联的数采设置
+        StandingbookAcquisitionDO standingbookAcquisitionDO =
+                standingbookAcquisitionMapper.selectOne(StandingbookAcquisitionDO::getStandingbookId,
+                        standingbookId);
+        if(Objects.isNull(standingbookAcquisitionDO)){
+            return;
+        }
+        // 删除数采设置明细
+        standingbookAcquisitionDetailMapper.delete(StandingbookAcquisitionDetailDO::getAcquisitionId,
+                standingbookAcquisitionDO.getId());
     }
 
     /**

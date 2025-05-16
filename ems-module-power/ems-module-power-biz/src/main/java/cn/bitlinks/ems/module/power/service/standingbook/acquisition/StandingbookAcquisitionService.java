@@ -47,4 +47,9 @@ public interface StandingbookAcquisitionService {
      */
     String testData(StandingbookAcquisitionTestReqVO testReqVO);
 
+    /**
+     * 根据台账id删除数采相关
+     * @param id 台账id
+     */
+    void deleteAcquisitionByStandingbookId(Long standingbookId);
 }
