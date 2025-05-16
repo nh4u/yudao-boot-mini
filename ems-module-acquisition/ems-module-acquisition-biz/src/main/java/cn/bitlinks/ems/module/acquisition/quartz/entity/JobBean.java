@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 
+import java.time.LocalDateTime;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -26,4 +28,8 @@ public class JobBean {
      * 任务初始化数据
      */
     private JobDataMap jobDataMap;
+    /**
+     * 任务开始时间
+     */
+    private LocalDateTime startTime;
 }

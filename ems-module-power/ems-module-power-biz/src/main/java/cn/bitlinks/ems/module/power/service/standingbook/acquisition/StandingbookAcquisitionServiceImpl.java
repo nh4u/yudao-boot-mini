@@ -143,6 +143,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                                    List<StandingbookAcquisitionDetailVO> detailVOS) {
         // 【更新定时任务]
         AcquisitionJobDTO acquisitionJobDTO = new AcquisitionJobDTO();
+        acquisitionJobDTO.setStatus(updateReqVO.getStatus());
         acquisitionJobDTO.setStandingbookId(updateReqVO.getStandingbookId());
         acquisitionJobDTO.setJobStartTime(updateReqVO.getStartTime());
         acquisitionJobDTO.setCronExpression(CronUtils.getCron(updateReqVO.getFrequency(),

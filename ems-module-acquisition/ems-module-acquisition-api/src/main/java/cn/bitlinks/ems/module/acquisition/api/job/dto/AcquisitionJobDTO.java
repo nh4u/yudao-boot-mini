@@ -16,7 +16,10 @@ public class AcquisitionJobDTO {
      */
     @NotNull(message = "台账id不能为空")
     private Long standingbookId;
-
+    /**
+     * 设备采集启停开关
+     */
+    private Boolean status;
     /**
      * 任务开始时间
      */

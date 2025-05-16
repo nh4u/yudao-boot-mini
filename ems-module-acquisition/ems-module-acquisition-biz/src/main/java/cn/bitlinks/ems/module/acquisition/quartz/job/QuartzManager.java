@@ -2,9 +2,12 @@ package cn.bitlinks.ems.module.acquisition.quartz.job;
 
 import cn.bitlinks.ems.module.acquisition.quartz.entity.JobBean;
 import org.quartz.*;
-import org.quartz.DateBuilder.IntervalUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.Objects;
 
 /**
  *
@@ -21,14 +24,33 @@ public class QuartzManager {
      */
     public void createJob(JobBean jobBean) throws SchedulerException {
         JobDetail jobDetail = JobBuilder.newJob(jobBean.getJobClass()).withIdentity(jobBean.getJobName()).build();
-        Trigger trigger = TriggerBuilder.newTrigger().withIdentity(jobBean.getJobName())
-                .startAt(DateBuilder.futureDate(1, IntervalUnit.SECOND))
-                .withSchedule(CronScheduleBuilder.cronSchedule(jobBean.getCronExpression())).startNow().build();
+        // 创建 Trigger，使用业务指定的开始时间
+        TriggerBuilder<CronTrigger> triggerBuilder = TriggerBuilder.newTrigger()
+                .withIdentity(jobBean.getJobName())
+                .withSchedule(CronScheduleBuilder.cronSchedule(jobBean.getCronExpression()));
+
+        // 设置开始时间（从 JobBean 获取）
+        if (Objects.nonNull(jobBean.getStartTime())) {
+            Date startDate = Date.from(jobBean.getStartTime().atZone(ZoneId.systemDefault()).toInstant());
+            triggerBuilder.startAt(startDate);
+        } else {
+            triggerBuilder.startNow(); // 如果没有指定开始时间，默认立即启动
+        }
+
+        Trigger trigger = triggerBuilder.build();
 
         scheduler.scheduleJob(jobDetail, trigger);
         if (!scheduler.isShutdown()) {
             scheduler.start();
         }
+    }
+
+    /**
+     * 获取触发器状态
+     */
+    public Trigger.TriggerState getTriggerState(String jobName) throws SchedulerException {
+        TriggerKey triggerKey = TriggerKey.triggerKey(jobName);
+        return scheduler.getTriggerState(triggerKey);
     }
 
     /**
@@ -60,20 +82,33 @@ public class QuartzManager {
 
         // 替换旧的 JobDetail
         scheduler.addJob(newJobDetail, true);
-        // 2. 比较和更新 Trigger（仅当 Cron 表达式不同时）
+        // 2. 比较和更新 Trigger（仅当 Cron 表达式不同时) 和开始时间不同时,更新触发器
+
         Trigger oldTrigger = scheduler.getTrigger(triggerKey);
         if (oldTrigger instanceof CronTrigger) {
             String oldCronExpression = ((CronTrigger) oldTrigger).getCronExpression();
             // 规范化比较（去除多余空格，统一大小写）
-            if (normalizeCronExpression(oldCronExpression).equals(normalizeCronExpression(jobBean.getCronExpression()))) {
+            if (normalizeCronExpression(oldCronExpression).equals(normalizeCronExpression(jobBean.getCronExpression()))
+                    &&
+                    oldTrigger.getStartTime().equals(Date.from(jobBean.getStartTime().atZone(ZoneId.systemDefault()).toInstant()))) {
                 return;
             }
         }
-        // Cron 表达式不同，创建并替换 Trigger
-        Trigger newTrigger = TriggerBuilder.newTrigger()
+
+        //创建并替换 Trigger
+        TriggerBuilder<CronTrigger> triggerBuilder = TriggerBuilder.newTrigger()
                 .withIdentity(triggerKey)
-                .withSchedule(CronScheduleBuilder.cronSchedule(jobBean.getCronExpression()))
-                .build();
+                .withSchedule(CronScheduleBuilder.cronSchedule(jobBean.getCronExpression()));
+        // 设置开始时间（从 JobBean 获取）
+        if (Objects.nonNull(jobBean.getStartTime())) {
+            Date startDate = Date.from(jobBean.getStartTime().atZone(ZoneId.systemDefault()).toInstant());
+            triggerBuilder.startAt(startDate);
+        } else {
+            triggerBuilder.startNow(); // 如果没有指定开始时间，默认立即启动
+        }
+
+        Trigger newTrigger = triggerBuilder.build();
+
         scheduler.rescheduleJob(triggerKey, newTrigger);
     }
 
@@ -91,14 +126,10 @@ public class QuartzManager {
      *
      * @param jobName 任务名称
      */
-    public void deleteJob(String jobName) {
-        try {
-            scheduler.pauseTrigger(TriggerKey.triggerKey(jobName));
-            scheduler.unscheduleJob(TriggerKey.triggerKey(jobName));
-            scheduler.deleteJob(new JobKey(jobName));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public void deleteJob(String jobName) throws SchedulerException{
+        scheduler.pauseTrigger(TriggerKey.triggerKey(jobName));
+        scheduler.unscheduleJob(TriggerKey.triggerKey(jobName));
+        scheduler.deleteJob(new JobKey(jobName));
     }
 
     /**
@@ -112,33 +143,19 @@ public class QuartzManager {
     }
 
     /**
-     * 暂停一个job
-     *
-     * @param jobName 任务名称
+     * 暂停任务
      */
-    public void pauseJob(String jobName) {
-        try {
-
-            JobKey jobKey = JobKey.jobKey(jobName);
-            //
-            scheduler.pauseJob(jobKey);
-        } catch (SchedulerException e) {
-            e.printStackTrace();
-        }
+    public void pauseJob(String jobName) throws SchedulerException {
+        JobKey jobKey = JobKey.jobKey(jobName);
+        scheduler.pauseJob(jobKey);
     }
 
     /**
-     * 恢复一个job
-     *
-     * @param jobName 任务名称
+     * 恢复任务
      */
-    public void resumeJob(String jobName) {
-        try {
-            JobKey jobKey = JobKey.jobKey(jobName);
-            scheduler.resumeJob(jobKey);
-        } catch (SchedulerException e) {
-            e.printStackTrace();
-        }
+    public void resumeJob(String jobName) throws SchedulerException {
+        JobKey jobKey = JobKey.jobKey(jobName);
+        scheduler.resumeJob(jobKey);
     }
 
 }
