@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.statistics;
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.pojo.StatsResult;
+import cn.bitlinks.ems.framework.common.util.calc.CalculateUtil;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
@@ -14,7 +15,6 @@ import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
-import cn.bitlinks.ems.module.power.utils.CalculateUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
@@ -36,7 +36,8 @@ import java.util.stream.Collectors;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.LABEL_NAME_PREFIX;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
-import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.*;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_STANDARD_COAL_CHART;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_STANDARD_COAL_TABLE;
 
 /**
  * @Title: ydme-doublecarbon
