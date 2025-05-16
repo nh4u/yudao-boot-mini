@@ -11,6 +11,8 @@ public class StatisticsCacheConstants {
     public static final String USAGE_COST_TABLE = "statistics:usage:cost:table:";
     public static final String USAGE_COST_CHART = "statistics:usage:cost:chart:";
 
+    public static final String USAGE_STANDARD_COAL_TABLE = "statistics:usage:standardCoal:table:";
+    public static final String USAGE_STANDARD_COAL_CHART = "statistics:usage:standardCoal:chart:";
 
 
 }

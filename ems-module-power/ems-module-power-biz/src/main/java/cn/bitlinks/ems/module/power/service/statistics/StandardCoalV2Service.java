@@ -23,5 +23,5 @@ public interface StandardCoalV2Service {
      * @param paramVO
      * @return
      */
-    StatisticsResultV2VO<StatisticsInfoV2> standardCoalAnalysisChart(StatisticsParamVO paramVO);
+    StatisticsChartResultV2VO standardCoalAnalysisChart(StatisticsParamV2VO paramVO);
 }

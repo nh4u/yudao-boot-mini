@@ -30,15 +30,15 @@ public class StandardCoalStatisticsV2Controller {
 
 
     @PostMapping("/standardCoalAnalysisTable")
-    @Operation(summary = "折标煤分析（表）")
+    @Operation(summary = "折标煤分析（表）V2")
     public CommonResult<StatisticsResultV2VO<StandardCoalInfo>> standardCoalAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO) {
         return success(standardCoalV2Service.standardCoalAnalysisTable(paramVO));
     }
 
 
     @PostMapping("/standardCoalAnalysisChart")
-    @Operation(summary = "折标煤分析（图）")
-    public CommonResult<StatisticsResultV2VO<StatisticsInfoV2>> standardCoalAnalysisChart(@Valid @RequestBody StatisticsParamVO paramVO) {
+    @Operation(summary = "折标煤分析（图）V2")
+    public CommonResult<StatisticsChartResultV2VO> standardCoalAnalysisChart(@Valid @RequestBody StatisticsParamV2VO paramVO) {
         return success(standardCoalV2Service.standardCoalAnalysisChart(paramVO));
     }
 
