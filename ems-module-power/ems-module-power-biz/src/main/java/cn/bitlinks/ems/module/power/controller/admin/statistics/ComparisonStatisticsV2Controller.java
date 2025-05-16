@@ -40,4 +40,16 @@ public class ComparisonStatisticsV2Controller {
 
     }
 
+    @PostMapping("/foldCoalAnalysisTable")
+    @Operation(summary = "折煤环比分析（表）")
+    public CommonResult<StatisticsResultV2VO> foldCoalAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO) {
+        return success(comparisonV2Service.foldCoalAnalysisTable(paramVO));
+    }
+
+    @PostMapping("/foldCoalAnalysisChart")
+    @Operation(summary = "折煤环比分析（图）")
+    public CommonResult<ComparisonChartResultVO> foldCoalAnalysisChart(@Valid @RequestBody StatisticsParamV2VO paramVO) {
+        return success(comparisonV2Service.foldCoalAnalysisChart(paramVO));
+
+    }
 }
