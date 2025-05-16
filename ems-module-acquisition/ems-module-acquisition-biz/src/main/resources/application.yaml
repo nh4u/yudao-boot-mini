@@ -24,8 +24,8 @@ spring:
   # Jackson 配置项
   jackson:
     serialization:
-#      write-dates-as-timestamps: true # 设置 LocalDateTime 的格式，使用时间戳
-#      write-date-timestamps-as-nanoseconds: false # 设置不使用 nanoseconds 的格式。例如说 1611460870.401，而是直接 1611460870401
+      #      write-dates-as-timestamps: true # 设置 LocalDateTime 的格式，使用时间戳
+      #      write-date-timestamps-as-nanoseconds: false # 设置不使用 nanoseconds 的格式。例如说 1611460870.401，而是直接 1611460870401
       write-durations-as-timestamps: true # 设置 Duration 的格式，使用时间戳
       fail-on-empty-beans: false # 允许序列化无属性的 Bean
 
@@ -36,11 +36,16 @@ spring:
       time-to-live: 1h # 设置过期时间为 1 小时
 
 server:
-  port: 48098
+  port: 48098 # 服务端口
 
 logging:
   file:
     name: ${user.home}/logs/${spring.application.name}.log # 日志文件名，全路径
+
+jasypt:
+  encryptor:
+    password: qwerty  #密钥(自定义)
+    algorithm: PBEWithMD5AndDES #加密方式
 
 --- #################### 接口文档配置 ####################
 
@@ -89,42 +94,7 @@ spring:
 easy-trans:
   is-enable-global: true # 启用全局翻译（拦截所有 SpringMVC ResponseBody 进行自动翻译 )。如果对于性能要求很高可关闭此配置，或通过 @IgnoreTrans 忽略某个接口
 
---- #################### RPC 远程调用相关配置 ####################
 
---- #################### 消息队列相关 ####################
-
-# rocketmq 配置项，对应 RocketMQProperties 配置类
-rocketmq:
-  # Producer 配置项
-  producer:
-    group: ${spring.application.name}_PRODUCER # 生产者分组
-
-spring:
-  # Kafka 配置项，对应 KafkaProperties 配置类
-  kafka:
-    # Kafka Producer 配置项
-    producer:
-      acks: 1 # 0-不应答。1-leader 应答。all-所有 leader 和 follower 应答。
-      retries: 3 # 发送失败时，重试发送的次数
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer # 消息的 value 的序列化
-    # Kafka Consumer 配置项
-    consumer:
-      auto-offset-reset: earliest # 设置消费者分组最初的消费进度为 earliest 。可参考博客 https://blog.csdn.net/lishuangzhe7047/article/details/74530417 理解
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: '*'
-    # Kafka Consumer Listener 监听器配置
-    listener:
-      missing-topics-fatal: false # 消费监听接口监听的主题不存在时，默认会报错。所以通过设置为 false ，解决报错
-
---- #################### 定时任务相关配置 ####################
-
-xxl:
-  job:
-    executor:
-      appname: ${spring.application.name} # 执行器 AppName
-      logpath: ${user.home}/logs/xxl-job/${spring.application.name} # 执行器运行日志文件存储磁盘路径
-    accessToken: default_token # 执行器通讯TOKEN
 
 --- #################### bitlinks相关配置 ####################
 
@@ -135,37 +105,10 @@ ems:
   web:
     admin-ui:
       url: http://dashboard.ems.bitlinks.cn # Admin 管理后台 UI 的地址
-  xss:
-    enable: false
-    exclude-urls: # 如下两个 url，仅仅是为了演示，去掉配置也没关系
-      - ${spring.boot.admin.context-path}/** # 不处理 Spring Boot Admin 的请求
-      - ${management.endpoints.web.base-path}/** # 不处理 Actuator 的请求
-  websocket:
-    enable: true # websocket的开关
-    path: /acquisition/ws # 路径
-    sender-type: local # 消息发送的类型，可选值为 local、redis、rocketmq、kafka、rabbitmq
-    sender-rocketmq:
-      topic: ${spring.application.name}-websocket # 消息发送的 RocketMQ Topic
-      consumer-group: ${spring.application.name}-websocket-consumer # 消息发送的 RocketMQ Consumer Group
-    sender-rabbitmq:
-      exchange: ${spring.application.name}-websocket-exchange # 消息发送的 RabbitMQ Exchange
-      queue: ${spring.application.name}-websocket-queue # 消息发送的 RabbitMQ Queue
-    sender-kafka:
-      topic: ${spring.application.name}-websocket # 消息发送的 Kafka Topic
-      consumer-group: ${spring.application.name}-websocket-consumer # 消息发送的 Kafka Consumer Group
   swagger:
     title: 管理后台
     description: 提供管理员管理的所有功能
     version: ${ems.info.version}
-  codegen:
-    base-package: cn.bitlinks.ems
-    db-schemas: ${spring.datasource.dynamic.datasource.master.name}
-    front-type: 20 # 前端模版的类型，参见 CodegenFrontTypeEnum 枚举类
-    unit-test-enable: false # 是否生成单元测试
-  tenant: # 多租户相关配置项
-    enable: true
-    ignore-urls:
-      - /admin-api/acquisition/file/*/get/** # 获取图片，和租户无关
-    ignore-tables:
+
 
 debug: false

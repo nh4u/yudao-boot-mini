@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.acquisition;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -18,8 +19,8 @@ import java.util.TimeZone;
 @Slf4j
 @SpringBootApplication
 public class AcquisitionServerApplication {
-
-    public static void main(String[] args) throws UnknownHostException {
+    @SneakyThrows(UnknownHostException.class)
+    public static void main(String[] args) {
 
         TimeZone.setDefault(TimeZone.getTimeZone("GMT+8"));
         ConfigurableApplicationContext application = SpringApplication.run(AcquisitionServerApplication.class, args);
@@ -37,3 +38,5 @@ public class AcquisitionServerApplication {
     }
 
 }
+
+

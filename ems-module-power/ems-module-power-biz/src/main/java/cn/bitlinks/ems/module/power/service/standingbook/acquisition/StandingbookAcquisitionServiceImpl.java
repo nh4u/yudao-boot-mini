@@ -1,9 +1,13 @@
 package cn.bitlinks.ems.module.power.service.standingbook.acquisition;
 
+import cn.bitlinks.ems.framework.common.util.calc.CalculateUtil;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
 import cn.bitlinks.ems.framework.common.util.opcda.OpcDaUtils;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
+import cn.bitlinks.ems.module.acquisition.api.job.QuartzApi;
+import cn.bitlinks.ems.module.acquisition.api.job.dto.AcquisitionJobDTO;
+import cn.bitlinks.ems.module.acquisition.api.job.dto.StandingbookAcquisitionDetailDTO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.servicesettings.ServiceSettingsDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
@@ -16,7 +20,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.Standingb
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.acquisition.dto.ParameterKey;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
-import cn.bitlinks.ems.module.power.utils.CalculateUtil;
+import cn.bitlinks.ems.module.power.utils.CornUtils;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -61,6 +65,8 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
     private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
     @Value("${spring.profiles.active}")
     private String env;
+    @Resource
+    private QuartzApi quartzApi;
 
     @Override
     public Long createOrUpdateStandingbookAcquisition(StandingbookAcquisitionVO updateReqVO) {
@@ -83,6 +89,8 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                     StandingbookAcquisitionDetailDO.class);
             detailDOS.forEach(detailDO -> detailDO.setAcquisitionId(standingbookAcquisition.getId()));
             standingbookAcquisitionDetailMapper.insertBatch(detailDOS);
+            // ***需要创建【定时任务】
+            createOrUpdateJob(updateReqVO, detailVOS);
             // 返回
             return standingbookAcquisition.getId();
         }
@@ -96,6 +104,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
 //                updateReqVO.getDetails();
         if (CollUtil.isEmpty(detailVOS)) {
             // 返回
+            // 【更新定时任务】
             return updateReqVO.getId();
         }
 
@@ -116,9 +125,28 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         if (CollUtil.isNotEmpty(updatedDetails)) {
             standingbookAcquisitionDetailMapper.updateBatch(updatedDetails);
         }
+        // 【更新定时任务】
+        createOrUpdateJob(updateReqVO, detailVOS);
 
         // 返回
         return updateReqVO.getId();
+    }
+
+    /**
+     * 设备数采定时任务调用
+     *
+     * @param updateReqVO 数采设置详情
+     * @param detailVOS   添加了真实公式的部分
+     */
+    private void createOrUpdateJob(StandingbookAcquisitionVO updateReqVO,
+                                   List<StandingbookAcquisitionDetailVO> detailVOS) {
+        // 【更新定时任务]
+        AcquisitionJobDTO acquisitionJobDTO = new AcquisitionJobDTO();
+        acquisitionJobDTO.setStandingbookId(updateReqVO.getStandingbookId());
+        acquisitionJobDTO.setJobStartTime(updateReqVO.getStartTime());
+        acquisitionJobDTO.setCornExpression(CornUtils.getCorn(updateReqVO.getFrequency(), updateReqVO.getFrequencyUnit()));
+        acquisitionJobDTO.setDetails(BeanUtils.toBean(detailVOS, StandingbookAcquisitionDetailDTO.class));
+        quartzApi.createOrUpdateJob(acquisitionJobDTO);
     }
 
 

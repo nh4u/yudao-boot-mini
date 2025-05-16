@@ -1,6 +1,4 @@
-package cn.bitlinks.ems.module.power.utils;
-
-import com.google.common.math.Stats;
+package cn.bitlinks.ems.framework.common.util.calc;
 
 import cn.bitlinks.ems.framework.common.pojo.StatsResult;
 import cn.hutool.core.util.ArrayUtil;
@@ -12,12 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 

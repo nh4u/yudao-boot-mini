@@ -24,6 +24,16 @@
         </dependency>
 
         <!-- 依赖服务 -->
+        <dependency>
+            <groupId>cn.bitlinks.ems</groupId>
+            <artifactId>ems-module-power-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.bitlinks.ems</groupId>
+            <artifactId>ems-module-acquisition-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
 
 
         <!-- 业务组件 -->
@@ -76,17 +86,6 @@
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
 
-        <!-- Job 定时任务相关 -->
-        <dependency>
-            <groupId>cn.bitlinks.ems</groupId>
-            <artifactId>ems-spring-boot-starter-job</artifactId>
-        </dependency>
-
-        <!-- 消息队列相关 -->
-        <dependency>
-            <groupId>cn.bitlinks.ems</groupId>
-            <artifactId>ems-spring-boot-starter-mq</artifactId>
-        </dependency>
 
         <!-- Test 测试相关 -->
         <dependency>
@@ -135,6 +134,53 @@
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId> <!-- 文件客户端：文件类型的识别 -->
         </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.imgscalr</groupId>
+            <artifactId>imgscalr-lib</artifactId>
+            <version>4.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.ulisesbocchio</groupId>
+            <artifactId>jasypt-spring-boot-starter</artifactId>
+            <version>2.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.bitlinks.ems</groupId>
+            <artifactId>ems-spring-boot-starter-protection</artifactId>
+        </dependency>
+
+
+        <!-- QLExpress -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>QLExpress</artifactId>
+        </dependency>
+
+
+        <!--        定时任务-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-quartz</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mchange</groupId>
+            <artifactId>c3p0</artifactId>
+            <version>0.9.5.2</version>
+        </dependency>
+        <!--        消息队列相关-->
+        <dependency>
+            <groupId>org.apache.rocketmq</groupId>
+            <artifactId>rocketmq-spring-boot-starter</artifactId>
+
+        </dependency>
+
+
 
     </dependencies>
     <build>

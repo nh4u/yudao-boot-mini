@@ -128,4 +128,6 @@ public interface ErrorCodeConstants {
     ErrorCode STANDINGBOOK_ACQUISITION_FORMULA_SET = new ErrorCode(1_002_101_002,"公式配置有误，无法进行数据采集，请检查");
     ErrorCode STANDINGBOOK_ACQUISITION_CYCLE_RELY =  new ErrorCode(1_002_101_003,"公式配置存在循环依赖");
     ErrorCode STANDINGBOOK_ACQUISITION_TEST_FAIL =  new ErrorCode(1_002_101_004,"采集失败");
+    ErrorCode STANDINGBOOK_ACQUISITION_CORN_FAIL =  new ErrorCode(1_002_101_005,"频率和单位不能为空且频率必须大于0");
+    ErrorCode STANDINGBOOK_ACQUISITION_CORN_UNIT_NOT_EXISTS =  new ErrorCode(1_002_101_006,"无效的频率单位: {}");
 }

@@ -85,5 +85,9 @@ public interface StandingbookTmplDaqAttrService {
      */
     List<StandingbookTmplDaqAttrDO> getByEnergyIds(List<Long> energyIds);
 
-
+    /**
+     * 获取所有的typeId-ennergyId映射
+     * @return
+     */
+    Map<Long, Long> getEnergyMapping();
 }

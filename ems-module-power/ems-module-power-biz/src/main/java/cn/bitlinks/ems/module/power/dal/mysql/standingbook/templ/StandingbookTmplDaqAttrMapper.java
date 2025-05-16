@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 台账分类的数采参数表（自定义和能源） Mapper
@@ -33,4 +34,10 @@ public interface StandingbookTmplDaqAttrMapper extends BaseMapperX<StandingbookT
             "WHERE energy_id = #{energyId} AND deleted = 0")
     List<Long> selectSbTypeIdsByEnergyId(@Param("energyId") Long energyId);
 
+    /**
+     * 查询分类-关联能源
+     * @return typeId-energyId
+     */
+    @Select("SELECT distinct type_id,energy_id FROM `power_standingbook_tmpl_daq_attr` where energy_id is not null and deleted = 0 and status = 1")
+    Map<Long, Long> selectEnergyMapping();
 }
