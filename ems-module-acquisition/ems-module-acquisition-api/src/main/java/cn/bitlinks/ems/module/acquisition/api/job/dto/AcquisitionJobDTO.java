@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.acquisition.api.job.dto;
 
+import cn.bitlinks.ems.framework.common.core.StandingbookAcquisitionDetailDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -35,7 +36,12 @@ public class AcquisitionJobDTO {
      * 详情
      */
     @NotNull(message = "数采参数列表不能为空")
-    List<StandingbookAcquisitionDetailDTO> details;
+    private List<StandingbookAcquisitionDetailDTO> details;
+    /**
+     * 服务设置
+     */
+    @NotNull(message = "服务设置不能为空")
+    private ServiceSettingsDTO serviceSettingsDTO;
 }
 
 

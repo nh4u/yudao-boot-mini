@@ -32,6 +32,7 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -72,6 +73,7 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Resource
     private MeasurementAssociationMapper measurementAssociationMapper;
 
+    @Lazy
     @Resource
     private StandingbookAcquisitionService standingbookAcquisitionService;
 

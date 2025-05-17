@@ -67,16 +67,7 @@ public class ApiConstants {
 
     // 告警管理-查看详情（跳转设备）todo 设备监控设备跳转链接待完善
     public static final String SB_MONITOR_DETAIL ="<a href=\"/aa/aa?id=%s\">查看详情</a>";
-    /**
-     * 数采公式：匹配格式获取公式中的参数
-     */
-    public static final Pattern PATTERN_ACQUISITION_FORMULA_PARAM = Pattern.compile("\\{\\[\"([^\"]+)\"," +
-            " (true|false|\"[^\"]+\")\\]\\}");
-    /**
-     * 数采公式：填充参数格式 code、energyFlag
-     */
-    public static final String  PATTERN_ACQUISITION_FORMULA_FILL =
-            "{[\"%s\", %s]}";
+
 
 
 

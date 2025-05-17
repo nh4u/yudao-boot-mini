@@ -1,14 +1,13 @@
 package cn.bitlinks.ems.module.acquisition.quartz.job;
 
-import cn.bitlinks.ems.module.acquisition.api.job.dto.StandingbookAcquisitionDetailDTO;
+import cn.bitlinks.ems.framework.common.core.StandingbookAcquisitionDetailDTO;
+import cn.bitlinks.ems.module.acquisition.api.job.dto.ServiceSettingsDTO;
 import cn.bitlinks.ems.module.acquisition.mq.message.AcquisitionMessage;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
-import org.quartz.DisallowConcurrentExecution;
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.PersistJobDataAfterExecution;
+import org.quartz.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
@@ -18,8 +17,7 @@ import javax.annotation.Resource;
 import java.util.List;
 import java.util.Objects;
 
-import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.ACQUISITION_JOB_DATA_MAP_KEY_DETAILS;
-import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.ACQUISITION_JOB_DATA_MAP_KEY_STANDING_BOOK_ID;
+import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.*;
 
 /**
  * 数据采集定时任务
@@ -39,11 +37,14 @@ public class AcquisitionJob implements Job {
     public void execute(JobExecutionContext context) {
 
         String jobName = context.getJobDetail().getKey().getName();
+        JobDataMap jobDataMap = context.getJobDetail().getJobDataMap();
         try {
             log.info("数据采集任务[{}] 执行时间:{}", jobName, context.getFireTime());
-            String standingbookId = (String) context.getJobDetail().getJobDataMap().get(ACQUISITION_JOB_DATA_MAP_KEY_STANDING_BOOK_ID);
-            List<StandingbookAcquisitionDetailDTO> details = (List<StandingbookAcquisitionDetailDTO>) context.getJobDetail().getJobDataMap().get(ACQUISITION_JOB_DATA_MAP_KEY_DETAILS);
-
+            Long standingbookId =
+                    (Long) jobDataMap.get(ACQUISITION_JOB_DATA_MAP_KEY_STANDING_BOOK_ID);
+            List<StandingbookAcquisitionDetailDTO> details = (List<StandingbookAcquisitionDetailDTO>) jobDataMap.get(ACQUISITION_JOB_DATA_MAP_KEY_DETAILS);
+            ServiceSettingsDTO serviceSettingsDTO =
+                    (ServiceSettingsDTO) jobDataMap.get(ACQUISITION_JOB_DATA_MAP_KEY_SERVICE_SETTINGS);
             // 验证数据
             if (Objects.isNull(standingbookId) || Objects.isNull(details)) {
                 log.error("数据采集任务[{}] 数据缺失: standingbookId={}, details={}", jobName, standingbookId, details);
@@ -54,6 +55,8 @@ public class AcquisitionJob implements Job {
             AcquisitionMessage acquisitionMessage = new AcquisitionMessage();
             acquisitionMessage.setStandingbookId(standingbookId);
             acquisitionMessage.setDetails(details);
+            acquisitionMessage.setServiceSettingsDTO(serviceSettingsDTO);
+            acquisitionMessage.setJobTime(DateUtil.toLocalDateTime(context.getFireTime()));
 
             // 构建 RocketMQ 消息
             Message<AcquisitionMessage> msg = MessageBuilder.withPayload(acquisitionMessage).build();

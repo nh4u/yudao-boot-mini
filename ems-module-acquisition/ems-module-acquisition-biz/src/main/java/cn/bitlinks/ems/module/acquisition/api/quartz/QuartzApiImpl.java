@@ -40,6 +40,7 @@ public class QuartzApiImpl implements QuartzApi {
             Map<String, Object> detailDTOMap = new HashMap<>();
             detailDTOMap.put(ACQUISITION_JOB_DATA_MAP_KEY_DETAILS, acquisitionJobDTO.getDetails());
             detailDTOMap.put(ACQUISITION_JOB_DATA_MAP_KEY_STANDING_BOOK_ID, acquisitionJobDTO.getStandingbookId());
+            detailDTOMap.put(ACQUISITION_JOB_DATA_MAP_KEY_SERVICE_SETTINGS, acquisitionJobDTO.getServiceSettingsDTO());
             jobBean.setJobDataMap(new JobDataMap(detailDTOMap));
 
 

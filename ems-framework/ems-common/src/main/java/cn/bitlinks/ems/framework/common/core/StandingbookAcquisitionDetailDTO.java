@@ -1,4 +1,4 @@
-package cn.bitlinks.ems.module.acquisition.api.job.dto;
+package cn.bitlinks.ems.framework.common.core;
 
 import lombok.Data;
 

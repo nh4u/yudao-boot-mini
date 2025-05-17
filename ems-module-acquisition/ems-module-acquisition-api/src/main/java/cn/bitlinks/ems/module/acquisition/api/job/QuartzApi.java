@@ -24,6 +24,6 @@ public interface QuartzApi {
 
     @GetMapping(PREFIX + "/deleteJob")
     @Operation(summary = "删除指定设备的数据采集任务")
-    void deleteJob(@RequestParam Long standingbookId);
+    void deleteJob(@RequestParam("standingbookId") Long standingbookId);
 
 }
