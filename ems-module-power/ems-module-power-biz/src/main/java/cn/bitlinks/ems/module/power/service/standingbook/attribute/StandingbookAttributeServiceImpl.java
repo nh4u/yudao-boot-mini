@@ -149,7 +149,6 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
                     // 比较属性 (简化写法)
                     if (!Objects.equals(updatedAttr.getName(), rawAttr.getName()) ||
                             !Objects.equals(updatedAttr.getFormat(), rawAttr.getFormat()) ||
-                            !Objects.equals(updatedAttr.getSort(), rawAttr.getSort()) ||
                             !Objects.equals(updatedAttr.getIsRequired(), rawAttr.getIsRequired())) {
                         modified = true;  // 至少有一个属性被修改
                     }
@@ -207,15 +206,7 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
             if (foundAttribute.isPresent()) {
                 StandingbookAttributeDO updAttribute = foundAttribute.get();
                 optUpdAttrList.forEach(attribute -> {
-                    //如果类型改变的话，属性值要清空(针对台账的属性列表)
-                    if (!attribute.getFormat().equals(updAttribute.getFormat())) {
-                        attribute.setValue(EMPTY);
-                    }
-                    attribute.setName(updAttribute.getName())
-                            .setIsRequired(updAttribute.getIsRequired())
-                            .setSort(updAttribute.getSort())
-                            .setFormat(updAttribute.getFormat());
-
+                    attribute.setSort(updAttribute.getSort());
                 });
                 cascadeAttrList.addAll(optUpdAttrList);
             }
