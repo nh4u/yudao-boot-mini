@@ -471,7 +471,7 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
     }
 
     @Override
-    public Map<Long, Long> getEnergyMapping() {
+    public List<Map<Long, Long>> getEnergyMapping() {
         return standingbookTmplDaqAttrMapper.selectEnergyMapping();
     }
 
