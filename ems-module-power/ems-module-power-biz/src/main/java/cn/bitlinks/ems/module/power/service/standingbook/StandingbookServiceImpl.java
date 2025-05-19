@@ -337,6 +337,9 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<Long> energyTypeIds = new ArrayList<>();
         if (StringUtils.isNotEmpty(energy)) {
             energyTypeIds = standingbookTmplDaqAttrMapper.selectSbTypeIdsByEnergyId(Long.valueOf(energy));
+            if(CollUtil.isNotEmpty(energyTypeIds)){
+                return Collections.emptyList();
+            }
         }
 
         // 分类多选条件(可能为空)
@@ -349,7 +352,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         // 根据分类和topType查询台账
         List<StandingbookTypeDO> sbTypeDOS = standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>()
                 .inIfPresent(StandingbookTypeDO::getId, sbTypeIdList)
-                .in(StandingbookTypeDO::getId, energyTypeIds)
+                .inIfPresent(StandingbookTypeDO::getId, energyTypeIds)
                 .eqIfPresent(StandingbookTypeDO::getTopType, pageReqVO.get(SB_TYPE_ATTR_TOP_TYPE)));
         if (CollUtil.isEmpty(sbTypeDOS)) {
             return Collections.emptyList();
