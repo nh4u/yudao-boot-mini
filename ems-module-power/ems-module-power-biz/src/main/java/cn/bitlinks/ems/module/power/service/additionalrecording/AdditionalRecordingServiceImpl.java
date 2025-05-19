@@ -60,7 +60,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         Integer dataFeature = parseDataFeatureFromParams(parameters);
 
         if (dataFeature != null && dataFeature == 1) { // 1表示累积值
-            if (StringUtils.isBlank(createReqVO.getValueType())) {
+            if (createReqVO.getValueType() == null) {
                 throw exception(VALUE_TYPE_REQUIRED);
             }
         }
