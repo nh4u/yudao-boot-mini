@@ -261,8 +261,11 @@ public class StandingbookServiceImpl implements StandingbookService {
         standingbook.setTypeId(Long.valueOf(updateReqVO.get("typeId")));
         standingbook.setId(Long.valueOf(updateReqVO.get("id")));
         // 修改标签信息 先删后增
-        standingbookLabelInfoMapper.delete(new LambdaQueryWrapper<StandingbookLabelInfoDO>().eq(StandingbookLabelInfoDO::getStandingbookId, standingbook.getId()));
-        createLabelInfoList(updateReqVO.get("labelInfo"), standingbook.getId());
+        if(StringUtils.isNotEmpty(updateReqVO.get(ATTR_LABEL_INFO))){
+            standingbookLabelInfoMapper.delete(new LambdaQueryWrapper<StandingbookLabelInfoDO>().eq(StandingbookLabelInfoDO::getStandingbookId, standingbook.getId()));
+            createLabelInfoList(updateReqVO.get(ATTR_LABEL_INFO), standingbook.getId());
+        }
+
         if (updateReqVO.get("stage") != null) {
             standingbook.setStage(Integer.valueOf(updateReqVO.get("stage")));
         }
@@ -336,6 +339,9 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<Long> energyTypeIds = new ArrayList<>();
         if (StringUtils.isNotEmpty(energy)) {
             energyTypeIds = standingbookTmplDaqAttrMapper.selectSbTypeIdsByEnergyId(Long.valueOf(energy));
+            if(CollUtil.isEmpty(energyTypeIds)){
+                return Collections.emptyList();
+            }
         }
 
         // 分类多选条件(可能为空)
