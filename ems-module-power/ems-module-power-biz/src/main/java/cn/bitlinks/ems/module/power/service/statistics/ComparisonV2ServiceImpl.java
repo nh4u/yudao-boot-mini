@@ -70,6 +70,15 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
     @Override
     public StatisticsResultV2VO<ComparisonItemVO> discountAnalysisTable(StatisticsParamV2VO paramVO) {
+        return analysisTable(paramVO, UsageCostData::getTotalCost);
+    }
+
+    @Override
+    public StatisticsResultV2VO<ComparisonItemVO> foldCoalAnalysisTable(StatisticsParamV2VO paramVO) {
+        return analysisTable(paramVO, UsageCostData::getTotalCost);
+    }
+
+    public StatisticsResultV2VO<ComparisonItemVO> analysisTable(StatisticsParamV2VO paramVO, Function<UsageCostData, BigDecimal> valueExtractor) {
         // 校验时间范围合法性
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         LocalDateTime startTime = rangeOrigin[0];
@@ -147,7 +156,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
         if (QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)) {
             // 按能源查看，无需构建标签分组
-            statisticsInfoList.addAll(queryByEnergy(energyList, usageCostDataList, lastUsageCostDataList,dataTypeEnum));
+            statisticsInfoList.addAll(queryByEnergy(energyList, usageCostDataList, lastUsageCostDataList, dataTypeEnum, valueExtractor));
         } else {
             // 构建标签分组结构：一级标签名 -> 二级/三级值 -> 对应标签列表
             Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
@@ -158,10 +167,10 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
             if (QueryDimensionEnum.LABEL_REVIEW.getCode().equals(queryType)) {
                 // 按标签查看
-                statisticsInfoList.addAll(queryByLabel(grouped, usageCostDataList, lastUsageCostDataList,dataTypeEnum));
+                statisticsInfoList.addAll(queryByLabel(grouped, usageCostDataList, lastUsageCostDataList, dataTypeEnum, valueExtractor));
             } else {
                 // 综合默认查看
-                statisticsInfoList.addAll(queryDefault(grouped, usageCostDataList, lastUsageCostDataList,dataTypeEnum));
+                statisticsInfoList.addAll(queryDefault(grouped, usageCostDataList, lastUsageCostDataList, dataTypeEnum, valueExtractor));
             }
         }
 
@@ -183,7 +192,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
     private List<ComparisonItemVO> queryByEnergy(List<EnergyConfigurationDO> energyList,
                                                  List<UsageCostData> usageCostDataList,
                                                  List<UsageCostData> lastUsageCostDataList,
-                                                 DataTypeEnum dataTypeEnum) {
+                                                 DataTypeEnum dataTypeEnum,
+                                                 Function<UsageCostData, BigDecimal> valueExtractor) {
         // 按能源ID分组当前周期数据
         Map<Long, List<UsageCostData>> energyUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
@@ -209,8 +219,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                                 String lastTime = LocalDateTimeUtils.getPreviousTime(current.getTime(), dataTypeEnum);
                                 String key = current.getEnergyId() + "_" + lastTime;
                                 UsageCostData previous = lastDataMap.get(key);
-                                BigDecimal now = current.getTotalCost();
-                                BigDecimal last = previous != null ? previous.getTotalCost() : null;
+                                BigDecimal now = valueExtractor.apply(current);
+                                BigDecimal last = previous != null ? valueExtractor.apply(previous) : null;
                                 BigDecimal ratio = calculateRatio(now, last);
                                 return new ComparisonDetailVO(current.getTime(), now, last, ratio);
                             })
@@ -239,8 +249,11 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
     /**
      * 按标签维度统计：以 standingbookId 和标签结构为基础构建环比对比数据
      */
-    private List<ComparisonItemVO> queryByLabel(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped, List<UsageCostData> usageCostDataList,
-                                                List<UsageCostData> lastUsageCostDataList, DataTypeEnum dateTypeEnum) {
+    private List<ComparisonItemVO> queryByLabel(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped,
+                                                List<UsageCostData> usageCostDataList,
+                                                List<UsageCostData> lastUsageCostDataList,
+                                                DataTypeEnum dateTypeEnum,
+                                                Function<UsageCostData, BigDecimal> valueExtractor) {
         // 当前周期数据按 standingbookId 分组
         Map<Long, List<UsageCostData>> currentMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
@@ -280,8 +293,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                                 String previousTime = LocalDateTimeUtils.getPreviousTime(current.getTime(), dateTypeEnum);
                                 String key = current.getStandingbookId() + "_" + previousTime;
                                 UsageCostData previous = lastMap.get(key);
-                                BigDecimal now = current.getTotalCost();
-                                BigDecimal last = previous != null ? previous.getTotalCost() : null;
+                                BigDecimal now = valueExtractor.apply(current);
+                                BigDecimal last = previous != null ? valueExtractor.apply(previous) : null;
                                 BigDecimal ratio = calculateRatio(now, last);
                                 return new ComparisonDetailVO(current.getTime(), now, last, ratio);
                             })
@@ -314,8 +327,11 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
     /**
      * 综合默认统计：标签 + energyId 双维度聚合构建对比数据
      */
-    private List<ComparisonItemVO> queryDefault(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped, List<UsageCostData> usageCostDataList,
-                                                List<UsageCostData> lastUsageCostDataList, DataTypeEnum dateTypeEnum) {
+    private List<ComparisonItemVO> queryDefault(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped,
+                                                List<UsageCostData> usageCostDataList,
+                                                List<UsageCostData> lastUsageCostDataList,
+                                                DataTypeEnum dateTypeEnum,
+                                                Function<UsageCostData, BigDecimal> valueExtractor) {
         // 提取所有能源ID
         Set<Long> energyIdSet = usageCostDataList.stream().map(UsageCostData::getEnergyId).collect(Collectors.toSet());
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(energyIdSet, null);
@@ -369,8 +385,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                                     String previousTime = LocalDateTimeUtils.getPreviousTime(current.getTime(), dateTypeEnum);
                                     String key = current.getStandingbookId() + "_" + energyId + "_" + previousTime;
                                     UsageCostData previous = lastMap.get(key);
-                                    BigDecimal now = current.getTotalCost();
-                                    BigDecimal last = previous != null ? previous.getTotalCost() : null;
+                                    BigDecimal now = valueExtractor.apply(current);
+                                    BigDecimal last = previous != null ? valueExtractor.apply(previous) : null;
                                     BigDecimal ratio = calculateRatio(now, last);
                                     return new ComparisonDetailVO(current.getTime(), now, last, ratio);
                                 })
@@ -434,6 +450,16 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
     @Override
     public ComparisonChartResultVO discountAnalysisChart(StatisticsParamV2VO paramVO) {
+        return analysisChart(paramVO, UsageCostData::getTotalCost);
+    }
+
+    @Override
+    public ComparisonChartResultVO foldCoalAnalysisChart(StatisticsParamV2VO paramVO) {
+        return analysisChart(paramVO, UsageCostData::getTotalStandardCoalEquivalent);
+    }
+
+
+    public ComparisonChartResultVO analysisChart(StatisticsParamV2VO paramVO,Function<UsageCostData, BigDecimal> valueExtractor) {
         // 1. 校验时间范围合法性
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         LocalDateTime startTime = rangeOrigin[0];
@@ -503,11 +529,11 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         List<ComparisonChartGroupVO> groupList;
 
         if (QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)) {
-            groupList = buildChartByEnergy(energyList, usageCostDataList, lastUsageCostDataList, xdata, dataTypeEnum);
+            groupList = buildChartByEnergy(energyList, usageCostDataList, lastUsageCostDataList, xdata, dataTypeEnum, valueExtractor);
         } else if (QueryDimensionEnum.LABEL_REVIEW.getCode().equals(queryType)) {
-            groupList = buildChartByLabel(standingbookIdsByLabel, standingBookIds, usageCostDataList, lastUsageCostDataList, xdata, dataTypeEnum);
+            groupList = buildChartByLabel(standingbookIdsByLabel, standingBookIds, usageCostDataList, lastUsageCostDataList, xdata, dataTypeEnum, valueExtractor);
         } else {
-            groupList = buildChartByDefault(usageCostDataList, lastUsageCostDataList, xdata, dataTypeEnum);
+            groupList = buildChartByDefault(usageCostDataList, lastUsageCostDataList, xdata, dataTypeEnum, valueExtractor);
         }
 
         // 10. 构建最终图表结果并缓存
@@ -531,17 +557,18 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                                                             List<UsageCostData> usageCostDataList,
                                                             List<UsageCostData> lastUsageCostDataList,
                                                             List<String> xdata,
-                                                            DataTypeEnum dataTypeEnum) {
+                                                            DataTypeEnum dataTypeEnum,
+                                                            Function<UsageCostData, BigDecimal> valueExtractor) {
         // 构建当前周期和上周期数据的 (energyId -> time -> cost) 映射
         Map<Long, Map<String, BigDecimal>> nowMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(
                         UsageCostData::getEnergyId,
-                        Collectors.toMap(UsageCostData::getTime, UsageCostData::getTotalCost, BigDecimal::add)));
+                        Collectors.toMap(UsageCostData::getTime, valueExtractor, BigDecimal::add)));
 
         Map<Long, Map<String, BigDecimal>> lastMap = lastUsageCostDataList.stream()
                 .collect(Collectors.groupingBy(
                         UsageCostData::getEnergyId,
-                        Collectors.toMap(UsageCostData::getTime, UsageCostData::getTotalCost, BigDecimal::add)));
+                        Collectors.toMap(UsageCostData::getTime, valueExtractor, BigDecimal::add)));
 
         List<ComparisonChartGroupVO> result = new ArrayList<>();
         for (EnergyConfigurationDO energy : energyList) {
@@ -586,7 +613,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                                                            List<UsageCostData> usageCostDataList,
                                                            List<UsageCostData> lastUsageCostDataList,
                                                            List<String> xdata,
-                                                           DataTypeEnum dataTypeEnum) {
+                                                           DataTypeEnum dataTypeEnum,
+                                                           Function<UsageCostData, BigDecimal> valueExtractor) {
         // 构造 standingbookId -> labelKey（例如 "label_1"）映射
         Map<Long, String> standingbookLabelMap = labelList.stream()
                 .filter(s -> validStandingbookIds.contains(s.getStandingbookId()))
@@ -605,7 +633,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         for (UsageCostData data : usageCostDataList) {
             String label = standingbookLabelMap.get(data.getStandingbookId());
             if (label == null) continue;
-            nowMap.computeIfAbsent(label, k -> new HashMap<>()).merge(data.getTime(), data.getTotalCost(), BigDecimal::add);
+            nowMap.computeIfAbsent(label, k -> new HashMap<>())
+                    .merge(data.getTime(), valueExtractor.apply(data), BigDecimal::add);
         }
 
         // 构造 (labelKey -> time -> cost) 的二维映射（上周期）
@@ -613,7 +642,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         for (UsageCostData data : lastUsageCostDataList) {
             String label = standingbookLabelMap.get(data.getStandingbookId());
             if (label == null) continue;
-            lastMap.computeIfAbsent(label, k -> new HashMap<>()).merge(data.getTime(), data.getTotalCost(), BigDecimal::add);
+            lastMap.computeIfAbsent(label, k -> new HashMap<>())
+                    .merge(data.getTime(), valueExtractor.apply(data), BigDecimal::add);
         }
 
         // 构造图表组数据（每个标签一个）
@@ -657,16 +687,17 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
     private List<ComparisonChartGroupVO> buildChartByDefault(List<UsageCostData> usageCostDataList,
                                                              List<UsageCostData> lastUsageCostDataList,
                                                              List<String> xdata,
-                                                             DataTypeEnum dataTypeEnum) {
+                                                             DataTypeEnum dataTypeEnum,
+                                                             Function<UsageCostData, BigDecimal> valueExtractor) {
         // 当前周期与上周期：时间 -> 总和映射
         Map<String, BigDecimal> nowMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getTime,
-                        Collectors.mapping(UsageCostData::getTotalCost,
+                        Collectors.mapping(valueExtractor,
                                 Collectors.reducing(BigDecimal.ZERO, BigDecimal::add))));
 
         Map<String, BigDecimal> lastMap = lastUsageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getTime,
-                        Collectors.mapping(UsageCostData::getTotalCost,
+                        Collectors.mapping(valueExtractor,
                                 Collectors.reducing(BigDecimal.ZERO, BigDecimal::add))));
 
         List<BigDecimal> nowList = new ArrayList<>();

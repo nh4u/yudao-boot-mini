@@ -68,7 +68,7 @@ public class StandingbookTypeController {
     }
 
     @GetMapping("/checkRelStandingbook")
-    @Operation(summary = "台账类型是否关联台账")
+    @Operation(summary = "台账类型(子分类范围)是否关联台账")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
     @PreAuthorize("@ss.hasPermission('power:standingbook-type:query')")
     public CommonResult<Boolean> checkRelStandingbook(@RequestParam("id") Long id) {

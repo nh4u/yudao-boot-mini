@@ -124,7 +124,7 @@ rocketmq:
 
   # 生产者发送消息的topic
   topic:
-    device-task: "device_task_topic-${spring.profiles.active}"
+    device-acquisition: "device_acquisition_topic-${spring.profiles.active}"
 
 
 

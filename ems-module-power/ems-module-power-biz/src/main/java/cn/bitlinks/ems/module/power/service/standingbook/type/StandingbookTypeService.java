@@ -70,7 +70,7 @@ public interface StandingbookTypeService {
     List<Long> getSubtreeIds(List<StandingbookTypeDO> typeList, Long targetId);
 
     /**
-     * 查询是否关联台账
+     * 查询台账范围下是否关联台账
      * @param id 分类id
      * @return
      */

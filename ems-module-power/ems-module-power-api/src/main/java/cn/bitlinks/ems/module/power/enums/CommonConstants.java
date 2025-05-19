@@ -62,10 +62,7 @@ public interface CommonConstants {
      * 利用率
      */
     Integer RATIO = 3;
-    /**
-     * 正式环境
-     */
-    String SPRING_PROFILES_ACTIVE_PROD = "prod";
+
     /**
      * 随机成功概率
       */

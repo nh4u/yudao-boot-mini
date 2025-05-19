@@ -34,7 +34,7 @@ public class CollectRawDataDO {
     /**
      * 台账id
      */
-    private String standingbookId;
+    private Long standingbookId;
     /**
      * 公式计算值
      */
@@ -47,9 +47,6 @@ public class CollectRawDataDO {
      * 数据采集时间（原始）
      */
     private LocalDateTime collectTime;
-    /**
-     * 创建时间
-     */
-    private LocalDateTime createTime;
+
 
 }

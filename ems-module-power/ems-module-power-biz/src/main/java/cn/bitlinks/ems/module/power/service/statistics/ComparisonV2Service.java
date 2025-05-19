@@ -22,4 +22,18 @@ public interface ComparisonV2Service {
      * @return
      */
     ComparisonChartResultVO discountAnalysisChart(StatisticsParamV2VO paramVO);
+
+    /**
+     * 折煤环比分析-表
+     * @param paramVO
+     * @return
+     */
+    StatisticsResultV2VO foldCoalAnalysisTable(StatisticsParamV2VO paramVO);
+
+    /**
+     * 折煤环比分析-图
+     * @param paramVO
+     * @return
+     */
+    ComparisonChartResultVO foldCoalAnalysisChart(StatisticsParamV2VO paramVO);
 }
