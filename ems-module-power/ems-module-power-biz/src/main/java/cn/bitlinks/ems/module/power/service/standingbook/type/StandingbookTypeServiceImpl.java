@@ -292,9 +292,12 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
 
     @Override
     public Boolean checkRelStandingbook(Long id) {
-        List<StandingbookDO> standingbookDOList = standingbookService.getByTypeIds(Collections.singletonList(id));
+        List<StandingbookTypeDO> typeList = getStandingbookTypeNode();
+        List<Long> subtreeIds = getSubtreeIds(typeList, id);
+        List<StandingbookDO> standingbookDOList = standingbookService.getByTypeIds(subtreeIds);
         return CollUtil.isNotEmpty(standingbookDOList);
     }
+
 
     // 树状结构中查询当前节点
     private StandingbookTypeDO findNode(List<StandingbookTypeDO> typeList, Long targetId) {

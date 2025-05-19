@@ -41,6 +41,14 @@ public interface StandingbookTmplDaqAttrService {
     void cascadeAddDaqAttrByEnergyParams(Long energyId, List<EnergyParametersDO> energyParams);
 
     /**
+     * 获取台账私有属性 by typeId
+     *
+     * @param typeId 编号
+     * @return 台账属性
+     */
+    List<StandingbookTmplDaqAttrDO> getPrivateStandingbookAttributeByTypeId(Long typeId, Boolean energyFlag);
+
+    /**
      * 判断能源id是否关联模板
      *
      * @param energyId 能源id
@@ -74,12 +82,15 @@ public interface StandingbookTmplDaqAttrService {
 
     /**
      * 获取台账数采属性（启用的）
+     *
      * @param standingbookId 台账id
      * @return 数采属性列表
      */
     List<StandingbookTmplDaqAttrDO> getDaqAttrsByStandingbookId(Long standingbookId);
+
     /**
      * 根据能源ids获取台账模板数据
+     *
      * @param energyIds
      * @return
      */
