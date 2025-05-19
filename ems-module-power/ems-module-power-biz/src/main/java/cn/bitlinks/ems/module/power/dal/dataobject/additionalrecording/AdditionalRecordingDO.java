@@ -43,7 +43,7 @@ public class AdditionalRecordingDO extends BaseDO {
     /**
      * 增量/全量
      */
-    private String valueType;
+    private Integer valueType;
     /**
      * 本次采集时间
      */

@@ -23,7 +23,7 @@ public class AdditionalRecordingPageReqVO extends PageParam {
     private Long standingbookId;
 
     @Schema(description = "增量/全量")
-    private String valueType;
+    private Integer valueType;
 
     @Schema(description = "本次采集时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
