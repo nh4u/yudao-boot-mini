@@ -22,7 +22,7 @@ public class AdditionalRecordingSaveReqVO {
     private Long standingbookId;
 
     @Schema(description = "增量/全量")
-    private String valueType;
+    private Integer valueType;
 
     @Schema(description = "本次采集时间")
     @NotNull(message = "本次采集时间不能为空")
