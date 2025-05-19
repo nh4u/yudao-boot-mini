@@ -121,7 +121,25 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
         updateAttrCascade(updateList, rawAttrList, isUpdateAndDeleteForbidden);
 
     }
+    /**
+     * 判断是否更改了其他属性
+     * @param updateList  分类属性列表
+     * @param rawAttrList 原始分类属性列表
+     */
+    public boolean checkModifiedSortDaqAttributes(List<StandingbookTmplDaqAttrDO> updateList,
+                                                   List<StandingbookTmplDaqAttrDO> rawAttrList) {
+        return updateList.stream()
+                .allMatch(attr -> rawAttrList.stream()
+                        .anyMatch(rawAttr -> Objects.equals(rawAttr.getId(), attr.getId())
+                                && Objects.equals(attr.getParameter(), rawAttr.getParameter()) &&
+                                Objects.equals(attr.getCode(), rawAttr.getCode()) &&
+                                Objects.equals(attr.getDataType(), rawAttr.getDataType()) &&
+                                Objects.equals(attr.getStatus(), rawAttr.getStatus()) &&
+                                Objects.equals(attr.getDataFeature(), rawAttr.getDataFeature()) &&
+                                Objects.equals(attr.getUnit(), rawAttr.getUnit())
+                                && !Objects.equals(rawAttr.getSort(), attr.getSort())));
 
+    }
 
     /**
      * 过滤掉未修改的分类属性
@@ -129,7 +147,7 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
      * @param updateList  分类属性列表
      * @param rawAttrList 原始分类属性列表
      */
-    public static void filterModifiedDaqAttributes(List<StandingbookTmplDaqAttrDO> updateList,
+    public void filterModifiedDaqAttributes(List<StandingbookTmplDaqAttrDO> updateList,
                                                    List<StandingbookTmplDaqAttrDO> rawAttrList) {
         updateList.removeIf(updatedAttr -> rawAttrList.stream()
                 .anyMatch(rawAttr -> updatedAttr.getId().equals(rawAttr.getId()) &&
@@ -138,6 +156,7 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
                         Objects.equals(updatedAttr.getDataType(), rawAttr.getDataType()) &&
                         Objects.equals(updatedAttr.getStatus(), rawAttr.getStatus()) &&
                         Objects.equals(updatedAttr.getDataFeature(), rawAttr.getDataFeature()) &&
+                        Objects.equals(updatedAttr.getSort(), rawAttr.getSort()) &&
                         Objects.equals(updatedAttr.getUnit(), rawAttr.getUnit())));
 
     }
@@ -160,7 +179,9 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
         if (CollUtil.isEmpty(updateList)) {
             return;
         }
-        if (isUpdateAndDeleteForbidden) {
+        // 0.1 判断是否只更改了sort属性,
+        boolean onlySortChanged = checkModifiedSortDaqAttributes(updateList, rawAttrList);
+        if (isUpdateAndDeleteForbidden && !onlySortChanged) {
             throw exception(STANDINGBOOK_EXIST_NOT_SUPPORT_UPD_DEL);
         }
 
