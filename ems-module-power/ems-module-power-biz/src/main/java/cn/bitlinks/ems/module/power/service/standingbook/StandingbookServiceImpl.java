@@ -346,7 +346,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         // 根据分类和topType查询台账
         List<StandingbookTypeDO> sbTypeDOS = standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>()
                 .inIfPresent(StandingbookTypeDO::getId, sbTypeIdList)
-                .inIfPresent(StandingbookTypeDO::getId, energyTypeIds)
+                .in(StandingbookTypeDO::getId, energyTypeIds)
                 .eqIfPresent(StandingbookTypeDO::getTopType, pageReqVO.get(SB_TYPE_ATTR_TOP_TYPE)));
         if (CollUtil.isEmpty(sbTypeDOS)) {
             return Collections.emptyList();
