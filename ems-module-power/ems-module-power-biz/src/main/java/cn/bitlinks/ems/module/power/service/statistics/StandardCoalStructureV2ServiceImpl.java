@@ -5,6 +5,7 @@ import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.pojo.StatsResult;
 import cn.bitlinks.ems.framework.common.util.calc.CalculateUtil;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
+import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
@@ -27,6 +28,8 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -67,7 +70,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
 
     @Override
-    public StatisticsResultV2VO<StandardCoalInfo> standardCoalStructureAnalysisTable(StatisticsParamV2VO paramVO) {
+    public StatisticsResultV2VO<StructureInfo> standardCoalStructureAnalysisTable(StatisticsParamV2VO paramVO) {
 
         // 1.校验时间范围
         LocalDateTime[] rangeOrigin = validateRange(paramVO.getRange());
@@ -86,7 +89,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         }
 
         // 4.如果没有则去数据库查询
-        StatisticsResultV2VO<StandardCoalInfo> resultVO = new StatisticsResultV2VO<>();
+        StatisticsResultV2VO<StructureInfo> resultVO = new StatisticsResultV2VO<>();
         resultVO.setDataTime(LocalDateTime.now());
 
         // 4.1.表头处理
@@ -148,12 +151,11 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                 paramVO.getRange()[1],
                 standingBookIds);
 
-
-        List<StandardCoalInfo> statisticsInfoList = new ArrayList<>();
+        List<StructureInfo> statisticsInfoList = new ArrayList<>();
         // 1、按能源查看
         if (QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)) {
-            List<StandardCoalInfo> standardCoalInfos = queryByEnergy(energyList, usageCostDataList, dataTypeEnum);
-            statisticsInfoList.addAll(standardCoalInfos);
+            List<StructureInfo> structureInfos = queryByEnergy(energyList, usageCostDataList, dataTypeEnum);
+            statisticsInfoList.addAll(structureInfos);
 
         } else if (QueryDimensionEnum.LABEL_REVIEW.getCode().equals(queryType)) {
             // 2、按标签查看
@@ -169,8 +171,8 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                             Collectors.groupingBy(StandingbookLabelInfoDO::getValue)
                     ));
 
-            List<StandardCoalInfo> standardCoalInfos = queryByLabel(grouped, usageCostDataList, dataTypeEnum);
-            statisticsInfoList.addAll(standardCoalInfos);
+            List<StructureInfo> structureInfos = queryByLabel(grouped, usageCostDataList, dataTypeEnum);
+            statisticsInfoList.addAll(structureInfos);
 
         } else {
             // 0、综合查看（默认）
@@ -186,8 +188,8 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                             Collectors.groupingBy(StandingbookLabelInfoDO::getValue)
                     ));
 
-            List<StandardCoalInfo> statisticsInfoV2s = queryDefault(grouped, usageCostDataList, dataTypeEnum);
-            statisticsInfoList.addAll(statisticsInfoV2s);
+            List<StructureInfo> structureInfos = queryDefault(grouped, usageCostDataList, dataTypeEnum);
+            statisticsInfoList.addAll(structureInfos);
         }
 
         resultVO.setStatisticsInfoList(statisticsInfoList);
@@ -443,9 +445,9 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
     }
 
 
-    public List<StandardCoalInfo> queryDefault(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped,
-                                               List<UsageCostData> usageCostDataList,
-                                               DataTypeEnum dataType) {
+    public List<StructureInfo> queryDefault(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped,
+                                            List<UsageCostData> usageCostDataList,
+                                            DataTypeEnum dataType) {
 
         // 实际用到的能源ids
         Set<Long> energyIdSet = usageCostDataList
@@ -471,7 +473,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         Map<Long, List<UsageCostData>> energyUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
 
-        List<StandardCoalInfo> resultList = new ArrayList<>();
+        List<StructureInfo> resultList = new ArrayList<>();
 
         grouped.forEach((topLabelKey, labelInfoGroup) -> {
 
@@ -505,35 +507,30 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                         EnergyConfigurationDO energyConfigurationDO = energyMap.get(energyId);
 
                         // 聚合数据 转换成 StandardCoalInfoData
-                        List<StandardCoalInfoData> dataList = usageList.stream()
-                                .map(usage -> new StandardCoalInfoData(
+                        List<StructureInfoData> dataList = usageList.stream()
+                                .map(usage -> new StructureInfoData(
                                         //DateUtil.format(usage.getTime(), dataType.getFormat()),
                                         usage.getTime(),
-                                        usage.getCurrentTotalUsage(),
-                                        usage.getTotalStandardCoalEquivalent()
+                                        usage.getTotalStandardCoalEquivalent(),
+                                        null
                                 ))
                                 .collect(Collectors.toList());
 
-                        // 用量数据求和
-                        BigDecimal totalConsumption = dataList.stream()
-                                .map(StandardCoalInfoData::getConsumption)
-                                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
                         // 折标煤数据求和
-                        BigDecimal totalCost = dataList.stream()
-                                .map(StandardCoalInfoData::getStandardCoal)
+                        BigDecimal totalNum = dataList.stream()
+                                .map(StructureInfoData::getNum)
                                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
 
-                        StandardCoalInfo info = new StandardCoalInfo();
+                        StructureInfo info = new StructureInfo();
                         info.setEnergyId(energyId);
                         info.setEnergyName(energyConfigurationDO.getEnergyName());
                         info.setLabel1(topLabel.getLabelName());
                         info.setLabel2(label2Name);
                         info.setLabel3(label3Name);
-                        info.setStandardCoalInfoDataList(dataList);
-                        info.setSumEnergyConsumption(totalConsumption);
-                        info.setSumEnergyStandardCoal(totalCost);
+                        info.setStructureInfoDataList(dataList);
+                        info.setSumNum(totalNum);
+                        info.setSumProportion(null);
 
                         resultList.add(info);
                     });
@@ -547,9 +544,9 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
     }
 
 
-    public List<StandardCoalInfo> queryByLabel(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped,
-                                               List<UsageCostData> usageCostDataList,
-                                               DataTypeEnum dataType) {
+    public List<StructureInfo> queryByLabel(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped,
+                                            List<UsageCostData> usageCostDataList,
+                                            DataTypeEnum dataType) {
 
         Map<Long, List<UsageCostData>> energyUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
@@ -558,7 +555,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                 .stream()
                 .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
 
-        List<StandardCoalInfo> resultList = new ArrayList<>();
+        List<StructureInfo> resultList = new ArrayList<>();
 
         grouped.forEach((topLabelKey, labelInfoGroup) -> {
             Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
@@ -577,29 +574,26 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                         return; // 计量器具没有数据，跳过
                     }
 
-                    List<StandardCoalInfoData> dataList = usageList.stream()
-                            .map(usage -> new StandardCoalInfoData(
+                    List<StructureInfoData> dataList = usageList.stream()
+                            .map(usage -> new StructureInfoData(
                                     //DateUtil.format(usage.getTime(), dataType.getFormat()),
                                     usage.getTime(),
-                                    usage.getCurrentTotalUsage(),
-                                    usage.getTotalStandardCoalEquivalent()
+                                    usage.getTotalStandardCoalEquivalent(),
+                                    null
                             ))
                             .collect(Collectors.toList());
 
-                    BigDecimal totalConsumption = dataList.stream()
-                            .map(StandardCoalInfoData::getConsumption)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-                    BigDecimal totalStandardCoal = dataList.stream()
-                            .map(StandardCoalInfoData::getStandardCoal)
+                    BigDecimal totalNum = dataList.stream()
+                            .map(StructureInfoData::getNum)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                    StandardCoalInfo info = new StandardCoalInfo();
+                    StructureInfo info = new StructureInfo();
                     info.setLabel1(topLabel.getLabelName());
                     info.setLabel2(label2Name);
                     info.setLabel3(label3Name);
-                    info.setStandardCoalInfoDataList(dataList);
-                    info.setSumEnergyConsumption(totalConsumption);
-                    info.setSumEnergyStandardCoal(totalStandardCoal);
+                    info.setStructureInfoDataList(dataList);
+                    info.setSumNum(totalNum);
+                    info.setSumProportion(null);
 
                     resultList.add(info);
                 });
@@ -612,14 +606,14 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
     /**
      * 根据能源查看
      */
-    public List<StandardCoalInfo> queryByEnergy(List<EnergyConfigurationDO> energyList,
-                                                List<UsageCostData> usageCostDataList,
-                                                DataTypeEnum dataType) {
+    public List<StructureInfo> queryByEnergy(List<EnergyConfigurationDO> energyList,
+                                             List<UsageCostData> usageCostDataList,
+                                             DataTypeEnum dataType) {
         // 按能源ID分组
         Map<Long, List<UsageCostData>> energyUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
 
-        return energyList.stream()
+        List<StructureInfo> collect = energyList.stream()
                 // 筛选存在于map中的能源
                 .filter(energy -> energyUsageMap.containsKey(energy.getId()))
                 .map(energy -> {
@@ -630,41 +624,119 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                         return null;
                     }
 
-                    StandardCoalInfo info = new StandardCoalInfo();
+                    StructureInfo info = new StructureInfo();
                     info.setEnergyId(energy.getId());
                     info.setEnergyName(energy.getName());
 
-
-                    // TODO: 2025/5/16 计算占比问题 新的vo问题 只需要统计折标煤即可
-
-                    
-                    List<StandardCoalInfoData> infoDataV2List = usageCostList.stream()
-                            .map(usageCost -> new StandardCoalInfoData(
+                    List<StructureInfoData> structureDataList = usageCostList.stream()
+                            .map(usageCost -> new StructureInfoData(
                                     //DateUtil.format(usageCost.getTime(), dataType.getFormat()),
                                     usageCost.getTime(),
-                                    usageCost.getCurrentTotalUsage(),
-                                    usageCost.getTotalStandardCoalEquivalent()
+                                    usageCost.getTotalStandardCoalEquivalent(),
+                                    null
                             ))
                             .collect(Collectors.toList());
 
-                    BigDecimal sumEnergyConsumption = infoDataV2List
+                    // 横向折标煤总和
+                    BigDecimal sumNum = structureDataList
                             .stream()
-                            .map(StandardCoalInfoData::getConsumption)
+                            .map(StructureInfoData::getNum)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                    BigDecimal sumEnergyStandardCoal = infoDataV2List
-                            .stream()
-                            .map(StandardCoalInfoData::getStandardCoal)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    info.setStructureInfoDataList(structureDataList);
 
-                    info.setStandardCoalInfoDataList(infoDataV2List);
-
-                    info.setSumEnergyConsumption(sumEnergyConsumption);
-                    info.setSumEnergyStandardCoal(sumEnergyStandardCoal);
+                    info.setSumNum(sumNum);
+                    info.setSumProportion(null);
                     return info;
+
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+        return getStructureResultList(collect);
+    }
+
+
+    /**
+     * 处理占比问题
+     *
+     * @param list 对应list
+     * @return
+     */
+    private List<StructureInfo> getStructureResultList(List<StructureInfo> list) {
+
+        // 获取纵向总和map
+        Map<String, BigDecimal> sumMap = getSumMap(list);
+        // 获取合计
+        for (StructureInfo structureInfo : list) {
+
+            List<StructureInfoData> statisticsStructureDataList = structureInfo.getStructureInfoDataList();
+            statisticsStructureDataList.forEach(s -> {
+                s.setProportion(getProportion(s.getNum(), sumMap.get(s.getDate())));
+            });
+
+            structureInfo.setSumProportion(getProportion(structureInfo.getSumNum(), sumMap.get("sumNum")));
+        }
+
+        return list;
+    }
+
+    /**
+     * 按时间为key 得到map  纵向综合map
+     *
+     * @param list 对应list
+     * @return
+     */
+    private Map<String, BigDecimal> getSumMap(List<StructureInfo> list) {
+
+        Map<String, BigDecimal> sumMap = new HashMap<>();
+
+        list.forEach(l -> {
+            List<StructureInfoData> structureInfoDataList = l.getStructureInfoDataList();
+            structureInfoDataList.forEach(s -> {
+                sumMap.put(s.getDate(), addBigDecimal(sumMap.get(s.getDate()), s.getNum()));
+            });
+            sumMap.put("sumNum", addBigDecimal(sumMap.get("sumNum"), l.getSumNum()));
+        });
+
+        return sumMap;
+    }
+
+    /**
+     * 计算占比
+     *
+     * @param now   当前
+     * @param total 总计
+     * @return
+     */
+    private BigDecimal getProportion(BigDecimal now, BigDecimal total) {
+
+        if (now == null || total == null) {
+            return null;
+        }
+        BigDecimal proportion = BigDecimal.ZERO;
+        if (total.compareTo(BigDecimal.ZERO) != 0) {
+            proportion = now.divide(total, 10, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal(100))
+                    .setScale(2, RoundingMode.HALF_UP);
+        }
+        return proportion;
+    }
+
+    /**
+     * 两个数据相加
+     *
+     * @param first  1
+     * @param second 2
+     * @return add
+     */
+    private BigDecimal addBigDecimal(BigDecimal first, BigDecimal second) {
+
+        if (Objects.isNull(first)) {
+            return second;
+        } else {
+            return first.add(second);
+        }
+
     }
 
     /**

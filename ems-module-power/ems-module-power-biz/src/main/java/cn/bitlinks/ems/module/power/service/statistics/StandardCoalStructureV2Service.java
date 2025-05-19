@@ -1,9 +1,6 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StandardCoalInfo;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsChartResultV2VO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 
 /**
  * @Title: ydme-ems
@@ -18,7 +15,7 @@ public interface StandardCoalStructureV2Service {
      * @param paramVO
      * @return
      */
-    StatisticsResultV2VO<StandardCoalInfo> standardCoalStructureAnalysisTable(StatisticsParamV2VO paramVO);
+    StatisticsResultV2VO<StructureInfo> standardCoalStructureAnalysisTable(StatisticsParamV2VO paramVO);
 
     /**
      * 折标煤图
