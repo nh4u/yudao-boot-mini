@@ -9,7 +9,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.mysql.coalfactorhistory.CoalFactorHistoryMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.labelconfig.LabelConfigMapper;
-import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookLabelInfoMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.tree.Tree;
@@ -46,7 +46,7 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     private CoalFactorHistoryMapper coalFactorHistoryMapper;
 
     @Resource
-    private StandingbookMapper standingbookMapper;
+    private StandingbookLabelInfoMapper standingbookLabelInfoMapper;
 
     @Override
     public Long createLabelConfig(LabelConfigSaveReqVO createReqVO) {
@@ -336,26 +336,15 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     }
 
     private void validateDirectBinding(Long labelId) {
-        LambdaQueryWrapperX<StandingbookDO> queryWrapper = new LambdaQueryWrapperX<>();
-        queryWrapper.apply("JSON_SEARCH(label_info, 'one', {0}) IS NOT NULL", labelId);
-
-        Long count = standingbookMapper.selectCount(queryWrapper);
+        Integer count = standingbookLabelInfoMapper.getCountByLabelId(labelId.toString());
         if (count > 0) {
             throw exception(LABEL_CONFIG_HAS_DEVICE); // 错误码示例：父标签作为 Value 被绑定
         }
     }
 
-    private void validateChildBinding(List<Long> childIds) {
+    private void validateChildBinding(List<String> childIds) {
         if (CollectionUtil.isEmpty(childIds)) return;
-
-        LambdaQueryWrapperX<StandingbookDO> queryWrapper = new LambdaQueryWrapperX<>();
-        queryWrapper.and(qw -> {
-            childIds.forEach(childId ->
-                    qw.or().apply("JSON_SEARCH(label_info, 'one', {0}) IS NOT NULL", childId)
-            );
-        });
-
-        Long count = standingbookMapper.selectCount(queryWrapper);
+        Integer count = standingbookLabelInfoMapper.getCountByLabelIds(childIds);
         if (count > 0) {
             throw exception(LABEL_CONFIG_CHILDREN_HAS_DEVICE);
         }
@@ -364,8 +353,9 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     private void validateLabelDeviceBinding(Long labelId) {
         // 1. 获取所有子标签ID（排除自身）
         List<Long> allLabelIds = getAllRelatedLabelIds(labelId);
-        List<Long> childIds = allLabelIds.stream()
+        List<String> childIds = allLabelIds.stream()
                 .filter(id -> !id.equals(labelId))
+                .map(id->id.toString())
                 .collect(Collectors.toList());
 
         // 2. 分层校验

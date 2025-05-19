@@ -37,6 +37,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
@@ -104,14 +105,24 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateEnergyConfiguration(EnergyConfigurationSaveReqVO updateReqVO) {
         Long energyId = updateReqVO.getId();
         // 1. 校验主表存在性
-        validateEnergyConfigurationExists(energyId);
+        EnergyConfigurationDO energyConfigurationDO = validateEnergyConfigurationExists(energyId);
         // 2. 检查能源编码重复性（排除自身）
         checkEnergyCodeDuplicate(updateReqVO.getCode(), energyId);
         // 2. 子表编码查重（新增逻辑）
         checkEnergyParameterCodeDuplicate(updateReqVO.getEnergyParameters());
+
+        if(!energyConfigurationDO.getEnergyClassify().equals(updateReqVO.getEnergyClassify())){
+            // 如何group发生改变 则判断是否关联数据 如果管理则报错
+            boolean isTemplateAssociated = standingbookTmplDaqAttrService.isAssociationWithEnergyId(energyId);
+            if (isTemplateAssociated) {
+                throw exception(ENERGY_ASSOCIATED_STANDINGBOOK_UPDATE);
+            }
+        }
+
         // 3. 处理单位变更校验（原有逻辑保留）
         String nickname = getLoginUserNickname();
         List<EnergyParametersSaveReqVO> newParameters = updateReqVO.getEnergyParameters();
@@ -215,27 +226,30 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         boolean isTemplateAssociated = standingbookTmplDaqAttrService.isAssociationWithEnergyId(energyId);
         if (isTemplateAssociated) {
             // 有关联模板时禁止删除和更新操作
-            if (!toDelete.isEmpty() || !toUpdate.isEmpty()) {
-                throw exception(ENERGY_CONFIGURATION_TEMPLATE_ASSOCIATED); // 使用新的异常码
-            }
-        }
-
-        // 7. 执行删除、更新、新增
-        if (!toDelete.isEmpty()) {
-            List<Long> deleteIds = toDelete.stream()
-                    .map(EnergyParametersDO::getId)
-                    .collect(Collectors.toList());
-            energyParametersMapper.deleteByIds(deleteIds);
-        }
-        if (!toUpdate.isEmpty()) {
-            List<EnergyParametersDO> updateDOs = BeanUtils.toBean(toUpdate, EnergyParametersDO.class);
-            energyParametersMapper.updateBatch(updateDOs);
-        }
-        if (!toAdd.isEmpty()) {
-            List<EnergyParametersDO> addDOs = BeanUtils.toBean(toAdd, EnergyParametersDO.class);
-            energyParametersMapper.insertBatch(addDOs);
-            if (isTemplateAssociated) {
+            if (!toAdd.isEmpty()) {
+                List<EnergyParametersDO> addDOs = BeanUtils.toBean(toAdd, EnergyParametersDO.class);
+                energyParametersMapper.insertBatch(addDOs);
                 standingbookTmplDaqAttrService.cascadeAddDaqAttrByEnergyParams(energyId, addDOs);
+            }else {
+                // 使用新的异常码
+                throw exception(ENERGY_CONFIGURATION_TEMPLATE_ASSOCIATED);
+            }
+        }else {
+            // 无关联模板时
+            // 7. 执行删除、更新、新增
+            if (!toDelete.isEmpty()) {
+                List<Long> deleteIds = toDelete.stream()
+                        .map(EnergyParametersDO::getId)
+                        .collect(Collectors.toList());
+                energyParametersMapper.deleteByIds(deleteIds);
+            }
+            if (!toUpdate.isEmpty()) {
+                List<EnergyParametersDO> updateDOs = BeanUtils.toBean(toUpdate, EnergyParametersDO.class);
+                energyParametersMapper.updateBatch(updateDOs);
+            }
+            if (!toAdd.isEmpty()) {
+                List<EnergyParametersDO> addDOs = BeanUtils.toBean(toAdd, EnergyParametersDO.class);
+                energyParametersMapper.insertBatch(addDOs);
             }
         }
     }
@@ -324,10 +338,12 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         energyConfigurationMapper.deleteByIds(ids);
     }
 
-    private void validateEnergyConfigurationExists(Long id) {
-        if (energyConfigurationMapper.selectById(id) == null) {
+    private EnergyConfigurationDO validateEnergyConfigurationExists(Long id) {
+        EnergyConfigurationDO energyConfigurationDO = energyConfigurationMapper.selectById(id);
+        if (energyConfigurationDO == null) {
             throw exception(ENERGY_CONFIGURATION_NOT_EXISTS);
         }
+        return energyConfigurationDO;
     }
 
     @Override

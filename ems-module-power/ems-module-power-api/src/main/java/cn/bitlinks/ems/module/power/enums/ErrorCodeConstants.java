@@ -36,7 +36,7 @@ public interface ErrorCodeConstants {
     ErrorCode ENERGY_PARAMETERS_NOT_EXISTS = new ErrorCode(1_001_301_026,"能源参数不存在");
     ErrorCode USAGE_MORE_THAN_ONE = new ErrorCode(1_001_301_027,"每个能源只能有一个用量参数");
     ErrorCode ENERGY_CONFIGURATION_STANDINGBOOK_DELETE = new ErrorCode(1_001_301_027,"该能源已关联计量器具，不可删除能源参数");
-    ErrorCode ENERGY_CONFIGURATION_STANDINGBOOK_UPDATE = new ErrorCode(1_001_301_027,"该能源已关联计量器具，不可修改能源参数");
+    ErrorCode ENERGY_ASSOCIATED_STANDINGBOOK_UPDATE = new ErrorCode(1_001_301_027,"该能源存在关联数据，不可修改能源来源");
     ErrorCode ENERGY_PARAMETER_CODE_DUPLICATE = new ErrorCode(1_001_301_028,"能源参数不可重复");
     ErrorCode ENERGY_CONFIGURATION_TEMPLATE_ASSOCIATED = new ErrorCode(1_001_301_029,"该能源参数已关联计量器具模板，不可删除或更新");
     ErrorCode ENERGY_ID_NOT_EXISTS = new ErrorCode(1_001_301_030, "能源id不存在");
