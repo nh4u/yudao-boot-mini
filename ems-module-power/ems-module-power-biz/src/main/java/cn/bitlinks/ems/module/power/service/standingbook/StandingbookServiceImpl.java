@@ -337,7 +337,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<Long> energyTypeIds = new ArrayList<>();
         if (StringUtils.isNotEmpty(energy)) {
             energyTypeIds = standingbookTmplDaqAttrMapper.selectSbTypeIdsByEnergyId(Long.valueOf(energy));
-            if(CollUtil.isNotEmpty(energyTypeIds)){
+            if(CollUtil.isEmpty(energyTypeIds)){
                 return Collections.emptyList();
             }
         }
