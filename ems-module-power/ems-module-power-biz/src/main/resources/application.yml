@@ -34,7 +34,28 @@ spring:
     type: REDIS
     redis:
       time-to-live: 1h # 设置过期时间为 1 小时
-
+  # 定时任务
+  quartz:
+    job-store-type: jdbc
+    jdbc:
+      #always每次先清空数据库进行初始化
+      #embedded只初始化内存数据库，默认值
+      #never不进行初始化
+      initialize-schema: never
+    #相关属性配置
+    properties:
+      org:
+        quartz:
+          scheduler:
+            instanceName: clusteredScheduler
+            instanceId: AUTO
+          dataSource:
+            dataSource:
+              driver: com.mysql.cj.jdbc.Driver
+              URL: ${spring.datasource.dynamic.datasource.master.url}
+              user: ${spring.datasource.dynamic.datasource.master.username}
+              password: ${spring.datasource.dynamic.datasource.master.password}
+              maxConnections: 10
 server:
   port: 48099 # 服务端口
 

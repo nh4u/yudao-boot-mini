@@ -56,17 +56,17 @@ spring:
       primary: master
       datasource:
         master:
-          url: jdbc:mysql://127.0.0.1:3306/ydme_ems?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true # MySQL Connector/J 8.X 连接的示例
+          url: jdbc:mysql://127.0.0.1:3306/ydme_ems_acquisition?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true # MySQL Connector/J 8.X 连接的示例
           username: root
           password: BitlinkMysql@2022
         slave: # 模拟从库，可根据自己需要修改 # 模拟从库，可根据自己需要修改
           lazy: true # 开启懒加载，保证启动速度
-          url: jdbc:mysql://127.0.0.1:3306/ydme_ems?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true # MySQL Connector/J 8.X 连接的示例
+          url: jdbc:mysql://127.0.0.1:3306/ydme_ems_acquisition?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true # MySQL Connector/J 8.X 连接的示例
           username: root
           password: BitlinkMysql@2022
         starrocks: # 模拟从库，可根据自己需要修改
           lazy: true # 开启懒加载，保证启动速度
-          url: jdbc:mysql://192.168.2.45:9030/quickstart?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
+          url: jdbc:mysql://192.168.2.45:9030/acquisition?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
           username: root
   # Redis 配置。Redisson 默认的配置足够使用，一般不需要进行调优
   redis:
@@ -74,28 +74,7 @@ spring:
     port: 6379 # 端口
     database: 1 # 数据库索引
     password: bitlink2022 # 密码，建议生产环境开启
-  # 定时任务
-  quartz:
-    job-store-type: jdbc
-    jdbc:
-      #always每次先清空数据库进行初始化
-      #embedded只初始化内存数据库，默认值
-      #never不进行初始化
-      initialize-schema: never
-    #相关属性配置
-    properties:
-      org:
-        quartz:
-          scheduler:
-            instanceName: clusteredScheduler
-            instanceId: AUTO
-          dataSource:
-            dataSource:
-              driver: com.mysql.cj.jdbc.Driver
-              URL: ${spring.datasource.dynamic.datasource.master.url}
-              user: ${spring.datasource.dynamic.datasource.master.username}
-              password: ${spring.datasource.dynamic.datasource.master.password}
-              maxConnections: 10
+
 --- #################### MQ 消息队列相关配置 ####################
 
 # rocketmq 配置项，对应 RocketMQProperties 配置类
@@ -116,11 +95,10 @@ rocketmq:
     compressMessageBodyThreshold: 4096
     # 是否在内部发送失败时重试另一个broker，默认false
     retryNextServer: false
+  consumer:
+    access-key: rocketAdminMQ
+    secret-key: 25be49067687d405a082dcaa2edaceea        # 密码
   # 自定义配置
-  enhance:
-    # 启动隔离，用于激活配置类EnvironmentIsolationConfig
-    # 启动后会自动在topic上拼接激活的配置文件，达到自动隔离的效果
-    enabledIsolation: true
 
   # 生产者发送消息的topic
   topic:

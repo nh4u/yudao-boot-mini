@@ -2,7 +2,6 @@ package cn.bitlinks.ems.module.power.service.standingbook;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.bitlinks.ems.module.acquisition.api.job.QuartzApi;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.AssociationData;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
@@ -144,6 +143,12 @@ public class StandingbookServiceImpl implements StandingbookService {
         LambdaQueryWrapper<StandingbookDO> wrapper = new LambdaQueryWrapper<>();
         wrapper.in(StandingbookDO::getTypeId, typeIds);
         return standingbookMapper.selectList(wrapper);
+    }
+
+    @Override
+    public List<StandingbookDO> getByStandingbookIds(List<Long> standingbookIds) {
+        return standingbookMapper.selectList(new LambdaQueryWrapper<StandingbookDO>().in(StandingbookDO::getId,
+                standingbookIds));
     }
 
     /**
@@ -348,11 +353,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<String> sbTypeIdList = new ArrayList<>();
         String sbTypeIds = pageReqVO.get(ATTR_SB_TYPE_ID);
         if (StringUtils.isNotEmpty(sbTypeIds)) {
-            sbTypeIdList = Arrays.stream(sbTypeIds.split(StringPool.HASH))
-                    .map(s -> s.split(StringPool.COMMA))
-                    .map(Arrays::stream)
-                    .map(stream -> stream.reduce((first, second) -> second).orElse(""))
-                    .collect(Collectors.toList());
+            sbTypeIdList = Arrays.asList(sbTypeIds.split(StringPool.COMMA));
         }
 
         // 根据分类和topType查询台账

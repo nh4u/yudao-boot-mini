@@ -1,7 +1,6 @@
 package cn.bitlinks.ems.module.acquisition.api.quartz;
 
-import cn.bitlinks.ems.module.acquisition.api.job.QuartzApi;
-import cn.bitlinks.ems.module.acquisition.api.job.dto.AcquisitionJobDTO;
+import cn.bitlinks.ems.module.acquisition.api.quartz.dto.AcquisitionJobDTO;
 import cn.bitlinks.ems.module.acquisition.quartz.entity.JobBean;
 import cn.bitlinks.ems.module.acquisition.quartz.job.AcquisitionJob;
 import cn.bitlinks.ems.module.acquisition.quartz.job.QuartzManager;

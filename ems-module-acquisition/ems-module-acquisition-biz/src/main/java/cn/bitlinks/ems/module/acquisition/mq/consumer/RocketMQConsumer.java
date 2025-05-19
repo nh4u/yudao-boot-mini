@@ -5,7 +5,7 @@ import cn.bitlinks.ems.framework.common.core.StandingbookAcquisitionDetailDTO;
 import cn.bitlinks.ems.framework.common.util.calc.AcquisitionFormulaUtils;
 import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
 import cn.bitlinks.ems.framework.common.util.opcda.OpcDaUtils;
-import cn.bitlinks.ems.module.acquisition.api.job.dto.ServiceSettingsDTO;
+import cn.bitlinks.ems.module.acquisition.api.quartz.dto.ServiceSettingsDTO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectRawDataDO;
 import cn.bitlinks.ems.module.acquisition.mq.message.AcquisitionMessage;
 import cn.bitlinks.ems.module.acquisition.service.collectrawdata.CollectRawDataService;
@@ -129,11 +129,6 @@ public abstract class RocketMQConsumer implements RocketMQListener<AcquisitionMe
         }
         // 执行插入操作
         collectRawDataService.insertBatch(acquisitionMessage.getStandingbookId(), collectRawDataDOList);
-        // 实时数据 触发告警规则
-
-
-        // 实时数据 拆分/聚合到 分钟聚合数据表 todo
-
 
     }
 

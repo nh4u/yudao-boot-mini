@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.warningstrategy;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.object.PageUtils;
+import cn.bitlinks.ems.module.power.controller.admin.quartz.job.QuartzManager;
 import cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
@@ -57,6 +58,8 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
     private StandingbookAttributeService standingbookAttributeService;
 
 
+    @Resource
+    private QuartzManager quartzManager;
     @Transactional
     @Override
     public Long createWarningStrategy(WarningStrategySaveReqVO createReqVO) {

@@ -81,5 +81,9 @@ public interface CommonConstants {
      * 服务名称（IP地址：端口号）协议
      */
     String LABEL_NAME_PREFIX = "label_";
+    /**
+     * 策略任务锁
+     */
+    String STRATEGY_JOB_LOCK_KEY = "warning-strategy:job:%s:%s" ;
 
 }

@@ -1,7 +1,7 @@
 package cn.bitlinks.ems.module.acquisition.mq.message;
 
 import cn.bitlinks.ems.framework.common.core.StandingbookAcquisitionDetailDTO;
-import cn.bitlinks.ems.module.acquisition.api.job.dto.ServiceSettingsDTO;
+import cn.bitlinks.ems.module.acquisition.api.quartz.dto.ServiceSettingsDTO;
 import lombok.Data;
 
 import java.io.Serializable;

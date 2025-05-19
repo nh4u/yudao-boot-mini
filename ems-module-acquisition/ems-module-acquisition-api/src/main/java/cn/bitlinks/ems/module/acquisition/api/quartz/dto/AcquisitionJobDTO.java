@@ -1,4 +1,4 @@
-package cn.bitlinks.ems.module.acquisition.api.job.dto;
+package cn.bitlinks.ems.module.acquisition.api.quartz.dto;
 
 import cn.bitlinks.ems.framework.common.core.StandingbookAcquisitionDetailDTO;
 import io.swagger.v3.oas.annotations.media.Schema;

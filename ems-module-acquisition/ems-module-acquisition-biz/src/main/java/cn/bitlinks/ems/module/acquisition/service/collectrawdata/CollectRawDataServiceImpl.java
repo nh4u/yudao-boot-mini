@@ -31,6 +31,10 @@ public class CollectRawDataServiceImpl implements CollectRawDataService {
         return collectRawDataMapper.selectLatestByStandingbookId(standingbookId);
     }
 
+    @Override
+    public List<CollectRawDataDO> selectLatestByStandingbookIds(List<Long> standingbookIds) {
+        return collectRawDataMapper.selectLatestByStandingbookIds(standingbookIds);
+    }
 
 
 }
