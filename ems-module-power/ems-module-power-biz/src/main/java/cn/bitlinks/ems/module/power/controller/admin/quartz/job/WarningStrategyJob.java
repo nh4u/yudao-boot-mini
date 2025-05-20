@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.concurrent.TimeUnit;
 
-import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.WARNING_STRATEGY_JOB_DATA_MAP_KEY_STRATEGY_ID;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.STRATEGY_JOB_LOCK_KEY;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.WARNING_STRATEGY_JOB_DATA_MAP_KEY_STRATEGY_ID;
 
 /**
  * 扫描策略

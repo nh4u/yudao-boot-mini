@@ -85,5 +85,10 @@ public interface CommonConstants {
      * 策略任务锁
      */
     String STRATEGY_JOB_LOCK_KEY = "warning-strategy:job:%s:%s" ;
+    String STRATEGY_JOB_NAME_PREFIX = "STRATEGY_JOB_%s";
+    /**
+     * 告警策略任务,数据map 键-策略id
+     */
+    String WARNING_STRATEGY_JOB_DATA_MAP_KEY_STRATEGY_ID = "strategyJobStrategyId";
 
 }

@@ -1,6 +1,8 @@
 package cn.bitlinks.ems.module.acquisition.quartz.job;
 
+import cn.bitlinks.ems.framework.common.enums.FrequencyUnitEnum;
 import cn.bitlinks.ems.module.acquisition.quartz.entity.JobBean;
+import cn.hutool.core.date.DateUnit;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -18,16 +20,15 @@ public class QuartzManager {
     @Autowired
     private Scheduler scheduler;
 
-
     /**
      * 增加一个job
      */
     public void createJob(JobBean jobBean) throws SchedulerException {
         JobDetail jobDetail = JobBuilder.newJob(jobBean.getJobClass()).withIdentity(jobBean.getJobName()).build();
         // 创建 Trigger，使用业务指定的开始时间
-        TriggerBuilder<CronTrigger> triggerBuilder = TriggerBuilder.newTrigger()
+        TriggerBuilder<SimpleTrigger> triggerBuilder = TriggerBuilder.newTrigger()
                 .withIdentity(jobBean.getJobName())
-                .withSchedule(CronScheduleBuilder.cronSchedule(jobBean.getCronExpression()));
+                .withSchedule(getSimpleSchedule(jobBean.getFrequency(), jobBean.getFrequencyUnit()));
 
         // 设置开始时间（从 JobBean 获取）
         if (Objects.nonNull(jobBean.getStartTime())) {
@@ -83,22 +84,26 @@ public class QuartzManager {
         // 替换旧的 JobDetail
         scheduler.addJob(newJobDetail, true);
         // 2. 比较和更新 Trigger（仅当 Cron 表达式不同时) 和开始时间不同时,更新触发器
-
         Trigger oldTrigger = scheduler.getTrigger(triggerKey);
-        if (oldTrigger instanceof CronTrigger) {
-            String oldCronExpression = ((CronTrigger) oldTrigger).getCronExpression();
-            // 规范化比较（去除多余空格，统一大小写）
-            if (normalizeCronExpression(oldCronExpression).equals(normalizeCronExpression(jobBean.getCronExpression()))
-                    &&
+        if (oldTrigger instanceof SimpleTrigger) {
+            SimpleTrigger oldSimpleTrigger = (SimpleTrigger) oldTrigger;
+            // 获取旧触发器的间隔（单位：毫秒）
+            long oldIntervalMs = oldSimpleTrigger.getRepeatInterval();
+            // 根据新单位将新间隔转换为毫秒
+            long newIntervalMs = convertToMilliseconds(jobBean.getFrequency(), jobBean.getFrequencyUnit());
+
+            // 比较间隔和开始时间
+            if (oldIntervalMs == newIntervalMs &&
                     oldTrigger.getStartTime().equals(Date.from(jobBean.getStartTime().atZone(ZoneId.systemDefault()).toInstant()))) {
-                return;
+                return; // 间隔和开始时间相同，无需更新
             }
         }
 
+
         //创建并替换 Trigger
-        TriggerBuilder<CronTrigger> triggerBuilder = TriggerBuilder.newTrigger()
+        TriggerBuilder<SimpleTrigger> triggerBuilder = TriggerBuilder.newTrigger()
                 .withIdentity(triggerKey)
-                .withSchedule(CronScheduleBuilder.cronSchedule(jobBean.getCronExpression()));
+                .withSchedule(getSimpleSchedule(jobBean.getFrequency(), jobBean.getFrequencyUnit()));
         // 设置开始时间（从 JobBean 获取）
         if (Objects.nonNull(jobBean.getStartTime())) {
             Date startDate = Date.from(jobBean.getStartTime().atZone(ZoneId.systemDefault()).toInstant());
@@ -126,7 +131,7 @@ public class QuartzManager {
      *
      * @param jobName 任务名称
      */
-    public void deleteJob(String jobName) throws SchedulerException{
+    public void deleteJob(String jobName) throws SchedulerException {
         scheduler.pauseTrigger(TriggerKey.triggerKey(jobName));
         scheduler.unscheduleJob(TriggerKey.triggerKey(jobName));
         scheduler.deleteJob(new JobKey(jobName));
@@ -156,6 +161,49 @@ public class QuartzManager {
     public void resumeJob(String jobName) throws SchedulerException {
         JobKey jobKey = JobKey.jobKey(jobName);
         scheduler.resumeJob(jobKey);
+    }
+
+    // 定义 SimpleScheduleBuilder
+    private SimpleScheduleBuilder getSimpleSchedule(long interval, Integer unit) {
+        SimpleScheduleBuilder scheduleBuilder = SimpleScheduleBuilder.simpleSchedule();
+        switch (FrequencyUnitEnum.codeOf(unit)) {
+            case SECONDS:
+                scheduleBuilder.withIntervalInSeconds(Math.toIntExact(interval));
+                break;
+            case MINUTES:
+                scheduleBuilder.withIntervalInMinutes(Math.toIntExact(interval));
+                break;
+            case HOUR:
+                scheduleBuilder.withIntervalInHours(Math.toIntExact(interval));
+                break;
+            case DAY:
+                scheduleBuilder.withIntervalInHours(Math.toIntExact(interval * 24)); // 天转换为小时
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported unit: " + unit);
+        }
+
+        // 设置重复次数，-1 表示无限重复
+        scheduleBuilder.repeatForever();
+
+        return scheduleBuilder;
+    }
+
+
+    // 辅助方法：将间隔转换为毫秒
+    private long convertToMilliseconds(long interval, Integer unit) {
+        switch (FrequencyUnitEnum.codeOf(unit)) {
+            case SECONDS:
+                return interval * DateUnit.SECOND.getMillis();
+            case MINUTES:
+                return interval * DateUnit.MINUTE.getMillis();
+            case HOUR:
+                return interval * DateUnit.HOUR.getMillis();
+            case DAY:
+                return interval * DateUnit.DAY.getMillis();
+            default:
+                throw new IllegalArgumentException("Unsupported unit: " + unit);
+        }
     }
 
 }

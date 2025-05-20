@@ -92,7 +92,7 @@ public class WarningStrategyDO extends BaseDO {
      * 告警间隔
      */
     @TableField(value = "`interval`")
-    private String interval;
+    private Integer interval;
 
     /**
      * 状态

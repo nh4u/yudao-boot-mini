@@ -22,7 +22,6 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.Standingb
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.StandingbookAcquisitionMapper;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
-import cn.bitlinks.ems.module.power.utils.CronUtils;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -151,8 +150,8 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         acquisitionJobDTO.setStatus(updateReqVO.getStatus());
         acquisitionJobDTO.setStandingbookId(updateReqVO.getStandingbookId());
         acquisitionJobDTO.setJobStartTime(updateReqVO.getStartTime());
-        acquisitionJobDTO.setCronExpression(CronUtils.getCron(updateReqVO.getFrequency(),
-                updateReqVO.getFrequencyUnit()));
+        acquisitionJobDTO.setFrequency(updateReqVO.getFrequency());
+        acquisitionJobDTO.setFrequencyUnit(updateReqVO.getFrequencyUnit());
         acquisitionJobDTO.setDetails(BeanUtils.toBean(detailVOS, StandingbookAcquisitionDetailDTO.class));
         acquisitionJobDTO.setServiceSettingsDTO(BeanUtils.toBean(serviceSettingsDO, ServiceSettingsDTO.class));
         quartzApi.createOrUpdateJob(acquisitionJobDTO);

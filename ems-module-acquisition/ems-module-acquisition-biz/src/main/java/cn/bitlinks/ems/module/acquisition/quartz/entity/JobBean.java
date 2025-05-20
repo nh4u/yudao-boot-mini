@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 
+import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 @Data
@@ -20,10 +21,16 @@ public class JobBean {
      * 具体任务
      */
     private Class<? extends Job> jobClass;
+
     /**
-     * 任务表达式
+     * 频率
      */
-    private String cronExpression;
+    private Long frequency;
+
+    /**
+     * 频率单位
+     */
+    private Integer frequencyUnit;
     /**
      * 任务初始化数据
      */

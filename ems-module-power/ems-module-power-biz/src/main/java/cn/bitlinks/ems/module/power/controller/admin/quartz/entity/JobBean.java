@@ -16,20 +16,25 @@ public class JobBean {
      * 任务名-唯一标识
      */
     private String jobName;
+
     /**
      * 具体任务
      */
     private Class<? extends Job> jobClass;
+
     /**
-     * 任务表达式
+     * 任务频率
      */
-    private String cronExpression;
+    private Integer frequency;
+
+    /**
+     * 频率单位
+     */
+    private Integer frequencyUnit;
+
     /**
      * 任务初始化数据
      */
     private JobDataMap jobDataMap;
-    /**
-     * 任务开始时间
-     */
-    private LocalDateTime startTime;
+
 }
