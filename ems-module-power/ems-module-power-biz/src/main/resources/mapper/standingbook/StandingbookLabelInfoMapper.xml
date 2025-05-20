@@ -23,7 +23,7 @@
             </foreach>
         </if>
         FROM
-        power_standingbook_label_info WHERE and deleted = 0
+        power_standingbook_label_info WHERE deleted = 0
         GROUP BY
         standingbook_id
         HAVING
