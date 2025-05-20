@@ -7,6 +7,8 @@ import javax.validation.constraints.*;
 
 @Schema(description = "管理后台 - 能源参数新增/修改 Request VO")
 @Data
+@EqualsAndHashCode(callSuper = false)
+@ToString(callSuper = true)
 public class EnergyParametersSaveReqVO {
 
     @Schema(description = "id", requiredMode = Schema.RequiredMode.REQUIRED, example = "26158")
