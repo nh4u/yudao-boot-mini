@@ -109,13 +109,13 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     public void updateEnergyConfiguration(EnergyConfigurationSaveReqVO updateReqVO) {
         Long energyId = updateReqVO.getId();
         // 1. 校验主表存在性
-        EnergyConfigurationDO energyConfigurationDO = validateEnergyConfigurationExists(energyId);
+        EnergyConfigurationDO old = validateEnergyConfigurationExists(energyId);
         // 2. 检查能源编码重复性（排除自身）
         checkEnergyCodeDuplicate(updateReqVO.getCode(), energyId);
         // 2. 子表编码查重（新增逻辑）
         checkEnergyParameterCodeDuplicate(updateReqVO.getEnergyParameters());
 
-        if(!energyConfigurationDO.getEnergyClassify().equals(updateReqVO.getEnergyClassify())){
+        if(!old.getEnergyClassify().equals(updateReqVO.getEnergyClassify())){
             // 如何group发生改变 则判断是否关联数据 如果管理则报错
             boolean isTemplateAssociated = standingbookTmplDaqAttrService.isAssociationWithEnergyId(energyId);
             if (isTemplateAssociated) {
@@ -230,10 +230,30 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
                 List<EnergyParametersDO> addDOs = BeanUtils.toBean(toAdd, EnergyParametersDO.class);
                 energyParametersMapper.insertBatch(addDOs);
                 standingbookTmplDaqAttrService.cascadeAddDaqAttrByEnergyParams(energyId, addDOs);
-            }else {
+            }
+
+            // 删除list有数据 则抛出异常
+            if (!toDelete.isEmpty()){
                 // 使用新的异常码
                 throw exception(ENERGY_CONFIGURATION_TEMPLATE_ASSOCIATED);
             }
+
+            // 更新list有数据
+            if (!toUpdate.isEmpty()) {
+                // 校验与原来的是否有变化
+                List<EnergyParametersSaveReqVO> oldParamsVo = BeanUtils.toBean(oldParams, EnergyParametersSaveReqVO.class);
+                Map<Long, EnergyParametersSaveReqVO> oldParamsMap = oldParamsVo.stream()
+                        .collect(Collectors.toMap(EnergyParametersSaveReqVO::getId, Function.identity()));
+
+                // 循环做比较
+                for (EnergyParametersSaveReqVO param : toUpdate) {
+
+                    if (!param.equals(oldParamsMap.get(param.getId()))){
+                        throw exception(ENERGY_CONFIGURATION_TEMPLATE_ASSOCIATED);
+                    }
+                }
+            }
+
         }else {
             // 无关联模板时
             // 7. 执行删除、更新、新增
