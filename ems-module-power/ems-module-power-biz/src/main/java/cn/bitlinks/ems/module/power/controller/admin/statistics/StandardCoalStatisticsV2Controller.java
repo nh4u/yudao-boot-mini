@@ -57,7 +57,7 @@ public class StandardCoalStatisticsV2Controller {
 
     @PostMapping("/standardCoalStructureAnalysisChart")
     @Operation(summary = "用能结构分析（图）V2")
-    public CommonResult<StatisticsChartResultV2VO> standardCoalStructureAnalysisChart(@Valid @RequestBody StatisticsParamV2VO paramVO) {
+    public CommonResult<StatisticsChartPieResultVO> standardCoalStructureAnalysisChart(@Valid @RequestBody StatisticsParamV2VO paramVO) {
         return success(standardCoalStructureV2Service.standardCoalStructureAnalysisChart(paramVO));
     }
 }
