@@ -293,6 +293,10 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                 paramVO.getRange()[1],
                 standingBookIds);
 
+
+        // TODO: 2025/5/19 明天开始开发 图占比 
+
+
         // 按能源查看
         if (QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)) {
 
@@ -501,13 +505,14 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                             .stream()
                             .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
 
+                    List<StructureInfo> tempResultList = new ArrayList<>();
                     energyUsageCostMap.forEach((energyId, usageCostList) -> {
 
                         // 获取能源数据
                         EnergyConfigurationDO energyConfigurationDO = energyMap.get(energyId);
 
                         // 聚合数据 转换成 StandardCoalInfoData
-                        List<StructureInfoData> dataList = usageList.stream()
+                        List<StructureInfoData> dataList = usageCostList.stream()
                                 .map(usage -> new StructureInfoData(
                                         //DateUtil.format(usage.getTime(), dataType.getFormat()),
                                         usage.getTime(),
@@ -532,8 +537,10 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                         info.setSumNum(totalNum);
                         info.setSumProportion(null);
 
-                        resultList.add(info);
+                        tempResultList.add(info);
                     });
+                    List<StructureInfo> structureResultList = getStructureResultList(tempResultList);
+                    resultList.addAll(structureResultList);
                 });
             });
         });
@@ -600,7 +607,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
             });
         });
 
-        return resultList;
+        return getStructureResultList(resultList);
     }
 
     /**
@@ -652,6 +659,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+
         return getStructureResultList(collect);
     }
 
