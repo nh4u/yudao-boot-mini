@@ -17,7 +17,7 @@ public class WarningStrategyBatchUpdIntervalReqVO {
 
     @Schema(description = "告警间隔", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotEmpty(message = "告警间隔不能为空")
-    private String interval;
+    private Integer interval;
 
     @Schema(description = "告警间隔单位", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "告警间隔单位不能为空")

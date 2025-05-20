@@ -1,15 +1,14 @@
-package cn.bitlinks.ems.module.acquisition.quartz.job;
+package cn.bitlinks.ems.module.power.controller.admin.quartz.job;
 
 import cn.bitlinks.ems.framework.common.enums.FrequencyUnitEnum;
-import cn.bitlinks.ems.module.acquisition.quartz.entity.JobBean;
+import cn.bitlinks.ems.module.power.controller.admin.quartz.entity.JobBean;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUnit;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
-import java.util.Date;
-import java.util.Objects;
+import java.util.List;
 
 /**
  *
@@ -20,6 +19,7 @@ public class QuartzManager {
     @Autowired
     private Scheduler scheduler;
 
+
     /**
      * 增加一个job
      */
@@ -29,14 +29,7 @@ public class QuartzManager {
         TriggerBuilder<SimpleTrigger> triggerBuilder = TriggerBuilder.newTrigger()
                 .withIdentity(jobBean.getJobName())
                 .withSchedule(getSimpleSchedule(jobBean.getFrequency(), jobBean.getFrequencyUnit()));
-
-        // 设置开始时间（从 JobBean 获取）
-        if (Objects.nonNull(jobBean.getStartTime())) {
-            Date startDate = Date.from(jobBean.getStartTime().atZone(ZoneId.systemDefault()).toInstant());
-            triggerBuilder.startAt(startDate);
-        } else {
-            triggerBuilder.startNow(); // 如果没有指定开始时间，默认立即启动
-        }
+        triggerBuilder.startNow(); // 如果没有指定开始时间，默认立即启动
 
         Trigger trigger = triggerBuilder.build();
 
@@ -62,58 +55,19 @@ public class QuartzManager {
     public void updateJob(JobBean jobBean) throws SchedulerException {
         String jobName = jobBean.getJobName();
         // 定义 JobKey 和 TriggerKey
-        JobKey jobKey = JobKey.jobKey(jobName);
         TriggerKey triggerKey = TriggerKey.triggerKey(jobName);
-
-        // 检查 JobKey 是否存在
-        if (!scheduler.checkExists(jobKey)) {
-            throw new SchedulerException("Job with name " + jobName + " does not exist!");
-        }
-
         // 检查 TriggerKey 是否存在
         if (!scheduler.checkExists(triggerKey)) {
             throw new SchedulerException("Trigger for job " + jobName + " does not exist!");
         }
-
-        // 1. 更新 JobDetail（包含新的 JobDataMap）
-        JobDetail newJobDetail = JobBuilder.newJob(AcquisitionJob.class)
-                .withIdentity(jobKey)
-                .usingJobData(jobBean.getJobDataMap())
-                .build();
-
-        // 替换旧的 JobDetail
-        scheduler.addJob(newJobDetail, true);
-        // 2. 比较和更新 Trigger（仅当 Cron 表达式不同时) 和开始时间不同时,更新触发器
-        Trigger oldTrigger = scheduler.getTrigger(triggerKey);
-        if (oldTrigger instanceof SimpleTrigger) {
-            SimpleTrigger oldSimpleTrigger = (SimpleTrigger) oldTrigger;
-            // 获取旧触发器的间隔（单位：毫秒）
-            long oldIntervalMs = oldSimpleTrigger.getRepeatInterval();
-            // 根据新单位将新间隔转换为毫秒
-            long newIntervalMs = convertToMilliseconds(jobBean.getFrequency(), jobBean.getFrequencyUnit());
-
-            // 比较间隔和开始时间
-            if (oldIntervalMs == newIntervalMs &&
-                    oldTrigger.getStartTime().equals(Date.from(jobBean.getStartTime().atZone(ZoneId.systemDefault()).toInstant()))) {
-                return; // 间隔和开始时间相同，无需更新
-            }
-        }
-
 
         //创建并替换 Trigger
         TriggerBuilder<SimpleTrigger> triggerBuilder = TriggerBuilder.newTrigger()
                 .withIdentity(triggerKey)
                 .withSchedule(getSimpleSchedule(jobBean.getFrequency(), jobBean.getFrequencyUnit()));
         // 设置开始时间（从 JobBean 获取）
-        if (Objects.nonNull(jobBean.getStartTime())) {
-            Date startDate = Date.from(jobBean.getStartTime().atZone(ZoneId.systemDefault()).toInstant());
-            triggerBuilder.startAt(startDate);
-        } else {
-            triggerBuilder.startNow(); // 如果没有指定开始时间，默认立即启动
-        }
-
+        triggerBuilder.startNow(); // 如果没有指定开始时间，默认立即启动
         Trigger newTrigger = triggerBuilder.build();
-
         scheduler.rescheduleJob(triggerKey, newTrigger);
     }
 
@@ -190,20 +144,22 @@ public class QuartzManager {
     }
 
 
-    // 辅助方法：将间隔转换为毫秒
-    private long convertToMilliseconds(long interval, Integer unit) {
-        switch (FrequencyUnitEnum.codeOf(unit)) {
-            case SECONDS:
-                return interval * DateUnit.SECOND.getMillis();
-            case MINUTES:
-                return interval * DateUnit.MINUTE.getMillis();
-            case HOUR:
-                return interval * DateUnit.HOUR.getMillis();
-            case DAY:
-                return interval * DateUnit.DAY.getMillis();
-            default:
-                throw new IllegalArgumentException("Unsupported unit: " + unit);
+    /**
+     * 批量修改任务的间隔
+     * @param interval 间隔
+     * @param intervalUnit 间隔单位
+     * @param jobNameList 任务名称列表
+     */
+    public void updateJobBatch(Integer interval, Integer intervalUnit, List<String> jobNameList) throws SchedulerException {
+        if(CollUtil.isEmpty(jobNameList)){
+            // 遍历任务名称列表
+            for (String jobName : jobNameList) {
+                JobBean jobBean = new JobBean();
+                jobBean.setJobName(jobName);
+                jobBean.setFrequencyUnit(intervalUnit);
+                jobBean.setFrequency(interval);
+                updateJob(jobBean);
+            }
         }
     }
-
 }

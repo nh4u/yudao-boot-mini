@@ -66,41 +66,15 @@ spring:
           password: BitlinkMysql@2022
         starrocks: # 模拟从库，可根据自己需要修改
           lazy: true # 开启懒加载，保证启动速度
-          url: jdbc:mysql://192.168.2.45:9030/acquisition?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
+          url: jdbc:mysql://127.0.0.1:9030/acquisition_dev?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
           username: root
+          password: BitlinkStarrocks@2025
   # Redis 配置。Redisson 默认的配置足够使用，一般不需要进行调优
   redis:
     host: 192.168.2.26 # 地址
     port: 6379 # 端口
     database: 1 # 数据库索引
     password: bitlink2022 # 密码，建议生产环境开启
---- #################### MQ 消息队列相关配置 ####################
-
-# rocketmq 配置项，对应 RocketMQProperties 配置类
-rocketmq:
-  name-server: 113.250.189.24:9876
-  producer:
-    # 发送同一类消息的设置为同一个group，保证唯一
-    group: springboot_producer_group
-    # 发送消息超时时间，默认3000
-    sendMessageTimeout: 10000
-    # 发送消息失败重试次数，默认2
-    retryTimesWhenSendFailed: 2
-    # 异步消息重试此处，默认2
-    retryTimesWhenSendAsyncFailed: 2
-    # 消息最大长度，默认1024 * 1024 * 4(默认4M)
-    maxMessageSize: 4096
-    # 压缩消息阈值，默认4k(1024 * 4)
-    compressMessageBodyThreshold: 4096
-    # 是否在内部发送失败时重试另一个broker，默认false
-    retryNextServer: false
-  # 自定义配置
-
-  # 生产者发送消息的topic
-  topic:
-    device-task: "device_task_topic-${spring.profiles.active}"
-
-
 
 --- #################### 服务保障相关配置 ####################
 

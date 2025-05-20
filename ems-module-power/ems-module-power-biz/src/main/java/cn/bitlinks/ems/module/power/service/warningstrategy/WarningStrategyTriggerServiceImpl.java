@@ -2,8 +2,12 @@ package cn.bitlinks.ems.module.power.service.warningstrategy;
 
 import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
-import cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo.SbDataTriggerVO;
+import cn.bitlinks.ems.module.acquisition.api.collectrawdata.CollectRawDataApi;
+import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.CollectRawDataDTO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyConditionDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyDO;
@@ -13,9 +17,11 @@ import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyCon
 import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningtemplate.WarningTemplateMapper;
 import cn.bitlinks.ems.module.power.enums.DictTypeConstants;
-import cn.bitlinks.ems.module.power.enums.warninginfo.WarningIntervalUnitEnum;
 import cn.bitlinks.ems.module.power.enums.warninginfo.WarningStrategyConnectorEnum;
+import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
+import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
+import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
 import cn.bitlinks.ems.module.power.service.warningtemplate.WarningTemplateService;
 import cn.bitlinks.ems.module.system.api.mail.MailSendApi;
 import cn.bitlinks.ems.module.system.api.mail.dto.MailSendSingleToUserCustomReqDTO;
@@ -23,9 +29,7 @@ import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
-import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -37,7 +41,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.*;
-import static cn.bitlinks.ems.module.power.enums.warninginfo.WarningIntervalUnitEnum.calculateThresholdTime;
 import static cn.bitlinks.ems.module.power.enums.warninginfo.WarningStrategyConnectorEnum.evaluateCondition;
 import static cn.bitlinks.ems.module.power.enums.warninginfo.WarningTemplateKeyWordEnum.*;
 import static cn.hutool.core.date.DatePattern.NORM_DATETIME_FORMATTER;
@@ -66,196 +69,304 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
     @Resource
     private WarningTemplateService warningTemplateService;
 
-    //    @Resource
-//    private EnergyConfigurationService energyConfigurationService;
-
     @Resource
     @Lazy
     private MailSendApi mailSendApi;
-
+    @Resource
+    private StandingbookTypeService standingbookTypeService;
+    @Resource
+    private StandingbookService standingbookService;
     @Resource
     private StandingbookAttributeService standingbookAttributeService;
-    private static final Integer batchSize = 2000;
+    @Resource
+    private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
+    @Resource
+    private CollectRawDataApi collectRawDataApi;
 
 
     @Override
-    public void triggerWarning(List<SbDataTriggerVO> sbDataTriggerVOList) {
-        LocalDateTime triggerTime = LocalDateTime.now();
-        // todo 只匹配条件中完全对应的实体设备, 等待虚拟设备逻辑完善。
-        if (CollUtil.isEmpty(sbDataTriggerVOList)) {
+    public void triggerWarning(Long strategyId, LocalDateTime triggerTime) {
+        // 查询该策略
+        WarningStrategyDO warningStrategyDO = warningStrategyMapper.selectById(strategyId);
+        // 如果该策略的状态是关闭
+        if (CommonStatusEnum.DISABLE.getStatus().equals(warningStrategyDO.getStatus())) {
             return;
         }
-        /* ---------------------------- 实体设备触发告警 ---------------------------------------- */
-        // todo 欠缺数采设备编码和设备id的转换、系统中能源参数编码和数采参数编码的转换，可能需要将接口参数再一一处理一层
-        // 获取设备编码和设备参数
-        Map<Long, List<SbDataTriggerVO>> codeParamMap = sbDataTriggerVOList.stream()
-                .collect(Collectors.groupingBy(SbDataTriggerVO::getSbId));
-        // 获取对应台账信息-所有的设备id
-        Map<Long, List<StandingbookAttributeDO>> attrsMap = standingbookAttributeService.getAttributesBySbIds(new ArrayList<>(codeParamMap.keySet()));
-        if(CollUtil.isEmpty(attrsMap)){
+        // 获取该策略对应的设备和设备分类下的所有设备
+        List<Long> deviceScopeIds = warningStrategyDO.getDeviceScope();
+
+        // 1.1 查询台账分类范围下的所有设备id todo 循环递归问题, 待优化
+        List<Long> typeIds = warningStrategyDO.getDeviceTypeScope();
+        // 1.1.1 获取台账分类下所有的台账ids
+        Map<Long, List<Long>> typeIdToAllStandingbookIdsMap = new HashMap<>();
+        if (CollUtil.isNotEmpty(warningStrategyDO.getDeviceTypeScope())) {
+            Map<Long, List<Long>> cascadeTypeIdMap = new HashMap<>();
+            // 查询范围里包含的所有台账分类ids
+            List<StandingbookTypeDO> typeList = standingbookTypeService.getStandingbookTypeNode();
+            List<Long> typeIdSet = new ArrayList<>();
+            for (Long typeId : typeIds) {
+                List<Long> subtreeIds = standingbookTypeService.getSubtreeIds(typeList, typeId);
+                typeIdSet.addAll(subtreeIds);
+                cascadeTypeIdMap.put(typeId, subtreeIds);
+            }
+            // 查询范围内所有台账分类下的台账
+            List<StandingbookDO> standingbookDOS = standingbookService.getByTypeIds(typeIdSet);
+
+            if (CollUtil.isNotEmpty(standingbookDOS)) {
+
+                deviceScopeIds.addAll(standingbookDOS.stream().map(StandingbookDO::getId).collect(Collectors.toList()));
+                // 按照typeId分组
+                Map<Long, List<Long>> typeIdToStandingbookIds = standingbookDOS.stream()
+                        .collect(Collectors.groupingBy(
+                                StandingbookDO::getTypeId,
+                                Collectors.mapping(
+                                        StandingbookDO::getId,
+                                        Collectors.toList()
+                                )
+                        ));
+                // 合并 cascadeTypeIdMap 和 typeIdToStandingbookIds
+                typeIdToAllStandingbookIdsMap = cascadeTypeIdMap.entrySet().stream()
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey,
+                                entry -> entry.getValue().stream()
+                                        .filter(typeIdToStandingbookIds::containsKey)
+                                        .flatMap(subTypeId -> typeIdToStandingbookIds.getOrDefault(subTypeId, Collections.emptyList()).stream())
+                                        .distinct()
+                                        .collect(Collectors.toList()),
+                                (existing, replacement) -> existing
+                        ));
+            }
+        }
+        if (CollUtil.isEmpty(deviceScopeIds)) {
             return;
         }
-        // 查询所有能源 todo 等能源设置好之后，再填充能源参数相关的问题。
-//        List<EnergyConfigurationDO> energyConfigurationDOS = energyConfigurationService.getAllEnergyConfiguration(null);
-//        Map<Long, List<WarningStrategyConditionDO>> energyConfigurationMap = energyConfigurationDOS.stream()
-//                .collect(Collectors.groupingBy(EnergyConfigurationDO::get));
+        // 2. 查询涉及到的所有的设备参数的实时数据
+        List<CollectRawDataDTO> collectRawDataDTOList =
+                collectRawDataApi.getCollectRawDataListByStandingBookIds(deviceScopeIds);
 
-
-        // 1.获取所有启动的告警策略
-        List<WarningStrategyDO> warningStrategyDOList = warningStrategyMapper.selectList(new LambdaQueryWrapper<WarningStrategyDO>()
-                .eq(WarningStrategyDO::getStatus, CommonStatusEnum.ENABLE.getStatus())
-                .eq(WarningStrategyDO::getDeleted, CommonStatusEnum.ENABLE.getStatus())
-        );
-        if (CollUtil.isEmpty(warningStrategyDOList)) {
+        if (CollUtil.isEmpty(collectRawDataDTOList)) {
             return;
         }
-        // 1.2 获取告警信息中策略触发最新时间，筛选掉触发过的策略
-        Map<Long, LocalDateTime> strategyTimeMap = warningInfoMapper.selectLatestByStrategy();
-        warningStrategyDOList.removeIf(warningStrategyDO -> {
-            // 1）每条策略，检查时间间隔是否触发过
-            LocalDateTime latestTime = strategyTimeMap.get(warningStrategyDO.getId());
-            // 时间间隔内触发过了，不必考虑此策略
-            return checkStrategyTrigger(warningStrategyDO.getInterval(), warningStrategyDO.getIntervalUnit(), latestTime, triggerTime);
-        });
-        if (CollUtil.isEmpty(warningStrategyDOList)) {
+        // 2.0 按照 台账id-> code#energyFlag->CollectRawDataDTO 的格式进行分组
+        Map<Long, Map<String, CollectRawDataDTO>> collectRawDataMap = collectRawDataDTOList.stream()
+                .collect(Collectors.groupingBy(
+                        CollectRawDataDTO::getStandingbookId, // Outer key: standingbookId as String
+                        Collectors.toMap(
+                                dto -> dto.getParamCode() + StringPool.HASH + dto.getEnergyFlag(), // Inner key:
+                                // paramCode#energyFlag
+                                dto -> dto, // Value: CollectRawDataDTO
+                                (existing, replacement) -> existing // Merge function: keep existing if duplicate
+                        )
+                ));
+        // 2.1 查询 台账id->台账基础属性
+        Map<Long, List<StandingbookAttributeDO>> attrsMap = standingbookAttributeService.getAttributesBySbIds(deviceScopeIds);
+        Map<Long, List<StandingbookTmplDaqAttrDO>> daqAttrsMap =
+                standingbookTmplDaqAttrService.getDaqAttrsBySbIds(deviceScopeIds);
+        // 2.2 查询 台账id-> 台账
+        List<StandingbookDO> standingbookDOList = standingbookService.getByStandingbookIds(deviceScopeIds);
+        Map<Long, StandingbookDO> standingbookDOMap = standingbookDOList.stream()
+                .collect(Collectors.toMap(StandingbookDO::getId, item -> item));
+        // 2.2 查询 台账分类id-> 台账分类
+        List<StandingbookTypeDO> standingbookTypeList = standingbookTypeService.getStandingbookTypeList(null);
+        Map<Long, StandingbookTypeDO> standingbookTypeDOMap = standingbookTypeList.stream()
+                .collect(Collectors.toMap(StandingbookTypeDO::getId, item -> item));
+        // 3. 查询策略中需要满足的所有条件
+        List<WarningStrategyConditionDO> conditionVOS =
+                warningStrategyConditionMapper.selectList(WarningStrategyConditionDO::getStrategyId, strategyId);
+        if (CollUtil.isEmpty(conditionVOS)) {
             return;
         }
-        // 获取策略对应的策略条件
-        List<Long> strategyIds = warningStrategyDOList.stream().map(WarningStrategyDO::getId).collect(Collectors.toList());
 
-        List<WarningStrategyConditionDO> conditionDOS = warningStrategyConditionMapper.selectList(new LambdaQueryWrapper<WarningStrategyConditionDO>()
-                .in(WarningStrategyConditionDO::getStrategyId, strategyIds)
-        );
-        Map<Long, List<WarningStrategyConditionDO>> strategyConditionMap = conditionDOS.stream()
-                .collect(Collectors.groupingBy(WarningStrategyConditionDO::getStrategyId));
-
-        // 获取所有模板信息
-        List<Long> siteTemplateId = warningStrategyDOList.stream().map(WarningStrategyDO::getSiteTemplateId).collect(Collectors.toList());
-        if (CollUtil.isEmpty(siteTemplateId)) {
+        // 4.!!!!根据实时数据判断条件是否全都被满足
+        Map<WarningStrategyConditionDO, List<CollectRawDataDTO>> matchCollectRawDataMap =
+                filterMatchCollectRawDataDTO(conditionVOS,
+                        collectRawDataMap, typeIdToAllStandingbookIdsMap);
+        //无实时数据可满足该策略的所有条件
+        if (CollUtil.isEmpty(matchCollectRawDataMap)) {
+            log.info("该策略 id {},未满足条件", strategyId);
             return;
         }
-        List<Long> mailTemplateId = warningStrategyDOList.stream().map(WarningStrategyDO::getMailTemplateId).collect(Collectors.toList());
-        siteTemplateId.addAll(mailTemplateId);
-        List<WarningTemplateDO> templateDOS = warningTemplateMapper.selectList(new LambdaQueryWrapper<WarningTemplateDO>()
-                .in(WarningTemplateDO::getId, siteTemplateId));
-        if (CollUtil.isEmpty(templateDOS)) {
-            return;
-        }
-        Map<Long, WarningTemplateDO> templatesMap = templateDOS.stream()
-                .collect(Collectors.toMap(WarningTemplateDO::getId, template -> template));
-        // 策略分批处理
-        List<List<WarningStrategyDO>> batches = Lists.partition(warningStrategyDOList, batchSize);
+        // 5.组织关键字结构信息,准备发送告警信息/邮件
+        List<String> deviceRelList = new ArrayList<>();
+        // 补充告警信息内容（多行部分）
+        List<Map<String, String>> conditionParamsMapList = new ArrayList<>();
+        matchCollectRawDataMap.forEach((conditionVO, collectRawDataDTOS) -> {
+            List<String> paramIds = conditionVO.getParamId();
+            // 获取设备id or 分类id
+            String conditionSbOrTypeId = paramIds.get(paramIds.size() - 2);
+            // 获取参数编码
+            String conditionCodeAndEnergyFlag = paramIds.get(paramIds.size() - 1);
+            boolean deviceFlag = conditionVO.getDeviceFlag();
+            collectRawDataDTOS.forEach(collectRawDataDTO -> {
+                // 条件符合，填充所有关键字参数
+                Map<String, String> conditionParamsMap = new HashMap<>();
+                conditionParamsMap.put(WARNING_TIME.getKeyWord(), triggerTime.format(NORM_DATETIME_FORMATTER));
+                conditionParamsMap.put(WARNING_LEVEL.getKeyWord(), DictFrameworkUtils.getDictDataLabel(DictTypeConstants.WARNING_INFO_LEVEL, warningStrategyDO.getLevel()));
+                conditionParamsMap.put(WARNING_EXCEPTION_TIME.getKeyWord(),
+                        collectRawDataDTO.getCollectTime().format(NORM_DATETIME_FORMATTER));
+                conditionParamsMap.put(WARNING_VALUE.getKeyWord(), collectRawDataDTO.getCalcValue());
 
-        // 过滤掉时间间隔触发过的。
+                // 补充参数相关数据
+                List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS =
+                        daqAttrsMap.get(collectRawDataDTO.getStandingbookId());
+                Optional<StandingbookTmplDaqAttrDO> paramOptional = standingbookTmplDaqAttrDOS.stream()
+                        .filter(attribute -> conditionCodeAndEnergyFlag.equals(attribute.getCode() + StringPool.HASH + attribute.getEnergyFlag()))
+                        .findFirst();
 
-        for (List<WarningStrategyDO> batchStrategy : batches) {
-            batchStrategy.forEach(warningStrategyDO -> {
+                String paramName =
+                        paramOptional.map(StandingbookTmplDaqAttrDO::getParameter).orElse(StringPool.EMPTY);
+                String unit =
+                        paramOptional.map(StandingbookTmplDaqAttrDO::getUnit).orElse(StringPool.EMPTY);
+                conditionParamsMap.put(WARNING_PARAM.getKeyWord(), paramName);
+                conditionParamsMap.put(WARNING_UNIT.getKeyWord(), unit);
+                conditionParamsMap.put(WARNING_CONDITION_VALUE.getKeyWord(), conditionVO.getValue());
 
-                // 1）循环策略中每个条件，检查设备、参数是否包含，如果包含，根据关键字生成告警信息
-                List<WarningStrategyConditionDO> conditionVOS = strategyConditionMap.get(warningStrategyDO.getId());
-                if (CollUtil.isEmpty(conditionVOS)) {
-                    return;
+                if (deviceFlag) {
+                    conditionParamsMap.put(WARNING_DEVICE_TYPE.getKeyWord(), StringPool.EMPTY);
+                } else {
+                    StandingbookTypeDO standingbookTypeDO =
+                            standingbookTypeDOMap.get(Long.valueOf(conditionSbOrTypeId));
+                    conditionParamsMap.put(WARNING_DEVICE_TYPE.getKeyWord(), standingbookTypeDO.getName());
                 }
 
-                List<String> deviceRelList = new ArrayList<>();
-
-                // 检查告警策略是否满足条件，补充告警信息内容（多行部分）
-                List<Map<String, String>> conditionParamsMapList = new ArrayList<>();
-                for (WarningStrategyConditionDO conditionVO : conditionVOS) {
-                    try {
-                        List<String> paramIds = conditionVO.getParamId();
-                        // 获取参数编码
-                        String conditionCode = paramIds.get(paramIds.size() - 1);
-                        // 获取设备id
-                        String conditionSbId = paramIds.get(paramIds.size() - 2);
-                        List<SbDataTriggerVO> sbDataTriggerVOS = codeParamMap.get(Long.valueOf(conditionSbId));
-                        if (CollUtil.isEmpty(sbDataTriggerVOS)) {
-                            // 该条件对应的设备id不存在，跳出此策略
-                            return;
-                        }
-                        // 查找匹配的参数编码
-                        Optional<SbDataTriggerVO> foundParamData = sbDataTriggerVOS.stream()
-                                .filter(vo -> vo.getParamCode().equals(conditionCode) )
-                                .findFirst();
-                        if (!foundParamData.isPresent()) {
-                            // 该条件对应的参数编码不存在，跳出此策略
-                            return;
-                        }
-                        SbDataTriggerVO sbDataTriggerVO = foundParamData.get();
-                        // 组合条件进行判断
-                        boolean isMatch = evaluateCondition(WarningStrategyConnectorEnum.codeOf(conditionVO.getConnector()), conditionVO.getValue(), sbDataTriggerVO.getValue());
-                        if (!isMatch) {
-                            return;
-                        }
-                        // 条件符合，填充所有关键字参数
-                        Map<String, String> conditionParamsMap = new HashMap<>();
-                        conditionParamsMap.put(WARNING_TIME.getKeyWord(), triggerTime.format(NORM_DATETIME_FORMATTER));
-                        conditionParamsMap.put(WARNING_LEVEL.getKeyWord(), DictFrameworkUtils.getDictDataLabel(DictTypeConstants.WARNING_INFO_LEVEL, warningStrategyDO.getLevel()));
-                        conditionParamsMap.put(WARNING_EXCEPTION_TIME.getKeyWord(), sbDataTriggerVO.getDataTime().format(NORM_DATETIME_FORMATTER));
-                        conditionParamsMap.put(WARNING_VALUE.getKeyWord(), sbDataTriggerVO.getValue());
-
-                        // todo 等能源参数补充好之后，再进行填充的修改
-                        conditionParamsMap.put(WARNING_PARAM.getKeyWord(), StringPool.EMPTY);
-                        conditionParamsMap.put(WARNING_UNIT.getKeyWord(), StringPool.EMPTY);
-                        conditionParamsMap.put(WARNING_CONDITION_VALUE.getKeyWord(), conditionVO.getValue());
-
-                        // todo 设备分类关键字不做处理,暂时填充空串
-                        conditionParamsMap.put(WARNING_DEVICE_TYPE.getKeyWord(), StringPool.EMPTY);
-
-                        List<StandingbookAttributeDO> standingbookAttributeDOS = attrsMap.get(Long.valueOf(conditionSbId));
-                        Optional<StandingbookAttributeDO> measureNameOptional = standingbookAttributeDOS.stream()
-                                .filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode()))
-                                .findFirst();
-                        Optional<StandingbookAttributeDO> measureIdOptional = standingbookAttributeDOS.stream()
-                                .filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode()))
-                                .findFirst();
-                        String sbName = measureNameOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY);
-                        String sbCode = measureIdOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY);
-                        conditionParamsMap.put(WARNING_DEVICE_NAME.getKeyWord(), sbName);
-                        conditionParamsMap.put(WARNING_DEVICE_CODE.getKeyWord(), sbCode);
-                        conditionParamsMap.put(WARNING_STRATEGY_NAME.getKeyWord(), warningStrategyDO.getName());
-                        conditionParamsMap.put(WARNING_DETAIL_LINK.getKeyWord(), String.format(SB_MONITOR_DETAIL, conditionSbId));
-                        conditionParamsMapList.add(conditionParamsMap);
-                        String deviceRel = String.format("%s(%s)", sbName, sbCode);
-                        deviceRelList.add(deviceRel);
-                    } catch (Exception e) {
-                        log.error("告警策略id{}条件解析异常", conditionVO.getId(), e);
-                        return;
-                    }
-                }
-                if (CollUtil.isEmpty(conditionParamsMapList)) {
-                    return;
-                }
-                //if(conditionParamsMapList.size() != conditionVOS.size)
-                if (CollUtil.isEmpty(deviceRelList)) {
-                    return;
-                }
-
-                //------------------------------（还差收件人、标题、内容未填充）------------------------
-                // 一、发送站内信
-                //站内信模板通知人员
-                List<Long> siteUserIds = warningStrategyDO.getSiteStaff();
-                WarningTemplateDO siteTemplateDO = templatesMap.get(warningStrategyDO.getSiteTemplateId());
-                //              //  (组装告警信息类)
-                WarningInfoDO warningInfoDO = new WarningInfoDO();
-                warningInfoDO.setLevel(warningStrategyDO.getLevel());
-                warningInfoDO.setWarningTime(triggerTime);
-                warningInfoDO.setTemplateId(warningStrategyDO.getSiteTemplateId());
-                warningInfoDO.setStrategyId(warningStrategyDO.getId());
-                warningInfoDO.setDeviceRel(String.join(StringPool.COMMA, deviceRelList));
-                sendSiteMsg(siteUserIds, siteTemplateDO, conditionParamsMapList, warningInfoDO);
-
-                // 二、如果有邮件模板，发送邮件
-                //邮件模板通知人员
-                List<Long> mailUserIds = warningStrategyDO.getMailStaff();
-                WarningTemplateDO mailTemplateDO = templatesMap.get(warningStrategyDO.getMailTemplateId());
-                if (mailTemplateDO != null) {
-                    sendSiteMsg(mailUserIds, mailTemplateDO, conditionParamsMapList, null);
-                }
-
+                List<StandingbookAttributeDO> standingbookAttributeDOS = attrsMap.get(collectRawDataDTO.getStandingbookId());
+                Optional<StandingbookAttributeDO> measureNameOptional = standingbookAttributeDOS.stream()
+                        .filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode()))
+                        .findFirst();
+                Optional<StandingbookAttributeDO> measureIdOptional = standingbookAttributeDOS.stream()
+                        .filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode()))
+                        .findFirst();
+                String sbName = measureNameOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY);
+                String sbCode = measureIdOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY);
+                conditionParamsMap.put(WARNING_DEVICE_NAME.getKeyWord(), sbName);
+                conditionParamsMap.put(WARNING_DEVICE_CODE.getKeyWord(), sbCode);
+                conditionParamsMap.put(WARNING_STRATEGY_NAME.getKeyWord(), warningStrategyDO.getName());
+                conditionParamsMap.put(WARNING_DETAIL_LINK.getKeyWord(), String.format(SB_MONITOR_DETAIL,
+                        collectRawDataDTO.getStandingbookId()));
+                conditionParamsMapList.add(conditionParamsMap);
+                String deviceRel = String.format("%s(%s)", sbName, sbCode);
+                deviceRelList.add(deviceRel);
             });
+        });
+
+
+        //------------------------------（还差收件人、标题、内容未填充）------------------------
+        // 一、发送站内信
+        // 站内信模板通知人员
+        List<Long> siteUserIds = warningStrategyDO.getSiteStaff();
+        WarningTemplateDO siteTemplateDO = warningTemplateMapper.selectById(warningStrategyDO.getSiteTemplateId());
+        //              //  (组装告警信息类)
+        WarningInfoDO warningInfoDO = new WarningInfoDO();
+        warningInfoDO.setLevel(warningStrategyDO.getLevel());
+        warningInfoDO.setWarningTime(triggerTime);
+        warningInfoDO.setTemplateId(warningStrategyDO.getSiteTemplateId());
+        warningInfoDO.setStrategyId(warningStrategyDO.getId());
+        warningInfoDO.setDeviceRel(String.join(StringPool.COMMA, deviceRelList));
+        sendSiteMsg(siteUserIds, siteTemplateDO, conditionParamsMapList, warningInfoDO);
+
+        // 二、如果有邮件模板，发送邮件
+        //邮件模板通知人员
+        List<Long> mailUserIds = warningStrategyDO.getMailStaff();
+        WarningTemplateDO mailTemplateDO = warningTemplateMapper.selectById(warningStrategyDO.getMailTemplateId());
+        if (mailTemplateDO != null) {
+            sendSiteMsg(mailUserIds, mailTemplateDO, conditionParamsMapList, null);
         }
 
+
+    }
+
+    /**
+     * 获取满足条件的实时数据
+     *
+     * @param conditionVOS
+     * @param collectRawDataMap
+     * @param typeIdToAllStandingbookIdsMap
+     * @return
+     */
+    private Map<WarningStrategyConditionDO, List<CollectRawDataDTO>> filterMatchCollectRawDataDTO(List<WarningStrategyConditionDO> conditionVOS, Map<Long,
+            Map<String, CollectRawDataDTO>> collectRawDataMap, Map<Long, List<Long>> typeIdToAllStandingbookIdsMap) {
+        Map<WarningStrategyConditionDO, List<CollectRawDataDTO>> result = new HashMap<>();
+
+        for (WarningStrategyConditionDO conditionVO : conditionVOS) {
+            List<String> paramIds = conditionVO.getParamId();
+            // 获取设备id or 分类id
+            String conditionSbOrTypeId = paramIds.get(paramIds.size() - 2);
+
+            boolean deviceFlag = conditionVO.getDeviceFlag();
+            // 是设备策略
+            if (deviceFlag) {
+                // 查询实时数据
+                CollectRawDataDTO collectRawDataDTO = filterMatchCollectRawDataDTOByStandingbookId(conditionVO,
+                        Long.valueOf(conditionSbOrTypeId),
+                        collectRawDataMap);
+                // 该条件不被满足
+                if (Objects.isNull(collectRawDataDTO)) {
+                    return null;
+                }
+                result.put(conditionVO, Collections.singletonList(collectRawDataDTO));
+            } else {
+                // 是分类策略
+                List<Long> standingbookIds = typeIdToAllStandingbookIdsMap.get(Long.valueOf(conditionSbOrTypeId));
+                // 分类下无设备,无设备可以满足该条件
+                if (CollUtil.isEmpty(standingbookIds)) {
+                    return null;
+                }
+                List<CollectRawDataDTO> collectRawDataDTOS = new ArrayList<>();
+                standingbookIds.forEach(standingbookId -> {
+                    CollectRawDataDTO collectRawDataDTO = filterMatchCollectRawDataDTOByStandingbookId(conditionVO,
+                            standingbookId,
+                            collectRawDataMap);
+                    if (Objects.nonNull(collectRawDataDTO)) {
+                        collectRawDataDTOS.add(collectRawDataDTO);
+                    }
+
+                });
+                // 该条件不被满足,分类下无设备可满足
+                if (CollUtil.isEmpty(collectRawDataDTOS)) {
+                    return null;
+                }
+                result.put(conditionVO, collectRawDataDTOS);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 查询匹配条件的的实时数据
+     *
+     * @param conditionVO
+     * @param standingbookId
+     * @param collectRawDataMap
+     * @return
+     */
+    private CollectRawDataDTO filterMatchCollectRawDataDTOByStandingbookId(WarningStrategyConditionDO conditionVO,
+                                                                           Long standingbookId, Map<Long, Map<String,
+            CollectRawDataDTO>> collectRawDataMap) {
+        List<String> paramIds = conditionVO.getParamId();
+        // 获取参数编码
+        String conditionCodeAndEnergyFlag = paramIds.get(paramIds.size() - 1);
+
+        // 查询实时数据
+        Map<String, CollectRawDataDTO> paramValueMap = collectRawDataMap.get(Long.valueOf(standingbookId));
+        // 无实时数据
+        if (CollUtil.isEmpty(paramValueMap)) {
+            return null;
+        }
+        // 无该参数实时数据
+        if (!paramValueMap.containsKey(conditionCodeAndEnergyFlag)) {
+            // 该条件对应的参数编码不存在，跳出此策略
+            return null;
+        }
+        // 得到实时数据, 根据实时数据进行判断
+        CollectRawDataDTO collectRawDataDTO = paramValueMap.get(conditionCodeAndEnergyFlag);
+        // 组合条件进行判断
+        boolean isMatch =
+                evaluateCondition(WarningStrategyConnectorEnum.codeOf(conditionVO.getConnector()),
+                        conditionVO.getValue(), collectRawDataDTO.getCalcValue());
+        if (!isMatch) {
+            return null;
+        }
+        return collectRawDataDTO;
     }
 
     /**
@@ -323,31 +434,5 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
         }
     }
 
-
-    /**
-     * 判断告警间隔内是否触发过
-     *
-     * @param interval     告警间隔
-     * @param intervalUnit 告警间隔时间单位
-     * @param latestTime   上次触发时间
-     * @param triggerTime  本次触发时间
-     * @return 是否触发过
-     */
-    private boolean checkStrategyTrigger(String interval, Integer intervalUnit, LocalDateTime latestTime, LocalDateTime triggerTime) {
-        if (latestTime == null) {
-            // 上次触发时间为空，说明从未触发过，本次肯定需要触发
-            return false;
-        }
-        int intervalValue = Integer.parseInt(interval);
-
-        //计算间隔时间
-        LocalDateTime thresholdTime = calculateThresholdTime(WarningIntervalUnitEnum.codeOf(intervalUnit), latestTime, intervalValue);
-        if (thresholdTime == null) {
-            // 该策略系统不支持处理，简单返回true，当成已触发。
-            return true;
-        }
-        // 如果本次触发时间在阈值时间之前，则说明在间隔内已经触发过
-        return triggerTime.isBefore(thresholdTime);
-    }
 
 }

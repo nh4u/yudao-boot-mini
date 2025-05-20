@@ -1,7 +1,7 @@
 package cn.bitlinks.ems.module.acquisition.quartz.job;
 
 import cn.bitlinks.ems.framework.common.core.StandingbookAcquisitionDetailDTO;
-import cn.bitlinks.ems.module.acquisition.api.job.dto.ServiceSettingsDTO;
+import cn.bitlinks.ems.module.acquisition.api.quartz.dto.ServiceSettingsDTO;
 import cn.bitlinks.ems.module.acquisition.mq.message.AcquisitionMessage;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.json.JSONUtil;

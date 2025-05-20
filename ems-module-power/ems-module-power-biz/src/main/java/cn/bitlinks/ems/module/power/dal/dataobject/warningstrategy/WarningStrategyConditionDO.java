@@ -47,7 +47,7 @@ public class WarningStrategyConditionDO extends BaseDO {
      */
     private String value;
     /**
-     * 是否分类，0；设备1：分类
+     * 是否分类，1；设备0：分类
      */
     private Boolean deviceFlag;
 

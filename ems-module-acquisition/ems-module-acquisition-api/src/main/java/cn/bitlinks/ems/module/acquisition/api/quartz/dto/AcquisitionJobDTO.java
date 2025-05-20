@@ -1,10 +1,9 @@
-package cn.bitlinks.ems.module.acquisition.api.job.dto;
+package cn.bitlinks.ems.module.acquisition.api.quartz.dto;
 
 import cn.bitlinks.ems.framework.common.core.StandingbookAcquisitionDetailDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,12 +25,18 @@ public class AcquisitionJobDTO {
      */
     @NotNull(message = "开始时间不能为空")
     private LocalDateTime jobStartTime;
+    /**
+     * 采集频率
+     */
+    @NotNull(message = "采集频率不能为空")
+    private Long frequency;
 
     /**
-     * cron表达式
+     * 采集频率单位
      */
-    @NotEmpty(message = "cron表达式不能为空")
-    private String cronExpression;
+    @NotNull(message = "采集频率单位不能为空")
+    private Integer frequencyUnit;
+
     /**
      * 详情
      */

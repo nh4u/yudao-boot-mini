@@ -1,7 +1,6 @@
 package cn.bitlinks.ems.module.acquisition.api.quartz;
 
-import cn.bitlinks.ems.module.acquisition.api.job.QuartzApi;
-import cn.bitlinks.ems.module.acquisition.api.job.dto.AcquisitionJobDTO;
+import cn.bitlinks.ems.module.acquisition.api.quartz.dto.AcquisitionJobDTO;
 import cn.bitlinks.ems.module.acquisition.quartz.entity.JobBean;
 import cn.bitlinks.ems.module.acquisition.quartz.job.AcquisitionJob;
 import cn.bitlinks.ems.module.acquisition.quartz.job.QuartzManager;
@@ -35,7 +34,8 @@ public class QuartzApiImpl implements QuartzApi {
             // 组装任务参数
             JobBean jobBean = new JobBean();
             jobBean.setJobName(jobName);
-            jobBean.setCronExpression(acquisitionJobDTO.getCronExpression());
+            jobBean.setFrequency(acquisitionJobDTO.getFrequency());
+            jobBean.setFrequencyUnit(acquisitionJobDTO.getFrequencyUnit());
             jobBean.setJobClass(AcquisitionJob.class);
             Map<String, Object> detailDTOMap = new HashMap<>();
             detailDTOMap.put(ACQUISITION_JOB_DATA_MAP_KEY_DETAILS, acquisitionJobDTO.getDetails());
