@@ -3,17 +3,17 @@
 FROM eclipse-temurin:8-jre
 
 ## 创建目录，并使用它作为工作目录
-RUN mkdir -p /ems-module-system-biz
-WORKDIR /ems-module-system-biz
+RUN mkdir -p /ems-module-power-biz
+WORKDIR /ems-module-power-biz
 ## 将后端项目的 Jar 文件，复制到镜像中
-COPY ./target/ems-module-system-biz.jar app.jar
+COPY ./target/ems-module-power-biz.jar app.jar
 
 ## 设置 TZ 时区
 ## 设置 JAVA_OPTS 环境变量，可通过 docker run -e "JAVA_OPTS=" 进行覆盖
 ENV TZ=Asia/Shanghai JAVA_OPTS="-Xms512m -Xmx512m"
 
 ## 暴露后端项目的 48080 端口
-EXPOSE 48091
+EXPOSE 48099
 
 ## 启动后端项目
 CMD java ${JAVA_OPTS} -jar app.jar
