@@ -14,8 +14,15 @@ import lombok.Data;
 @Data
 public class StatisticsChartYDataV2VO {
 
+    @Schema(description = "最大成本")
     private BigDecimal max;
+
+    @Schema(description = "最小成本")
     private BigDecimal min;
+
+    @Schema(description = "成本总和")
     private BigDecimal cost;
+
+    @Schema(description = "成本平均值")
     private BigDecimal avg;
 }
