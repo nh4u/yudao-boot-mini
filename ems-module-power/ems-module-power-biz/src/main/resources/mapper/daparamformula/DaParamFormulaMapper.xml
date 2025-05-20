@@ -44,13 +44,13 @@
                 where eupc.deleted = 0
                 and eupc.formula_id = edpf.id
                 limit 1), (ifnull(
-                (select 2
+                (select 1
                 from ems_unit_price_configuration eupc
                 where eupc.deleted = 0
                 and eupc.formula_id = edpf.id
-                and eupc.end_time &lt; now()
+                and eupc.end_time &gt; now()
                 limit 1),
-                1)), 0)
+                2)), 0)
                 )
 
             </when>
@@ -66,12 +66,14 @@
                 and edpf.formula_type = #{vo.formulaType}
             </if>
         </where>
+        ORDER BY formulaStatus asc, edpf.create_time DESC
     </select>
 
     <select id="getFormulaListByIds"
             resultType="cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO">
         select a.id,
                a.energy_formula,
+               a.create_time,
         if(a.formula_type = 1,
         <!-- 1折标煤公式-->
         (
@@ -98,20 +100,21 @@
              where eupc.deleted = 0
                and eupc.formula_id = a.id
              limit 1), (ifnull(
-                (select 2
+                (select 1
                  from ems_unit_price_configuration eupc
                  where eupc.deleted = 0
                    and eupc.formula_id = a.id
-                   and eupc.end_time &lt; now()
+                   and eupc.end_time &gt; now()
                  limit 1),
-                1)), 0)
+                2)), 0)
             )
             )
             as formulaStatus
         from
         (select edpf.id,
                 edpf.energy_formula,
-                edpf.formula_type
+                edpf.formula_type,
+                edpf.create_time
          from ems_da_param_formula edpf
         <where>
             edpf.deleted = 0
@@ -121,5 +124,6 @@
             </foreach>
         </where>
         ) as a
+        ORDER BY formulaStatus asc, a.create_time DESC
     </select>
 </mapper>
