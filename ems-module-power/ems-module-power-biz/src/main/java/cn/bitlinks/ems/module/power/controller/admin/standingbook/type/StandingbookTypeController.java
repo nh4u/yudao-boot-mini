@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.validation.Valid;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 
@@ -99,8 +100,6 @@ public class StandingbookTypeController {
     public CommonResult<List<StandingbookTypeRespVO>> getStandingbookTree(@RequestParam(value = "id", required = false) Long id) {
         List<StandingbookTypeDO> nodes = standingbookTypeService.getStandingbookTypeNode();
 
-        Map<Long, Long> typeEnergyIdMap =
-                standingbookTmplDaqAttrService.getEnergyMapping();
         if (id != null) {
             List<StandingbookTypeDO> result = new ArrayList<>();
             for (StandingbookTypeDO node : nodes) {
@@ -114,12 +113,21 @@ public class StandingbookTypeController {
         if(CollUtil.isEmpty(nodes)){
             return success(Collections.emptyList());
         }
+        List<Map<Long, Long>> typeEnergyIdsList =
+                standingbookTmplDaqAttrService.getEnergyMapping();
+        Map<Long, Long> typeEnergyIdsMap = new HashMap<>();
+
+        if(CollUtil.isNotEmpty(typeEnergyIdsList)){
+            typeEnergyIdsMap = typeEnergyIdsList.stream()
+                    .flatMap(m -> m.entrySet().stream())
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
         List<StandingbookTypeRespVO> result = new ArrayList<>();
-        nodes.forEach(node->{
+        for(StandingbookTypeDO node : nodes){
             StandingbookTypeRespVO respVO = BeanUtils.toBean(node, StandingbookTypeRespVO.class);
-            respVO.setEnergyId(typeEnergyIdMap.get(node.getId()));
+            respVO.setEnergyId(typeEnergyIdsMap.get(node.getId()));
             result.add(respVO);
-        });
+        }
 
         return success(result);
     }
