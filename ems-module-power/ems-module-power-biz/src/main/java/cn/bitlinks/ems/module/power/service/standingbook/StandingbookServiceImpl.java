@@ -348,7 +348,11 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<String> sbTypeIdList = new ArrayList<>();
         String sbTypeIds = pageReqVO.get(ATTR_SB_TYPE_ID);
         if (StringUtils.isNotEmpty(sbTypeIds)) {
-            sbTypeIdList = Arrays.asList(sbTypeIds.split(StringPool.COMMA));
+            sbTypeIdList = Arrays.stream(sbTypeIds.split(StringPool.HASH))
+                    .map(s -> s.split(StringPool.COMMA))
+                    .map(Arrays::stream)
+                    .map(stream -> stream.reduce((first, second) -> second).orElse(""))
+                    .collect(Collectors.toList());
         }
 
         // 根据分类和topType查询台账

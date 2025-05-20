@@ -32,6 +32,7 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -100,7 +101,7 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
     @Transactional(rollbackFor = Exception.class)
     public void updateUnitPriceConfiguration(Long energyId, List<UnitPriceConfigurationSaveReqVO> updateReqVOList) {
         // 当前时间
-        LocalDateTime currentTime = LocalDateTime.now();
+        LocalDateTime currentTime = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
 
         // 0.获取新配置的最小周期(当前周期,只会修改结束时间)  2025-03-01 - 2025-04-11 15 02 01
         updateReqVOList.sort(Comparator.comparing(UnitPriceConfigurationSaveReqVO::getStartTime));
@@ -144,8 +145,8 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
             // 删除结束时间
             rawConfigList.removeIf(rawConfig -> rawConfig.getId().equals(existingConfig.getId()));
             // 删除结束时间大于当前时间的
-            // 修改当前周期的起始时间为当前时间的下一秒
-            currentUpdConfig.setStartTime(currentTime.plusSeconds(1L));
+            // 修改当前周期的起始时间为当前时间的下一分钟
+            currentUpdConfig.setStartTime(currentTime.plusMinutes(1L));
         }
         //删除当前周期和未来周期,
         if(CollUtil.isNotEmpty(rawConfigList)){
