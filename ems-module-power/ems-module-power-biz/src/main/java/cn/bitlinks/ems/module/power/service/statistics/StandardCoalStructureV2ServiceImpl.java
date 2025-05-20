@@ -39,8 +39,7 @@ import java.util.stream.Collectors;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.LABEL_NAME_PREFIX;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
-import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_STANDARD_COAL_CHART;
-import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_STANDARD_COAL_TABLE;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.*;
 
 /**
  * @Title: ydme-doublecarbon
@@ -80,7 +79,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         DataTypeEnum dataTypeEnum = validateDateType(paramVO.getDateType());
 
         // 3.查询对应缓存是否已经存在，如果存在这直接返回（如果查最新的，最新的在实时更新，所以缓存的是不对的）
-        String cacheKey = USAGE_STANDARD_COAL_TABLE + SecureUtil.md5(paramVO.toString());
+        String cacheKey = USAGE_STANDARD_COAL_STRUCTURE_TABLE + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (StrUtil.isNotEmpty(cacheRes)) {
@@ -221,7 +220,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         DataTypeEnum dataTypeEnum = validateDateType(paramVO.getDateType());
 
         // 3.查询对应缓存是否已经存在，如果存在这直接返回（如果查最新的，最新的在实时更新，所以缓存的是不对的）
-        String cacheKey = USAGE_STANDARD_COAL_CHART + SecureUtil.md5(paramVO.toString());
+        String cacheKey = USAGE_STANDARD_COAL_STRUCTURE_CHART + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (StrUtil.isNotEmpty(cacheRes)) {
