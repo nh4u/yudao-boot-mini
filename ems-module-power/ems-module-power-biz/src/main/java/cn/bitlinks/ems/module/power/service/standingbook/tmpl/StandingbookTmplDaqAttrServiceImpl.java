@@ -62,7 +62,8 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
     private List<StandingbookTmplDaqAttrDO> getSbTmplDaqAttrByTypeId(Long typeId, Boolean energyFlag) {
         return standingbookTmplDaqAttrMapper.selectList(new LambdaQueryWrapper<StandingbookTmplDaqAttrDO>()
                 .eq(StandingbookTmplDaqAttrDO::getTypeId, typeId)
-                .eq(StandingbookTmplDaqAttrDO::getEnergyFlag, energyFlag));
+                .eq(StandingbookTmplDaqAttrDO::getEnergyFlag, energyFlag)
+                .orderByAsc(StandingbookTmplDaqAttrDO::getSort));
     }
 
     @Override
