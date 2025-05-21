@@ -498,7 +498,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
                         List<StatisticsChartYDataV2VO> dataList = xdata.stream().map(time -> {
                             StatisticsChartYDataV2VO vo = new StatisticsChartYDataV2VO();
-                            vo.setCost(timeCostMap.getOrDefault(time, null));
+                            vo.setCost(timeCostMap.getOrDefault(time, BigDecimal.ZERO));
                             return vo;
                         }).collect(Collectors.toList());
 
@@ -561,7 +561,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                 List<StatisticsChartYDataV2VO> ydata = xdata.stream().map(x -> {
                     BigDecimal cost = timeCostMap.getOrDefault(x, BigDecimal.ZERO);
                     StatisticsChartYDataV2VO vo = new StatisticsChartYDataV2VO();
-                    vo.setCost(cost.compareTo(BigDecimal.ZERO) > 0 ? cost : null);
+                    vo.setCost(cost.compareTo(BigDecimal.ZERO) > 0 ? cost : BigDecimal.ZERO);
                     return vo;
                 }).collect(Collectors.toList());
 
@@ -579,18 +579,21 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             List<StatisticsChartYInfoV2VO> ydata = new ArrayList<>();
             xdata.forEach(s -> {
                 StatsResult statsResult = statsResultMap.get(s);
+                StatisticsChartYInfoV2VO yInfoV2VO = new StatisticsChartYInfoV2VO();
+                StatisticsChartYDataV2VO dataV2VO = new StatisticsChartYDataV2VO();
                 if (Objects.nonNull(statsResult)) {
-                    StatisticsChartYInfoV2VO yInfoV2VO = new StatisticsChartYInfoV2VO();
-                    StatisticsChartYDataV2VO dataV2VO = new StatisticsChartYDataV2VO();
                     dataV2VO.setAvg(statsResult.getAvg());
                     dataV2VO.setMax(statsResult.getMax());
                     dataV2VO.setMin(statsResult.getMin());
                     dataV2VO.setCost(statsResult.getSum());
-                    yInfoV2VO.setData(Collections.singletonList(dataV2VO));
-                    ydata.add(yInfoV2VO);
                 } else {
-                    ydata.add(null);
+                    dataV2VO.setAvg(BigDecimal.ZERO);
+                    dataV2VO.setMax(BigDecimal.ZERO);
+                    dataV2VO.setMin(BigDecimal.ZERO);
+                    dataV2VO.setCost(BigDecimal.ZERO);
                 }
+                yInfoV2VO.setData(Collections.singletonList(dataV2VO));
+                ydata.add(yInfoV2VO);
             });
             resultV2VO.setYdata(ydata);
         }
