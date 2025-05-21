@@ -303,10 +303,15 @@ public class StandingbookServiceImpl implements StandingbookService {
             return;
         }
         // 如果存在关联关系，则不删除台账
-        long count = measurementDeviceMapper.selectCount(MeasurementDeviceDO::getDeviceId, ids);
-        count = count+measurementDeviceMapper.selectCount(MeasurementDeviceDO::getMeasurementInstrumentId, ids);
-        count = count+measurementAssociationMapper.selectCount(MeasurementAssociationDO::getMeasurementInstrumentId, ids);
-        count = count+measurementAssociationMapper.selectCount(MeasurementAssociationDO::getMeasurementId, ids);
+        Long count = measurementDeviceMapper.selectCount(new LambdaQueryWrapper<MeasurementDeviceDO>()
+                .in(MeasurementDeviceDO::getDeviceId,ids)
+                .or().in(MeasurementDeviceDO::getMeasurementInstrumentId,ids));
+        if(count >0 ){
+            throw exception(ErrorCodeConstants.STANDINGBOOK_ASSOCIATION_EXISTS);
+        }
+        count = measurementAssociationMapper.selectCount(new LambdaQueryWrapper<MeasurementAssociationDO>()
+                .in(MeasurementAssociationDO::getMeasurementId,ids)
+                .or().in(MeasurementAssociationDO::getMeasurementInstrumentId,ids));
         if(count>0){
             throw exception(ErrorCodeConstants.STANDINGBOOK_ASSOCIATION_EXISTS);
         }
@@ -320,9 +325,12 @@ public class StandingbookServiceImpl implements StandingbookService {
         // 删除
         standingbookMapper.deleteByIds(ids);
         // 删除标签信息
-        standingbookLabelInfoMapper.delete(StandingbookLabelInfoDO::getStandingbookId, ids);
+        standingbookLabelInfoMapper.delete(new LambdaQueryWrapperX<StandingbookLabelInfoDO>()
+                .inIfPresent(StandingbookLabelInfoDO::getStandingbookId,ids));
         // 删除属性
-        standingbookAttributeMapper.delete(StandingbookAttributeDO::getStandingbookId,ids);
+        standingbookAttributeMapper.delete(new LambdaQueryWrapperX<StandingbookAttributeDO>()
+                .inIfPresent(StandingbookAttributeDO::getStandingbookId,ids));
+
         // 删除数采关联
         standingbookAcquisitionService.deleteByStandingbookIds(ids);
         // 删除数采的任务 todo
