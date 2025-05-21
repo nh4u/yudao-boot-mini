@@ -39,5 +39,5 @@ public interface StandingbookTmplDaqAttrMapper extends BaseMapperX<StandingbookT
      * @return typeId-energyId
      */
     @Select("SELECT distinct type_id,energy_id FROM `power_standingbook_tmpl_daq_attr` where energy_id is not null and deleted = 0 and status = 1")
-    List<Map<Long, Long>> selectEnergyMapping();
+    List<StandingbookTmplDaqAttrDO> selectEnergyMapping();
 }
