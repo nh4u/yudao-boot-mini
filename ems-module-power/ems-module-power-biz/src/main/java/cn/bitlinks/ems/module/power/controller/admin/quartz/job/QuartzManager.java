@@ -3,7 +3,6 @@ package cn.bitlinks.ems.module.power.controller.admin.quartz.job;
 import cn.bitlinks.ems.framework.common.enums.FrequencyUnitEnum;
 import cn.bitlinks.ems.module.power.controller.admin.quartz.entity.JobBean;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.date.DateUnit;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,7 +23,10 @@ public class QuartzManager {
      * 增加一个job
      */
     public void createJob(JobBean jobBean) throws SchedulerException {
-        JobDetail jobDetail = JobBuilder.newJob(jobBean.getJobClass()).withIdentity(jobBean.getJobName()).build();
+        JobDetail jobDetail = JobBuilder.newJob(jobBean.getJobClass())
+                .withIdentity(jobBean.getJobName())
+                .usingJobData(jobBean.getJobDataMap())
+                .build();
         // 创建 Trigger，使用业务指定的开始时间
         TriggerBuilder<SimpleTrigger> triggerBuilder = TriggerBuilder.newTrigger()
                 .withIdentity(jobBean.getJobName())
@@ -53,31 +55,8 @@ public class QuartzManager {
      * @param jobBean 任务
      */
     public void updateJob(JobBean jobBean) throws SchedulerException {
-        String jobName = jobBean.getJobName();
-        // 定义 JobKey 和 TriggerKey
-        TriggerKey triggerKey = TriggerKey.triggerKey(jobName);
-        // 检查 TriggerKey 是否存在
-        if (!scheduler.checkExists(triggerKey)) {
-            throw new SchedulerException("Trigger for job " + jobName + " does not exist!");
-        }
-
-        //创建并替换 Trigger
-        TriggerBuilder<SimpleTrigger> triggerBuilder = TriggerBuilder.newTrigger()
-                .withIdentity(triggerKey)
-                .withSchedule(getSimpleSchedule(jobBean.getFrequency(), jobBean.getFrequencyUnit()));
-        // 设置开始时间（从 JobBean 获取）
-        triggerBuilder.startNow(); // 如果没有指定开始时间，默认立即启动
-        Trigger newTrigger = triggerBuilder.build();
-        scheduler.rescheduleJob(triggerKey, newTrigger);
-    }
-
-    // 规范化 Cron 表达式以确保比较准确
-    private String normalizeCronExpression(String cronExpression) {
-        if (cronExpression == null) {
-            return "";
-        }
-        // 去除多余空格，统一为小写（根据需要调整）
-        return cronExpression.trim().replaceAll("\\s+", " ").toLowerCase();
+        deleteJob(jobBean.getJobName());
+        createJob(jobBean);
     }
 
     /**
@@ -146,12 +125,13 @@ public class QuartzManager {
 
     /**
      * 批量修改任务的间隔
-     * @param interval 间隔
+     *
+     * @param interval     间隔
      * @param intervalUnit 间隔单位
-     * @param jobNameList 任务名称列表
+     * @param jobNameList  任务名称列表
      */
     public void updateJobBatch(Integer interval, Integer intervalUnit, List<String> jobNameList) throws SchedulerException {
-        if(CollUtil.isEmpty(jobNameList)){
+        if (CollUtil.isEmpty(jobNameList)) {
             // 遍历任务名称列表
             for (String jobName : jobNameList) {
                 JobBean jobBean = new JobBean();
@@ -161,5 +141,10 @@ public class QuartzManager {
                 updateJob(jobBean);
             }
         }
+    }
+
+    public void init() throws SchedulerException, InterruptedException {
+        Thread.sleep(5000L);
+        scheduler.start();
     }
 }

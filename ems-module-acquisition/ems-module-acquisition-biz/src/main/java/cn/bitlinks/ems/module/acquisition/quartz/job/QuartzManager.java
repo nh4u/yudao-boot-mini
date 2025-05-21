@@ -67,14 +67,6 @@ public class QuartzManager {
         createJob(jobBean);
     }
 
-    // 规范化 Cron 表达式以确保比较准确
-    private String normalizeCronExpression(String cronExpression) {
-        if (cronExpression == null) {
-            return "";
-        }
-        // 去除多余空格，统一为小写（根据需要调整）
-        return cronExpression.trim().replaceAll("\\s+", " ").toLowerCase();
-    }
 
     /**
      * 删除任务一个job
@@ -138,6 +130,7 @@ public class QuartzManager {
 
         return scheduleBuilder;
     }
+
     public void init() throws SchedulerException, InterruptedException {
         Thread.sleep(5000L);
         scheduler.start();
