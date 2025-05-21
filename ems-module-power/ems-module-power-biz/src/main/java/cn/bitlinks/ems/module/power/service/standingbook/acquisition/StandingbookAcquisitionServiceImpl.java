@@ -369,24 +369,6 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void deleteAcquisitionByStandingbookId(Long standingbookId) {
-        // 删除数采设置
-        standingbookAcquisitionMapper.delete(StandingbookAcquisitionDO::getStandingbookId,
-                standingbookId);
-        // 查询台账关联的数采设置
-        StandingbookAcquisitionDO standingbookAcquisitionDO =
-                standingbookAcquisitionMapper.selectOne(StandingbookAcquisitionDO::getStandingbookId,
-                        standingbookId);
-        if (Objects.isNull(standingbookAcquisitionDO)) {
-            return;
-        }
-        // 删除数采设置明细
-        standingbookAcquisitionDetailMapper.delete(StandingbookAcquisitionDetailDO::getAcquisitionId,
-                standingbookAcquisitionDO.getId());
-    }
-
-    @Override
     public void deleteByStandingbookIds(List<Long> ids) {
         List<StandingbookAcquisitionDO> list = queryListByStandingbookIds(ids);
         if(CollUtil.isEmpty(list)){
