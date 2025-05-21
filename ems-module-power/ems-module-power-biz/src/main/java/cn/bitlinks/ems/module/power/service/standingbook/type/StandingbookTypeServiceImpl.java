@@ -69,14 +69,24 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
     @Transactional
     @Override
     public void updateStandingbookType(StandingbookTypeSaveReqVO updateReqVO) {
-        // 校验存在
-        validateStandingbookTypeExists(updateReqVO.getId());
+        // 校验台账是否存在
+        StandingbookTypeDO standingbookTypeDO = standingbookTypeMapper.selectById(updateReqVO.getId());
+        if (Objects.isNull(standingbookTypeDO)) {
+            throw exception(STANDINGBOOK_TYPE_NOT_EXISTS);
+        }
         // 校验父级类型编号的有效性
         validateParentStandingbookType(updateReqVO.getId(), updateReqVO.getSuperId());
-        // 校验名字的唯一性
         // 更新
         StandingbookTypeDO updateObj = BeanUtils.toBean(updateReqVO, StandingbookTypeDO.class);
-        standingbookTypeMapper.updateById(updateObj);
+
+        if(Objects.equals(updateObj.getName(),standingbookTypeDO.getName()) && Objects.equals(updateObj.getCode(),standingbookTypeDO.getCode())){
+            standingbookTypeMapper.updateById(updateObj);
+        }
+        // 若节点及其子节点下存在设备数据，则不允许修改【分类名称】【编码】
+        if(checkRelStandingbook(updateReqVO.getId())) {
+            throw exception(STANDINGBOOK_TYPE_REL_STANDINGBOOK);
+        }
+
     }
 
     void recursiveDeletion(List<Long> ids, Long id) {
