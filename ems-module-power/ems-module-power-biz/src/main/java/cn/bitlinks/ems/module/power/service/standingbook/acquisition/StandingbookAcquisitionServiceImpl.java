@@ -23,6 +23,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.Standingb
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.hutool.core.collection.CollUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -368,21 +369,22 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void deleteAcquisitionByStandingbookId(Long standingbookId) {
-        // 删除数采设置
-        standingbookAcquisitionMapper.delete(StandingbookAcquisitionDO::getStandingbookId,
-                standingbookId);
-        // 查询台账关联的数采设置
-        StandingbookAcquisitionDO standingbookAcquisitionDO =
-                standingbookAcquisitionMapper.selectOne(StandingbookAcquisitionDO::getStandingbookId,
-                        standingbookId);
-        if (Objects.isNull(standingbookAcquisitionDO)) {
+    public void deleteByStandingbookIds(List<Long> ids) {
+        List<StandingbookAcquisitionDO> list = queryListByStandingbookIds(ids);
+        if(CollUtil.isEmpty(list)){
             return;
         }
-        // 删除数采设置明细
-        standingbookAcquisitionDetailMapper.delete(StandingbookAcquisitionDetailDO::getAcquisitionId,
-                standingbookAcquisitionDO.getId());
+        List<Long> acquisitionIds = list.stream().map(StandingbookAcquisitionDO::getId).collect(Collectors.toList());
+        standingbookAcquisitionMapper.deleteByIds(acquisitionIds);
+        standingbookAcquisitionDetailMapper.delete(StandingbookAcquisitionDetailDO::getAcquisitionId,ids);
+    }
+
+    @Override
+    public List<StandingbookAcquisitionDO> queryListByStandingbookIds(List<Long> ids) {
+        return standingbookAcquisitionMapper.selectList(new LambdaQueryWrapper<StandingbookAcquisitionDO>()
+                .eq(StandingbookAcquisitionDO::getStatus,true)
+                .in(StandingbookAcquisitionDO::getStandingbookId,ids)
+        );
     }
 
     /**

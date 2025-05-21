@@ -11,18 +11,25 @@ import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.Measur
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementdevice.MeasurementDeviceDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.acquisition.StandingbookAcquisitionDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.acquisition.StandingbookAcquisitionDetailDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import cn.bitlinks.ems.module.power.dal.mysql.measurementassociation.MeasurementAssociationMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.measurementdevice.MeasurementDeviceMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookLabelInfoMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.StandingbookAcquisitionDetailMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.StandingbookAcquisitionMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.templ.StandingbookTmplDaqAttrMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
 import cn.bitlinks.ems.module.power.enums.standingbook.StandingbookTypeTopEnum;
+import cn.bitlinks.ems.module.power.service.standingbook.acquisition.StandingbookAcquisitionService;
+import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.acquisition.StandingbookAcquisitionService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
 import cn.hutool.core.collection.CollUtil;
@@ -31,6 +38,9 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -293,19 +303,38 @@ public class StandingbookServiceImpl implements StandingbookService {
         }
 
     }
-
+    @Transactional
     @Override
-    public void deleteStandingbook(Long id) {
-        // 校验存在
-        validateStandingbookExists(id);
+    public void deleteStandingbookBatch(List<Long> ids) {
+        if(CollUtil.isEmpty(ids)){
+            return;
+        }
+        // 如果存在关联关系，则不删除台账
+        long count = measurementDeviceMapper.selectCount(MeasurementDeviceDO::getDeviceId, ids);
+        count = count+measurementDeviceMapper.selectCount(MeasurementDeviceDO::getMeasurementInstrumentId, ids);
+        count = count+measurementAssociationMapper.selectCount(MeasurementAssociationDO::getMeasurementInstrumentId, ids);
+        count = count+measurementAssociationMapper.selectCount(MeasurementAssociationDO::getMeasurementId, ids);
+        if(count>0){
+            throw exception(ErrorCodeConstants.STANDINGBOOK_ASSOCIATION_EXISTS);
+        }
+        // 查询存在启用的数采关联
+        List<StandingbookAcquisitionDO> standingbookAcquisitionList =
+                standingbookAcquisitionService.queryListByStandingbookIds(ids);
+        if(CollUtil.isNotEmpty(standingbookAcquisitionList)){
+            throw exception(ErrorCodeConstants.STANDINGBOOK_ACQUISITION_EXISTS);
+        }
+
         // 删除
-        standingbookMapper.deleteById(id);
+        standingbookMapper.deleteByIds(ids);
         // 删除标签信息
-        standingbookLabelInfoMapper.delete(StandingbookLabelInfoDO::getStandingbookId, id);
+        standingbookLabelInfoMapper.delete(StandingbookLabelInfoDO::getStandingbookId, ids);
         // 删除属性
-        standingbookAttributeMapper.deleteStandingbookId(id);
-        // 删除数采相关
-        standingbookAcquisitionService.deleteAcquisitionByStandingbookId(id);
+        standingbookAttributeMapper.delete(StandingbookAttributeDO::getStandingbookId,ids);
+        // 删除数采关联
+        standingbookAcquisitionService.deleteByStandingbookIds(ids);
+        // 删除数采的任务 todo
+
+
     }
 
     private void validateStandingbookExists(Long id) {
@@ -353,7 +382,11 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<String> sbTypeIdList = new ArrayList<>();
         String sbTypeIds = pageReqVO.get(ATTR_SB_TYPE_ID);
         if (StringUtils.isNotEmpty(sbTypeIds)) {
-            sbTypeIdList = Arrays.asList(sbTypeIds.split(StringPool.COMMA));
+            sbTypeIdList = Arrays.stream(sbTypeIds.split(StringPool.HASH))
+                    .map(s -> s.split(StringPool.COMMA))
+                    .map(Arrays::stream)
+                    .map(stream -> stream.reduce((first, second) -> second).orElse(""))
+                    .collect(Collectors.toList());
         }
 
         // 根据分类和topType查询台账

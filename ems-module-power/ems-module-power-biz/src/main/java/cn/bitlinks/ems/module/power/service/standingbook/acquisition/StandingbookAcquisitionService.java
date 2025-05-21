@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.standingbook.acquisition;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.StandingbookAcquisitionRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.StandingbookAcquisitionTestReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.StandingbookAcquisitionVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.acquisition.StandingbookAcquisitionDO;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -48,8 +49,14 @@ public interface StandingbookAcquisitionService {
     String testData(StandingbookAcquisitionTestReqVO testReqVO);
 
     /**
-     * 根据台账id删除数采相关
-     * @param id 台账id
+     * 根据台账ids删除数采设置和数采设置详细
+     * @param ids
      */
-    void deleteAcquisitionByStandingbookId(Long standingbookId);
+    void deleteByStandingbookIds(List<Long> ids);
+
+    /**
+     * 根据台账ids查询数采设置
+     * @param ids 台账ids
+     */
+    List<StandingbookAcquisitionDO> queryListByStandingbookIds(List<Long> ids);
 }
