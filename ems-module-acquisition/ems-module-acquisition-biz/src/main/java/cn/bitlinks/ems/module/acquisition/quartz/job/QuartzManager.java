@@ -2,7 +2,6 @@ package cn.bitlinks.ems.module.acquisition.quartz.job;
 
 import cn.bitlinks.ems.framework.common.enums.FrequencyUnitEnum;
 import cn.bitlinks.ems.module.acquisition.quartz.entity.JobBean;
-import cn.hutool.core.date.DateUnit;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -139,26 +138,9 @@ public class QuartzManager {
 
         return scheduleBuilder;
     }
-
-
-    // 辅助方法：将间隔转换为毫秒
-    private long convertToMilliseconds(long interval, Integer unit) {
-        switch (FrequencyUnitEnum.codeOf(unit)) {
-            case SECONDS:
-                return interval * DateUnit.SECOND.getMillis();
-            case MINUTES:
-                return interval * DateUnit.MINUTE.getMillis();
-            case HOUR:
-                return interval * DateUnit.HOUR.getMillis();
-            case DAY:
-                return interval * DateUnit.DAY.getMillis();
-            default:
-                throw new IllegalArgumentException("Unsupported unit: " + unit);
-        }
-    }
-
     public void init() throws SchedulerException, InterruptedException {
         Thread.sleep(5000L);
         scheduler.start();
     }
+
 }
