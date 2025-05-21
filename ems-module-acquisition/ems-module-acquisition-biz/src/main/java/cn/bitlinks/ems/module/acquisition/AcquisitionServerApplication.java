@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.acquisition;
 
+import cn.bitlinks.ems.module.acquisition.quartz.job.QuartzManager;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
@@ -11,7 +12,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.TimeZone;
-
+import org.quartz.*;
 /**
  * 项目的启动类
  *
@@ -21,12 +22,14 @@ import java.util.TimeZone;
 @SpringBootApplication
 @EnableScheduling
 public class AcquisitionServerApplication {
+
     @SneakyThrows(UnknownHostException.class)
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SchedulerException, InterruptedException {
 
         TimeZone.setDefault(TimeZone.getTimeZone("GMT+8"));
         ConfigurableApplicationContext application = SpringApplication.run(AcquisitionServerApplication.class, args);
         Environment env = application.getEnvironment();
+
         log.info("\n----------------------------------------------------------\n\t" +
                         "应用 '{}' 启动成功! 访问连接:\n\t" +
                         "Swagger文档: \t\thttp://{}:{}/doc.html\n\t" +
@@ -37,6 +40,9 @@ public class AcquisitionServerApplication {
                 env.getProperty("server.port", "8080"),
                 "127.0.0.1",
                 env.getProperty("server.port", "8080"));
+        //启动调度器
+        QuartzManager quartzManager = (QuartzManager) application.getBean("quartzManager");
+        quartzManager.init();
     }
 
 }

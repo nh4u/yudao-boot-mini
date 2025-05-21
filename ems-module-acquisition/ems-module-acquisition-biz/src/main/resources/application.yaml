@@ -72,6 +72,9 @@ jasypt:
 rocketmq:
   name-server: 113.250.189.24:9876
   producer:
+    # 权限认证
+    access-key: rocketAdminMQ
+    secret-key: 25be49067687d405a082dcaa2edaceea
     # 发送同一类消息的设置为同一个group，保证唯一
     group: "device_acquisition_group-${spring.profiles.active}"
     # 发送消息超时时间，默认3000
@@ -87,10 +90,10 @@ rocketmq:
     # 是否在内部发送失败时重试另一个broker，默认false
     retryNextServer: false
   consumer:
+    group: "device_acquisition_group-${spring.profiles.active}"
     access-key: rocketAdminMQ
-    secret-key: 25be49067687d405a082dcaa2edaceea        # 密码
+    secretKey: 25be49067687d405a082dcaa2edaceea        # 密码
   # 自定义配置
-
   # 生产者发送消息的topic
   topic:
     device-acquisition: "device_acquisition_topic-${spring.profiles.active}"

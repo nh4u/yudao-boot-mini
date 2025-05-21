@@ -24,7 +24,10 @@ public class QuartzManager {
      * 增加一个job
      */
     public void createJob(JobBean jobBean) throws SchedulerException {
-        JobDetail jobDetail = JobBuilder.newJob(jobBean.getJobClass()).withIdentity(jobBean.getJobName()).build();
+        JobDetail jobDetail = JobBuilder.newJob(jobBean.getJobClass())
+                .withIdentity(jobBean.getJobName())
+                .usingJobData(jobBean.getJobDataMap())
+                .build();
         // 创建 Trigger，使用业务指定的开始时间
         TriggerBuilder<SimpleTrigger> triggerBuilder = TriggerBuilder.newTrigger()
                 .withIdentity(jobBean.getJobName())
@@ -60,61 +63,9 @@ public class QuartzManager {
      * @param jobBean 任务
      */
     public void updateJob(JobBean jobBean) throws SchedulerException {
-        String jobName = jobBean.getJobName();
-        // 定义 JobKey 和 TriggerKey
-        JobKey jobKey = JobKey.jobKey(jobName);
-        TriggerKey triggerKey = TriggerKey.triggerKey(jobName);
 
-        // 检查 JobKey 是否存在
-        if (!scheduler.checkExists(jobKey)) {
-            throw new SchedulerException("Job with name " + jobName + " does not exist!");
-        }
-
-        // 检查 TriggerKey 是否存在
-        if (!scheduler.checkExists(triggerKey)) {
-            throw new SchedulerException("Trigger for job " + jobName + " does not exist!");
-        }
-
-        // 1. 更新 JobDetail（包含新的 JobDataMap）
-        JobDetail newJobDetail = JobBuilder.newJob(AcquisitionJob.class)
-                .withIdentity(jobKey)
-                .usingJobData(jobBean.getJobDataMap())
-                .build();
-
-        // 替换旧的 JobDetail
-        scheduler.addJob(newJobDetail, true);
-        // 2. 比较和更新 Trigger（仅当 Cron 表达式不同时) 和开始时间不同时,更新触发器
-        Trigger oldTrigger = scheduler.getTrigger(triggerKey);
-        if (oldTrigger instanceof SimpleTrigger) {
-            SimpleTrigger oldSimpleTrigger = (SimpleTrigger) oldTrigger;
-            // 获取旧触发器的间隔（单位：毫秒）
-            long oldIntervalMs = oldSimpleTrigger.getRepeatInterval();
-            // 根据新单位将新间隔转换为毫秒
-            long newIntervalMs = convertToMilliseconds(jobBean.getFrequency(), jobBean.getFrequencyUnit());
-
-            // 比较间隔和开始时间
-            if (oldIntervalMs == newIntervalMs &&
-                    oldTrigger.getStartTime().equals(Date.from(jobBean.getStartTime().atZone(ZoneId.systemDefault()).toInstant()))) {
-                return; // 间隔和开始时间相同，无需更新
-            }
-        }
-
-
-        //创建并替换 Trigger
-        TriggerBuilder<SimpleTrigger> triggerBuilder = TriggerBuilder.newTrigger()
-                .withIdentity(triggerKey)
-                .withSchedule(getSimpleSchedule(jobBean.getFrequency(), jobBean.getFrequencyUnit()));
-        // 设置开始时间（从 JobBean 获取）
-        if (Objects.nonNull(jobBean.getStartTime())) {
-            Date startDate = Date.from(jobBean.getStartTime().atZone(ZoneId.systemDefault()).toInstant());
-            triggerBuilder.startAt(startDate);
-        } else {
-            triggerBuilder.startNow(); // 如果没有指定开始时间，默认立即启动
-        }
-
-        Trigger newTrigger = triggerBuilder.build();
-
-        scheduler.rescheduleJob(triggerKey, newTrigger);
+        deleteJob(jobBean.getJobName());
+        createJob(jobBean);
     }
 
     // 规范化 Cron 表达式以确保比较准确
@@ -206,4 +157,8 @@ public class QuartzManager {
         }
     }
 
+    public void init() throws SchedulerException, InterruptedException {
+        Thread.sleep(5000L);
+        scheduler.start();
+    }
 }
