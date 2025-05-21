@@ -33,6 +33,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
@@ -85,6 +86,7 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
 
 
     @Override
+    @Transactional
     public void triggerWarning(Long strategyId, LocalDateTime triggerTime) {
         // 查询该策略
         WarningStrategyDO warningStrategyDO = warningStrategyMapper.selectById(strategyId);
