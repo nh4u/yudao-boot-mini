@@ -37,27 +37,12 @@ public interface CollectRawDataMapper {
      *
      * @param standingbookId 台账id
      */
-    @Select("<script>" +
-            "SELECT t.* FROM (" +
-            "    SELECT *, DENSE_RANK() OVER (PARTITION BY standingbook_id ORDER BY collect_time DESC) AS rnk " +
-            "    FROM collect_raw_data " +
-            "    WHERE standingbook_id = #{standingbookId}" +
-            ") t WHERE t.rnk = 1 " +
-            "ORDER BY collect_time DESC" +
-            "</script>")
+
     List<CollectRawDataDO> selectLatestByStandingbookId(@Param("standingbookId") Long standingbookId);
 
     /**
      * 查询台账最新的采集数据
      * @param standingbookIds 台账ids
      */
-    @Select("<script>" +
-            "SELECT t.* FROM (" +
-            "    SELECT *, DENSE_RANK() OVER (PARTITION BY standingbook_id ORDER BY collect_time DESC) AS rnk " +
-            "    FROM collect_raw_data " +
-            "    WHERE standingbook_id IN #{standingbookIds}" +
-            ") t WHERE t.rnk = 1 " +
-            "ORDER BY collect_time DESC" +
-            "</script>")
     List<CollectRawDataDO> selectLatestByStandingbookIds(List<Long> standingbookIds);
 }

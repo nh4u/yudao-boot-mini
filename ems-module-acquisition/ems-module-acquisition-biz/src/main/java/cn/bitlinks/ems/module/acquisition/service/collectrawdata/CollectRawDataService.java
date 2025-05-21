@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.acquisition.service.collectrawdata;
 
+import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectRawDataDO;
 
 import java.util.List;

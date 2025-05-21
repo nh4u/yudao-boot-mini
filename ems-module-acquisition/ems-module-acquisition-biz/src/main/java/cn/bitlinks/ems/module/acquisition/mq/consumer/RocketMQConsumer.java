@@ -152,7 +152,7 @@ public abstract class RocketMQConsumer implements RocketMQListener<AcquisitionMe
             ItemStatus itemStatus = new ItemStatus();
             itemStatus.setItemId(dataSite);
             //如果不存在最新数据, 随机生成 100-600之间的数值
-            if (StringUtils.isNotEmpty(existValueMap.get(dataSite))) {
+            if (StringUtils.isEmpty(existValueMap.get(dataSite))) {
                 itemStatus.setValue(getRandomValue(MOCK_INIT_MAX, MOCK_INIT_MIN));
             } else {
                 // 存在最新数据, 在最新数据的基础上进行随机0-5的数据的增加

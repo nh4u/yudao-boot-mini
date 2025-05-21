@@ -30,7 +30,6 @@ public class QuartzApiImpl implements QuartzApi {
         String jobName = String.format(ACQUISITION_JOB_NAME_PREFIX, acquisitionJobDTO.getStandingbookId());
         try {
 
-
             // 组装任务参数
             JobBean jobBean = new JobBean();
             jobBean.setJobName(jobName);
