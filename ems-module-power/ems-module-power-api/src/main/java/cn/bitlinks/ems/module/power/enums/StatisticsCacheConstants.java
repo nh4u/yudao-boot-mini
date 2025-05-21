@@ -16,5 +16,9 @@ public class StatisticsCacheConstants {
     public static final String USAGE_STANDARD_COAL_TABLE = "statistics:usage:standardCoal:table:";
     public static final String USAGE_STANDARD_COAL_CHART = "statistics:usage:standardCoal:chart:";
 
+    public static final String USAGE_STANDARD_COAL_STRUCTURE_TABLE = "statistics:usage:standardCoalStructure:table:";
+    public static final String USAGE_STANDARD_COAL_STRUCTURE_CHART = "statistics:usage:standardCoalStructure:chart:";
 
+    public static final String USAGE_COST_STRUCTURE_TABLE = "statistics:usage:costStructure:table:";
+    public static final String USAGE_COST_STRUCTURE_CHART = "statistics:usage:costStructure:chart:";
 }
