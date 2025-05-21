@@ -165,11 +165,11 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             return Collections.emptyList();
         }
         List<Long> sbIds = standingbookDOS.stream().map(StandingbookDO::getId).collect(Collectors.toList());
-        // 查询数采设置
+        // 查询台账对应的数采设置
         List<StandingbookAcquisitionDO> standingbookAcquisitionDOS =
                 standingbookAcquisitionMapper.selectList(StandingbookAcquisitionDO::getStandingbookId, sbIds);
         if (CollUtil.isEmpty(standingbookAcquisitionDOS)) {
-            return Collections.emptyList();
+            return BeanUtils.toBean(standingbookDOS, StandingbookAcquisitionRespVO.class);
         }
         Map<Long, StandingbookAcquisitionDO> standingbookAcquisitionMap = standingbookAcquisitionDOS.stream()
                 .collect(Collectors.toMap(StandingbookAcquisitionDO::getStandingbookId, Function.identity()));
