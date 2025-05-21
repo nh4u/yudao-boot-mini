@@ -44,5 +44,5 @@ public interface CollectRawDataMapper {
      * 查询台账最新的采集数据
      * @param standingbookIds 台账ids
      */
-    List<CollectRawDataDO> selectLatestByStandingbookIds(List<Long> standingbookIds);
+    List<CollectRawDataDO> selectLatestByStandingbookIds(@Param("standingbookIds") List<Long> standingbookIds);
 }
