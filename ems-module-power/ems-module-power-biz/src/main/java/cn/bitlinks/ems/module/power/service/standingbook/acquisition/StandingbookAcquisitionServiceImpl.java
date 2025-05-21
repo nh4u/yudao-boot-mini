@@ -18,6 +18,7 @@ import cn.bitlinks.ems.module.power.service.standingbook.acquisition.dto.Paramet
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.bitlinks.ems.module.power.utils.CalculateUtil;
 import cn.hutool.core.collection.CollUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -364,6 +365,25 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         }
         return result.toString();
 
+    }
+
+    @Override
+    public void deleteByStandingbookIds(List<Long> ids) {
+        List<StandingbookAcquisitionDO> list = queryListByStandingbookIds(ids);
+        if(CollUtil.isEmpty(list)){
+            return;
+        }
+        List<Long> acquisitionIds = list.stream().map(StandingbookAcquisitionDO::getId).collect(Collectors.toList());
+        standingbookAcquisitionMapper.deleteByIds(acquisitionIds);
+        standingbookAcquisitionDetailMapper.delete(StandingbookAcquisitionDetailDO::getAcquisitionId,ids);
+    }
+
+    @Override
+    public List<StandingbookAcquisitionDO> queryListByStandingbookIds(List<Long> ids) {
+        return standingbookAcquisitionMapper.selectList(new LambdaQueryWrapper<StandingbookAcquisitionDO>()
+                .eq(StandingbookAcquisitionDO::getStatus,true)
+                .in(StandingbookAcquisitionDO::getStandingbookId,ids)
+        );
     }
 
     /**
