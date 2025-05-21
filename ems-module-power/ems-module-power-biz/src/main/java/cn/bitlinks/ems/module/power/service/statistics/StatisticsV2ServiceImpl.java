@@ -498,7 +498,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
                         List<StatisticsChartYDataV2VO> dataList = xdata.stream().map(time -> {
                             StatisticsChartYDataV2VO vo = new StatisticsChartYDataV2VO();
-                            vo.setCost(timeCostMap.getOrDefault(time, null));
+                            vo.setCost(timeCostMap.getOrDefault(time, BigDecimal.ZERO));
                             return vo;
                         }).collect(Collectors.toList());
 
@@ -561,7 +561,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                 List<StatisticsChartYDataV2VO> ydata = xdata.stream().map(x -> {
                     BigDecimal cost = timeCostMap.getOrDefault(x, BigDecimal.ZERO);
                     StatisticsChartYDataV2VO vo = new StatisticsChartYDataV2VO();
-                    vo.setCost(cost.compareTo(BigDecimal.ZERO) > 0 ? cost : null);
+                    vo.setCost(cost.compareTo(BigDecimal.ZERO) > 0 ? cost : BigDecimal.ZERO);
                     return vo;
                 }).collect(Collectors.toList());
 
