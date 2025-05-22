@@ -364,7 +364,7 @@ public class LocalDateTimeUtils {
                 break;
             case HOUR:
                 while (!current.isAfter(endDateTime)) {
-                    result.add(LocalDateTimeUtil.format(current, "yyyy-MM-dd HH"));
+                    result.add(LocalDateTimeUtil.format(current, "yyyy-MM-dd HH:00:00"));
                     current = current.plusHours(1);
                 }
                 break;

@@ -10,8 +10,6 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
@@ -88,6 +86,5 @@ public class StatisticsCommonService {
         }
         return labelInfoDOList;
     }
-
 
 }

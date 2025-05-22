@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.dal.mysql.coalfactorhistory;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
@@ -40,5 +41,10 @@ public interface CoalFactorHistoryMapper extends BaseMapperX<CoalFactorHistoryDO
      * @return 折标煤系数历史记录
      */
     CoalFactorHistoryDO selectCurrentByEnergyId(@Param("energyId") Long energyId);
+
+    /**
+     * 根据能源ID和时间获取折标煤系数和公式
+     */
+    List<CoalFactorFormulaData> getByEnergyIdsAndTime(@Param("energyIds")List<Long> energyId, @Param("time")LocalDateTime time);
 
 }

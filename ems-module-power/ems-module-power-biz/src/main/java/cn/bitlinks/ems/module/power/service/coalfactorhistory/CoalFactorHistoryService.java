@@ -1,6 +1,12 @@
 package cn.bitlinks.ems.module.power.service.coalfactorhistory;
 
+import org.apache.ibatis.annotations.Param;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
+import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorFormulaData;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistorySaveReqVO;
@@ -60,4 +66,9 @@ public interface CoalFactorHistoryService {
      * @return 折标煤系数详细信息
      */
     CoalFactorHistoryRespVO getAvailableCoalFactor(Long energyId);
+
+    /**
+     * 根据能源ID和时间获取折标煤系数和公式
+     */
+    List<CoalFactorFormulaData> getByEnergyIdsAndTime(List<Long> energyId, LocalDateTime time);
 }
