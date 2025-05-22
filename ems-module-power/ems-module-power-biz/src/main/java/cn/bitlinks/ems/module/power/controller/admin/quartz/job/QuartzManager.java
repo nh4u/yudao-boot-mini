@@ -5,9 +5,12 @@ import cn.bitlinks.ems.module.power.controller.admin.quartz.entity.JobBean;
 import cn.hutool.core.collection.CollUtil;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+
+import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_LOCAL;
 
 /**
  *
@@ -17,7 +20,8 @@ public class QuartzManager {
 
     @Autowired
     private Scheduler scheduler;
-
+    @Value("${spring.profiles.active}")
+    private String env;
 
     /**
      * 增加一个job
@@ -144,6 +148,10 @@ public class QuartzManager {
     }
 
     public void init() throws SchedulerException, InterruptedException {
+        // 本地环境不初始化
+        if (SPRING_PROFILES_ACTIVE_LOCAL.equals(env)) {
+            return;
+        }
         Thread.sleep(5000L);
         scheduler.start();
     }
