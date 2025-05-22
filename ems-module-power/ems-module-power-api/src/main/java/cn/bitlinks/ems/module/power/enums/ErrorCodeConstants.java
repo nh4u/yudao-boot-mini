@@ -76,6 +76,10 @@ public interface ErrorCodeConstants {
 
     ErrorCode STANDINGBOOK_ASSOCIATION_EXISTS = new ErrorCode(1_001_202_014,"已与其他计量器具关联，请先将关联关系删除");
     ErrorCode STANDINGBOOK_ACQUISITION_EXISTS = new ErrorCode(1_001_202_015,"已进行数采配置，请先停用数采配置;");
+    ErrorCode STANDINGBOOK_TYPE_REL_STANDINGBOOK = new ErrorCode(1_001_202_016,"存在设备数据，不允许修改名称和编码");
+
+
+
     // ========== 标签配置 ==========
     ErrorCode LABEL_CONFIG_NOT_EXISTS = new ErrorCode(1_001_401_001, "配置标签不存在");
     ErrorCode LABEL_CONFIG_REACH_LIMIT = new ErrorCode(1_001_401_002, "单层标签超过限制");
@@ -96,7 +100,7 @@ public interface ErrorCodeConstants {
     // ========== 告警管理 ==========
     ErrorCode WARNING_INFO_NOT_EXISTS = new ErrorCode(1_001_701_001, "告警信息不存在");
     ErrorCode WARNING_TEMPLATE_NOT_EXISTS = new ErrorCode(1_001_701_002, "告警模板不存在");
-    ErrorCode WARNING_TEMPLATE_CODE_EXISTS = new ErrorCode(1_001_701_003, "邮件模版 code({}) 已存在");
+    ErrorCode WARNING_TEMPLATE_CODE_EXISTS = new ErrorCode(1_001_701_003, "模版编码({}) 已存在");
     ErrorCode WARNING_TEMPLATE_DELETE_ERROR = new ErrorCode(1_001_701_004, "该模板已关联告警规则，不可删除！");
     ErrorCode WARNING_TEMPLATE_DELETE_BATCH_ERROR = new ErrorCode(1_001_701_005, "{}模板已关联告警规则，不可删除！");
     ErrorCode WARNING_STRATEGY_NOT_EXISTS = new ErrorCode(1_001_701_006, "告警策略不存在");

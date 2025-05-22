@@ -336,6 +336,9 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
 
     @Override
     public void updateWarningStrategyIntervalBatch(WarningStrategyBatchUpdIntervalReqVO updateReqVO) {
+        if (CollUtil.isEmpty(updateReqVO.getIds())) {
+            return;
+        }
         warningStrategyMapper.update(new LambdaUpdateWrapper<>(WarningStrategyDO.class)
                 .in(WarningStrategyDO::getId, updateReqVO.getIds())
                 .set(WarningStrategyDO::getInterval, updateReqVO.getInterval())
