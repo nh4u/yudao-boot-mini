@@ -4,6 +4,7 @@ import cn.bitlinks.ems.module.acquisition.api.quartz.dto.AcquisitionJobDTO;
 import cn.bitlinks.ems.module.acquisition.quartz.entity.JobBean;
 import cn.bitlinks.ems.module.acquisition.quartz.job.AcquisitionJob;
 import cn.bitlinks.ems.module.acquisition.quartz.job.QuartzManager;
+import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobDataMap;
 import org.quartz.Trigger;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.*;
@@ -84,15 +86,19 @@ public class QuartzApiImpl implements QuartzApi {
     }
 
     @Override
-    public void deleteJob(Long standingbookId) {
-        String jobName = String.format(ACQUISITION_JOB_NAME_PREFIX, standingbookId);
-        try {
-            if (quartzManager.checkExists(jobName)) {
-                quartzManager.deleteJob(jobName);
-            }
-        } catch (Exception e) {
-            log.error("删除任务[{}]失败, 异常:{}", jobName, e.getMessage(), e);
+    public void deleteJob(List<Long> standingbookIds) {
+        if(CollUtil.isEmpty(standingbookIds)){
+            return;
         }
-
+        standingbookIds.forEach(standingbookId -> {
+            String jobName = String.format(ACQUISITION_JOB_NAME_PREFIX, standingbookId);
+            try {
+                if (quartzManager.checkExists(jobName)) {
+                    quartzManager.deleteJob(jobName);
+                }
+            } catch (Exception e) {
+                log.error("删除任务[{}]失败, 异常:{}", jobName, e.getMessage(), e);
+            }
+        });
     }
 }

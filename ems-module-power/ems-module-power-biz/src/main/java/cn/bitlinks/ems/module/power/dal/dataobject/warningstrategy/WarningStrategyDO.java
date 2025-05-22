@@ -2,9 +2,8 @@ package cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy;
 
 import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
-import cn.bitlinks.ems.framework.mybatis.core.type.StringListTypeHandler;
+import cn.bitlinks.ems.framework.mybatis.core.type.LongListTypeHandler;
 import com.baomidou.mybatisplus.annotation.*;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.*;
 
 import java.util.List;
@@ -41,12 +40,12 @@ public class WarningStrategyDO extends BaseDO {
     /**
      * 设备范围
      */
-    @TableField(typeHandler = JacksonTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    @TableField(typeHandler = LongListTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
     private List<Long> deviceScope;
     /**
      * 设备分类范围
      */
-    @TableField(typeHandler = JacksonTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    @TableField(typeHandler = LongListTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
     private List<Long> deviceTypeScope;
 
 //    /**
@@ -80,12 +79,12 @@ public class WarningStrategyDO extends BaseDO {
     /**
      * 站内信人员
      */
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = LongListTypeHandler.class)
     private List<Long> siteStaff;
     /**
      * 邮件人员
      */
-    @TableField(typeHandler = JacksonTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    @TableField(typeHandler = LongListTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
     private List<Long> mailStaff;
 
     /**
