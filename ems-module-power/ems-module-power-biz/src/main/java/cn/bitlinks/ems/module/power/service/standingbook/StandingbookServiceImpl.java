@@ -578,7 +578,7 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
     @Override
-    public List<StandingbookEnergyTypeVO> getByStandingbookIds(List<Long> standingbookIds) {
+    public List<StandingbookEnergyTypeVO> getEnergyAndTypeByStandingbookIds(List<Long> standingbookIds) {
         LambdaQueryWrapper<StandingbookDO> standingbookWrapper = new LambdaQueryWrapper<>();
         standingbookWrapper.in(StandingbookDO::getId, standingbookIds);
         List<StandingbookDO> standingbookDOS = standingbookMapper.selectList(standingbookWrapper);

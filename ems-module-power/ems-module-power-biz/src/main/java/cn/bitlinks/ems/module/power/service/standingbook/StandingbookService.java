@@ -90,6 +90,6 @@ public interface StandingbookService {
      * @param standingbookIds
      * @return
      */
-    List<StandingbookEnergyTypeVO> getByStandingbookIds(List<Long> standingbookIds);
+    List<StandingbookEnergyTypeVO> getEnergyAndTypeByStandingbookIds(List<Long> standingbookIds);
 
 }

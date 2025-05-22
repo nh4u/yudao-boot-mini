@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import cn.bitlinks.ems.framework.common.util.calc.CalculateUtil;
 import cn.bitlinks.ems.module.power.api.usagecost.dto.UsageCostCalcReqDTO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorFormulaData;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookEnergyTypeVO;
@@ -36,7 +37,6 @@ import cn.bitlinks.ems.module.power.service.coalfactorhistory.CoalFactorHistoryS
 import cn.bitlinks.ems.module.power.service.pricedetail.PriceDetailService;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
-import cn.bitlinks.ems.module.power.utils.CalculateUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.LocalDateTimeUtil;
@@ -128,7 +128,7 @@ public class CalcJob {
             //台账ID
             Set<Long> standingbookIds = reqDTOS.stream().map(UsageCostCalcReqDTO::getStandingbookId).collect(Collectors.toSet());
             //台账能源类型关系
-            List<StandingbookEnergyTypeVO> byStandingbookIds = standingbookService.getByStandingbookIds(new ArrayList<>(standingbookIds));
+            List<StandingbookEnergyTypeVO> byStandingbookIds = standingbookService.getEnergyAndTypeByStandingbookIds(new ArrayList<>(standingbookIds));
             // 台账能源类型关系Map
             Map<Long, StandingbookEnergyTypeVO> standingbookEnergyTypeVOMap = byStandingbookIds.stream().collect(Collectors.toMap(StandingbookEnergyTypeVO::getStandingbookId, Function.identity()));
             //能源ID
