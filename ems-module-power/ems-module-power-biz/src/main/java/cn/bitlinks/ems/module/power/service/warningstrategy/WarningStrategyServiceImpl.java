@@ -274,7 +274,9 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
         List<Long> siteStaff = warningStrategyDO.getSiteStaff();
         List<Long> mailStaff = warningStrategyDO.getMailStaff();
         List<Long> allUserId = new ArrayList<>(siteStaff);
-        allUserId.addAll(mailStaff);
+        if(CollUtil.isNotEmpty(mailStaff)){
+            allUserId.addAll(mailStaff);
+        }
 
 
         Map<Long, AdminUserRespDTO> allUserMap = adminUserApi.getUserMap(allUserId);
