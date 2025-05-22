@@ -33,13 +33,6 @@ public interface StandingbookService {
     void updateStandingbook(@Valid Map<String, String> updateReqVO);
 
     /**
-     * 删除台账属性
-     *
-     * @param id 编号
-     */
-    void deleteStandingbook(Long id);
-
-    /**
      * 获得台账属性
      *
      * @param id 编号
@@ -78,6 +71,19 @@ public interface StandingbookService {
      * 根据分类ID查询台账ID
      */
     List<StandingbookDO> getByTypeIds(List<Long> typeIds);
+
+    /**
+     * 根据分类ID查询台账ID
+     */
+    List<StandingbookDO> getByStandingbookIds(List<Long> standingbookIds);
+
+
+
+    /**
+     * 批量删除
+     * @param ids 台账ids
+     */
+    void deleteStandingbookBatch(List<Long> ids);
 
     /**
      * 根据能源ids获取台账模板数据

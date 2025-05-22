@@ -48,13 +48,14 @@
                 YEAR(aggregate_time) AS time
             </when>
             <when test="queryParam.dateType == 3">
-                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00') AS time
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H') AS time
             </when>
         </choose>
         ,
 
         SUM(cost) AS totalCost,
-        SUM(current_usage) AS currentTotalUsage
+        SUM(current_usage) AS currentTotalUsage,
+        SUM(standard_coal_equivalent) AS totalStandardCoalEquivalent
         FROM
         usage_cost
         WHERE
@@ -87,7 +88,7 @@
                 YEAR(aggregate_time)
             </when>
             <when test="queryParam.dateType == 3">
-                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00')
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H')
             </when>
         </choose>
 

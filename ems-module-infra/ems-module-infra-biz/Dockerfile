@@ -13,7 +13,7 @@ COPY ./target/ems-module-infra-biz.jar app.jar
 ENV TZ=Asia/Shanghai JAVA_OPTS="-Xms512m -Xmx512m"
 
 ## 暴露后端项目的 48080 端口
-EXPOSE 48082
+EXPOSE 48092
 
 ## 启动后端项目
-CMD java ${JAVA_OPTS} -Djava.security.egd=file:/dev/./urandom -jar app.jar
+CMD java ${JAVA_OPTS} -jar app.jar

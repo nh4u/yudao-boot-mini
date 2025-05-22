@@ -9,6 +9,7 @@ import com.alibaba.excel.annotation.ExcelProperty;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -18,7 +19,8 @@ import lombok.Data;
  */
 @Schema(description = "堆叠图Y轴数据")
 @Data
-public class StatisticsChartYInfoV2VO {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class StatisticsChartYInfoV2VO<T> {
     /**
      * 元素id
      */
@@ -38,5 +40,5 @@ public class StatisticsChartYInfoV2VO {
      */
     @Schema(description = "对应的数据")
     @ExcelProperty("对应的数据")
-    private List<StatisticsChartYDataV2VO> data;
+    private List<T> data;
 }

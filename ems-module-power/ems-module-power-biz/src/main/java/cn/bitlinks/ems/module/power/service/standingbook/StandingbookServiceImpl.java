@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.standingbook;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.bitlinks.ems.module.acquisition.api.quartz.QuartzApi;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.AssociationData;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
@@ -12,6 +13,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.Measur
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementdevice.MeasurementDeviceDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.acquisition.StandingbookAcquisitionDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
@@ -25,17 +27,16 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookType
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
 import cn.bitlinks.ems.module.power.enums.standingbook.StandingbookTypeTopEnum;
-import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
+import cn.bitlinks.ems.module.power.service.standingbook.acquisition.StandingbookAcquisitionService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
-import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
+import cn.bitlinks.ems.module.power.service.warningstrategy.WarningStrategyService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -69,14 +70,21 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Resource
     private StandingbookTypeMapper standingbookTypeMapper;
     @Resource
-    private  StandingbookTmplDaqAttrMapper standingbookTmplDaqAttrMapper;
+    private StandingbookTmplDaqAttrMapper standingbookTmplDaqAttrMapper;
     @Resource
     private StandingbookAttributeMapper standingbookAttributeMapper;
     @Resource
     private MeasurementDeviceMapper measurementDeviceMapper;
     @Resource
     private MeasurementAssociationMapper measurementAssociationMapper;
-
+    @Resource
+    @Lazy
+    private WarningStrategyService warningStrategyService;
+    @Resource
+    private QuartzApi quartzApi;
+    @Lazy
+    @Resource
+    private StandingbookAcquisitionService standingbookAcquisitionService;
 
     @Override
     public Long count(Long typeId) {
@@ -145,6 +153,12 @@ public class StandingbookServiceImpl implements StandingbookService {
         LambdaQueryWrapper<StandingbookDO> wrapper = new LambdaQueryWrapper<>();
         wrapper.in(StandingbookDO::getTypeId, typeIds);
         return standingbookMapper.selectList(wrapper);
+    }
+
+    @Override
+    public List<StandingbookDO> getByStandingbookIds(List<Long> standingbookIds) {
+        return standingbookMapper.selectList(new LambdaQueryWrapper<StandingbookDO>().in(StandingbookDO::getId,
+                standingbookIds));
     }
 
     /**
@@ -262,8 +276,11 @@ public class StandingbookServiceImpl implements StandingbookService {
         standingbook.setTypeId(Long.valueOf(updateReqVO.get("typeId")));
         standingbook.setId(Long.valueOf(updateReqVO.get("id")));
         // 修改标签信息 先删后增
-        standingbookLabelInfoMapper.delete(new LambdaQueryWrapper<StandingbookLabelInfoDO>().eq(StandingbookLabelInfoDO::getStandingbookId, standingbook.getId()));
-        createLabelInfoList(updateReqVO.get("labelInfo"), standingbook.getId());
+        if (StringUtils.isNotEmpty(updateReqVO.get(ATTR_LABEL_INFO))) {
+            standingbookLabelInfoMapper.delete(new LambdaQueryWrapper<StandingbookLabelInfoDO>().eq(StandingbookLabelInfoDO::getStandingbookId, standingbook.getId()));
+            createLabelInfoList(updateReqVO.get(ATTR_LABEL_INFO), standingbook.getId());
+        }
+
         if (updateReqVO.get("stage") != null) {
             standingbook.setStage(Integer.valueOf(updateReqVO.get("stage")));
         }
@@ -287,16 +304,49 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     }
 
+    @Transactional
     @Override
-    public void deleteStandingbook(Long id) {
-        // 校验存在
-        validateStandingbookExists(id);
+    public void deleteStandingbookBatch(List<Long> ids) {
+        if (CollUtil.isEmpty(ids)) {
+            return;
+        }
+        // 如果存在关联关系，则不删除台账
+        Long count = measurementDeviceMapper.selectCount(new LambdaQueryWrapper<MeasurementDeviceDO>()
+                .in(MeasurementDeviceDO::getDeviceId, ids)
+                .or().in(MeasurementDeviceDO::getMeasurementInstrumentId, ids));
+        if (count > 0) {
+            throw exception(ErrorCodeConstants.STANDINGBOOK_ASSOCIATION_EXISTS);
+        }
+        count = measurementAssociationMapper.selectCount(new LambdaQueryWrapper<MeasurementAssociationDO>()
+                .in(MeasurementAssociationDO::getMeasurementId, ids)
+                .or().in(MeasurementAssociationDO::getMeasurementInstrumentId, ids));
+        if (count > 0) {
+            throw exception(ErrorCodeConstants.STANDINGBOOK_ASSOCIATION_EXISTS);
+        }
+        // 查询存在启用的数采关联
+        List<StandingbookAcquisitionDO> standingbookAcquisitionList =
+                standingbookAcquisitionService.queryListByStandingbookIds(ids);
+        if (CollUtil.isNotEmpty(standingbookAcquisitionList)) {
+            throw exception(ErrorCodeConstants.STANDINGBOOK_ACQUISITION_EXISTS);
+        }
+        // 查询存在告警配置
+        if (warningStrategyService.existsByStandingbookIds(ids)) {
+            throw exception(ErrorCodeConstants.STANDINGBOOK_REL_STRATEGY);
+        }
+
         // 删除
-        standingbookMapper.deleteById(id);
+        standingbookMapper.deleteByIds(ids);
         // 删除标签信息
-        standingbookLabelInfoMapper.delete(StandingbookLabelInfoDO::getStandingbookId, id);
+        standingbookLabelInfoMapper.delete(new LambdaQueryWrapperX<StandingbookLabelInfoDO>()
+                .inIfPresent(StandingbookLabelInfoDO::getStandingbookId, ids));
         // 删除属性
-        standingbookAttributeMapper.deleteStandingbookId(id);
+        standingbookAttributeMapper.delete(new LambdaQueryWrapperX<StandingbookAttributeDO>()
+                .inIfPresent(StandingbookAttributeDO::getStandingbookId, ids));
+
+        // 删除数采关联
+        standingbookAcquisitionService.deleteByStandingbookIds(ids);
+        // 删除数采的任务
+        quartzApi.deleteJob(ids);
 
     }
 
@@ -325,7 +375,6 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
 
-
     @Override
     public List<StandingbookDO> getStandingbookList(Map<String, String> pageReqVO) {
         //过滤空条件
@@ -337,13 +386,20 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<Long> energyTypeIds = new ArrayList<>();
         if (StringUtils.isNotEmpty(energy)) {
             energyTypeIds = standingbookTmplDaqAttrMapper.selectSbTypeIdsByEnergyId(Long.valueOf(energy));
+            if (CollUtil.isEmpty(energyTypeIds)) {
+                return Collections.emptyList();
+            }
         }
 
         // 分类多选条件(可能为空)
         List<String> sbTypeIdList = new ArrayList<>();
         String sbTypeIds = pageReqVO.get(ATTR_SB_TYPE_ID);
         if (StringUtils.isNotEmpty(sbTypeIds)) {
-            sbTypeIdList = Arrays.asList(sbTypeIds.split(StringPool.COMMA));
+            sbTypeIdList = Arrays.stream(sbTypeIds.split(StringPool.HASH))
+                    .map(s -> s.split(StringPool.COMMA))
+                    .map(Arrays::stream)
+                    .map(stream -> stream.reduce((first, second) -> second).orElse(""))
+                    .collect(Collectors.toList());
         }
 
         // 根据分类和topType查询台账
@@ -396,7 +452,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         if (CollUtil.isEmpty(sbIds)) {
             return new ArrayList<>();
         }
-        if(CollUtil.isNotEmpty(labelInfoConditions)){
+        if (CollUtil.isNotEmpty(labelInfoConditions)) {
             // 根据标签属性查询台账id
             List<Long> labelSbIds = standingbookLabelInfoMapper.selectStandingbookIdByLabelCondition(labelInfoConditions, sbIds);
             sbIds.retainAll(labelSbIds);

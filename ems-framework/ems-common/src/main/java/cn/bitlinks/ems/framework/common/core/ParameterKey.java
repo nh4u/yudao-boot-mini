@@ -1,4 +1,4 @@
-package cn.bitlinks.ems.module.power.service.standingbook.acquisition.dto;
+package cn.bitlinks.ems.framework.common.core;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.util.Objects;
 
 
-@Schema(description = "管理后台 - 台账-数采设置参数标识 VO")
+@Schema(description = "台账-数采设置参数标识 VO")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.bitlinks.ems.module.acquisition.dal.mysql.collectrawdata.CollectRawDataMapper">
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        data_site,sync_time,param_code,energy_flag,standingbook_id,calc_value,raw_value,collect_time
+    </sql>
+
+    <resultMap id="BaseResultMap"
+               type="cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectRawDataDO">
+        <result column="data_site" property="dataSite"/>
+        <result column="sync_time" property="syncTime"/>
+        <result column="param_code" property="paramCode"/>
+        <result column="energy_flag" property="energyFlag"/>
+        <result column="standingbook_id" property="standingbookId"/>
+        <result column="calc_value" property="calcValue"/>
+        <result column="raw_value" property="rawValue"/>
+        <result column="collect_time" property="collectTime"/>
+    </resultMap>
+    <select id="selectLatestByStandingbookId"
+            resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectRawDataDO">
+        SELECT
+        t.*
+        FROM
+        ( SELECT *, DENSE_RANK() OVER ( PARTITION BY standingbook_id ORDER BY sync_time DESC ) AS rnk FROM collect_raw_data WHERE standingbook_id = #{standingbookId} ) t
+        WHERE
+        t.rnk = 1
+        ORDER BY
+        collect_time DESC
+    </select>
+    <select id="selectLatestByStandingbookIds"
+            resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectRawDataDO">
+        SELECT t.* FROM (
+         SELECT *, DENSE_RANK() OVER (PARTITION BY standingbook_id ORDER BY collect_time DESC) AS rnk
+          FROM collect_raw_data
+           WHERE standingbook_id IN #{standingbookIds}
+        ) t WHERE t.rnk = 1
+        ORDER BY collect_time DESC
+    </select>
+</mapper>

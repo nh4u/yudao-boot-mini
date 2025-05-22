@@ -23,7 +23,7 @@
             </foreach>
         </if>
         FROM
-        power_standingbook_label_info
+        power_standingbook_label_info WHERE deleted = 0
         GROUP BY
         standingbook_id
         HAVING
@@ -54,5 +54,29 @@
         <foreach collection="valueList" item="item" open="(" separator="," close=")">
             #{item}
         </foreach>
+    </select>
+
+    <select id="getCountByLabelIds" resultType="java.lang.Integer">
+        select count(0)
+        from power_standingbook_label_info
+        where
+        deleted =0
+        and
+        (
+        <foreach collection="labelIds" item="labelId" separator="or" open="(" close=")">
+            FIND_IN_SET(#{labelId}, value)
+        </foreach>
+        or
+        <foreach collection="labelIds" item="labelId" separator="or" open="(" close=")">
+            name like concat('%', #{labelId})
+        </foreach>
+        )
+    </select>
+
+    <select id="getCountByLabelId" resultType="java.lang.Integer">
+        select count(0)
+        from power_standingbook_label_info
+        where deleted = 0
+        and (FIND_IN_SET(#{labelId}, `value`) or name like concat('%', #{labelId}))
     </select>
 </mapper>

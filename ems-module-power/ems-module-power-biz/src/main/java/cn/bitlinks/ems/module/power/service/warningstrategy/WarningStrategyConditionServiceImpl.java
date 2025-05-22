@@ -83,11 +83,11 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
             StandingbookTypeDO standingbookTypeDO = sbTypeDOMap.get(typeId);
             // 组装分类节点
             AttributeTreeNode typeNode = new AttributeTreeNode();
-            typeNode.setPId(0L);
+            typeNode.setPId(String.valueOf(0L));
             typeNode.setType(AttributeTreeNodeTypeEnum.SB_TYPE.getCode());
-            typeNode.setId(typeId);
+            typeNode.setId(String.valueOf(typeId));
             typeNode.setName(Objects.isNull(standingbookTypeDO) ? StringPool.EMPTY : standingbookTypeDO.getName());
-            typeNode.setAttrChildren(convertDaqAttrNode(typeId, attrDOS));
+            typeNode.setAttrChildren(convertDaqAttrNode(String.valueOf(typeId), attrDOS));
             result.add(typeNode);
         });
         return result;
@@ -100,7 +100,7 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
      * @param attrDOS 数采参数节点列表
      * @return 树形节点
      */
-    private List<AttributeTreeNode> convertDaqAttrNode(Long pId, List<StandingbookTmplDaqAttrDO> attrDOS) {
+    private List<AttributeTreeNode> convertDaqAttrNode(String pId, List<StandingbookTmplDaqAttrDO> attrDOS) {
         if (CollUtil.isEmpty(attrDOS)) {
             return Collections.emptyList();
         }
@@ -112,7 +112,7 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
             Integer type = attrDO.getEnergyFlag() ? AttributeTreeNodeTypeEnum.ENERGY_DAQ_ATTR.getCode() :
                     AttributeTreeNodeTypeEnum.CUSTOMIZE_DAQ_ATTR.getCode();
             daqNode.setType(type);
-            daqNode.setId(attrDO.getId());
+            daqNode.setId(attrDO.getCode() + StringPool.HASH + attrDO.getEnergyFlag());
             result.add(daqNode);
         });
         return result;
@@ -217,9 +217,9 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
             }
             // 组装设备节点
             AttributeTreeNode deviceRoot = new AttributeTreeNode();
-            deviceRoot.setPId(0L);
+            deviceRoot.setPId(String.valueOf(0L));
             deviceRoot.setType(AttributeTreeNodeTypeEnum.EQUIPMENT.getCode());
-            deviceRoot.setId(device.getId());
+            deviceRoot.setId(String.valueOf(device.getId()));
             deviceRoot.setAttrChildren(convertDaqAttrNode(deviceRoot.getId(), attrDOS));
             List<StandingbookAttributeDO> attributeDOS = allAttrMap.get(device.getId());
             Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream()
@@ -280,10 +280,10 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
             }
             // 组装计量器具节点
             AttributeTreeNode measureNode = new AttributeTreeNode();
-            measureNode.setPId(pId);
+            measureNode.setPId(String.valueOf(pId));
             measureNode.setType(AttributeTreeNodeTypeEnum.MEASURING.getCode());
-            measureNode.setId(measureId);
-            measureNode.setAttrChildren(convertDaqAttrNode(measureId, attrDOS));
+            measureNode.setId(String.valueOf(measureId));
+            measureNode.setAttrChildren(convertDaqAttrNode(String.valueOf(measureId), attrDOS));
 
             List<StandingbookAttributeDO> measureAttrDOS = allAttrMap.get(measureId);
             Optional<StandingbookAttributeDO> measureNameOptional = measureAttrDOS.stream()

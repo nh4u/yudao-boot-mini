@@ -437,9 +437,17 @@ public class LocalDateTimeUtils {
                 return date.minusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
             case HOUR:
-                // 格式：yyyy-MM-dd HH:00:00
-                LocalDateTime hour = LocalDateTime.parse(current, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:00:00"));
-                return hour.minusHours(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:00:00"));
+                try {
+                    // 优先尝试更详细格式
+                    DateTimeFormatter fullFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                    LocalDateTime dt = LocalDateTime.parse(current, fullFormatter);
+                    return dt.minusHours(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH"));
+                } catch (DateTimeParseException e) {
+                    // 退而使用短格式
+                    DateTimeFormatter shortFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH");
+                    LocalDateTime dt = LocalDateTime.parse(current, shortFormatter);
+                    return dt.minusHours(1).format(shortFormatter);
+                }
 
             default:
                 throw new IllegalArgumentException("不支持的时间类型：" + type);

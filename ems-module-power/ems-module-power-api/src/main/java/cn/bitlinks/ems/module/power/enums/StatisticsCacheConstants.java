@@ -8,9 +8,17 @@ public class StatisticsCacheConstants {
 
     // 用能分析-环比分析-折旧分析-表格
     public static final String COMPARISON_DISCOUNT_TABLE = "statistics:comparison:discount:table:";
+    // 用能分析-环比分析-折旧分析-图标
+    public static final String COMPARISON_DISCOUNT_CHART = "statistics:comparison:discount:chart:";
     public static final String USAGE_COST_TABLE = "statistics:usage:cost:table:";
     public static final String USAGE_COST_CHART = "statistics:usage:cost:chart:";
 
+    public static final String USAGE_STANDARD_COAL_TABLE = "statistics:usage:standardCoal:table:";
+    public static final String USAGE_STANDARD_COAL_CHART = "statistics:usage:standardCoal:chart:";
 
+    public static final String USAGE_STANDARD_COAL_STRUCTURE_TABLE = "statistics:usage:standardCoalStructure:table:";
+    public static final String USAGE_STANDARD_COAL_STRUCTURE_CHART = "statistics:usage:standardCoalStructure:chart:";
 
+    public static final String USAGE_COST_STRUCTURE_TABLE = "statistics:usage:costStructure:table:";
+    public static final String USAGE_COST_STRUCTURE_CHART = "statistics:usage:costStructure:chart:";
 }
