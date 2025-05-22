@@ -1,7 +1,9 @@
 package cn.bitlinks.ems.module.power;
 
+import cn.bitlinks.ems.module.power.controller.admin.quartz.job.QuartzManager;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.quartz.SchedulerException;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -15,7 +17,7 @@ import java.util.TimeZone;
 @SpringBootApplication
 public class PowerApplication {
     @SneakyThrows(UnknownHostException.class)
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SchedulerException, InterruptedException {
 
         TimeZone.setDefault(TimeZone.getTimeZone("GMT+8"));
         ConfigurableApplicationContext application = SpringApplication.run(PowerApplication.class, args);
@@ -30,6 +32,9 @@ public class PowerApplication {
                 env.getProperty("server.port", "8080"),
                 "127.0.0.1",
                 env.getProperty("server.port", "8080"));
+        //启动调度器
+        QuartzManager quartzManager = (QuartzManager) application.getBean("quartzManager");
+        quartzManager.init();
     }
 
 }

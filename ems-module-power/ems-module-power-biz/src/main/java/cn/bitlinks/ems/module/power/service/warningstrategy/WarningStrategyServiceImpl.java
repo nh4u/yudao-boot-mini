@@ -359,5 +359,33 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
         }
     }
 
+    @Override
+    public boolean existsByStandingbookIds(List<Long> ids) {
+        // 如果传入的 IDs 为空，直接返回 false
+        if (CollUtil.isEmpty(ids)) {
+            return false;
+        }
+
+        // 查询所有 WarningStrategyDO 记录
+        List<WarningStrategyDO> strategies = warningStrategyMapper.selectList();
+
+        // 将传入的 IDs 转为 Set 提高查找效率
+        Set<Long> idSet = new HashSet<>(ids);
+
+        // 遍历每条记录的 deviceScope
+        for (WarningStrategyDO strategy : strategies) {
+            List<Long> deviceScope = strategy.getDeviceScope();
+            if (CollUtil.isEmpty(deviceScope)) {
+                // 检查 deviceScope 是否包含任意一个传入的 ID
+                for (Long id : idSet) {
+                    if (deviceScope.contains(id)) {
+                        return true; // 找到一个匹配的 ID，立即返回 true
+                    }
+                }
+            }
+        }
+        return false; // 没有找到任何匹配的 ID
+    }
+
 
 }

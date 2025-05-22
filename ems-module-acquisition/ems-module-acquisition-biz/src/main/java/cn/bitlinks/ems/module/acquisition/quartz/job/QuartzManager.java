@@ -4,11 +4,14 @@ import cn.bitlinks.ems.framework.common.enums.FrequencyUnitEnum;
 import cn.bitlinks.ems.module.acquisition.quartz.entity.JobBean;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.Objects;
+
+import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_LOCAL;
 
 /**
  *
@@ -18,7 +21,8 @@ public class QuartzManager {
 
     @Autowired
     private Scheduler scheduler;
-
+    @Value("${spring.profiles.active}")
+    private String env;
     /**
      * 增加一个job
      */
@@ -67,14 +71,6 @@ public class QuartzManager {
         createJob(jobBean);
     }
 
-    // 规范化 Cron 表达式以确保比较准确
-    private String normalizeCronExpression(String cronExpression) {
-        if (cronExpression == null) {
-            return "";
-        }
-        // 去除多余空格，统一为小写（根据需要调整）
-        return cronExpression.trim().replaceAll("\\s+", " ").toLowerCase();
-    }
 
     /**
      * 删除任务一个job
@@ -138,7 +134,12 @@ public class QuartzManager {
 
         return scheduleBuilder;
     }
+
     public void init() throws SchedulerException, InterruptedException {
+        // 本地环境不初始化
+        if (SPRING_PROFILES_ACTIVE_LOCAL.equals(env)) {
+            return;
+        }
         Thread.sleep(5000L);
         scheduler.start();
     }

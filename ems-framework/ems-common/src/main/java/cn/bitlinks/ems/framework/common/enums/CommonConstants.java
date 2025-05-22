@@ -7,7 +7,7 @@ public interface CommonConstants {
      * 正式环境
      */
     String SPRING_PROFILES_ACTIVE_PROD = "prod";
-
+    String SPRING_PROFILES_ACTIVE_LOCAL = "local";
     /**
      * 数采公式：匹配格式获取公式中的参数
      */
