@@ -72,5 +72,10 @@ public interface WarningStrategyService {
      */
     void updateWarningStrategyIntervalBatch(WarningStrategyBatchUpdIntervalReqVO updateReqVO);
 
-
+    /**
+     * 查询台账是否存在告警策略
+     * @param ids
+     * @return
+     */
+    boolean existsByStandingbookIds(List<Long> ids);
 }

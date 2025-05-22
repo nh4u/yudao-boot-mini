@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.List;
+
 
 @FeignClient(name = ApiConstants.NAME) // TODO bitlinks：fallbackFactory =
 @Tag(name = "RPC 服务 - 定时任务")
@@ -24,6 +26,6 @@ public interface QuartzApi {
 
     @GetMapping(PREFIX + "/deleteJob")
     @Operation(summary = "删除指定设备的数据采集任务")
-    void deleteJob(@RequestParam("standingbookId") Long standingbookId);
+    void deleteJob(@RequestParam("standingbookIds") List<Long> standingbookIds);
 
 }
