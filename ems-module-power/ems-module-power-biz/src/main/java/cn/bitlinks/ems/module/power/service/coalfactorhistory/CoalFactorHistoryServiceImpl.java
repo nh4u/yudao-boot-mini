@@ -5,12 +5,12 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistorySaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.mysql.coalfactorhistory.CoalFactorHistoryMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.daparamformula.DaParamFormulaMapper;
-import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
+import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -35,7 +35,7 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
     @Resource
     private CoalFactorHistoryMapper coalFactorHistoryMapper;
     @Resource
-    private EnergyConfigurationService energyConfigurationService;
+    private EnergyConfigurationMapper energyConfigurationMapper;
 
     @Resource
     private DaParamFormulaMapper daParamFormulaMapper;
@@ -117,10 +117,10 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
      */
     private void updateEnergyConfiguration(Long energyId, BigDecimal factor) {
         // 更新能源配置
-        EnergyConfigurationSaveReqVO updateVo = new EnergyConfigurationSaveReqVO();
+        EnergyConfigurationDO updateVo = new EnergyConfigurationDO();
         updateVo.setId(energyId);
         updateVo.setFactor(factor);
-        energyConfigurationService.updateEnergyConfiguration(updateVo);
+        energyConfigurationMapper.updateById(updateVo);
     }
 
     @Override
