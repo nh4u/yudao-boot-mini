@@ -1,8 +1,11 @@
 package cn.bitlinks.ems.module.power.service.daparamformula;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+
 import cn.bitlinks.ems.framework.common.exception.ErrorCode;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.daparamformula.vo.DaParamFormulaPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.daparamformula.vo.DaParamFormulaSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
@@ -184,6 +187,16 @@ public class DaParamFormulaServiceImpl implements DaParamFormulaService {
 
         return true;
 
+    }
+
+    @Override
+    public List<DaParamFormulaDO> getByIds(List<Long> ids) {
+        if(CollectionUtil.isEmpty(ids)){
+            return Collections.emptyList();
+        }
+        LambdaQueryWrapper<DaParamFormulaDO> wrapper = new LambdaQueryWrapper();
+        wrapper.in(DaParamFormulaDO::getId, ids);
+        return daParamFormulaMapper.selectList(wrapper);
     }
 
     @Override

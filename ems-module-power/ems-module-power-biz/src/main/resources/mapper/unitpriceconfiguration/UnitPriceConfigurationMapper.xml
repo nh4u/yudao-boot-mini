@@ -18,21 +18,23 @@
     <select id="getByEnergyTime" resultType="cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.EnergyTimeResultVO">
         SELECT
         p.id,
+        p.energy_id,
         p.accounting_frequency,
         p.billing_method,
         p.start_time,
         p.end_time,
         p.formula_id,
-        f.energy_formula,
-        f.formula_scale
+        t.query_time AS aggregateTime
         FROM ems_unit_price_configuration p
-        LEFT JOIN ems_da_param_formula f ON p.formula_id = f.id
-        WHERE p.energy_id IN
-        <foreach collection="energyIds" item="id" open="(" separator="," close=")">
-            #{id}
+        JOIN (
+        <foreach collection="query" item="param" separator=" UNION ALL ">
+            SELECT #{param.energyId} AS energy_id, #{param.aggregateTime} AS query_time
         </foreach>
-        AND p.start_time &lt;= #{queryTime}
-        AND (p.end_time IS NULL OR #{queryTime} &lt;= p.end_time)
+        ) t ON p.energy_id = t.energy_id
+        WHERE p.start_time &lt;= t.query_time
+        AND (p.end_time IS NULL OR t.query_time &lt;= p.end_time)
+        and p.deleted = 0
+
     </select>
 
 </mapper>

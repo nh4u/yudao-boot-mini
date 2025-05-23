@@ -47,4 +47,9 @@ public class CoalFactorFormulaData {
      * 小数点
      */
     private Integer formulaScale;    // f.formula_scale
+
+    /**
+     * 时间
+     */
+    private LocalDateTime aggregateTime;
 }

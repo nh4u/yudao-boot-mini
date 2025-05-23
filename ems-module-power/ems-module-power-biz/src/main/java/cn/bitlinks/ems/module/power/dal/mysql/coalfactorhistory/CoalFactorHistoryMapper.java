@@ -6,6 +6,7 @@ import java.util.*;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.framework.mybatis.core.mapper.BaseMapperX;
+import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.QueryEnergyFormula;
 import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
 import org.apache.ibatis.annotations.Mapper;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.*;
@@ -45,6 +46,6 @@ public interface CoalFactorHistoryMapper extends BaseMapperX<CoalFactorHistoryDO
     /**
      * 根据能源ID和时间获取折标煤系数和公式
      */
-    List<CoalFactorFormulaData> getByEnergyIdsAndTime(@Param("energyIds")List<Long> energyId, @Param("time")LocalDateTime time);
+    List<CoalFactorFormulaData> getByEnergyIdsAndTime(@Param("query")List<QueryEnergyFormula> queryEnergyTimeList);
 
 }

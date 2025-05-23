@@ -10,6 +10,7 @@ import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFa
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistorySaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.QueryEnergyFormula;
 import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
 
 import javax.validation.Valid;
@@ -70,5 +71,5 @@ public interface CoalFactorHistoryService {
     /**
      * 根据能源ID和时间获取折标煤系数和公式
      */
-    List<CoalFactorFormulaData> getByEnergyIdsAndTime(List<Long> energyId, LocalDateTime time);
+    List<CoalFactorFormulaData> getByEnergyIdsAndTime(List<QueryEnergyFormula> queryEnergyTimeList);
 }

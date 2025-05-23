@@ -34,12 +34,12 @@ public class EnergyTimeResultVO {
 
 
     /**
-     * 折标煤系数有效期-开始时间
+     * 开始时间
      */
     private LocalDateTime startTime;
 
     /**
-     * 折标煤系数有效期-结束时间
+     * 结束时间
      */
     private LocalDateTime endTime;
 
@@ -49,12 +49,18 @@ public class EnergyTimeResultVO {
     private Long formulaId;
 
     /**
-     * 计算公式
+     * 时间
+     */
+    private LocalDateTime aggregateTime;
+
+    /**
+     * 公式
      */
     private String energyFormula;
 
     /**
-     * 小数点
+     * 小数点位数
      */
     private Integer formulaScale;
+
 }

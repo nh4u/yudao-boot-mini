@@ -586,8 +586,9 @@ public class StandingbookServiceImpl implements StandingbookService {
         Set<Long> typeIds = standingbookDOS.stream().map(StandingbookDO::getTypeId).collect(Collectors.toSet());
 
         LambdaQueryWrapper<StandingbookTmplDaqAttrDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(StandingbookTmplDaqAttrDO::getTypeId,StandingbookTmplDaqAttrDO::getEnergyId);
         wrapper.in(StandingbookTmplDaqAttrDO::getTypeId, typeIds);
-        wrapper.groupBy(StandingbookTmplDaqAttrDO::getTypeId);
+        wrapper.groupBy(StandingbookTmplDaqAttrDO::getTypeId,StandingbookTmplDaqAttrDO::getEnergyId);
         List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS = standingbookTmplDaqAttrMapper.selectList(wrapper);
         Map<Long, StandingbookTmplDaqAttrDO> typeTmplMap = standingbookTmplDaqAttrDOS.stream().collect(Collectors.toMap(StandingbookTmplDaqAttrDO::getTypeId, Function.identity()));
 

@@ -15,12 +15,15 @@ import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsPar
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
 import cn.bitlinks.ems.module.power.dal.dataobject.usagecost.UsageCostDO;
 import cn.bitlinks.ems.module.power.dal.mysql.usagecost.UsageCostMapper;
+import cn.hutool.json.JSONUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author wangl
  * @date 2025年05月13日 10:52
  */
 @DS("starrocks")
+@Slf4j
 @Service
 @Validated
 public class UsageCostServiceImpl implements UsageCostService {
@@ -42,7 +45,7 @@ public class UsageCostServiceImpl implements UsageCostService {
 
     @Override
     public void saveList(List<UsageCostDO> usageCostDOS) {
-
+        log.info("saveList: {}", JSONUtil.toJsonStr(usageCostDOS));
     }
 
 }

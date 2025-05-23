@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.framework.common.util.calc;
 
 import cn.bitlinks.ems.framework.common.exception.ServiceException;
+import cn.bitlinks.ems.framework.common.exception.enums.GlobalErrorCodeConstants;
 import cn.bitlinks.ems.framework.common.pojo.StatsResult;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ArrayUtil;
@@ -16,7 +17,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.EXPRESSION_EXECUTION_FAILED;
 
 /**
  * @Title: ydme-ems
@@ -43,7 +43,8 @@ public class CalculateUtil {
             return runner.execute(expression, context, null, true, false);
         } catch (Exception e) {
             log.error("执行表达式失败: [{}]，参数: {}", expression, calcData, e);
-            throw new ServiceException(EXPRESSION_EXECUTION_FAILED);
+
+            throw new ServiceException(GlobalErrorCodeConstants.EXPRESSION_EXECUTION_FAILED);
         }
     }
 

@@ -64,7 +64,7 @@ public interface UnitPriceConfigurationMapper extends BaseMapperX<UnitPriceConfi
                                             @Param("endTime") LocalDateTime endTime);
 
 
-    List<EnergyTimeResultVO> getByEnergyTime(@Param("energyIds") List<Long> energyIds, @Param("queryTime") LocalDateTime queryTime);
+    List<EnergyTimeResultVO> getByEnergyTime(@Param("query") List<QueryEnergyFormula> energyIds);
 
     /**
      * 获取单价绑定的公式记录

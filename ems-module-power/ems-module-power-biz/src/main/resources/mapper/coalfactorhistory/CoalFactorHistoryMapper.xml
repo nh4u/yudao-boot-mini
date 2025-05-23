@@ -44,16 +44,15 @@
         h.start_time,
         h.end_time,
         h.formula_id,
-        f.energy_formula,
-        f.formula_scale
+        t.query_time AS aggregateTime
         FROM ems_coal_factor_history h
-        LEFT JOIN ems_da_param_formula f ON h.formula_id = f.id
-        WHERE
-        h.energy_id IN
-        <foreach collection="energyIds" item="id" open="(" separator="," close=")">
-            #{id}
+        JOIN (
+        <foreach collection="query" item="param" separator=" UNION ALL ">
+            SELECT #{param.energyId} AS energy_id, #{param.aggregateTime} AS query_time
         </foreach>
-        AND h.start_time &lt;= #{queryTime}
-        AND (h.end_time IS NULL OR #{queryTime} &lt;= h.end_time)
+        ) t ON h.energy_id = t.energy_id
+        WHERE h.start_time &lt;= t.query_time
+        AND (h.end_time IS NULL OR t.query_time &lt;= h.end_time)
+        and h.deleted = 0
     </select>
 </mapper>

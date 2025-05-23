@@ -8,6 +8,7 @@ import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFa
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistorySaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.QueryEnergyFormula;
 import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
@@ -152,8 +153,8 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
     }
 
     @Override
-    public List<CoalFactorFormulaData> getByEnergyIdsAndTime(List<Long> energyId, LocalDateTime time) {
+    public List<CoalFactorFormulaData> getByEnergyIdsAndTime(List<QueryEnergyFormula> queryEnergyTimeList) {
 
-        return coalFactorHistoryMapper.getByEnergyIdsAndTime(energyId, time);
+        return coalFactorHistoryMapper.getByEnergyIdsAndTime(queryEnergyTimeList);
     }
 }
