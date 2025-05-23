@@ -48,6 +48,7 @@ public abstract class RocketMQConsumer implements RocketMQListener<AcquisitionMe
             collectRawDataDO.setStandingbookId(acquisitionMessage.getStandingbookId());
             collectRawDataDO.setSyncTime(acquisitionMessage.getJobTime());
             collectRawDataDO.setParamCode(detail.getCode());
+            collectRawDataDO.setUsage(detail.getUsage());
             collectRawDataDO.setEnergyFlag(detail.getEnergyFlag());
             collectRawDataDO.setCalcValue(calcValue);
             ItemStatus itemStatus = itemStatusMap.get(detail.getDataSite());

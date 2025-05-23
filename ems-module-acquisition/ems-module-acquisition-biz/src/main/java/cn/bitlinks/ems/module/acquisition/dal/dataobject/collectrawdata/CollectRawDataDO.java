@@ -44,6 +44,10 @@ public class CollectRawDataDO {
      */
     private String rawValue;
     /**
+     * 是否用量
+     */
+    private Integer usage;
+    /**
      * 数据采集时间（原始）
      */
     private LocalDateTime collectTime;

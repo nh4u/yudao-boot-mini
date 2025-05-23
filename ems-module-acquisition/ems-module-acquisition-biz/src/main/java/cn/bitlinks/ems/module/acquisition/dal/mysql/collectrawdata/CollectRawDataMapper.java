@@ -4,8 +4,8 @@ import cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectR
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -42,7 +42,29 @@ public interface CollectRawDataMapper {
 
     /**
      * 查询台账最新的采集数据
+     *
      * @param standingbookIds 台账ids
      */
     List<CollectRawDataDO> selectLatestByStandingbookIds(@Param("standingbookIds") List<Long> standingbookIds);
+
+    /**
+     * 获取最新的台账id
+     */
+    List<CollectRawDataDO> getGroupedData();
+
+    /**
+     * 查询每个台账用量参数 当前时间点
+     */
+    List<CollectRawDataDO> selectExactDataBatch(@Param("standingbookIds") List<Long> ids, @Param("targetTime") LocalDateTime targetTime);
+
+    /**
+     * 查询每个台账用量参数 当前时间点之前的最新数据
+     */
+    List<CollectRawDataDO> selectPrevDataBatch(@Param("standingbookIds") List<Long> ids, @Param("targetTime") LocalDateTime targetTime);
+
+    /**
+     * 查询每个台账用量参数 当前时间点之后的第一条数据
+     */
+    List<CollectRawDataDO> selectNextDataBatch(@Param("standingbookIds") List<Long> ids, @Param("targetTime") LocalDateTime targetTime);
+
 }

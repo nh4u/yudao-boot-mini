@@ -3,4 +3,23 @@
 <mapper namespace="cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata.MinuteAggregateDataMapper">
 
 
+    <select id="getLatestData"
+            resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
+        SELECT
+        standingbook_id
+        MAX(aggregate_time) AS latest_aggregate_time
+        FROM
+        minute_aggregate_data
+        GROUP BY
+        standingbook_id;
+
+    </select>
+    <select id="selectExactData"
+            resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
+        SELECT *
+        FROM minute_aggregate_data
+        WHERE standingbook_id = #{standingbookId}
+        AND aggregateTime = #{targetTime}
+        LIMIT 1
+    </select>
 </mapper>
