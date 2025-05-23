@@ -3,11 +3,13 @@ package cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Schema(description = "RPC 服务 - 实时数据")
 @Data
-public class CollectRawDataDTO {
+public class CollectRawDataDTO implements Serializable {
+    private static final long serialVersionUID = 1L; // 推荐指定序列化版本
     /**
      * OPC_DA:IO地址/
      */
