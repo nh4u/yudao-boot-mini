@@ -102,4 +102,6 @@ public interface EnergyConfigurationService {
      * @return
      */
     List<EnergyConfigurationDO> getByEnergyClassify(Set<Long> energyIds, Integer energyClassify);
+
+    List<EnergyConfigurationDO> getByEnergyClassify(Integer energyClassify);
 }
