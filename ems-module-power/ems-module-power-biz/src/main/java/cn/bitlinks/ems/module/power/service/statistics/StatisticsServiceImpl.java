@@ -78,6 +78,25 @@ public class StatisticsServiceImpl implements StatisticsService {
             data.add(map);
         });
 
+
+        List<EnergyConfigurationDO> energyList1 = new ArrayList<>();
+        List<EnergyConfigurationDO> energyList2 = new ArrayList<>();
+        ;
+
+        Integer energyClassify = energyList.get(0).getEnergyClassify();
+        if (1 == energyClassify) {
+            // 外购
+            energyList1 = energyList;
+            // 园区
+            energyList2 = energyConfigurationService.getByEnergyClassify(2);
+
+        } else {
+            // 外购
+            energyList1 = energyConfigurationService.getByEnergyClassify(1);
+            // 园区
+            energyList2 = energyList;
+        }
+
         // 标签数据
         ImmutablePair<List<LabelConfigDO>, List<Tree<Long>>> labelPair = dealLabelQueryDataForEnergyFlow(paramVO);
 
@@ -88,14 +107,10 @@ public class StatisticsServiceImpl implements StatisticsService {
             data.add(map);
         });
 
+        List<EnergyConfigurationDO> finalEnergyList = energyList2;
+        energyList1.forEach(e -> {
 
-        Map<Integer, List<EnergyConfigurationDO>> collect = energyList.stream().collect(Collectors.groupingBy(EnergyConfigurationDO::getEnergyClassify));
-        List<EnergyConfigurationDO> energy1 = collect.get(1);
-        List<EnergyConfigurationDO> energy2 = collect.get(2);
-
-        energy1.forEach(e -> {
-
-            energy2.forEach(e2 -> {
+            finalEnergyList.forEach(e2 -> {
                 Map<String, Object> map = new HashMap<>();
                 map.put("source", e.getEnergyName());
                 map.put("target", e2.getEnergyName());
@@ -106,7 +121,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         List<Tree<Long>> labelTree = labelPair.getRight();
 
-        energy2.forEach(e -> {
+        energyList2.forEach(e -> {
             for (Tree<Long> tree : labelTree) {
                 Map<String, Object> map = new HashMap<>();
                 map.put("source", e.getEnergyName());
@@ -325,7 +340,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         List<StatisticsResultVO> list = new ArrayList<>();
         // 标签查询条件处理
         List<Tree<Long>> labelTree = dealLabelQueryData(paramVO);
-        if (CollectionUtil.isEmpty(labelTree)){
+        if (CollectionUtil.isEmpty(labelTree)) {
             throw exception(LABEL_CONFIG_NOT_EXISTS);
         }
         // 能源查询条件处理
