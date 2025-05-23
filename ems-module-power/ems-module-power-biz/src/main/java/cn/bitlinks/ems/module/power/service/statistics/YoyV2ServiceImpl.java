@@ -219,8 +219,8 @@ public class YoyV2ServiceImpl implements YoyV2Service {
                                 String lastTime = LocalDateTimeUtils.getYearOnYearTime(current.getTime(), dataTypeEnum);
                                 String key = current.getEnergyId() + "_" + lastTime;
                                 UsageCostData previous = lastDataMap.get(key);
-                                BigDecimal now = valueExtractor.apply(current);
-                                BigDecimal last = previous != null ? valueExtractor.apply(previous) : null;
+                                BigDecimal now = Optional.ofNullable(valueExtractor.apply(current)).orElse(BigDecimal.ZERO);
+                                BigDecimal last = previous != null ? Optional.ofNullable(valueExtractor.apply(previous)).orElse(BigDecimal.ZERO) : BigDecimal.ZERO;
                                 BigDecimal ratio = calculateYearOnYearRatio(now, last);
                                 return new YoyDetailVO(current.getTime(), now, last, ratio);
                             })
@@ -293,8 +293,8 @@ public class YoyV2ServiceImpl implements YoyV2Service {
                                 String previousTime = LocalDateTimeUtils.getYearOnYearTime(current.getTime(), dateTypeEnum);
                                 String key = current.getStandingbookId() + "_" + previousTime;
                                 UsageCostData previous = lastMap.get(key);
-                                BigDecimal now = valueExtractor.apply(current);
-                                BigDecimal last = previous != null ? valueExtractor.apply(previous) : null;
+                                BigDecimal now = Optional.ofNullable(valueExtractor.apply(current)).orElse(BigDecimal.ZERO);
+                                BigDecimal last = previous != null ? Optional.ofNullable(valueExtractor.apply(previous)).orElse(BigDecimal.ZERO) : BigDecimal.ZERO;
                                 BigDecimal ratio = calculateYearOnYearRatio(now, last);
                                 return new YoyDetailVO(current.getTime(), now, last, ratio);
                             })
@@ -385,8 +385,8 @@ public class YoyV2ServiceImpl implements YoyV2Service {
                                     String previousTime = LocalDateTimeUtils.getYearOnYearTime(current.getTime(), dateTypeEnum);
                                     String key = current.getStandingbookId() + "_" + energyId + "_" + previousTime;
                                     UsageCostData previous = lastMap.get(key);
-                                    BigDecimal now = valueExtractor.apply(current);
-                                    BigDecimal last = previous != null ? valueExtractor.apply(previous) : null;
+                                    BigDecimal now = Optional.ofNullable(valueExtractor.apply(current)).orElse(BigDecimal.ZERO);
+                                    BigDecimal last = previous != null ? Optional.ofNullable(valueExtractor.apply(previous)).orElse(BigDecimal.ZERO) : BigDecimal.ZERO;
                                     BigDecimal ratio = calculateYearOnYearRatio(now, last);
                                     return new YoyDetailVO(current.getTime(), now, last, ratio);
                                 })
@@ -580,9 +580,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
             List<BigDecimal> ratioList = new ArrayList<>();
             // 遍历横轴时间点构造每条数据序列
             for (String time : xdata) {
-                BigDecimal now = nowSeries.getOrDefault(time, null);
+                BigDecimal now = nowSeries.getOrDefault(time, BigDecimal.ZERO);
                 String lastTime = LocalDateTimeUtils.getYearOnYearTime(time, dataTypeEnum);
-                BigDecimal previous = lastSeries.getOrDefault(lastTime, null);
+                BigDecimal previous = lastSeries.getOrDefault(lastTime, BigDecimal.ZERO);
                 nowList.add(now);
                 lastList.add(previous);
                 ratioList.add(calculateYearOnYearRatio(now, previous));
@@ -657,9 +657,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
             List<BigDecimal> ratioList = new ArrayList<>();
 
             for (String time : xdata) {
-                BigDecimal now = nowSeries.getOrDefault(time, null);
+                BigDecimal now = nowSeries.getOrDefault(time, BigDecimal.ZERO);
                 String lastTime = LocalDateTimeUtils.getYearOnYearTime(time, dataTypeEnum);
-                BigDecimal previous = lastSeries.getOrDefault(lastTime, null);
+                BigDecimal previous = lastSeries.getOrDefault(lastTime, BigDecimal.ZERO);
                 nowList.add(now);
                 lastList.add(previous);
                 ratioList.add(calculateYearOnYearRatio(now, previous));
@@ -705,9 +705,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         List<BigDecimal> ratioList = new ArrayList<>();
 
         for (String time : xdata) {
-            BigDecimal now = nowMap.getOrDefault(time, null);
+            BigDecimal now = nowMap.getOrDefault(time, BigDecimal.ZERO);
             String lastTime = LocalDateTimeUtils.getYearOnYearTime(time, dataTypeEnum);
-            BigDecimal previous = lastMap.getOrDefault(lastTime, null);
+            BigDecimal previous = lastMap.getOrDefault(lastTime, BigDecimal.ZERO);
             nowList.add(now);
             lastList.add(previous);
             ratioList.add(calculateYearOnYearRatio(now, previous));
