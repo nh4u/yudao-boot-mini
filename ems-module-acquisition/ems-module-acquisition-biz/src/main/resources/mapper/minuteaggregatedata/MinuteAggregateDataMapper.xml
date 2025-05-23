@@ -16,8 +16,8 @@
     <select id="getLatestData"
             resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
         SELECT
-        standingbook_id
-        MAX(aggregate_time) AS aggregate_time
+        standingbook_id,
+        MAX(aggregate_time) aggregate_time
         FROM
         minute_aggregate_data
         GROUP BY
