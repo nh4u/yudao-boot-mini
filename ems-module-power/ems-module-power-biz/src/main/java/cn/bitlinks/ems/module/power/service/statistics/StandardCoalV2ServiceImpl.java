@@ -317,7 +317,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                                 .stream()
                                 .map(time -> {
                                     StandardCoalChartYData vo = new StandardCoalChartYData();
-                                    vo.setStandardCoal(timeCostMap.getOrDefault(time, null));
+                                    vo.setStandardCoal(timeCostMap.getOrDefault(time, BigDecimal.ZERO));
                                     return vo;
                                 })
                                 .collect(Collectors.toList());
@@ -385,7 +385,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 List<StandardCoalChartYData> ydata = xdata.stream().map(x -> {
                     BigDecimal standardCoal = timeCostMap.getOrDefault(x, BigDecimal.ZERO);
                     StandardCoalChartYData vo = new StandardCoalChartYData();
-                    vo.setStandardCoal(standardCoal.compareTo(BigDecimal.ZERO) > 0 ? standardCoal : null);
+                    vo.setStandardCoal(standardCoal.compareTo(BigDecimal.ZERO) > 0 ? standardCoal : BigDecimal.ZERO);
                     return vo;
                 }).collect(Collectors.toList());
 
@@ -408,18 +408,21 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
             List<StatisticsChartYInfoV2VO> ydata = new ArrayList<>();
             xdata.forEach(s -> {
                 StatsResult statsResult = statsResultMap.get(s);
+                StatisticsChartYInfoV2VO<StandardCoalChartYData> yInfoV2VO = new StatisticsChartYInfoV2VO<>();
+                StandardCoalChartYData dataV2VO = new StandardCoalChartYData();
                 if (Objects.nonNull(statsResult)) {
-                    StatisticsChartYInfoV2VO<StandardCoalChartYData> yInfoV2VO = new StatisticsChartYInfoV2VO<>();
-                    StandardCoalChartYData dataV2VO = new StandardCoalChartYData();
                     dataV2VO.setAvg(statsResult.getAvg());
                     dataV2VO.setMax(statsResult.getMax());
                     dataV2VO.setMin(statsResult.getMin());
                     dataV2VO.setStandardCoal(statsResult.getSum());
-                    yInfoV2VO.setData(Collections.singletonList(dataV2VO));
-                    ydata.add(yInfoV2VO);
                 } else {
-                    ydata.add(null);
+                    dataV2VO.setAvg(BigDecimal.ZERO);
+                    dataV2VO.setMax(BigDecimal.ZERO);
+                    dataV2VO.setMin(BigDecimal.ZERO);
+                    dataV2VO.setStandardCoal(BigDecimal.ZERO);
                 }
+                yInfoV2VO.setData(Collections.singletonList(dataV2VO));
+                ydata.add(yInfoV2VO);
             });
             resultV2VO.setYdata(ydata);
         }
