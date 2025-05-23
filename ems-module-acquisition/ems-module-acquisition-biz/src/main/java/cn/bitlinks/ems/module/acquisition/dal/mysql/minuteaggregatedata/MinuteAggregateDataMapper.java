@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata;
 
+import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
@@ -27,6 +28,7 @@ public interface MinuteAggregateDataMapper {
      * @param targetTime     聚合时间
      * @return
      */
+    @TenantIgnore
     MinuteAggregateDataDO selectExactData(@Param("standingbookId") Long standingbookId,
                                           @Param("targetTime") LocalDateTime targetTime);
 
@@ -35,6 +37,7 @@ public interface MinuteAggregateDataMapper {
      *
      * @return 最新的聚合数据
      */
+    @TenantIgnore
     List<MinuteAggregateDataDO> getLatestData();
 
     /**
@@ -51,5 +54,6 @@ public interface MinuteAggregateDataMapper {
             "#{aggregateDataDO.standingbookId}, #{aggregateDataDO.fullValue},#{aggregateDataDO.incrementalValue})" +
             "</foreach>" +
             "</script>")
+    @TenantIgnore
     void insertBatch(@Param("aggregateDataDOS") List<MinuteAggregateDataDO> aggregateDataDOS);
 }
