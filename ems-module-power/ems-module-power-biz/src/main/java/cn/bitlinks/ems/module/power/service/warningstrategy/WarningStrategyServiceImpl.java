@@ -349,13 +349,10 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
         if (CollUtil.isEmpty(updateReqVO.getIds())) {
             return;
         }
-        List<String> jobNameList = new ArrayList<>();
-        updateReqVO.getIds().forEach(id -> {
-            jobNameList.add(String.format(STRATEGY_JOB_NAME_PREFIX, id));
-        });
+
         // 批量修改任务的间隔
         try {
-            quartzManager.updateJobBatch(updateReqVO.getInterval(), updateReqVO.getIntervalUnit(), jobNameList);
+            quartzManager.updateJobBatch(updateReqVO.getInterval(), updateReqVO.getIntervalUnit(), updateReqVO.getIds());
         } catch (Exception e) {
             log.error("批量修改策略任务的间隔失败", e);
         }

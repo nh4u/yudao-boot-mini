@@ -2,5 +2,34 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata.MinuteAggregateDataMapper">
 
+    <resultMap id="BaseResultMap"
+               type="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
+        <result column="data_site" property="dataSite"/>
+        <result column="aggregate_time" property="aggregateTime"/>
+        <result column="param_code" property="paramCode"/>
+        <result column="energy_flag" property="energyFlag"/>
+        <result column="standingbook_id" property="standingbookId"/>
+        <result column="full_value" property="fullValue"/>
+        <result column="incremental_value" property="incrementalValue"/>
+    </resultMap>
 
+    <select id="getLatestData"
+            resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
+        SELECT
+        standingbook_id
+        MAX(aggregate_time) AS aggregate_time
+        FROM
+        minute_aggregate_data
+        GROUP BY
+        standingbook_id;
+
+    </select>
+    <select id="selectExactData"
+            resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
+        SELECT *
+        FROM minute_aggregate_data
+        WHERE standingbook_id = #{standingbookId}
+        AND aggregateTime = #{targetTime}
+        LIMIT 1
+    </select>
 </mapper>

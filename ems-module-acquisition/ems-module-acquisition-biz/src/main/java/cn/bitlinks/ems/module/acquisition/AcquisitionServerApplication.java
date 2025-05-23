@@ -40,9 +40,6 @@ public class AcquisitionServerApplication {
                 env.getProperty("server.port", "8080"),
                 "127.0.0.1",
                 env.getProperty("server.port", "8080"));
-        //启动调度器
-        QuartzManager quartzManager = (QuartzManager) application.getBean("quartzManager");
-        quartzManager.init();
     }
 
 }
