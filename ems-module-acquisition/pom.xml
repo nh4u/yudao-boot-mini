@@ -17,7 +17,7 @@
 
     <name>${project.artifactId}</name>
     <description>
-        数据采集模块
+        数据采集服务
     </description>
 
 </project>

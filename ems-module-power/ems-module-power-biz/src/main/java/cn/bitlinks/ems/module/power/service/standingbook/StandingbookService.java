@@ -72,6 +72,13 @@ public interface StandingbookService {
     List<StandingbookDO> getByTypeIds(List<Long> typeIds);
 
     /**
+     * 根据分类ID查询台账ID
+     */
+    List<StandingbookDO> getByStandingbookIds(List<Long> standingbookIds);
+
+
+
+    /**
      * 批量删除
      * @param ids 台账ids
      */

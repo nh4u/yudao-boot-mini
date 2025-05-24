@@ -16,6 +16,11 @@
 
 
     <dependencies>
+        <!-- QLExpress -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>QLExpress</artifactId>
+        </dependency>
         <!-- 数采服务 -->
         <dependency>
             <groupId>org.bouncycastle</groupId>

@@ -88,7 +88,7 @@
         <jinterop.interopdeps.version>2.0.4</jinterop.interopdeps.version>
         <org.openscada.external.jcifs.version>1.2.25</org.openscada.external.jcifs.version>
         <org.openscada.opc.lib.version>1.5.0</org.openscada.opc.lib.version>
-
+        <ql-express.version>3.3.1</ql-express.version>
         <!-- 专属于 JDK8 安全漏洞升级 -->
         <logback.version>1.2.13</logback.version> <!-- 无法使用 1.3.X 版本，启动会报错 -->
     </properties>
@@ -140,6 +140,12 @@
             </dependency>
 
             <!-- 业务组件 -->
+            <!-- QLExpress -->
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>QLExpress</artifactId>
+                <version>${ql-express.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcprov-jdk16</artifactId>

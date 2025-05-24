@@ -496,5 +496,10 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
         return standingbookTmplDaqAttrMapper.selectList(wrapper);
     }
 
+    @Override
+    public List<StandingbookTmplDaqAttrDO> getEnergyMapping() {
+        return standingbookTmplDaqAttrMapper.selectEnergyMapping();
+    }
+
 
 }

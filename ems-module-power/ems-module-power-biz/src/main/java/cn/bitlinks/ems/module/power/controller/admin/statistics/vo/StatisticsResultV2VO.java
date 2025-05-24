@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.apache.poi.ss.formula.functions.T;
 
 /**
  * @author wangl
@@ -19,12 +20,12 @@ import lombok.ToString;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @ToString(callSuper = true)
-public class StatisticsResultV2VO {
+public class StatisticsResultV2VO<T> {
 
     /**
      * 统计信息
      */
-    private List<StatisticsInfoV2> statisticsInfoList;
+    private List<T> statisticsInfoList;
 
     /**
      * 表头

@@ -74,10 +74,11 @@ public interface ErrorCodeConstants {
     ErrorCode STANDINGBOOK_TYPE_ONLY_FIVE = new ErrorCode(1_001_202_012, "最多允许五层节点");
     ErrorCode STANDINGBOOK_EXIST_NOT_SUPPORT_UPD_DEL = new ErrorCode(1_001_202_013, "该分类或其子分类下存在设备，不可删除和修改！");
     ErrorCode STANDINGBOOK_ASSOCIATION_EXISTS = new ErrorCode(1_001_202_014,"已与其他计量器具关联，请先将关联关系删除");
-    ErrorCode STANDINGBOOK_ACQUISITION_EXISTS = new ErrorCode(1_001_202_015,"已进行数采配置，请先停用数采配置;");
+    ErrorCode STANDINGBOOK_ACQUISITION_EXISTS = new ErrorCode(1_001_202_015,"已进行数采配置，请先停用数采配置");
     ErrorCode STANDINGBOOK_TYPE_REL_STANDINGBOOK = new ErrorCode(1_001_202_016,"存在设备数据，不允许修改名称和编码");
     ErrorCode STANDINGBOOK_EXIST_NOT_SUPPORT_CREATE = new ErrorCode(1_001_202_017, "该分类或其子分类下存在设备，不可选择能源！");
 
+    ErrorCode STANDINGBOOK_REL_STRATEGY = new ErrorCode(1_001_202_018,"已配置告警策略，请先删除告警策略");
 
 
     // ========== 标签配置 ==========
@@ -135,6 +136,6 @@ public interface ErrorCodeConstants {
     ErrorCode STANDINGBOOK_ACQUISITION_FORMULA_SET = new ErrorCode(1_002_101_002,"公式配置有误，无法进行数据采集，请检查");
     ErrorCode STANDINGBOOK_ACQUISITION_CYCLE_RELY =  new ErrorCode(1_002_101_003,"公式配置存在循环依赖");
     ErrorCode STANDINGBOOK_ACQUISITION_TEST_FAIL =  new ErrorCode(1_002_101_004,"采集失败");
-
-
+    ErrorCode STANDINGBOOK_ACQUISITION_CRON_FAIL =  new ErrorCode(1_002_101_005,"频率和单位不能为空且频率必须大于0");
+    ErrorCode STANDINGBOOK_ACQUISITION_CRON_UNIT_NOT_EXISTS =  new ErrorCode(1_002_101_006,"无效的频率单位: {}");
 }

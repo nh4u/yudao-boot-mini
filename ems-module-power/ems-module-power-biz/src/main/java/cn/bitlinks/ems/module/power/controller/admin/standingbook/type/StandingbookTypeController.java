@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.Standi
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
+import cn.hutool.core.collection.CollUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.validation.Valid;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -30,6 +32,7 @@ public class StandingbookTypeController {
 
     @Resource
     private StandingbookTypeService standingbookTypeService;
+
 
     @PostMapping("/create")
     @Operation(summary = "创建台账类型")
@@ -106,6 +109,30 @@ public class StandingbookTypeController {
             nodes = result;
         }
         return success(BeanUtils.toBean(nodes, StandingbookTypeRespVO.class));
+    }
+
+    @GetMapping("/tree-energy")
+    @Operation(summary = "获得台账类型树形列表(带能源的)")
+    @PreAuthorize("@ss.hasPermission('power:standingbook-type:query')")
+    @Parameter(name = "id", description = "编号", example = "1024")
+    public CommonResult<List<StandingbookTypeRespVO>> getStandingbookTreeWithEnergy(@RequestParam(value = "id",
+            required = false) Long id) {
+        List<StandingbookTypeRespVO> nodes = standingbookTypeService.getStandingbookTypeNodeWithEnergy();
+
+        if (id != null) {
+            List<StandingbookTypeRespVO> result = new ArrayList<>();
+            for (StandingbookTypeRespVO node : nodes) {
+                if (Objects.equals(node.getId(), id)) {
+                    result.add(node);
+                    break;
+                }
+            }
+            nodes = result;
+        }
+        if (CollUtil.isEmpty(nodes)) {
+            return success(Collections.emptyList());
+        }
+        return success(nodes);
     }
 
 

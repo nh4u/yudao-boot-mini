@@ -48,13 +48,14 @@
                 YEAR(aggregate_time) AS time
             </when>
             <when test="queryParam.dateType == 3">
-                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00') AS time
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H') AS time
             </when>
         </choose>
         ,
 
         SUM(cost) AS totalCost,
-        SUM(current_usage) AS currentTotalUsage
+        SUM(current_usage) AS currentTotalUsage,
+        SUM(standard_coal_equivalent) AS totalStandardCoalEquivalent
         FROM
         usage_cost
         WHERE
@@ -87,9 +88,33 @@
                 YEAR(aggregate_time)
             </when>
             <when test="queryParam.dateType == 3">
-                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00')
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H')
             </when>
         </choose>
 
     </select>
+
+
+    <select id="getLastTime" resultType="java.time.LocalDateTime">
+        <!-- 参数说明：
+          - dateType (聚合类型，0: 按日, 1: 按月, 2: 按年, 3: 按时)
+          - queryType (分组字段，0: 按 standingbook_id, 1: 按 energy_id, 2: 按 tag_id)
+          - startDate (起始日期)
+          - endDate (结束日期)
+        -->
+        SELECT
+        MAX(aggregate_time) AS lastTime
+        FROM
+        usage_cost
+        WHERE
+        aggregate_time BETWEEN #{startDate} AND #{endDate}
+        AND standingbook_id IN
+        <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+
+
+    </select>
+
 </mapper>
+

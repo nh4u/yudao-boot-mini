@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.standingbook;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.bitlinks.ems.module.acquisition.api.quartz.QuartzApi;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.AssociationData;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
@@ -26,6 +27,7 @@ import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
 import cn.bitlinks.ems.module.power.enums.standingbook.StandingbookTypeTopEnum;
 import cn.bitlinks.ems.module.power.service.standingbook.acquisition.StandingbookAcquisitionService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
+import cn.bitlinks.ems.module.power.service.warningstrategy.WarningStrategyService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -60,9 +62,6 @@ public class StandingbookServiceImpl implements StandingbookService {
     private StandingbookLabelInfoMapper standingbookLabelInfoMapper;
     @Resource
     private StandingbookAttributeService standingbookAttributeService;
-    @Resource
-    @Lazy
-    private StandingbookAcquisitionService standingbookAcquisitionService;
 
 
     @Resource
@@ -75,7 +74,14 @@ public class StandingbookServiceImpl implements StandingbookService {
     private MeasurementDeviceMapper measurementDeviceMapper;
     @Resource
     private MeasurementAssociationMapper measurementAssociationMapper;
-
+    @Resource
+    @Lazy
+    private WarningStrategyService warningStrategyService;
+    @Resource
+    private QuartzApi quartzApi;
+    @Lazy
+    @Resource
+    private StandingbookAcquisitionService standingbookAcquisitionService;
 
     @Override
     public Long count(Long typeId) {
@@ -144,6 +150,12 @@ public class StandingbookServiceImpl implements StandingbookService {
         LambdaQueryWrapper<StandingbookDO> wrapper = new LambdaQueryWrapper<>();
         wrapper.in(StandingbookDO::getTypeId, typeIds);
         return standingbookMapper.selectList(wrapper);
+    }
+
+    @Override
+    public List<StandingbookDO> getByStandingbookIds(List<Long> standingbookIds) {
+        return standingbookMapper.selectList(new LambdaQueryWrapper<StandingbookDO>().in(StandingbookDO::getId,
+                standingbookIds));
     }
 
     /**
@@ -311,6 +323,10 @@ public class StandingbookServiceImpl implements StandingbookService {
         if (CollUtil.isNotEmpty(standingbookAcquisitionList)) {
             throw exception(ErrorCodeConstants.STANDINGBOOK_ACQUISITION_EXISTS);
         }
+        // 查询存在告警配置
+        if (warningStrategyService.existsByStandingbookIds(ids)) {
+            throw exception(ErrorCodeConstants.STANDINGBOOK_REL_STRATEGY);
+        }
 
         // 删除
         standingbookMapper.deleteByIds(ids);
@@ -323,8 +339,8 @@ public class StandingbookServiceImpl implements StandingbookService {
 
         // 删除数采关联
         standingbookAcquisitionService.deleteByStandingbookIds(ids);
-        // 删除数采的任务 todo
-
+        // 删除数采的任务
+        quartzApi.deleteJob(ids);
 
     }
 

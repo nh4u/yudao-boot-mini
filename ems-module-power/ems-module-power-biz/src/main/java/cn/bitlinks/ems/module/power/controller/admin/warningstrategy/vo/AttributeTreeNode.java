@@ -15,9 +15,9 @@ import java.util.List;
 @NoArgsConstructor
 public class AttributeTreeNode {
     @Schema(description = "父级编号")
-    private Long pId;
+    private String pId;
     @Schema(description = "编号")
-    private Long id;
+    private String id;
     @Schema(description = "名称")
     private String name;
     @Schema(description = "节点类型0-设备分类 1-重点设备 2-计量器具 3-能源数采参数 4-自定义数采参数")

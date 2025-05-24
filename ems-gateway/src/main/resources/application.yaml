@@ -18,6 +18,13 @@ spring:
     gateway:
       # 路由配置项，对应 RouteDefinition 数组
       routes:
+        ## acquisition-server 服务
+        - id: acquisition-admin-api # 路由的编号
+          uri: grayLb://acquisition-server
+          predicates: # 断言，作为路由的匹配条件，对应 RouteDefinition 数组
+            - Path=/admin-api/acquisition/**
+          filters:
+            - RewritePath=/admin-api/acquisition/v3/api-docs, /v3/api-docs # 配置，保证转发到 /v3/api-docs
         ## power-server 服务
         - id: power-admin-api # 路由的编号
           uri: grayLb://power-server
@@ -89,7 +96,9 @@ knife4j:
       - name: power-server
         service-name: power-server
         url: /admin-api/power/v3/api-docs
-
+      - name: acquisition-server
+        service-name: acquisition-server
+        url: /admin-api/acquisition/v3/api-docs
 --- #################### bitlinks相关配置 ####################
 
 ems:

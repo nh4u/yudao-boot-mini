@@ -62,10 +62,7 @@ public interface CommonConstants {
      * 利用率
      */
     Integer RATIO = 3;
-    /**
-     * 正式环境
-     */
-    String SPRING_PROFILES_ACTIVE_PROD = "prod";
+
     /**
      * 随机成功概率
       */
@@ -79,5 +76,19 @@ public interface CommonConstants {
      */
     Pattern PATTERN_PARAMS = Pattern.compile("\\{(.*?)}");
 
+
+    /**
+     * 服务名称（IP地址：端口号）协议
+     */
+    String LABEL_NAME_PREFIX = "label_";
+    /**
+     * 策略任务锁
+     */
+    String STRATEGY_JOB_LOCK_KEY = "warning-strategy:job:%s:%s" ;
+    String STRATEGY_JOB_NAME_PREFIX = "STRATEGY_JOB_%s";
+    /**
+     * 告警策略任务,数据map 键-策略id
+     */
+    String WARNING_STRATEGY_JOB_DATA_MAP_KEY_STRATEGY_ID = "strategyJobStrategyId";
 
 }

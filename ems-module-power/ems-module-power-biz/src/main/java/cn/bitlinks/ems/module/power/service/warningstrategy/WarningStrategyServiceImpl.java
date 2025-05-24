@@ -3,6 +3,9 @@ package cn.bitlinks.ems.module.power.service.warningstrategy;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.object.PageUtils;
+import cn.bitlinks.ems.module.power.controller.admin.quartz.entity.JobBean;
+import cn.bitlinks.ems.module.power.controller.admin.quartz.job.QuartzManager;
+import cn.bitlinks.ems.module.power.controller.admin.quartz.job.WarningStrategyJob;
 import cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
@@ -18,6 +21,8 @@ import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.extern.slf4j.Slf4j;
+import org.quartz.JobDataMap;
+import org.quartz.SchedulerException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -29,6 +34,8 @@ import java.util.stream.Collectors;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_EQUIPMENT_NAME;
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_MEASURING_INSTRUMENT_MAME;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.STRATEGY_JOB_NAME_PREFIX;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.WARNING_STRATEGY_JOB_DATA_MAP_KEY_STRATEGY_ID;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.WARNING_STRATEGY_CONDITION_NOT_NULL;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.WARNING_STRATEGY_NOT_EXISTS;
 
@@ -57,6 +64,9 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
     private StandingbookAttributeService standingbookAttributeService;
 
 
+    @Resource
+    private QuartzManager quartzManager;
+
     @Transactional
     @Override
     public Long createWarningStrategy(WarningStrategySaveReqVO createReqVO) {
@@ -69,9 +79,29 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
 
         // 添加条件
         createCondition(createReqVO.getCondition(), warningStrategy.getId());
-
+        createOrUpdateJob(warningStrategy, false);
         // 返回
         return warningStrategy.getId();
+    }
+
+    private void createOrUpdateJob(WarningStrategyDO strategyDO, boolean updFlag) {
+        try {
+            JobBean jobBean = new JobBean();
+            jobBean.setJobName(String.format(STRATEGY_JOB_NAME_PREFIX, strategyDO.getId()));
+            jobBean.setJobClass(WarningStrategyJob.class);
+            jobBean.setFrequency(strategyDO.getInterval());
+            jobBean.setFrequencyUnit(strategyDO.getIntervalUnit());
+            Map<String, Object> detailDTOMap = new HashMap<>();
+            detailDTOMap.put(WARNING_STRATEGY_JOB_DATA_MAP_KEY_STRATEGY_ID, strategyDO.getId());
+            jobBean.setJobDataMap(new JobDataMap(detailDTOMap));
+            if (updFlag) {
+                quartzManager.updateJob(jobBean);
+            } else {
+                quartzManager.createJob(jobBean);
+            }
+        } catch (Exception e) {
+            log.error("创建/修改告警策略定时任务失败", e);
+        }
     }
 
     /**
@@ -141,7 +171,10 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
     @Override
     public void updateWarningStrategy(WarningStrategySaveReqVO updateReqVO) {
         // 校验存在
-        validateWarningStrategyExists(updateReqVO.getId());
+        WarningStrategyDO existsDO = warningStrategyMapper.selectById(updateReqVO.getId());
+        if (Objects.isNull(existsDO)) {
+            throw exception(WARNING_STRATEGY_NOT_EXISTS);
+        }
         // 更新
         WarningStrategyDO updateObj = BeanUtils.toBean(updateReqVO, WarningStrategyDO.class);
         buildScope(updateReqVO.getSelectScope(), updateObj);
@@ -152,6 +185,11 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
                 .eq(WarningStrategyConditionDO::getStrategyId, updateReqVO.getId()));
         // 重新添加条件
         createCondition(updateReqVO.getCondition(), updateReqVO.getId());
+        // 判断与原来的间隔、单位是否改变，如果改变则修改任务
+        if (existsDO.getInterval().equals(updateReqVO.getInterval()) && existsDO.getIntervalUnit().equals(updateReqVO.getIntervalUnit())) {
+            return;
+        }
+        createOrUpdateJob(updateObj, true);
     }
 
     @Override
@@ -160,6 +198,15 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
         validateWarningStrategyExists(id);
         // 删除
         warningStrategyMapper.deleteById(id);
+        // 删除关联管理
+        warningStrategyConditionMapper.delete(new LambdaQueryWrapper<WarningStrategyConditionDO>()
+                .eq(WarningStrategyConditionDO::getStrategyId, id));
+        String jobName = String.format(STRATEGY_JOB_NAME_PREFIX, id);
+        try {
+            quartzManager.deleteJob(jobName);
+        } catch (SchedulerException e) {
+            log.error("删除策略定时任务{}，失败", id, e);
+        }
     }
 
     private void validateWarningStrategyExists(Long id) {
@@ -227,7 +274,9 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
         List<Long> siteStaff = warningStrategyDO.getSiteStaff();
         List<Long> mailStaff = warningStrategyDO.getMailStaff();
         List<Long> allUserId = new ArrayList<>(siteStaff);
-        allUserId.addAll(mailStaff);
+        if(CollUtil.isNotEmpty(mailStaff)){
+            allUserId.addAll(mailStaff);
+        }
 
 
         Map<Long, AdminUserRespDTO> allUserMap = adminUserApi.getUserMap(allUserId);
@@ -262,6 +311,22 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
     @Override
     public void deleteWarningStrategyBatch(List<Long> ids) {
         warningStrategyMapper.deleteByIds(ids);
+        // 删除关联管理
+        warningStrategyConditionMapper.delete(new LambdaQueryWrapper<WarningStrategyConditionDO>()
+                .in(WarningStrategyConditionDO::getStrategyId, ids));
+        if (CollUtil.isEmpty(ids)) {
+            return;
+        }
+        ids.forEach(id -> {
+            String jobName = String.format(STRATEGY_JOB_NAME_PREFIX, id);
+            try {
+                quartzManager.deleteJob(jobName);
+            } catch (SchedulerException e) {
+                log.error("删除策略定时任务{}，失败", id, e);
+            }
+        });
+
+
     }
 
     @Override
@@ -281,6 +346,44 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
                 .set(WarningStrategyDO::getInterval, updateReqVO.getInterval())
                 .set(WarningStrategyDO::getIntervalUnit, updateReqVO.getIntervalUnit())
         );
+        if (CollUtil.isEmpty(updateReqVO.getIds())) {
+            return;
+        }
+
+        // 批量修改任务的间隔
+        try {
+            quartzManager.updateJobBatch(updateReqVO.getInterval(), updateReqVO.getIntervalUnit(), updateReqVO.getIds());
+        } catch (Exception e) {
+            log.error("批量修改策略任务的间隔失败", e);
+        }
+    }
+
+    @Override
+    public boolean existsByStandingbookIds(List<Long> ids) {
+        // 如果传入的 IDs 为空，直接返回 false
+        if (CollUtil.isEmpty(ids)) {
+            return false;
+        }
+
+        // 查询所有 WarningStrategyDO 记录
+        List<WarningStrategyDO> strategies = warningStrategyMapper.selectList();
+
+        // 将传入的 IDs 转为 Set 提高查找效率
+        Set<Long> idSet = new HashSet<>(ids);
+
+        // 遍历每条记录的 deviceScope
+        for (WarningStrategyDO strategy : strategies) {
+            List<Long> deviceScope = strategy.getDeviceScope();
+            if (CollUtil.isEmpty(deviceScope)) {
+                // 检查 deviceScope 是否包含任意一个传入的 ID
+                for (Long id : idSet) {
+                    if (deviceScope.contains(id)) {
+                        return true; // 找到一个匹配的 ID，立即返回 true
+                    }
+                }
+            }
+        }
+        return false; // 没有找到任何匹配的 ID
     }
 
 

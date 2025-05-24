@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.standingbook.type;
 
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 
@@ -56,6 +57,11 @@ public interface StandingbookTypeService {
     List<StandingbookTypeDO> getStandingbookTypeNode();
 
     /**
+     * 获取台账树形结构（带能源）
+     * @return 台账类型列表
+     */
+    List<StandingbookTypeRespVO> getStandingbookTypeNodeWithEnergy();
+    /**
      * 获得台账类型列表Map<id,DO>
      * @return map
      */
@@ -75,4 +81,6 @@ public interface StandingbookTypeService {
      * @return
      */
     Boolean checkRelStandingbook(Long id);
+
+
 }

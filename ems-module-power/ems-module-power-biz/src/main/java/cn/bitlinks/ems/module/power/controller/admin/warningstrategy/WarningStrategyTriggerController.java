@@ -1,7 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.warningstrategy;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
-import cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo.SbDataTriggerVO;
 import cn.bitlinks.ems.module.power.service.warningstrategy.WarningStrategyTriggerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
-import java.util.List;
+import java.time.LocalDateTime;
 
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 
@@ -28,8 +27,8 @@ public class WarningStrategyTriggerController {
 
     @PostMapping("/testTrigger")
     @Operation(summary = "测试告警策略触发")
-    public CommonResult<Boolean> triggerWarning(@Valid @RequestBody List<SbDataTriggerVO> sbDataTriggerVOList) {
-        warningStrategyTriggerService.triggerWarning(sbDataTriggerVOList);
+    public CommonResult<Boolean> triggerWarning(@Valid @RequestBody Long strategyId) {
+        warningStrategyTriggerService.triggerWarning(strategyId, LocalDateTime.now());
         return success(true);
     }
 

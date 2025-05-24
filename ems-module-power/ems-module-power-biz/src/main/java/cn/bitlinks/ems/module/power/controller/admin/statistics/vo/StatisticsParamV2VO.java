@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.controller.admin.statistics.vo;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.validation.constraints.NotNull;
@@ -24,7 +25,6 @@ import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_M
 @Schema(description = "管理后台 - 用能统计入参 VO")
 @Data
 @EqualsAndHashCode(callSuper = false)
-@ToString(callSuper = true)
 public class StatisticsParamV2VO {
 
     @Schema(description = "统计周期,最长不超1年", example = "[1734451200000, 1735315200000]")
@@ -54,5 +54,16 @@ public class StatisticsParamV2VO {
     @NotNull(message = "能源类型不能为空")
     private Integer energyClassify;
 
-
+    @Override
+    public String toString() {
+        return "StatisticsParamV2VO{" +
+                "range=" + Arrays.toString(range) +
+                ", childLabels='" + childLabels + '\'' +
+                ", topLabel='" + topLabel + '\'' +
+                ", energyIds=" + energyIds +
+                ", queryType=" + queryType +
+                ", dateType=" + dateType +
+                ", energyClassify=" + energyClassify +
+                '}';
+    }
 }

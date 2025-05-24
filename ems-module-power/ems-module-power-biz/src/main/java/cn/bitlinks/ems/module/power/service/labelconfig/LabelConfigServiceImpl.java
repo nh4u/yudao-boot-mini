@@ -269,6 +269,13 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         return labelConfigMapper.selectList(wrapper);
     }
 
+    @Override
+    public List<LabelConfigDO> getByIds(List<Long> ids) {
+        LambdaQueryWrapperX<LabelConfigDO> wrapper = new LambdaQueryWrapperX<>();
+        wrapper.in(LabelConfigDO::getId, ids);
+        return labelConfigMapper.selectList(wrapper);
+    }
+
     /**
      * 获取父节点到顶
      *

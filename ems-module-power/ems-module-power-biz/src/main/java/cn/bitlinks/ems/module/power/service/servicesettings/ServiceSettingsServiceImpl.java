@@ -23,8 +23,10 @@ import javax.annotation.Resource;
 import java.util.*;
 import java.util.function.Predicate;
 
+import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_PROD;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.SERVICE_NAME_FORMAT;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.SUCCESS_PROBABILITY;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.ACQUISITION_PROTOCOL;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 

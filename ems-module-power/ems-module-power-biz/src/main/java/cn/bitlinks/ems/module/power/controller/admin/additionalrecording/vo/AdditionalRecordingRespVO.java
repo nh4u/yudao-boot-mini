@@ -29,7 +29,7 @@ public class AdditionalRecordingRespVO {
 
     @Schema(description = "增量/全量")
     @ExcelProperty("增量/全量")
-    private String valueType;
+    private Integer valueType;
 
     @Schema(description = "本次采集时间")
     @ExcelProperty("本次采集时间")
