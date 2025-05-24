@@ -118,6 +118,7 @@ public interface ErrorCodeConstants {
     ErrorCode FORMULA_ID_NOT_EXISTS = new ErrorCode(1_001_801_005, "公式id不存在");
     ErrorCode FORMULA_HAVE_BIND_DELETE = new ErrorCode(1_001_801_006, "公式已使用，不可删除！");
     ErrorCode FORMULA_HAVE_BIND_UPDATE = new ErrorCode(1_001_801_006, "公式已使用，不可更新！");
+    ErrorCode EXPRESSION_EXECUTION_FAILED = new ErrorCode(1_001_801_007, "执行表达式失败！");
     // ========== 其他业务错误 ==========
 
     ErrorCode DATE_RANGE_NOT_EXISTS = new ErrorCode(1_001_601_001, "日期范围不存在");

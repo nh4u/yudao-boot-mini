@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.standingbook;
 
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookAssociationReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookEnergyTypeVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 
@@ -83,4 +84,12 @@ public interface StandingbookService {
      * @param ids 台账ids
      */
     void deleteStandingbookBatch(List<Long> ids);
+
+    /**
+     * 根据能源ids获取台账模板数据
+     * @param standingbookIds
+     * @return
+     */
+    List<StandingbookEnergyTypeVO> getEnergyAndTypeByStandingbookIds(List<Long> standingbookIds);
+
 }

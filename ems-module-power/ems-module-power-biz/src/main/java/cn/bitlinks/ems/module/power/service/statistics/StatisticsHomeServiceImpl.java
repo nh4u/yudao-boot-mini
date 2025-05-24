@@ -1,42 +1,56 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
-import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
-import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
-import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
-import cn.bitlinks.ems.framework.common.util.string.StrUtils;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
-import cn.bitlinks.ems.module.power.enums.ChartSeriesTypeEnum;
-import cn.bitlinks.ems.module.power.enums.CommonConstants;
-import cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants;
-import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
-import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
-import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
-import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
-import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.util.RandomUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.SecureUtil;
-import cn.hutool.json.JSONUtil;
-import com.alibaba.fastjson.JSONObject;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
-import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import javax.annotation.Resource;
+
+import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
+import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
+import cn.bitlinks.ems.framework.common.util.string.StrUtils;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.StatisticsParamHomeV2VO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.ChartSeriesItemVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.ComparisonChartGroupVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.ComparisonChartResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsHomeData;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsHomeResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsOverviewEnergyData;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsOverviewStatisticsData;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
+import cn.bitlinks.ems.module.power.enums.ChartSeriesTypeEnum;
+import cn.bitlinks.ems.module.power.enums.CommonConstants;
+import cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants;
+import cn.bitlinks.ems.module.power.enums.StatisticsQueryType;
+import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
+import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
+import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
+import cn.hutool.json.JSONUtil;
+import lombok.extern.slf4j.Slf4j;
+
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_RANGE_EXCEED_LIMIT;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_TYPE_NOT_EXISTS;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.END_TIME_MUST_AFTER_START_TIME;
 
 /**
  * 统计总览 Service 实现类
@@ -70,7 +84,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
 
     @Override
-    public StatisticsHomeResultVO overview(StatisticsParamV2VO paramVO) {
+    public StatisticsHomeResultVO overview(StatisticsParamHomeV2VO paramVO) {
         StatisticsHomeResultVO statisticsHomeResultVO = new StatisticsHomeResultVO();
 
         // 尝试读取缓存
@@ -96,7 +110,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
         // 查询能源类型与台账
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(
-                new HashSet<>(paramVO.getEnergyIds()), paramVO.getEnergyClassify());
+                null, paramVO.getEnergyClassify());
         List<Long> energyIdList = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
         List<StandingbookDO> standingbookIdsByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIdList);
         List<Long> standingBookIds = standingbookIdsByEnergy.stream().map(StandingbookDO::getId).collect(Collectors.toList());
@@ -111,15 +125,21 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         LocalDateTime startTime = rangeOrigin[0];
         LocalDateTime endTime = rangeOrigin[1];
         DataTypeEnum dataTypeEnum = DataTypeEnum.codeOf(paramVO.getDateType());
+        StatisticsParamV2VO param = new StatisticsParamV2VO();
+        param.setRange(rangeOrigin);
+        param.setQueryType(StatisticsQueryType.COMPREHENSIVE_VIEW.getCode());
+        param.setDateType(paramVO.getDateType());
+        param.setEnergyClassify(paramVO.getEnergyClassify());
+
 
         // 查询数据
-        List<UsageCostData> usageCostDataList = usageCostService.getList(paramVO, startTime, endTime, standingBookIds); // 当前
+        List<UsageCostData> usageCostDataList = usageCostService.getList(param, startTime, endTime, standingBookIds); // 当前
         // 上一周期
-        List<UsageCostData> comparisonDataList = usageCostService.getList(paramVO,
+        List<UsageCostData> comparisonDataList = usageCostService.getList(param,
                 LocalDateTimeUtils.getPreviousRange(rangeOrigin, dataTypeEnum)[0],
                 LocalDateTimeUtils.getPreviousRange(rangeOrigin, dataTypeEnum)[1], standingBookIds);
         // 同期
-        List<UsageCostData> yoyDataList = usageCostService.getList(paramVO,
+        List<UsageCostData> yoyDataList = usageCostService.getList(param,
                 LocalDateTimeUtils.getSamePeriodLastYear(rangeOrigin, dataTypeEnum)[0],
                 LocalDateTimeUtils.getSamePeriodLastYear(rangeOrigin, dataTypeEnum)[1], standingBookIds);
 
@@ -142,17 +162,69 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
     }
 
     @Override
-    public ComparisonChartResultVO costChart(StatisticsParamV2VO paramVO) {
-        return analysisChart(paramVO, UsageCostData::getTotalCost,StatisticsCacheConstants.COMPARISON_HOME_CHART_COST);
+    public ComparisonChartResultVO costChart(StatisticsParamHomeV2VO paramVO) {
+        return analysisChart(paramVO, UsageCostData::getTotalCost, StatisticsCacheConstants.COMPARISON_HOME_CHART_COST);
     }
 
     @Override
-    public ComparisonChartResultVO coalChart(StatisticsParamV2VO paramVO) {
-        return analysisChart(paramVO, UsageCostData::getTotalStandardCoalEquivalent,StatisticsCacheConstants.COMPARISON_HOME_CHART_COAL);
+    public ComparisonChartResultVO coalChart(StatisticsParamHomeV2VO paramVO) {
+        return analysisChart(paramVO, UsageCostData::getTotalStandardCoalEquivalent, StatisticsCacheConstants.COMPARISON_HOME_CHART_COAL);
+    }
+
+    @Override
+    public List<StatisticsOverviewEnergyData> energy(StatisticsParamHomeV2VO paramVO) {
+        // 查询能源类型与台账
+        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(
+                null, paramVO.getEnergyClassify());
+
+        List<Long> energyIdList = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
+
+
+        // 时间参数准备
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+        LocalDateTime startTime = rangeOrigin[0];
+        LocalDateTime endTime = rangeOrigin[1];
+
+
+        List<UsageCostData> usageCostDataList = usageCostService.getListOfHome(startTime, endTime, energyIdList);
+        if (CollectionUtil.isEmpty(usageCostDataList)) {
+            return Collections.emptyList();
+        }
+        return energy(usageCostDataList, energyList);
+    }
+
+    public List<StatisticsOverviewEnergyData> energy(List<UsageCostData> usageCostDataList, List<EnergyConfigurationDO> energyList){
+        //总成本
+        BigDecimal totalCost = usageCostDataList.stream().map(UsageCostData::getTotalCost).reduce(BigDecimal.ZERO, BigDecimal::add);
+        //折标煤
+        BigDecimal totalStandardCoalEquivalent = usageCostDataList.stream().map(UsageCostData::getTotalStandardCoalEquivalent).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        List<StatisticsOverviewEnergyData> result = new ArrayList<>();
+        StatisticsOverviewEnergyData sum = new StatisticsOverviewEnergyData();
+        sum.setName("综合");
+        sum.setMoney(totalCost);
+        sum.setStandardCoal(totalStandardCoalEquivalent);
+        result.add(sum);
+
+        Map<Long, EnergyConfigurationDO> energyIdMap = energyList.stream().collect(Collectors.toMap(EnergyConfigurationDO::getId, Function.identity()));
+        usageCostDataList.forEach(usageCostData -> {
+            EnergyConfigurationDO energyConfigurationDO = energyIdMap.get(usageCostData.getEnergyId());
+            StatisticsOverviewEnergyData energyData = new StatisticsOverviewEnergyData();
+            energyData.setName(energyConfigurationDO.getEnergyName());
+            energyData.setMoney(usageCostData.getTotalCost());
+            energyData.setStandardCoal(usageCostData.getTotalStandardCoalEquivalent());
+            energyData.setConsumption(usageCostData.getTotalCost());
+            energyData.setConsumption(usageCostData.getTotalCost());
+            energyData.setEnergyIcon(energyConfigurationDO.getEnergyIcon());
+            result.add(energyData);
+        });
+
+
+        return result;
     }
 
 
-    public ComparisonChartResultVO analysisChart(StatisticsParamV2VO paramVO, Function<UsageCostData, BigDecimal> valueExtractor,String commonType) {
+    public ComparisonChartResultVO analysisChart(StatisticsParamHomeV2VO paramVO, Function<UsageCostData, BigDecimal> valueExtractor, String commonType) {
         // 1. 校验时间范围合法性
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         LocalDateTime startTime = rangeOrigin[0];
@@ -181,19 +253,25 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
         // 4. 查询能源信息及能源ID
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(
-                new HashSet<>(paramVO.getEnergyIds()), paramVO.getEnergyClassify());
+                null, paramVO.getEnergyClassify());
         List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
 
         // 5. 查询台账信息（按能源）
         List<StandingbookDO> standingbookIdsByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIds);
         List<Long> standingBookIds = standingbookIdsByEnergy.stream().map(StandingbookDO::getId).collect(Collectors.toList());
 
+        StatisticsParamV2VO param = new StatisticsParamV2VO();
+        param.setRange(rangeOrigin);
+        param.setQueryType(StatisticsQueryType.COMPREHENSIVE_VIEW.getCode());
+        param.setDateType(paramVO.getDateType());
+        param.setEnergyClassify(paramVO.getEnergyClassify());
+
         // 6. 查询当前周期的数据
-        List<UsageCostData> usageCostDataList = usageCostService.getList(paramVO, startTime, endTime, standingBookIds);
+        List<UsageCostData> usageCostDataList = usageCostService.getList(param, startTime, endTime, standingBookIds);
 
         // 7. 构建横轴时间（xdata）
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, dataTypeEnum);
-        LocalDateTime lastTime = usageCostService.getLastTime(paramVO, startTime, endTime, standingBookIds);
+        LocalDateTime lastTime = usageCostService.getLastTime(param, startTime, endTime, standingBookIds);
 
         // 8. 构建图表组（柱状图 + 折线图）
         List<ComparisonChartGroupVO> groupList = buildSimpleChart(usageCostDataList, xdata, dataTypeEnum, valueExtractor);
@@ -267,6 +345,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         resultList.add(buildSingleItem(ITEM_AVG, nowStats.getAverage(), previousStats.getAverage(), yoyStats.getAverage(), momStats.getAverage()));
         return resultList;
     }
+
     private StatisticsHomeData buildSingleItem(String itemName, BigDecimal now, BigDecimal previous, BigDecimal yoy, BigDecimal mom) {
         StatisticsHomeData data = new StatisticsHomeData();
         data.setItem(itemName);
@@ -276,6 +355,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         data.setMOM(mom);
         return data;
     }
+
     /**
      * 构建基础统计项（累计、平均、最大、最小）
      */

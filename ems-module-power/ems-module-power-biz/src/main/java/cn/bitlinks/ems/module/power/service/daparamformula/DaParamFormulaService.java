@@ -81,4 +81,6 @@ public interface DaParamFormulaService {
      * @return
      */
     Boolean isDelete(Long id);
+
+    List<DaParamFormulaDO> getByIds(List<Long> ids);
 }
