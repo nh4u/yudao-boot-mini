@@ -1,10 +1,7 @@
 package cn.bitlinks.ems.module.power.controller.admin.statistics;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsHomeResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsOverviewResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.service.statistics.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,4 +32,15 @@ public class StatisticsHomeController {
         return success(statisticsHomeService.overview(paramVO));
     }
 
+    @PostMapping("/costChart")
+    @Operation(summary = "折价分析图")
+    public CommonResult<ComparisonChartResultVO> costChart(@Valid @RequestBody StatisticsParamV2VO paramVO) {
+        return success(statisticsHomeService.costChart(paramVO));
+    }
+
+    @PostMapping("/coalChart")
+    @Operation(summary = "折标煤分析图")
+    public CommonResult<ComparisonChartResultVO> coalChart(@Valid @RequestBody StatisticsParamV2VO paramVO) {
+        return success(statisticsHomeService.coalChart(paramVO));
+    }
 }

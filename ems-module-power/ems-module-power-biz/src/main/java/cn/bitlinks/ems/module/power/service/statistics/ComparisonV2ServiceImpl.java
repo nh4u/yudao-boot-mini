@@ -70,15 +70,16 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
     @Override
     public StatisticsResultV2VO<ComparisonItemVO> discountAnalysisTable(StatisticsParamV2VO paramVO) {
-        return analysisTable(paramVO, UsageCostData::getTotalCost);
+        return analysisTable(paramVO, UsageCostData::getTotalCost,StatisticsCacheConstants.COMPARISON_DISCOUNT_TABLE_COST);
     }
 
     @Override
     public StatisticsResultV2VO<ComparisonItemVO> foldCoalAnalysisTable(StatisticsParamV2VO paramVO) {
-        return analysisTable(paramVO, UsageCostData::getTotalCost);
+        return analysisTable(paramVO, UsageCostData::getTotalStandardCoalEquivalent,StatisticsCacheConstants.COMPARISON_DISCOUNT_TABLE_COAL);
     }
 
-    public StatisticsResultV2VO<ComparisonItemVO> analysisTable(StatisticsParamV2VO paramVO, Function<UsageCostData, BigDecimal> valueExtractor) {
+    public StatisticsResultV2VO<ComparisonItemVO> analysisTable(StatisticsParamV2VO paramVO,
+                                                                Function<UsageCostData, BigDecimal> valueExtractor,String commonType) {
         // 校验时间范围合法性
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         LocalDateTime startTime = rangeOrigin[0];
@@ -97,7 +98,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             throw exception(DATE_TYPE_NOT_EXISTS);
         }
 
-        String cacheKey = StatisticsCacheConstants.COMPARISON_DISCOUNT_TABLE + SecureUtil.md5(paramVO.toString());
+        String cacheKey = commonType + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if(StrUtil.isNotEmpty(cacheRes)){
@@ -452,16 +453,17 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
     @Override
     public ComparisonChartResultVO discountAnalysisChart(StatisticsParamV2VO paramVO) {
-        return analysisChart(paramVO, UsageCostData::getTotalCost);
+        return analysisChart(paramVO, UsageCostData::getTotalCost,StatisticsCacheConstants.COMPARISON_DISCOUNT_CHART_COST);
     }
 
     @Override
     public ComparisonChartResultVO foldCoalAnalysisChart(StatisticsParamV2VO paramVO) {
-        return analysisChart(paramVO, UsageCostData::getTotalStandardCoalEquivalent);
+        return analysisChart(paramVO, UsageCostData::getTotalStandardCoalEquivalent,StatisticsCacheConstants.COMPARISON_DISCOUNT_CHART_COAL);
     }
 
 
-    public ComparisonChartResultVO analysisChart(StatisticsParamV2VO paramVO,Function<UsageCostData, BigDecimal> valueExtractor) {
+    public ComparisonChartResultVO analysisChart(StatisticsParamV2VO paramVO,
+                                                 Function<UsageCostData, BigDecimal> valueExtractor,String commonType) {
         // 1. 校验时间范围合法性
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         LocalDateTime startTime = rangeOrigin[0];
@@ -480,7 +482,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         }
 
         // 3. 尝试读取缓存（避免重复计算）
-        String cacheKey = StatisticsCacheConstants.COMPARISON_DISCOUNT_CHART + SecureUtil.md5(paramVO.toString());
+        String cacheKey =  commonType + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (StrUtil.isNotEmpty(cacheRes)) {
