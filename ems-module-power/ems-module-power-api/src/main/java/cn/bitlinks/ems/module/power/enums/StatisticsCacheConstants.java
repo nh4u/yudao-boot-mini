@@ -6,9 +6,7 @@ package cn.bitlinks.ems.module.power.enums;
 public class StatisticsCacheConstants {
     private StatisticsCacheConstants() {}
 
-    // 用能分析-环比分析-折旧分析-表格
     public static final String COMPARISON_DISCOUNT_TABLE = "statistics:comparison:discount:table:";
-    // 用能分析-环比分析-折旧分析-图标
     public static final String COMPARISON_DISCOUNT_CHART = "statistics:comparison:discount:chart:";
     public static final String USAGE_COST_TABLE = "statistics:usage:cost:table:";
     public static final String USAGE_COST_CHART = "statistics:usage:cost:chart:";
@@ -22,8 +20,11 @@ public class StatisticsCacheConstants {
     public static final String USAGE_COST_STRUCTURE_TABLE = "statistics:usage:costStructure:table:";
     public static final String USAGE_COST_STRUCTURE_CHART = "statistics:usage:costStructure:chart:";
 
-    // 用能分析-同比分析-折旧分析-表格
     public static final String COMPARISON_YOY_TABLE = "statistics:yoy:discount:table:";
-    // 用能分析-同比分析-折旧分析-图标
+
     public static final String COMPARISON_YOY_CHART = "statistics:yoy:discount:chart:";
+
+    public static final String COMPARISON_BASE_TABLE = "statistics:base:discount:table:";
+
+    public static final String COMPARISON_BASE_CHART = "statistics:base:discount:chart:";
 }
