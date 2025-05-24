@@ -48,10 +48,10 @@ public class StatisticsHomeResultVO {
     private List<StatisticsOverviewEnergyData> statisticsOverviewEnergyDataList;
 
     @Schema(description = "折标煤用量统计", example = "折标煤用量统计", hidden = true)
-    private StatisticsHomeData standardCoalStatistics;
+    private List<StatisticsHomeData> standardCoalStatistics;
 
     @Schema(description = "折价统计", example = "折价统计", hidden = true)
-    private StatisticsHomeData moneyStatistics;
+    private List<StatisticsHomeData> moneyStatistics;
 
     @Schema(description = "数据更新时间", example = "数据更新时间")
     private LocalDateTime dataUpdateTime;

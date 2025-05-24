@@ -5,22 +5,27 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.math.BigDecimal;
+
 @Schema(description = "统计总览 折标煤用量统计/折价统计底层VO")
 @Data
 @EqualsAndHashCode(callSuper = false)
 @ToString(callSuper = true)
 public class StatisticsHomeData {
 
-    @Schema(description = "今日/本周/本季/本年")
-    private StatisticsOverviewStatisticsData now;
+    @Schema(description = "指标项名称，如：累计")
+    private String item;
 
-    @Schema(description = "昨日/上周/上季/去年")
-    private StatisticsOverviewStatisticsData previous;
+    @Schema(description = "当前值")
+    private BigDecimal now;
 
-    @Schema(description = "同比")
-    private StatisticsOverviewStatisticsData YOY;
+    @Schema(description = "上期值")
+    private BigDecimal previous;
 
-    @Schema(description = "环比")
-    private StatisticsOverviewStatisticsData MOM;
+    @Schema(description = "同比（%）")
+    private BigDecimal YOY;
+
+    @Schema(description = "环比（%）")
+    private BigDecimal MOM;
 
 }
