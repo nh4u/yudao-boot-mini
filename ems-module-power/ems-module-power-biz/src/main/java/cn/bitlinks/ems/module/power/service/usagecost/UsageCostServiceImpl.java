@@ -44,8 +44,15 @@ public class UsageCostServiceImpl implements UsageCostService {
     }
 
     @Override
+    @TenantIgnore
     public void saveList(List<UsageCostDO> usageCostDOS) {
         log.info("saveList: {}", JSONUtil.toJsonStr(usageCostDOS));
+    }
+
+    @Override
+    @TenantIgnore
+    public List<UsageCostData> getListOfHome(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIdList) {
+        return usageCostMapper.getListOfHome(startDate, endDate, energyIdList);
     }
 
 }
