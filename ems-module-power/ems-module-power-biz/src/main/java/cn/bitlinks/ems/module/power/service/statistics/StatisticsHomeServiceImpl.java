@@ -63,6 +63,12 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
     @Resource
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
 
+    public static final String ITEM_ACCUMULATE = "累计";
+    public static final String ITEM_MAX = "最高(Max)";
+    public static final String ITEM_MIN = "最低(Min)";
+    public static final String ITEM_AVG = "平均(Avg)";
+
+
     @Override
     public StatisticsHomeResultVO overview(StatisticsParamV2VO paramVO) {
         StatisticsHomeResultVO statisticsHomeResultVO = new StatisticsHomeResultVO();
@@ -80,6 +86,13 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         statisticsHomeResultVO.setMeasurementInstrumentNum(standingbookService.count(CommonConstants.MEASUREMENT_INSTRUMENT_ID));
         statisticsHomeResultVO.setKeyEquipmentNum(standingbookService.count(CommonConstants.KEY_EQUIPMENT_ID));
         statisticsHomeResultVO.setOtherEquipmentNum(standingbookService.count(CommonConstants.OTHER_EQUIPMENT_ID));
+
+        statisticsHomeResultVO.setOutputValueEnergyConsumption(BigDecimal.ZERO);
+        statisticsHomeResultVO.setProductEnergyConsumption8(BigDecimal.ZERO);
+        statisticsHomeResultVO.setProductEnergyConsumption12(BigDecimal.ZERO);
+        statisticsHomeResultVO.setOutsourceEnergyUtilizationRate(BigDecimal.ZERO);
+        statisticsHomeResultVO.setParkEnergyUtilizationRate(BigDecimal.ZERO);
+        statisticsHomeResultVO.setEnergyConversionRate(BigDecimal.ZERO);
 
         // 查询能源类型与台账
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(
@@ -111,10 +124,10 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
                 LocalDateTimeUtils.getSamePeriodLastYear(rangeOrigin, dataTypeEnum)[1], standingBookIds);
 
         // 折标煤统计
-        StatisticsHomeData standardCoalStatistics = buildStatisticsHomeData(
+        List<StatisticsHomeData> standardCoalStatistics = buildStatisticsHomeData(
                 usageCostDataList, comparisonDataList, yoyDataList, UsageCostData::getTotalStandardCoalEquivalent);
         //折价统计
-        StatisticsHomeData moneyStatistics = buildStatisticsHomeData(
+        List<StatisticsHomeData> moneyStatistics = buildStatisticsHomeData(
                 usageCostDataList, comparisonDataList, yoyDataList, UsageCostData::getTotalCost);
 
         statisticsHomeResultVO.setStandardCoalStatistics(standardCoalStatistics);
@@ -234,22 +247,35 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
     }
 
     /**
-     * 构建统计数据（当前、同比、环比）
+     * 构建统计数据（当前、同比、环比）- 重构版，返回 List<StatisticsHomeData>
      */
-    private StatisticsHomeData buildStatisticsHomeData(List<UsageCostData> nowList,
-                                                       List<UsageCostData> previousList,
-                                                       List<UsageCostData> yoyList,
-                                                       Function<UsageCostData, BigDecimal> extractor) {
-        StatisticsHomeData result = new StatisticsHomeData();
+    private List<StatisticsHomeData> buildStatisticsHomeData(List<UsageCostData> nowList,
+                                                             List<UsageCostData> previousList,
+                                                             List<UsageCostData> yoyList,
+                                                             Function<UsageCostData, BigDecimal> extractor) {
+        List<StatisticsHomeData> resultList = new ArrayList<>();
 
-        result.setNow(buildBasicStats(nowList, extractor));
-        result.setPrevious(buildBasicStats(previousList, extractor));
-        result.setMOM(buildRatioStats(nowList, previousList, extractor)); // 环比
-        result.setYOY(buildRatioStats(nowList, yoyList, extractor));       // 同比
+        // 计算基础统计值
+        StatisticsOverviewStatisticsData nowStats = buildBasicStats(nowList, extractor);
+        StatisticsOverviewStatisticsData previousStats = buildBasicStats(previousList, extractor);
+        StatisticsOverviewStatisticsData yoyStats = buildRatioStats(nowList, yoyList, extractor);
+        StatisticsOverviewStatisticsData momStats = buildRatioStats(nowList, previousList, extractor);
 
-        return result;
+        resultList.add(buildSingleItem(ITEM_ACCUMULATE, nowStats.getAccumulate(), previousStats.getAccumulate(), yoyStats.getAccumulate(), momStats.getAccumulate()));
+        resultList.add(buildSingleItem(ITEM_MAX, nowStats.getMax(), previousStats.getMax(), yoyStats.getMax(), momStats.getMax()));
+        resultList.add(buildSingleItem(ITEM_MIN, nowStats.getMin(), previousStats.getMin(), yoyStats.getMin(), momStats.getMin()));
+        resultList.add(buildSingleItem(ITEM_AVG, nowStats.getAverage(), previousStats.getAverage(), yoyStats.getAverage(), momStats.getAverage()));
+        return resultList;
     }
-
+    private StatisticsHomeData buildSingleItem(String itemName, BigDecimal now, BigDecimal previous, BigDecimal yoy, BigDecimal mom) {
+        StatisticsHomeData data = new StatisticsHomeData();
+        data.setItem(itemName);
+        data.setNow(now);
+        data.setPrevious(previous);
+        data.setYOY(yoy);
+        data.setMOM(mom);
+        return data;
+    }
     /**
      * 构建基础统计项（累计、平均、最大、最小）
      */
