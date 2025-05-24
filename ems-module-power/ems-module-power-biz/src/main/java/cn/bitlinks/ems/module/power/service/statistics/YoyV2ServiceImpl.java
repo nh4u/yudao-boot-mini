@@ -440,7 +440,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
      */
     private BigDecimal calculateYearOnYearRatio(BigDecimal now, BigDecimal previous) {
         if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0 || now == null) {
-            return null;
+            return BigDecimal.ZERO;
         }
         return now.subtract(previous)
                 .divide(previous, 4, RoundingMode.HALF_UP)
