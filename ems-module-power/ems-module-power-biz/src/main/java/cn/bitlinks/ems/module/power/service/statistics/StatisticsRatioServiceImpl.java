@@ -1831,25 +1831,25 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
         // TODO: 2024/12/12 调用starrocks数据库获取对应 标签、能源、日期下的数据。  可能没标签或者没能源类型（待完善）折标煤、折价、利用率
         BigDecimal now = BigDecimal.ZERO;
         BigDecimal previous = BigDecimal.ZERO;
-        switch (filed) {
-            case 1:
-                // 折标煤
-                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                break;
-            case 2:
-                // 折价
-                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                break;
-            case 3:
-                // 利用率
-                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                break;
-            default:
-
-        }
+//        switch (filed) {
+//            case 1:
+//                // 折标煤
+//                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                break;
+//            case 2:
+//                // 折价
+//                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                break;
+//            case 3:
+//                // 利用率
+//                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                break;
+//            default:
+//
+//        }
         return StatisticsRatioData.builder()
                 .now(now)
                 .previous(previous)
@@ -1862,25 +1862,25 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
         // TODO: 2024/12/12 调用starrocks数据库获取对应 标签、能源、日期下的数据。  可能没标签或者没能源类型（待完善）折标煤、折价、利用率
         BigDecimal now = BigDecimal.ZERO;
         BigDecimal previous = BigDecimal.ZERO;
-        switch (filed) {
-            case 1:
-                // 折标煤
-                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                break;
-            case 2:
-                // 折价
-                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                break;
-            case 3:
-                // 利用率
-                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                break;
-            default:
-
-        }
+//        switch (filed) {
+//            case 1:
+//                // 折标煤
+//                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                break;
+//            case 2:
+//                // 折价
+//                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                break;
+//            case 3:
+//                // 利用率
+//                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                break;
+//            default:
+//
+//        }
         return StatisticsRatioData.builder()
                 .now(now)
                 .previous(previous)
@@ -1896,25 +1896,25 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
         BigDecimal now = BigDecimal.ZERO;
         BigDecimal previous = BigDecimal.ZERO;
-        switch (filed) {
-            case 1:
-                // 折标煤
-                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                break;
-            case 2:
-                // 折价
-                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                break;
-            case 3:
-                // 利用率
-                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                break;
-            default:
-
-        }
+//        switch (filed) {
+//            case 1:
+//                // 折标煤
+//                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                break;
+//            case 2:
+//                // 折价
+//                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                break;
+//            case 3:
+//                // 利用率
+//                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                break;
+//            default:
+//
+//        }
         return StatisticsRatioData.builder()
                 .now(now)
                 .previous(previous)
@@ -1929,25 +1929,25 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
 
         BigDecimal now = BigDecimal.ZERO;
         BigDecimal previous = BigDecimal.ZERO;
-        switch (filed) {
-            case 1:
-                // 折标煤
-                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                break;
-            case 2:
-                // 折价
-                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                break;
-            case 3:
-                // 利用率
-                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
-                break;
-            default:
-
-        }
+//        switch (filed) {
+//            case 1:
+//                // 折标煤
+//                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                break;
+//            case 2:
+//                // 折价
+//                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                break;
+//            case 3:
+//                // 利用率
+//                now = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                previous = RandomUtil.randomBigDecimal(BigDecimal.valueOf(10L)).setScale(2, RoundingMode.HALF_UP);
+//                break;
+//            default:
+//
+//        }
 
         return StatisticsRatioData.builder()
                 .now(now)
@@ -1968,7 +1968,7 @@ public class StatisticsRatioServiceImpl implements StatisticsRatioService {
     private BigDecimal getMOMOrYOY(BigDecimal now, BigDecimal previous) {
 
         if (now == null || previous == null) {
-            return null;
+            return BigDecimal.ZERO;
         }
         BigDecimal MOM = BigDecimal.ZERO;
         if (previous.compareTo(BigDecimal.ZERO) != 0) {

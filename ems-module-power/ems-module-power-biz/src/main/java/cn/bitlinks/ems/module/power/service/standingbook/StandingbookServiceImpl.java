@@ -215,20 +215,17 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<StandingbookAttributeDO> children = new ArrayList<>();
         // 查询属性分类部分的关联属性
         List<StandingbookAttributeDO> standingbookAttributeByTypeId = standingbookAttributeService.getStandingbookAttributeByTypeId(typeId);
-        createReqVO.forEach((key, value) -> {
-            //根据code查询分类属性，找不到的话就直接抛出异常
-            Optional<StandingbookAttributeDO> rawAttrOptional = standingbookAttributeByTypeId.stream().filter(standingbookAttributeDO -> key.equals(standingbookAttributeDO.getCode())).findFirst();
-            if (!rawAttrOptional.isPresent()) {
-                throw exception(ErrorCodeConstants.STANDINGBOOK_ATTRIBUTE_NOT_EXISTS);
-            }
-            StandingbookAttributeDO attribute = BeanUtils.toBean(rawAttrOptional.get(), StandingbookAttributeDO.class);
-            attribute.setValue(value);
+        standingbookAttributeByTypeId.forEach(standingbookAttributeDO -> {
+            StandingbookAttributeDO attribute = BeanUtils.toBean(standingbookAttributeDO, StandingbookAttributeDO.class);
+            //根据code查询分类属性，
+            attribute.setValue(createReqVO.get(attribute.getCode()));
             attribute.setStandingbookId(standingbook.getId());
             attribute.setId(null);
             attribute.setCreateTime(null);
             attribute.setUpdateTime(null);
             children.add(attribute);
         });
+
         // 新增台账属性
         standingbookAttributeMapper.insertBatch(children);
 

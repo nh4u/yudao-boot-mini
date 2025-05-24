@@ -5,6 +5,7 @@ import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.CollectRawDataApi;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.CollectRawDataDTO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
@@ -146,7 +147,7 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
         }
         // 2. 查询涉及到的所有的设备参数的实时数据
         List<CollectRawDataDTO> collectRawDataDTOList =
-                collectRawDataApi.getCollectRawDataListByStandingBookIds(deviceScopeIds);
+                collectRawDataApi.getCollectRawDataListByStandingBookIds(deviceScopeIds).getData();
 
         if (CollUtil.isEmpty(collectRawDataDTOList)) {
             return;
@@ -171,7 +172,7 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
         Map<Long, StandingbookDO> standingbookDOMap = standingbookDOList.stream()
                 .collect(Collectors.toMap(StandingbookDO::getId, item -> item));
         // 2.2 查询 台账分类id-> 台账分类
-        List<StandingbookTypeDO> standingbookTypeList = standingbookTypeService.getStandingbookTypeList(null);
+        List<StandingbookTypeDO> standingbookTypeList = standingbookTypeService.getStandingbookTypeList(new StandingbookTypeListReqVO());
         Map<Long, StandingbookTypeDO> standingbookTypeDOMap = standingbookTypeList.stream()
                 .collect(Collectors.toMap(StandingbookTypeDO::getId, item -> item));
         // 3. 查询策略中需要满足的所有条件
