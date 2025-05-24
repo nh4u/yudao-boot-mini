@@ -8,13 +8,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_LOCAL;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.STRATEGY_JOB_NAME_PREFIX;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.WARNING_STRATEGY_JOB_DATA_MAP_KEY_STRATEGY_ID;
 
-/**
- *
- */
+
 @Component
 public class QuartzManager {
 
@@ -132,19 +134,25 @@ public class QuartzManager {
      *
      * @param interval     间隔
      * @param intervalUnit 间隔单位
-     * @param jobNameList  任务名称列表
+     * @param strategyIds  策略id列表
      */
-    public void updateJobBatch(Integer interval, Integer intervalUnit, List<String> jobNameList) throws SchedulerException {
-        if (CollUtil.isEmpty(jobNameList)) {
-            // 遍历任务名称列表
-            for (String jobName : jobNameList) {
-                JobBean jobBean = new JobBean();
-                jobBean.setJobName(jobName);
-                jobBean.setFrequencyUnit(intervalUnit);
-                jobBean.setFrequency(interval);
-                updateJob(jobBean);
-            }
+    public void updateJobBatch(Integer interval, Integer intervalUnit, List<Long> strategyIds) throws SchedulerException {
+
+        if (CollUtil.isEmpty(strategyIds)) {
+            return;
         }
+        for (Long strategyId : strategyIds) {
+            String jobName = String.format(STRATEGY_JOB_NAME_PREFIX, strategyId);
+            JobBean jobBean = new JobBean();
+            jobBean.setJobName(jobName);
+            jobBean.setFrequencyUnit(intervalUnit);
+            jobBean.setFrequency(interval);
+            Map<String, Object> detailDTOMap = new HashMap<>();
+            detailDTOMap.put(WARNING_STRATEGY_JOB_DATA_MAP_KEY_STRATEGY_ID, strategyId);
+            jobBean.setJobDataMap(new JobDataMap(detailDTOMap));
+            updateJob(jobBean);
+        }
+
     }
 
     public void init() throws SchedulerException, InterruptedException {

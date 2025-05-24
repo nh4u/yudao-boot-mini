@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.warningstrategy;
 
 import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
+import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.CollectRawDataApi;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.CollectRawDataDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
@@ -87,6 +88,7 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
 
     @Override
     @Transactional
+    @TenantIgnore
     public void triggerWarning(Long strategyId, LocalDateTime triggerTime) {
         // 查询该策略
         WarningStrategyDO warningStrategyDO = warningStrategyMapper.selectById(strategyId);

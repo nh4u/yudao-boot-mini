@@ -419,6 +419,38 @@ public class LocalDateTimeUtils {
     }
 
     /**
+     * 获取上一年同期的时间范围（用于同比分析）
+     *
+     * @param currentRange 当前时间范围 [start, end]
+     * @param type         时间类型（DAY、MONTH、YEAR、HOUR）
+     * @return 上一年同期的时间范围 [lastStart, lastEnd]
+     */
+    public static LocalDateTime[] getSamePeriodLastYear(LocalDateTime[] currentRange, DataTypeEnum type) {
+        LocalDateTime start = currentRange[0];
+        LocalDateTime end = currentRange[1];
+
+        LocalDateTime lastStart;
+        LocalDateTime lastEnd;
+
+        switch (type) {
+            case YEAR:
+            case MONTH:
+            case DAY:
+                lastStart = start.minusYears(1);
+                lastEnd = end.minusYears(1);
+                break;
+            case HOUR:
+                // 如果是小时粒度，也可以减整整一年
+                lastStart = start.minusYears(1);
+                lastEnd = end.minusYears(1);
+                break;
+            default:
+                throw new IllegalArgumentException("不支持的时间类型: " + type);
+        }
+
+        return new LocalDateTime[]{lastStart, lastEnd};
+    }
+    /**
      * 根据当前时间字符串和类型推算上一个周期的时间字符串（格式与原格式一致）
      */
     public static String getPreviousTime(String current, DataTypeEnum type) {
@@ -447,6 +479,42 @@ public class LocalDateTimeUtils {
                     DateTimeFormatter shortFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH");
                     LocalDateTime dt = LocalDateTime.parse(current, shortFormatter);
                     return dt.minusHours(1).format(shortFormatter);
+                }
+
+            default:
+                throw new IllegalArgumentException("不支持的时间类型：" + type);
+        }
+    }
+    /**
+     * 根据当前时间字符串和类型推算“去年同期”的时间字符串（格式与原格式一致）
+     */
+    public static String getYearOnYearTime(String current, DataTypeEnum type) {
+        switch (type) {
+
+            case YEAR:
+                return String.valueOf(Integer.parseInt(current) - 1);
+
+            case MONTH:
+                // 格式：yyyy-MM
+                YearMonth ym = YearMonth.parse(current, DateTimeFormatter.ofPattern("yyyy-MM"));
+                return ym.minusYears(1).format(DateTimeFormatter.ofPattern("yyyy-MM"));
+
+            case DAY:
+                // 格式：yyyy-MM-dd
+                LocalDate date = LocalDate.parse(current, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                return date.minusYears(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+            case HOUR:
+                try {
+                    // 优先尝试更详细格式
+                    DateTimeFormatter fullFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                    LocalDateTime dt = LocalDateTime.parse(current, fullFormatter);
+                    return dt.minusYears(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH"));
+                } catch (DateTimeParseException e) {
+                    // 退而使用短格式
+                    DateTimeFormatter shortFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH");
+                    LocalDateTime dt = LocalDateTime.parse(current, shortFormatter);
+                    return dt.minusYears(1).format(shortFormatter);
                 }
 
             default:

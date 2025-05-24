@@ -597,4 +597,15 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         wrapper.eq(EnergyConfigurationDO::getEnergyClassify, energyClassify);
         return energyConfigurationMapper.selectList(wrapper);
     }
+
+    @Override
+    public List<EnergyConfigurationDO> getByEnergyClassify(Integer energyClassify) {
+        if (!Objects.isNull(energyClassify)){
+            return energyConfigurationMapper.selectList(new LambdaQueryWrapper<EnergyConfigurationDO>()
+                    .eq(EnergyConfigurationDO::getEnergyClassify, energyClassify));
+        }
+        else {
+            return Collections.emptyList();
+        }
+    }
 }

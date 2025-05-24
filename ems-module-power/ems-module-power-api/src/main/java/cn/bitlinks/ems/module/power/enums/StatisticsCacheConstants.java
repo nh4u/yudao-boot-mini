@@ -21,4 +21,9 @@ public class StatisticsCacheConstants {
 
     public static final String USAGE_COST_STRUCTURE_TABLE = "statistics:usage:costStructure:table:";
     public static final String USAGE_COST_STRUCTURE_CHART = "statistics:usage:costStructure:chart:";
+
+    // 用能分析-同比分析-折旧分析-表格
+    public static final String COMPARISON_YOY_TABLE = "statistics:yoy:discount:table:";
+    // 用能分析-同比分析-折旧分析-图标
+    public static final String COMPARISON_YOY_CHART = "statistics:yoy:discount:chart:";
 }

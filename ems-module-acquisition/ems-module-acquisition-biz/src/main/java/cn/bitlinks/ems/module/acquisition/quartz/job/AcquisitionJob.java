@@ -46,8 +46,6 @@ public class AcquisitionJob implements Job {
     @Value("${spring.profiles.active}")
     private String env;
     @Resource
-    private CollectRawDataService collectRawDataService;
-    @Resource
     private RedisTemplate<String, String> redisTemplate;
 
     /**
@@ -66,7 +64,7 @@ public class AcquisitionJob implements Job {
      * mock数据增量值 下限
      */
     final BigDecimal MOCK_INCREMENT_MIN = new BigDecimal("0");
-
+    final int DECIMAL_SCALE = 10;
     public void execute(JobExecutionContext context) {
 
         String jobName = context.getJobDetail().getKey().getName();
@@ -203,7 +201,7 @@ public class AcquisitionJob implements Job {
         // 生成 [0, 1) 的随机值，并缩放到 [min, max]
         BigDecimal range = max.subtract(min);
         BigDecimal randomValue =
-                min.add(range.multiply(BigDecimal.valueOf(random.nextDouble()))).setScale(6,
+                min.add(range.multiply(BigDecimal.valueOf(random.nextDouble()))).setScale(DECIMAL_SCALE,
                         RoundingMode.UP);
         return randomValue.toString();
     }
