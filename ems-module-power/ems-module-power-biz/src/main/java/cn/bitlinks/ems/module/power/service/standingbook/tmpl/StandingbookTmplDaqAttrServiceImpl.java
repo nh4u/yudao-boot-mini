@@ -117,10 +117,29 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
                 .collect(Collectors.toList());
         // 进行级联创建操作
         subtreeIds.removeIf(typeId::equals);
-        createAttrCascade(createList, subtreeIds, energyFlag);
+
+        createAttrCascade(createList, subtreeIds, energyFlag, isUpdateAndDeleteForbidden);
         // 进行级联修改操作
         updateAttrCascade(updateList, rawAttrList, isUpdateAndDeleteForbidden);
 
+    }
+    @Transactional
+    public void createAttrCascade(List<StandingbookTmplDaqAttrDO> createList, List<Long> subtreeIds,
+                                  Boolean energyFlag, Boolean isUpdateAndDeleteForbidden) {
+        //如果父级选择新能源，考虑要修改子级的能源参数呢，有台账的话不可以新增
+        if(energyFlag){
+            // 判断子级是否有台账，
+            if (isUpdateAndDeleteForbidden) {
+                throw exception(STANDINGBOOK_EXIST_NOT_SUPPORT_CREATE);
+            }
+            // 可以全部新增替换。
+            // 删除所有级联typeId的能源参数
+            standingbookTmplDaqAttrMapper.delete(new LambdaQueryWrapper<StandingbookTmplDaqAttrDO>()
+                    .in(StandingbookTmplDaqAttrDO::getTypeId, subtreeIds)
+                    .eq(StandingbookTmplDaqAttrDO::getEnergyFlag,true)
+            );
+        }
+        createAttrCascade(createList, subtreeIds, energyFlag);
     }
     /**
      * 判断是否更改了其他属性
@@ -247,8 +266,8 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
         // 1. 新增当前分类的属性
         standingbookTmplDaqAttrMapper.insertBatch(createList);
 
-        // 2. 获取所有typeId tree，查询所有的子级节点的typeId
 
+        // 2. 获取所有typeId tree，查询所有的子级节点的typeId
         if (CollUtil.isEmpty(subtreeIds)) {
             return;
         }
@@ -290,6 +309,7 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
         });
         // 4.执行新增操作
         standingbookTmplDaqAttrMapper.insertBatch(cascadeAttrList);
+
     }
 
 
