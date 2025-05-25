@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
+import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
@@ -14,7 +15,6 @@ import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurat
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -36,7 +36,8 @@ import java.util.stream.Stream;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
-import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.*;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_STRUCTURE_CHART;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_STRUCTURE_TABLE;
 
 /**
  * @Title: ydme-doublecarbon
@@ -68,21 +69,34 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
     @Override
     public StatisticsResultV2VO<StructureInfo> moneyStructureAnalysisTable(StatisticsParamV2VO paramVO) {
 
+        // 1.查询对应缓存是否已经存在，如果存在这直接返回（如果查最新的，最新的在实时更新，所以缓存的是不对的）
+        String cacheKey = USAGE_COST_STRUCTURE_TABLE + SecureUtil.md5(paramVO.toString());
+        byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
+        String cacheRes = StrUtils.decompressGzip(compressed);
+        if (StrUtil.isNotEmpty(cacheRes)) {
+            log.info("缓存结果");
+            return JSONUtil.toBean(cacheRes,StatisticsResultV2VO.class);
+        }
+
+        // 获取结果
+        StatisticsResultV2VO<StructureInfo> resultVO = dealMoneyStructureAnalysisTable(paramVO);
+
+        // 结果保存在缓存中
+        String jsonStr = JSONUtil.toJsonStr(resultVO);
+        byte[] bytes = StrUtils.compressGzip(jsonStr);
+        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+
+        // 返回查询结果。
+        return resultVO;
+    }
+
+    private StatisticsResultV2VO<StructureInfo> dealMoneyStructureAnalysisTable(StatisticsParamV2VO paramVO) {
         // 1.校验时间范围
         LocalDateTime[] rangeOrigin = validateRange(paramVO.getRange());
         // 2.1.校验查看类型
         Integer queryType = validateQueryType(paramVO.getQueryType());
         // 2.2.校验时间类型
         DataTypeEnum dataTypeEnum = validateDateType(paramVO.getDateType());
-
-        // 3.查询对应缓存是否已经存在，如果存在这直接返回（如果查最新的，最新的在实时更新，所以缓存的是不对的）
-        String cacheKey = USAGE_COST_STRUCTURE_TABLE + SecureUtil.md5(paramVO.toString());
-        byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
-        String cacheRes = StrUtils.decompressGzip(compressed);
-        if (StrUtil.isNotEmpty(cacheRes)) {
-            log.info("缓存结果");
-            return JSONUtil.toBean(cacheRes, StatisticsResultV2VO.class);
-        }
 
         // 4.如果没有则去数据库查询
         StatisticsResultV2VO<StructureInfo> resultVO = new StatisticsResultV2VO<>();
@@ -198,12 +212,6 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
                 standingBookIds);
         resultVO.setDataTime(lastTime);
 
-        // 结果保存在缓存中
-        String jsonStr = JSONUtil.toJsonStr(resultVO);
-        byte[] bytes = StrUtils.compressGzip(jsonStr);
-        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
-
-        // 返回查询结果。
         return resultVO;
     }
 
@@ -221,7 +229,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
 
         paramVO.setQueryType(0);
         // 复用表方法的核心逻辑
-        StatisticsResultV2VO<StructureInfo> tableResult = moneyStructureAnalysisTable(paramVO);
+        StatisticsResultV2VO<StructureInfo> tableResult = dealMoneyStructureAnalysisTable(paramVO);
 
         // 获取原始数据列表
         List<StructureInfo> dataList = tableResult.getStatisticsInfoList();
@@ -647,12 +655,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
      * @return
      */
     private PieChartVO buildLabelPie(List<StructureInfo> dataList, StatisticsParamV2VO paramVO) {
-        // 过滤出选中的标签
-        List<String> childLabelValues = StrSplitter.split(paramVO.getChildLabels(), "#", 0, true, true);
-        Set<String> selectedLabelIds = new HashSet<>(childLabelValues);
-
         Map<String, BigDecimal> labelMap = dataList.stream()
-                .filter(vo -> selectedLabelIds.contains(vo.getLabelId().toString()))
                 .collect(Collectors.groupingBy(
                         this::getFullLabelPath,
                         Collectors.reducing(BigDecimal.ZERO, StructureInfo::getSumNum, BigDecimal::add)
@@ -669,23 +672,41 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
      * @return
      */
     private List<PieChartVO> buildEnergyDimensionPies(List<StructureInfo> dataList, StatisticsParamV2VO paramVO) {
-        return paramVO.getEnergyIds().stream().map(energyId -> {
+        List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
+        return energyList.stream().map(energy -> {
             // 按一级标签聚合数据
             Map<String, BigDecimal> labelMap = dataList.stream()
-                    .filter(vo -> energyId.equals(vo.getEnergyId()))
+                    .filter(vo -> energy.getId().equals(vo.getEnergyId()))
                     .collect(Collectors.groupingBy(
                             StructureInfo::getLabel1, // 关键修改：使用一级标签分组
                             Collectors.reducing(BigDecimal.ZERO, StructureInfo::getSumNum, BigDecimal::add)
                     ));
 
-            String energyName = dataList.stream()
-                    .filter(vo -> energyId.equals(vo.getEnergyId()))
-                    .findFirst()
-                    .map(StructureInfo::getEnergyName)
-                    .orElse("未知能源");
+            String energyName = energy.getEnergyName();
 
             return createPieChart(energyName, labelMap);
         }).collect(Collectors.toList());
+    }
+
+    /**
+     * 能源查询条件处理
+     *
+     * @param paramVO
+     * @return
+     */
+    private List<EnergyConfigurationDO> dealEnergyQueryData(StatisticsParamV2VO paramVO) {
+        // 能源查询条件处理
+        EnergyConfigurationPageReqVO queryVO = new EnergyConfigurationPageReqVO();
+
+        List<Long> energyIds = paramVO.getEnergyIds();
+        if (CollectionUtil.isNotEmpty(energyIds)) {
+            queryVO.setEnergyIds(energyIds);
+        } else {
+            // 默认 外购能源全部
+            queryVO.setEnergyClassify(1);
+        }
+        // 能源list
+        return energyConfigurationService.getEnergyConfigurationList(queryVO);
     }
 
     /**
@@ -774,6 +795,6 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         return Stream.of(vo.getLabel1(), vo.getLabel2(), vo.getLabel3())
                 .filter(Objects::nonNull)
                 .distinct()
-                .collect(Collectors.joining("/"));
+                .collect(Collectors.joining("-"));
     }
 }
