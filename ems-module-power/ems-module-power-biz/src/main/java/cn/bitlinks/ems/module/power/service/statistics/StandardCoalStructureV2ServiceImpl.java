@@ -2,10 +2,7 @@ package cn.bitlinks.ems.module.power.service.statistics;
 
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
-import cn.bitlinks.ems.framework.common.pojo.StatsResult;
-import cn.bitlinks.ems.framework.common.util.calc.CalculateUtil;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
-import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
@@ -18,13 +15,9 @@ import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurat
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.LocalDateTimeUtil;
-import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
-import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -34,7 +27,6 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -43,9 +35,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.LABEL_NAME_PREFIX;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
-import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.*;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_STANDARD_COAL_STRUCTURE_CHART;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_STANDARD_COAL_STRUCTURE_TABLE;
 
 /**
  * @Title: ydme-doublecarbon
