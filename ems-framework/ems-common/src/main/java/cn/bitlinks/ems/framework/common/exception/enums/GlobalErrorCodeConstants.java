@@ -36,6 +36,8 @@ public interface GlobalErrorCodeConstants {
     ErrorCode REPEATED_REQUESTS = new ErrorCode(900, "重复请求，请稍后重试"); // 重复请求
     ErrorCode DEMO_DENY = new ErrorCode(901, "演示模式，禁止写操作");
 
+    ErrorCode EXPRESSION_EXECUTION_FAILED = new ErrorCode(902, "执行表达式失败！");
+
     ErrorCode UNKNOWN = new ErrorCode(999, "未知错误");
 
 }

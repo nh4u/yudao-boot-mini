@@ -1,10 +1,14 @@
 package cn.bitlinks.ems.module.power.service.coalfactorhistory;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorFormulaData;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistoryRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorHistorySaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.QueryEnergyFormula;
 import cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormulaDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
@@ -17,6 +21,7 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -145,5 +150,11 @@ public class CoalFactorHistoryServiceImpl implements CoalFactorHistoryService {
 
         // 3. 转换VO并返回
         return BeanUtils.toBean(entity, CoalFactorHistoryRespVO.class);
+    }
+
+    @Override
+    public List<CoalFactorFormulaData> getByEnergyIdsAndTime(List<QueryEnergyFormula> queryEnergyTimeList) {
+
+        return coalFactorHistoryMapper.getByEnergyIdsAndTime(queryEnergyTimeList);
     }
 }

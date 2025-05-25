@@ -60,18 +60,18 @@ public interface CollectRawDataMapper {
      * 查询每个台账用量参数 当前时间点
      */
     @TenantIgnore
-    List<CollectRawDataDO> selectExactDataBatch(@Param("standingbookIds") List<Long> ids, @Param("targetTime") LocalDateTime targetTime);
+    List<CollectRawDataDO> selectExactDataBatch(@Param("standingbookIds") List<Long> standingbookIds, @Param("targetTime") LocalDateTime targetTime);
 
     /**
      * 查询每个台账用量参数 当前时间点之前的最新数据
      */
     @TenantIgnore
-    List<CollectRawDataDO> selectPrevDataBatch(@Param("standingbookIds") List<Long> ids, @Param("targetTime") LocalDateTime targetTime);
+    List<CollectRawDataDO> selectPrevDataBatch(@Param("standingbookIds") List<Long> standingbookIds, @Param("targetTime") LocalDateTime targetTime);
 
     /**
      * 查询每个台账用量参数 当前时间点之后的第一条数据
      */
     @TenantIgnore
-    List<CollectRawDataDO> selectNextDataBatch(@Param("standingbookIds") List<Long> ids, @Param("targetTime") LocalDateTime targetTime);
+    List<CollectRawDataDO> selectNextDataBatch(@Param("standingbookIds") List<Long> standingbookIds, @Param("targetTime") LocalDateTime targetTime);
 
 }

@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfigurat
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookAssociationReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookEnergyTypeVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementdevice.MeasurementDeviceDO;
@@ -14,6 +15,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.acquisition.StandingbookAcquisitionDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import cn.bitlinks.ems.module.power.dal.mysql.measurementassociation.MeasurementAssociationMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.measurementdevice.MeasurementDeviceMapper;
@@ -41,6 +43,7 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -212,20 +215,17 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<StandingbookAttributeDO> children = new ArrayList<>();
         // 查询属性分类部分的关联属性
         List<StandingbookAttributeDO> standingbookAttributeByTypeId = standingbookAttributeService.getStandingbookAttributeByTypeId(typeId);
-        createReqVO.forEach((key, value) -> {
-            //根据code查询分类属性，找不到的话就直接抛出异常
-            Optional<StandingbookAttributeDO> rawAttrOptional = standingbookAttributeByTypeId.stream().filter(standingbookAttributeDO -> key.equals(standingbookAttributeDO.getCode())).findFirst();
-            if (!rawAttrOptional.isPresent()) {
-                throw exception(ErrorCodeConstants.STANDINGBOOK_ATTRIBUTE_NOT_EXISTS);
-            }
-            StandingbookAttributeDO attribute = BeanUtils.toBean(rawAttrOptional.get(), StandingbookAttributeDO.class);
-            attribute.setValue(value);
+        standingbookAttributeByTypeId.forEach(standingbookAttributeDO -> {
+            StandingbookAttributeDO attribute = BeanUtils.toBean(standingbookAttributeDO, StandingbookAttributeDO.class);
+            //根据code查询分类属性，
+            attribute.setValue(createReqVO.get(attribute.getCode()));
             attribute.setStandingbookId(standingbook.getId());
             attribute.setId(null);
             attribute.setCreateTime(null);
             attribute.setUpdateTime(null);
             children.add(attribute);
         });
+
         // 新增台账属性
         standingbookAttributeMapper.insertBatch(children);
 
@@ -574,5 +574,32 @@ public class StandingbookServiceImpl implements StandingbookService {
         return result;
     }
 
+    @Override
+    public List<StandingbookEnergyTypeVO> getEnergyAndTypeByStandingbookIds(List<Long> standingbookIds) {
+        LambdaQueryWrapper<StandingbookDO> standingbookWrapper = new LambdaQueryWrapper<>();
+        standingbookWrapper.in(StandingbookDO::getId, standingbookIds);
+        List<StandingbookDO> standingbookDOS = standingbookMapper.selectList(standingbookWrapper);
+
+        Set<Long> typeIds = standingbookDOS.stream().map(StandingbookDO::getTypeId).collect(Collectors.toSet());
+
+        LambdaQueryWrapper<StandingbookTmplDaqAttrDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(StandingbookTmplDaqAttrDO::getTypeId,StandingbookTmplDaqAttrDO::getEnergyId);
+        wrapper.in(StandingbookTmplDaqAttrDO::getTypeId, typeIds);
+        wrapper.groupBy(StandingbookTmplDaqAttrDO::getTypeId,StandingbookTmplDaqAttrDO::getEnergyId);
+        List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS = standingbookTmplDaqAttrMapper.selectList(wrapper);
+        Map<Long, StandingbookTmplDaqAttrDO> typeTmplMap = standingbookTmplDaqAttrDOS.stream().collect(Collectors.toMap(StandingbookTmplDaqAttrDO::getTypeId, Function.identity()));
+
+        List<StandingbookEnergyTypeVO> result = new ArrayList<>();
+        standingbookDOS.forEach(standingbookDO ->{
+            StandingbookEnergyTypeVO vo = new StandingbookEnergyTypeVO();
+            vo.setStandingbookId(standingbookDO.getId());
+            vo.setTypeId(standingbookDO.getTypeId());
+            StandingbookTmplDaqAttrDO standingbookTmplDaqAttrDO = typeTmplMap.get(standingbookDO.getTypeId());
+            vo.setEnergyId(standingbookTmplDaqAttrDO.getEnergyId());
+            result.add(vo);
+        });
+
+        return result;
+    }
 
 }

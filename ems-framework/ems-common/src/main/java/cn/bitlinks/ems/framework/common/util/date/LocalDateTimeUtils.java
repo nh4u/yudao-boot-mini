@@ -364,7 +364,7 @@ public class LocalDateTimeUtils {
                 break;
             case HOUR:
                 while (!current.isAfter(endDateTime)) {
-                    result.add(LocalDateTimeUtil.format(current, "yyyy-MM-dd HH"));
+                    result.add(LocalDateTimeUtil.format(current, "yyyy-MM-dd HH:00:00"));
                     current = current.plusHours(1);
                 }
                 break;
@@ -520,6 +520,85 @@ public class LocalDateTimeUtils {
             default:
                 throw new IllegalArgumentException("不支持的时间类型：" + type);
         }
+    }
+    /**
+     * 根据当前时间字符串、时间类型和基准年份，推算定基比的时间字符串（格式与原格式一致）
+     *
+     * @param current    当前时间字符串（如 "2025-05-19"）
+     * @param type       时间类型（YEAR、MONTH、DAY、HOUR）
+     * @param benchmark  基准年份（如 2022）
+     * @return           基准年对应的时间字符串（格式与 current 一致）
+     */
+    public static String getBenchmarkTime(String current, DataTypeEnum type, int benchmark) {
+        switch (type) {
+            case YEAR:
+                return String.valueOf(benchmark);
+
+            case MONTH:
+                // 格式：yyyy-MM
+                YearMonth ym = YearMonth.parse(current, DateTimeFormatter.ofPattern("yyyy-MM"));
+                int offsetMonth = ym.getMonthValue();
+                return YearMonth.of(benchmark, offsetMonth).format(DateTimeFormatter.ofPattern("yyyy-MM"));
+
+            case DAY:
+                // 格式：yyyy-MM-dd
+                LocalDate date = LocalDate.parse(current, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                return date.withYear(benchmark).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+            case HOUR:
+                try {
+                    // 优先尝试详细格式：yyyy-MM-dd HH:mm:ss
+                    DateTimeFormatter fullFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                    LocalDateTime dt = LocalDateTime.parse(current, fullFormatter);
+                    return dt.withYear(benchmark).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH"));
+                } catch (DateTimeParseException e) {
+                    // 回退简短格式：yyyy-MM-dd HH
+                    DateTimeFormatter shortFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH");
+                    LocalDateTime dt = LocalDateTime.parse(current, shortFormatter);
+                    return dt.withYear(benchmark).format(shortFormatter);
+                }
+
+            default:
+                throw new IllegalArgumentException("不支持的时间类型：" + type);
+        }
+    }
+
+    /**
+     * 获取指定基准年份的时间范围（用于定基比分析）
+     *
+     * @param currentRange 当前时间范围 [start, end]
+     * @param type         时间类型（DAY、MONTH、YEAR、HOUR）
+     * @param benchmark    基准年份（如 2021、2022）
+     * @return 基准年对应的时间范围 [baseStart, baseEnd]
+     */
+    public static LocalDateTime[] getBenchmarkRange(LocalDateTime[] currentRange, DataTypeEnum type, int benchmark) {
+        LocalDateTime start = currentRange[0];
+        LocalDateTime end = currentRange[1];
+
+        // 计算当前时间段起始年份
+        int currentYear = start.getYear();
+        int offsetYears = currentYear - benchmark;
+
+        if (offsetYears < 0) {
+            throw new IllegalArgumentException("基准年份不能大于当前年份");
+        }
+
+        LocalDateTime baseStart;
+        LocalDateTime baseEnd;
+
+        switch (type) {
+            case YEAR:
+            case MONTH:
+            case DAY:
+            case HOUR:
+                baseStart = start.minusYears(offsetYears);
+                baseEnd = end.minusYears(offsetYears);
+                break;
+            default:
+                throw new IllegalArgumentException("不支持的时间类型: " + type);
+        }
+
+        return new LocalDateTime[]{baseStart, baseEnd};
     }
 
 }

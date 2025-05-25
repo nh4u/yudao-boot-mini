@@ -14,4 +14,27 @@
         ORDER BY start_time ASC LIMIT 1
     </select>
 
+
+    <select id="getByEnergyTime" resultType="cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo.EnergyTimeResultVO">
+        SELECT
+        p.id,
+        p.energy_id,
+        p.accounting_frequency,
+        p.billing_method,
+        p.start_time,
+        p.end_time,
+        p.formula_id,
+        t.query_time AS aggregateTime
+        FROM ems_unit_price_configuration p
+        JOIN (
+        <foreach collection="query" item="param" separator=" UNION ALL ">
+            SELECT #{param.energyId} AS energy_id, #{param.aggregateTime} AS query_time
+        </foreach>
+        ) t ON p.energy_id = t.energy_id
+        WHERE p.start_time &lt;= t.query_time
+        AND (p.end_time IS NULL OR t.query_time &lt;= p.end_time)
+        and p.deleted = 0
+
+    </select>
+
 </mapper>
