@@ -3,10 +3,10 @@ package cn.bitlinks.ems.module.power.controller.admin.standingbook;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.MeasurementVirtualAssociationSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookAssociationReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
-import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -78,6 +78,21 @@ public class StandingbookController {
     @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
     public CommonResult<List<StandingbookRespVO>> listSbAllWithAssociations(@RequestBody StandingbookAssociationReqVO reqVO) {
         return success(standingbookService.listSbAllWithAssociations(reqVO));
+    }
+
+    @PostMapping("/listSbAllWithAssociationsVirtual")
+    @Operation(summary = "虚拟表：关联下级计量器具（topType=2）")
+    @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
+    public CommonResult<List<StandingbookRespVO>> listSbAllWithAssociationsVirtual(@RequestBody StandingbookAssociationReqVO reqVO) {
+        return success(standingbookService.listSbAllWithAssociationsVirtual(reqVO));
+    }
+
+    @PostMapping("/measurementInstrument")
+    @Operation(summary = "虚拟表：关联下级计量")
+    @PreAuthorize("@ss.hasPermission('power:standingbook:update')")
+    public CommonResult<Boolean> updAssociationMeasurementInstrument(@Valid @RequestBody MeasurementVirtualAssociationSaveReqVO createReqVO) {
+        standingbookService.updAssociationMeasurementInstrument(createReqVO);
+        return success(true);
     }
 
     @PostMapping("/listWithAssociations")
