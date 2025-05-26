@@ -51,8 +51,8 @@ public class AggTask {
     @Value("${rocketmq.topic.device-aggregate}")
     private String deviceAggTopic;
 
-    //    @Scheduled(cron = "0 0/1 * * * ? ") // 每分钟的 0 秒执行一次
-    @Scheduled(cron = "0/10 * * * * ? ") // 每分钟的 0 秒执行一次
+    @Scheduled(cron = "0 0/1 * * * ? ") // 每分钟的 0 秒执行一次
+//    @Scheduled(cron = "0/10 * * * * ? ") // 每分钟的 0 秒执行一次
     public void execute() {
         String LOCK_KEY = String.format(AGG_TASK_LOCK_KEY, env);
 
@@ -246,10 +246,14 @@ public class AggTask {
         MinuteAggregateDataDO latestAggData = latestTimeDataMap.get(standingbookId);
         // 聚合数据表没有最新数据，则第一条的增量为0；
 
-        // 聚合数据表有最新数据，则，prevTime为最新聚合时间
+        // 聚合数据表有最新数据，
         if (Objects.nonNull(latestAggData)) {
-            prevTime = latestAggData.getAggregateTime();
-            prevValue = latestAggData.getFullValue();
+            LocalDateTime latestAggTime = latestAggData.getAggregateTime();
+            // 上次实时推送数据早于 最新的聚合时间，则以最新的聚合时间开始进行计算，，永远不会比prevTime晚
+            if(latestAggTime.isAfter(prevTime)){
+                prevTime = latestAggTime;
+                prevValue = latestAggData.getFullValue();
+            }
         }
 
         long totalSeconds = Duration.between(prevTime, nextTime).getSeconds();
