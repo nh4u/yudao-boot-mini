@@ -1,8 +1,8 @@
 package cn.bitlinks.ems.module.acquisition.task;
 
 
+import cn.bitlinks.ems.framework.common.message.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectRawDataDO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
 import cn.bitlinks.ems.module.acquisition.dal.mysql.collectrawdata.CollectRawDataMapper;
@@ -10,9 +10,12 @@ import cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata.MinuteAg
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -45,6 +48,11 @@ public class AggTask {
     @Resource
     private RedissonClient redissonClient;
     public static final int batchSize = 2000;
+    @Resource
+    private RocketMQTemplate rocketMQTemplate;
+
+    @Value("${rocketmq.topic.device-aggregate}")
+    private String deviceAggTopic;
 
     @Scheduled(cron = "0 0/1 * * * ? ") // 每分钟的 0 秒执行一次
     public void execute() {
@@ -144,6 +152,13 @@ public class AggTask {
         for (List<MinuteAggregateDataDO> batch : batchList) {
             // 执行你的批量插入操作，比如：
             minuteAggregateDataMapper.insertBatch(batch);
+            // 发送mq消息
+            int groupIndex = Math.abs(deviceAggTopic.hashCode() % 3);
+            String topicName = deviceAggTopic + groupIndex;
+            // 发送消息
+            Message<List<MinuteAggregateDataDTO>> msg =
+                    MessageBuilder.withPayload(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class)).build();
+            rocketMQTemplate.send(topicName, msg);
         }
 
     }
