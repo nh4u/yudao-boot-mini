@@ -51,8 +51,8 @@ public class AggTask {
     @Value("${rocketmq.topic.device-aggregate}")
     private String deviceAggTopic;
 
-    //    @Scheduled(cron = "0 0/1 * * * ? ") // 每分钟的 0 秒执行一次
-    @Scheduled(cron = "0/10 * * * * ? ") // 每分钟的 0 秒执行一次
+    @Scheduled(cron = "0 0/1 * * * ? ") // 每分钟的 0 秒执行一次
+//    @Scheduled(cron = "0/10 * * * * ? ") // 每分钟的 0 秒执行一次
     public void execute() {
         String LOCK_KEY = String.format(AGG_TASK_LOCK_KEY, env);
 
