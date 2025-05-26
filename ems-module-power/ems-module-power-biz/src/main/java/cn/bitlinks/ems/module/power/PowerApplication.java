@@ -1,6 +1,5 @@
 package cn.bitlinks.ems.module.power;
 
-import cn.bitlinks.ems.module.power.controller.admin.quartz.job.QuartzManager;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.SchedulerException;

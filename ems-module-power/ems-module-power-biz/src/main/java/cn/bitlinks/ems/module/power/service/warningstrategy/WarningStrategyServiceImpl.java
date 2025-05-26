@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.warningstrategy;
 
+import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.object.PageUtils;
@@ -8,8 +9,10 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.Standi
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyConditionDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyDO;
+import cn.bitlinks.ems.module.power.dal.mysql.warninginfo.WarningInfoMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyConditionMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyMapper;
+import cn.bitlinks.ems.module.power.enums.warninginfo.WarningIntervalUnitEnum;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
 import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
@@ -23,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -31,6 +35,7 @@ import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_EQUIPMENT_NAM
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_MEASURING_INSTRUMENT_MAME;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.WARNING_STRATEGY_CONDITION_NOT_NULL;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.WARNING_STRATEGY_NOT_EXISTS;
+import static cn.bitlinks.ems.module.power.enums.warninginfo.WarningIntervalUnitEnum.calculateThresholdTime;
 
 /**
  * 告警策略 Service 实现类
@@ -44,6 +49,8 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
 
     @Resource
     private WarningStrategyMapper warningStrategyMapper;
+    @Resource
+    private WarningInfoMapper warningInfoMapper;
     @Resource
     private WarningStrategyConditionMapper warningStrategyConditionMapper;
     @Resource
@@ -329,5 +336,53 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
         return false; // 没有找到任何匹配的 ID
     }
 
+    @Override
+    public List<WarningStrategyDO> queryNeedTriggerStrategyList(LocalDateTime triggerTime) {
+        // 1.获取所有启动的告警策略
+        List<WarningStrategyDO> warningStrategyDOList = warningStrategyMapper.selectList(new LambdaQueryWrapper<WarningStrategyDO>()
+                .eq(WarningStrategyDO::getStatus, CommonStatusEnum.ENABLE.getStatus())
+                .eq(WarningStrategyDO::getDeleted, CommonStatusEnum.ENABLE.getStatus())
+        );
+        if (CollUtil.isEmpty(warningStrategyDOList)) {
+            return null;
+        }
+        // 1.2 获取告警信息中策略触发最新时间，筛选掉触发过的策略
+        Map<Long, LocalDateTime> strategyTimeMap = warningInfoMapper.selectLatestByStrategy();
+        warningStrategyDOList.removeIf(warningStrategyDO -> {
+            // 1）每条策略，检查时间间隔是否触发过
+            LocalDateTime latestTime = strategyTimeMap.get(warningStrategyDO.getId());
+            // 时间间隔内触发过了，不必考虑此策略
+            return checkStrategyTrigger(warningStrategyDO.getInterval(), warningStrategyDO.getIntervalUnit(), latestTime, triggerTime);
+        });
+        if (CollUtil.isEmpty(warningStrategyDOList)) {
+            return null;
+        }
+        return warningStrategyDOList;
+    }
+
+    /**
+     * 判断告警间隔内是否触发过
+     *
+     * @param interval     告警间隔
+     * @param intervalUnit 告警间隔时间单位
+     * @param latestTime   上次触发时间
+     * @param triggerTime  本次触发时间
+     * @return 是否触发过
+     */
+    private boolean checkStrategyTrigger(Integer interval, Integer intervalUnit, LocalDateTime latestTime,
+                                         LocalDateTime triggerTime) {
+        if (latestTime == null) {
+            // 上次触发时间为空，说明从未触发过，本次肯定需要触发
+            return false;
+        }
+        //计算间隔时间
+        LocalDateTime thresholdTime = calculateThresholdTime(WarningIntervalUnitEnum.codeOf(intervalUnit), latestTime, interval);
+        if (thresholdTime == null) {
+            // 该策略系统不支持处理，简单返回true，当成已触发。
+            return true;
+        }
+        // 如果本次触发时间在阈值时间之前，则说明在间隔内已经触发过
+        return triggerTime.isBefore(thresholdTime);
+    }
 
 }
