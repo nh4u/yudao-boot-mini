@@ -2,7 +2,6 @@ package cn.bitlinks.ems.module.acquisition.task;
 
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectRawDataDO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
 import cn.bitlinks.ems.module.acquisition.dal.mysql.collectrawdata.CollectRawDataMapper;
@@ -10,6 +9,7 @@ import cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata.MinuteAg
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,8 +45,14 @@ public class AggTask {
     @Resource
     private RedissonClient redissonClient;
     public static final int batchSize = 2000;
+    @Resource
+    private RocketMQTemplate rocketMQTemplate;
 
-    @Scheduled(cron = "0 0/1 * * * ? ") // 每分钟的 0 秒执行一次
+    @Value("${rocketmq.topic.device-aggregate}")
+    private String deviceAggTopic;
+
+    //    @Scheduled(cron = "0 0/1 * * * ? ") // 每分钟的 0 秒执行一次
+    @Scheduled(cron = "0/10 * * * * ? ") // 每分钟的 0 秒执行一次
     public void execute() {
         String LOCK_KEY = String.format(AGG_TASK_LOCK_KEY, env);
 
@@ -73,7 +79,7 @@ public class AggTask {
      */
     private void insertMinuteData() {
         LocalDateTime currentMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(10L);
-
+//        LocalDateTime currentMinute = LocalDateTime.of(2025, 5, 26, 11, 21, 0);
         // 1.先获取所有的台账id、能源参数、和id
         List<CollectRawDataDO> collectRawDataDOList = collectRawDataMapper.getGroupedData();
         if (CollUtil.isEmpty(collectRawDataDOList)) {
@@ -109,13 +115,13 @@ public class AggTask {
 
         Map<Long, CollectRawDataDO> prevMap = CollUtil.isEmpty(prevList)
                 ? new HashMap<>()
-                : exactList.stream().collect(Collectors.toMap(CollectRawDataDO::getStandingbookId, Function.identity()));
+                : prevList.stream().collect(Collectors.toMap(CollectRawDataDO::getStandingbookId, Function.identity()));
 
         List<CollectRawDataDO> nextList = collectRawDataMapper.selectNextDataBatch(standingbookIds, currentMinute);
 
         Map<Long, CollectRawDataDO> nextMap = CollUtil.isEmpty(nextList)
                 ? new HashMap<>()
-                : exactList.stream().collect(Collectors.toMap(CollectRawDataDO::getStandingbookId, Function.identity()));
+                : nextList.stream().collect(Collectors.toMap(CollectRawDataDO::getStandingbookId, Function.identity()));
 
 
         standingbookIds.forEach(standingbookId -> {
@@ -144,6 +150,13 @@ public class AggTask {
         for (List<MinuteAggregateDataDO> batch : batchList) {
             // 执行你的批量插入操作，比如：
             minuteAggregateDataMapper.insertBatch(batch);
+//            // 发送mq消息
+//            int groupIndex = Math.abs(deviceAggTopic.hashCode() % 3);
+//            String topicName = deviceAggTopic + groupIndex;
+//            // 发送消息
+//            Message<List<MinuteAggregateDataDTO>> msg =
+//                    MessageBuilder.withPayload(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class)).build();
+//            rocketMQTemplate.send(topicName, msg);
         }
 
     }
@@ -224,10 +237,20 @@ public class AggTask {
             log.info("台账id {} 当前分钟的聚合数据 无前后实时数据，无法生成当前值", standingbookId);
             return;
         }
+        // 实时数据
         LocalDateTime prevTime = prev.getSyncTime();//前一时间点 一定不是准分钟点，一定早于targetTime
         BigDecimal prevValue = new BigDecimal(prev.getCalcValue());//前一数值
         LocalDateTime nextTime = next.getSyncTime();//后一时间点 一定不是准分钟点
         BigDecimal nextValue = new BigDecimal(next.getCalcValue());//后一数值
+        // 最新聚合数据，
+        MinuteAggregateDataDO latestAggData = latestTimeDataMap.get(standingbookId);
+        // 聚合数据表没有最新数据，则第一条的增量为0；
+
+        // 聚合数据表有最新数据，则，prevTime为最新聚合时间
+        if (Objects.nonNull(latestAggData)) {
+            prevTime = latestAggData.getAggregateTime();
+            prevValue = latestAggData.getFullValue();
+        }
 
         long totalSeconds = Duration.between(prevTime, nextTime).getSeconds();
         if (totalSeconds <= 0 || targetTime.isBefore(prevTime) || targetTime.isAfter(nextTime)) {
@@ -246,9 +269,16 @@ public class AggTask {
             MinuteAggregateDataDO data = BeanUtils.toBean(prev, MinuteAggregateDataDO.class);
             data.setAggregateTime(minutePoint);
             data.setFullValue(interpolatedValue);
-            data.setIncrementalValue(rate.multiply(BigDecimal.valueOf(elapsedSeconds)));
+            // 第一条聚合数据增量为0
+            if (prevTime.truncatedTo(ChronoUnit.MINUTES).plusMinutes(1L).equals(minutePoint)) {
+                data.setIncrementalValue(BigDecimal.ZERO);
+            } else {
+                data.setIncrementalValue(rate.multiply(BigDecimal.valueOf(elapsedSeconds)));
+            }
             currentDataList.add(data);
             minutePoint = minutePoint.plusMinutes(1);
         }
+
+
     }
 }
