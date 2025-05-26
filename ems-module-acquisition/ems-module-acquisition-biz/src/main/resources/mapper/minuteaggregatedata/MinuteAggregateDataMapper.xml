@@ -17,11 +17,11 @@
             resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
         SELECT
         standingbook_id,
-        MAX(aggregate_time) aggregate_time
+        MAX(aggregate_time) aggregate_time,full_value
         FROM
         minute_aggregate_data
         GROUP BY
-        standingbook_id;
+        standingbook_id,full_value;
 
     </select>
     <select id="selectExactData"
