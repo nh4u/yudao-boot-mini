@@ -27,7 +27,6 @@ public interface CommonConstants {
      * 聚合任务锁
      */
     String AGG_TASK_LOCK_KEY = "agg-task:%s" ;
-    String STREAM_LOAD_PREFIX = "streamload_";
 }
 
 
