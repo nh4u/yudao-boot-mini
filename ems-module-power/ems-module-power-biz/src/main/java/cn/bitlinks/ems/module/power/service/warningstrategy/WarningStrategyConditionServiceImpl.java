@@ -1,14 +1,14 @@
 package cn.bitlinks.ems.module.power.service.warningstrategy;
 
 import cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo.AttributeTreeNode;
-import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementdevice.MeasurementDeviceDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.measurementvirtualassociation.MeasurementVirtualAssociationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
-import cn.bitlinks.ems.module.power.dal.mysql.measurementassociation.MeasurementAssociationMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.measurementdevice.MeasurementDeviceMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.measurementvirtualassociation.MeasurementVirtualAssociationMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
 import cn.bitlinks.ems.module.power.enums.standingbook.AttributeTreeNodeTypeEnum;
 import cn.bitlinks.ems.module.power.enums.standingbook.StandingbookTypeTopEnum;
@@ -41,7 +41,7 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
     @Resource
     private StandingbookTypeService standingbookTypeService;
     @Resource
-    private MeasurementAssociationMapper measurementAssociationMapper;
+    private MeasurementVirtualAssociationMapper measurementVirtualAssociationMapper;
     @Resource
     private MeasurementDeviceMapper measurementDeviceMapper;
 
@@ -129,12 +129,13 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
             return Collections.emptyList();
         }
         // 0. 获取所有计量器具关联关系
-        List<MeasurementAssociationDO> measurementAssociationDOS = measurementAssociationMapper.selectList();
+        List<MeasurementVirtualAssociationDO> measurementAssociationDOS =
+                measurementVirtualAssociationMapper.selectList();
         // 0.1 获取所有计量器具属性列表
         Set<Long> allAssociationIds = new HashSet<>();
         if (CollUtil.isNotEmpty(measurementAssociationDOS)) {
-            List<Long> mIds1 = measurementAssociationDOS.stream().map(MeasurementAssociationDO::getMeasurementId).collect(Collectors.toList());
-            List<Long> mIds2 = measurementAssociationDOS.stream().map(MeasurementAssociationDO::getMeasurementInstrumentId).collect(Collectors.toList());
+            List<Long> mIds1 = measurementAssociationDOS.stream().map(MeasurementVirtualAssociationDO::getMeasurementId).collect(Collectors.toList());
+            List<Long> mIds2 = measurementAssociationDOS.stream().map(MeasurementVirtualAssociationDO::getMeasurementInstrumentId).collect(Collectors.toList());
             allAssociationIds.addAll(mIds1);
             allAssociationIds.addAll(mIds2);
         }
@@ -200,7 +201,7 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
     private List<AttributeTreeNode> getDeviceNode(List<StandingbookDO> deviceList,
                                                   Map<Long, List<StandingbookAttributeDO>> allAttrMap,
                                                   Map<Long, List<StandingbookTmplDaqAttrDO>> allDaqAttrMap,
-                                                  List<MeasurementAssociationDO> measurementAssociationDOS,
+                                                  List<MeasurementVirtualAssociationDO> measurementAssociationDOS,
                                                   List<MeasurementDeviceDO> measurementDeviceDOS) {
 
         if (CollUtil.isEmpty(deviceList)) {
@@ -265,7 +266,7 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
                                                       List<Long> measureIds,
                                                       Map<Long, List<StandingbookAttributeDO>> allAttrMap,
                                                       Map<Long, List<StandingbookTmplDaqAttrDO>> allDaqAttrMap,
-                                                      List<MeasurementAssociationDO> measurementAssociationDOS) {
+                                                      List<MeasurementVirtualAssociationDO> measurementAssociationDOS) {
         if (CollUtil.isEmpty(measureIds)) {
             return Collections.emptyList();
         }
@@ -296,14 +297,14 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
                 result.add(measureNode);
                 return;
             }
-            List<MeasurementAssociationDO> measureAssociationList =
+            List<MeasurementVirtualAssociationDO> measureAssociationList =
                     measurementAssociationDOS.stream().filter(measurementAssociationDO -> measureId.equals(measurementAssociationDO.getMeasurementInstrumentId())).collect(Collectors.toList());
             if (CollUtil.isEmpty(measureAssociationList)) {
                 result.add(measureNode);
                 return;
             }
             // 1.获取关联的id
-            List<Long> measureRelIds = measureAssociationList.stream().map(MeasurementAssociationDO::getMeasurementId).collect(Collectors.toList());
+            List<Long> measureRelIds = measureAssociationList.stream().map(MeasurementVirtualAssociationDO::getMeasurementId).collect(Collectors.toList());
             // 把下一级的计量器具节点补充完整
             List<AttributeTreeNode> childList = getMeasureRelNode(measureId, measureRelIds, allAttrMap, allDaqAttrMap,
                     measurementAssociationDOS);

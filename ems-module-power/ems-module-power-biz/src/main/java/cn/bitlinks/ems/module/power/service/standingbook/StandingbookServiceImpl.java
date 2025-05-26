@@ -6,11 +6,13 @@ import cn.bitlinks.ems.module.acquisition.api.quartz.QuartzApi;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.AssociationData;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.MeasurementVirtualAssociationSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookAssociationReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookEnergyTypeVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementdevice.MeasurementDeviceDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.measurementvirtualassociation.MeasurementVirtualAssociationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.acquisition.StandingbookAcquisitionDO;
@@ -19,6 +21,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.Standingboo
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import cn.bitlinks.ems.module.power.dal.mysql.measurementassociation.MeasurementAssociationMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.measurementdevice.MeasurementDeviceMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.measurementvirtualassociation.MeasurementVirtualAssociationMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookLabelInfoMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
@@ -77,6 +80,8 @@ public class StandingbookServiceImpl implements StandingbookService {
     private MeasurementDeviceMapper measurementDeviceMapper;
     @Resource
     private MeasurementAssociationMapper measurementAssociationMapper;
+    @Resource
+    private MeasurementVirtualAssociationMapper measurementVirtualAssociationMapper;
     @Resource
     @Lazy
     private WarningStrategyService warningStrategyService;
@@ -149,6 +154,95 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
     @Override
+    public List<StandingbookRespVO> listSbAllWithAssociationsVirtual(StandingbookAssociationReqVO reqVO) {
+
+        Map<String, String> paramMap = reqVO.getPageReqVO();
+        if (CollUtil.isEmpty(paramMap)) {
+            paramMap = new HashMap<>();
+        }
+        paramMap.put(SB_TYPE_ATTR_TOP_TYPE, reqVO.getTopType() + "");
+
+        Long sbId = reqVO.getSbId();
+
+        List<StandingbookDO> sbList = getStandingbookList(paramMap);
+
+
+        // 如果是计量器具的话，需要根据已关联的计量器具进行筛选，筛选出该计量器具可关联的计量器具列表
+        // 查询出所有的关联关系，
+        List<MeasurementVirtualAssociationDO> list = measurementVirtualAssociationMapper.selectList();
+        Set<Long> parentIds = new HashSet<>(); // 使用 Set 去重
+        findAllParentsRecursiveVirtual(sbId, list, parentIds);
+        parentIds.add(sbId);
+
+        // 从 sbList 中筛选掉 id 在 已关联的parentIds 中的元素
+        if (CollUtil.isEmpty(sbList)) {
+            return new ArrayList<>();
+        }
+
+        List<StandingbookDO> standingbookDOS = sbList.stream().filter(standingbookDO -> !parentIds.contains(standingbookDO.getId())).collect(Collectors.toList());
+        // 添加计量器具类型
+        if (CollUtil.isEmpty(standingbookDOS)) {
+            return new ArrayList<>();
+        }
+        // 查询所有台账分类id列表
+        List<Long> sbTypeIds = standingbookDOS.stream().map(StandingbookDO::getTypeId).collect(Collectors.toList());
+        List<StandingbookTypeDO> typeList = standingbookTypeMapper.selectList(new LambdaQueryWrapper<StandingbookTypeDO>().in(StandingbookTypeDO::getId, sbTypeIds));
+        Map<Long, StandingbookTypeDO> typeMap = typeList.stream().collect(Collectors.toMap(StandingbookTypeDO::getId, standingbookTypeDO -> standingbookTypeDO));
+        List<StandingbookRespVO> result = BeanUtils.toBean(standingbookDOS, StandingbookRespVO.class);
+        result.forEach(sb -> {
+            sb.setStandingbookTypeId(typeMap.get(sb.getTypeId()).getId());
+            sb.setStandingbookTypeName(typeMap.get(sb.getTypeId()).getName());
+        });
+
+        return result;
+
+    }
+
+    @Override
+    public void updAssociationMeasurementInstrument(MeasurementVirtualAssociationSaveReqVO createReqVO) {
+        List<Long> ids = createReqVO.getMeasurementIds();
+
+        List<MeasurementVirtualAssociationDO> list =
+                measurementVirtualAssociationMapper.selectList(new LambdaQueryWrapper<MeasurementVirtualAssociationDO>()
+                        .eq(MeasurementVirtualAssociationDO::getMeasurementInstrumentId, createReqVO.getMeasurementInstrumentId()));
+        if (CollUtil.isEmpty(list)) {
+            ids.forEach(id -> {
+                MeasurementVirtualAssociationDO measurementAssociationDO = new MeasurementVirtualAssociationDO();
+                measurementAssociationDO.setMeasurementId(id);
+                measurementAssociationDO.setMeasurementInstrumentId(createReqVO.getMeasurementInstrumentId());
+                list.add(measurementAssociationDO);
+            });
+            measurementVirtualAssociationMapper.insertBatch(list);
+            return;
+        }
+        // 1. 找出需要删除的关联
+        List<Long> toDelete = list.stream()
+                .filter(association -> !ids.contains(association.getMeasurementId()))
+                .map(MeasurementVirtualAssociationDO::getId)
+                .collect(Collectors.toList());
+        if (CollUtil.isNotEmpty(toDelete)) {
+            measurementVirtualAssociationMapper.deleteByIds(toDelete);
+        }
+
+        // 2. 找出需要新增的关联 ID
+        List<Long> toAddIds = ids.stream()
+                .filter(id -> list.stream().noneMatch(association -> association.getMeasurementId().equals(id)))
+                .collect(Collectors.toList());
+        if (CollUtil.isEmpty(toAddIds)) {
+            return;
+        }
+        List<MeasurementVirtualAssociationDO> toAddList = new ArrayList<>();
+        toAddIds.forEach(id -> {
+            MeasurementVirtualAssociationDO measurementAssociationDO = new MeasurementVirtualAssociationDO();
+            measurementAssociationDO.setMeasurementId(id);
+            measurementAssociationDO.setMeasurementInstrumentId(createReqVO.getMeasurementInstrumentId());
+            toAddList.add(measurementAssociationDO);
+        });
+        measurementVirtualAssociationMapper.insertBatch(toAddList);
+    }
+
+
+    @Override
     public List<StandingbookDO> getByTypeIds(List<Long> typeIds) {
         LambdaQueryWrapper<StandingbookDO> wrapper = new LambdaQueryWrapper<>();
         wrapper.in(StandingbookDO::getTypeId, typeIds);
@@ -159,6 +253,27 @@ public class StandingbookServiceImpl implements StandingbookService {
     public List<StandingbookDO> getByStandingbookIds(List<Long> standingbookIds) {
         return standingbookMapper.selectList(new LambdaQueryWrapper<StandingbookDO>().in(StandingbookDO::getId,
                 standingbookIds));
+    }
+
+    /**
+     * 递归查询出上级计量器具的id
+     *
+     * @param childId      当前计量器具id
+     * @param associations 所有计量器具关联关系
+     * @param parentIds    上级计量器具id集合
+     */
+    private static void findAllParentsRecursiveVirtual(Long childId, List<MeasurementVirtualAssociationDO> associations,
+                                                       Set<Long> parentIds) {
+        for (MeasurementVirtualAssociationDO association : associations) {
+            if (association.getMeasurementId().equals(childId)) {
+                Long parentId = association.getMeasurementInstrumentId();
+                if (parentId != null && !parentIds.contains(parentId)) {
+                    parentIds.add(parentId); // 添加父节点 ID
+                    // 递归查找父节点的父节点
+                    findAllParentsRecursiveVirtual(parentId, associations, parentIds);
+                }
+            }
+        }
     }
 
     /**
