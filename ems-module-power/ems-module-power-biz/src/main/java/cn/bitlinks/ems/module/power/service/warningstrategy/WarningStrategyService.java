@@ -2,8 +2,10 @@ package cn.bitlinks.ems.module.power.service.warningstrategy;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo.*;
+import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyDO;
 
 import javax.validation.Valid;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -78,4 +80,10 @@ public interface WarningStrategyService {
      * @return
      */
     boolean existsByStandingbookIds(List<Long> ids);
+
+    /**
+     * 查询需要触发的策略，（未在间隔内触发过）
+     * @return 策略列表
+     */
+    List<WarningStrategyDO> queryNeedTriggerStrategyList(LocalDateTime triggerTime);
 }
