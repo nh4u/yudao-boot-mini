@@ -79,7 +79,7 @@
         AND sync_time &lt; #{targetTime}
         GROUP BY standingbook_id
         ) latest
-        ON cr.standingbook_id = latest.standingbook_id
+        ON cr.standingbook_id = latest.standingbook_id and `usage`=1
         AND cr.sync_time = latest.max_time
     </select>
     <select id="selectNextDataBatch"
@@ -98,7 +98,7 @@
         AND sync_time > #{targetTime}
         GROUP BY standingbook_id
         ) latest
-        ON cr.standingbook_id = latest.standingbook_id
+        ON cr.standingbook_id = latest.standingbook_id and `usage`=1
         AND cr.sync_time = latest.min_time
     </select>
 </mapper>

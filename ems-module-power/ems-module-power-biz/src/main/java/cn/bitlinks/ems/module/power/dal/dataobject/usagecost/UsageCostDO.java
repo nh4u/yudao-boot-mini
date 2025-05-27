@@ -58,10 +58,6 @@ public class UsageCostDO {
      */
     private Long energyId;
 
-    /**
-     * 标签ID
-     */
-    private Long tagId;
 
 
 }

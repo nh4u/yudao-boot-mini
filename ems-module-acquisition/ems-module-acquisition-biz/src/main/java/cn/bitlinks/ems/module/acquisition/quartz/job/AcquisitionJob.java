@@ -5,7 +5,6 @@ import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
 import cn.bitlinks.ems.framework.common.util.opcda.OpcDaUtils;
 import cn.bitlinks.ems.module.acquisition.api.quartz.dto.ServiceSettingsDTO;
 import cn.bitlinks.ems.module.acquisition.mq.message.AcquisitionMessage;
-import cn.bitlinks.ems.module.acquisition.service.collectrawdata.CollectRawDataService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.json.JSONUtil;
@@ -65,6 +64,7 @@ public class AcquisitionJob implements Job {
      */
     final BigDecimal MOCK_INCREMENT_MIN = new BigDecimal("0");
     final int DECIMAL_SCALE = 10;
+
     public void execute(JobExecutionContext context) {
 
         String jobName = context.getJobDetail().getKey().getName();
@@ -74,9 +74,14 @@ public class AcquisitionJob implements Job {
             Long standingbookId =
                     (Long) jobDataMap.get(ACQUISITION_JOB_DATA_MAP_KEY_STANDING_BOOK_ID);
             List<StandingbookAcquisitionDetailDTO> details = (List<StandingbookAcquisitionDetailDTO>) jobDataMap.get(ACQUISITION_JOB_DATA_MAP_KEY_DETAILS);
-
+            Boolean deviceStatus =
+                    (Boolean) jobDataMap.get(ACQUISITION_JOB_DATA_MAP_KEY_STATUS);
+            if (!Boolean.TRUE.equals(deviceStatus)) {
+                log.info("设备[{}] 状态为false, 不进行数据采集!", standingbookId);
+                return;
+            }
             // 验证数据
-            if (Objects.isNull(standingbookId) || Objects.isNull(details)) {
+            if (Objects.isNull(standingbookId) || CollUtil.isEmpty(details)) {
                 log.error("数据采集任务[{}] 数据缺失: standingbookId={}, details={}", jobName, standingbookId, details);
                 return;
             }
@@ -133,7 +138,6 @@ public class AcquisitionJob implements Job {
             // 选择 topic（基于 jobName）
             String topicName = getTopicName(jobName);
 
-            // jinxing
             // 发送消息
             rocketMQTemplate.send(topicName, msg);
             log.info("数据采集任务[{}] 发送MQ消息: topic={}, payload={}", jobName, topicName, JSONUtil.toJsonStr(acquisitionMessage));

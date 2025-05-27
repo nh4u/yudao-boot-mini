@@ -27,7 +27,7 @@
     </update>
 
     <!-- 在对应的 XML 文件中 -->
-    <select id="selectCurrentByEnergyId" resultType="CoalFactorHistoryDO">
+    <select id="selectCurrentByEnergyId" resultType="cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory.CoalFactorHistoryDO">
         SELECT *
         FROM ems_coal_factor_history
         WHERE energy_id = #{energyId}
@@ -35,5 +35,24 @@
         AND deleted = 0  <!-- 假设逻辑删除字段 -->
         order by create_time desc
         LIMIT 1  <!-- 确保只返回一条有效记录 -->
+    </select>
+
+    <select id="getByEnergyIdsAndTime" resultType="cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorFormulaData">
+        SELECT
+        h.energy_id,
+        h.factor,
+        h.start_time,
+        h.end_time,
+        h.formula_id,
+        t.query_time AS aggregateTime
+        FROM ems_coal_factor_history h
+        JOIN (
+        <foreach collection="query" item="param" separator=" UNION ALL ">
+            SELECT #{param.energyId} AS energy_id, #{param.aggregateTime} AS query_time
+        </foreach>
+        ) t ON h.energy_id = t.energy_id
+        WHERE h.start_time &lt;= t.query_time
+        AND (h.end_time IS NULL OR t.query_time &lt;= h.end_time)
+        and h.deleted = 0
     </select>
 </mapper>

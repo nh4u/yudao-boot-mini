@@ -116,5 +116,25 @@
 
     </select>
 
+
+
+    <select id="getListOfHome" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData">
+        SELECT
+        energy_id,
+        SUM( cost ) AS totalCost,
+        SUM( current_usage ) AS currentTotalUsage,
+        SUM( standard_coal_equivalent ) AS totalStandardCoalEquivalent
+        FROM
+        usage_cost
+        WHERE
+        DATE_FORMAT(aggregate_time, '%Y-%m-%d') BETWEEN DATE_FORMAT(#{startDate}, '%Y-%m-%d') AND DATE_FORMAT(#{endDate}, '%Y-%m-%d')
+        AND energy_id IN
+        <foreach collection="energyIdList" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        GROUP BY
+        energy_id
+
+    </select>
 </mapper>
 

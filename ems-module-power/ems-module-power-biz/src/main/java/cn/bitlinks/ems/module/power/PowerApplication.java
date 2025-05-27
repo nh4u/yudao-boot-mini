@@ -1,6 +1,5 @@
 package cn.bitlinks.ems.module.power;
 
-import cn.bitlinks.ems.module.power.controller.admin.quartz.job.QuartzManager;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.SchedulerException;
@@ -8,6 +7,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -15,6 +15,7 @@ import java.util.TimeZone;
 
 @Slf4j
 @SpringBootApplication
+@EnableScheduling
 public class PowerApplication {
     @SneakyThrows(UnknownHostException.class)
     public static void main(String[] args) throws SchedulerException, InterruptedException {

@@ -7,21 +7,27 @@ import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectRawDataDO;
 import cn.bitlinks.ems.module.acquisition.mq.message.AcquisitionMessage;
 import cn.bitlinks.ems.module.acquisition.service.collectrawdata.CollectRawDataService;
+import cn.bitlinks.ems.module.acquisition.starrocks.StarRocksStreamLoadService;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQListener;
-import org.springframework.beans.factory.annotation.Value;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.util.*;
+
+import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.STREAM_LOAD_PREFIX;
 
 @Slf4j
 public abstract class RocketMQConsumer implements RocketMQListener<AcquisitionMessage> {
 
     @Resource
     private CollectRawDataService collectRawDataService;
+    @Resource
+    private StarRocksStreamLoadService starRocksStreamLoadService;
 
+    private static final String TABLE_NAME = "collect_raw_data";
 
     @Override
     public void onMessage(AcquisitionMessage acquisitionMessage) {
@@ -63,9 +69,15 @@ public abstract class RocketMQConsumer implements RocketMQListener<AcquisitionMe
             return;
         }
         // 执行插入操作
-        collectRawDataService.insertBatch(acquisitionMessage.getStandingbookId(), collectRawDataDOList);
-
+        String labelName =
+                STREAM_LOAD_PREFIX + acquisitionMessage.getJobTime() + acquisitionMessage.getStandingbookId();
+        try {
+            starRocksStreamLoadService.streamLoadData(collectRawDataDOList, labelName, TABLE_NAME);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
+
 
 
 }

@@ -1,25 +1,32 @@
 package cn.bitlinks.ems.module.power.service.usagecost;
 
-import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
-import cn.bitlinks.ems.module.power.dal.mysql.usagecost.UsageCostMapper;
 import com.baomidou.dynamic.datasource.annotation.DS;
+
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
-import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import javax.annotation.Resource;
+
+import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
+import cn.bitlinks.ems.module.power.dal.dataobject.usagecost.UsageCostDO;
+import cn.bitlinks.ems.module.power.dal.mysql.usagecost.UsageCostMapper;
+import cn.hutool.json.JSONUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author wangl
  * @date 2025年05月13日 10:52
  */
 @DS("starrocks")
+@Slf4j
 @Service
 @Validated
-public class UsageCostServiceImpl implements UsageCostService{
+public class UsageCostServiceImpl implements UsageCostService {
 
     @Resource
     private UsageCostMapper usageCostMapper;
@@ -34,6 +41,18 @@ public class UsageCostServiceImpl implements UsageCostService{
     @TenantIgnore
     public LocalDateTime getLastTime(StatisticsParamV2VO paramVO, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
         return usageCostMapper.getLastTime(paramVO, startDate, endDate, standingBookIds);
+    }
+
+    @Override
+    @TenantIgnore
+    public void saveList(List<UsageCostDO> usageCostDOS) {
+        log.info("saveList: {}", JSONUtil.toJsonStr(usageCostDOS));
+    }
+
+    @Override
+    @TenantIgnore
+    public List<UsageCostData> getListOfHome(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIdList) {
+        return usageCostMapper.getListOfHome(startDate, endDate, energyIdList);
     }
 
 }

@@ -1,6 +1,9 @@
 package cn.bitlinks.ems.framework.common.util.calc;
 
+import cn.bitlinks.ems.framework.common.exception.ServiceException;
+import cn.bitlinks.ems.framework.common.exception.enums.GlobalErrorCodeConstants;
 import cn.bitlinks.ems.framework.common.pojo.StatsResult;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ArrayUtil;
 import com.ql.util.express.DefaultContext;
 import com.ql.util.express.ExpressRunner;
@@ -13,6 +16,7 @@ import java.math.RoundingMode;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 
 /**
  * @Title: ydme-ems
@@ -27,6 +31,23 @@ public class CalculateUtil {
     public static final int SCALE = 30;
     public static final String FORMUlA_SUM = "SUM";
     public static final String FORMUlA_AVG = "AVG";
+
+    private static final ExpressRunner runner = new ExpressRunner(true, false);
+
+    public static Object execute(String expression, Map<String, Object> calcData) {
+        DefaultContext<String, Object> context = new DefaultContext<>();
+        if (MapUtil.isNotEmpty(calcData)) {
+            context.putAll(calcData);
+        }
+        try {
+            return runner.execute(expression, context, null, true, false);
+        } catch (Exception e) {
+            log.error("执行表达式失败: [{}]，参数: {}", expression, calcData, e);
+
+            throw new ServiceException(GlobalErrorCodeConstants.EXPRESSION_EXECUTION_FAILED);
+        }
+    }
+
     /**
      * 数采公式计算(存在非数值型返回)
      *
@@ -71,6 +92,9 @@ public class CalculateUtil {
 
     }
 
+    public static void main(String[] args) throws Exception {
+        qlExpressTest();
+    }
 
     /**
      * sum 和 avg 测试 max min 本身自带有在 OperatorMinMax类中
@@ -84,10 +108,10 @@ public class CalculateUtil {
 
         //参数
         DefaultContext<String, Object> context = new DefaultContext<String, Object>();
-        context.put("用电量1", 100);
-        context.put("用电量2", 200);
-        context.put("用电量3", 300);
-        context.put("电力标煤系数", 10);
+        context.put("用电量1", new BigDecimal(100));
+        context.put("用电量2", new BigDecimal(200));
+        context.put("用电量3", new BigDecimal(300));
+        context.put("电力标煤系数", new BigDecimal(400));
         String express1 = "用电量*电力标煤系数*1.5";
         String express2 = "sum(用电量1,用电量2,用电量3)*电力标煤系数*1.5";
         String express3 = "avg(用电量1,用电量2,用电量3)*电力标煤系数*1.5";
@@ -98,7 +122,7 @@ public class CalculateUtil {
         String express8 = "if ( 用电量1 > 用电量2 ) then {return 用电量1*电力标煤系数*1.5;} else {return 用电量2*电力标煤系数*1.5;}";
         // 如果调用过程不出现异常，指令集instructionSet就是可以被加载运行（execute）了！
         // InstructionSet instructionSet = runner.parseInstructionSet(express);
-        Object r = runner.execute(express8, context, null, false, false);
+        BigDecimal r = (BigDecimal) runner.execute(express8, context, null, false, false);
         System.out.println(r);
     }
 
