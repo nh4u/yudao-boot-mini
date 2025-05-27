@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.standingbook;
 
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.MeasurementVirtualAssociationSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookAssociationReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookEnergyTypeVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
@@ -98,4 +99,17 @@ public interface StandingbookService {
      */
     List<StandingbookEnergyTypeVO> getEnergyAndTypeByStandingbookIds(List<Long> standingbookIds);
 
+
+    /**
+     * 虚拟表：关联下级计量器具
+     * @param reqVO
+     * @return
+     */
+    List<StandingbookRespVO> listSbAllWithAssociationsVirtual(StandingbookAssociationReqVO reqVO);
+
+    /**
+     * 虚拟表关联下级计量器具
+     * @param createReqVO
+     */
+    void updAssociationMeasurementInstrument(MeasurementVirtualAssociationSaveReqVO createReqVO);
 }

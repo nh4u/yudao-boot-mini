@@ -17,6 +17,10 @@ public interface CommonConstants {
      * 数据采集任务,数据map 键-服务设置
      */
     String ACQUISITION_JOB_DATA_MAP_KEY_SERVICE_SETTINGS = "acquisitionJobServiceSettings";
+    /**
+     * 数据采集任务,数据map 键-设备任务状态
+     */
+    String ACQUISITION_JOB_DATA_MAP_KEY_STATUS = "acquisitionJobStatus";
 
     /**
      * 数据采集任务redis 前缀 env:io地址
@@ -27,7 +31,6 @@ public interface CommonConstants {
      * 聚合任务锁
      */
     String AGG_TASK_LOCK_KEY = "agg-task:%s" ;
-//    String STREAM_LOAD_PREFIX = "streamload_";
 }
 
 
