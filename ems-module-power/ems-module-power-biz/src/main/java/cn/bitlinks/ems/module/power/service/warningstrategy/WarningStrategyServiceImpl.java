@@ -317,6 +317,9 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
 
         // 查询所有 WarningStrategyDO 记录
         List<WarningStrategyDO> strategies = warningStrategyMapper.selectList();
+        if(CollUtil.isEmpty(strategies)){
+            return false;
+        }
 
         // 将传入的 IDs 转为 Set 提高查找效率
         Set<Long> idSet = new HashSet<>(ids);
