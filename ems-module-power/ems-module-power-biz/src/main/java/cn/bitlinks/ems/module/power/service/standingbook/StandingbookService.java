@@ -5,6 +5,7 @@ import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.Measurement
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookAssociationReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookEnergyTypeVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 
 import javax.validation.Valid;
@@ -85,6 +86,11 @@ public interface StandingbookService {
      * @param ids 台账ids
      */
     void deleteStandingbookBatch(List<Long> ids);
+
+    Map<Long, List<MeasurementAssociationDO>>  getSubStandingbookIdsBySbIds(List<Long> sbIds);
+
+
+    Map<Long, List<MeasurementAssociationDO>>  getUpStandingbookIdsBySbIds(List<Long> sbIds);
 
     /**
      * 根据能源ids获取台账模板数据

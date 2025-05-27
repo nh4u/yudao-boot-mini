@@ -29,4 +29,19 @@ public interface UsageCostMapper {
                                 @Param("endDate") LocalDateTime endDate,
                                 @Param("energyIdList") List<Long> energyIdList);
 
+
+    List<UsageCostData> getEnergyAndSbStandardCoal(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("standingBookIds") List<Long> standingBookIds);
+
+    List<UsageCostData> getEnergyStandardCoal(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("standingBookIds") List<Long> standingBookIds);
+
+    List<UsageCostData> getStandingbookStandardCoal(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("standingBookIds") List<Long> standingBookIds);
 }
