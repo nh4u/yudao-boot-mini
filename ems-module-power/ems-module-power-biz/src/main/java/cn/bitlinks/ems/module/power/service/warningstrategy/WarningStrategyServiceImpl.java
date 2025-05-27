@@ -268,7 +268,7 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
 
         Long count = warningStrategyMapper.getCount(pageReqVO);
         if (Objects.isNull(count) || count == 0L) {
-            return new PageResult<>();
+            return new PageResult<>(Collections.emptyList(), 0L);
         }
         List<WarningStrategyPageRespVO> deviceApiResVOS = warningStrategyMapper.getPage(pageReqVO, PageUtils.getStart(pageReqVO));
 

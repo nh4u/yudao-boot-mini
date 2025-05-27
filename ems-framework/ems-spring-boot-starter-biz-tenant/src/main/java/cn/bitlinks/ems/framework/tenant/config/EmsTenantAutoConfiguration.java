@@ -92,7 +92,6 @@ public class EmsTenantAutoConfiguration {
     // ========== Job ==========
 
     @Bean
-    @ConditionalOnClass(name = "com.xxl.job.core.handler.annotation.XxlJob")
     public TenantJobAspect tenantJobAspect(TenantFrameworkService tenantFrameworkService) {
         return new TenantJobAspect(tenantFrameworkService);
     }
