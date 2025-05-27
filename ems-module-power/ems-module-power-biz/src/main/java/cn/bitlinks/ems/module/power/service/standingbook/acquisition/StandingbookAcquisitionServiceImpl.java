@@ -72,6 +72,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
     private QuartzApi quartzApi;
 
     @Override
+    @Transactional
     public Long createOrUpdateStandingbookAcquisition(StandingbookAcquisitionVO updateReqVO) {
         // 0.对公式进行解析检查，生成到io级别的实际公式, 处理填充具体的公式，
         List<StandingbookAcquisitionDetailVO> detailVOS = expandFormulas(updateReqVO.getDetails());
@@ -369,6 +370,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
     }
 
     @Override
+    @Transactional
     public void deleteByStandingbookIds(List<Long> ids) {
         List<StandingbookAcquisitionDO> list = queryListByStandingbookIds(ids);
         if(CollUtil.isEmpty(list)){
