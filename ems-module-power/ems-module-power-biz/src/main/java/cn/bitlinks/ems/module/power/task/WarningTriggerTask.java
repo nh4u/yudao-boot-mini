@@ -1,6 +1,8 @@
 package cn.bitlinks.ems.module.power.task;
 
 
+import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
+import cn.bitlinks.ems.framework.tenant.core.job.TenantJob;
 import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyDO;
 import cn.bitlinks.ems.module.power.service.warningstrategy.WarningStrategyService;
 import cn.bitlinks.ems.module.power.service.warningstrategy.WarningStrategyTriggerService;
@@ -36,6 +38,7 @@ public class WarningTriggerTask {
     private WarningStrategyService warningStrategyService;
 
     @Scheduled(cron = "0 0/1 * * * ? ") // 每分钟执行一次
+    @TenantJob
     public void execute() {
         String LOCK_KEY = String.format(STRATEGY_TASK_LOCK_KEY, env);
 
