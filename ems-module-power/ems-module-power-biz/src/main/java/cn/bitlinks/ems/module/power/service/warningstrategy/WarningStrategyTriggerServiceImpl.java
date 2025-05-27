@@ -86,7 +86,6 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
 
     @Override
     @Transactional
-    @TenantIgnore
     public void triggerWarning(List<WarningStrategyDO> warningStrategyDOS, LocalDateTime triggerTime) {
         for (WarningStrategyDO warningStrategyDO : warningStrategyDOS) {
             try {
