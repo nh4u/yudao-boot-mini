@@ -6,7 +6,6 @@ import cn.bitlinks.ems.framework.common.util.calc.AcquisitionFormulaUtils;
 import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectRawDataDO;
 import cn.bitlinks.ems.module.acquisition.mq.message.AcquisitionMessage;
-import cn.bitlinks.ems.module.acquisition.service.collectrawdata.CollectRawDataService;
 import cn.bitlinks.ems.module.acquisition.starrocks.StarRocksStreamLoadService;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -21,9 +20,6 @@ import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.STREAM_LO
 
 @Slf4j
 public abstract class RocketMQConsumer implements RocketMQListener<AcquisitionMessage> {
-
-    @Resource
-    private CollectRawDataService collectRawDataService;
     @Resource
     private StarRocksStreamLoadService starRocksStreamLoadService;
 
@@ -71,13 +67,13 @@ public abstract class RocketMQConsumer implements RocketMQListener<AcquisitionMe
         // 执行插入操作
         String labelName =
                 STREAM_LOAD_PREFIX + acquisitionMessage.getJobTime() + acquisitionMessage.getStandingbookId();
+
         try {
             starRocksStreamLoadService.streamLoadData(collectRawDataDOList, labelName, TABLE_NAME);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            log.error("实时数据 台账id：{}，新增失败：", acquisitionMessage.getStandingbookId(), e);
         }
     }
-
 
 
 }
