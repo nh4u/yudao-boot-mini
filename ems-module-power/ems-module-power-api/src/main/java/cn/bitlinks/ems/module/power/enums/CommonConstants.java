@@ -90,5 +90,9 @@ public interface CommonConstants {
      * 告警策略任务,数据map 键-策略id
      */
     String WARNING_STRATEGY_JOB_DATA_MAP_KEY_STRATEGY_ID = "strategyJobStrategyId";
+    /**
+     * 告警策略任务，锁
+     */
+    String STRATEGY_TASK_LOCK_KEY = "strategy-task:%s" ;
 
 }

@@ -90,4 +90,7 @@ lock4j:
 
 # bitlinks配置项，设置当前项目所有自定义的配置
 ems:
-  #demo: true # 开启演示模式
+# bitlinks配置项，设置当前项目所有自定义的配置
+  starrocks:
+    api-url: http://82.157.40.213:8188
+    db: acquisition_dev
