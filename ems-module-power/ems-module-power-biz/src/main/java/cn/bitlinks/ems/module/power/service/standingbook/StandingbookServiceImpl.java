@@ -150,9 +150,14 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     public List<StandingbookDO> getByTypeIds(List<Long> typeIds) {
-        LambdaQueryWrapper<StandingbookDO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.in(StandingbookDO::getTypeId, typeIds);
-        return standingbookMapper.selectList(wrapper);
+        if (CollUtil.isNotEmpty(typeIds)){
+            LambdaQueryWrapper<StandingbookDO> wrapper = new LambdaQueryWrapper<>();
+            wrapper.in(StandingbookDO::getTypeId, typeIds);
+            return standingbookMapper.selectList(wrapper);
+        } else {
+            return new ArrayList<>();
+        }
+
     }
 
     @Override
@@ -572,6 +577,45 @@ public class StandingbookServiceImpl implements StandingbookService {
         }
 
         return result;
+    }
+
+    /**
+     * 查询所有台账关联的下级计量器具
+     * @param sbIds
+     */
+    @Override
+    public Map<Long, List<MeasurementAssociationDO>>  getSubStandingbookIdsBySbIds(List<Long> sbIds){
+        // 查询所有台账关联的下级计量器具
+        List<MeasurementAssociationDO> assosicationSbList = measurementAssociationMapper.selectList(
+                new LambdaQueryWrapper<MeasurementAssociationDO>().in(MeasurementAssociationDO::getMeasurementInstrumentId, sbIds));
+
+        if (CollUtil.isNotEmpty(assosicationSbList)) {
+            // 分组 台账id-下级计量器具们
+            return assosicationSbList
+                    .stream()
+                    .collect(Collectors.groupingBy(MeasurementAssociationDO::getMeasurementInstrumentId));
+        }
+
+        return null;
+    }
+
+    /**
+     * 查询所有台账关联的下级计量器具
+     * @param sbIds
+     */
+    @Override
+    public Map<Long, List<MeasurementAssociationDO>>  getUpStandingbookIdsBySbIds(List<Long> sbIds){
+        // 查询所有台账关联的下级计量器具
+        List<MeasurementAssociationDO> assosicationSbList = measurementAssociationMapper.selectList(
+                new LambdaQueryWrapper<MeasurementAssociationDO>().in(MeasurementAssociationDO::getMeasurementId, sbIds));
+
+        if (CollUtil.isNotEmpty(assosicationSbList)) {
+            // 分组 台账id-下级计量器具们
+            return assosicationSbList
+                    .stream()
+                    .collect(Collectors.groupingBy(MeasurementAssociationDO::getMeasurementId));
+        }
+        return null;
     }
 
     @Override

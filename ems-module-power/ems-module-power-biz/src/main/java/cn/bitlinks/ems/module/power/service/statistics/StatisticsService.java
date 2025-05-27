@@ -1,6 +1,8 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.EnergyFlowResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsBarVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamVO;
 import com.alibaba.fastjson.JSONObject;
 
@@ -20,6 +22,8 @@ public interface StatisticsService {
      * @return 数据
      */
     Map<String, Object> energyFlowAnalysis(StatisticsParamVO paramVO);
+
+    EnergyFlowResultVO energyFlowAnalysisV2(StatisticsParamV2VO paramVO);
 
     Map<String, Object> moneyAnalysisTable(StatisticsParamVO paramVO);
 
