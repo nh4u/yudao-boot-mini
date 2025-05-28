@@ -26,7 +26,7 @@ public interface CommonConstants {
      * 数据采集任务redis 前缀 env:io地址
      */
     String ACQUISITION_JOB_REDIS_KEY = "ACQUISITION_JOB_LATEST_VALUE_%s:%s";
-    String STREAM_LOAD_PREFIX = "streamload_";
+    String STREAM_LOAD_PREFIX = "_streamload_";
     /**
      * 聚合任务锁
      */
