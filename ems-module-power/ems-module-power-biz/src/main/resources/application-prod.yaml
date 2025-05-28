@@ -142,6 +142,6 @@ rocketmq:
 # bitlinks配置项，设置当前项目所有自定义的配置
 ems:
   ocr:
-    uploadUrl: http://192.168.2.248:8090/api/ocr_table
+    uploadUrl: http://192.168.91.64:8090/api/ocr_table
     token: 11
   #demo: true # 开启演示模式
