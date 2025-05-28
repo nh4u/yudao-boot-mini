@@ -1,37 +1,33 @@
 package cn.bitlinks.ems.module.power.controller.admin.additionalrecording;
 
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.web.bind.annotation.*;
-import javax.annotation.Resource;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.security.access.prepost.PreAuthorize;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.Operation;
-
-import javax.validation.constraints.*;
-import javax.validation.*;
-import javax.servlet.http.*;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.io.IOException;
-
+import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
+import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageParam;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
-import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
-
 import cn.bitlinks.ems.framework.excel.core.util.ExcelUtils;
-
-import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
-import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.*;
-import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
-
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
 import cn.bitlinks.ems.module.power.service.additionalrecording.AdditionalRecordingService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
+import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
+import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 
 @Tag(name = "管理后台 - 补录")
 @RestController
@@ -55,15 +51,16 @@ public class AdditionalRecordingController {
     public CommonResult<List<Long>> createAdditionalRecording(@RequestBody CreateAdditionalRecordingDTO request) {
         Long standingbookId = request.getStandingbookId();
         List<Long> voucherIds = request.getVoucherIds();
-        return success(additionalRecordingService.createAdditionalRecordingByVoucherId(voucherIds,standingbookId));
+        return success(additionalRecordingService.createAdditionalRecordingByVoucherId(voucherIds, standingbookId));
     }
 
     @GetMapping("/getVoucherIdBystandingbookId")
     @Operation(summary = "回显凭证id")
     @PreAuthorize("@ss.hasPermission('power:additional-recording:getVoucherIdBystandingbookId')")
-    public CommonResult<List<Long>> getVoucherIdsByStandingbookId(@RequestParam("standingbookId")Long standingbookId) {
+    public CommonResult<List<Long>> getVoucherIdsByStandingbookId(@RequestParam("standingbookId") Long standingbookId) {
         return success(additionalRecordingService.getVoucherIdsByStandingbookId(standingbookId));
     }
+
 
     @GetMapping("/last-record")
     @Operation(summary = "获取上次记录")
@@ -88,7 +85,8 @@ public class AdditionalRecordingController {
     @Parameter(name = "ids", description = "编号", required = true)
     @PreAuthorize("@ss.hasPermission('power:additional-recording:delete')")
     public CommonResult<Boolean> deleteAdditionalRecordings(@RequestBody List<Long> ids) {
-        additionalRecordingService.deleteAdditionalRecordings(ids);;
+        additionalRecordingService.deleteAdditionalRecordings(ids);
+        ;
         return success(true);
     }
 
@@ -123,12 +121,12 @@ public class AdditionalRecordingController {
     @PreAuthorize("@ss.hasPermission('power:additional-recording:export')")
     @ApiAccessLog(operateType = EXPORT)
     public void exportAdditionalRecordingExcel(@Valid AdditionalRecordingPageReqVO pageReqVO,
-              HttpServletResponse response) throws IOException {
+                                               HttpServletResponse response) throws IOException {
         pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
         List<AdditionalRecordingDO> list = additionalRecordingService.getAdditionalRecordingPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "补录.xls", "数据", AdditionalRecordingRespVO.class,
-                        BeanUtils.toBean(list, AdditionalRecordingRespVO.class));
+                BeanUtils.toBean(list, AdditionalRecordingRespVO.class));
     }
 
     @GetMapping("/query")
@@ -140,7 +138,7 @@ public class AdditionalRecordingController {
             Integer recordMethod,
             LocalDateTime startThisCollectTime, LocalDateTime endThisCollectTime,
             LocalDateTime startEnterTime, LocalDateTime endEnterTime) {
-        return success(additionalRecordingService.selectByCondition(minThisValue,maxThisValue,recordPerson,recordMethod,startThisCollectTime,endThisCollectTime,startEnterTime,endEnterTime));
+        return success(additionalRecordingService.selectByCondition(minThisValue, maxThisValue, recordPerson, recordMethod, startThisCollectTime, endThisCollectTime, startEnterTime, endEnterTime));
     }
 
 }

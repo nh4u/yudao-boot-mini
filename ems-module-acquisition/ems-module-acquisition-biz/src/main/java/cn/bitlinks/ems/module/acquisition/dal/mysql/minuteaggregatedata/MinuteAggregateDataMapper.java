@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata;
 
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
+import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
@@ -33,6 +34,15 @@ public interface MinuteAggregateDataMapper {
                                           @Param("targetTime") LocalDateTime targetTime);
 
     /**
+     * 获取指定时间的上一次聚合数据
+     * @param standingbookId 台账id
+     * @param targetTime 聚合时间
+     * @return
+     */
+    @TenantIgnore
+    MinuteAggregateDataDO selectLatestDataByAggTime(@Param("standingbookId") Long standingbookId,
+                                          @Param("targetTime") LocalDateTime targetTime);
+    /**
      * 获取最新的聚合数据
      *
      * @return 最新的聚合数据
@@ -56,4 +66,26 @@ public interface MinuteAggregateDataMapper {
             "</script>")
     @TenantIgnore
     void insertBatch(@Param("aggregateDataDOS") List<MinuteAggregateDataDO> aggregateDataDOS);
+
+    /**
+     * 查询聚合数据中最老的
+     * @param standingbookId
+     * @return
+     */
+    MinuteAggregateDataDTO selectOldestByStandingBookId(@Param("standingbookId")Long standingbookId);
+
+    /**
+     * 查询聚合数据中最新的数据
+     * @param standingbookId
+     * @return
+     */
+
+    MinuteAggregateDataDTO selectLatestByStandingBookId(@Param("standingbookId")Long standingbookId);
+
+    /**
+     * 删除台账的指定时间的数据
+     * @param aggregateTime
+     * @param standingbookId
+     */
+    void deleteDataByMinute(@Param("aggregateTime")LocalDateTime aggregateTime, @Param("standingbookId") Long standingbookId);
 }

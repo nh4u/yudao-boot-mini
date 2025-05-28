@@ -1,11 +1,11 @@
 package cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.*;
-import java.util.*;
-import javax.validation.constraints.*;
+import lombok.Data;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
-import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
 
 @Schema(description = "管理后台 - 补录新增/修改 Request VO")
@@ -24,6 +24,12 @@ public class AdditionalRecordingSaveReqVO {
     @Schema(description = "增量/全量")
     private Integer valueType;
 
+    @Schema(description = "上次采集时间")
+    private LocalDateTime preCollectTime;
+
+    @Schema(description = "上次数值")
+    private BigDecimal preValue;
+
     @Schema(description = "本次采集时间")
     @NotNull(message = "本次采集时间不能为空")
     private LocalDateTime thisCollectTime;
@@ -33,6 +39,7 @@ public class AdditionalRecordingSaveReqVO {
     private BigDecimal thisValue;
 
     @Schema(description = "单位")
+    @NotBlank(message = "用量单位不能为空")
     private String unit;
 
     @Schema(description = "补录人")

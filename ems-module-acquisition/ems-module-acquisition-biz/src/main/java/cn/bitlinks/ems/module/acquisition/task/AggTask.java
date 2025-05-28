@@ -2,7 +2,6 @@ package cn.bitlinks.ems.module.acquisition.task;
 
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectRawDataDO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
 import cn.bitlinks.ems.module.acquisition.dal.mysql.collectrawdata.CollectRawDataMapper;
@@ -16,8 +15,6 @@ import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -161,7 +158,7 @@ public class AggTask {
 
         for (List<MinuteAggregateDataDO> batch : batchList) {
             // 执行你的批量插入操作，比如：
-            String labelName = STREAM_LOAD_PREFIX + "_" + System.currentTimeMillis()+RandomUtil.randomNumbers(6);
+            String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
             starRocksStreamLoadService.streamLoadData(batch, labelName, AGG_TB);
 //            // 发送mq消息
 //            String topicName = deviceAggTopic;
