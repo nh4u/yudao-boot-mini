@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
@@ -21,6 +22,7 @@ public class MinuteAggregateDataDO {
      * 聚合时间
      */
     @JsonProperty("aggregate_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime aggregateTime;
     /**
      * 参数 code
@@ -30,8 +32,15 @@ public class MinuteAggregateDataDO {
     /**
      * 是否能源数采参数 0自定义 1能源参数
      */
-    @JsonProperty("energy_flag")
     private Boolean energyFlag;
+
+    @JsonProperty("energy_flag")
+    public Integer getEnergyFlagInt() {
+        if (energyFlag == null) {
+            return null; // 或 return 0，根据业务是否允许 null
+        }
+        return energyFlag ? 1 : 0;
+    }
     /**
      * OPC_DA:IO地址/
      */

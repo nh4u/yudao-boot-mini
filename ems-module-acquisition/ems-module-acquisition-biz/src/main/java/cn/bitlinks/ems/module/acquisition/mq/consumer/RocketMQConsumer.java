@@ -14,6 +14,8 @@ import org.apache.rocketmq.spring.core.RocketMQListener;
 
 import javax.annotation.Resource;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.STREAM_LOAD_PREFIX;
@@ -58,6 +60,7 @@ public abstract class RocketMQConsumer implements RocketMQListener<AcquisitionMe
                 collectRawDataDO.setRawValue(itemStatus.getValue());
                 collectRawDataDO.setCollectTime(itemStatus.getTime());
             }
+            collectRawDataDO.setCreateTime(LocalDateTime.now());
             collectRawDataDOList.add(collectRawDataDO);
         });
 
@@ -66,7 +69,7 @@ public abstract class RocketMQConsumer implements RocketMQListener<AcquisitionMe
         }
         // 执行插入操作
         String labelName =
-                STREAM_LOAD_PREFIX + acquisitionMessage.getJobTime() + acquisitionMessage.getStandingbookId();
+                acquisitionMessage.getStandingbookId() + STREAM_LOAD_PREFIX + acquisitionMessage.getJobTime().atZone(ZoneId.systemDefault()).toEpochSecond() ;
 
         try {
             starRocksStreamLoadService.streamLoadData(collectRawDataDOList, labelName, TABLE_NAME);

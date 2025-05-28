@@ -1,18 +1,17 @@
 package cn.bitlinks.ems.module.acquisition;
 
-import cn.bitlinks.ems.module.acquisition.quartz.job.QuartzManager;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.quartz.SchedulerException;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
-import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.TimeZone;
-import org.quartz.*;
+
 /**
  * 项目的启动类
  *
@@ -20,7 +19,7 @@ import org.quartz.*;
  */
 @Slf4j
 @SpringBootApplication
-@EnableScheduling
+//@EnableScheduling
 public class AcquisitionServerApplication {
 
     @SneakyThrows(UnknownHostException.class)
