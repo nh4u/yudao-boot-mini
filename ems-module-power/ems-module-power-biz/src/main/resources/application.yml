@@ -143,9 +143,7 @@ ems:
     ignore-tables:
       - crashdata
       - weatherdata
-  ocr:
-    uploadUrl: http://192.168.2.248:8090/api/ocr_table
-    token: 11
+
 
   calc:
     scale: 5 # 默认小数点位数
