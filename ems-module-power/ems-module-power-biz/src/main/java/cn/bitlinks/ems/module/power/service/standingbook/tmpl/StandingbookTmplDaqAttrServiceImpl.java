@@ -126,6 +126,9 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
     @Transactional
     public void createAttrCascade(List<StandingbookTmplDaqAttrDO> createList, List<Long> subtreeIds,
                                   Boolean energyFlag, Boolean isUpdateAndDeleteForbidden) {
+        if (CollUtil.isEmpty(createList)) {
+            return;
+        }
         //如果父级选择新能源，考虑要修改子级的能源参数呢，有台账的话不可以新增
         if (energyFlag) {
             if (CollUtil.isNotEmpty(subtreeIds)) {
