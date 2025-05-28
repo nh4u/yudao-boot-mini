@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
@@ -25,6 +26,7 @@ public class CollectRawDataDO {
      * 数据同步时间
      */
     @JsonProperty("sync_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime syncTime;
     /**
      * 参数 code
@@ -34,8 +36,15 @@ public class CollectRawDataDO {
     /**
      * 是否能源数采参数 0自定义 1能源参数
      */
-    @JsonProperty("energy_flag")
     private Boolean energyFlag;
+
+    @JsonProperty("energy_flag")
+    public Integer getEnergyFlagInt() {
+        if (energyFlag == null) {
+            return null; // 或 return 0，根据业务是否允许 null
+        }
+        return energyFlag ? 1 : 0;
+    }
     /**
      * 台账id
      */
@@ -60,7 +69,11 @@ public class CollectRawDataDO {
      * 数据采集时间（原始）
      */
     @JsonProperty("collect_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime collectTime;
 
+    @JsonProperty("create_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createTime;
 
 }
