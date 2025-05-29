@@ -117,7 +117,7 @@ public class AcquisitionJob implements Job {
                         (ServiceSettingsDTO) jobDataMap.get(ACQUISITION_JOB_DATA_MAP_KEY_SERVICE_SETTINGS);
                 // 采集所有参数
                 itemStatusMap = OpcDaUtils.batchGetValue(serviceSettingsDTO.getIpAddress(),
-                        serviceSettingsDTO.getUser(),
+                        serviceSettingsDTO.getUsername(),
                         serviceSettingsDTO.getPassword(), serviceSettingsDTO.getClsid(), dataSites);
             } else {
                 itemStatusMap = mockData(dataSites);

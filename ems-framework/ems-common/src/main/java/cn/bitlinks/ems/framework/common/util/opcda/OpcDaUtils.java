@@ -8,6 +8,7 @@ import org.openscada.opc.lib.da.Server;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * opc-da协议 获取数据
@@ -24,7 +25,7 @@ public class OpcDaUtils {
         try {
             Server server = OpcDaConnectionManager.getServer(host, user, password, clsid);
             OpcDaConnectionMonitor.startMonitoring(host, user, password, clsid);
-            Group group = server.addGroup("DynamicGroup");
+            Group group = server.addGroup("DynamicGroup"+ UUID.randomUUID());
             group.setActive(true);
             group.addItems(items);
             return OpcUtil.readValues(group, itemList);
