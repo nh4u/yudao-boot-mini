@@ -7,6 +7,7 @@ spring:
       username: nacos # Nacos 账号
       password: nacos # Nacos 密码
       discovery: # 【配置中心】配置项
+        ip: 192.168.91.66
         namespace: 98dbbbee-8a69-4a76-afe7-b76281e8ddba # 命名空间。这里使用 dev 开发环境
         group: DEFAULT_GROUP # 使用的 Nacos 配置分组，默认为 DEFAULT_GROUP
         metadata:
