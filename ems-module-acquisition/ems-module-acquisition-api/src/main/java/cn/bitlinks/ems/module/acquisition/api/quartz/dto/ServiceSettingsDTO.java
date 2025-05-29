@@ -33,7 +33,7 @@ public class ServiceSettingsDTO implements Serializable {
     /**
      * 用户名
      */
-    private String user;
+    private String username;
     /**
      * 密码
      */

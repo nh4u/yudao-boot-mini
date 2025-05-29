@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.framework.rpc.config;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.CollectRawDataApi;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
 import cn.bitlinks.ems.module.acquisition.api.quartz.QuartzApi;
+import cn.bitlinks.ems.module.acquisition.api.starrocks.StreamLoadApi;
 import cn.bitlinks.ems.module.infra.api.config.ConfigApi;
 import cn.bitlinks.ems.module.infra.api.file.FileApi;
 import cn.bitlinks.ems.module.infra.api.websocket.WebSocketSenderApi;
@@ -14,6 +15,6 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 @EnableFeignClients(clients = {FileApi.class, AdminUserApi.class, WebSocketSenderApi.class, ConfigApi.class,
-        DictDataApi.class, QuartzApi.class, CollectRawDataApi.class, MailSendApi.class, MinuteAggregateDataApi.class})
+        DictDataApi.class, QuartzApi.class, CollectRawDataApi.class, MailSendApi.class, StreamLoadApi.class, MinuteAggregateDataApi.class})
 public class RpcConfiguration {
 }

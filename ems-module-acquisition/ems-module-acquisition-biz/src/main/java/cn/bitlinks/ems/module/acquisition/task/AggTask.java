@@ -160,12 +160,12 @@ public class AggTask {
             // 执行你的批量插入操作，比如：
             String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
             starRocksStreamLoadService.streamLoadData(batch, labelName, AGG_TB);
-//            // 发送mq消息
-//            String topicName = deviceAggTopic;
-//            // 发送消息
-//            Message<List<MinuteAggregateDataDTO>> msg =
-//                    MessageBuilder.withPayload(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class)).build();
-//            rocketMQTemplate.send(topicName, msg);
+            // 发送mq消息
+            String topicName = deviceAggTopic;
+            // 发送消息
+            Message<List<MinuteAggregateDataDTO>> msg =
+                    MessageBuilder.withPayload(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class)).build();
+            rocketMQTemplate.send(topicName, msg);
         }
 
     }

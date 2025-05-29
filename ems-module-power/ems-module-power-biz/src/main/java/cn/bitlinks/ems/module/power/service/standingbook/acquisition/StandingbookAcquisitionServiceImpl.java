@@ -38,8 +38,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static cn.bitlinks.ems.framework.common.enums.CommonConstants.PATTERN_ACQUISITION_FORMULA_FILL;
-import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_PROD;
+import static cn.bitlinks.ems.framework.common.enums.CommonConstants.*;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.SERVICE_NAME_FORMAT;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.ACQUISITION_FREQUENCY;
@@ -345,7 +344,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
 
             // 2.2 采集这些参数，
             Map<String, ItemStatus> itemStatusMap;
-            if (env.equals(SPRING_PROFILES_ACTIVE_PROD)) {
+            if (env.equals(SPRING_PROFILES_ACTIVE_PROD) || env.equals(SPRING_PROFILES_ACTIVE_STAGE)) {
                 itemStatusMap = OpcDaUtils.batchGetValue(serviceSettingsDO.getIpAddress(),
                         serviceSettingsDO.getUsername(),
                         serviceSettingsDO.getPassword(),
