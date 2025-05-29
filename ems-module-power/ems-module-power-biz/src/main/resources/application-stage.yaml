@@ -67,7 +67,7 @@ spring:
           password: f6158df6cd0b81d228e315d568f20b7f
         starrocks: # 模拟从库，可根据自己需要修改
           lazy: true # 开启懒加载，保证启动速度
-          url: jdbc:mysql://192.168.91.68:9030/acquisition?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
+          url: jdbc:mysql://192.168.91.61:9030/acquisition?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
           username: root
           password: f6158df6cd0b81d228e315d568f20b7f
   # Redis 配置。Redisson 默认的配置足够使用，一般不需要进行调优
