@@ -122,6 +122,10 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
         //能源列表
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(new HashSet<>(paramVO.getEnergyIds()), paramVO.getEnergyClassify());
+        if(CollectionUtil.isEmpty(energyList)){
+            resultVO.setDataTime(LocalDateTime.now());
+            return resultVO;
+        }
         //能源ID energyIds
         List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
 
@@ -433,6 +437,11 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
         //能源列表
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(new HashSet<>(paramVO.getEnergyIds()), paramVO.getEnergyClassify());
+        StatisticsChartResultV2VO resultV2VO = new StatisticsChartResultV2VO();
+        if(CollectionUtil.isEmpty(energyList)){
+            resultV2VO.setDataTime(LocalDateTime.now());
+            return resultV2VO;
+        }
         //能源ID energyIds
         List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
 
@@ -445,7 +454,6 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByLabel(paramVO.getTopLabel(), paramVO.getChildLabels(), standingBookIdList);
 
         List<Long> standingBookIds = new ArrayList<>();
-        StatisticsChartResultV2VO resultV2VO = new StatisticsChartResultV2VO();
         if (CollectionUtil.isNotEmpty(standingbookIdsByLabel)) {
             List<Long> sids = standingbookIdsByLabel.stream().map(StandingbookLabelInfoDO::getStandingbookId).collect(Collectors.toList());
             List<StandingbookDO> collect = standingbookIdsByEnergy.stream().filter(s -> sids.contains(s.getId())).collect(Collectors.toList());
