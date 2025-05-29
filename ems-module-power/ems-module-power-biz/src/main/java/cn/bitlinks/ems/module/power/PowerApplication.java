@@ -2,7 +2,6 @@ package cn.bitlinks.ems.module.power;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.quartz.SchedulerException;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -18,7 +17,7 @@ import java.util.TimeZone;
 @EnableScheduling
 public class PowerApplication {
     @SneakyThrows(UnknownHostException.class)
-    public static void main(String[] args) throws SchedulerException, InterruptedException {
+    public static void main(String[] args) {
 
         TimeZone.setDefault(TimeZone.getTimeZone("GMT+8"));
         ConfigurableApplicationContext application = SpringApplication.run(PowerApplication.class, args);
