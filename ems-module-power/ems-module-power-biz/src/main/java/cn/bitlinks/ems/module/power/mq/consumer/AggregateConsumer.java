@@ -21,8 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RocketMQMessageListener(
-        topic = "${rocketmq.device-aggregate-consumer.device-aggregate}",
-        consumerGroup = "${rocketmq.device-aggregate-consumer.group}"
+        topic = "${rocketmq.topic.device-aggregate}",
+        consumerGroup = "${rocketmq.consumer.group}"
 )
 public class AggregateConsumer  implements RocketMQListener<List<MinuteAggregateDataDTO>> {
 
