@@ -120,5 +120,5 @@ lock4j:
 # bitlinks配置项，设置当前项目所有自定义的配置
 ems:
   starrocks:
-    api-url: http://192.168.91.68:8040
+    api-url: http://192.168.91.61:8030
     db: acquisition
