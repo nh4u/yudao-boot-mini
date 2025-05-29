@@ -87,4 +87,22 @@ public class StatisticsCommonService {
         return labelInfoDOList;
     }
 
+
+    /**
+     * 根据筛选条件筛选能源ID
+     *
+     * @return
+     */
+    public List<Long> getEnergyByStandingbookIds(List<Long> standingbookIds) {
+
+        List<StandingbookDO> standingbookList = standingbookService.getByStandingbookIds(standingbookIds);
+        List<Long> typeIds = standingbookList.stream().map(StandingbookDO::getTypeId).collect(Collectors.toList());
+        List<StandingbookTmplDaqAttrDO> tmplList = standingbookTmplDaqAttrService.getByTypeIds(typeIds);
+
+        return tmplList.stream().map(StandingbookTmplDaqAttrDO::getEnergyId).collect(Collectors.toList());
+    }
+
+
+
+
 }

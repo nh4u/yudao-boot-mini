@@ -71,4 +71,45 @@ public class UsageCostServiceImpl implements UsageCostService {
         return usageCostMapper.getListOfHome(startDate, endDate, energyIdList);
     }
 
+    /**
+     * 按能源和台账分组
+     *
+     * @param startDate
+     * @param endDate
+     * @param standingBookIds
+     * @return
+     */
+    @Override
+    @TenantIgnore
+    public List<UsageCostData> getEnergyAndSbStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getEnergyAndSbStandardCoal(startDate, endDate, standingBookIds);
+    }
+
+    /**
+     * 按能源分组
+     *
+     * @param startDate
+     * @param endDate
+     * @param standingBookIds
+     * @return
+     */
+    @Override
+    @TenantIgnore
+    public List<UsageCostData> getEnergyStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getEnergyStandardCoal(startDate, endDate, standingBookIds);
+    }
+
+    /**
+     * 按台账分组
+     *
+     * @param startDate
+     * @param endDate
+     * @param standingBookIds
+     * @return
+     */
+    @Override
+    @TenantIgnore
+    public List<UsageCostData> getStandingbookStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getStandingbookStandardCoal(startDate, endDate, standingBookIds);
+    }
 }

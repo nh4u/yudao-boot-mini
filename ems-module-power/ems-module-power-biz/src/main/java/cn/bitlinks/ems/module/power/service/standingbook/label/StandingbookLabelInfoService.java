@@ -15,4 +15,6 @@ public interface StandingbookLabelInfoService {
     List<StandingbookLabelInfoDO> getByValues(List<String> values);
 
     List<StandingbookLabelInfoDO> getByStandingBookIds(List<Long> standingBookIdList);
+
+    List<StandingbookLabelInfoDO> getByStandingBookId(Long standingBookId);
 }
