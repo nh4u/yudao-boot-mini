@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_PROD;
+import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_STAGE;
 import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.*;
 
 /**
@@ -111,7 +112,7 @@ public class AcquisitionJob implements Job {
 
             // 采集有io的参数的真实数据
             Map<String, ItemStatus> itemStatusMap;
-            if (env.equals(SPRING_PROFILES_ACTIVE_PROD)) {
+            if (env.equals(SPRING_PROFILES_ACTIVE_PROD) || env.equals(SPRING_PROFILES_ACTIVE_STAGE)) {
                 ServiceSettingsDTO serviceSettingsDTO =
                         (ServiceSettingsDTO) jobDataMap.get(ACQUISITION_JOB_DATA_MAP_KEY_SERVICE_SETTINGS);
                 // 采集所有参数

@@ -157,7 +157,7 @@ rocketmq:
   # 自定义配置
   # 生产者发送消息的topic
   topic:
-    device-acquisition: "device_acquisition_topic-${spring.profiles.active}"
+    device-aggregate: "device_aggregate_topic-${spring.profiles.active}"
 
 --- #################### bitlinks相关配置 ####################
 
