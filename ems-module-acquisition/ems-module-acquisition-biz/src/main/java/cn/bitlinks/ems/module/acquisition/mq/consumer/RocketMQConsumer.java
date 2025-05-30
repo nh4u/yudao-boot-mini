@@ -3,12 +3,15 @@ package cn.bitlinks.ems.module.acquisition.mq.consumer;
 import cn.bitlinks.ems.framework.common.core.ParameterKey;
 import cn.bitlinks.ems.framework.common.core.StandingbookAcquisitionDetailDTO;
 import cn.bitlinks.ems.framework.common.util.calc.AcquisitionFormulaUtils;
+import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
 import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectRawDataDO;
 import cn.bitlinks.ems.module.acquisition.mq.message.AcquisitionMessage;
 import cn.bitlinks.ems.module.acquisition.starrocks.StarRocksStreamLoadService;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+
+import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQListener;
 
@@ -29,6 +32,7 @@ public abstract class RocketMQConsumer implements RocketMQListener<AcquisitionMe
     @Override
     public void onMessage(AcquisitionMessage acquisitionMessage) {
 
+        log.info("数据采集任务接收到mq消息：{}", JSONUtil.toJsonStr(acquisitionMessage));
         try {
             Map<String, ItemStatus> itemStatusMap = acquisitionMessage.getItemStatusMap();
             List<CollectRawDataDO> collectRawDataDOList = new ArrayList<>();
@@ -44,6 +48,7 @@ public abstract class RocketMQConsumer implements RocketMQListener<AcquisitionMe
                 // 计算公式的值
                 String calcValue = AcquisitionFormulaUtils.calcSingleParamValue(detail, paramMap, itemStatusMap);
                 if (StringUtils.isEmpty(calcValue)) {
+                    log.info("单个计算值为空，不进行数据插入,{}",JSONUtil.toJsonStr(detail));
                     return;
                 }
                 // 计算出值, 将数据带入实时数据表中.
@@ -65,6 +70,7 @@ public abstract class RocketMQConsumer implements RocketMQListener<AcquisitionMe
             });
 
             if (CollUtil.isEmpty(collectRawDataDOList)) {
+                log.info("计算值后数据全为空，不进行数据插入,{}",JSONUtil.toJsonStr(acquisitionMessage.getStandingbookId()));
                 return;
             }
             // 执行插入操作
