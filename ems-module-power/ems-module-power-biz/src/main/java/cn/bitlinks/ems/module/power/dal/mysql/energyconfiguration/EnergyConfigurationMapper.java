@@ -80,5 +80,5 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
             "  AND deleted = 0 ", // 增加删除状态过滤
             "LIMIT 1" // 确保唯一性
     })
-    String selectUnitByEnergyNameAndChinese(@Param("energyId") String energyId);
+    String selectUnitByEnergyNameAndChinese(@Param("energyId") Long energyId);
 }

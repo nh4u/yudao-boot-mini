@@ -73,6 +73,22 @@ public interface StandingbookTmplDaqAttrService {
     Map<Long, List<StandingbookTmplDaqAttrDO>> getDaqAttrsByTypeIds(List<Long> typeIds);
 
     /**
+     * 获取能源id
+     *
+     * @param sbId
+     * @return
+     */
+    Long getEnergyIdBySbId(Long sbId);
+
+    /**
+     * 获取能源id
+     *
+     * @param typeId
+     * @return
+     */
+    Long getEnergyIdByTypeId(Long typeId);
+
+    /**
      * 根据台账ids获取数采属性列表（启用的）
      *
      * @param sbIds 台账id
@@ -98,6 +114,7 @@ public interface StandingbookTmplDaqAttrService {
 
     /**
      * 获取所有的typeId-ennergyId映射
+     *
      * @return
      */
     List<StandingbookTmplDaqAttrDO> getEnergyMapping();

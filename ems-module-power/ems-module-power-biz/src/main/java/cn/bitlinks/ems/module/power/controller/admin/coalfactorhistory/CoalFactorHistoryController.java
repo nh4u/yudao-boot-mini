@@ -81,7 +81,7 @@ public class CoalFactorHistoryController {
     @PreAuthorize("@ss.hasPermission('power:coal-factor-history:query')")
     public CommonResult<PageResult<CoalFactorHistoryRespVO>> getCoalFactorHistoryPage(@Valid CoalFactorHistoryPageReqVO pageReqVO, Long energyId) {
         PageResult<CoalFactorHistoryDO> pageResult = coalFactorHistoryService.getCoalFactorHistoryPage(pageReqVO);
-        String energyUnit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(String.valueOf(energyId));
+        String energyUnit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energyId);
         if (energyUnit == null || energyUnit.isEmpty()) {
             energyUnit = "";
         }

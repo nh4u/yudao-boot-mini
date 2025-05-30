@@ -51,12 +51,21 @@ public interface ErrorCodeConstants {
 
     //========== 数采补录 1-001-301-005 ==========
     ErrorCode ADDITIONAL_RECORDING_NOT_EXISTS = new ErrorCode(1_001_301_015, "补录不存在");
-    ErrorCode THIS_TIME_EXISTS_DATA = new ErrorCode(1_001_301_201, "该时间点已存在非补录数据，请选择其他时间");
+    ErrorCode THIS_TIME_EXISTS_DATA = new ErrorCode(1_001_301_201, "该时间点已存在数据，请选择其他时间");
     ErrorCode THIS_VALUE_NOT_LESS = new ErrorCode(1_001_301_202, "本次数值不可小于上次数值");
     ErrorCode THIS_VALUE_NOT_MORE = new ErrorCode(1_001_301_203, "本次数值不可大于下次数值");
     ErrorCode VALUE_TYPE_REQUIRED = new ErrorCode(1_001_301_204, "该计量器具能源用量的数值特征为累积值，需要指定数据是全量还是增量");
     ErrorCode PURCHASE_TIME_OVER_CURRENT = new ErrorCode(1_001_301_205, "购入时间不可大于当前时间");
-
+    ErrorCode ADDITIONAL_RECORDING_ENERGY_NOT_EXISTS = new ErrorCode(1_001_301_206, "无对应能源用量，不可进行补录");
+    ErrorCode CURRENT_TIME_ERROR=new ErrorCode(1_001_301_207,"为保证数据准确，本次采集时间必须要小于上次采集时间且要小于当前时间的前十分钟点！");
+    ErrorCode CURRENT_TIME_TOO_BIG_ERROR=new ErrorCode(1_001_301_208,"本次采集数据值不可大于已有数据！");
+    ErrorCode CURRENT_TIME_TOO_SMALL_ERROR=new ErrorCode(1_001_301_209,"本次采集数据值不可小于已有数据！");
+    ErrorCode INCREMENT_HISTORY_NOT_EXISTS=new ErrorCode(1_001_301_210,"无历史数据，不可单独补录增量，请选择全量进行补录！");
+    ErrorCode PRE_COLLECT_TIME_ERROR=new ErrorCode(1_001_301_211,"上次采集时间与历史数据不连续，不可进行补录！");
+    ErrorCode CUR_COLLECT_TIME_ERROR=new ErrorCode(1_001_301_212,"本次采集时间与历史数据不连续，不可进行补录！");
+    ErrorCode RANGE_TIME_NOT_NULL=new ErrorCode(1_001_301_213,"上次采集时间和本次采集时间不能为空");
+    ErrorCode RANGE_TIME_ERROR=new ErrorCode(1_001_301_214,"上次采集时间和本次采集时间时间范围与历史数据不连续，不可进行补录！");
+    ErrorCode ADDITIONAL_RECORDING_SPLIT_ERROR = new ErrorCode(1_001_301_215, "补录拆分失败，无法补录");
     // ========== 台账类型 ==========
     ErrorCode STANDINGBOOK_TYPE_NOT_EXISTS = new ErrorCode(1_001_202_000, "台账类型不存在");
     ErrorCode STANDINGBOOK_TYPE_EXITS_CHILDREN = new ErrorCode(1_001_202_001, "存在存在子台账类型，无法删除");
