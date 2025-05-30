@@ -34,7 +34,7 @@ public class WarningInfoController {
 
     @PostMapping("/statistics")
     @Operation(summary = "告警信息统计")
-    @PreAuthorize("@ss.hasPermission('power:warning-info:query')")
+    //@PreAuthorize("@ss.hasPermission('power:warning-info:query')")
     @TenantIgnore
     public CommonResult<WarningInfoStatisticsRespVO> statistics() {
         return success(warningInfoService.statistics());
@@ -43,7 +43,7 @@ public class WarningInfoController {
 
     @PutMapping("/updateStatus")
     @Operation(summary = "更新告警信息状态：点击处理：1，点击处理完成：2")
-    @PreAuthorize("@ss.hasPermission('power:warning-info:update')")
+    //@PreAuthorize("@ss.hasPermission('power:warning-info:update')")
     @TenantIgnore
     public CommonResult<Boolean> updateWarningInfoStatus(@Valid @RequestBody WarningInfoStatusUpdReqVO updateReqVO) {
         warningInfoService.updateWarningInfoStatus(updateReqVO);
@@ -53,7 +53,7 @@ public class WarningInfoController {
     @GetMapping("/get")
     @Operation(summary = "获得告警信息")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
-    @PreAuthorize("@ss.hasPermission('power:warning-info:query')")
+    //@PreAuthorize("@ss.hasPermission('power:warning-info:query')")
     @TenantIgnore
     public CommonResult<WarningInfoRespVO> getWarningInfo(@RequestParam("id") Long id) {
         WarningInfoDO warningInfo = warningInfoService.getWarningInfo(id);
@@ -62,7 +62,7 @@ public class WarningInfoController {
 
     @GetMapping("/page")
     @Operation(summary = "获得我的告警信息分页/小铃铛传status处理状态0-未处理，第一页，默认页数填5")
-    @PreAuthorize("@ss.hasPermission('power:warning-info:query')")
+    //@PreAuthorize("@ss.hasPermission('power:warning-info:query')")
     @TenantIgnore
     public CommonResult<PageResult<WarningInfoRespVO>> getWarningInfoPage(@Valid WarningInfoPageReqVO pageReqVO) {
         PageResult<WarningInfoDO> pageResult = warningInfoService.getWarningInfoPage(pageReqVO);

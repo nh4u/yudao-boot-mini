@@ -4,11 +4,13 @@ import cn.bitlinks.ems.framework.common.exception.ErrorCode;
 
 /**
  * acquisition  错误码枚举类
- *
- * acquisition 系统，使用 1-001-000-000 段
+ * <p>
+ * acquisition 系统，使用 1-010-000-000 段
  */
 public interface ErrorCodeConstants {
 
-
+    ErrorCode STREAM_LOAD_INIT_FAIL = new ErrorCode(1_010_000_001, "stream load初始化插入数据失败");
+    ErrorCode STREAM_LOAD_DEL_RANGE_FAIL = new ErrorCode(1_010_000_002, "stream load范围之前插入数据失败");
+    ErrorCode STREAM_LOAD_RANGE_FAIL = new ErrorCode(1_010_000_003, "stream load范围之后插入数据失败");
 
 }

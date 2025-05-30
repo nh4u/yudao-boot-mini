@@ -449,6 +449,22 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
     }
 
     @Override
+    public Long getEnergyIdBySbId(Long sbId) {
+        // 查询台账分类
+        StandingbookDO standingbookDO = standingbookMapper.selectById(sbId);
+        return getEnergyIdByTypeId(standingbookDO.getTypeId());
+    }
+
+    @Override
+    public Long getEnergyIdByTypeId(Long typeId) {
+        List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS = standingbookTmplDaqAttrMapper.selectEnergyMapping(Collections.singletonList(typeId));
+        if (CollUtil.isEmpty(standingbookTmplDaqAttrDOS)) {
+            return null;
+        }
+        return standingbookTmplDaqAttrDOS.get(0).getEnergyId();
+    }
+
+    @Override
     public Map<Long, List<StandingbookTmplDaqAttrDO>> getDaqAttrsBySbIds(List<Long> sbIds) {
 
         MPJLambdaWrapperX<StandingbookTmplDaqAttrDO> query = new MPJLambdaWrapperX<StandingbookTmplDaqAttrDO>()
@@ -501,7 +517,7 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
 
     @Override
     public List<StandingbookTmplDaqAttrDO> getEnergyMapping() {
-        return standingbookTmplDaqAttrMapper.selectEnergyMapping();
+        return standingbookTmplDaqAttrMapper.selectEnergyMapping(null);
     }
 
     @Override

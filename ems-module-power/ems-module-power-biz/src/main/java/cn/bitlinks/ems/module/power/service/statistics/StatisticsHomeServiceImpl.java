@@ -111,6 +111,10 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         // 查询能源类型与台账
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(
                 null, paramVO.getEnergyClassify());
+        if(CollectionUtil.isEmpty(energyList)){
+            statisticsHomeResultVO.setDataUpdateTime(LocalDateTime.now());
+            return statisticsHomeResultVO;
+        }
         List<Long> energyIdList = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
         List<StandingbookDO> standingbookIdsByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIdList);
         List<Long> standingBookIds = standingbookIdsByEnergy.stream().map(StandingbookDO::getId).collect(Collectors.toList());
@@ -176,6 +180,9 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         // 查询能源类型与台账
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(
                 null, paramVO.getEnergyClassify());
+        if(CollectionUtil.isEmpty(energyList)){
+            return Collections.emptyList();
+        }
 
         List<Long> energyIdList = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
 
@@ -254,6 +261,11 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         // 4. 查询能源信息及能源ID
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(
                 null, paramVO.getEnergyClassify());
+        ComparisonChartResultVO result = new ComparisonChartResultVO();
+        if(CollectionUtil.isEmpty(energyList)){
+            result.setDataTime(LocalDateTime.now());
+            return result;
+        }
         List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
 
         // 5. 查询台账信息（按能源）
@@ -277,7 +289,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         List<ComparisonChartGroupVO> groupList = buildSimpleChart(usageCostDataList, xdata, dataTypeEnum, valueExtractor);
 
         // 9. 构建最终结果并缓存
-        ComparisonChartResultVO result = new ComparisonChartResultVO();
+
         result.setList(groupList);
         result.setDataTime(lastTime);
 

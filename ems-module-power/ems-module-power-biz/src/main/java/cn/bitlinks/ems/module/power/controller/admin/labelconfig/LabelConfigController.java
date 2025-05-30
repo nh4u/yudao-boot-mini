@@ -41,14 +41,14 @@ public class LabelConfigController {
     @Idempotent(timeout = 5)
     @PostMapping("/create")
     @Operation(summary = "创建配置标签")
-    @PreAuthorize("@ss.hasPermission('power:label-config:create')")
+    //@PreAuthorize("@ss.hasPermission('power:label-config:create')")
     public CommonResult<Long> createLabelConfig(@Valid @RequestBody LabelConfigSaveReqVO createReqVO) {
         return success(labelConfigService.createLabelConfig(createReqVO));
     }
 
     @PutMapping("/update")
     @Operation(summary = "更新配置标签")
-    @PreAuthorize("@ss.hasPermission('power:label-config:update')")
+    //@PreAuthorize("@ss.hasPermission('power:label-config:update')")
     public CommonResult<Boolean> updateLabelConfig(@Valid @RequestBody LabelConfigSaveReqVO updateReqVO) {
         labelConfigService.updateLabelConfig(updateReqVO);
         return success(true);
@@ -57,7 +57,7 @@ public class LabelConfigController {
     @DeleteMapping("/delete")
     @Operation(summary = "删除配置标签")
     @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('power:label-config:delete')")
+    //@PreAuthorize("@ss.hasPermission('power:label-config:delete')")
     public CommonResult<Boolean> deleteLabelConfig(@RequestParam("id") Long id) {
         labelConfigService.deleteLabelConfig(id);
         return success(true);
@@ -66,7 +66,7 @@ public class LabelConfigController {
     @GetMapping("/get")
     @Operation(summary = "获得配置标签")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
-    @PreAuthorize("@ss.hasPermission('power:label-config:query')")
+    //@PreAuthorize("@ss.hasPermission('power:label-config:query')")
     public CommonResult<LabelConfigRespVO> getLabelConfig(@RequestParam("id") Long id) {
         LabelConfigDO labelConfig = labelConfigService.getLabelConfig(id);
         return success(BeanUtils.toBean(labelConfig, LabelConfigRespVO.class));
@@ -74,7 +74,7 @@ public class LabelConfigController {
 
     @GetMapping("/page")
     @Operation(summary = "获得配置标签分页")
-    @PreAuthorize("@ss.hasPermission('power:label-config:query')")
+    //@PreAuthorize("@ss.hasPermission('power:label-config:query')")
     public CommonResult<PageResult<LabelConfigRespVO>> getLabelConfigPage(@Valid LabelConfigPageReqVO pageReqVO) {
         PageResult<LabelConfigDO> pageResult = labelConfigService.getLabelConfigPage(pageReqVO);
         return success(BeanUtils.toBean(pageResult, LabelConfigRespVO.class));
@@ -82,7 +82,7 @@ public class LabelConfigController {
 
     @GetMapping("/export-excel")
     @Operation(summary = "导出配置标签 Excel")
-    @PreAuthorize("@ss.hasPermission('power:label-config:export')")
+    //@PreAuthorize("@ss.hasPermission('power:label-config:export')")
     @ApiAccessLog(operateType = EXPORT)
     public void exportLabelConfigExcel(@Valid LabelConfigPageReqVO pageReqVO,
                                        HttpServletResponse response) throws IOException {
@@ -101,7 +101,7 @@ public class LabelConfigController {
      */
     @GetMapping("/tree")
     @Operation(summary = "获取标签tree")
-    @PreAuthorize("@ss.hasPermission('power:label-config:query')")
+    //@PreAuthorize("@ss.hasPermission('power:label-config:query')")
     public CommonResult<List<Tree<Long>>> getLabelTree(@RequestParam("lazy") boolean lazy,
                                                        @RequestParam(value = "parentId", required = false) Long parentId,
                                                        @RequestParam(value = "labelName", required = false) String labelName) {

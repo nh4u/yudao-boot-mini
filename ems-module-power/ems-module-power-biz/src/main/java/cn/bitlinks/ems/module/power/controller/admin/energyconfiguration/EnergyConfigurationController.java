@@ -39,14 +39,14 @@ public class EnergyConfigurationController {
 
     @PostMapping("/create")
     @Operation(summary = "创建能源配置")
-    @PreAuthorize("@ss.hasPermission('power:energy-configuration:create')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-configuration:create')")
     public CommonResult<Long> createEnergyConfiguration(@Valid @RequestBody EnergyConfigurationSaveReqVO createReqVO) {
         return success(energyConfigurationService.createEnergyConfiguration(createReqVO));
     }
 
     @PutMapping("/update")
     @Operation(summary = "更新能源配置")
-    @PreAuthorize("@ss.hasPermission('power:energy-configuration:update')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-configuration:update')")
     public CommonResult<Boolean> updateEnergyConfiguration(@Valid @RequestBody EnergyConfigurationSaveReqVO updateReqVO) {
         energyConfigurationService.updateEnergyConfiguration(updateReqVO);
         return success(true);
@@ -55,7 +55,7 @@ public class EnergyConfigurationController {
     @DeleteMapping("/delete")
     @Operation(summary = "删除能源配置")
     @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('power:energy-configuration:delete')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-configuration:delete')")
     public CommonResult<Boolean> deleteEnergyConfiguration(@RequestParam("id") Long id) {
         energyConfigurationService.deleteEnergyConfiguration(id);
         return success(true);
@@ -64,7 +64,7 @@ public class EnergyConfigurationController {
     @DeleteMapping("/deleteIds")
     @Operation(summary = "批量删除能源配置")
     @Parameter(name = "ids", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('power:energy-configuration:deleteIds')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-configuration:deleteIds')")
     public CommonResult<Boolean> deleteEnergyConfigurations(@RequestBody List<Long> ids) {
         energyConfigurationService.deleteEnergyConfigurations(ids);
         return success(true);
@@ -73,14 +73,14 @@ public class EnergyConfigurationController {
     @GetMapping("/get")
     @Operation(summary = "获得能源配置")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
-    @PreAuthorize("@ss.hasPermission('power:energy-configuration:query')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-configuration:query')")
     public CommonResult<EnergyConfigurationRespVO> getEnergyConfiguration(@RequestParam("id") Long id) {
         return success(energyConfigurationService.getEnergyConfiguration(id));
     }
 
     @GetMapping("/page")
     @Operation(summary = "获得能源配置分页")
-    @PreAuthorize("@ss.hasPermission('power:energy-configuration:query')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-configuration:query')")
     public CommonResult<PageResult<EnergyConfigurationRespVO>> getEnergyConfigurationPage(@Valid EnergyConfigurationPageReqVO pageReqVO) {
         PageResult<EnergyConfigurationRespVO> pageResult = energyConfigurationService.getEnergyConfigurationPage(pageReqVO);
         return success(pageResult);
@@ -88,14 +88,14 @@ public class EnergyConfigurationController {
 
     @GetMapping("/getAll")
     @Operation(summary = "获得所有能源配置")
-    @PreAuthorize("@ss.hasPermission('power:energy-configuration:getAll')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-configuration:getAll')")
     public CommonResult<List<EnergyConfigurationDO>> getEnergyConfigurationPage(@Valid EnergyConfigurationSaveReqVO queryVO) {
         return success(energyConfigurationService.getAllEnergyConfiguration(queryVO));
     }
 
     @GetMapping("/export-excel")
     @Operation(summary = "导出能源配置 Excel")
-    @PreAuthorize("@ss.hasPermission('power:energy-configuration:export')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-configuration:export')")
     @ApiAccessLog(operateType = EXPORT)
     public void exportEnergyConfigurationExcel(@Valid EnergyConfigurationPageReqVO pageReqVO,
                                                HttpServletResponse response) throws IOException {
@@ -109,7 +109,7 @@ public class EnergyConfigurationController {
 
     @GetMapping("/searchEnergyConfigurations")
     @Operation(summary = "根据条件查询能源配置")
-    @PreAuthorize("@ss.hasPermission('power:energy-configuration:searchEnergyConfigurations')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-configuration:searchEnergyConfigurations')")
     @ApiAccessLog(operateType = EXPORT)
     public CommonResult<List<EnergyConfigurationRespVO>> searchEnergyConfigurations(
             @RequestParam(required = false) String energyName,
@@ -121,21 +121,21 @@ public class EnergyConfigurationController {
     //return success(BeanUtils.toBean(pageResult, EnergyConfigurationRespVO.class));
     @GetMapping("/getStatisticsEnergy")
     @Operation(summary = "用能分析下【统计能源条件】接口 1:外购2:园区")
-    @PreAuthorize("@ss.hasPermission('power:energy-configuration:query')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-configuration:query')")
     public CommonResult<Map<Integer, List<EnergyConfigurationDO>>> getEnergyMenu() {
         return success(energyConfigurationService.getEnergyMenu());
     }
 
     @GetMapping("/getEnergyTree")
     @Operation(summary = "计量器具关联配置能源tree")
-    @PreAuthorize("@ss.hasPermission('power:energy-configuration:query')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-configuration:query')")
     public CommonResult<List<EnergyConfigurationDO>> getEnergyTree() {
         return success(energyConfigurationService.getEnergyTree());
     }
 
     @PutMapping("/submitFormula")
     @Operation(summary = "提交指标煤公式/用能成本公式接口")
-    @PreAuthorize("@ss.hasPermission('power:energy-configuration:update')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-configuration:update')")
     public CommonResult<Boolean> submitFormula(@Valid @RequestBody EnergyConfigurationSaveReqVO updateReqVO) {
         energyConfigurationService.submitFormula(updateReqVO);
         return success(true);

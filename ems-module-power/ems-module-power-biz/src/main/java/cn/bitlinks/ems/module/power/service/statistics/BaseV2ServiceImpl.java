@@ -115,6 +115,10 @@ public class BaseV2ServiceImpl implements BaseV2Service {
 
         // 查询能源信息
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(new HashSet<>(paramVO.getEnergyIds()), paramVO.getEnergyClassify());
+        if(CollectionUtil.isEmpty(energyList)){
+            resultVO.setDataTime(LocalDateTime.now());
+            return resultVO;
+        }
         List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
 
         // 查询台账信息（先按能源）
@@ -493,6 +497,11 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         // 4. 查询能源信息及能源ID
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(
                 new HashSet<>(paramVO.getEnergyIds()), paramVO.getEnergyClassify());
+        ComparisonChartResultVO result = new ComparisonChartResultVO();
+        if(CollectionUtil.isEmpty(energyList)){
+            result.setDataTime(LocalDateTime.now());
+            return result;
+        }
         List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
 
         // 5. 查询台账信息（按能源）
@@ -509,7 +518,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
             List<StandingbookDO> collect = standingbookIdsByEnergy.stream()
                     .filter(s -> sids.contains(s.getId())).collect(Collectors.toList());
             if (CollectionUtil.isEmpty(collect)) {
-                ComparisonChartResultVO result = new ComparisonChartResultVO();
+
                 result.setDataTime(LocalDateTime.now());
                 result.setList(Collections.emptyList());
                 return result;
@@ -541,7 +550,6 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         }
 
         // 10. 构建最终图表结果并缓存
-        ComparisonChartResultVO result = new ComparisonChartResultVO();
         result.setList(groupList);
         result.setDataTime(lastTime);
 

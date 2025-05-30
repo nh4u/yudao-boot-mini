@@ -8,5 +8,17 @@
         代码生成器暂时只生成 Mapper XML 文件本身，更多推荐 MybatisX 快速开发插件来生成查询。
         文档可见：https://www.bitlinks.cn/MyBatis/x-plugins/
      -->
-
+    <select id="selectEnergyMapping"
+            resultType="cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO">
+        SELECT DISTINCT type_id, energy_id
+        FROM power_standingbook_tmpl_daq_attr
+        WHERE energy_id IS NOT NULL
+        AND deleted = 0
+        <if test="typeIds != null and typeIds.size() > 0">
+            AND type_id IN
+            <foreach item="id" collection="typeIds" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+    </select>
 </mapper>
