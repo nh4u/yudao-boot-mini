@@ -101,4 +101,6 @@ public interface StandingbookTmplDaqAttrService {
      * @return
      */
     List<StandingbookTmplDaqAttrDO> getEnergyMapping();
+
+    List<StandingbookTmplDaqAttrDO> getByTypeIds(List<Long> typeIds);
 }

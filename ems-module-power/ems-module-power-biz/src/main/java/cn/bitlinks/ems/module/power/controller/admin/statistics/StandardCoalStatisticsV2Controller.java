@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.service.statistics.StandardCoalStructureV2Service;
 import cn.bitlinks.ems.module.power.service.statistics.StandardCoalV2Service;
+import cn.bitlinks.ems.module.power.service.statistics.StatisticsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
@@ -33,6 +34,8 @@ public class StandardCoalStatisticsV2Controller {
 
     @Resource
     private StandardCoalStructureV2Service standardCoalStructureV2Service;
+    @Resource
+    private StatisticsService statisticsService;
 
 
     @PostMapping("/standardCoalAnalysisTable")
@@ -59,5 +62,13 @@ public class StandardCoalStatisticsV2Controller {
     @Operation(summary = "用能结构分析（图）V2")
     public CommonResult<StatisticsChartPieResultVO> standardCoalStructureAnalysisChart(@Valid @RequestBody StatisticsParamV2VO paramVO) {
         return success(standardCoalStructureV2Service.standardCoalStructureAnalysisChart(paramVO));
+    }
+
+
+    @PostMapping("/energyFlowAnalysis")
+    @Operation(summary = "能流分析V2")
+    public CommonResult<EnergyFlowResultVO> energyFlowAnalysis(@Valid @RequestBody StatisticsParamV2VO paramVO) {
+        EnergyFlowResultVO jsonObject = statisticsService.energyFlowAnalysisV2(paramVO);
+        return success(jsonObject);
     }
 }

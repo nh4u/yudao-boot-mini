@@ -77,7 +77,37 @@ spring:
     password: bitlink2022 # 密码，建议生产环境开启
 
 
-
+--- #################### MQ 消息队列相关配置 ####################
+# rocketmq 配置项，对应 RocketMQProperties 配置类
+rocketmq:
+  name-server: 113.250.189.24:9876
+  producer:
+    # 权限认证
+    access-key: rocketAdminMQ
+    secret-key: 25be49067687d405a082dcaa2edaceea
+    # 发送同一类消息的设置为同一个group，保证唯一
+    group: "acquisition_producer_group-${spring.profiles.active}"
+    # 发送消息超时时间，默认3000
+    sendMessageTimeout: 10000
+    # 发送消息失败重试次数，默认2
+    retryTimesWhenSendFailed: 2
+    # 异步消息重试此处，默认2
+    retryTimesWhenSendAsyncFailed: 2
+    # 消息最大长度，默认1024 * 1024 * 4(默认4M)
+    maxMessageSize: 4096
+    # 压缩消息阈值，默认4k(1024 * 4)
+    compressMessageBodyThreshold: 4096
+    # 是否在内部发送失败时重试另一个broker，默认false
+    retryNextServer: false
+  consumer:
+    group: "acquisition_consumer_group-${spring.profiles.active}"
+    access-key: rocketAdminMQ
+    secretKey: 25be49067687d405a082dcaa2edaceea        # 密码
+  # 自定义配置
+  # 生产者发送消息的topic
+  topic:
+    device-acquisition: "device_acquisition_topic-${spring.profiles.active}"
+    device-aggregate: "device_aggregate_topic-${spring.profiles.active}"
 --- #################### 服务保障相关配置 ####################
 
 # Lock4j 配置项
@@ -92,5 +122,5 @@ lock4j:
 ems:
 # bitlinks配置项，设置当前项目所有自定义的配置
   starrocks:
-    api-url: http://82.157.40.213:8188
+    api-url: http://192.168.2.26:8040
     db: acquisition_dev

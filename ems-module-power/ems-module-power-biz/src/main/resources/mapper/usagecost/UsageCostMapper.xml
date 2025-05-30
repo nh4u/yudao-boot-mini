@@ -136,5 +136,55 @@
         energy_id
 
     </select>
+
+
+    <select id="getEnergyAndSbStandardCoal" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData">
+        SELECT
+        energy_id,
+        standingbook_id,
+        SUM(standard_coal_equivalent) AS totalStandardCoalEquivalent
+        FROM
+        usage_cost
+        WHERE
+        aggregate_time BETWEEN #{startDate} AND #{endDate}
+        AND standingbook_id IN
+        <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        group by energy_id,standingbook_id
+
+  </select>
+
+    <select id="getEnergyStandardCoal" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData">
+        SELECT
+        energy_id,
+        SUM(standard_coal_equivalent) AS totalStandardCoalEquivalent
+        FROM
+        usage_cost
+        WHERE
+        aggregate_time BETWEEN #{startDate} AND #{endDate}
+        AND standingbook_id IN
+        <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        group by energy_id
+
+    </select>
+
+    <select id="getStandingbookStandardCoal" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData">
+        SELECT
+        standingbook_id,
+        SUM(standard_coal_equivalent) AS totalStandardCoalEquivalent
+        FROM
+        usage_cost
+        WHERE
+        aggregate_time BETWEEN #{startDate} AND #{endDate}
+        AND standingbook_id IN
+        <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        group by standingbook_id
+
+    </select>
 </mapper>
 

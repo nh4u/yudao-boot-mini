@@ -23,6 +23,7 @@ public class StatisticsCacheConstants {
     public static final String USAGE_COST_STRUCTURE_TABLE = "statistics:usage:costStructure:table:";
     public static final String USAGE_COST_STRUCTURE_CHART = "statistics:usage:costStructure:chart:";
 
+    public static final String USAGE_STANDARD_COAL_ENERGY_FLOW_CHART = "statistics:usage:standardCoalEnergyFlow:chart:";
     public static final String COMPARISON_YOY_TABLE_COST = "statistics:yoy:discount:table:cost:";
     public static final String COMPARISON_YOY_TABLE_COAL = "statistics:yoy:discount:table:coal:";
 

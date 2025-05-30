@@ -29,6 +29,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.daparamformula.DaParamFormula
 import cn.bitlinks.ems.module.power.dal.dataobject.pricedetail.PriceDetailDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.usagecost.UsageCostDO;
 import cn.bitlinks.ems.module.power.dal.mysql.unitpriceconfiguration.UnitPriceConfigurationMapper;
+import cn.bitlinks.ems.module.power.dto.UsageCostDTO;
 import cn.bitlinks.ems.module.power.enums.BillingMethod;
 import cn.bitlinks.ems.module.power.enums.FormulaTypeEnum;
 import cn.bitlinks.ems.module.power.service.coalfactorhistory.CoalFactorHistoryService;
@@ -179,7 +180,7 @@ public class CalcUsageCostService {
             }
 
 
-            List<UsageCostDO> saveList = new ArrayList<>();
+            List<UsageCostDTO> saveList = new ArrayList<>();
 
             log.info("开始计算折标煤和用能成本");
 
@@ -216,13 +217,14 @@ public class CalcUsageCostService {
                 }
 
                 //组装成本
-                UsageCostDO usageCostDO = new UsageCostDO();
+                UsageCostDTO usageCostDO = new UsageCostDTO();
                 usageCostDO.setStandingbookId(dto.getStandingbookId());
                 usageCostDO.setEnergyId(standingbookEnergyTypeVO.getEnergyId());
                 usageCostDO.setCurrentUsage(currentUsage);
                 usageCostDO.setAggregateTime(dto.getAggregateTime());
                 usageCostDO.setCost(cost);
                 usageCostDO.setStandardCoalEquivalent(coalNum);
+                usageCostDO.setTotalUsage(BigDecimal.ZERO);
                 saveList.add(usageCostDO);
 
             });

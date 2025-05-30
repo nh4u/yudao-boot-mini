@@ -3,10 +3,11 @@
 spring:
   cloud:
     nacos:
-      server-addr: 192.168.2.31:8848 # Nacos 服务器地址
+      server-addr: 192.168.91.68:8848 # Nacos 服务器地址
       username: nacos # Nacos 账号
       password: nacos # Nacos 密码
       discovery: # 【配置中心】配置项
+        ip: 192.168.91.66
         namespace: 98dbbbee-8a69-4a76-afe7-b76281e8ddba # 命名空间。这里使用 dev 开发环境
         group: DEFAULT_GROUP # 使用的 Nacos 配置分组，默认为 DEFAULT_GROUP
         metadata:
@@ -56,66 +57,36 @@ spring:
       primary: master
       datasource:
         master:
-          url: jdbc:mysql://192.168.2.31:3307/ydme_ems?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true # MySQL Connector/J 8.X 连接的示例
+          url: jdbc:mysql://192.168.91.65:3306/ydme_ems_acquisition?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true # MySQL Connector/J 8.X 连接的示例
           username: root
-          password: BitlinkMysql@2022
+          password: f6158df6cd0b81d228e315d568f20b7f
         slave: # 模拟从库，可根据自己需要修改 # 模拟从库，可根据自己需要修改
           lazy: true # 开启懒加载，保证启动速度
-          url: jdbc:mysql://192.168.2.31:3307/ydme_ems?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true # MySQL Connector/J 8.X 连接的示例
+          url: jdbc:mysql://192.168.91.65:3306/ydme_ems_acquisition?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true # MySQL Connector/J 8.X 连接的示例
           username: root
-          password: BitlinkMysql@2022
+          password: f6158df6cd0b81d228e315d568f20b7f
         starrocks: # 模拟从库，可根据自己需要修改
           lazy: true # 开启懒加载，保证启动速度
-          url: jdbc:mysql://192.168.2.26:9030/acquisition?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
+          url: jdbc:mysql://192.168.91.61:9030/acquisition?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
           username: root
-          password: BitlinkStarrocks@2025
+          password: f6158df6cd0b81d228e315d568f20b7f
   # Redis 配置。Redisson 默认的配置足够使用，一般不需要进行调优
   redis:
-    host: 192.168.2.31 # 地址
+    host: 192.168.91.65 # 地址
     port: 6379 # 端口
-    database: 1 # 数据库索引
-    password: bitlink2022 # 密码，建议生产环境开启
+    database: 0 # 数据库索引
+    password: SbtyMveYNfLzTks7H0apCmyStPzWJqjy # 密码，建议生产环境开启
 
-
-
---- #################### 服务保障相关配置 ####################
-
-# Lock4j 配置项
-lock4j:
-  acquire-timeout: 3000 # 获取分布式锁超时时间，默认为 3000 毫秒
-  expire: 30000 # 分布式锁的超时时间，默认为 30 毫秒
-
---- #################### 监控相关配置 ####################
-
-# Actuator 监控端点的配置项
-management:
-  endpoints:
-    web:
-      base-path: /actuator # Actuator 提供的 API 接口的根目录。默认为 /actuator
-      exposure:
-        include: '*' # 需要开放的端点。默认值只打开 health 和 info 两个端点。通过设置 * ，可以开放所有端点。
-
-# Spring Boot Admin 配置项
-spring:
-  boot:
-    admin:
-      # Spring Boot Admin Client 客户端的相关配置
-      client:
-        instance:
-          service-host-type: IP # 注册实例时，优先使用 IP [IP, HOST_NAME, CANONICAL_HOST_NAME]
-      # Spring Boot Admin Server 服务端的相关配置
-      context-path: /admin # 配置 Spring
---- #################### 消息队列相关 ####################
-
+--- #################### MQ 消息队列相关配置 ####################
 # rocketmq 配置项，对应 RocketMQProperties 配置类
 rocketmq:
-  name-server: 113.250.189.24:9876
+  name-server: 192.168.91.68:9876
   producer:
     # 权限认证
     access-key: rocketAdminMQ
     secret-key: 25be49067687d405a082dcaa2edaceea
     # 发送同一类消息的设置为同一个group，保证唯一
-    group: "power_group-${spring.profiles.active}"
+    group: "acquisition_producer_group-${spring.profiles.active}"
     # 发送消息超时时间，默认3000
     sendMessageTimeout: 10000
     # 发送消息失败重试次数，默认2
@@ -129,19 +100,25 @@ rocketmq:
     # 是否在内部发送失败时重试另一个broker，默认false
     retryNextServer: false
   consumer:
-    group: "power_group-${spring.profiles.active}"
+    group: "acquisition_consumer_group-${spring.profiles.active}"
     access-key: rocketAdminMQ
     secretKey: 25be49067687d405a082dcaa2edaceea        # 密码
   # 自定义配置
   # 生产者发送消息的topic
   topic:
+    device-acquisition: "device_acquisition_topic-${spring.profiles.active}"
     device-aggregate: "device_aggregate_topic-${spring.profiles.active}"
+--- #################### 服务保障相关配置 ####################
+
+# Lock4j 配置项
+lock4j:
+  acquire-timeout: 3000 # 获取分布式锁超时时间，默认为 3000 毫秒
+  expire: 30000 # 分布式锁的超时时间，默认为 30 毫秒
 
 --- #################### bitlinks相关配置 ####################
 
 # bitlinks配置项，设置当前项目所有自定义的配置
 ems:
-  ocr:
-    uploadUrl: http://192.168.2.45:8090/api/ocr_table
-    token: 11
-  #demo: true # 开启演示模式
+  starrocks:
+    api-url: http://192.168.91.61:8030
+    db: acquisition
