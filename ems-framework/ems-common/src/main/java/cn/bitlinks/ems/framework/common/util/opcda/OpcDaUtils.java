@@ -22,10 +22,12 @@ public class OpcDaUtils {
             return Collections.emptyMap();
         }
         String[] items = itemList.toArray(new String[0]);
+        Group group = null;
+        Server server = null;
         try {
-            Server server = OpcDaConnectionManager.getServer(host, user, password, clsid);
+            server = OpcDaConnectionManager.getServer(host, user, password, clsid);
             OpcDaConnectionMonitor.startMonitoring(host, user, password, clsid);
-            Group group = server.addGroup("DynamicGroup"+ UUID.randomUUID());
+            group = server.addGroup("DynamicGroup"+ UUID.randomUUID());
             group.setActive(true);
             group.addItems(items);
             return OpcUtil.readValues(group, itemList);
@@ -33,6 +35,14 @@ public class OpcDaUtils {
             // 记录日志或处理异常
             log.error("Failed to read values from OPC server", e);
             return null;
+        }finally {
+            if (group != null) {
+                try {
+                    server.removeGroup(group, true);
+                } catch (Exception ex) {
+                    log.warn("释放 OPC group 失败", ex);
+                }
+            }
         }
     }
 }
