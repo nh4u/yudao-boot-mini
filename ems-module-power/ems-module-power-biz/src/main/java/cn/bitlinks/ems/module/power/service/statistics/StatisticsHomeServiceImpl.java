@@ -195,7 +195,14 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
         List<UsageCostData> usageCostDataList = usageCostService.getListOfHome(startTime, endTime, energyIdList);
         if (CollectionUtil.isEmpty(usageCostDataList)) {
-            return Collections.emptyList();
+            List<StatisticsOverviewEnergyData> result = new ArrayList<>();
+            energyList.forEach(energyConfigurationDO -> {
+                StatisticsOverviewEnergyData energyData = new StatisticsOverviewEnergyData();
+                energyData.setName(energyConfigurationDO.getEnergyName());
+                energyData.setEnergyIcon(energyConfigurationDO.getEnergyIcon());
+                result.add(energyData);
+            });
+            return result;
         }
         return energy(usageCostDataList, energyList);
     }
@@ -213,18 +220,35 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         sum.setStandardCoal(totalStandardCoalEquivalent);
         result.add(sum);
 
-        Map<Long, EnergyConfigurationDO> energyIdMap = energyList.stream().collect(Collectors.toMap(EnergyConfigurationDO::getId, Function.identity()));
-        usageCostDataList.forEach(usageCostData -> {
-            EnergyConfigurationDO energyConfigurationDO = energyIdMap.get(usageCostData.getEnergyId());
+        Map<Long, UsageCostData> energyIdUsageCostDataMap =
+                usageCostDataList.stream().collect(Collectors.toMap(UsageCostData::getEnergyId, Function.identity()));
+
+        energyList.forEach(energyConfigurationDO -> {
+            UsageCostData usageCostData  = energyIdUsageCostDataMap.get(energyConfigurationDO.getId());
+            //EnergyConfigurationDO energyConfigurationDO = energyIdMap.get(usageCostData.getEnergyId());
             StatisticsOverviewEnergyData energyData = new StatisticsOverviewEnergyData();
             energyData.setName(energyConfigurationDO.getEnergyName());
-            energyData.setMoney(usageCostData.getTotalCost());
-            energyData.setStandardCoal(usageCostData.getTotalStandardCoalEquivalent());
-            energyData.setConsumption(usageCostData.getTotalCost());
-            energyData.setConsumption(usageCostData.getTotalCost());
             energyData.setEnergyIcon(energyConfigurationDO.getEnergyIcon());
+            if(Objects.nonNull(usageCostData)){
+                energyData.setMoney(usageCostData.getTotalCost());
+                energyData.setStandardCoal(usageCostData.getTotalStandardCoalEquivalent());
+                energyData.setConsumption(usageCostData.getTotalCost());
+            }
             result.add(energyData);
         });
+
+//        Map<Long, EnergyConfigurationDO> energyIdMap = energyList.stream().collect(Collectors.toMap(EnergyConfigurationDO::getId, Function.identity()));
+//        usageCostDataList.forEach(usageCostData -> {
+//            EnergyConfigurationDO energyConfigurationDO = energyIdMap.get(usageCostData.getEnergyId());
+//            StatisticsOverviewEnergyData energyData = new StatisticsOverviewEnergyData();
+//            energyData.setName(energyConfigurationDO.getEnergyName());
+//            energyData.setMoney(usageCostData.getTotalCost());
+//            energyData.setStandardCoal(usageCostData.getTotalStandardCoalEquivalent());
+//            energyData.setConsumption(usageCostData.getTotalCost());
+//            energyData.setConsumption(usageCostData.getTotalCost());
+//            energyData.setEnergyIcon(energyConfigurationDO.getEnergyIcon());
+//            result.add(energyData);
+//        });
 
 
         return result;
@@ -270,6 +294,10 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
         // 5. 查询台账信息（按能源）
         List<StandingbookDO> standingbookIdsByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIds);
+        if(CollectionUtil.isEmpty(standingbookIdsByEnergy)){
+            result.setDataTime(LocalDateTime.now());
+            return result;
+        }
         List<Long> standingBookIds = standingbookIdsByEnergy.stream().map(StandingbookDO::getId).collect(Collectors.toList());
 
         StatisticsParamV2VO param = new StatisticsParamV2VO();
