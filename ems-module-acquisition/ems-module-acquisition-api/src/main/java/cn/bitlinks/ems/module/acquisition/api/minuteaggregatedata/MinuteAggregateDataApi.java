@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata;
 
+import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.enums.ApiConstants;
@@ -8,6 +9,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDateTime;
 
@@ -26,7 +29,8 @@ public interface MinuteAggregateDataApi {
      */
     @GetMapping(PREFIX + "/selectByAggTime")
     @Operation(summary = "查询设备指定时间的聚合数据")
-    MinuteAggregateDataDTO selectByAggTime(Long standingbookId, LocalDateTime thisCollectTime);
+    CommonResult<MinuteAggregateDataDTO> selectByAggTime(@RequestParam("standingbookId") Long standingbookId,
+                                                         @RequestParam("thisCollectTime") LocalDateTime thisCollectTime);
 
     /**
      * 获取当前时间上次的最新数据
@@ -37,7 +41,8 @@ public interface MinuteAggregateDataApi {
      */
     @GetMapping(PREFIX + "/selectLatestByAggTime")
     @Operation(summary = "查询设备指定时间的上次聚合数据")
-    MinuteAggregateDataDTO selectLatestByAggTime(Long standingbookId, LocalDateTime currentCollectTime);
+    CommonResult<MinuteAggregateDataDTO> selectLatestByAggTime(@RequestParam("standingbookId") Long standingbookId,
+                                                               @RequestParam("currentCollectTime") LocalDateTime currentCollectTime);
 
     /**
      * 获取台账对应的最早的聚合数据
@@ -47,7 +52,7 @@ public interface MinuteAggregateDataApi {
      */
     @GetMapping(PREFIX + "/selectOldestByStandingBookId")
     @Operation(summary = "获取台账对应的最早的聚合数据")
-    MinuteAggregateDataDTO selectOldestByStandingBookId(Long standingbookId);
+    CommonResult<MinuteAggregateDataDTO> selectOldestByStandingBookId(@RequestParam("standingbookId") Long standingbookId);
 
     /**
      * 获取台账对应的最新的聚合数据
@@ -57,29 +62,32 @@ public interface MinuteAggregateDataApi {
      */
     @GetMapping(PREFIX + "/selectLatestByStandingBookId")
     @Operation(summary = "获取台账对应的最新的聚合数据")
-    MinuteAggregateDataDTO selectLatestByStandingBookId(Long standingbookId);
+    CommonResult<MinuteAggregateDataDTO> selectLatestByStandingBookId(@RequestParam("standingbookId") Long standingbookId);
 
     /**
      * 直接插入单条数据
+     *
      * @param minuteAggregateDataDTO
      */
     @PostMapping(PREFIX + "/insertSingleData")
     @Operation(summary = "直接插入数据")
-    void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO);
+    void insertSingleData(@RequestBody MinuteAggregateDataDTO minuteAggregateDataDTO);
 
     /**
      * 根据两条数据进行拆分，并且修改最后一条的增量
+     *
      * @param minuteAggDataSplitDTO
      */
     @PostMapping(PREFIX + "/insertDelRangeData")
     @Operation(summary = "根据两条数据进行拆分，并且修改最后一条的增量")
-    void insertDelRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO);
+    void insertDelRangeData(@RequestBody MinuteAggDataSplitDTO minuteAggDataSplitDTO);
 
     /**
      * 根据两条数据进行拆分
+     *
      * @param minuteAggDataSplitDTO
      */
     @PostMapping(PREFIX + "/insertRangeData")
     @Operation(summary = "根据两条数据进行拆分")
-    void insertRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO);
+    void insertRangeData(@RequestBody MinuteAggDataSplitDTO minuteAggDataSplitDTO);
 }

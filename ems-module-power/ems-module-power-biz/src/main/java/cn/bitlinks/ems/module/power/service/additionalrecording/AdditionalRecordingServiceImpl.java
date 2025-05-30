@@ -77,6 +77,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
                     createReqVO.getThisCollectTime(), createReqVO.getPreValue(), createReqVO.getThisValue());
         } catch (Exception e) {
             log.error("补录拆分数据失败，失败原因:{}", e.getMessage(), e);
+            throw exception(ADDITIONAL_RECORDING_SPLIT_ERROR);
         }
         AdditionalRecordingDO additionalRecording = BeanUtils.toBean(createReqVO, AdditionalRecordingDO.class);
         if (createReqVO.getRecordPerson() == null) {
@@ -104,9 +105,9 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
                            LocalDateTime currentCollectTime, BigDecimal preValue, BigDecimal thisValue) {
         // 获取此时聚合数据的最新和最老数据
         MinuteAggregateDataDTO oldestData =
-                minuteAggregateDataApi.selectOldestByStandingBookId(standingbookId);
+                minuteAggregateDataApi.selectOldestByStandingBookId(standingbookId).getData();
         MinuteAggregateDataDTO latestData =
-                minuteAggregateDataApi.selectLatestByStandingBookId(standingbookId);
+                minuteAggregateDataApi.selectLatestByStandingBookId(standingbookId).getData();
         // 0.0本次采集时间必须要小于上次采集时间且要小于当前时间的前十分钟点
         if (!LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(10L).isAfter(currentCollectTime)) {
             throw exception(CURRENT_TIME_ERROR);
@@ -297,7 +298,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
 
         MinuteAggregateDataDTO minuteAggregateDataDTO =
                 minuteAggregateDataApi.selectLatestByAggTime(standingbookId,
-                        currentCollectTime);
+                        currentCollectTime).getData();
         if (Objects.isNull(minuteAggregateDataDTO)) {
             return null;
         }

@@ -47,7 +47,7 @@
         LIMIT 1
     </select>
     <select id="selectOldestByStandingBookId"
-            resultType="cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO">
+            resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
         SELECT *
         FROM minute_aggregate_data
         WHERE standingbook_id = #{standingbookId}
@@ -55,7 +55,7 @@
         LIMIT 1
     </select>
     <select id="selectLatestByStandingBookId"
-            resultType="cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO">
+            resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
         SELECT *
         FROM minute_aggregate_data
         WHERE standingbook_id = #{standingbookId}

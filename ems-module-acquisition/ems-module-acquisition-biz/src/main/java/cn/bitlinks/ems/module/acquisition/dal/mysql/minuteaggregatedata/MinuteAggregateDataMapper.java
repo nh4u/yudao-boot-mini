@@ -72,7 +72,7 @@ public interface MinuteAggregateDataMapper {
      * @param standingbookId
      * @return
      */
-    MinuteAggregateDataDTO selectOldestByStandingBookId(@Param("standingbookId")Long standingbookId);
+    MinuteAggregateDataDO selectOldestByStandingBookId(@Param("standingbookId")Long standingbookId);
 
     /**
      * 查询聚合数据中最新的数据
@@ -80,7 +80,7 @@ public interface MinuteAggregateDataMapper {
      * @return
      */
 
-    MinuteAggregateDataDTO selectLatestByStandingBookId(@Param("standingbookId")Long standingbookId);
+    MinuteAggregateDataDO selectLatestByStandingBookId(@Param("standingbookId")Long standingbookId);
 
     /**
      * 删除台账的指定时间的数据

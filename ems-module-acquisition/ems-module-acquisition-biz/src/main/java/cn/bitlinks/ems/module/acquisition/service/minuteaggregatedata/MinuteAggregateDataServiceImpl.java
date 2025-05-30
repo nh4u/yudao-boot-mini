@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
@@ -42,6 +43,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     private static final String TB_NAME = "minute_aggregate_data";
 
     @Override
+    @TenantIgnore
     public MinuteAggregateDataDTO selectByAggTime(Long standingbookId, LocalDateTime thisCollectTime) {
         MinuteAggregateDataDO minuteAggregateDataDO = minuteAggregateDataMapper.selectExactData(standingbookId,
                 thisCollectTime);
@@ -52,6 +54,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     }
 
     @Override
+    @TenantIgnore
     public MinuteAggregateDataDTO selectLatestByAggTime(Long standingbookId, LocalDateTime currentCollectTime) {
         MinuteAggregateDataDO minuteAggregateDataDO = minuteAggregateDataMapper.selectLatestDataByAggTime(standingbookId,
                 currentCollectTime);
@@ -62,16 +65,29 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     }
 
     @Override
+    @TenantIgnore
     public MinuteAggregateDataDTO selectOldestByStandingBookId(Long standingbookId) {
-        return minuteAggregateDataMapper.selectOldestByStandingBookId(standingbookId);
+        MinuteAggregateDataDO minuteAggregateDataDO =
+                minuteAggregateDataMapper.selectOldestByStandingBookId(standingbookId);
+        if(Objects.isNull(minuteAggregateDataDO)){
+            return null;
+        }
+        return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
     }
 
     @Override
+    @TenantIgnore
     public MinuteAggregateDataDTO selectLatestByStandingBookId(Long standingbookId) {
-        return minuteAggregateDataMapper.selectLatestByStandingBookId(standingbookId);
+        MinuteAggregateDataDO minuteAggregateDataDO =
+                minuteAggregateDataMapper.selectLatestByStandingBookId(standingbookId);
+        if(Objects.isNull(minuteAggregateDataDO)){
+            return null;
+        }
+        return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
     }
 
     @Override
+    @TenantIgnore
     public void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO) {
         try {
             MinuteAggregateDataDO minuteAggregateDataDO = BeanUtils.toBean(minuteAggregateDataDTO,
@@ -84,6 +100,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     }
 
     @Override
+    @TenantIgnore
     public void insertDelRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
         try {
             MinuteAggregateDataDTO endDataDTO = minuteAggDataSplitDTO.getEndDataDO();
@@ -101,6 +118,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     }
 
     @Override
+    @TenantIgnore
     public void insertRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
         try {
             List<MinuteAggregateDataDO> minuteAggregateDataDOS = splitData(minuteAggDataSplitDTO.getStartDataDO(),
@@ -115,8 +133,8 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     /**
      * 根据分钟级的数据进行数据拆分，填充两端时间之间的分钟级别数据，计算出全量和增量值，塞到MinuteAggregateDataDO中
      *
-     * @param startData  开始数据
-     * @param endData    结束数据
+     * @param startData 开始数据
+     * @param endData   结束数据
      */
     private List<MinuteAggregateDataDO> splitData(MinuteAggregateDataDTO startData, MinuteAggregateDataDTO endData) {
 
@@ -150,8 +168,8 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             data.setAggregateTime(currentTime);
             data.setFullValue(currentFullValue);
             data.setIncrementalValue(perMinuteIncrement);
-            if(i==0) {
-                if (Objects.isNull(endData.getIncrementalValue())){
+            if (i == 0) {
+                if (Objects.isNull(endData.getIncrementalValue())) {
                     //这个是历史时间段之后添加的连续数据，两个时间点全量都有，需要计算出最后一个时间点的增量和，时间范围之间的分钟级数据的增量
                     //第一条数据的值，还是第一条数据的值，不需要加入新增的队列中
                     data.setIncrementalValue(startData.getIncrementalValue());
