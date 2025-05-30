@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo;
 
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyParameter;
+import cn.bitlinks.ems.module.power.controller.admin.energyparameters.vo.EnergyParametersSaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.unitpriceconfiguration.UnitPriceConfigurationDO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -19,6 +20,12 @@ public class EnergyConfigurationSaveReqVO {
     @Schema(description = "id", requiredMode = Schema.RequiredMode.REQUIRED, example = "14490")
     private Long id;
 
+    @Schema(description = "分組id", example = "26887")
+    private Long groupId;
+
+    @Schema(description = "分组名称", example = "王五")
+    private String groupName;
+
     @Schema(description = "能源名称", example = "赵六")
     private String energyName;
 
@@ -32,7 +39,7 @@ public class EnergyConfigurationSaveReqVO {
     private Map<String, String> energyIcon;
 
     @Schema(description = "能源参数")
-    private List<EnergyParameter> energyParameter;
+    private List<EnergyParametersSaveReqVO> energyParameters;
 
     @Schema(description = "折标煤系数")
     private BigDecimal factor;
@@ -58,7 +65,7 @@ public class EnergyConfigurationSaveReqVO {
     private Integer accountingFrequency;
 
     @Schema(description = "单价详细", example = "11713")
-    private String unitPrice;
+    private UnitPriceConfigurationDO unitPrice;
 
     @Schema(description = "用能成本公式")
     private String unitPriceFormula;

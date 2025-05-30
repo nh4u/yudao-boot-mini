@@ -21,8 +21,8 @@ public class AdditionalRecordingSaveReqVO {
     @Schema(description = "计量器具id", example = "21597")
     private Long standingbookId;
 
-    @Schema(description = "数值类型", example = "1")
-    private String valueType;
+    @Schema(description = "增量/全量")
+    private Integer valueType;
 
     @Schema(description = "本次采集时间")
     @NotNull(message = "本次采集时间不能为空")

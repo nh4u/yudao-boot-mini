@@ -1,7 +1,7 @@
 package cn.bitlinks.ems.module.power.dal.dataobject.daparamformula;
 
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyParameter;
+import cn.bitlinks.ems.module.power.controller.admin.energyparameters.vo.EnergyParametersSaveReqVO;
 import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.*;
@@ -34,10 +34,9 @@ public class DaParamFormulaDO extends BaseDO {
      */
     private Long energyId;
     /**
-     * 能源参数名称
+     * 公式状态【0:未使用；1：使用中；2：已使用】
      */
-    @TableField(typeHandler = JacksonTypeHandler.class)
-    private List<EnergyParameter> energyParam;
+    private Integer formulaStatus;
     /**
      * 能源参数计算公式
      */

@@ -6,6 +6,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -13,6 +14,7 @@ import java.util.TimeZone;
 
 @Slf4j
 @SpringBootApplication
+@EnableScheduling
 public class PowerApplication {
     @SneakyThrows(UnknownHostException.class)
     public static void main(String[] args) {
@@ -30,6 +32,7 @@ public class PowerApplication {
                 env.getProperty("server.port", "8080"),
                 "127.0.0.1",
                 env.getProperty("server.port", "8080"));
+
     }
 
 }

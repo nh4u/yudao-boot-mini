@@ -2,6 +2,8 @@ package cn.bitlinks.ems.module.power.enums;
 
 import cn.bitlinks.ems.framework.common.enums.RpcConstants;
 
+import java.util.regex.Pattern;
+
 /**
  * API 相关的枚举
  *
@@ -61,8 +63,11 @@ public class ApiConstants {
     public static final String ATTR_EQUIPMENT_ID ="equipmentId";
     public static final String ATTR_EQUIPMENT_NAME ="equipmentName";
     public static final String ATTR_ENERGY ="energy";
+    public static final String SQL_SB_ID ="sbId";
 
-    //多选下拉框
+    // 告警管理-查看详情（跳转设备）todo 设备监控设备跳转链接待完善
+    public static final String SB_MONITOR_DETAIL ="<a href=\"/aa/aa?id=%s\">查看详情</a>";
+
 
 
 

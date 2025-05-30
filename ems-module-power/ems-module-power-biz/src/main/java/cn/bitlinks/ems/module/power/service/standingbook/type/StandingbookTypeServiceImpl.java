@@ -2,15 +2,18 @@ package cn.bitlinks.ems.module.power.service.standingbook.type;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.templ.StandingbookTmplDaqAttrMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.enums.ApiConstants;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
-import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
+import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
@@ -36,21 +39,20 @@ import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 @Validated
 public class StandingbookTypeServiceImpl implements StandingbookTypeService {
     @Resource
-    private StandingbookAttributeService attributeService;
-    @Resource
     private StandingbookTypeMapper standingbookTypeMapper;
     @Resource
     private StandingbookService standingbookService;
     @Resource
     private StandingbookAttributeMapper standingbookAttributeMapper;
-
+    @Resource
+    private StandingbookTmplDaqAttrMapper standingbookTmplDaqAttrMapper;
+    @Resource
+    private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
     @Transactional
     @Override
     public Long createStandingbookType(StandingbookTypeSaveReqVO createReqVO) {
         // 校验父级类型编号的有效性
         validateParentStandingbookType(null, createReqVO.getSuperId());
-        // 校验名字的唯一性
-//        validateStandingbookTypeNameUnique(null, createReqVO.getSuperId(), createReqVO.getName());
 
         // 校验允许最多五层节点
         validateOnlyFive(createReqVO.getSuperId());
@@ -59,6 +61,8 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         standingbookTypeMapper.insert(standingbookType);
         //创建分类的属性
         createTypeAttrFromParent(standingbookType);
+        //创建分类的数采属性
+        createTypeDaqAttrFromParent(standingbookType);
         //此处只对重点设备和计量器具进行属性固定的控制
 
         // 返回
@@ -68,16 +72,24 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
     @Transactional
     @Override
     public void updateStandingbookType(StandingbookTypeSaveReqVO updateReqVO) {
-        // 校验存在
-        validateStandingbookTypeExists(updateReqVO.getId());
+        // 校验台账是否存在
+        StandingbookTypeDO standingbookTypeDO = standingbookTypeMapper.selectById(updateReqVO.getId());
+        if (Objects.isNull(standingbookTypeDO)) {
+            throw exception(STANDINGBOOK_TYPE_NOT_EXISTS);
+        }
         // 校验父级类型编号的有效性
         validateParentStandingbookType(updateReqVO.getId(), updateReqVO.getSuperId());
-        // 校验名字的唯一性
-//        validateStandingbookTypeNameUnique(updateReqVO.getId(), updateReqVO.getSuperId(), updateReqVO.getName());
-
         // 更新
         StandingbookTypeDO updateObj = BeanUtils.toBean(updateReqVO, StandingbookTypeDO.class);
-        standingbookTypeMapper.updateById(updateObj);
+
+        if(Objects.equals(updateObj.getName(),standingbookTypeDO.getName()) && Objects.equals(updateObj.getCode(),standingbookTypeDO.getCode())){
+            standingbookTypeMapper.updateById(updateObj);
+        }
+        // 若节点及其子节点下存在设备数据，则不允许修改【分类名称】【编码】
+        if(checkRelStandingbook(updateReqVO.getId())) {
+            throw exception(STANDINGBOOK_TYPE_REL_STANDINGBOOK);
+        }
+
     }
 
     void recursiveDeletion(List<Long> ids, Long id) {
@@ -107,15 +119,10 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
     public void deleteStandingbookType(Long id) {
         ArrayList<Long> ids = new ArrayList<>();
         recursiveDeletion(ids, id);
-        for (Long aLong : ids) {
-            // 删除
-            standingbookTypeMapper.deleteById(aLong);
-            try {
-                attributeService.deleteStandingbookAttributeByTypeId(aLong);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+        // 删除
+        standingbookTypeMapper.deleteByIds(ids);
+        standingbookAttributeMapper.delete(new LambdaQueryWrapper<StandingbookAttributeDO>().in(StandingbookAttributeDO::getTypeId, ids));
+        standingbookTmplDaqAttrMapper.delete(new LambdaQueryWrapper<StandingbookTmplDaqAttrDO>().in(StandingbookTmplDaqAttrDO::getTypeId, ids));
 
     }
 
@@ -161,7 +168,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
 
     private void validateOnlyFive(Long superId) {
 
-        if (Objects.isNull(superId)){
+        if (Objects.isNull(superId)) {
             return;
         }
 
@@ -172,7 +179,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
             }
 
             // 允许最多五层节点
-            if (i > 3){
+            if (i > 3) {
                 throw exception(STANDINGBOOK_TYPE_ONLY_FIVE);
             }
             superId = standingbookTypeDO.getSuperId();
@@ -189,44 +196,62 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
     public List<StandingbookTypeDO> getStandingbookType(String name) {
         return standingbookTypeMapper.selectByName(name);
     }
-    // Recursive method to find nodes by fuzzy name matching
 
     @Override
     public List<StandingbookTypeDO> getStandingbookTypeList(StandingbookTypeListReqVO listReqVO) {
         return standingbookTypeMapper.selectList(listReqVO);
     }
+    @Override
+    public List<StandingbookTypeRespVO> getStandingbookTypeNodeWithEnergy() {
+        List<StandingbookTypeDO> nodeDOS = standingbookTypeMapper.selectNotDelete();
+        if(CollUtil.isEmpty(nodeDOS)){
+            return Collections.emptyList();
+        }
+        List<StandingbookTypeRespVO> nodes = BeanUtils.toBean(nodeDOS,StandingbookTypeRespVO.class);
 
+        List<StandingbookTmplDaqAttrDO> typeEnergyIdsList =
+                standingbookTmplDaqAttrService.getEnergyMapping();
+
+        // 补充能源id
+        if (CollUtil.isNotEmpty(typeEnergyIdsList)) {
+            Map<Long, Long> typeEnergyIdsMap = typeEnergyIdsList.stream()
+                    .collect(Collectors.toMap(
+                            StandingbookTmplDaqAttrDO::getTypeId,
+                            StandingbookTmplDaqAttrDO::getEnergyId
+                    ));
+            nodes.forEach(node->{
+                node.setEnergyId(typeEnergyIdsMap.get(node.getId()));
+            });
+        }
+
+        // 构建树形结构
+        Map<Long, StandingbookTypeRespVO> nodeMap = new HashMap<>();
+        Queue<StandingbookTypeRespVO> queue = new LinkedList<>();
+
+        for (StandingbookTypeRespVO node : nodes) {
+            nodeMap.put(node.getId(), node);
+            if (node.getSuperId() == null) {
+                queue.add(node);
+            } else {
+                StandingbookTypeRespVO parent = nodeMap.get(node.getSuperId());
+                if (parent != null) {
+                    parent.getChildren().add(node);
+                }
+            }
+        }
+
+        // 通过队列构建树形结构
+        List<StandingbookTypeRespVO> rootNodes = new ArrayList<>();
+        while (!queue.isEmpty()) {
+            StandingbookTypeRespVO currentNode = queue.poll();
+            rootNodes.add(currentNode);
+        }
+        return rootNodes;
+    }
     @Override
     public List<StandingbookTypeDO> getStandingbookTypeNode() {
-        List<StandingbookTypeDO> nodes = fetchNodesFromDatabase();
+        List<StandingbookTypeDO> nodes = standingbookTypeMapper.selectNotDelete();
 
-        // 将rootNodes序列化为JSON并发送给前端
-//        log.info("StandingbookTypeNode: " + JSONUtil.toJsonStr(rootNodes));
-        return createStandingbookTypeTreeNode(nodes);
-    }
-
-    @Override
-    public Map<Long, StandingbookTypeDO> getStandingbookTypeIdMap(List<Long> typeIds) {
-        List<StandingbookTypeDO> allList;
-        if(CollUtil.isEmpty(typeIds)){
-            allList= standingbookTypeMapper.selectList();
-        }else{
-            allList=standingbookTypeMapper.selectList(new LambdaQueryWrapper<StandingbookTypeDO>().in(StandingbookTypeDO::getId, typeIds));
-        }
-
-        if(CollUtil.isEmpty(allList)){
-            return new HashMap<>();
-        }
-        return allList.stream()
-                .collect(Collectors.toMap(StandingbookTypeDO::getId, type -> type));
-    }
-
-
-    private List<StandingbookTypeDO> fetchNodesFromDatabase() {
-        return standingbookTypeMapper.selectNotDelete();
-    }
-
-    List<StandingbookTypeDO> createStandingbookTypeTreeNode(List<StandingbookTypeDO> nodes) {
         // 构建树形结构
         Map<Long, StandingbookTypeDO> nodeMap = new HashMap<>();
         Queue<StandingbookTypeDO> queue = new LinkedList<>();
@@ -250,12 +275,51 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
             rootNodes.add(currentNode);
         }
         return rootNodes;
-
     }
 
+    @Override
+    public Map<Long, StandingbookTypeDO> getStandingbookTypeIdMap(List<Long> typeIds) {
+        List<StandingbookTypeDO> allList;
+        if (CollUtil.isEmpty(typeIds)) {
+            allList = standingbookTypeMapper.selectList();
+        } else {
+            allList = standingbookTypeMapper.selectList(new LambdaQueryWrapper<StandingbookTypeDO>().in(StandingbookTypeDO::getId, typeIds));
+        }
 
-    @Transactional(rollbackFor = Exception.class)
-    public void createTypeAttrFromParent(StandingbookTypeDO standingbookTypeDO) {
+        if (CollUtil.isEmpty(allList)) {
+            return new HashMap<>();
+        }
+        return allList.stream()
+                .collect(Collectors.toMap(StandingbookTypeDO::getId, type -> type));
+    }
+
+    /**
+     * 继承数采属性
+     *
+     * @param standingbookTypeDO
+     */
+    private void createTypeDaqAttrFromParent(StandingbookTypeDO standingbookTypeDO) {
+        Long superId = standingbookTypeDO.getSuperId();
+        List<StandingbookTmplDaqAttrDO> superDaqAttributes =
+                standingbookTmplDaqAttrMapper.selectList(StandingbookTmplDaqAttrDO::getTypeId, superId);
+        if (CollUtil.isEmpty(superDaqAttributes)) {
+            return;
+        }
+        superDaqAttributes.forEach(attr -> {
+            attr.setTypeId(standingbookTypeDO.getId())
+                    .setAutoGenerated(ApiConstants.YES)
+                    .setRawAttrId(attr.getRawAttrId() == null ? attr.getId() : attr.getRawAttrId());
+            attr.setId(null);
+        });
+        standingbookTmplDaqAttrMapper.insertBatch(superDaqAttributes);
+    }
+
+    /**
+     * 继承基础参数
+     *
+     * @param standingbookTypeDO
+     */
+    private void createTypeAttrFromParent(StandingbookTypeDO standingbookTypeDO) {
         Long superId = standingbookTypeDO.getSuperId();
         List<StandingbookAttributeDO> superAttributes = standingbookAttributeMapper.selectTypeId(superId);
         if (CollUtil.isEmpty(superAttributes)) {
@@ -265,11 +329,65 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
             attr.setTypeId(standingbookTypeDO.getId())
                     .setAutoGenerated(ApiConstants.YES)
                     .setDescription(PARENT_ATTR_AUTO)
-                    .setRawAttrId(attr.getRawAttrId() == null ? attr.getId(): attr.getRawAttrId());
+                    .setRawAttrId(attr.getRawAttrId() == null ? attr.getId() : attr.getRawAttrId());
             ;
             attr.setId(null);
         });
-        attributeService.createStandingbookAttributeBatch(superAttributes);
+        standingbookAttributeMapper.insertBatch(superAttributes);
     }
 
+    /**
+     * 递归查询子节点 id
+     */
+    @Override
+    public List<Long> getSubtreeIds(List<StandingbookTypeDO> typeList, Long targetId) {
+        List<Long> subtreeIds = new ArrayList<>();
+
+        StandingbookTypeDO node = findNode(typeList, targetId);
+        getSubtreeIdsRecursive(node, subtreeIds);
+
+        return subtreeIds;
+    }
+
+    @Override
+    public Boolean checkRelStandingbook(Long id) {
+        List<StandingbookTypeDO> typeList = getStandingbookTypeNode();
+        List<Long> subtreeIds = getSubtreeIds(typeList, id);
+        List<StandingbookDO> standingbookDOList = standingbookService.getByTypeIds(subtreeIds);
+        return CollUtil.isNotEmpty(standingbookDOList);
+    }
+
+
+    // 树状结构中查询当前节点
+    private StandingbookTypeDO findNode(List<StandingbookTypeDO> typeList, Long targetId) {
+        if (typeList == null || typeList.isEmpty()) {
+            return null;
+        }
+
+        for (StandingbookTypeDO node : typeList) {
+            if (node.getId().equals(targetId)) {
+                return node; // 找到目标节点
+            }
+
+            // 递归查找子节点
+            StandingbookTypeDO foundInChildren = findNode(node.getChildren(), targetId);
+            if (foundInChildren != null) {
+                return foundInChildren; // 在子节点中找到目标节点
+            }
+        }
+
+        return null; // 没有找到目标节点
+    }
+
+    // 递归遍历子节点
+    private void getSubtreeIdsRecursive(StandingbookTypeDO node, List<Long> subtreeIds) {
+        if (node == null) {
+            return;
+        }
+        subtreeIds.add(node.getId()); // 添加当前节点 id
+
+        for (StandingbookTypeDO child : node.getChildren()) {
+            getSubtreeIdsRecursive(child, subtreeIds); // 递归遍历子节点
+        }
+    }
 }

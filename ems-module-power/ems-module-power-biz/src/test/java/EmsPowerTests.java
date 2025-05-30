@@ -156,22 +156,6 @@ class EmsPowerTests {
         System.out.println(stringBuilder.toString());
     }
 
-
-    @Test
-    void getTableHeaderTest() {
-
-        TenantContextHolder.setTenantId(1L);
-
-        StatisticsParamVO paramVO = new StatisticsParamVO();
-        LocalDate now = LocalDate.now();
-        LocalDate end = now.plusDays(10);
-        LocalDate[] range = new LocalDate[]{now, end};
-        paramVO.setRange(range);
-        Map<String, Object> jsonObject = statisticsService.standardCoalAnalysis(paramVO);
-        System.out.println(jsonObject);
-    }
-
-
     /**
      * 返回参数 是 2个或3个的时候，可以使用ImmutablePair、ImmutableTriple而不是丢失变量类型的Map，即可以同时返回不同类型的返回值。
      */

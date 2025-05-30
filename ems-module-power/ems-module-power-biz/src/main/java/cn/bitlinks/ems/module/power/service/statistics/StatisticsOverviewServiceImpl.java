@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
+import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
@@ -65,7 +66,7 @@ public class StatisticsOverviewServiceImpl implements StatisticsOverviewService 
         List<StatisticsOverviewEnergyData> list = new ArrayList<>();
         Integer energyClassify = paramVO.getEnergyClassify();
 
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.selectByCondition(null, energyClassify.toString(), null);
+        List<EnergyConfigurationRespVO> energyList = energyConfigurationService.selectByCondition(null, energyClassify.toString(), null);
 
         List<Long> energyIdList = new ArrayList<>();
 

@@ -39,6 +39,10 @@ public class WarningInfoRespVO {
     @ExcelProperty("模板id")
     private Long templateId;
 
+    @Schema(description = "策略id", requiredMode = Schema.RequiredMode.REQUIRED, example = "3996")
+    @ExcelProperty("策略id")
+    private Long strategyId;
+
     @Schema(description = "标题", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("标题")
     private String title;

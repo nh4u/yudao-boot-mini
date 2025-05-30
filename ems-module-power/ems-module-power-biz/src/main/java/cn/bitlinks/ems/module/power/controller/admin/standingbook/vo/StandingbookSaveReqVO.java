@@ -29,31 +29,8 @@ public class StandingbookSaveReqVO {
     private String labelInfo;
     @Schema(description = "环节 | 1：外购存储  2：加工转换 3：传输分配 4：终端使用 5：回收利用")
     private Integer stage;
-    /**
-     * 采集频率
-     */
-    @Schema(description = "采集频率", example = "1")
-    private Integer frequency;
-    /**
-     * 采集频率单位
-     */
-    @Schema(description = "采集频率单位", example = "秒")
-    private String frequencyUnit;
-    /**
-     * 数据来源分类
-     */
-    @Schema(description = "数据来源分类", example = "1")
-    private Integer sourceType;
-    /**
-     * 数据来源分类=关联计量器具时 相关信息json
-     */
-    @Schema(description = "数据来源分类=关联计量器具时 相关信息json", example = "json")
-    private String associationMeasurementJson;
-    /**
-     * 开关（0：关；1开。）
-     */
-    @Schema(description = "开关（0：关；1开。）", example = "0")
-    private Boolean status;
+
+
     List<StandingbookAttributeSaveReqVO> children = new ArrayList<>();
 
     public StandingbookSaveReqVO(List<StandingbookAttributeSaveReqVO> children) {

@@ -1,14 +1,14 @@
 package cn.bitlinks.ems.module.power.dal.dataobject.coalfactorhistory;
 
-import com.alibaba.excel.annotation.ExcelProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
+import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.KeySequence;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
-import java.util.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.LocalDateTime;
-import com.baomidou.mybatisplus.annotation.*;
-import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
 
 /**
  * 折标煤系数历史 DO
@@ -50,5 +50,9 @@ public class CoalFactorHistoryDO extends BaseDO {
      * 关联计算公式
      */
     private String formula;
+    /**
+     * 公式id
+     */
+    private  Long formulaId;
 
 }

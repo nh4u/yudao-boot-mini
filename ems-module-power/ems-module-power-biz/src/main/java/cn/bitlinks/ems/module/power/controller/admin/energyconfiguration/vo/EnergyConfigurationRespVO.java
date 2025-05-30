@@ -2,7 +2,8 @@ package cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo;
 
 import cn.bitlinks.ems.framework.excel.core.annotations.DictFormat;
 import cn.bitlinks.ems.framework.excel.core.convert.DictConvert;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyParameter;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.unitpriceconfiguration.UnitPriceConfigurationDO;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -25,6 +26,14 @@ public class EnergyConfigurationRespVO {
     @ExcelProperty("id")
     private Long id;
 
+    @Schema(description = "分組id", example = "26887")
+    @ExcelProperty("分組id")
+    private Long groupId;
+
+    @Schema(description = "分组名称", example = "王五")
+    @ExcelProperty("分组名称")
+    private String groupName;
+
     @Schema(description = "能源名称", example = "赵六")
     @ExcelProperty("能源名称")
     private String energyName;
@@ -43,7 +52,7 @@ public class EnergyConfigurationRespVO {
 
     @Schema(description = "能源参数")
     @ExcelProperty("能源参数")
-    private List<EnergyParameter> energyParameter;
+    private List<EnergyParametersDO> energyParameters;
 
     @Schema(description = "折标煤系数")
     @ExcelProperty("折标煤系数")
@@ -78,7 +87,7 @@ public class EnergyConfigurationRespVO {
 
     @Schema(description = "单价详细", example = "11713")
     @ExcelProperty("单价详细")
-    private String unitPrice;
+    private UnitPriceConfigurationDO unitPrice;
 
     @Schema(description = "用能成本公式")
     @ExcelProperty("用能成本公式")

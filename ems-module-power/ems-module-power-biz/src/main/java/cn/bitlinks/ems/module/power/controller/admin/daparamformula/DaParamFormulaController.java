@@ -80,6 +80,43 @@ public class DaParamFormulaController {
         return success(BeanUtils.toBean(pageResult, DaParamFormulaRespVO.class));
     }
 
+    @PostMapping("/change")
+    @Operation(summary = "公式新增、修改、删除")
+    @PreAuthorize("@ss.hasPermission('power:da-param-formula:create')")
+    public CommonResult<Boolean> change(@Valid @RequestBody List<DaParamFormulaSaveReqVO> formulas) {
+        return success(daParamFormulaService.change(formulas));
+    }
+
+    @GetMapping("/getFormulaList")
+    @Operation(summary = "获取公式list")
+    @PreAuthorize("@ss.hasPermission('power:da-param-formula:query')")
+    public CommonResult<List<DaParamFormulaRespVO>> getDaParamFormulaList(DaParamFormulaSaveReqVO reqVO) {
+        List<DaParamFormulaDO> list = daParamFormulaService.getDaParamFormulaList(reqVO);
+        return success(BeanUtils.toBean(list, DaParamFormulaRespVO.class));
+    }
+
+    @GetMapping("/isDuplicate")
+    @Operation(summary = "公式是否重复true:重复；false：不重复")
+    @Parameter(name = "id", description = "公式id", example = "1024")
+    @Parameter(name = "energyId", description = "能源id", required = true, example = "1024")
+    @Parameter(name = "formulaType", description = "公式类型 1折标煤公式，2用能成本公式", required = true, example = "1")
+    @Parameter(name = "energyFormula", description = "公式", required = true, example = "用量X折标煤系数X0.9")
+    @PreAuthorize("@ss.hasPermission('power:da-param-formula:query')")
+    public CommonResult<Boolean> isDuplicate(@RequestParam(value = "id", required = false) Long id,
+                                             @RequestParam(value = "energyId") Long energyId,
+                                             @RequestParam(value = "formulaType") Integer formulaType,
+                                             @RequestParam(value = "energyFormula") String energyFormula) {
+        return success(daParamFormulaService.isDuplicate(id, energyId, formulaType, energyFormula));
+    }
+
+    @GetMapping("/isDelete")
+    @Operation(summary = "公式是否可删除")
+    @Parameter(name = "id", description = "公式id", required = true, example = "1024")
+    @PreAuthorize("@ss.hasPermission('power:da-param-formula:query')")
+    public CommonResult<Boolean> isDelete(@RequestParam(value = "id") Long id) {
+        return success(daParamFormulaService.isDelete(id));
+    }
+
     @GetMapping("/export-excel")
     @Operation(summary = "导出参数公式 Excel")
     @PreAuthorize("@ss.hasPermission('power:da-param-formula:export')")

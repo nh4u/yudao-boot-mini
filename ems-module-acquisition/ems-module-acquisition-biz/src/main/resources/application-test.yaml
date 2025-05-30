@@ -1,0 +1,123 @@
+--- #################### 注册中心 + 配置中心相关配置 ####################
+
+spring:
+  cloud:
+    nacos:
+      server-addr: 192.168.2.31:8848 # Nacos 服务器地址
+      username: nacos # Nacos 账号
+      password: nacos # Nacos 密码
+      discovery: # 【配置中心】配置项
+        namespace: 98dbbbee-8a69-4a76-afe7-b76281e8ddba # 命名空间。这里使用 dev 开发环境
+        group: DEFAULT_GROUP # 使用的 Nacos 配置分组，默认为 DEFAULT_GROUP
+        metadata:
+          version: 1.0.0 # 服务实例的版本号，可用于灰度发布
+      config: # 【注册中心】配置项
+        namespace: 98dbbbee-8a69-4a76-afe7-b76281e8ddba # 命名空间。这里使用 dev 开发环境
+        group: DEFAULT_GROUP # 使用的 Nacos 配置分组，默认为 DEFAULT_GROUP
+
+--- #################### 数据库相关配置 ####################
+spring:
+  # 数据源配置项
+  autoconfigure:
+    exclude:
+      - com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure # 排除 Druid 的自动配置，使用 dynamic-datasource-spring-boot-starter 配置多数据源
+  datasource:
+    druid: # Druid 【监控】相关的全局配置
+      web-stat-filter:
+        enabled: true
+      stat-view-servlet:
+        enabled: true
+        allow: # 设置白名单，不填则允许所有访问
+        url-pattern: /druid/*
+        login-username: # 控制台管理用户名和密码
+        login-password:
+      filter:
+        stat:
+          enabled: true
+          log-slow-sql: true # 慢 SQL 记录
+          slow-sql-millis: 100
+          merge-sql: true
+        wall:
+          config:
+            multi-statement-allow: true
+    dynamic: # 多数据源配置
+      druid: # Druid 【连接池】相关的全局配置
+        initial-size: 5 # 初始连接数
+        min-idle: 10 # 最小连接池数量
+        max-active: 20 # 最大连接池数量
+        max-wait: 600000 # 配置获取连接等待超时的时间，单位：毫秒
+        time-between-eviction-runs-millis: 60000 # 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位：毫秒
+        min-evictable-idle-time-millis: 300000 # 配置一个连接在池中最小生存的时间，单位：毫秒
+        max-evictable-idle-time-millis: 900000 # 配置一个连接在池中最大生存的时间，单位：毫秒
+        validation-query: SELECT 1 FROM DUAL # 配置检测连接是否有效
+        test-while-idle: true
+        test-on-borrow: false
+        test-on-return: false
+      primary: master
+      datasource:
+        master:
+          url: jdbc:mysql://192.168.2.31:3307/ydme_ems_acquisition?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true # MySQL Connector/J 8.X 连接的示例
+          username: root
+          password: BitlinkMysql@2022
+        slave: # 模拟从库，可根据自己需要修改 # 模拟从库，可根据自己需要修改
+          lazy: true # 开启懒加载，保证启动速度
+          url: jdbc:mysql://192.168.2.31:3307/ydme_ems_acquisition?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true # MySQL Connector/J 8.X 连接的示例
+          username: root
+          password: BitlinkMysql@2022
+        starrocks: # 模拟从库，可根据自己需要修改
+          lazy: true # 开启懒加载，保证启动速度
+          url: jdbc:mysql://192.168.2.26:9030/acquisition?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
+          username: root
+          password: BitlinkStarrocks@2025
+  # Redis 配置。Redisson 默认的配置足够使用，一般不需要进行调优
+  redis:
+    host: 192.168.2.31 # 地址
+    port: 6379 # 端口
+    database: 1 # 数据库索引
+    password: bitlink2022 # 密码，建议生产环境开启
+
+--- #################### MQ 消息队列相关配置 ####################
+# rocketmq 配置项，对应 RocketMQProperties 配置类
+rocketmq:
+  name-server: 113.250.189.24:9876
+  producer:
+    # 权限认证
+    access-key: rocketAdminMQ
+    secret-key: 25be49067687d405a082dcaa2edaceea
+    # 发送同一类消息的设置为同一个group，保证唯一
+    group: "acquisition_producer_group-${spring.profiles.active}"
+    # 发送消息超时时间，默认3000
+    sendMessageTimeout: 10000
+    # 发送消息失败重试次数，默认2
+    retryTimesWhenSendFailed: 2
+    # 异步消息重试此处，默认2
+    retryTimesWhenSendAsyncFailed: 2
+    # 消息最大长度，默认1024 * 1024 * 4(默认4M)
+    maxMessageSize: 4096
+    # 压缩消息阈值，默认4k(1024 * 4)
+    compressMessageBodyThreshold: 4096
+    # 是否在内部发送失败时重试另一个broker，默认false
+    retryNextServer: false
+  consumer:
+    group: "acquisition_consumer_group-${spring.profiles.active}"
+    access-key: rocketAdminMQ
+    secretKey: 25be49067687d405a082dcaa2edaceea        # 密码
+  # 自定义配置
+  # 生产者发送消息的topic
+  topic:
+    device-acquisition: "device_acquisition_topic-${spring.profiles.active}"
+    device-aggregate: "device_aggregate_topic-${spring.profiles.active}"
+--- #################### 服务保障相关配置 ####################
+
+# Lock4j 配置项
+lock4j:
+  acquire-timeout: 3000 # 获取分布式锁超时时间，默认为 3000 毫秒
+  expire: 30000 # 分布式锁的超时时间，默认为 30 毫秒
+
+--- #################### bitlinks相关配置 ####################
+
+# bitlinks配置项，设置当前项目所有自定义的配置
+ems:
+  starrocks:
+    api-url: http://192.168.2.26:8040
+    db: acquisition

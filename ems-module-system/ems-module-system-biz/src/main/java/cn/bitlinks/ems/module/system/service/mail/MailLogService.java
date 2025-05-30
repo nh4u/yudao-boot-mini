@@ -31,7 +31,20 @@ public interface MailLogService {
      * @return 邮件日志
      */
     MailLogDO getMailLog(Long id);
-
+    /**
+     * 创建邮件日志(自定义告警信息)
+     *
+     * @param userId 用户编码
+     * @param userType 用户类型
+     * @param toMail 收件人邮件
+     * @param account 邮件账号信息
+     * @param template      模版信息
+     * @param isSend        是否发送成功
+     * @return 日志编号
+     */
+    Long createMailLogCustom(Long userId, Integer userType, String toMail,
+                       MailAccountDO account, MailTemplateDO template ,
+                       Boolean isSend);
     /**
      * 创建邮件日志
      *

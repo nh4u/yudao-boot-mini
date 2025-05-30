@@ -13,12 +13,15 @@ import java.util.List;
 @ExcelIgnoreUnannotated
 public class WarningStrategyRespVO extends WarningStrategyDO {
 
+    @Schema(description = "告警条件")
+    private List<ConditionVO> condition;
 
     @Schema(description = "已选设备范围")
     private List<DeviceScopeVO> deviceScopeList;
 
     @Schema(description = "站内信所选用户")
     private List<AdminUserRespDTO> siteStaffList;
+
     @Schema(description = "邮箱通知所选用户")
     private List<AdminUserRespDTO> mailStaffList;
 }

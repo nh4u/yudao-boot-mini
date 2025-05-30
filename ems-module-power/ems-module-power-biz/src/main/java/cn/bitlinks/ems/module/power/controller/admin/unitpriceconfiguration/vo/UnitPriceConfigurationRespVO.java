@@ -1,9 +1,9 @@
 package cn.bitlinks.ems.module.power.controller.admin.unitpriceconfiguration.vo;
 
+import cn.bitlinks.ems.module.power.controller.admin.pricedetail.vo.PriceDetailRespVO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
-import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
 import com.alibaba.excel.annotation.*;
 import cn.bitlinks.ems.framework.excel.core.annotations.DictFormat;
@@ -41,12 +41,14 @@ public class UnitPriceConfigurationRespVO {
     private Integer accountingFrequency;
 
     @Schema(description = "单价详细")
-    @ExcelProperty("单价详细")
-    private String priceDetails;
+    private List<PriceDetailRespVO> priceDetails;
 
     @Schema(description = "计算公式")
     @ExcelProperty("计算公式")
     private String formula;
+
+    @Schema(description = "关联计算公式id")
+    private Long formulaId;
 
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("创建时间")

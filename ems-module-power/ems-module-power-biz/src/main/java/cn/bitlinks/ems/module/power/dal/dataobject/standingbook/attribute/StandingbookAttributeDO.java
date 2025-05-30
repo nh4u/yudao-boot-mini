@@ -74,11 +74,7 @@ public class StandingbookAttributeDO extends BaseDO {
      */
     @Schema(description = "格式")
     private String format;
-    /**
-     * 归属节点
-     */
-    @Schema(description = "归属节点")
-    private String node;
+
     /**
      * 归属节点id
      */

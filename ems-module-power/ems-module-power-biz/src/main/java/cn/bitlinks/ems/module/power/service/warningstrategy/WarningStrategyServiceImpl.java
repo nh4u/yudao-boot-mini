@@ -1,30 +1,41 @@
 package cn.bitlinks.ems.module.power.service.warningstrategy;
 
+import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.object.PageUtils;
 import cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyConditionDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyDO;
+import cn.bitlinks.ems.module.power.dal.mysql.warninginfo.WarningInfoMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyConditionMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyMapper;
+import cn.bitlinks.ems.module.power.enums.warninginfo.WarningIntervalUnitEnum;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
 import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
 import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.collection.CollUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_EQUIPMENT_NAME;
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_MEASURING_INSTRUMENT_MAME;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.WARNING_STRATEGY_CONDITION_NOT_NULL;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.WARNING_STRATEGY_NOT_EXISTS;
+import static cn.bitlinks.ems.module.power.enums.warninginfo.WarningIntervalUnitEnum.calculateThresholdTime;
 
 /**
  * 告警策略 Service 实现类
@@ -33,12 +44,18 @@ import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.WARNING_STRA
  */
 @Service
 @Validated
+@Slf4j
 public class WarningStrategyServiceImpl implements WarningStrategyService {
 
     @Resource
     private WarningStrategyMapper warningStrategyMapper;
     @Resource
+    private WarningInfoMapper warningInfoMapper;
+    @Resource
+    private WarningStrategyConditionMapper warningStrategyConditionMapper;
+    @Resource
     private AdminUserApi adminUserApi;
+
 
     @Resource
     private StandingbookTypeService standingbookTypeService;
@@ -46,16 +63,69 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
     @Resource
     private StandingbookAttributeService standingbookAttributeService;
 
+
+//    @Resource
+//    private QuartzManager quartzManager;
+
+    @Transactional
     @Override
     public Long createWarningStrategy(WarningStrategySaveReqVO createReqVO) {
         // 插入
         WarningStrategyDO warningStrategy = BeanUtils.toBean(createReqVO, WarningStrategyDO.class);
         buildScope(createReqVO.getSelectScope(), warningStrategy);
-
+        // 触发告警的设备参数集合和参数编码集合冗余字段
+//        buildParams(createReqVO.getCondition(), warningStrategy);
         warningStrategyMapper.insert(warningStrategy);
+
+        // 添加条件
+        createCondition(createReqVO.getCondition(), warningStrategy.getId());
         // 返回
         return warningStrategy.getId();
     }
+
+
+    /**
+     * 创建关联条件数据
+     *
+     * @param conditionVOS 条件
+     * @param strategyId   策略id
+     */
+    private void createCondition(List<ConditionVO> conditionVOS, Long strategyId) {
+        List<WarningStrategyConditionDO> warningStrategyConditionDOS = new ArrayList<>();
+        if (CollUtil.isEmpty(conditionVOS)) {
+            throw exception(WARNING_STRATEGY_CONDITION_NOT_NULL);
+        }
+        conditionVOS.forEach(conditionVO -> {
+            WarningStrategyConditionDO warningStrategyConditionDO = BeanUtils.toBean(conditionVO, WarningStrategyConditionDO.class);
+            warningStrategyConditionDO.setStrategyId(strategyId);
+            warningStrategyConditionDOS.add(warningStrategyConditionDO);
+        });
+        warningStrategyConditionMapper.insertBatch(warningStrategyConditionDOS);
+    }
+
+//    /**
+//     * 插入/修改 触发告警的设备参数集合和参数编码集合（暂不需要）
+//     *
+//     * @param warningStrategyDO 策略
+//     */
+//    private void buildParams(List<ConditionVO> conditionVOS, WarningStrategyDO warningStrategyDO) {
+//        List<String> paramCodes = new ArrayList<>();
+//        List<String> deviceIds = new ArrayList<>();
+//        if (CollUtil.isNotEmpty(conditionVOS)) {
+//            for (ConditionVO conditionVO : conditionVOS) {
+//                List<String> paramIdList = conditionVO.getParamId();
+//                if (paramIdList != null && paramIdList.size() >= 2) {  // Ensure there are at least 2 elements
+//                    int size = paramIdList.size();
+//                    String paramCode = paramIdList.get(size - 1);   // Last element
+//                    String deviceId = paramIdList.get(size - 2);    // Second to last element
+//                    paramCodes.add(paramCode);
+//                    deviceIds.add(deviceId);
+//                }
+//            }
+//            warningStrategyDO.setParamCodes(paramCodes);
+//            warningStrategyDO.setSbIds(deviceIds);
+//        }
+//    }
 
     /**
      * 插入/修改 处理设备范围结构
@@ -77,14 +147,25 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
         warningStrategyDO.setDeviceTypeScope(groupedMap.get(false));
     }
 
+    @Transactional
     @Override
     public void updateWarningStrategy(WarningStrategySaveReqVO updateReqVO) {
         // 校验存在
-        validateWarningStrategyExists(updateReqVO.getId());
+        WarningStrategyDO existsDO = warningStrategyMapper.selectById(updateReqVO.getId());
+        if (Objects.isNull(existsDO)) {
+            throw exception(WARNING_STRATEGY_NOT_EXISTS);
+        }
         // 更新
         WarningStrategyDO updateObj = BeanUtils.toBean(updateReqVO, WarningStrategyDO.class);
         buildScope(updateReqVO.getSelectScope(), updateObj);
+//        buildParams(updateReqVO.getCondition(), updateObj);
         warningStrategyMapper.updateById(updateObj);
+        // 删除条件
+        warningStrategyConditionMapper.delete(new LambdaQueryWrapper<WarningStrategyConditionDO>()
+                .eq(WarningStrategyConditionDO::getStrategyId, updateReqVO.getId()));
+        // 重新添加条件
+        createCondition(updateReqVO.getCondition(), updateReqVO.getId());
+
     }
 
     @Override
@@ -93,6 +174,10 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
         validateWarningStrategyExists(id);
         // 删除
         warningStrategyMapper.deleteById(id);
+        // 删除关联管理
+        warningStrategyConditionMapper.delete(new LambdaQueryWrapper<WarningStrategyConditionDO>()
+                .eq(WarningStrategyConditionDO::getStrategyId, id));
+
     }
 
     private void validateWarningStrategyExists(Long id) {
@@ -105,7 +190,13 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
     public WarningStrategyRespVO getWarningStrategy(Long id) {
 
         WarningStrategyDO warningStrategyDO = warningStrategyMapper.selectById(id);
+
         WarningStrategyRespVO strategyRespVO = BeanUtils.toBean(warningStrategyDO, WarningStrategyRespVO.class);
+        // 0.关联条件
+        List<WarningStrategyConditionDO> warningStrategyConditionDO = warningStrategyConditionMapper.selectList(new LambdaQueryWrapper<WarningStrategyConditionDO>()
+                .eq(WarningStrategyConditionDO::getStrategyId, warningStrategyDO.getId()));
+        List<ConditionVO> conditionVOS = BeanUtils.toBean(warningStrategyConditionDO, ConditionVO.class);
+        strategyRespVO.setCondition(conditionVOS);
         // 1.需要展示勾选的设备名称 和勾引选的分类名称
         List<Long> sbIds = warningStrategyDO.getDeviceScope();
 
@@ -154,7 +245,9 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
         List<Long> siteStaff = warningStrategyDO.getSiteStaff();
         List<Long> mailStaff = warningStrategyDO.getMailStaff();
         List<Long> allUserId = new ArrayList<>(siteStaff);
-        allUserId.addAll(mailStaff);
+        if (CollUtil.isNotEmpty(mailStaff)) {
+            allUserId.addAll(mailStaff);
+        }
 
 
         Map<Long, AdminUserRespDTO> allUserMap = adminUserApi.getUserMap(allUserId);
@@ -175,7 +268,7 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
 
         Long count = warningStrategyMapper.getCount(pageReqVO);
         if (Objects.isNull(count) || count == 0L) {
-            return new PageResult<>();
+            return new PageResult<>(Collections.emptyList(), 0L);
         }
         List<WarningStrategyPageRespVO> deviceApiResVOS = warningStrategyMapper.getPage(pageReqVO, PageUtils.getStart(pageReqVO));
 
@@ -189,6 +282,10 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
     @Override
     public void deleteWarningStrategyBatch(List<Long> ids) {
         warningStrategyMapper.deleteByIds(ids);
+        // 删除关联管理
+        warningStrategyConditionMapper.delete(new LambdaQueryWrapper<WarningStrategyConditionDO>()
+                .in(WarningStrategyConditionDO::getStrategyId, ids));
+
     }
 
     @Override
@@ -200,11 +297,95 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
 
     @Override
     public void updateWarningStrategyIntervalBatch(WarningStrategyBatchUpdIntervalReqVO updateReqVO) {
+        if (CollUtil.isEmpty(updateReqVO.getIds())) {
+            return;
+        }
         warningStrategyMapper.update(new LambdaUpdateWrapper<>(WarningStrategyDO.class)
                 .in(WarningStrategyDO::getId, updateReqVO.getIds())
                 .set(WarningStrategyDO::getInterval, updateReqVO.getInterval())
                 .set(WarningStrategyDO::getIntervalUnit, updateReqVO.getIntervalUnit())
         );
+
+    }
+
+    @Override
+    public boolean existsByStandingbookIds(List<Long> ids) {
+        // 如果传入的 IDs 为空，直接返回 false
+        if (CollUtil.isEmpty(ids)) {
+            return false;
+        }
+
+        // 查询所有 WarningStrategyDO 记录
+        List<WarningStrategyDO> strategies = warningStrategyMapper.selectList();
+        if(CollUtil.isEmpty(strategies)){
+            return false;
+        }
+
+        // 将传入的 IDs 转为 Set 提高查找效率
+        Set<Long> idSet = new HashSet<>(ids);
+
+        // 遍历每条记录的 deviceScope
+        for (WarningStrategyDO strategy : strategies) {
+            List<Long> deviceScope = strategy.getDeviceScope();
+            if (CollUtil.isEmpty(deviceScope)) {
+                // 检查 deviceScope 是否包含任意一个传入的 ID
+                for (Long id : idSet) {
+                    if (deviceScope.contains(id)) {
+                        return true; // 找到一个匹配的 ID，立即返回 true
+                    }
+                }
+            }
+        }
+        return false; // 没有找到任何匹配的 ID
+    }
+
+    @Override
+    public List<WarningStrategyDO> queryNeedTriggerStrategyList(LocalDateTime triggerTime) {
+        // 1.获取所有启动的告警策略
+        List<WarningStrategyDO> warningStrategyDOList = warningStrategyMapper.selectList(new LambdaQueryWrapper<WarningStrategyDO>()
+                .eq(WarningStrategyDO::getStatus, CommonStatusEnum.ENABLE.getStatus())
+                .eq(WarningStrategyDO::getDeleted, CommonStatusEnum.ENABLE.getStatus())
+        );
+        if (CollUtil.isEmpty(warningStrategyDOList)) {
+            return null;
+        }
+        // 1.2 获取告警信息中策略触发最新时间，筛选掉触发过的策略
+        Map<Long, LocalDateTime> strategyTimeMap = warningInfoMapper.selectLatestByStrategy();
+        warningStrategyDOList.removeIf(warningStrategyDO -> {
+            // 1）每条策略，检查时间间隔是否触发过
+            LocalDateTime latestTime = strategyTimeMap.get(warningStrategyDO.getId());
+            // 时间间隔内触发过了，不必考虑此策略
+            return checkStrategyTrigger(warningStrategyDO.getInterval(), warningStrategyDO.getIntervalUnit(), latestTime, triggerTime);
+        });
+        if (CollUtil.isEmpty(warningStrategyDOList)) {
+            return null;
+        }
+        return warningStrategyDOList;
+    }
+
+    /**
+     * 判断告警间隔内是否触发过
+     *
+     * @param interval     告警间隔
+     * @param intervalUnit 告警间隔时间单位
+     * @param latestTime   上次触发时间
+     * @param triggerTime  本次触发时间
+     * @return 是否触发过
+     */
+    private boolean checkStrategyTrigger(Integer interval, Integer intervalUnit, LocalDateTime latestTime,
+                                         LocalDateTime triggerTime) {
+        if (latestTime == null) {
+            // 上次触发时间为空，说明从未触发过，本次肯定需要触发
+            return false;
+        }
+        //计算间隔时间
+        LocalDateTime thresholdTime = calculateThresholdTime(WarningIntervalUnitEnum.codeOf(intervalUnit), latestTime, interval);
+        if (thresholdTime == null) {
+            // 该策略系统不支持处理，简单返回true，当成已触发。
+            return true;
+        }
+        // 如果本次触发时间在阈值时间之前，则说明在间隔内已经触发过
+        return triggerTime.isBefore(thresholdTime);
     }
 
 }

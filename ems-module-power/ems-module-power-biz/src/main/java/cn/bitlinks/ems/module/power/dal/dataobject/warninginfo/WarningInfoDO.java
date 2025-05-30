@@ -1,12 +1,13 @@
 package cn.bitlinks.ems.module.power.dal.dataobject.warninginfo;
 
-import lombok.*;
-import java.util.*;
-import java.time.LocalDateTime;
-import java.time.LocalDateTime;
-import java.time.LocalDateTime;
-import com.baomidou.mybatisplus.annotation.*;
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.KeySequence;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.*;
+
+import java.time.LocalDateTime;
 
 /**
  * 告警信息 DO
@@ -26,14 +27,14 @@ public class WarningInfoDO extends BaseDO {
     /**
      * 编号
      */
-    @TableId
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
      * 告警等级：紧急4 重要3 次要2 警告1 提示0
      */
     private Integer level;
     /**
-     * 用户id
+     * 用户id （每条告警信息内容与收件人有关，暂不拆出）
      */
     private Long userId;
     /**
@@ -52,6 +53,10 @@ public class WarningInfoDO extends BaseDO {
      * 模板id
      */
     private Long templateId;
+    /**
+     * 策略id
+     */
+    private Long strategyId;
     /**
      * 标题
      */

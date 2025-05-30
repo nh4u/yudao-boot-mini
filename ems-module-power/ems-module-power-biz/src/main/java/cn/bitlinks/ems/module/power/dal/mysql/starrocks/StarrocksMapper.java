@@ -8,6 +8,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -25,4 +26,8 @@ public interface StarrocksMapper {
     void addData(@Param("date") String date);
 
     void deleteData(String date);
+
+    BigDecimal selectUsage(@Param("energyId") Long energyId,
+                           @Param("startTime") String startTime,
+                           @Param("endTime") String endTime);
 }

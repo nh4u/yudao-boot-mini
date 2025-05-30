@@ -2,7 +2,6 @@ package cn.bitlinks.ems.module.power.dal.mysql.standingbook.type;
 
 import cn.bitlinks.ems.framework.mybatis.core.mapper.BaseMapperX;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.AttributeTreeNode;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import org.apache.ibatis.annotations.Mapper;
@@ -27,7 +26,6 @@ public interface StandingbookTypeMapper extends BaseMapperX<StandingbookTypeDO> 
 
                 .eqIfPresent(StandingbookTypeDO::getTopType, reqVO.getTopType())
                 .eqIfPresent(StandingbookTypeDO::getSort, reqVO.getSort())
-                .eqIfPresent(StandingbookTypeDO::getLevel, reqVO.getLevel())
                 .eqIfPresent(StandingbookTypeDO::getCode, reqVO.getCode())
                 .eqIfPresent(StandingbookTypeDO::getDescription, reqVO.getDescription())
                 .betweenIfPresent(StandingbookTypeDO::getCreateTime, reqVO.getCreateTime())
@@ -57,7 +55,5 @@ public interface StandingbookTypeMapper extends BaseMapperX<StandingbookTypeDO> 
     @Select("SELECT value FROM power_standingbook_attribute WHERE standingbook_id = #{standingbookId} AND code = #{code} AND deleted=0 ORDER BY sort")
     String selectAttributeValueByCode(@Param("standingbookId") Long standingbookId, @Param("code") String code);
 
-    @Select("SELECT id,super_id as pId,name ,0 as type FROM power_standingbook_attribute WHERE super_id = #{superId}")
-    AttributeTreeNode selectAttributeTreeNodeBySuperId(Long superId);
 
 }

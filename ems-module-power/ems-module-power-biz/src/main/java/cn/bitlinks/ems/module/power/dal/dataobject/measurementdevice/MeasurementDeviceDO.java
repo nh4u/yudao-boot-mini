@@ -25,7 +25,7 @@ public class MeasurementDeviceDO extends BaseDO {
     /**
      * id
      */
-    @TableId
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
      * 计量器具id

@@ -1,10 +1,7 @@
 package cn.bitlinks.ems.module.power.dal.dataobject.warningtemplate;
 
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
-import com.baomidou.mybatisplus.annotation.KeySequence;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.*;
 
@@ -15,7 +12,7 @@ import java.util.List;
  *
  * @author bitlinks
  */
-@TableName("power_warning_template")
+@TableName(value = "power_warning_template", autoResultMap = true)
 @KeySequence("power_warning_template_seq") // 用于 Oracle、PostgreSQL、Kingbase、DB2、H2 数据库的主键自增。如果是 MySQL 等数据库，可不写。
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -28,7 +25,7 @@ public class WarningTemplateDO extends BaseDO {
     /**
      * 编号
      */
-    @TableId
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
      * 模板名称

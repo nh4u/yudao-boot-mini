@@ -2,9 +2,8 @@ package cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy;
 
 import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
-import cn.bitlinks.ems.module.power.controller.admin.warningstrategy.vo.ConditionVO;
+import cn.bitlinks.ems.framework.mybatis.core.type.LongListTypeHandler;
 import com.baomidou.mybatisplus.annotation.*;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.*;
 
 import java.util.List;
@@ -14,7 +13,7 @@ import java.util.List;
  *
  * @author bitlinks
  */
-@TableName(value="power_warning_strategy", autoResultMap = true)
+@TableName(value = "power_warning_strategy", autoResultMap = true)
 @KeySequence("power_warning_strategy_seq") // 用于 Oracle、PostgreSQL、Kingbase、DB2、H2 数据库的主键自增。如果是 MySQL 等数据库，可不写。
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -27,7 +26,7 @@ public class WarningStrategyDO extends BaseDO {
     /**
      * 编号
      */
-    @TableId
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
      * 规则名称
@@ -41,18 +40,26 @@ public class WarningStrategyDO extends BaseDO {
     /**
      * 设备范围
      */
-    @TableField(typeHandler = JacksonTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    @TableField(typeHandler = LongListTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
     private List<Long> deviceScope;
     /**
      * 设备分类范围
      */
-    @TableField(typeHandler = JacksonTypeHandler.class, updateStrategy  = FieldStrategy.ALWAYS)
+    @TableField(typeHandler = LongListTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
     private List<Long> deviceTypeScope;
-    /**
-     * 告警条件
-     */
-    @TableField(value = "`condition`", typeHandler = JacksonTypeHandler.class)
-    private List<ConditionVO> condition;
+
+//    /**
+//     * 触发告警的参数编码集合-冗余字段
+//     */
+//    @TableField(typeHandler = StringListTypeHandler.class)
+//    private List<String> paramCodes;
+//
+//    /**
+//     * 真正触发告警的设备id集合-冗余字段
+//     */
+//    @TableField(typeHandler = StringListTypeHandler.class)
+//    private List<String> sbIds;
+
     /**
      * 告警等级：紧急4 重要3 次要2 警告1 提示0
      * <p>
@@ -67,24 +74,24 @@ public class WarningStrategyDO extends BaseDO {
     /**
      * 邮件模板id
      */
-    @TableField(updateStrategy  = FieldStrategy.ALWAYS)
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long mailTemplateId;
     /**
      * 站内信人员
      */
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = LongListTypeHandler.class)
     private List<Long> siteStaff;
     /**
      * 邮件人员
      */
-    @TableField(typeHandler = JacksonTypeHandler.class, updateStrategy  = FieldStrategy.ALWAYS)
+    @TableField(typeHandler = LongListTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
     private List<Long> mailStaff;
 
     /**
      * 告警间隔
      */
     @TableField(value = "`interval`")
-    private String interval;
+    private Integer interval;
 
     /**
      * 状态

@@ -71,4 +71,19 @@ public interface WarningTemplateService {
      * @return 列表集合
      */
     List<WarningTemplateDO> getWarningTemplateList(Integer type, String name) ;
+
+    /**
+     * 字符串提取关键字
+     * @param content 字符串
+     * @return 关键字列表
+     */
+    List<String> parseTemplateContentParams(String content);
+
+    /**
+     * 构建单条模板字符串参数（能力有限）
+     *
+     * @param conditionParamsMapList 所有关键字组成的条件参数们。
+     * @return 替换好关键字的字符串 为null则填充失败
+     */
+    String buildTitleOrContentByParams(List<String> keyWord, String templateStr, List<Map<String, String>> conditionParamsMapList) ;
 }

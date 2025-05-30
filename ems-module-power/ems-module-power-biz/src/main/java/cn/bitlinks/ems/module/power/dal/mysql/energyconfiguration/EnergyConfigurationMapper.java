@@ -21,6 +21,7 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
 
     default PageResult<EnergyConfigurationDO> selectPage(EnergyConfigurationPageReqVO reqVO) {
         return selectPage(reqVO, new LambdaQueryWrapperX<EnergyConfigurationDO>()
+                .eqIfPresent(EnergyConfigurationDO::getGroupId, reqVO.getGroupId())
                 .likeIfPresent(EnergyConfigurationDO::getEnergyName, reqVO.getEnergyName())
                 .eqIfPresent(EnergyConfigurationDO::getCode, reqVO.getCode())
                 .eqIfPresent(EnergyConfigurationDO::getEnergyClassify, reqVO.getEnergyClassify())
@@ -41,6 +42,7 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
 
     default List<EnergyConfigurationDO> selectList(EnergyConfigurationPageReqVO reqVO) {
         return selectList(new LambdaQueryWrapperX<EnergyConfigurationDO>()
+                .eqIfPresent(EnergyConfigurationDO::getGroupId, reqVO.getGroupId())
                 .likeIfPresent(EnergyConfigurationDO::getEnergyName, reqVO.getEnergyName())
                 .eqIfPresent(EnergyConfigurationDO::getCode, reqVO.getCode())
                 .eqIfPresent(EnergyConfigurationDO::getEnergyClassify, reqVO.getEnergyClassify())
@@ -71,28 +73,12 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
     EnergyConfigurationSaveReqVO selectByEnergyName(@Param("energyName") String energyName);
 
     @Select({
-            "SELECT",
-            "  JSON_UNQUOTE(",
-            "    JSON_EXTRACT(",
-            "      energy_parameter,",
-            "      REPLACE(",
-            "        JSON_UNQUOTE(",
-            "          JSON_SEARCH(",
-            "            energy_parameter,",
-            "            'one',",
-            "            '用量',",  // 这里固定为'用量'
-            "            NULL,",
-            "            '$[*].chinese'",
-            "          )",
-            "        ),",
-            "        '.chinese',",
-            "        '.unit'",
-            "      )",
-            "    )",
-            "  ) AS unit",
-            "FROM ems_energy_configuration",
-            "WHERE id = #{energyId}",
-            "LIMIT 1"
+            "SELECT unit ",
+            "FROM ems_energy_parameters ",
+            "WHERE energy_id = #{energyId} ",
+            "  AND 'usage' = 1 ", // 直接通过usage字段过滤
+            "  AND deleted = 0 ", // 增加删除状态过滤
+            "LIMIT 1" // 确保唯一性
     })
     String selectUnitByEnergyNameAndChinese(@Param("energyId") String energyId);
 }

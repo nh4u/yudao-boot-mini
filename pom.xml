@@ -15,7 +15,7 @@
         <module>ems-module-system</module>
         <module>ems-module-infra</module>
         <module>ems-module-power</module>
-<!--        <module>ems-module-xxx</module>-->
+        <module>ems-module-acquisition</module>
 
     </modules>
 

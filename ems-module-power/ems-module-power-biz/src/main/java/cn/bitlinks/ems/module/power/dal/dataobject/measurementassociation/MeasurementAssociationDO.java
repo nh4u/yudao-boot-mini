@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation;
 
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -24,7 +25,7 @@ public class MeasurementAssociationDO extends BaseDO {
     /**
      * id
      */
-    @TableId
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
      * 计量器具id

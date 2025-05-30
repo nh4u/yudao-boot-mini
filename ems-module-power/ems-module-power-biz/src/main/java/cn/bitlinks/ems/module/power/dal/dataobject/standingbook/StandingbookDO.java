@@ -2,7 +2,6 @@ package cn.bitlinks.ems.module.power.dal.dataobject.standingbook;
 
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
-import com.alibaba.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -50,41 +49,16 @@ public class StandingbookDO extends BaseDO {
      */
     @Schema(description = "简介")
     private String description;
-    /**
-     * 标签信息
-     */
+
     @Schema(description = "标签信息")
-    private String labelInfo;
-    /**
+    @TableField(exist = false)
+    private List<StandingbookLabelInfoDO> labelInfo;
+        /**
      * 环节 | 1：外购存储  2：加工转换 3：传输分配 4：终端使用 5：回收利用
      */
     @Schema(description = "环节")
     private Integer stage;
-    /**
-     * 采集频率
-     */
-    @Schema(description = "采集频率")
-    private Integer frequency;
-    /**
-     * 采集频率单位
-     */
-    @Schema(description = "采集频率单位")
-    private String frequencyUnit;
-    /**
-     * 数据来源分类
-     */
-    @Schema(description = "数据来源分类")
-    private Integer sourceType;
-    /**
-     * 数据来源分类=关联计量器具时 相关信息json
-     */
-    @Schema(description = "数据来源分类=关联计量器具时 相关信息json")
-    private String associationMeasurementJson;
-    /**
-     * 开关（0：关；1开。）
-     */
-    @Schema(description = "开关（0：关；1开。）")
-    private Boolean status;
+
     @TableField(exist = false)
     List<StandingbookAttributeDO> children = new ArrayList<>();
 

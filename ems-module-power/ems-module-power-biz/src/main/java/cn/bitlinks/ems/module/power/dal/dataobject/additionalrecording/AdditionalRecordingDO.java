@@ -41,9 +41,9 @@ public class AdditionalRecordingDO extends BaseDO {
      */
     private Long standingbookId;
     /**
-     * 数值类型
+     * 增量/全量
      */
-    private String valueType;
+    private Integer valueType;
     /**
      * 本次采集时间
      */

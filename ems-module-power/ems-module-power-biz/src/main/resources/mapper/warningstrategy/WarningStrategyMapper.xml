@@ -20,7 +20,7 @@
             <if test="reqVO.creatorName != null and reqVO.creatorName != ''">
                 and su.username like CONCAT('%',#{reqVO.creatorName},'%')
             </if>
-            <if test="reqVO.createTime != null">
+            <if test="reqVO.createTime != null and reqVO.createTime.length == 2">
                 and ws.create_time BETWEEN #{reqVO.createTime[0]} and #{reqVO.createTime[1]}
             </if>
         </where>

@@ -27,9 +27,9 @@ public class AdditionalRecordingRespVO {
     @ExcelProperty("计量器具id")
     private Long standingbookId;
 
-    @Schema(description = "数值类型", example = "1")
-    @ExcelProperty("数值类型")
-    private String valueType;
+    @Schema(description = "增量/全量")
+    @ExcelProperty("增量/全量")
+    private Integer valueType;
 
     @Schema(description = "本次采集时间")
     @ExcelProperty("本次采集时间")
