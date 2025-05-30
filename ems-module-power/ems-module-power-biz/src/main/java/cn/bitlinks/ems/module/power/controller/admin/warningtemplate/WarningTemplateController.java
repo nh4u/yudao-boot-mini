@@ -39,14 +39,14 @@ public class WarningTemplateController {
 
     @PostMapping("/create")
     @Operation(summary = "创建告警模板")
-    @PreAuthorize("@ss.hasPermission('power:warning-template:create')")
+    //@PreAuthorize("@ss.hasPermission('power:warning-template:create')")
     public CommonResult<Long> createWarningTemplate(@Valid @RequestBody WarningTemplateSaveReqVO createReqVO) {
         return success(warningTemplateService.createWarningTemplate(createReqVO));
     }
 
     @PutMapping("/update")
     @Operation(summary = "更新告警模板")
-    @PreAuthorize("@ss.hasPermission('power:warning-template:update')")
+    //@PreAuthorize("@ss.hasPermission('power:warning-template:update')")
     public CommonResult<Boolean> updateWarningTemplate(@Valid @RequestBody WarningTemplateSaveReqVO updateReqVO) {
         warningTemplateService.updateWarningTemplate(updateReqVO);
         return success(true);
@@ -54,7 +54,7 @@ public class WarningTemplateController {
 
     @DeleteMapping("/deleteBatch")
     @Operation(summary = "删除告警模板(批量)")
-    @PreAuthorize("@ss.hasPermission('power:warning-template:delete')")
+    //@PreAuthorize("@ss.hasPermission('power:warning-template:delete')")
     public CommonResult<Boolean> deleteWarningTemplateBatch( @RequestBody List<Long> ids) {
         warningTemplateService.deleteWarningTemplateBatch(ids);
         return success(true);
@@ -63,7 +63,7 @@ public class WarningTemplateController {
     @DeleteMapping("/delete")
     @Operation(summary = "删除告警模板")
     @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('power:warning-template:delete')")
+    //@PreAuthorize("@ss.hasPermission('power:warning-template:delete')")
     public CommonResult<Boolean> deleteWarningTemplate(@RequestParam("id") Long id) {
         warningTemplateService.deleteWarningTemplate(id);
         return success(true);
@@ -72,7 +72,7 @@ public class WarningTemplateController {
     @GetMapping("/get")
     @Operation(summary = "获得告警模板")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
-    @PreAuthorize("@ss.hasPermission('power:warning-template:query')")
+    //@PreAuthorize("@ss.hasPermission('power:warning-template:query')")
     public CommonResult<WarningTemplateRespVO> getWarningTemplate(@RequestParam("id") Long id) {
         WarningTemplateDO warningTemplate = warningTemplateService.getWarningTemplate(id);
         return success(BeanUtils.toBean(warningTemplate, WarningTemplateRespVO.class));
@@ -80,7 +80,7 @@ public class WarningTemplateController {
 
     @GetMapping("/page")
     @Operation(summary = "获得告警模板分页")
-    @PreAuthorize("@ss.hasPermission('power:warning-template:query')")
+    //@PreAuthorize("@ss.hasPermission('power:warning-template:query')")
     public CommonResult<PageResult<WarningTemplateRespVO>> getWarningTemplatePage(@Valid WarningTemplatePageReqVO pageReqVO) {
         PageResult<WarningTemplateDO> pageResult = warningTemplateService.getWarningTemplatePage(pageReqVO);
         return success(BeanUtils.toBean(pageResult, WarningTemplateRespVO.class));
@@ -88,7 +88,7 @@ public class WarningTemplateController {
 
     @GetMapping("/listByType")
     @Operation(summary = "站内信/邮件模板列表，模板名称 模糊搜索，")
-    @PreAuthorize("@ss.hasPermission('power:warning-template:query')")
+    //@PreAuthorize("@ss.hasPermission('power:warning-template:query')")
     @Parameters({
             @Parameter(name = "type", description = "type：0-站内信 1-邮件", required = true, example = "0"),
             @Parameter(name = "name", description = "模板名称", required = false, example = "d")
@@ -101,7 +101,7 @@ public class WarningTemplateController {
 
     @GetMapping("/export-excel")
     @Operation(summary = "导出告警模板 Excel")
-    @PreAuthorize("@ss.hasPermission('power:warning-template:export')")
+    //@PreAuthorize("@ss.hasPermission('power:warning-template:export')")
     @ApiAccessLog(operateType = EXPORT)
     public void exportWarningTemplateExcel(@Valid WarningTemplatePageReqVO pageReqVO,
                                            HttpServletResponse response) throws IOException {

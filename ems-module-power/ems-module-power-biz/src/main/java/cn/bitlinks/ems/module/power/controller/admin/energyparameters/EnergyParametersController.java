@@ -40,14 +40,14 @@ public class EnergyParametersController {
 
     @PostMapping("/create")
     @Operation(summary = "创建能源参数")
-    @PreAuthorize("@ss.hasPermission('power:energy-parameters:create')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-parameters:create')")
     public CommonResult<Long> createEnergyParameters(@Valid @RequestBody EnergyParametersSaveReqVO createReqVO) {
         return success(energyParametersService.createEnergyParameters(createReqVO));
     }
 
     @PutMapping("/update")
     @Operation(summary = "更新能源参数")
-    @PreAuthorize("@ss.hasPermission('power:energy-parameters:update')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-parameters:update')")
     public CommonResult<Boolean> updateEnergyParameters(@Valid @RequestBody EnergyParametersSaveReqVO updateReqVO) {
         energyParametersService.updateEnergyParameters(updateReqVO);
         return success(true);
@@ -56,7 +56,7 @@ public class EnergyParametersController {
     @DeleteMapping("/delete")
     @Operation(summary = "删除能源参数")
     @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('power:energy-parameters:delete')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-parameters:delete')")
     public CommonResult<Boolean> deleteEnergyParameters(@RequestParam("id") Long id) {
         energyParametersService.deleteEnergyParameters(id);
         return success(true);
@@ -65,7 +65,7 @@ public class EnergyParametersController {
     @GetMapping("/get")
     @Operation(summary = "获得能源参数")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
-    @PreAuthorize("@ss.hasPermission('power:energy-parameters:query')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-parameters:query')")
     public CommonResult<EnergyParametersRespVO> getEnergyParameters(@RequestParam("id") Long id) {
         EnergyParametersDO energyParameters = energyParametersService.getEnergyParameters(id);
         return success(BeanUtils.toBean(energyParameters, EnergyParametersRespVO.class));
@@ -73,7 +73,7 @@ public class EnergyParametersController {
 
     @GetMapping("/page")
     @Operation(summary = "获得能源参数分页")
-    @PreAuthorize("@ss.hasPermission('power:energy-parameters:query')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-parameters:query')")
     public CommonResult<PageResult<EnergyParametersRespVO>> getEnergyParametersPage(@Valid EnergyParametersPageReqVO pageReqVO) {
         PageResult<EnergyParametersDO> pageResult = energyParametersService.getEnergyParametersPage(pageReqVO);
         return success(BeanUtils.toBean(pageResult, EnergyParametersRespVO.class));
@@ -81,7 +81,7 @@ public class EnergyParametersController {
 
     @GetMapping("/export-excel")
     @Operation(summary = "导出能源参数 Excel")
-    @PreAuthorize("@ss.hasPermission('power:energy-parameters:export')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-parameters:export')")
     @ApiAccessLog(operateType = EXPORT)
     public void exportEnergyParametersExcel(@Valid EnergyParametersPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
@@ -95,7 +95,7 @@ public class EnergyParametersController {
     @GetMapping("/getByEnergyId")
     @Operation(summary = "根据能源id获得能源参数")
     @Parameter(name = "energyId", description = "能源id", required = true, example = "1024")
-    @PreAuthorize("@ss.hasPermission('power:energy-parameters:getByEnergyId')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-parameters:getByEnergyId')")
     public CommonResult<List<EnergyParametersRespVO>> getEnergyParametersByEnergyId(@RequestParam("energyId") Long energyId) {
         List<EnergyParametersDO> energyParameters = energyParametersService.getEnergyParametersByEnergyId(energyId);
         return success(BeanUtils.toBean(energyParameters, EnergyParametersRespVO.class));

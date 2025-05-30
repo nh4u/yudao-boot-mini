@@ -31,7 +31,7 @@ public class StandingBookTmplDaqAttrController {
 
     @PostMapping("/saveMultiple")
     @Operation(summary = "保存多个台账数采模板属性")
-    @PreAuthorize("@ss.hasPermission('power:standingbook-tmpl-daq-attr:create')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook-tmpl-daq-attr:create')")
     public CommonResult<Boolean> saveMultiple(@Valid @RequestBody List<StandingbookTmplDaqAttrSaveReqVO> saveReqVOList) {
         standingbookTemplAttrService.saveMultiple(saveReqVOList);
         return success(true);
@@ -39,7 +39,7 @@ public class StandingBookTmplDaqAttrController {
 
     @GetMapping("/getByTypeIdAndEnergyFlag")
     @Operation(summary = "获得台账分类的模板数采参数（能源+自定义）")
-    @PreAuthorize("@ss.hasPermission('power:standingbook-tmpl-daq-attr:query')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook-tmpl-daq-attr:query')")
     public CommonResult<List<StandingbookTmplDaqAttrRespVO>> getByTypeIdAndEnergyFlag(@RequestParam("typeId") Long typeId,
                                                                                       @RequestParam("energyFlag") Boolean energyFlag) {
         return success(standingbookTemplAttrService.getByTypeIdAndEnergyFlag(typeId, energyFlag));
@@ -47,7 +47,7 @@ public class StandingBookTmplDaqAttrController {
 
     @GetMapping("/getDaqAttrsByStandingbookId")
     @Operation(summary = "获取台账id对应的所有数采参数（能源+自定义）查询启用的")
-    @PreAuthorize("@ss.hasPermission('power:standingbook-tmpl-daq-attr:query')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook-tmpl-daq-attr:query')")
     public CommonResult<List<StandingbookTmplDaqAttrRespVO>> getDaqAttrsByStandingbookId(@RequestParam("standingbookId") Long standingbookId) {
         List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS =
                 standingbookTemplAttrService.getDaqAttrsByStandingbookId(standingbookId);
@@ -60,7 +60,7 @@ public class StandingBookTmplDaqAttrController {
 
     @GetMapping("/getUsageAttrBySbId")
     @Operation(summary = "根据台账id获取对应的用量的单位")
-    @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")
     public CommonResult<StandingbookTmplDaqAttrRespVO> getUsageAttrBySbId(@RequestParam("id") Long id) {
         StandingbookTmplDaqAttrDO standingbookTmplDaqAttrDO = standingbookTemplAttrService.getUsageAttrBySbId(id);
         if (Objects.isNull(standingbookTmplDaqAttrDO)) {

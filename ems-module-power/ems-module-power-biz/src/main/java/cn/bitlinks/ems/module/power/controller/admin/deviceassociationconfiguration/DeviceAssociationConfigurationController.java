@@ -29,7 +29,7 @@ public class DeviceAssociationConfigurationController {
 
     @PostMapping("/measurementInstrument")
     @Operation(summary = "关联下级计量")
-    @PreAuthorize("@ss.hasPermission('power:device-association-configuration:update')")
+    //@PreAuthorize("@ss.hasPermission('power:device-association-configuration:update')")
     public CommonResult<Boolean> updAssociationMeasurementInstrument(@Valid @RequestBody MeasurementAssociationSaveReqVO createReqVO) {
         deviceAssociationConfigurationService.updAssociationMeasurementInstrument(createReqVO);
         return success(true);
@@ -37,7 +37,7 @@ public class DeviceAssociationConfigurationController {
 
     @PostMapping("/device")
     @Operation(summary = "关联设备")
-    @PreAuthorize("@ss.hasPermission('power:device-association-configuration:update')")
+    //@PreAuthorize("@ss.hasPermission('power:device-association-configuration:update')")
     public CommonResult<Boolean> updAssociationDevice(@Valid @RequestBody DeviceAssociationSaveReqVO createReqVO) {
         deviceAssociationConfigurationService.updAssociationDevice(createReqVO);
         return success(true);
