@@ -40,14 +40,14 @@ public class AdditionalRecordingController {
 
     @PostMapping("/create")
     @Operation(summary = "手动补录")
-    @PreAuthorize("@ss.hasPermission('power:additional-recording:create')")
+    //@PreAuthorize("@ss.hasPermission('power:additional-recording:create')")
     public CommonResult<Long> createAdditionalRecording(@Valid @RequestBody AdditionalRecordingSaveReqVO createReqVO) {
         return success(additionalRecordingService.createAdditionalRecording(createReqVO));
     }
 
     @PostMapping("/createByVoucherId")
     @Operation(summary = "凭证导入")
-    @PreAuthorize("@ss.hasPermission('power:additional-recording:createByVoucherId')")
+    //@PreAuthorize("@ss.hasPermission('power:additional-recording:createByVoucherId')")
     public CommonResult<List<Long>> createAdditionalRecording(@RequestBody CreateAdditionalRecordingDTO request) {
         Long standingbookId = request.getStandingbookId();
         List<Long> voucherIds = request.getVoucherIds();
@@ -56,7 +56,7 @@ public class AdditionalRecordingController {
 
     @GetMapping("/getVoucherIdBystandingbookId")
     @Operation(summary = "回显凭证id")
-    @PreAuthorize("@ss.hasPermission('power:additional-recording:getVoucherIdBystandingbookId')")
+    //@PreAuthorize("@ss.hasPermission('power:additional-recording:getVoucherIdBystandingbookId')")
     public CommonResult<List<Long>> getVoucherIdsByStandingbookId(@RequestParam("standingbookId") Long standingbookId) {
         return success(additionalRecordingService.getVoucherIdsByStandingbookId(standingbookId));
     }
@@ -74,7 +74,7 @@ public class AdditionalRecordingController {
 
     @PutMapping("/update")
     @Operation(summary = "更新补录")
-    @PreAuthorize("@ss.hasPermission('power:additional-recording:update')")
+    //@PreAuthorize("@ss.hasPermission('power:additional-recording:update')")
     public CommonResult<Boolean> updateAdditionalRecording(@Valid @RequestBody AdditionalRecordingSaveReqVO updateReqVO) {
         additionalRecordingService.updateAdditionalRecording(updateReqVO);
         return success(true);
@@ -83,7 +83,7 @@ public class AdditionalRecordingController {
     @DeleteMapping("/deleteIds")
     @Operation(summary = "批量删除补录")
     @Parameter(name = "ids", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('power:additional-recording:delete')")
+    //@PreAuthorize("@ss.hasPermission('power:additional-recording:delete')")
     public CommonResult<Boolean> deleteAdditionalRecordings(@RequestBody List<Long> ids) {
         additionalRecordingService.deleteAdditionalRecordings(ids);
         ;
@@ -93,7 +93,7 @@ public class AdditionalRecordingController {
     @DeleteMapping("/delete")
     @Operation(summary = "删除补录")
     @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('power:additional-recording:delete')")
+    //@PreAuthorize("@ss.hasPermission('power:additional-recording:delete')")
     public CommonResult<Boolean> deleteAdditionalRecording(@RequestParam("id") Long id) {
         additionalRecordingService.deleteAdditionalRecording(id);
         return success(true);
@@ -102,7 +102,7 @@ public class AdditionalRecordingController {
     @GetMapping("/get")
     @Operation(summary = "获得补录")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
-    @PreAuthorize("@ss.hasPermission('power:additional-recording:query')")
+    //@PreAuthorize("@ss.hasPermission('power:additional-recording:query')")
     public CommonResult<AdditionalRecordingRespVO> getAdditionalRecording(@RequestParam("id") Long id) {
         AdditionalRecordingDO additionalRecording = additionalRecordingService.getAdditionalRecording(id);
         return success(BeanUtils.toBean(additionalRecording, AdditionalRecordingRespVO.class));
@@ -110,7 +110,7 @@ public class AdditionalRecordingController {
 
     @GetMapping("/page")
     @Operation(summary = "获得补录分页")
-    @PreAuthorize("@ss.hasPermission('power:additional-recording:query')")
+    //@PreAuthorize("@ss.hasPermission('power:additional-recording:query')")
     public CommonResult<PageResult<AdditionalRecordingRespVO>> getAdditionalRecordingPage(@Valid AdditionalRecordingPageReqVO pageReqVO) {
         PageResult<AdditionalRecordingDO> pageResult = additionalRecordingService.getAdditionalRecordingPage(pageReqVO);
         return success(BeanUtils.toBean(pageResult, AdditionalRecordingRespVO.class));
@@ -118,7 +118,7 @@ public class AdditionalRecordingController {
 
     @GetMapping("/export-excel")
     @Operation(summary = "导出补录 Excel")
-    @PreAuthorize("@ss.hasPermission('power:additional-recording:export')")
+    //@PreAuthorize("@ss.hasPermission('power:additional-recording:export')")
     @ApiAccessLog(operateType = EXPORT)
     public void exportAdditionalRecordingExcel(@Valid AdditionalRecordingPageReqVO pageReqVO,
                                                HttpServletResponse response) throws IOException {
@@ -131,7 +131,7 @@ public class AdditionalRecordingController {
 
     @GetMapping("/query")
     @Operation(summary = "查询补录数据")
-    @PreAuthorize("@ss.hasPermission('power:additional-recording:query')")
+    //@PreAuthorize("@ss.hasPermission('power:additional-recording:query')")
     public CommonResult<List<AdditionalRecordingDO>> getAdditionalRecordingPage(
             BigDecimal minThisValue, BigDecimal maxThisValue,
             String recordPerson,

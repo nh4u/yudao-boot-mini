@@ -29,7 +29,7 @@ public class WarningStrategyConditionController {
 
     @PostMapping("/getConditionTree")
     @Operation(summary = "根据台账ids和台账类型ids查询台账属性树形结构")
-    @PreAuthorize("@ss.hasPermission('power:warning-strategy-condition:query')")
+    //@PreAuthorize("@ss.hasPermission('power:warning-strategy-condition:query')")
     public CommonResult<List<AttributeTreeNode>> queryDaqTreeNodeByTypeAndSb(@RequestBody AttributeTreeReqVO reqVO) {
         return success(warningStrategyConditionService.queryDaqTreeNodeByTypeAndSb(reqVO.getSbIds(),
                 reqVO.getTypeIds()));

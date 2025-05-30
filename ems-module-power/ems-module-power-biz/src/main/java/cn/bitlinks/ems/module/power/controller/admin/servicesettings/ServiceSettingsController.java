@@ -30,21 +30,21 @@ public class ServiceSettingsController {
 
     @PostMapping("/create")
     @Operation(summary = "创建服务设置")
-    @PreAuthorize("@ss.hasPermission('power:service-settings:create')")
+    //@PreAuthorize("@ss.hasPermission('power:service-settings:create')")
     public CommonResult<Long> createServiceSettings(@Valid @RequestBody ServiceSettingsSaveReqVO createReqVO) {
         return success(serviceSettingsService.createServiceSettings(createReqVO));
     }
 
     @PostMapping("/test")
     @Operation(summary = "测试服务连通")
-    @PreAuthorize("@ss.hasPermission('power:service-settings:create')")
+    //@PreAuthorize("@ss.hasPermission('power:service-settings:create')")
     public CommonResult<Boolean> testLink(@Valid @RequestBody ServiceSettingsTestReqVO createReqVO) {
         return success(serviceSettingsService.testLink(createReqVO));
     }
 
     @PutMapping("/update")
     @Operation(summary = "更新服务设置")
-    @PreAuthorize("@ss.hasPermission('power:service-settings:update')")
+    //@PreAuthorize("@ss.hasPermission('power:service-settings:update')")
     public CommonResult<Boolean> updateServiceSettings(@Valid @RequestBody ServiceSettingsSaveReqVO updateReqVO) {
         serviceSettingsService.updateServiceSettings(updateReqVO);
         return success(true);
@@ -53,7 +53,7 @@ public class ServiceSettingsController {
     @DeleteMapping("/delete")
     @Operation(summary = "删除服务设置")
     @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('power:service-settings:delete')")
+    //@PreAuthorize("@ss.hasPermission('power:service-settings:delete')")
     public CommonResult<Boolean> deleteServiceSettings(@RequestParam("id") Long id) {
         serviceSettingsService.deleteServiceSettings(id);
         return success(true);
@@ -62,7 +62,7 @@ public class ServiceSettingsController {
     @GetMapping("/get")
     @Operation(summary = "获得服务设置")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
-    @PreAuthorize("@ss.hasPermission('power:service-settings:query')")
+    //@PreAuthorize("@ss.hasPermission('power:service-settings:query')")
     public CommonResult<ServiceSettingsRespVO> getServiceSettings(@RequestParam("id") Long id) {
         ServiceSettingsDO serviceSettings = serviceSettingsService.getServiceSettings(id);
         return success(BeanUtils.toBean(serviceSettings, ServiceSettingsRespVO.class));
@@ -70,7 +70,7 @@ public class ServiceSettingsController {
 
     @GetMapping("/list")
     @Operation(summary = "获得服务设置全部列表")
-    @PreAuthorize("@ss.hasPermission('power:service-settings:query')")
+    //@PreAuthorize("@ss.hasPermission('power:service-settings:query')")
     public CommonResult<List<ServiceSettingsOptionsRespVO>> getServiceSettingsList() {
         return success(serviceSettingsService.getServiceSettingsList());
     }
@@ -78,7 +78,7 @@ public class ServiceSettingsController {
 
     @GetMapping("/page")
     @Operation(summary = "获得服务设置分页")
-    @PreAuthorize("@ss.hasPermission('power:service-settings:query')")
+    //@PreAuthorize("@ss.hasPermission('power:service-settings:query')")
     public CommonResult<PageResult<ServiceSettingsRespVO>> getServiceSettingsPage(@Valid ServiceSettingsPageReqVO pageReqVO) {
         PageResult<ServiceSettingsDO> pageResult = serviceSettingsService.getServiceSettingsPage(pageReqVO);
         return success(BeanUtils.toBean(pageResult, ServiceSettingsRespVO.class));
