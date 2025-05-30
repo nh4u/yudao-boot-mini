@@ -100,11 +100,16 @@ rocketmq:
     # 是否在内部发送失败时重试另一个broker，默认false
     retryNextServer: false
   consumer:
-    group: "acquisition_consumer_group-${spring.profiles.active}"
     access-key: rocketAdminMQ
-    secretKey: 25be49067687d405a082dcaa2edaceea        # 密码
-  # 自定义配置
-  # 生产者发送消息的topic
+    secretKey: 25be49067687d405a082dcaa2edaceea
+  multi-consumer:
+    consumers:
+      - group: "acquisition_consumer_group-${spring.profiles.active}0"
+        topic: "device_acquisition_topic-${spring.profiles.active}0"
+      - group: "acquisition_consumer_group-${spring.profiles.active}1"
+        topic: "device_acquisition_topic-${spring.profiles.active}1"
+      - group: "acquisition_consumer_group-${spring.profiles.active}2"
+        topic: "device_acquisition_topic-${spring.profiles.active}2"
   topic:
     device-acquisition: "device_acquisition_topic-${spring.profiles.active}"
     device-aggregate: "device_aggregate_topic-${spring.profiles.active}"
