@@ -10,6 +10,7 @@ import cn.bitlinks.ems.module.acquisition.starrocks.StarRocksStreamLoadService;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
@@ -88,6 +89,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
 
     @Override
     @TenantIgnore
+    @Transactional
     public void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO) {
         try {
             MinuteAggregateDataDO minuteAggregateDataDO = BeanUtils.toBean(minuteAggregateDataDTO,
@@ -101,17 +103,19 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
 
     @Override
     @TenantIgnore
+    @Transactional
     public void insertDelRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
         try {
             MinuteAggregateDataDTO endDataDTO = minuteAggDataSplitDTO.getEndDataDO();
             // 按照起始两条数据，进行拆分，然后删除
             minuteAggregateDataMapper.deleteDataByMinute(endDataDTO.getAggregateTime(), endDataDTO.getStandingbookId());
-
             // 数据拆分
             List<MinuteAggregateDataDO> minuteAggregateDataDOS = splitData(minuteAggDataSplitDTO.getStartDataDO(), endDataDTO);
 
             String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
             starRocksStreamLoadService.streamLoadData(minuteAggregateDataDOS, labelName, TB_NAME);
+
+
         } catch (Exception e) {
             throw exception(STREAM_LOAD_DEL_RANGE_FAIL);
         }
@@ -119,6 +123,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
 
     @Override
     @TenantIgnore
+    @Transactional
     public void insertRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
         try {
             List<MinuteAggregateDataDO> minuteAggregateDataDOS = splitData(minuteAggDataSplitDTO.getStartDataDO(),
@@ -159,7 +164,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         LocalDateTime currentTime = startTime;
         BigDecimal currentFullValue = startValue;
 
-        for (int i = 0; i < minutes; i++) {
+        for (int i = 0; i <= minutes; i++) {
             MinuteAggregateDataDO data = new MinuteAggregateDataDO();
             data.setStandingbookId(startData.getStandingbookId());
             data.setParamCode(startData.getParamCode());
@@ -173,6 +178,9 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
                     //这个是历史时间段之后添加的连续数据，两个时间点全量都有，需要计算出最后一个时间点的增量和，时间范围之间的分钟级数据的增量
                     //第一条数据的值，还是第一条数据的值，不需要加入新增的队列中
                     data.setIncrementalValue(startData.getIncrementalValue());
+                    // 更新当前时间和全量值
+                    currentTime = currentTime.plusMinutes(1);
+                    currentFullValue = currentFullValue.add(perMinuteIncrement);
                     continue;
                 }
                 if (endData.getIncrementalValue().equals(BigDecimal.ZERO)) {

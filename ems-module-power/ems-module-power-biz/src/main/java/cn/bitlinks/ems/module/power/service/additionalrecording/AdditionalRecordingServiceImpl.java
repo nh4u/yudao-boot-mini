@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.additionalrecording;
 
 import cn.bitlinks.ems.framework.common.enums.FullIncrementEnum;
+import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
@@ -73,8 +74,11 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         // 进行数据拆分时校验补录的时间是否合法，不合法则提示无法补录
         try {
             splitData(daqAttrDO, createReqVO.getStandingbookId(), createReqVO.getValueType(),
-                    createReqVO.getPreCollectTime(),
-                    createReqVO.getThisCollectTime(), createReqVO.getPreValue(), createReqVO.getThisValue());
+                    createReqVO.getLastCollectTime(),
+                    createReqVO.getThisCollectTime(), createReqVO.getLastValue(), createReqVO.getThisValue());
+        } catch (ServiceException e) {
+            log.error(e.getMessage(),e);
+            throw e;
         } catch (Exception e) {
             log.error("补录拆分数据失败，失败原因:{}", e.getMessage(), e);
             throw exception(ADDITIONAL_RECORDING_SPLIT_ERROR);
@@ -179,7 +183,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             minuteAggDataSplitDTO.setStartDataDO(latestData);
             minuteAggDataSplitDTO.setEndDataDO(minuteAggregateDataDTO);
             minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
-
+            return;
         } else if (FullIncrementEnum.INCREMENT.getCode().equals(valueType)) {
             // 1.2.1 只允许存在两种情况，，本次采集时间为oldestData的时间上次采集时间在oldestdata之前，或者 上次采集时间为latestData，本次采集时间在latestData之后
             // 1.2.1 如果本次采集时间在oldestData之前，需要修改oldestData的增量，

@@ -25,10 +25,10 @@ public class AdditionalRecordingSaveReqVO {
     private Integer valueType;
 
     @Schema(description = "上次采集时间")
-    private LocalDateTime preCollectTime;
+    private LocalDateTime lastCollectTime;
 
     @Schema(description = "上次数值")
-    private BigDecimal preValue;
+    private BigDecimal lastValue;
 
     @Schema(description = "本次采集时间")
     @NotNull(message = "本次采集时间不能为空")
