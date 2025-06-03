@@ -505,7 +505,7 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
         return standingbookTmplDaqAttrMapper.selectList(new LambdaQueryWrapperX<StandingbookTmplDaqAttrDO>()
                 .eq(StandingbookTmplDaqAttrDO::getStatus, true)
                 .eq(StandingbookTmplDaqAttrDO::getTypeId, standingbookDO.getTypeId())
-                .orderByDesc(StandingbookTmplDaqAttrDO::getSort));
+                .orderByAsc(StandingbookTmplDaqAttrDO::getSort));
     }
 
     @Override
