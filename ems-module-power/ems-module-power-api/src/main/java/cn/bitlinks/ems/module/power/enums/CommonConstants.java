@@ -32,7 +32,7 @@ public interface CommonConstants {
      */
     Long LABEL_NUM_LIMIT = 25L;
 
-    Long LABEL_LAYER_LIMIT = 3L;
+    Long LABEL_LAYER_LIMIT = 5L;
 
 
     Integer YEAR = 366;
