@@ -9,7 +9,6 @@ import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDa
 import cn.hutool.core.collection.CollUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -42,7 +41,15 @@ public class StandingBookTmplDaqAttrController {
     //@PreAuthorize("@ss.hasPermission('power:standingbook-tmpl-daq-attr:query')")
     public CommonResult<List<StandingbookTmplDaqAttrRespVO>> getByTypeIdAndEnergyFlag(@RequestParam("typeId") Long typeId,
                                                                                       @RequestParam("energyFlag") Boolean energyFlag) {
-        return success(standingbookTemplAttrService.getByTypeIdAndEnergyFlag(typeId, energyFlag));
+        return success(standingbookTemplAttrService.getByTypeIdAndEnergyFlag(typeId, energyFlag, null));
+    }
+
+    @GetMapping("/getByTypeIdAndEnergyFlagEnabled")
+    @Operation(summary = "获得台账分类的模板数采参数（能源(启用的)+自定义）")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook-tmpl-daq-attr:query')")
+    public CommonResult<List<StandingbookTmplDaqAttrRespVO>> getByTypeIdAndEnergyFlagEnabled(@RequestParam("typeId") Long typeId,
+                                                                                             @RequestParam("energyFlag") Boolean energyFlag) {
+        return success(standingbookTemplAttrService.getByTypeIdAndEnergyFlag(typeId, energyFlag, true));
     }
 
     @GetMapping("/getDaqAttrsByStandingbookId")

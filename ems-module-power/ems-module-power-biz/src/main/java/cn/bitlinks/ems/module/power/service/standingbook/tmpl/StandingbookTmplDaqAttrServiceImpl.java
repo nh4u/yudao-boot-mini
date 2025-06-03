@@ -58,10 +58,11 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
      * @param energyFlag 是否能源参数
      * @return 数采属性列表
      */
-    private List<StandingbookTmplDaqAttrDO> getSbTmplDaqAttrByTypeId(Long typeId, Boolean energyFlag) {
-        return standingbookTmplDaqAttrMapper.selectList(new LambdaQueryWrapper<StandingbookTmplDaqAttrDO>()
+    private List<StandingbookTmplDaqAttrDO> getSbTmplDaqAttrByTypeId(Long typeId, Boolean energyFlag, Boolean status) {
+        return standingbookTmplDaqAttrMapper.selectList(new LambdaQueryWrapperX<StandingbookTmplDaqAttrDO>()
                 .eq(StandingbookTmplDaqAttrDO::getTypeId, typeId)
                 .eq(StandingbookTmplDaqAttrDO::getEnergyFlag, energyFlag)
+                .eqIfPresent(StandingbookTmplDaqAttrDO::getStatus, status)
                 .orderByAsc(StandingbookTmplDaqAttrDO::getSort));
     }
 
@@ -354,14 +355,13 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
 
 
     @Override
-    public List<StandingbookTmplDaqAttrRespVO> getByTypeIdAndEnergyFlag(Long typeId, Boolean energyFlag) {
-        List<StandingbookTmplDaqAttrDO> standingbookAttributes = getSbTmplDaqAttrByTypeId(typeId, energyFlag);
+    public List<StandingbookTmplDaqAttrRespVO> getByTypeIdAndEnergyFlag(Long typeId, Boolean energyFlag, Boolean status) {
+        List<StandingbookTmplDaqAttrDO> standingbookAttributes = getSbTmplDaqAttrByTypeId(typeId, energyFlag, status);
         List<StandingbookTmplDaqAttrRespVO> bean = BeanUtils.toBean(standingbookAttributes, StandingbookTmplDaqAttrRespVO.class);
         // 查询所有分类
         Map<Long, StandingbookTypeDO> allTypeMap = standingbookTypeService.getStandingbookTypeIdMap(null);
         // 查询所有用户
         IntStream.range(0, bean.size()).forEach(i -> {
-
             // 获取归属节点名称
             StandingbookTypeDO type = allTypeMap.get(bean.get(i).getNodeId());
             if (type != null) {
@@ -372,6 +372,7 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
         return bean;
 
     }
+
 
     @Override
     @Transactional
