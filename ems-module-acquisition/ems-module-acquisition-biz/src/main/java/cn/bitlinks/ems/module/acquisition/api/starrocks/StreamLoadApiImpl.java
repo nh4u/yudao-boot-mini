@@ -18,6 +18,7 @@ public class StreamLoadApiImpl implements StreamLoadApi {
     @Override
     public void streamLoadData(StreamLoadDTO streamLoadDTO) {
         try {
+            log.info("streamLoadData 开始批量新增");
             starRocksStreamLoadService.streamLoadData(streamLoadDTO.getData(), streamLoadDTO.getLabel(), streamLoadDTO.getTableName());
         } catch (Exception e) {
             log.error("streamLoadData 批量新增失败：{}",e.getMessage(), e);
