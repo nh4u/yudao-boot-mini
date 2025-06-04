@@ -33,14 +33,14 @@ public class StandingbookController {
 
     @PostMapping("/create")
     @Operation(summary = "创建台账")
-    @PreAuthorize("@ss.hasPermission('power:standingbook:create')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook:create')")
     public CommonResult<Long> createStandingbook(@Valid @RequestBody Map<String, String> createReqVO) {
         return success(standingbookService.createStandingbook(createReqVO));
     }
 
     @PutMapping("/update")
     @Operation(summary = "更新台账")
-    @PreAuthorize("@ss.hasPermission('power:standingbook:update')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook:update')")
     public CommonResult<Boolean> updateStandingbook(@Valid @RequestBody Map<String, String> updateReqVO) {
         standingbookService.updateStandingbook(updateReqVO);
         return success(true);
@@ -50,7 +50,7 @@ public class StandingbookController {
     @DeleteMapping("/delete")
     @Operation(summary = "删除台账")
     @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('power:standingbook:delete')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook:delete')")
     public CommonResult<Boolean> deleteStandingbook(@RequestBody List<Long> ids) {
         standingbookService.deleteStandingbookBatch(ids);
         return success(true);
@@ -59,7 +59,7 @@ public class StandingbookController {
     @GetMapping("/get")
     @Operation(summary = "获得台账")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
-    @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")
     public CommonResult<StandingbookRespVO> getStandingbook(@RequestParam("id") Long id) {
         StandingbookDO standingbook = standingbookService.getStandingbook(id);
         return success(BeanUtils.toBean(standingbook, StandingbookRespVO.class));
@@ -67,7 +67,7 @@ public class StandingbookController {
 
     @PostMapping("/list")
     @Operation(summary = "获得台账列表")
-    @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")
     public CommonResult<List<StandingbookRespVO>> getStandingbookPage(@Valid @RequestBody Map<String, String> pageReqVO) {
         List<StandingbookDO> list = standingbookService.getStandingbookList(pageReqVO);
         return success(BeanUtils.toBean(list, StandingbookRespVO.class));
@@ -75,21 +75,21 @@ public class StandingbookController {
 
     @PostMapping("/listSbAllWithAssociations")
     @Operation(summary = "关联计量器具：关联下级计量器具/关联设备接口（topType=2）或者重点设备（topType=1）")
-    @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")
     public CommonResult<List<StandingbookRespVO>> listSbAllWithAssociations(@RequestBody StandingbookAssociationReqVO reqVO) {
         return success(standingbookService.listSbAllWithAssociations(reqVO));
     }
 
     @PostMapping("/listSbAllWithAssociationsVirtual")
     @Operation(summary = "虚拟表：关联下级计量器具（topType=2）")
-    @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")
     public CommonResult<List<StandingbookRespVO>> listSbAllWithAssociationsVirtual(@RequestBody StandingbookAssociationReqVO reqVO) {
         return success(standingbookService.listSbAllWithAssociationsVirtual(reqVO));
     }
 
     @PostMapping("/measurementInstrument")
     @Operation(summary = "虚拟表：关联下级计量")
-    @PreAuthorize("@ss.hasPermission('power:standingbook:update')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook:update')")
     public CommonResult<Boolean> updAssociationMeasurementInstrument(@Valid @RequestBody MeasurementVirtualAssociationSaveReqVO createReqVO) {
         standingbookService.updAssociationMeasurementInstrument(createReqVO);
         return success(true);
@@ -97,7 +97,7 @@ public class StandingbookController {
 
     @PostMapping("/listWithAssociations")
     @Operation(summary = "关联计量器具：根据条件获得台账列表和计量器具联系")
-    @PreAuthorize("@ss.hasPermission('power:standingbook:query')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")
     public CommonResult<List<StandingbookWithAssociations>> getStandingbookListWithAssociations(@RequestBody Map<String, String> pageReqVO) {
         List<StandingbookWithAssociations> list = standingbookService.getStandingbookListWithAssociations(pageReqVO);
         return success(BeanUtils.toBean(list, StandingbookWithAssociations.class));

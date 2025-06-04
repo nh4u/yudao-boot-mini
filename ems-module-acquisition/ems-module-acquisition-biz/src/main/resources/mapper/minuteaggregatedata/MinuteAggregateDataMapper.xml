@@ -12,6 +12,11 @@
         <result column="full_value" property="fullValue"/>
         <result column="incremental_value" property="incrementalValue"/>
     </resultMap>
+    <delete id="deleteDataByMinute">
+        DELETE FROM minute_aggregate_data
+        WHERE aggregate_time = #{aggregateTime}
+        AND standingbook_id = #{standingbookId}
+    </delete>
 
     <select id="getLatestData"
             resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
@@ -30,6 +35,31 @@
         FROM minute_aggregate_data
         WHERE standingbook_id = #{standingbookId}
         AND aggregateTime = #{targetTime}
+        LIMIT 1
+    </select>
+    <select id="selectLatestDataByAggTime"
+            resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
+        SELECT *
+        FROM minute_aggregate_data
+        WHERE standingbook_id = #{standingbookId}
+        AND aggregate_time &lt; #{targetTime}
+        ORDER BY aggregate_time DESC
+        LIMIT 1
+    </select>
+    <select id="selectOldestByStandingBookId"
+            resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
+        SELECT *
+        FROM minute_aggregate_data
+        WHERE standingbook_id = #{standingbookId}
+        ORDER BY aggregate_time ASC
+        LIMIT 1
+    </select>
+    <select id="selectLatestByStandingBookId"
+            resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
+        SELECT *
+        FROM minute_aggregate_data
+        WHERE standingbook_id = #{standingbookId}
+        ORDER BY aggregate_time DESC
         LIMIT 1
     </select>
 </mapper>

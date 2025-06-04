@@ -39,7 +39,7 @@ public class VoucherController {
 
     @PostMapping("/create")
     @Operation(summary = "创建凭证管理")
-    @PreAuthorize("@ss.hasPermission('power:voucher:create')")
+    //@PreAuthorize("@ss.hasPermission('power:voucher:create')")
     public CommonResult<VoucherRespVO> createVoucher(@Valid @RequestBody VoucherSaveReqVO createReqVO) {
         VoucherDO voucher = voucherService.createVoucher(createReqVO);
         return success(BeanUtils.toBean(voucher, VoucherRespVO.class));
@@ -49,7 +49,7 @@ public class VoucherController {
 
     @PutMapping("/update")
     @Operation(summary = "更新凭证管理")
-    @PreAuthorize("@ss.hasPermission('power:voucher:update')")
+    //@PreAuthorize("@ss.hasPermission('power:voucher:update')")
     public CommonResult<Boolean> updateVoucher(@Valid @RequestBody VoucherSaveReqVO updateReqVO) {
         voucherService.updateVoucher(updateReqVO);
         return success(true);
@@ -58,7 +58,7 @@ public class VoucherController {
     @DeleteMapping("/delete")
     @Operation(summary = "删除凭证管理")
     @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('power:voucher:delete')")
+    //@PreAuthorize("@ss.hasPermission('power:voucher:delete')")
     public CommonResult<Boolean> deleteVoucher(@RequestParam("id") Long id) {
         voucherService.deleteVoucher(id);
         return success(true);
@@ -67,7 +67,7 @@ public class VoucherController {
     @GetMapping("/get")
     @Operation(summary = "获得凭证管理")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
-    @PreAuthorize("@ss.hasPermission('power:voucher:query')")
+    //@PreAuthorize("@ss.hasPermission('power:voucher:query')")
     public CommonResult<VoucherRespVO> getVoucher(@RequestParam("id") Long id) {
         VoucherDO voucher = voucherService.getVoucher(id);
         return success(BeanUtils.toBean(voucher, VoucherRespVO.class));
@@ -75,7 +75,7 @@ public class VoucherController {
 
     @GetMapping("/page")
     @Operation(summary = "获得凭证管理分页")
-    @PreAuthorize("@ss.hasPermission('power:voucher:query')")
+    //@PreAuthorize("@ss.hasPermission('power:voucher:query')")
     public CommonResult<PageResult<VoucherRespVO>> getVoucherPage(@Valid VoucherPageReqVO pageReqVO) {
         PageResult<VoucherDO> pageResult = voucherService.getVoucherPage(pageReqVO);
         return success(BeanUtils.toBean(pageResult, VoucherRespVO.class));
@@ -83,7 +83,7 @@ public class VoucherController {
 
     @GetMapping("/export-excel")
     @Operation(summary = "导出凭证管理 Excel")
-    @PreAuthorize("@ss.hasPermission('power:voucher:export')")
+    //@PreAuthorize("@ss.hasPermission('power:voucher:export')")
     @ApiAccessLog(operateType = EXPORT)
     public void exportVoucherExcel(@Valid VoucherPageReqVO pageReqVO,
                                    HttpServletResponse response) throws IOException {
@@ -96,7 +96,7 @@ public class VoucherController {
 
     @DeleteMapping("/delete-batch")
     @Operation(summary = "批量删除凭证管理")
-    @PreAuthorize("@ss.hasPermission('power:voucher:delete')")
+    //@PreAuthorize("@ss.hasPermission('power:voucher:delete')")
     public CommonResult<Boolean> deleteVouchers(@RequestBody List<Long> ids) {
         voucherService.deleteVouchers(ids);
         return success(true);
@@ -105,7 +105,7 @@ public class VoucherController {
     @GetMapping("/recognition")
     @Operation(summary = "凭证识别")
     @Parameter(name = "url", description = "文件地址", required = true, example = "xxx.jpg")
-    @PreAuthorize("@ss.hasPermission('power:voucher:query')")
+    //@PreAuthorize("@ss.hasPermission('power:voucher:query')")
     public CommonResult<String> recognition(@RequestParam("url") String url) {
         String result = voucherService.recognition(url);
         return success(result);

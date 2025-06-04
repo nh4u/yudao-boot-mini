@@ -30,7 +30,7 @@ public class StandingbookAttributeController {
 
     @PostMapping("/saveMultiple")
     @Operation(summary = "保存多个台账属性")
-    @PreAuthorize("@ss.hasPermission('power:standingbook-attribute:create')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook-attribute:create')")
     public CommonResult<Boolean> saveMultiple(@Valid @RequestBody StandingbookAttributeSaveMultipleReqVO multipleReqVO) {
         List<StandingbookAttributeSaveReqVO> createReqVOs = multipleReqVO.getCreateReqVOs();
         standingbookAttributeService.saveMultiple(createReqVOs);
@@ -41,7 +41,7 @@ public class StandingbookAttributeController {
     @GetMapping("/getByTypeId")
     @Operation(summary = "获得台账属性ByTypeId")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
-    @PreAuthorize("@ss.hasPermission('power:standingbook-attribute:query')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook-attribute:query')")
     public CommonResult<List<StandingbookAttributeRespVO>> getByTypeId(@RequestParam("typeId") Long typeId) {
 
         return success(standingbookAttributeService.getByTypeId(typeId));

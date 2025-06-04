@@ -161,7 +161,7 @@ public class AggTask {
 
         for (List<MinuteAggregateDataDO> batch : batchList) {
             // 执行你的批量插入操作，比如：
-            String labelName = STREAM_LOAD_PREFIX + "_" + System.currentTimeMillis()+RandomUtil.randomNumbers(6);
+            String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
             starRocksStreamLoadService.streamLoadData(batch, labelName, AGG_TB);
             // 发送mq消息
             String topicName = deviceAggTopic;

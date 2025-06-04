@@ -42,7 +42,7 @@ public class StarrocksController {
 
     @GetMapping("/get")
     @Operation(summary = "starrocks示例-查询")
-    @PreAuthorize("@ss.hasPermission('power:starrocks:query')")
+    //@PreAuthorize("@ss.hasPermission('power:starrocks:query')")
     public CommonResult<List<Map<String, Objects>>> get() {
         List<Map<String, Objects>> map = starrocksService.queryData();
 
@@ -51,7 +51,7 @@ public class StarrocksController {
 
     @GetMapping("/addData")
     @Operation(summary = "starrocks示例-添加")
-    @PreAuthorize("@ss.hasPermission('power:starrocks:add')")
+    //@PreAuthorize("@ss.hasPermission('power:starrocks:add')")
     public CommonResult<Boolean> add(@RequestParam(name = "DATE") String date) {
         starrocksService.addData(date);
         return success(true);
@@ -59,7 +59,7 @@ public class StarrocksController {
 
     @GetMapping("/deleteData")
     @Operation(summary = "starrocks示例-删除")
-    @PreAuthorize("@ss.hasPermission('power:starrocks:delete')")
+    //@PreAuthorize("@ss.hasPermission('power:starrocks:delete')")
     public CommonResult<Boolean> deleteData(@RequestParam(name = "DATE") String date) {
         starrocksService.deleteData(date);
         return success(true);

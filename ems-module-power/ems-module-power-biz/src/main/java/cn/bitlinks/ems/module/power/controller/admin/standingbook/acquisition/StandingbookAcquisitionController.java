@@ -29,14 +29,14 @@ public class StandingbookAcquisitionController {
 
     @PostMapping("/update")
     @Operation(summary = "创建台账-数采设置")
-    @PreAuthorize("@ss.hasPermission('power:standingbook-acquisition:update')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook-acquisition:update')")
     public CommonResult<Long> createOrUpdateStandingbookAcquisition(@Valid @RequestBody StandingbookAcquisitionVO updateReqVO) {
         return success(standingbookAcquisitionService.createOrUpdateStandingbookAcquisition(updateReqVO));
     }
 
     @GetMapping("/get")
     @Operation(summary = "根据台账id获得台账-数采设置")
-    @PreAuthorize("@ss.hasPermission('power:standingbook-acquisition:query')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook-acquisition:query')")
     public CommonResult<StandingbookAcquisitionVO> getAcquisitionByStandingbookId(@RequestParam(
             "standingbookId") Long standingbookId) {
         return success(standingbookAcquisitionService.getAcquisitionByStandingbookId(standingbookId));
@@ -44,7 +44,7 @@ public class StandingbookAcquisitionController {
 
     @PostMapping("/test")
     @Operation(summary = "数采根据公式进行采集测试")
-    @PreAuthorize("@ss.hasPermission('power:standingbook-acquisition:query')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook-acquisition:query')")
     public CommonResult<String> testData(@RequestBody StandingbookAcquisitionTestReqVO testReqVO) {
         return success(standingbookAcquisitionService.testData(testReqVO));
     }
@@ -53,7 +53,7 @@ public class StandingbookAcquisitionController {
 
     @PostMapping("/list")
     @Operation(summary = "获得台账-数采设置列表")
-    @PreAuthorize("@ss.hasPermission('power:standingbook-acquisition:query')")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook-acquisition:query')")
     public CommonResult<List<StandingbookAcquisitionRespVO>> getStandingbookAcquisitionList(@Valid @RequestBody Map<String,
             String> queryReqVO) {
         return success(standingbookAcquisitionService.getStandingbookAcquisitionList(queryReqVO));

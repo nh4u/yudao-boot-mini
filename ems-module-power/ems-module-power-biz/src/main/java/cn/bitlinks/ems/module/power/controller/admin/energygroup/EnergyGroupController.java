@@ -39,14 +39,14 @@ public class EnergyGroupController {
 
     @PostMapping("/change")
     @Operation(summary = "创建能源分组")
-    @PreAuthorize("@ss.hasPermission('power:energy-group:create')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-group:create')")
     public CommonResult<Boolean> change(@Valid @RequestBody List<EnergyGroupSaveReqVO> energyGroups) {
         return success(energyGroupService.change(energyGroups));
     }
 
     @GetMapping("/getEnergyGroups")
     @Operation(summary = "获取能源分组list")
-    @PreAuthorize("@ss.hasPermission('power:energy-group:create')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-group:create')")
     public CommonResult<List<EnergyGroupRespVO>> getEnergyGroups() {
         List<EnergyGroupRespVO> energyGroups = energyGroupService.getEnergyGroups();
         return success(energyGroups);
@@ -55,7 +55,7 @@ public class EnergyGroupController {
 
     @GetMapping("/export-excel")
     @Operation(summary = "导出能源分组 Excel")
-    @PreAuthorize("@ss.hasPermission('power:energy-group:export')")
+    //@PreAuthorize("@ss.hasPermission('power:energy-group:export')")
     @ApiAccessLog(operateType = EXPORT)
     public void exportEnergyGroupExcel(@Valid EnergyGroupPageReqVO pageReqVO,
                                        HttpServletResponse response) throws IOException {

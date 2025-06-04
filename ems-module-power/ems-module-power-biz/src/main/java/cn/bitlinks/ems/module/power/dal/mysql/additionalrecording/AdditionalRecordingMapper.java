@@ -27,12 +27,12 @@ public interface AdditionalRecordingMapper extends BaseMapperX<AdditionalRecordi
                 .betweenIfPresent(AdditionalRecordingDO::getThisCollectTime, reqVO.getThisCollectTime())
                 .betweenIfPresent(AdditionalRecordingDO::getThisValue, reqVO.getThisValue())
                 .eqIfPresent(AdditionalRecordingDO::getUnit, reqVO.getUnit())
-                .eqIfPresent(AdditionalRecordingDO::getRecordPerson, reqVO.getRecordPerson())
+                .likeIfPresent(AdditionalRecordingDO::getRecordPerson, reqVO.getRecordPerson())
                 .eqIfPresent(AdditionalRecordingDO::getRecordReason, reqVO.getRecordReason())
                 .eqIfPresent(AdditionalRecordingDO::getRecordMethod, reqVO.getRecordMethod())
                 .betweenIfPresent(AdditionalRecordingDO::getEnterTime, reqVO.getEnterTime())
                 .betweenIfPresent(AdditionalRecordingDO::getCreateTime, reqVO.getCreateTime())
-                .orderByDesc(AdditionalRecordingDO::getId));
+                .orderByDesc(AdditionalRecordingDO::getEnterTime));
     }
 
     @Select("SELECT voucher_id FROM ems_additional_recording " +
