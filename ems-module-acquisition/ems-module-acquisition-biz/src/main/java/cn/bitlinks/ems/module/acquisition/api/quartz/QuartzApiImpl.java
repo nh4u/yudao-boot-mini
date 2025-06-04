@@ -37,6 +37,7 @@ public class QuartzApiImpl implements QuartzApi {
             jobBean.setJobName(jobName);
             jobBean.setFrequency(acquisitionJobDTO.getFrequency());
             jobBean.setFrequencyUnit(acquisitionJobDTO.getFrequencyUnit());
+            jobBean.setStartTime(acquisitionJobDTO.getJobStartTime());
             jobBean.setJobClass(AcquisitionJob.class);
             Map<String, Object> detailDTOMap = new HashMap<>();
             detailDTOMap.put(ACQUISITION_JOB_DATA_MAP_KEY_DETAILS, acquisitionJobDTO.getDetails());
