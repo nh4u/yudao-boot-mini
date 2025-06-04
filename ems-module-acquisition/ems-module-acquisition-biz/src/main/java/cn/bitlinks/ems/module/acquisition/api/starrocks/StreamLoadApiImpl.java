@@ -7,15 +7,18 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import javax.annotation.security.PermitAll;
 
 @Slf4j
 @RestController // 提供 RESTful API 接口，给 Feign 调用
 @Validated
+@PermitAll
 public class StreamLoadApiImpl implements StreamLoadApi {
     @Resource
     private StarRocksStreamLoadService starRocksStreamLoadService;
 
     @Override
+    @PermitAll
     public void streamLoadData(StreamLoadDTO streamLoadDTO) {
         try {
             log.info("streamLoadData 开始批量新增");
