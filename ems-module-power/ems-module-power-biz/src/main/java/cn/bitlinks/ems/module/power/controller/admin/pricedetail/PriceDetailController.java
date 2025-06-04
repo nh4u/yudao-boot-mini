@@ -41,7 +41,7 @@
 //    @DeleteMapping("/delete")
 //    @Operation(summary = "删除单价详细")
 //    @Parameter(name = "id", description = "编号", required = true)
-//    @PreAuthorize("@ss.hasPermission('power:price-detail:delete')")
+//    //@PreAuthorize("@ss.hasPermission('power:price-detail:delete')")
 //    public CommonResult<Boolean> deletePriceDetail(@RequestParam("id") Long id) {
 //        priceDetailService.deletePriceDetail(id);
 //        return success(true);
@@ -50,7 +50,7 @@
 //    @GetMapping("/get")
 //    @Operation(summary = "获得单价详细")
 //    @Parameter(name = "id", description = "编号", required = true, example = "1024")
-//    @PreAuthorize("@ss.hasPermission('power:price-detail:query')")
+//    //@PreAuthorize("@ss.hasPermission('power:price-detail:query')")
 //    public CommonResult<PriceDetailRespVO> getPriceDetail(@RequestParam("id") Long id) {
 //        PriceDetailDO priceDetail = priceDetailService.getPriceDetail(id);
 //        return success(BeanUtils.toBean(priceDetail, PriceDetailRespVO.class));
@@ -58,7 +58,7 @@
 //
 //    @GetMapping("/page")
 //    @Operation(summary = "获得单价详细分页")
-//    @PreAuthorize("@ss.hasPermission('power:price-detail:query')")
+//    //@PreAuthorize("@ss.hasPermission('power:price-detail:query')")
 //    public CommonResult<PageResult<PriceDetailRespVO>> getPriceDetailPage(@Valid PriceDetailPageReqVO pageReqVO) {
 //        PageResult<PriceDetailDO> pageResult = priceDetailService.getPriceDetailPage(pageReqVO);
 //        return success(BeanUtils.toBean(pageResult, PriceDetailRespVO.class));
@@ -66,7 +66,7 @@
 //
 //    @GetMapping("/export-excel")
 //    @Operation(summary = "导出单价详细 Excel")
-//    @PreAuthorize("@ss.hasPermission('power:price-detail:export')")
+//    //@PreAuthorize("@ss.hasPermission('power:price-detail:export')")
 //    @ApiAccessLog(operateType = EXPORT)
 //    public void exportPriceDetailExcel(@Valid PriceDetailPageReqVO pageReqVO,
 //              HttpServletResponse response) throws IOException {

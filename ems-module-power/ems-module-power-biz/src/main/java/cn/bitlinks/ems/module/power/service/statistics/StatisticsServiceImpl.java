@@ -30,7 +30,6 @@ import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.bouncycastle.jcajce.provider.asymmetric.dstu.SignatureSpiLe;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -48,7 +47,6 @@ import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
-import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_STRUCTURE_TABLE;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_STANDARD_COAL_ENERGY_FLOW_CHART;
 
 /**
@@ -99,7 +97,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
 
         // 获取结果
-        EnergyFlowResultVO resultVO = dealMoneyStructureAnalysisTable(paramVO);
+        EnergyFlowResultVO resultVO = dealEnergyFlowAnalysis1(paramVO);
 
         // 结果保存在缓存中
         String jsonStr = JSONUtil.toJsonStr(resultVO);
@@ -111,7 +109,14 @@ public class StatisticsServiceImpl implements StatisticsService {
 
     }
 
-    private EnergyFlowResultVO dealMoneyStructureAnalysisTable(StatisticsParamV2VO paramVO) {
+    /**
+     * 方式一
+     * 能源流动 根据关联关系获取
+     *
+     * @param paramVO
+     * @return
+     */
+    private EnergyFlowResultVO dealEnergyFlowAnalysis(StatisticsParamV2VO paramVO) {
         // TODO: 2025/5/25  能流图处理
         //  需要注意的是：所有能源和 标签需要在传入的范围内，如果没传入，则去取默认的数据。
         //  1.获取该能源直接关联的所有计量器具，，然后逐个寻找该器具的下级计量，根据下级计量得出标签和能源数据以及该计量器具的折标煤数据 然后递归依次获取对应数据
@@ -136,40 +141,45 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 存放所有线
         List<EnergyLinkData> links = new ArrayList<>();
 
-        // 4.2.能源id处理
+        // 2.1.能源id处理
         List<EnergyConfigurationDO> energyList = energyConfigurationService
                 .getByEnergyClassify(
                         CollectionUtil.isNotEmpty(paramVO.getEnergyIds()) ? new HashSet<>(paramVO.getEnergyIds()) : new HashSet<>(),
                         energyClassify);
+        // 2.2.没有能源报错
+        if (CollectionUtil.isEmpty(energyList)) {
+            throw exception(ENERGY_CONFIGURATION_NOT_EXISTS);
+        }
+        // 2.3.能源转换成ids
         List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
 
-
-        // 能源list转换成map
+        // 2.4.能源list转换成map
         Map<Long, EnergyConfigurationDO> energyMap = energyList
                 .stream()
                 .collect(Collectors.toMap(EnergyConfigurationDO::getId, Function.identity()));
 
+        // 2.5.获取所有标签
         Map<Long, LabelConfigDO> labelMap = labelConfigService.getAllLabelConfig()
                 .stream()
                 .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
 
-        // 4.3.台账id处理
-        // 4.3.1.根据能源id查询台账
+        // 3.1.台账id处理
+        // 3.1.1.根据能源id查询台账
         List<StandingbookDO> standingbooksByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIds);
-
+        // 3.1.2.台账变成ids
         List<Long> standingBookIds = standingbooksByEnergy
                 .stream()
                 .map(StandingbookDO::getId)
                 .collect(Collectors.toList());
 
-        // 4.5.根据台账和其他条件从数据库里拿出折标煤数据
-        // 4.5.1.根据台账ID查询用量和折标煤
+        // 3.2.根据台账和其他条件从数据库里拿出折标煤数据
+        // 3.2.1.根据台账ID查询用量和折标煤
         List<UsageCostData> energyStandardCoalList = usageCostService.getEnergyStandardCoal(
                 rangeOrigin[0],
                 rangeOrigin[1],
                 standingBookIds);
 
-        // 针对能源分组获取园区能源
+        // 针对能源Map获取园区能源
         energyStandardCoalList.forEach(usageData -> {
             // 获取能源数据
             EnergyConfigurationDO energy = energyMap.get(usageData.getEnergyId());
@@ -177,8 +187,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             if (!Objects.isNull(energy)) {
                 // 存入点
                 data.add(new EnergyItemData()
-                        .setName(energy.getEnergyName())
-                        .setStandardCoal(usageData.getTotalStandardCoalEquivalent()));
+                        .setName(energy.getEnergyName()));
             }
         });
 
@@ -219,14 +228,16 @@ public class StatisticsServiceImpl implements StatisticsService {
 
                                 // 存入点
                                 data.add(new EnergyItemData()
-                                        .setName(target)
-                                        .setStandardCoal(usageData.getTotalStandardCoalEquivalent()));
+                                        .setName(target));
 
-                                // 存入link
-                                links.add(new EnergyLinkData()
-                                        .setSource(source)
-                                        .setValue(usageData.getTotalStandardCoalEquivalent())
-                                        .setTarget(target));
+                                // 存入link（source和target的数据不能一样）
+                                if (!source.equals(target)) {
+                                    links.add(new EnergyLinkData()
+                                            .setSource(source)
+                                            .setValue(usageData.getTotalStandardCoalEquivalent())
+                                            .setTarget(target));
+                                }
+
 
                                 // 下级计量器具处理
                                 dealSbLabel(data, links, sbIds, rangeOrigin, target, labelMap);
@@ -273,14 +284,15 @@ public class StatisticsServiceImpl implements StatisticsService {
 
                                 // 存入点
                                 data.add(new EnergyItemData()
-                                        .setName(target)
-                                        .setStandardCoal(usageData.getTotalStandardCoalEquivalent()));
+                                        .setName(target));
 
                                 // 存入link
-                                links.add(new EnergyLinkData()
-                                        .setSource(source)
-                                        .setValue(usageData.getTotalStandardCoalEquivalent())
-                                        .setTarget(target));
+                                if (!source.equals(target)) {
+                                    links.add(new EnergyLinkData()
+                                            .setSource(source)
+                                            .setValue(usageData.getTotalStandardCoalEquivalent())
+                                            .setTarget(target));
+                                }
 
                                 // 下级计量器具处理  standingBookIds现在是园区计量数据
                                 dealSbLabel(data, links, standingBookIds, rangeOrigin, target, labelMap);
@@ -306,6 +318,362 @@ public class StatisticsServiceImpl implements StatisticsService {
         resultVO.setLinks(links);
 
         return resultVO;
+    }
+
+
+    /**
+     * 方式二  后面的下级台账要考label来限制要在label的台账ids范围内，而不是 能源+label，因为后面几栏只跟标签有关饿了，前面2栏目跟能源有关
+     * 能源流动 根据台账标签获取
+     *
+     * @param paramVO
+     * @return
+     */
+    private EnergyFlowResultVO dealEnergyFlowAnalysis1(StatisticsParamV2VO paramVO) {
+        // 1.校验时间范围
+        LocalDateTime[] rangeOrigin = validateRange(paramVO.getRange());
+
+        // 能源类型
+        Integer energyClassify = paramVO.getEnergyClassify();
+        // 构建返回结果数据
+        EnergyFlowResultVO resultVO = new EnergyFlowResultVO();
+        resultVO.setDataTime(LocalDateTime.now());
+
+        // 存放所有点
+        List<EnergyItemData> data = new ArrayList<>();
+        // 存放所有线
+        List<EnergyLinkData> links = new ArrayList<>();
+
+        // 2.1.能源id处理
+        List<EnergyConfigurationDO> energyList = energyConfigurationService
+                .getByEnergyClassify(
+                        CollectionUtil.isNotEmpty(paramVO.getEnergyIds()) ? new HashSet<>(paramVO.getEnergyIds()) : new HashSet<>(),
+                        energyClassify);
+        // 2.2.没有能源报错
+        if (CollectionUtil.isEmpty(energyList)) {
+            throw exception(ENERGY_CONFIGURATION_NOT_EXISTS);
+        }
+
+        // 有序set
+        LinkedHashSet<String> dataSet = new LinkedHashSet<>();
+        // 构建data数据
+        energyList.forEach(e -> {
+            dataSet.add(e.getEnergyName());
+        });
+
+
+        // 2.3.能源转换成ids
+        List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
+
+        // 2.4.全能源list转换成map
+        List<EnergyConfigurationDO> energyConfigurationList = energyConfigurationService.getEnergyConfigurationList(new EnergyConfigurationPageReqVO());
+        Map<Long, EnergyConfigurationDO> energyMap = energyConfigurationList
+                .stream()
+                .collect(Collectors.toMap(EnergyConfigurationDO::getId, Function.identity()));
+
+        // 2.5.获取所有标签
+        Map<Long, LabelConfigDO> labelMap = labelConfigService.getAllLabelConfig()
+                .stream()
+                .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
+
+        // 3.1.台账id处理
+        // 3.1.1.根据能源id查询台账
+        List<StandingbookDO> standingbooksByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIds);
+        // 3.1.2.台账变成ids
+        List<Long> standingBookIdList = standingbooksByEnergy
+                .stream()
+                .map(StandingbookDO::getId)
+                .collect(Collectors.toList());
+        List<Long> standingBookIds = new ArrayList<>();
+
+        // 根据标签查询对应标签关联信息，
+        // 1.只有一级Label  则会拿去改一级表现下所有的标签
+        // 2.一级和下级Label都没有， 则会拿能源关联的台账id所关联的标签信息
+        // 3.一级和下级标签都有的话，则拿对应选中的下级标签信息
+        List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByLabel(paramVO.getTopLabel(), paramVO.getChildLabels(), standingBookIdList);
+
+        if (CollectionUtil.isNotEmpty(standingbookIdsByLabel)) {
+            List<Long> labelSbIds = standingbookIdsByLabel.stream().map(StandingbookLabelInfoDO::getStandingbookId).collect(Collectors.toList());
+            List<StandingbookDO> collect = standingbooksByEnergy.stream().filter(s -> labelSbIds.contains(s.getId())).collect(Collectors.toList());
+            //能源管理计量器具，标签可能关联重点设备，当不存在交集时，则无需查询
+            if (ArrayUtil.isEmpty(collect)) {
+                // 获得datas
+                resultVO.setData(getDataList(dataSet));
+                return resultVO;
+            }
+            List<Long> collect1 = collect.stream().map(StandingbookDO::getId).collect(Collectors.toList());
+            standingBookIds.addAll(collect1);
+        } else {
+            standingBookIds.addAll(standingBookIdList);
+        }
+        if (CollectionUtil.isEmpty(standingBookIds)) {
+            // 获得datas
+            resultVO.setData(getDataList(dataSet));
+            resultVO.setDataTime(LocalDateTime.now());
+            return resultVO;
+        }
+
+
+        // TODO: 2025/5/27  判断外购 还是园区
+        // 1：外购能源；2：园区能源
+        if (1 == energyClassify) {
+            // 1：外购能源；
+            // 循环外购能源 开始逐一遍历 获取下级园区能源参数
+            for (EnergyConfigurationDO energy : energyList) {
+                List<StandingbookDO> standingbooks = statisticsCommonService.getStandingbookIdsByEnergy(
+                        Collections.singletonList(energy.getId()));
+
+                // standingbooks 要在大前提下
+                List<StandingbookDO> collect = standingbooks.stream().filter(s -> standingBookIds.contains(s.getId())).collect(Collectors.toList());
+
+
+                String source = energy.getEnergyName();
+
+                if (CollectionUtil.isNotEmpty(collect)) {
+
+                    List<Long> energySbIds = collect.stream().map(StandingbookDO::getId).collect(Collectors.toList());
+                    // 下级计量器具
+                    Map<Long, List<MeasurementAssociationDO>> subSbs = standingbookService.getSubStandingbookIdsBySbIds(energySbIds);
+
+                    // 计算下级计量器具数据
+                    if (CollUtil.isNotEmpty(subSbs)) {
+                        // 分组 台账id-下级计量器具们
+                        subSbs.forEach((sbId, association) -> {
+
+                            List<Long> sbIds = association.stream()
+                                    .map(MeasurementAssociationDO::getMeasurementId)
+                                    .collect(Collectors.toList());
+
+                            if (CollectionUtil.isNotEmpty(sbIds)) {
+                                List<UsageCostData> energyAndSbList = usageCostService.getEnergyAndSbStandardCoal(
+                                        rangeOrigin[0],
+                                        rangeOrigin[1],
+                                        sbIds);
+
+                                for (UsageCostData usageData : energyAndSbList) {
+
+                                    String target = energyMap.get(usageData.getEnergyId()).getEnergyName();
+
+                                    // 存入点
+                                    dataSet.add(target);
+
+                                    // 存入link
+                                    if (!source.equals(target)) {
+                                        links.add(new EnergyLinkData()
+                                                .setSource(source)
+                                                .setValue(usageData.getTotalStandardCoalEquivalent())
+                                                .setTarget(target));
+                                    }
+
+                                    List<Long> labelSbIds = standingbookIdsByLabel.stream().map(StandingbookLabelInfoDO::getStandingbookId).collect(Collectors.toList());
+                                    // 下级计量器具处理
+                                    dealSbLabel1(dataSet, links, sbIds, rangeOrigin, target, labelMap, labelSbIds);
+                                }
+                            }
+                        });
+
+                    }
+
+                }
+            }
+
+        } else if (2 == energyClassify) {
+            // 2：园区能源
+            // 循环园区能源 开始逐一遍历 获取上级外购能源参数
+            for (EnergyConfigurationDO energy : energyList) {
+                List<StandingbookDO> standingbooks = statisticsCommonService.getStandingbookIdsByEnergy(
+                        Collections.singletonList(energy.getId()));
+
+                // standingbooks 要在大前提下
+                List<StandingbookDO> collect = standingbooks.stream().filter(s -> standingBookIds.contains(s.getId()))
+                        .collect(Collectors.toList());
+
+
+                String target = energy.getEnergyName();
+
+                if (CollectionUtil.isNotEmpty(collect)) {
+
+                    List<Long> energySbIds = collect.stream().map(StandingbookDO::getId).collect(Collectors.toList());
+
+                    // 上级计量器具
+                    Map<Long, List<MeasurementAssociationDO>> subSbs = standingbookService.getUpStandingbookIdsBySbIds(energySbIds);
+
+                    // 计算上级计量器具数据
+                    if (CollUtil.isNotEmpty(subSbs)) {
+                        // 分组 台账id-上级计量器具们
+                        subSbs.forEach((sbId, association) -> {
+
+                            List<Long> sbIds = association.stream()
+                                    .map(MeasurementAssociationDO::getMeasurementInstrumentId)
+                                    .collect(Collectors.toList());
+
+                            List<Long> sbIdsCollect = sbIds.stream().filter(standingBookIds::contains).collect(Collectors.toList());
+
+                            List<UsageCostData> energyAndSbList = usageCostService.getEnergyAndSbStandardCoal(
+                                    rangeOrigin[0],
+                                    rangeOrigin[1],
+                                    sbIdsCollect);
+
+                            for (UsageCostData usageData : energyAndSbList) {
+
+                                String source = energyMap.get(usageData.getEnergyId()).getEnergyName();
+
+                                // 存入点
+                                dataSet.add(target);
+
+                                // 存入link
+                                if (!source.equals(target)) {
+                                    links.add(new EnergyLinkData()
+                                            .setSource(source)
+                                            .setValue(usageData.getTotalStandardCoalEquivalent())
+                                            .setTarget(target));
+                                }
+                                List<Long> labelSbIds = standingbookIdsByLabel.stream().map(StandingbookLabelInfoDO::getStandingbookId).collect(Collectors.toList());
+                                // 下级计量器具处理  standingBookIds现在是园区计量数据
+                                dealSbLabel1(dataSet, links, standingBookIds, rangeOrigin, target, labelMap, labelSbIds);
+                            }
+                        });
+                    }
+                }
+            }
+
+        } else {
+
+        }
+
+        // 获取数据更新时间
+        LocalDateTime lastTime = usageCostService.getLastTime(
+                paramVO,
+                rangeOrigin[0],
+                rangeOrigin[1],
+                standingBookIds);
+
+        // dataSet 转换成data
+        dataSet.forEach(d -> {
+            data.add(new EnergyItemData().setName(d));
+        });
+
+        resultVO.setData(data);
+        resultVO.setLinks(links);
+        resultVO.setDataTime(lastTime);
+
+        return resultVO;
+    }
+
+    private List<EnergyItemData> getDataList(LinkedHashSet<String> dataSet) {
+
+        return dataSet.stream().map(s ->
+                new EnergyItemData().setName(s)
+        ).collect(Collectors.toList());
+    }
+
+
+    /**
+     * 直接填充label的 data 和link
+     *
+     * @param data
+     * @param links
+     * @param sbIds
+     * @param rangeOrigin
+     * @param source
+     * @param labelMap
+     */
+    private void dealSbLabel1(LinkedHashSet<String> data,
+                              List<EnergyLinkData> links,
+                              List<Long> sbIds,
+                              LocalDateTime[] rangeOrigin,
+                              String source,
+                              Map<Long, LabelConfigDO> labelMap,
+                              List<Long> standingBookIds) {
+        // 下级计量
+        Map<Long, List<MeasurementAssociationDO>> sbs = standingbookService.getSubStandingbookIdsBySbIds(sbIds);
+
+        // 根据sbId获取对应的标签
+        // 计算下级计量器具数据
+        if (CollUtil.isNotEmpty(sbs)) {
+            // 分组 台账id-下级计量器具们
+            sbs.forEach((sbId, association) -> {
+
+                List<Long> subsbIds = association.stream()
+                        .map(MeasurementAssociationDO::getMeasurementId)
+                        .collect(Collectors.toList());
+
+
+                List<Long> sbIdsCollect = subsbIds.stream().filter(standingBookIds::contains).collect(Collectors.toList());
+
+                if (CollectionUtil.isNotEmpty(sbIdsCollect)) {
+                    List<UsageCostData> standingbookList = usageCostService.getStandingbookStandardCoal(
+                            rangeOrigin[0],
+                            rangeOrigin[1],
+                            sbIdsCollect);
+                    for (UsageCostData usageData : standingbookList) {
+
+                        // 获取标签  根据台账获取标签
+                        // 查询标签信息
+                        List<StandingbookLabelInfoDO> standingbookLabelInfoDOList =
+                                standingbookLabelInfoService.getByStandingBookId(usageData.getStandingbookId());
+
+                        if (CollUtil.isNotEmpty(standingbookLabelInfoDOList)) {
+                            for (StandingbookLabelInfoDO labelInfo : standingbookLabelInfoDOList) {
+
+
+                                // 处理一级标签
+                                String topLabelKey = labelInfo.getName();
+                                Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
+                                String target = labelMap.get(topLabelId).getLabelName();
+                                // 存入点
+                                data.add(target);
+                                // 存入link
+                                if (!source.equals(target)) {
+                                    links.add(new EnergyLinkData()
+                                            .setSource(source)
+                                            .setValue(usageData.getTotalStandardCoalEquivalent())
+                                            .setTarget(target));
+                                }
+
+                                // 处理n级标签问题
+                                String value = labelInfo.getValue();
+                                if (StrUtil.isNotEmpty(value)) {
+                                    String[] labelIds = value.split(",");
+                                    String labelName = "";
+                                    for (int i = 0; i < labelIds.length; i++) {
+                                        LabelConfigDO label = labelMap.get(Long.valueOf(labelIds[i]));
+                                        if (i == 0) {
+                                            labelName = label.getLabelName();
+                                            data.add(labelName);
+                                            // 存入link
+                                            if (!source.equals(target)) {
+                                                links.add(new EnergyLinkData()
+                                                        .setSource(target)
+                                                        .setValue(usageData.getTotalStandardCoalEquivalent())
+                                                        .setTarget(labelName));
+                                            }
+
+                                        } else {
+
+                                            String t = label.getLabelName();
+                                            // 存入点
+                                            data.add(t);
+                                            // 存入link
+                                            if (!source.equals(target)) {
+                                                links.add(new EnergyLinkData()
+                                                        .setSource(labelName)
+                                                        .setValue(usageData.getTotalStandardCoalEquivalent())
+                                                        .setTarget(t));
+                                            }
+
+                                            labelName = t;
+                                        }
+                                    }
+
+                                }
+
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
     }
 
 
@@ -346,14 +714,15 @@ public class StatisticsServiceImpl implements StatisticsService {
 
                             // 存入点
                             data.add(new EnergyItemData()
-                                    .setName(target)
-                                    .setStandardCoal(usageData.getTotalStandardCoalEquivalent()));
+                                    .setName(target));
 
                             // 存入link
-                            links.add(new EnergyLinkData()
-                                    .setSource(source)
-                                    .setValue(usageData.getTotalStandardCoalEquivalent())
-                                    .setTarget(target));
+                            if (!source.equals(target)) {
+                                links.add(new EnergyLinkData()
+                                        .setSource(source)
+                                        .setValue(usageData.getTotalStandardCoalEquivalent())
+                                        .setTarget(target));
+                            }
 
                             // 下级计量器具处理
                             dealSbLabel(data, links, subsbIds, rangeOrigin, target, labelMap);

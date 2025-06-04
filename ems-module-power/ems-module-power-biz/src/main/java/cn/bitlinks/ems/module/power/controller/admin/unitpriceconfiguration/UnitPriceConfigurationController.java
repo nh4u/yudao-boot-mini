@@ -52,7 +52,7 @@ public class UnitPriceConfigurationController {
 
     @PutMapping("/update")
     @Operation(summary = "更新单价配置")
-    @PreAuthorize("@ss.hasPermission('power:unit-price-configuration:update')")
+    //@PreAuthorize("@ss.hasPermission('power:unit-price-configuration:update')")
     public CommonResult<Boolean> updateUnitPriceConfiguration(@Valid @RequestBody UnitPriceConfigurationBatchSaveReqVO batchSaveReqVO) {
         unitPriceConfigurationService.updateUnitPriceConfiguration(batchSaveReqVO.getEnergyId(), batchSaveReqVO.getList());
         return success(true);
@@ -61,7 +61,7 @@ public class UnitPriceConfigurationController {
     @GetMapping("/getByEnergyId")
     @Operation(summary = "根据能源ID获得单价配置列表(当前周期和未来周期)")
     @Parameter(name = "energyId", description = "能源ID", required = true, example = "1024")
-    @PreAuthorize("@ss.hasPermission('power:unit-price-configuration:query')")
+    //@PreAuthorize("@ss.hasPermission('power:unit-price-configuration:query')")
     public CommonResult<List<UnitPriceConfigurationDO>> getUnitPriceConfigurationByEnergyId(@RequestParam("energyId") Long energyId) {
         List<UnitPriceConfigurationDO> result =
                 unitPriceConfigurationService.getUnitPriceConfigurationByEnergyId(energyId);
@@ -70,7 +70,7 @@ public class UnitPriceConfigurationController {
 
     @GetMapping("/page")
     @Operation(summary = "获得单价配置分页(过去周期-计价历史分页)")
-    @PreAuthorize("@ss.hasPermission('power:unit-price-configuration:query')")
+    //@PreAuthorize("@ss.hasPermission('power:unit-price-configuration:query')")
     public CommonResult<PageResult<UnitPriceConfigurationRespVO>> getUnitPriceConfigurationPage(@Valid UnitPriceConfigurationPageReqVO pageReqVO) {
         PageResult<UnitPriceConfigurationRespVO> pageResult =
                 unitPriceConfigurationService.getUnitPriceConfigurationPage(pageReqVO);
@@ -79,7 +79,7 @@ public class UnitPriceConfigurationController {
 
     @GetMapping("/export-excel")
     @Operation(summary = "导出单价配置 Excel")
-    @PreAuthorize("@ss.hasPermission('power:unit-price-configuration:export')")
+    //@PreAuthorize("@ss.hasPermission('power:unit-price-configuration:export')")
     @ApiAccessLog(operateType = EXPORT)
     public void exportUnitPriceConfigurationExcel(@Valid UnitPriceConfigurationPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {

@@ -116,12 +116,14 @@ public class StarRocksStreamLoadService {
 
     private String sendPost(String uri, Map<String, String> headers, byte[] body) {
         HttpRequest req = HttpUtil.createPost(baseUrl + uri).headerMap(headers, false);
+        req.setFollowRedirects(true);
         if (body != null) req.body(body);
         return req.execute().body();
     }
 
     private String sendPut(String uri, Map<String, String> headers, byte[] body) {
         HttpRequest req = HttpRequest.put(baseUrl + uri).headerMap(headers, false);
+        req.setFollowRedirects(true);
         if (body != null) req.body(body);
         return req.execute().body();
     }

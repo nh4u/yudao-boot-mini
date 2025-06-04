@@ -28,9 +28,10 @@ public interface StandingbookTmplDaqAttrService {
      *
      * @param typeId     台账类型id
      * @param energyFlag 是否能源数采
-     * @return
+     * @param status 可为空，可以查询所有启用的
+     * @return 数采参数列表
      */
-    List<StandingbookTmplDaqAttrRespVO> getByTypeIdAndEnergyFlag(Long typeId, Boolean energyFlag);
+    List<StandingbookTmplDaqAttrRespVO> getByTypeIdAndEnergyFlag(Long typeId, Boolean energyFlag,Boolean status);
 
     /**
      * 能源新增属性关联添加数采参数（默认启用）
@@ -73,6 +74,22 @@ public interface StandingbookTmplDaqAttrService {
     Map<Long, List<StandingbookTmplDaqAttrDO>> getDaqAttrsByTypeIds(List<Long> typeIds);
 
     /**
+     * 获取能源id
+     *
+     * @param sbId
+     * @return
+     */
+    Long getEnergyIdBySbId(Long sbId);
+
+    /**
+     * 获取能源id
+     *
+     * @param typeId
+     * @return
+     */
+    Long getEnergyIdByTypeId(Long typeId);
+
+    /**
      * 根据台账ids获取数采属性列表（启用的）
      *
      * @param sbIds 台账id
@@ -98,9 +115,11 @@ public interface StandingbookTmplDaqAttrService {
 
     /**
      * 获取所有的typeId-ennergyId映射
+     *
      * @return
      */
     List<StandingbookTmplDaqAttrDO> getEnergyMapping();
 
     List<StandingbookTmplDaqAttrDO> getByTypeIds(List<Long> typeIds);
+
 }

@@ -42,7 +42,7 @@ public class CoalFactorHistoryController {
 
     @PostMapping("/create")
     @Operation(summary = "创建折标煤系数历史")
-    @PreAuthorize("@ss.hasPermission('power:coal-factor-history:create')")
+    //@PreAuthorize("@ss.hasPermission('power:coal-factor-history:create')")
     public CommonResult<Long> createCoalFactorHistory(@Valid @RequestBody CoalFactorHistorySaveReqVO createReqVO) {
         Long id = coalFactorHistoryService.createCoalFactorHistory(createReqVO);
         return success(id);
@@ -50,7 +50,7 @@ public class CoalFactorHistoryController {
 
     @PutMapping("/update")
     @Operation(summary = "更新折标煤系数历史")
-    @PreAuthorize("@ss.hasPermission('power:coal-factor-history:update')")
+    //@PreAuthorize("@ss.hasPermission('power:coal-factor-history:update')")
     public CommonResult<Boolean> updateCoalFactorHistory(@Valid @RequestBody CoalFactorHistorySaveReqVO updateReqVO) {
         // 默认数据源更新
         coalFactorHistoryService.updateCoalFactorHistory(updateReqVO);
@@ -60,7 +60,7 @@ public class CoalFactorHistoryController {
     @DeleteMapping("/delete")
     @Operation(summary = "删除折标煤系数历史")
     @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('power:coal-factor-history:delete')")
+    //@PreAuthorize("@ss.hasPermission('power:coal-factor-history:delete')")
     public CommonResult<Boolean> deleteCoalFactorHistory(@RequestParam("id") Long id) {
         //正常删除
         coalFactorHistoryService.deleteCoalFactorHistory(id);
@@ -70,7 +70,7 @@ public class CoalFactorHistoryController {
     @GetMapping("/get")
     @Operation(summary = "获得折标煤系数历史")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
-    @PreAuthorize("@ss.hasPermission('power:coal-factor-history:query')")
+    //@PreAuthorize("@ss.hasPermission('power:coal-factor-history:query')")
     public CommonResult<CoalFactorHistoryRespVO> getCoalFactorHistory(@RequestParam("id") Long id) {
         CoalFactorHistoryDO coalFactorHistory = coalFactorHistoryService.getCoalFactorHistory(id);
         return success(BeanUtils.toBean(coalFactorHistory, CoalFactorHistoryRespVO.class));
@@ -78,10 +78,10 @@ public class CoalFactorHistoryController {
 
     @GetMapping("/page")
     @Operation(summary = "获得折标煤系数历史分页")
-    @PreAuthorize("@ss.hasPermission('power:coal-factor-history:query')")
+    //@PreAuthorize("@ss.hasPermission('power:coal-factor-history:query')")
     public CommonResult<PageResult<CoalFactorHistoryRespVO>> getCoalFactorHistoryPage(@Valid CoalFactorHistoryPageReqVO pageReqVO, Long energyId) {
         PageResult<CoalFactorHistoryDO> pageResult = coalFactorHistoryService.getCoalFactorHistoryPage(pageReqVO);
-        String energyUnit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(String.valueOf(energyId));
+        String energyUnit = energyConfigurationMapper.selectUnitByEnergyNameAndChinese(energyId);
         if (energyUnit == null || energyUnit.isEmpty()) {
             energyUnit = "";
         }
@@ -105,7 +105,7 @@ public class CoalFactorHistoryController {
 
     @GetMapping("/export-excel")
     @Operation(summary = "导出折标煤系数历史 Excel")
-    @PreAuthorize("@ss.hasPermission('power:coal-factor-history:export')")
+    //@PreAuthorize("@ss.hasPermission('power:coal-factor-history:export')")
     @ApiAccessLog(operateType = EXPORT)
     public void exportCoalFactorHistoryExcel(@Valid CoalFactorHistoryPageReqVO pageReqVO,
                                              HttpServletResponse response) throws IOException {
@@ -119,7 +119,7 @@ public class CoalFactorHistoryController {
     @GetMapping("/getAvailableCoalFactor")
     @Operation(summary = "获取当前生效的折标煤系数")
     @Parameter(name = "energyId", description = "能源ID", required = true)
-    @PreAuthorize("@ss.hasPermission('power:coal-factor-history:query')")
+    //@PreAuthorize("@ss.hasPermission('power:coal-factor-history:query')")
     public CommonResult<CoalFactorHistoryRespVO> getAvailableCoalFactor(
             @RequestParam("energyId") Long energyId) {
         return success(coalFactorHistoryService.getAvailableCoalFactor(energyId));
