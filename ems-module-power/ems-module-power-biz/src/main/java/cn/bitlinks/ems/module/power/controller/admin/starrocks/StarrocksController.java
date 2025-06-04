@@ -6,6 +6,8 @@ import cn.bitlinks.ems.module.power.service.starrocks.StarrocksService;
 import cn.bitlinks.ems.module.power.service.usagecost.CalcUsageCostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import org.apache.ibatis.annotations.Param;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -67,18 +69,17 @@ public class StarrocksController {
 
     @GetMapping("/test")
     @Operation(summary = "starrocks示例-删除")
-    public CommonResult<Boolean> test() {
-        calcUsageCostService.process(generateMockData(10));
+    public CommonResult<Boolean> test(@Param("sid") Long sid) {
+        calcUsageCostService.process(generateMockData(1, sid));
         return success(true);
     }
 
-    public static List<MinuteAggregateDataDTO> generateMockData(int count) {
+    public static List<MinuteAggregateDataDTO> generateMockData(int count, Long sid) {
         List<MinuteAggregateDataDTO> dataList = new ArrayList<>();
         Random random = new Random();
-        List<Long> sid = new ArrayList<>();
-        sid.add(1901888368999768065L);
-        sid.add(1901888619034812418L);
-        sid.add(1901888185771597826L);
+        List<Long> sids = new ArrayList<>();
+        sids.add(sid);
+
         LocalDateTime now = LocalDateTime.now();
         for (int i = 0; i < count; i++) {
             MinuteAggregateDataDTO data = new MinuteAggregateDataDTO();
@@ -87,7 +88,7 @@ public class StarrocksController {
             data.setParamCode("usage");
             data.setEnergyFlag(true);
             data.setDataSite("IO:TAG:" + (i + 1));
-            data.setStandingbookId(sid.get(random.nextInt(sid.size())));
+            data.setStandingbookId(sids.get(random.nextInt(sids.size())));
             data.setFullValue(BigDecimal.valueOf(1000 + random.nextInt(500)));
             data.setIncrementalValue(BigDecimal.valueOf(random.nextDouble() * 10).setScale(2, BigDecimal.ROUND_HALF_UP));
 
