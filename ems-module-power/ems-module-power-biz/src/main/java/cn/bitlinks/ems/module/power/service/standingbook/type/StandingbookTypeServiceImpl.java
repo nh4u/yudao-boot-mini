@@ -17,6 +17,7 @@ import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDa
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -48,6 +49,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
     private StandingbookTmplDaqAttrMapper standingbookTmplDaqAttrMapper;
     @Resource
     private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
+
     @Transactional
     @Override
     public Long createStandingbookType(StandingbookTypeSaveReqVO createReqVO) {
@@ -82,14 +84,32 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         // 更新
         StandingbookTypeDO updateObj = BeanUtils.toBean(updateReqVO, StandingbookTypeDO.class);
 
-        if(Objects.equals(updateObj.getName(),standingbookTypeDO.getName()) && Objects.equals(updateObj.getCode(),standingbookTypeDO.getCode())){
-            standingbookTypeMapper.updateById(updateObj);
-        }
         // 若节点及其子节点下存在设备数据，则不允许修改【分类名称】【编码】
-        if(checkRelStandingbook(updateReqVO.getId())) {
+        if (validUpdNameOrCode(updateObj, standingbookTypeDO) && checkRelStandingbook(updateReqVO.getId())) {
             throw exception(STANDINGBOOK_TYPE_REL_STANDINGBOOK);
         }
+        standingbookTypeMapper.updateById(updateObj);
 
+    }
+
+    /**
+     * 校验分类名称和编码是否修改
+     * @param updateObj
+     * @param existDO
+     * @return
+     */
+    private boolean validUpdNameOrCode(StandingbookTypeDO updateObj, StandingbookTypeDO existDO) {
+        boolean isUpdateName = !Objects.equals(
+                StringUtils.trimToNull(updateObj.getName()),
+                StringUtils.trimToNull(existDO.getName())
+        );
+
+        boolean isUpdateCode = !Objects.equals(
+                StringUtils.trimToNull(updateObj.getCode()),
+                StringUtils.trimToNull(existDO.getCode())
+        );
+
+        return isUpdateName || isUpdateCode;
     }
 
     void recursiveDeletion(List<Long> ids, Long id) {
@@ -201,13 +221,14 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
     public List<StandingbookTypeDO> getStandingbookTypeList(StandingbookTypeListReqVO listReqVO) {
         return standingbookTypeMapper.selectList(listReqVO);
     }
+
     @Override
     public List<StandingbookTypeRespVO> getStandingbookTypeNodeWithEnergy() {
         List<StandingbookTypeDO> nodeDOS = standingbookTypeMapper.selectNotDelete();
-        if(CollUtil.isEmpty(nodeDOS)){
+        if (CollUtil.isEmpty(nodeDOS)) {
             return Collections.emptyList();
         }
-        List<StandingbookTypeRespVO> nodes = BeanUtils.toBean(nodeDOS,StandingbookTypeRespVO.class);
+        List<StandingbookTypeRespVO> nodes = BeanUtils.toBean(nodeDOS, StandingbookTypeRespVO.class);
 
         List<StandingbookTmplDaqAttrDO> typeEnergyIdsList =
                 standingbookTmplDaqAttrService.getEnergyMapping();
@@ -219,7 +240,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
                             StandingbookTmplDaqAttrDO::getTypeId,
                             StandingbookTmplDaqAttrDO::getEnergyId
                     ));
-            nodes.forEach(node->{
+            nodes.forEach(node -> {
                 node.setEnergyId(typeEnergyIdsMap.get(node.getId()));
             });
         }
@@ -248,6 +269,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         }
         return rootNodes;
     }
+
     @Override
     public List<StandingbookTypeDO> getStandingbookTypeNode() {
         List<StandingbookTypeDO> nodes = standingbookTypeMapper.selectNotDelete();

@@ -20,6 +20,8 @@ import java.util.stream.Collectors;
 import javax.annotation.Resource;
 
 import cn.bitlinks.ems.framework.common.util.calc.CalculateUtil;
+import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
+import cn.bitlinks.ems.framework.tenant.core.job.TenantJob;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.power.controller.admin.coalfactorhistory.vo.CoalFactorFormulaData;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookEnergyTypeVO;
@@ -87,6 +89,7 @@ public class CalcUsageCostService {
      *
      * @return
      */
+    @TenantJob
     public void process(List<MinuteAggregateDataDTO> byAggregateTime) {
 
         log.info("【计算计量器具折标煤和用能成本任务开始】");

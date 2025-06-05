@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
@@ -23,6 +24,7 @@ public class UsageCostDTO {
      * 聚合时间
      */
     @JsonProperty("aggregate_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime aggregateTime;
 
     /**
