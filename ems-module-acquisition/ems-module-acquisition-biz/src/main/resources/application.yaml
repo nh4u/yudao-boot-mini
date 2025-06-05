@@ -131,6 +131,9 @@ ems:
     title: 管理后台
     description: 提供管理员管理的所有功能
     version: ${ems.info.version}
-
+  tenant: # 多租户相关配置项
+    enable: true
+    ignore-urls:
+      - /rpc-api/acquisition/streamLoad/insertBatch
 
 debug: false
