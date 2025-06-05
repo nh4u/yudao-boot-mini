@@ -8,6 +8,8 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import javax.annotation.security.PermitAll;
+
 @FeignClient(name = ApiConstants.NAME) // TODO bitlinks：fallbackFactory =
 @Tag(name = "RPC 服务 - 定时任务")
 public interface StreamLoadApi {
@@ -15,5 +17,6 @@ public interface StreamLoadApi {
 
     @PostMapping(PREFIX + "/insertBatch")
     @Operation(summary = "批量插入数据")
+    @PermitAll
     void streamLoadData(@RequestBody StreamLoadDTO streamLoadDTO);
 }

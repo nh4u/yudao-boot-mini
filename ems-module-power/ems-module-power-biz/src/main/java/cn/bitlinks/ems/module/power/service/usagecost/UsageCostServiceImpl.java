@@ -41,6 +41,7 @@ public class UsageCostServiceImpl implements UsageCostService {
     private StreamLoadApi streamLoadApi;
 
     private static final String LABEL_PREFIX = "label_usage_cost";
+    private static final String TABLE_NAME = "usage_cost";
 
     @Override
     @TenantIgnore
@@ -61,8 +62,9 @@ public class UsageCostServiceImpl implements UsageCostService {
         StreamLoadDTO dto = new StreamLoadDTO();
         dto.setData(usageCostDOS);
         dto.setLabel(LABEL_PREFIX + System.currentTimeMillis() + "_" + RandomUtil.randomNumbers(6));
-        dto.setTableName("usage_cost");
+        dto.setTableName(TABLE_NAME);
         streamLoadApi.streamLoadData(dto);
+        log.info("saveList end");
     }
 
     @Override
