@@ -171,6 +171,9 @@ public class AggTask {
             rocketMQTemplate.send(topicName, msg);
         }
 
+
+
+
     }
 
 
@@ -278,6 +281,9 @@ public class AggTask {
 
         // 从 prevTime 的下一个准分钟点开始
         LocalDateTime minutePoint = prevTime.truncatedTo(ChronoUnit.MINUTES).plusMinutes(1L);
+        MinuteAggregateDataDO lastData = latestAggData;
+
+
         while (!minutePoint.isAfter(targetTime)) {
             long elapsedSeconds = Duration.between(prevTime, minutePoint).getSeconds();
             BigDecimal interpolatedValue = prevValue.add(rate.multiply(BigDecimal.valueOf(elapsedSeconds)));
@@ -285,15 +291,20 @@ public class AggTask {
             MinuteAggregateDataDO data = BeanUtils.toBean(prev, MinuteAggregateDataDO.class);
             data.setAggregateTime(minutePoint);
             data.setFullValue(interpolatedValue);
+
             // 第一条聚合数据增量为0
-            if (prevTime.truncatedTo(ChronoUnit.MINUTES).plusMinutes(1L).equals(minutePoint)) {
-                data.setIncrementalValue(BigDecimal.ZERO);
-            } else {
-                data.setIncrementalValue(rate.multiply(BigDecimal.valueOf(elapsedSeconds)));
-            }
+
+            // 计算增量：当前值 - 上一条 fullValue
+            BigDecimal lastFullValue = lastData != null ? lastData.getFullValue() : BigDecimal.ZERO;
+            data.setIncrementalValue(interpolatedValue.subtract(lastFullValue));
+
+
             currentDataList.add(data);
+            lastData = data;
             minutePoint = minutePoint.plusMinutes(1);
         }
+
+
 
 
     }

@@ -17,6 +17,7 @@ import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurat
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.label.StandingbookLabelInfoService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
@@ -62,6 +63,9 @@ public class StatisticsCommonService {
      * @return
      */
     public List<StandingbookLabelInfoDO> getStandingbookIdsByLabel(String topLabel, String childLabels, List<Long> standingBookIdList) {
+        if(StrUtil.isBlank(topLabel) && StrUtil.isBlank(childLabels) && CollUtil.isEmpty(standingBookIdList)){
+            return Collections.emptyList();
+        }
         if(StrUtil.isBlank(topLabel) && StrUtil.isBlank(childLabels)){
             return standingbookLabelInfoService.getByStandingBookIds(standingBookIdList);
         }
