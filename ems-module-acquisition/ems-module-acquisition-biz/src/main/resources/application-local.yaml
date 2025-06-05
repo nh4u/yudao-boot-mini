@@ -108,7 +108,7 @@ rocketmq:
     # 异步消息重试此处，默认2
     retryTimesWhenSendAsyncFailed: 2
     # 消息最大长度，默认1024 * 1024 * 4(默认4M)
-    maxMessageSize: 4096
+    maxMessageSize: 4194304
     # 压缩消息阈值，默认4k(1024 * 4)
     compressMessageBodyThreshold: 4096
     # 是否在内部发送失败时重试另一个broker，默认false

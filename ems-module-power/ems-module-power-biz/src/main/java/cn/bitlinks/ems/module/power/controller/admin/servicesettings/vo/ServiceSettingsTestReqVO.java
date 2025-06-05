@@ -5,6 +5,7 @@ import lombok.Data;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 @Schema(description = "管理后台 - 服务设置测试 Request VO")
 @Data
@@ -17,6 +18,7 @@ public class ServiceSettingsTestReqVO {
 
     @Schema(description = "IP地址", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotEmpty(message = "IP地址不能为空")
+    @Size(max = 15, message = "IP地址长度不能超过15个字符")
     private String ipAddress;
 
     @Schema(description = "端口", requiredMode = Schema.RequiredMode.REQUIRED)
