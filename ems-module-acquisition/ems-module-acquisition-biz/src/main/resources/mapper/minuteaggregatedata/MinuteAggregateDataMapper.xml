@@ -20,13 +20,19 @@
 
     <select id="getLatestData"
             resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
+        SELECT mad.*
+        FROM minute_aggregate_data mad
+        INNER JOIN (
         SELECT
         standingbook_id,
-        MAX(aggregate_time) aggregate_time,full_value
+        MAX(aggregate_time) AS max_time
         FROM
         minute_aggregate_data
         GROUP BY
-        standingbook_id,full_value;
+        standingbook_id
+        ) latest
+        ON mad.standingbook_id = latest.standingbook_id
+        AND mad.aggregate_time = latest.max_time;
 
     </select>
     <select id="selectExactData"
