@@ -6,7 +6,7 @@ import cn.bitlinks.ems.framework.common.util.calc.AcquisitionFormulaUtils;
 import cn.bitlinks.ems.framework.common.util.calc.FormulaUtil;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
-import cn.bitlinks.ems.framework.common.util.opcda.OpcDaUtils;
+import cn.bitlinks.ems.framework.common.util.opcda.OpcConnectionTester;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
 import cn.bitlinks.ems.module.acquisition.api.quartz.QuartzApi;
 import cn.bitlinks.ems.module.acquisition.api.quartz.dto.AcquisitionJobDTO;
@@ -345,7 +345,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             // 2.2 采集这些参数，
             Map<String, ItemStatus> itemStatusMap;
             if (env.equals(SPRING_PROFILES_ACTIVE_PROD) || env.equals(SPRING_PROFILES_ACTIVE_STAGE)) {
-                itemStatusMap = OpcDaUtils.batchGetValue(serviceSettingsDO.getIpAddress(),
+                itemStatusMap = OpcConnectionTester.testLink(serviceSettingsDO.getIpAddress(),
                         serviceSettingsDO.getUsername(),
                         serviceSettingsDO.getPassword(),
                         serviceSettingsDO.getClsid(), dataSites);
@@ -372,19 +372,19 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
     @Transactional
     public void deleteByStandingbookIds(List<Long> ids) {
         List<StandingbookAcquisitionDO> list = queryListByStandingbookIds(ids);
-        if(CollUtil.isEmpty(list)){
+        if (CollUtil.isEmpty(list)) {
             return;
         }
         List<Long> acquisitionIds = list.stream().map(StandingbookAcquisitionDO::getId).collect(Collectors.toList());
         standingbookAcquisitionMapper.deleteByIds(acquisitionIds);
-        standingbookAcquisitionDetailMapper.delete(StandingbookAcquisitionDetailDO::getAcquisitionId,ids);
+        standingbookAcquisitionDetailMapper.delete(StandingbookAcquisitionDetailDO::getAcquisitionId, ids);
     }
 
     @Override
     public List<StandingbookAcquisitionDO> queryListByStandingbookIds(List<Long> ids) {
         return standingbookAcquisitionMapper.selectList(new LambdaQueryWrapper<StandingbookAcquisitionDO>()
-                .eq(StandingbookAcquisitionDO::getStatus,true)
-                .in(StandingbookAcquisitionDO::getStandingbookId,ids)
+                .eq(StandingbookAcquisitionDO::getStatus, true)
+                .in(StandingbookAcquisitionDO::getStandingbookId, ids)
         );
     }
 
