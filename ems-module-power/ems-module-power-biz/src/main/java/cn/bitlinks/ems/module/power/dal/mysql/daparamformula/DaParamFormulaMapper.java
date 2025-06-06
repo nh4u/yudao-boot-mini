@@ -33,7 +33,7 @@ public interface DaParamFormulaMapper extends BaseMapperX<DaParamFormulaDO> {
         return selectOne(new LambdaQueryWrapperX<DaParamFormulaDO>()
                 .eqIfPresent(DaParamFormulaDO::getEnergyId, daParamFormulaDO.getEnergyId())
                 .eqIfPresent(DaParamFormulaDO::getFormulaType, daParamFormulaDO.getFormulaType())
-                .orderByDesc(DaParamFormulaDO::getStartEffectiveTime)
+                .orderByDesc(DaParamFormulaDO::getCreateTime)
                 .last("limit 1"));
     }
 
