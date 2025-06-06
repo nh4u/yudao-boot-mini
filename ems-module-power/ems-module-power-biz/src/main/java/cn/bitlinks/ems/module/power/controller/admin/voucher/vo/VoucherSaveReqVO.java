@@ -44,9 +44,6 @@ public class VoucherSaveReqVO {
     @Schema(description = "用量")
     private BigDecimal usage;
 
-    @Schema(description = "用量单位")
-    private String usageUnit;
-
     @Schema(description = "描述", example = "随便")
     private String description;
 

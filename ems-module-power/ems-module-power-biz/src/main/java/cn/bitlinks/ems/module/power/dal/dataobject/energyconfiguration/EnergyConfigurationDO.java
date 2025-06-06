@@ -73,45 +73,11 @@ public class EnergyConfigurationDO extends BaseDO {
      */
     private BigDecimal factor;
     /**
-     * 折标煤公式
-     */
-    private String coalFormula;
-    /**
-     * 折标煤小数位数
-     */
-    private String coalScale;
-    /**
-     * 开始时间
-     */
-    private LocalDateTime startTime;
-    /**
-     * 结束时间
-     */
-    private LocalDateTime endTime;
-    /**
-     * 计费方式
-     * <p>
-     * 枚举 {@link TODO billing_method 对应的类}
-     */
-    private Integer billingMethod;
-    /**
-     * 核算频率
-     */
-    private Integer accountingFrequency;
-    /**
      * 单价详细
      */
     //private String unitPrice;
     @TableField(exist = false)
     private UnitPriceConfigurationDO unitPrice;
-    /**
-     * 用能成本公式
-     */
-    private String unitPriceFormula;
-    /**
-     * 单价小数位
-     */
-    private String unitPriceScale;
 
     @TableField(exist = false)
     List<EnergyConfigurationDO> children = new ArrayList<>();
