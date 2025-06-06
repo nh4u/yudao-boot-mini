@@ -1,9 +1,14 @@
 package cn.bitlinks.ems.framework.common.util.opcda;
 
+import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.openscada.opc.lib.common.ConnectionInformation;
+import org.openscada.opc.lib.da.Group;
 import org.openscada.opc.lib.da.Server;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -58,6 +63,71 @@ public class OpcConnectionTester {
             if (executor != null) {
                 executor.shutdown();
             }
+        }
+    }
+
+    /**
+     * 测试链接读取值
+     *
+     * @param host
+     * @param user
+     * @param password
+     * @param clsid
+     * @param itemList
+     * @return
+     */
+    public static Map<String, ItemStatus> testLink(String host, String user, String password, String clsid,
+                                                   List<String> itemList) {
+        if (CollUtil.isEmpty(itemList)) {
+            return Collections.emptyMap();
+        }
+
+        String key = host + "|" + user + "|" + password + "|" + clsid;
+        String[] items = itemList.toArray(new String[0]);
+
+        Server server = null;
+        Group group = null;
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+
+        try {
+            ConnectionInformation ci = new ConnectionInformation();
+            ci.setHost(host);
+            ci.setDomain("");
+            ci.setUser(user);
+            ci.setPassword(password);
+            ci.setClsid(clsid);
+
+            server = new Server(ci, executor);
+            server.connect();
+
+            group = server.addGroup("OneTest_" + key.hashCode());
+            group.setActive(true);
+
+            // 等待 OPC Server 处理完 group 初始化（某些厂商需要）
+            Thread.sleep(50);
+
+            group.addItems(items);
+            return OpcUtil.readValues(group, itemList);
+
+        } catch (Exception e) {
+            log.error("Failed to read values from OPC server", e);
+            return null;
+        } finally {
+            try {
+                if (group != null) {
+                    server.removeGroup(group, true);
+                }
+            } catch (Exception ex) {
+                log.warn("释放 OPC group 失败", ex);
+            }
+            try {
+                if (server != null) {
+                    server.disconnect();
+                }
+            } catch (Exception ex) {
+                log.warn("断开 OPC server 失败", ex);
+            }
+            executor.shutdownNow(); // 非常重要
         }
     }
 
