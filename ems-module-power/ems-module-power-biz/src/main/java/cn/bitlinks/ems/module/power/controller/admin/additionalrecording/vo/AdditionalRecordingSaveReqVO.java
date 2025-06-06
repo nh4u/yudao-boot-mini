@@ -38,10 +38,6 @@ public class AdditionalRecordingSaveReqVO {
     @NotNull(message = "本次数值数值不能为空")
     private BigDecimal thisValue;
 
-    @Schema(description = "单位")
-    @NotBlank(message = "用量单位不能为空")
-    private String unit;
-
     @Schema(description = "补录人")
     private String recordPerson;
 

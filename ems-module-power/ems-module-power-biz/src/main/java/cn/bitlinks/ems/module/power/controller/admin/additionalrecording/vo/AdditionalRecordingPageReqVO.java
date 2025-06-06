@@ -32,8 +32,6 @@ public class AdditionalRecordingPageReqVO extends PageParam {
     @Schema(description = "本次数值")
     private BigDecimal[] thisValue;
 
-    @Schema(description = "单位")
-    private String unit;
 
     @Schema(description = "补录人")
     private String recordPerson;

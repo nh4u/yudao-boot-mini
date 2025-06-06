@@ -26,7 +26,6 @@ public interface AdditionalRecordingMapper extends BaseMapperX<AdditionalRecordi
                 .eqIfPresent(AdditionalRecordingDO::getValueType, reqVO.getValueType())
                 .betweenIfPresent(AdditionalRecordingDO::getThisCollectTime, reqVO.getThisCollectTime())
                 .betweenIfPresent(AdditionalRecordingDO::getThisValue, reqVO.getThisValue())
-                .eqIfPresent(AdditionalRecordingDO::getUnit, reqVO.getUnit())
                 .likeIfPresent(AdditionalRecordingDO::getRecordPerson, reqVO.getRecordPerson())
                 .eqIfPresent(AdditionalRecordingDO::getRecordReason, reqVO.getRecordReason())
                 .eqIfPresent(AdditionalRecordingDO::getRecordMethod, reqVO.getRecordMethod())

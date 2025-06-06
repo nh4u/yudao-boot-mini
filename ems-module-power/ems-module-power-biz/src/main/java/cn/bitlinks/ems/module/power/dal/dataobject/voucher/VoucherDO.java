@@ -61,10 +61,6 @@ public class VoucherDO extends BaseDO {
     @TableField(value = "`usage`")
     private BigDecimal usage;
     /**
-     * 用量单位
-     */
-    private String usageUnit;
-    /**
      * 描述
      */
     private String description;

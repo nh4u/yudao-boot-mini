@@ -40,9 +40,6 @@ public class VoucherRespVO {
     @Schema(description = "用量")
     private BigDecimal usage;
 
-    @Schema(description = "用量单位")
-    private String usageUnit;
-
     @Schema(description = "金额", example = "9217")
     @ExcelProperty("金额")
     private BigDecimal price;
@@ -73,9 +70,5 @@ public class VoucherRespVO {
 
     @Schema(description = "凭证附件")
     private String appendix;
-
-    public String getUsageAndUsage() {
-        return usage + " " + usageUnit;
-    }
 
 }

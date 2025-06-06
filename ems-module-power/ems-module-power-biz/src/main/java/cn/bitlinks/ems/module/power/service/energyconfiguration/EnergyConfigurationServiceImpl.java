@@ -530,7 +530,6 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
             daParamFormulaDO = DaParamFormulaDO.builder()
                     .energyFormula(updateReqVO.getCoalFormula())
                     .energyId(updateReqVO.getId())
-                    .startEffectiveTime(now)
                     .formulaScale(StrUtil.isNotEmpty(coalScale) ? Integer.valueOf(coalScale) : null)
                     .formulaType(formulaType).build();
         } else {
@@ -539,7 +538,6 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
             daParamFormulaDO = DaParamFormulaDO.builder()
                     .energyFormula(updateReqVO.getUnitPriceFormula())
                     .energyId(updateReqVO.getId())
-                    .startEffectiveTime(now)
                     .formulaScale(StrUtil.isNotEmpty(unitPriceScale) ? Integer.valueOf(unitPriceScale) : null)
                     .formulaType(formulaType).build();
         }
@@ -547,7 +545,6 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         // 先要更新对应的能源id   formulaType 的上一条数据更新一下结束时间
         DaParamFormulaDO latestOne = daParamFormulaMapper.getLatestOne(daParamFormulaDO);
         if (latestOne != null) {
-            latestOne.setEndEffectiveTime(now);
             daParamFormulaMapper.updateById(latestOne);
         }
 
