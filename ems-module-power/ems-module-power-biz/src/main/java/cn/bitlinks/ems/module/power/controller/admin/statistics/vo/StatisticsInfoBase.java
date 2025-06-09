@@ -22,6 +22,12 @@ public class StatisticsInfoBase {
     @Schema(description = "三级标签", example = "101室")
     private String label3;
 
+    @Schema(description = "四级标签", example = "三排")
+    private String label4;
+
+    @Schema(description = "五级标签", example = "四位")
+    private String label5;
+
     @Schema(description = "能源", example = "能源")
     private String energyName;
 
