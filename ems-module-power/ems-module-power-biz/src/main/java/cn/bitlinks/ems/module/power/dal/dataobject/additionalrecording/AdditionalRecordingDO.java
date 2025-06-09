@@ -58,10 +58,6 @@ public class AdditionalRecordingDO extends BaseDO {
      */
     private BigDecimal thisValue;
     /**
-     * 单位
-     */
-    private String unit;
-    /**
      * 补录人
      */
     private String recordPerson;

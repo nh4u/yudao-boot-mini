@@ -49,13 +49,4 @@ public class DaParamFormulaDO extends BaseDO {
      * 公式小数点
      */
     private Integer formulaScale;
-    /**
-     * 开始生效时间
-     */
-    private LocalDateTime startEffectiveTime;
-
-    /**
-     * 结束生效时间
-     */
-    private LocalDateTime endEffectiveTime;
 }
