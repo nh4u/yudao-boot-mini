@@ -9,6 +9,7 @@ import cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata.MinuteAg
 import cn.bitlinks.ems.module.acquisition.starrocks.StarRocksStreamLoadService;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -33,6 +34,7 @@ import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.*;
 @DS("starrocks")
 @Service
 @Validated
+@Slf4j
 public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataService {
 
     @Resource
@@ -70,7 +72,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     public MinuteAggregateDataDTO selectOldestByStandingBookId(Long standingbookId) {
         MinuteAggregateDataDO minuteAggregateDataDO =
                 minuteAggregateDataMapper.selectOldestByStandingBookId(standingbookId);
-        if(Objects.isNull(minuteAggregateDataDO)){
+        if (Objects.isNull(minuteAggregateDataDO)) {
             return null;
         }
         return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
@@ -81,7 +83,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     public MinuteAggregateDataDTO selectLatestByStandingBookId(Long standingbookId) {
         MinuteAggregateDataDO minuteAggregateDataDO =
                 minuteAggregateDataMapper.selectLatestByStandingBookId(standingbookId);
-        if(Objects.isNull(minuteAggregateDataDO)){
+        if (Objects.isNull(minuteAggregateDataDO)) {
             return null;
         }
         return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
@@ -97,6 +99,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
             starRocksStreamLoadService.streamLoadData(Collections.singletonList(minuteAggregateDataDO), labelName, TB_NAME);
         } catch (Exception e) {
+            log.error("insertSingleData失败：{}", e.getMessage(), e);
             throw exception(STREAM_LOAD_INIT_FAIL);
         }
     }
@@ -106,17 +109,17 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     @Transactional
     public void insertDelRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
         try {
-            MinuteAggregateDataDTO endDataDTO = minuteAggDataSplitDTO.getEndDataDO();
-            // 按照起始两条数据，进行拆分，然后删除
-            minuteAggregateDataMapper.deleteDataByMinute(endDataDTO.getAggregateTime(), endDataDTO.getStandingbookId());
+//            MinuteAggregateDataDTO endDataDTO = minuteAggDataSplitDTO.getEndDataDO();
+//            // 按照起始两条数据，进行拆分，然后删除
+//            minuteAggregateDataMapper.deleteDataByMinute(endDataDTO.getAggregateTime(), endDataDTO.getStandingbookId());
             // 数据拆分
-            List<MinuteAggregateDataDO> minuteAggregateDataDOS = splitData(minuteAggDataSplitDTO.getStartDataDO(), endDataDTO);
+            List<MinuteAggregateDataDO> minuteAggregateDataDOS = splitData(minuteAggDataSplitDTO.getStartDataDO(), minuteAggDataSplitDTO.getEndDataDO());
 
             String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
             starRocksStreamLoadService.streamLoadData(minuteAggregateDataDOS, labelName, TB_NAME);
 
-
         } catch (Exception e) {
+            log.error("insertDelRangeData失败：{}", e.getMessage(), e);
             throw exception(STREAM_LOAD_DEL_RANGE_FAIL);
         }
     }
@@ -131,6 +134,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
             starRocksStreamLoadService.streamLoadData(minuteAggregateDataDOS, labelName, TB_NAME);
         } catch (Exception e) {
+            log.error("insertRangeData失败：{}", e.getMessage(), e);
             throw exception(STREAM_LOAD_RANGE_FAIL);
         }
     }

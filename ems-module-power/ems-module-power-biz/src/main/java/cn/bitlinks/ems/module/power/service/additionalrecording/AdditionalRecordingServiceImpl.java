@@ -64,6 +64,11 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     @Override
     public Long createAdditionalRecording(AdditionalRecordingSaveReqVO createReqVO) {
 
+        // 参数校验
+        // 上次采集时间不为空且，不早于此次采集时间，给出提示
+        if (Objects.nonNull(createReqVO.getLastCollectTime()) && !createReqVO.getLastCollectTime().truncatedTo(ChronoUnit.MINUTES).isBefore(createReqVO.getThisCollectTime().truncatedTo(ChronoUnit.MINUTES))) {
+            throw exception(LAST_COLLECT_TIME_TOO_LATE);
+        }
         // 1.获取能源用量参数，如果没有，不可补录
         StandingbookTmplDaqAttrDO daqAttrDO =
                 standingbookTmplDaqAttrService.getUsageAttrBySbId(createReqVO.getStandingbookId());
@@ -77,7 +82,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
                     createReqVO.getLastCollectTime(),
                     createReqVO.getThisCollectTime(), createReqVO.getLastValue(), createReqVO.getThisValue());
         } catch (ServiceException e) {
-            log.error(e.getMessage(),e);
+            log.error(e.getMessage(), e);
             throw e;
         } catch (Exception e) {
             log.error("补录拆分数据失败，失败原因:{}", e.getMessage(), e);
@@ -116,21 +121,41 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         if (!LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(10L).isAfter(currentCollectTime)) {
             throw exception(CURRENT_TIME_ERROR);
         }
+        MinuteAggregateDataDTO originalDTO = new MinuteAggregateDataDTO();
+        originalDTO.setStandingbookId(standingbookId);
+        originalDTO.setEnergyFlag(daqAttrDO.getEnergyFlag());
+        originalDTO.setParamCode(daqAttrDO.getCode());
+        originalDTO.setStandingbookId(standingbookId);
         //
         // 0.1 如果聚合表无历史数据。按照本次采集点进行补录, 忽略上次采集时间，全量增量都按照全量
         if (Objects.isNull(oldestData)) {
             if (FullIncrementEnum.INCREMENT.getCode().equals(valueType)) {
-                throw exception(INCREMENT_HISTORY_NOT_EXISTS);
+                //throw exception(INCREMENT_HISTORY_NOT_EXISTS);
+                // 增量按照时间段进行补录
+                MinuteAggregateDataDTO startDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
+                startDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
+                startDTO.setFullValue(BigDecimal.ZERO);
+                startDTO.setIncrementalValue(BigDecimal.ZERO);
+
+                MinuteAggregateDataDTO endDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
+                endDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
+                endDTO.setFullValue(thisValue);
+                // 增量需要计算出来
+
+                MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
+                minuteAggDataSplitDTO.setStartDataDO(startDTO);
+                minuteAggDataSplitDTO.setEndDataDO(endDTO);
+                minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
+
+            } else {
+                // 全量进行单条补录
+                MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
+                minuteAggregateDataDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
+                minuteAggregateDataDTO.setFullValue(thisValue);
+                minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
+                minuteAggregateDataApi.insertSingleData(minuteAggregateDataDTO);
             }
-            // 全量进行单条补录
-            MinuteAggregateDataDTO minuteAggregateDataDTO = new MinuteAggregateDataDTO();
-            minuteAggregateDataDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
-            minuteAggregateDataDTO.setStandingbookId(standingbookId);
-            minuteAggregateDataDTO.setFullValue(thisValue);
-            minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
-            minuteAggregateDataDTO.setEnergyFlag(daqAttrDO.getEnergyFlag());
-            minuteAggregateDataDTO.setParamCode(daqAttrDO.getCode());
-            minuteAggregateDataApi.insertSingleData(minuteAggregateDataDTO);
+
             return;
         }
 
@@ -151,14 +176,11 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
 
                 // 进行补录拆分到分钟
                 // 进行补录
-                MinuteAggregateDataDTO minuteAggregateDataDTO = new MinuteAggregateDataDTO();
+                MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
                 minuteAggregateDataDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
-                minuteAggregateDataDTO.setStandingbookId(standingbookId);
                 minuteAggregateDataDTO.setFullValue(thisValue);
                 minuteAggregateDataDTO.setDataSite(oldestData.getDataSite());
                 minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
-                minuteAggregateDataDTO.setEnergyFlag(daqAttrDO.getEnergyFlag());
-                minuteAggregateDataDTO.setParamCode(daqAttrDO.getCode());
                 MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
                 minuteAggDataSplitDTO.setStartDataDO(minuteAggregateDataDTO);
                 minuteAggDataSplitDTO.setEndDataDO(oldestData);
@@ -171,14 +193,11 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             }
             // 进行补录拆分到分钟
             // 进行补录
-            MinuteAggregateDataDTO minuteAggregateDataDTO = new MinuteAggregateDataDTO();
+            MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
             minuteAggregateDataDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
-            minuteAggregateDataDTO.setStandingbookId(standingbookId);
             minuteAggregateDataDTO.setFullValue(thisValue);
             minuteAggregateDataDTO.setDataSite(oldestData.getDataSite());
             //minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);需要拆分计算出来
-            minuteAggregateDataDTO.setEnergyFlag(daqAttrDO.getEnergyFlag());
-            minuteAggregateDataDTO.setParamCode(daqAttrDO.getCode());
             MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
             minuteAggDataSplitDTO.setStartDataDO(latestData);
             minuteAggDataSplitDTO.setEndDataDO(minuteAggregateDataDTO);
@@ -206,14 +225,11 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
                 //
                 BigDecimal initValue = oldestData.getFullValue().subtract(thisValue);
                 // 进行补录
-                MinuteAggregateDataDTO minuteAggregateDataDTO = new MinuteAggregateDataDTO();
+                MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
                 minuteAggregateDataDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
-                minuteAggregateDataDTO.setStandingbookId(standingbookId);
                 minuteAggregateDataDTO.setFullValue(initValue);
                 minuteAggregateDataDTO.setDataSite(oldestData.getDataSite());
                 minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
-                minuteAggregateDataDTO.setEnergyFlag(daqAttrDO.getEnergyFlag());
-                minuteAggregateDataDTO.setParamCode(daqAttrDO.getCode());
                 MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
                 minuteAggDataSplitDTO.setStartDataDO(minuteAggregateDataDTO);
                 minuteAggDataSplitDTO.setEndDataDO(oldestData);
@@ -224,14 +240,11 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
 
                 BigDecimal latestValue = latestData.getFullValue().add(thisValue);
 
-                MinuteAggregateDataDTO minuteAggregateDataDTO = new MinuteAggregateDataDTO();
+                MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
                 minuteAggregateDataDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
-                minuteAggregateDataDTO.setStandingbookId(standingbookId);
                 minuteAggregateDataDTO.setFullValue(latestValue);
                 minuteAggregateDataDTO.setDataSite(oldestData.getDataSite());
                 //minuteAggregateDataDTO.setIncrementalValue();需要拆分计算出来
-                minuteAggregateDataDTO.setEnergyFlag(daqAttrDO.getEnergyFlag());
-                minuteAggregateDataDTO.setParamCode(daqAttrDO.getCode());
                 MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
                 minuteAggDataSplitDTO.setStartDataDO(latestData);
                 minuteAggDataSplitDTO.setEndDataDO(minuteAggregateDataDTO);
@@ -448,4 +461,5 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         }
         return additionalRecordingMapper.selectList(queryWrapper);
     }
+
 }
