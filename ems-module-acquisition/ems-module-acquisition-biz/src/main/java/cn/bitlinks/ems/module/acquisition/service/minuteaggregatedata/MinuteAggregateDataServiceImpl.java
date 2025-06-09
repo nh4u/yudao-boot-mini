@@ -7,14 +7,20 @@ import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregate
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
 import cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata.MinuteAggregateDataMapper;
 import cn.bitlinks.ems.module.acquisition.starrocks.StarRocksStreamLoadService;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
@@ -25,7 +31,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.STREAM_LOAD_PREFIX;
+import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.*;
 
 /**
@@ -43,7 +49,11 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     @Resource
     private StarRocksStreamLoadService starRocksStreamLoadService;
 
-    private static final String TB_NAME = "minute_aggregate_data";
+
+    @Resource
+    private RocketMQTemplate rocketMQTemplate;
+    @Value("${rocketmq.topic.device-aggregate}")
+    private String deviceAggTopic;
 
     @Override
     @TenantIgnore
@@ -97,12 +107,34 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             MinuteAggregateDataDO minuteAggregateDataDO = BeanUtils.toBean(minuteAggregateDataDTO,
                     MinuteAggregateDataDO.class);
             String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
-            starRocksStreamLoadService.streamLoadData(Collections.singletonList(minuteAggregateDataDO), labelName, TB_NAME);
+            starRocksStreamLoadService.streamLoadData(Collections.singletonList(minuteAggregateDataDO), labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
+            // 发送给usageCost进行计算
+            sendMsgToUsageCostBatch(Collections.singletonList(minuteAggregateDataDO));
         } catch (Exception e) {
             log.error("insertSingleData失败：{}", e.getMessage(), e);
             throw exception(STREAM_LOAD_INIT_FAIL);
         }
     }
+    @Override
+    public void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList) throws IOException {
+        if (CollUtil.isEmpty(aggDataList)) {
+            return;
+        }
+        List<List<MinuteAggregateDataDO>> batchList = CollUtil.split(aggDataList, batchSize);
+        for (List<MinuteAggregateDataDO> batch : batchList) {
+            // 执行你的批量插入操作，比如：
+            String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
+            starRocksStreamLoadService.streamLoadData(batch, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
+            // 发送mq消息
+            String topicName = deviceAggTopic;
+            // 发送消息
+            Message<List<MinuteAggregateDataDTO>> msg =
+                    MessageBuilder.withPayload(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class)).build();
+            rocketMQTemplate.send(topicName, msg);
+        }
+
+    }
+
 
     @Override
     @TenantIgnore
@@ -116,8 +148,9 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             List<MinuteAggregateDataDO> minuteAggregateDataDOS = splitData(minuteAggDataSplitDTO.getStartDataDO(), minuteAggDataSplitDTO.getEndDataDO());
 
             String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
-            starRocksStreamLoadService.streamLoadData(minuteAggregateDataDOS, labelName, TB_NAME);
-
+            starRocksStreamLoadService.streamLoadData(minuteAggregateDataDOS, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
+            // 发送给usageCost进行计算
+            sendMsgToUsageCostBatch(minuteAggregateDataDOS);
         } catch (Exception e) {
             log.error("insertDelRangeData失败：{}", e.getMessage(), e);
             throw exception(STREAM_LOAD_DEL_RANGE_FAIL);
@@ -132,7 +165,9 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             List<MinuteAggregateDataDO> minuteAggregateDataDOS = splitData(minuteAggDataSplitDTO.getStartDataDO(),
                     minuteAggDataSplitDTO.getEndDataDO());
             String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
-            starRocksStreamLoadService.streamLoadData(minuteAggregateDataDOS, labelName, TB_NAME);
+            starRocksStreamLoadService.streamLoadData(minuteAggregateDataDOS, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
+            // 发送给usageCost进行计算
+            sendMsgToUsageCostBatch(minuteAggregateDataDOS);
         } catch (Exception e) {
             log.error("insertRangeData失败：{}", e.getMessage(), e);
             throw exception(STREAM_LOAD_RANGE_FAIL);

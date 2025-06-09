@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.standingbook.acquisition;
 
 import cn.bitlinks.ems.framework.common.core.ParameterKey;
 import cn.bitlinks.ems.framework.common.core.StandingbookAcquisitionDetailDTO;
+import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.util.calc.AcquisitionFormulaUtils;
 import cn.bitlinks.ems.framework.common.util.calc.FormulaUtil;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
@@ -25,6 +26,7 @@ import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDa
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -52,6 +54,7 @@ import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
  */
 @Service
 @Validated
+@Slf4j
 public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisitionService {
 
     @Resource
@@ -362,7 +365,10 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                 throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
             }
             return resultValue;
+        } catch (ServiceException e) {
+            throw e;
         } catch (Exception e) {
+            log.error("数采-测试，异常：{}", e.getMessage(), e);
             throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
         }
 
