@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectR
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
 import cn.bitlinks.ems.module.acquisition.dal.mysql.collectrawdata.CollectRawDataMapper;
 import cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata.MinuteAggregateDataMapper;
+import cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata.MinuteAggregateDataService;
 import cn.bitlinks.ems.module.acquisition.starrocks.StarRocksStreamLoadService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.RandomUtil;
@@ -16,6 +17,7 @@ import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -33,8 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.AGG_TASK_LOCK_KEY;
-import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.STREAM_LOAD_PREFIX;
+import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.*;
 
 /**
  * 聚合数据任务
@@ -48,19 +49,21 @@ public class AggTask {
     @Resource
     private MinuteAggregateDataMapper minuteAggregateDataMapper;
     @Resource
+    @Lazy
+    private MinuteAggregateDataService minuteAggregateDataService;
+    @Resource
     private StarRocksStreamLoadService starRocksStreamLoadService;
 
     @Value("${spring.profiles.active}")
     private String env;
     @Resource
     private RedissonClient redissonClient;
-    public static final int batchSize = 2000;
+
     @Resource
     private RocketMQTemplate rocketMQTemplate;
 
     @Value("${rocketmq.topic.device-aggregate}")
     private String deviceAggTopic;
-    private final static String AGG_TB = "minute_aggregate_data";
 
 
     @Scheduled(cron = "0 0/1 * * * ? ") // 每分钟的 0 秒执行一次
@@ -155,24 +158,7 @@ public class AggTask {
             log.info("所有台账，当前分钟的聚合数据为空，未获取到任何当前值");
         }
         // 4.将计算出的当前分钟的聚合数据插入到聚合数据表中
-
-        // 按 2000 条分批处理
-        List<List<MinuteAggregateDataDO>> batchList = CollUtil.split(currentAggDataList, batchSize);
-
-        for (List<MinuteAggregateDataDO> batch : batchList) {
-            // 执行你的批量插入操作，比如：
-            String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
-            starRocksStreamLoadService.streamLoadData(batch, labelName, AGG_TB);
-            // 发送mq消息
-            String topicName = deviceAggTopic;
-            // 发送消息
-            Message<List<MinuteAggregateDataDTO>> msg =
-                    MessageBuilder.withPayload(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class)).build();
-            rocketMQTemplate.send(topicName, msg);
-        }
-
-
-
+        minuteAggregateDataService.sendMsgToUsageCostBatch(currentAggDataList);
 
     }
 
