@@ -2,9 +2,11 @@ package cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata;
 
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
+import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 分钟聚合数据service
@@ -43,6 +45,12 @@ public interface MinuteAggregateDataService {
      */
     void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO) ;
 
+    /**
+     * 通用的聚合数据改动发送给usagecost
+     * @param aggDataList
+     * @throws IOException
+     */
+    void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList) throws IOException;
     /**
      * 插入时间段数据，需要拆分，末尾数据存在
      * @param minuteAggDataSplitDTO
