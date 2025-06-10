@@ -61,7 +61,14 @@ public class AcquisitionFormulaUtils {
         // 将计算后的数值替换到公式中，
         for (ParameterKey parameterKey : parameterKeys) {
             String relyParam = String.format(PATTERN_ACQUISITION_FORMULA_FILL, parameterKey.getCode(), parameterKey.getEnergyFlag());
-            String acquisitionValue = itemStatusMap.get(paramMap.get(parameterKey).getDataSite()).getValue();
+            StandingbookAcquisitionDetailDTO standingbookAcquisitionDetailDTO = paramMap.get(parameterKey);
+            String acquisitionValue = itemStatusMap.get(standingbookAcquisitionDetailDTO.getDataSite()).getValue();
+            String ioFormula = standingbookAcquisitionDetailDTO.getActualFormula();
+            if(StringUtils.isNotEmpty(ioFormula)){
+                String ioParam = String.format(PATTERN_ACQUISITION_FORMULA_FILL, standingbookAcquisitionDetailDTO.getCode(), standingbookAcquisitionDetailDTO.getEnergyFlag());
+                ioFormula = ioFormula.replace(ioParam,acquisitionValue);
+                acquisitionValue = CalculateUtil.calcAcquisitionFormula(ioFormula)+"";
+            }
             formula = formula.replace(relyParam, acquisitionValue);
         }
 

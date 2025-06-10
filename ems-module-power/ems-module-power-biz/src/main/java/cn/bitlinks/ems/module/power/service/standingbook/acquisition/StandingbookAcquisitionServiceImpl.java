@@ -463,6 +463,10 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             return expandedDetail; // 公式为空，无需展开
         }
 
+        if (StringUtils.isNotEmpty(expandedDetail.getDataSite())) {
+            return expandedDetail; // 是配置了io地址的，无需展开。
+        }
+
         ParameterKey currentKey = new ParameterKey(expandedDetail.getCode(), expandedDetail.getEnergyFlag());
 
         // 检查是否已经访问过该参数，防止循环引用
@@ -486,13 +490,12 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         for (ParameterKey dependency : dependencies) {
             if (paramMap.containsKey(dependency)) {
                 StandingbookAcquisitionDetailVO dependencyDetail = paramMap.get(dependency);
-
+                // 如果io地址不为空，无需展开
+                if (StringUtils.isNotEmpty(dependencyDetail.getDataSite())) {
+                    continue;
+                }
                 // 递归展开依赖参数的公式
                 StandingbookAcquisitionDetailVO fullyExpandedDependency = expandFormula(dependencyDetail, paramMap, visited);
-                String dataSite = fullyExpandedDependency.getDataSite();
-                if (StringUtils.isEmpty(dataSite)) {
-                    throw exception(STANDINGBOOK_ACQUISITION_FORMULA_SET);
-                }
 
                 // 如果依赖参数也有公式，则使用其展开后的公式进行替换。
                 String replacement = fullyExpandedDependency.getActualFormula();
