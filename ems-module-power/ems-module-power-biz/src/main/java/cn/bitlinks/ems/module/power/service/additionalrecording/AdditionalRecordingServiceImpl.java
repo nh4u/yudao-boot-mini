@@ -187,7 +187,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
                 MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
                 minuteAggDataSplitDTO.setStartDataDO(minuteAggregateDataDTO);
                 minuteAggDataSplitDTO.setEndDataDO(oldestData);
-                minuteAggregateDataApi.insertDelRangeData(minuteAggDataSplitDTO);
+                minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
                 return;
             }
             // 1.2.2 如果本次采集时间在latestData之后，补录到currentCollectTime此分钟,不需要修改历史数据
@@ -236,7 +236,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
                 MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
                 minuteAggDataSplitDTO.setStartDataDO(minuteAggregateDataDTO);
                 minuteAggDataSplitDTO.setEndDataDO(oldestData);
-                minuteAggregateDataApi.insertDelRangeData(minuteAggDataSplitDTO);
+                minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
                 return;
             } else if (validCase2) {
                 //上次采集时间为latestData，本次采集时间在latestData之后

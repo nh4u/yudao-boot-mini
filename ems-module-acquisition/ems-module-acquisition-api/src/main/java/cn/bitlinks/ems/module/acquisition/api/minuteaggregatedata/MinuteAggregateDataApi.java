@@ -68,24 +68,6 @@ public interface MinuteAggregateDataApi {
     CommonResult<MinuteAggregateDataDTO> selectLatestByStandingBookId(@RequestParam("standingbookId") Long standingbookId);
 
     /**
-     * 直接插入单条数据
-     *
-     * @param minuteAggregateDataDTO
-     */
-    @PostMapping(PREFIX + "/insertSingleData")
-    @Operation(summary = "直接插入数据")
-    void insertSingleData(@RequestBody MinuteAggregateDataDTO minuteAggregateDataDTO);
-
-    /**
-     * 根据两条数据进行拆分，并且修改最后一条的增量
-     *
-     * @param minuteAggDataSplitDTO
-     */
-    @PostMapping(PREFIX + "/insertDelRangeData")
-    @Operation(summary = "根据两条数据进行拆分，并且修改最后一条的增量")
-    void insertDelRangeData(@RequestBody MinuteAggDataSplitDTO minuteAggDataSplitDTO);
-
-    /**
      * 根据两条数据进行拆分
      *
      * @param minuteAggDataSplitDTO

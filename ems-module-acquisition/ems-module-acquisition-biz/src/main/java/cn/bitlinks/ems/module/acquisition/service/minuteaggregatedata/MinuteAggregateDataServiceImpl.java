@@ -26,13 +26,12 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.*;
-import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.*;
+import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_RANGE_FAIL;
 
 /**
  * 分钟聚合数据service
@@ -100,22 +99,6 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     }
 
     @Override
-    @TenantIgnore
-    @Transactional
-    public void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO) {
-        try {
-            MinuteAggregateDataDO minuteAggregateDataDO = BeanUtils.toBean(minuteAggregateDataDTO,
-                    MinuteAggregateDataDO.class);
-            String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
-            starRocksStreamLoadService.streamLoadData(Collections.singletonList(minuteAggregateDataDO), labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
-            // 发送给usageCost进行计算
-            sendMsgToUsageCostBatch(Collections.singletonList(minuteAggregateDataDO));
-        } catch (Exception e) {
-            log.error("insertSingleData失败：{}", e.getMessage(), e);
-            throw exception(STREAM_LOAD_INIT_FAIL);
-        }
-    }
-    @Override
     public void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList) throws IOException {
         if (CollUtil.isEmpty(aggDataList)) {
             return;
@@ -139,33 +122,10 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     @Override
     @TenantIgnore
     @Transactional
-    public void insertDelRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
-        try {
-//            MinuteAggregateDataDTO endDataDTO = minuteAggDataSplitDTO.getEndDataDO();
-//            // 按照起始两条数据，进行拆分，然后删除
-//            minuteAggregateDataMapper.deleteDataByMinute(endDataDTO.getAggregateTime(), endDataDTO.getStandingbookId());
-            // 数据拆分
-            List<MinuteAggregateDataDO> minuteAggregateDataDOS = splitData(minuteAggDataSplitDTO.getStartDataDO(), minuteAggDataSplitDTO.getEndDataDO());
-
-            String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
-            starRocksStreamLoadService.streamLoadData(minuteAggregateDataDOS, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
-            // 发送给usageCost进行计算
-            sendMsgToUsageCostBatch(minuteAggregateDataDOS);
-        } catch (Exception e) {
-            log.error("insertDelRangeData失败：{}", e.getMessage(), e);
-            throw exception(STREAM_LOAD_DEL_RANGE_FAIL);
-        }
-    }
-
-    @Override
-    @TenantIgnore
-    @Transactional
     public void insertRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
         try {
             List<MinuteAggregateDataDO> minuteAggregateDataDOS = splitData(minuteAggDataSplitDTO.getStartDataDO(),
                     minuteAggDataSplitDTO.getEndDataDO());
-            String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
-            starRocksStreamLoadService.streamLoadData(minuteAggregateDataDOS, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
             // 发送给usageCost进行计算
             sendMsgToUsageCostBatch(minuteAggregateDataDOS);
         } catch (Exception e) {
@@ -227,7 +187,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
                     data.setIncrementalValue(BigDecimal.ZERO);
                 }
             }
-            if(i == minutes){
+            if (i == minutes) {
                 data.setFullValue(endValue);
             }
 
