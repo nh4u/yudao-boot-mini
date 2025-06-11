@@ -129,35 +129,38 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         //
         // 0.1 如果聚合表无历史数据。按照本次采集点进行补录, 忽略上次采集时间，全量增量都按照全量
         if (Objects.isNull(oldestData)) {
-            if (FullIncrementEnum.INCREMENT.getCode().equals(valueType)) {
-                //throw exception(INCREMENT_HISTORY_NOT_EXISTS);
-                // 增量按照时间段进行补录
-                MinuteAggregateDataDTO startDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-                startDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
-                startDTO.setFullValue(BigDecimal.ZERO);
-                startDTO.setIncrementalValue(BigDecimal.ZERO);
-
-                MinuteAggregateDataDTO endDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-                endDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
-                endDTO.setFullValue(thisValue);
-                // 增量需要计算出来
-
-                MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
-                minuteAggDataSplitDTO.setStartDataDO(startDTO);
-                minuteAggDataSplitDTO.setEndDataDO(endDTO);
-                minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
-
-            } else {
-                // 全量进行单条补录
-                MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-                minuteAggregateDataDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
-                minuteAggregateDataDTO.setFullValue(thisValue);
-                minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
-                minuteAggregateDataApi.insertSingleData(minuteAggregateDataDTO);
-            }
-
-            return;
+            throw exception(MINUTE_DATA_HISTORY_NOT_EXIST);
         }
+//        if (Objects.isNull(oldestData)) {
+//            if (FullIncrementEnum.INCREMENT.getCode().equals(valueType)) {
+//                //throw exception(INCREMENT_HISTORY_NOT_EXISTS);
+//                // 增量按照时间段进行补录
+//                MinuteAggregateDataDTO startDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
+//                startDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
+//                startDTO.setFullValue(BigDecimal.ZERO);
+//                startDTO.setIncrementalValue(BigDecimal.ZERO);
+//
+//                MinuteAggregateDataDTO endDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
+//                endDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
+//                endDTO.setFullValue(thisValue);
+//                // 增量需要计算出来
+//
+//                MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
+//                minuteAggDataSplitDTO.setStartDataDO(startDTO);
+//                minuteAggDataSplitDTO.setEndDataDO(endDTO);
+//                minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
+//
+//            } else {
+//                // 全量进行单条补录
+//                MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
+//                minuteAggregateDataDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
+//                minuteAggregateDataDTO.setFullValue(thisValue);
+//                minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
+//                minuteAggregateDataApi.insertSingleData(minuteAggregateDataDTO);
+//            }
+//
+//            return;
+//        }
 
         // 0.2 如果聚合表有历史数据，
         if (FullIncrementEnum.FULL.getCode().equals(valueType)) {
@@ -184,7 +187,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
                 MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
                 minuteAggDataSplitDTO.setStartDataDO(minuteAggregateDataDTO);
                 minuteAggDataSplitDTO.setEndDataDO(oldestData);
-                minuteAggregateDataApi.insertDelRangeData(minuteAggDataSplitDTO);
+                minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
                 return;
             }
             // 1.2.2 如果本次采集时间在latestData之后，补录到currentCollectTime此分钟,不需要修改历史数据
@@ -233,7 +236,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
                 MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
                 minuteAggDataSplitDTO.setStartDataDO(minuteAggregateDataDTO);
                 minuteAggDataSplitDTO.setEndDataDO(oldestData);
-                minuteAggregateDataApi.insertDelRangeData(minuteAggDataSplitDTO);
+                minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
                 return;
             } else if (validCase2) {
                 //上次采集时间为latestData，本次采集时间在latestData之后

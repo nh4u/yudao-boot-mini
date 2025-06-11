@@ -23,7 +23,7 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     public CommonResult<MinuteAggregateDataDTO> selectByAggTime(Long standingbookId, LocalDateTime thisCollectTime) {
         MinuteAggregateDataDTO minuteAggregateDataDTO = minuteAggregateDataService.selectByAggTime(standingbookId,
                 thisCollectTime);
-        if(Objects.isNull(minuteAggregateDataDTO)){
+        if (Objects.isNull(minuteAggregateDataDTO)) {
             return CommonResult.success(null);
         }
         return CommonResult.success(minuteAggregateDataDTO);
@@ -32,7 +32,7 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     @Override
     public CommonResult<MinuteAggregateDataDTO> selectLatestByAggTime(Long standingbookId, LocalDateTime currentCollectTime) {
         MinuteAggregateDataDTO minuteAggregateDataDTO = minuteAggregateDataService.selectLatestByAggTime(standingbookId, currentCollectTime);
-        if(Objects.isNull(minuteAggregateDataDTO)){
+        if (Objects.isNull(minuteAggregateDataDTO)) {
             return CommonResult.success(null);
         }
         return CommonResult.success(minuteAggregateDataDTO);
@@ -41,7 +41,7 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     @Override
     public CommonResult<MinuteAggregateDataDTO> selectOldestByStandingBookId(Long standingbookId) {
         MinuteAggregateDataDTO minuteAggregateDataDTO = minuteAggregateDataService.selectOldestByStandingBookId(standingbookId);
-        if(Objects.isNull(minuteAggregateDataDTO)){
+        if (Objects.isNull(minuteAggregateDataDTO)) {
             return CommonResult.success(null);
         }
         return CommonResult.success(minuteAggregateDataDTO);
@@ -50,21 +50,12 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     @Override
     public CommonResult<MinuteAggregateDataDTO> selectLatestByStandingBookId(Long standingbookId) {
         MinuteAggregateDataDTO minuteAggregateDataDTO = minuteAggregateDataService.selectLatestByStandingBookId(standingbookId);
-        if(Objects.isNull(minuteAggregateDataDTO)){
+        if (Objects.isNull(minuteAggregateDataDTO)) {
             return CommonResult.success(null);
         }
         return CommonResult.success(minuteAggregateDataDTO);
     }
 
-    @Override
-    public void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO) {
-        minuteAggregateDataService.insertSingleData(minuteAggregateDataDTO);
-    }
-
-    @Override
-    public void insertDelRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
-        minuteAggregateDataService.insertDelRangeData(minuteAggDataSplitDTO);
-    }
 
     @Override
     public void insertRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {

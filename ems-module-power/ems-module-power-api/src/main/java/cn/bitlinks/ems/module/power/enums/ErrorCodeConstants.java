@@ -68,6 +68,7 @@ public interface ErrorCodeConstants {
     ErrorCode RANGE_TIME_ERROR=new ErrorCode(1_001_301_214,"上次采集时间和本次采集时间时间范围与历史数据不连续，不可进行补录！");
     ErrorCode ADDITIONAL_RECORDING_SPLIT_ERROR = new ErrorCode(1_001_301_215, "补录拆分失败，无法补录");
     ErrorCode LAST_COLLECT_TIME_TOO_LATE = new ErrorCode(1_001_301_216, "上次采集时间需早于本次采集时间");
+    ErrorCode MINUTE_DATA_HISTORY_NOT_EXIST=new ErrorCode(1_001_301_217,"");
     // ========== 台账类型 ==========
     ErrorCode STANDINGBOOK_TYPE_NOT_EXISTS = new ErrorCode(1_001_202_000, "台账类型不存在");
     ErrorCode STANDINGBOOK_TYPE_EXITS_CHILDREN = new ErrorCode(1_001_202_001, "存在存在子台账类型，无法删除");
