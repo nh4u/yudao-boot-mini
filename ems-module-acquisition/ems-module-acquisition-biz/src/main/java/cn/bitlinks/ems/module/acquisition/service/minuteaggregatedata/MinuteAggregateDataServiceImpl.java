@@ -227,6 +227,9 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
                     data.setIncrementalValue(BigDecimal.ZERO);
                 }
             }
+            if(i == minutes){
+                data.setFullValue(endValue);
+            }
 
             // 如果开始时间为空，按
             result.add(data);
