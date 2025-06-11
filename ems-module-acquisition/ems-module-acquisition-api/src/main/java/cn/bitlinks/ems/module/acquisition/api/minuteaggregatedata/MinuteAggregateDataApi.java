@@ -7,12 +7,15 @@ import cn.bitlinks.ems.module.acquisition.enums.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDateTime;
+
+import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 
 
 @FeignClient(name = ApiConstants.NAME) // TODO bitlinks：fallbackFactory =
@@ -30,7 +33,7 @@ public interface MinuteAggregateDataApi {
     @GetMapping(PREFIX + "/selectByAggTime")
     @Operation(summary = "查询设备指定时间的聚合数据")
     CommonResult<MinuteAggregateDataDTO> selectByAggTime(@RequestParam("standingbookId") Long standingbookId,
-                                                         @RequestParam("thisCollectTime") LocalDateTime thisCollectTime);
+                                                         @RequestParam("thisCollectTime")@DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime thisCollectTime);
 
     /**
      * 获取当前时间上次的最新数据
@@ -42,7 +45,7 @@ public interface MinuteAggregateDataApi {
     @GetMapping(PREFIX + "/selectLatestByAggTime")
     @Operation(summary = "查询设备指定时间的上次聚合数据")
     CommonResult<MinuteAggregateDataDTO> selectLatestByAggTime(@RequestParam("standingbookId") Long standingbookId,
-                                                               @RequestParam("currentCollectTime") LocalDateTime currentCollectTime);
+                                                               @RequestParam("currentCollectTime")@DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime currentCollectTime);
 
     /**
      * 获取台账对应的最早的聚合数据
