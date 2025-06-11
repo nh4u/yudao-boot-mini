@@ -245,8 +245,12 @@ public class AggTask {
         startDO.setEnergyFlag(prev.getEnergyFlag());
         startDO.setDataSite(prev.getDataSite());
         MinuteAggregateDataDO endDO = BeanUtils.toBean(startDO, MinuteAggregateDataDO.class);
-        endDO.setAggregateTime(next.getSyncTime());
-        endDO.setFullValue(new BigDecimal(next.getCalcValue()));
+        endDO.setAggregateTime(targetTime);
+        long totalSeconds = Duration.between(prevTime, next.getSyncTime()).getSeconds();
+        BigDecimal rate = new BigDecimal(next.getCalcValue()).subtract(prevValue)
+                .divide(BigDecimal.valueOf(totalSeconds), 10, RoundingMode.HALF_UP);
+        long elapsedSeconds = Duration.between(prevTime, targetTime).getSeconds();
+        endDO.setFullValue(prevValue.add(rate.multiply(BigDecimal.valueOf(elapsedSeconds))));
         splitData(currentDataList, latestAggData, startDO, endDO);
 
     }
