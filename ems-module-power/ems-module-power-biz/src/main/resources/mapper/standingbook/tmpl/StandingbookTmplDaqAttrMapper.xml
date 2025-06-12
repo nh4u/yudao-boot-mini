@@ -21,4 +21,16 @@
             </foreach>
         </if>
     </select>
+    <select id="selectSbTypeIdsByEnergyIds" resultType="java.lang.Long">
+        SELECT
+            distinct type_id
+        FROM
+            power_standingbook_tmpl_daq_attr
+        WHERE
+            energy_id in
+            <foreach item='energyId' collection='energyIds' open='(' separator=',' close=')'>
+                #{energyId}
+            </foreach>
+        AND deleted = 0
+    </select>
 </mapper>
