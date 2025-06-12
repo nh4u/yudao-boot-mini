@@ -1,13 +1,15 @@
 package cn.bitlinks.ems.module.acquisition.service.partition;
 
-import cn.bitlinks.ems.module.acquisition.dal.mysql.partition.PartitionMapper;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.*;
+import com.baomidou.dynamic.datasource.annotation.DS;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.DefaultTypedTuple;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -24,10 +26,10 @@ import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.REDIS_KEY
 import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.REDIS_MAX_PARTITION_NOT_EXIST;
 
 @Service
+@DS("starrocks")
+@Slf4j
 public class PartitionService {
 
-    @Resource
-    private PartitionMapper partitionMapper;
     @Resource
     private StringRedisTemplate stringRedisTemplate;
     private static final String partitionPrefix = "p";
@@ -35,7 +37,16 @@ public class PartitionService {
     private static final DateTimeFormatter pureDateFormatter = DatePattern.PURE_DATE_FORMATTER;
     @Value("${spring.profiles.active}")
     private String env;
+    @Resource
+    private JdbcTemplate jdbcTemplate;
 
+    /**
+     * 创建分区
+     *
+     * @param tableName
+     * @param startDateTime
+     * @param endDateTime
+     */
     public void createPartitions(String tableName, LocalDateTime startDateTime, LocalDateTime endDateTime) {
         // redis存储的最大的分区时间
         String maxPartitionTimeKey = String.format(REDIS_KEY_MAX_PARTITION_TIME, env, tableName);
@@ -56,9 +67,40 @@ public class PartitionService {
             return;
         }
 
-        partitionMapper.batchAddPartitions(tableName, partitionDayRanges);
-        // 把手动维护的分区维护到redis之中
-        savePartitions(tableName, partitionNames);
+        String disableDynamicPartitionSql = "ALTER TABLE " + tableName + " SET (\"dynamic_partition.enable\" = \"false\")";
+        String addPartitionsSql = buildAddPartitionsSQL(tableName, partitionDayRanges); // 构建 ADD PARTITIONS 语句
+        String enableDynamicPartitionSql = "ALTER TABLE " + tableName + " SET (\"dynamic_partition.enable\" = \"true\")";
+        try {
+
+            // 分开执行
+            jdbcTemplate.execute(disableDynamicPartitionSql);
+            jdbcTemplate.execute(addPartitionsSql);
+            jdbcTemplate.execute(enableDynamicPartitionSql);
+            // 把手动维护的分区维护到redis之中
+            savePartitions(tableName, partitionNames);
+        } catch (Exception ex) {
+            log.error("[StarRocksDDL] 创建分区执行 SQL 失败", ex);
+            jdbcTemplate.execute(enableDynamicPartitionSql);
+            throw new RuntimeException("执行 StarRocks DDL 失败: " + ex.getMessage(), ex);
+        }
+
+
+    }
+
+    public String buildAddPartitionsSQL(String tableName, List<PartitionDayRange> partitionDayRanges) {
+        StringBuilder sqlBuilder = new StringBuilder();
+        for (PartitionDayRange p : partitionDayRanges) {
+            String partitionSql = String.format(
+                    "ALTER TABLE %s ADD PARTITION %s VALUES [(\"%s\"), (\"%s\"));",
+                    tableName,
+                    p.getPartitionName(),
+                    p.getStartTime(),
+                    p.getEndTime()
+            );
+            sqlBuilder.append(partitionSql).append("\n"); // 每条 SQL 之后加换行方便日志查看
+        }
+
+        return sqlBuilder.toString();
 
     }
 
@@ -106,7 +148,7 @@ public class PartitionService {
         for (DateTime day : range) {
             LocalDateTime startDay = day.toLocalDateTime();
             LocalDateTime endDay = startDay.plusDays(1);
-            String partitionName = partitionPrefix + startDay.format(dateTimeFormatter);
+            String partitionName = partitionPrefix + startDay.format(pureDateFormatter);
             // 判断在redis中最大分区之前，则手动维护到redis中，而且分区名称不在redis中维护
             // 分区不在动态分区之前，不需要维护创建
             if (!startDay.isBefore(maxPartitionTime)) {
