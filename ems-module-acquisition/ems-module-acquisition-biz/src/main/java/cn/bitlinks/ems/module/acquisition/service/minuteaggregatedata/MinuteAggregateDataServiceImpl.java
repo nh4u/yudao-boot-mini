@@ -6,6 +6,7 @@ import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSp
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
 import cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata.MinuteAggregateDataMapper;
+import cn.bitlinks.ems.module.acquisition.service.partition.PartitionService;
 import cn.bitlinks.ems.module.acquisition.starrocks.StarRocksStreamLoadService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.RandomUtil;
@@ -54,6 +55,8 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     @Value("${rocketmq.topic.device-aggregate}")
     private String deviceAggTopic;
 
+    @Resource
+    private PartitionService partitionService;
     @Override
     @TenantIgnore
     public MinuteAggregateDataDTO selectByAggTime(Long standingbookId, LocalDateTime thisCollectTime) {
@@ -124,8 +127,11 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     @Transactional
     public void insertRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
         try {
+
             List<MinuteAggregateDataDO> minuteAggregateDataDOS = splitData(minuteAggDataSplitDTO.getStartDataDO(),
                     minuteAggDataSplitDTO.getEndDataDO());
+            // 创建分区
+            partitionService.createPartitions(MINUTE_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDOS.get(0).getAggregateTime(),minuteAggregateDataDOS.get(minuteAggregateDataDOS.size()-1).getAggregateTime());
             // 发送给usageCost进行计算
             sendMsgToUsageCostBatch(minuteAggregateDataDOS);
         } catch (Exception e) {
