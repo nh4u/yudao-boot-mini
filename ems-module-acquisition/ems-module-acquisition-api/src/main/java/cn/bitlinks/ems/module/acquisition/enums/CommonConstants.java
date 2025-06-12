@@ -32,7 +32,17 @@ public interface CommonConstants {
      */
     String AGG_TASK_LOCK_KEY = "agg-task:%s" ;
     String MINUTE_AGGREGATE_DATA_TB_NAME = "minute_aggregate_data";
+    String USAGE_COST_TB_NAME = "usage_cost";
     int batchSize = 2000;
+    /**
+     * redis 创建分区的上限分区:dev:tbName
+     */
+    String REDIS_KEY_MAX_PARTITION_TIME = "max-partition-time:%s:%s" ;
+
+    /**
+     * redis 手动维护的历史分区列表
+     */
+    String REDIS_KEY_HIS_PARTITION_LIST = "his-partition-list:%s:%s" ;
 }
 
 
