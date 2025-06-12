@@ -5,6 +5,7 @@ import cn.bitlinks.ems.module.power.config.OcrProperties;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
+import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -33,9 +34,16 @@ public class OcrUtil {
             // 发送请求并获取响应
             HttpResponse response = request.execute();
 
-            // 返回响应内容
+            // 返回响应内容处理
+            int status = response.getStatus();
+            if (status == HttpStatus.HTTP_OK) {
+                return (String) JSONUtil.parseObj(response.body()).get("html");
+            } else if (status == HttpStatus.HTTP_BAD_REQUEST) {
+                return (String) JSONUtil.parseObj(response.body()).get("error");
+            } else {
+                return "文件识别发生错误";
+            }
 
-            return (String) JSONUtil.parseObj(response.body()).get("html");
 
         } catch (Exception e) {
             e.printStackTrace();
