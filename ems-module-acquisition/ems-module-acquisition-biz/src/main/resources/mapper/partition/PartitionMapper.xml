@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.bitlinks.ems.module.acquisition.dal.mysql.partition.PartitionMapper">
+
+<!--    &lt;!&ndash; 添加占位分区 &ndash;&gt;-->
+<!--    <update id="addEarlyPartition">-->
+<!--        ALTER TABLE ${tableName} ADD PARTITION p_early VALUES LESS THAN ("${cutoffDate}");-->
+<!--    </update>-->
+
+<!--    &lt;!&ndash; 添加一个分区 &ndash;&gt;-->
+<!--    <update id="addOnePartition">-->
+<!--        ALTER TABLE ${tableName} ADD PARTITION ${partitionName} VALUES LESS THAN ("${lessThanDate}");-->
+<!--    </update>-->
+
+<!--    &lt;!&ndash; 删除占位分区 &ndash;&gt;-->
+<!--    <update id="dropEarlyPartition">-->
+<!--        ALTER TABLE ${tableName} DROP PARTITION p_early;-->
+<!--    </update>-->
+
+
+    <!-- 批量添加分区 -->
+    <update id="batchAddPartitions">
+        ALTER TABLE ${tableName} SET ("dynamic_partition.enable" = "false");
+        <foreach collection="partitions" item="item" index="key" separator=" ">
+            ALTER TABLE ${tableName} ADD PARTITION ${item.partitionName} VALUES [(#{item.startTime}), (#{item.endTime}));
+        </foreach>
+        ALTER TABLE ${tableName} SET ("dynamic_partition.enable" = "true");
+    </update>
+
+</mapper>
