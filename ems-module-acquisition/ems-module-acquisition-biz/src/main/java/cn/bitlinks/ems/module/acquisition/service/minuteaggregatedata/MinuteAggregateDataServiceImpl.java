@@ -130,8 +130,10 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
 
             List<MinuteAggregateDataDO> minuteAggregateDataDOS = splitData(minuteAggDataSplitDTO.getStartDataDO(),
                     minuteAggDataSplitDTO.getEndDataDO());
-            // 创建分区
+            // 创建聚合数据表分区
             partitionService.createPartitions(MINUTE_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDOS.get(0).getAggregateTime(),minuteAggregateDataDOS.get(minuteAggregateDataDOS.size()-1).getAggregateTime());
+            // 创建聚合数据计算表分区
+            partitionService.createPartitions(USAGE_COST_TB_NAME, minuteAggregateDataDOS.get(0).getAggregateTime(),minuteAggregateDataDOS.get(minuteAggregateDataDOS.size()-1).getAggregateTime());
             // 发送给usageCost进行计算
             sendMsgToUsageCostBatch(minuteAggregateDataDOS);
         } catch (Exception e) {
