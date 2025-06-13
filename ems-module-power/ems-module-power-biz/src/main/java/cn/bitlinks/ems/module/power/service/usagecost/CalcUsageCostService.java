@@ -225,7 +225,7 @@ public class CalcUsageCostService {
                 usageCostDO.setAggregateTime(dto.getAggregateTime());
                 usageCostDO.setCost(cost);
                 usageCostDO.setStandardCoalEquivalent(coalNum);
-                usageCostDO.setTotalUsage(BigDecimal.ZERO);
+                usageCostDO.setTotalUsage(dto.getFullValue());
                 saveList.add(usageCostDO);
 
             });
