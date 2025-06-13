@@ -12,6 +12,7 @@ import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -21,8 +22,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.REDIS_KEY_HIS_PARTITION_LIST;
-import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.REDIS_KEY_MAX_PARTITION_TIME;
+import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.REDIS_MAX_PARTITION_NOT_EXIST;
 
 @Service
@@ -37,8 +37,21 @@ public class PartitionService {
     private static final DateTimeFormatter pureDateFormatter = DatePattern.PURE_DATE_FORMATTER;
     @Value("${spring.profiles.active}")
     private String env;
+    @Value("${ems.max-partition.minutes-agg}")
+    private String maxPartitionMinutesAgg;
+    @Value("${ems.max-partition.usage-cost}")
+    private String maxPartitionUsageCost;
     @Resource
     private JdbcTemplate jdbcTemplate;
+
+    @PostConstruct
+    public void initMaxPartitions(){
+        // redis存储的最大的分区时间
+        String maxPartitionMinutesAggKey = String.format(REDIS_KEY_MAX_PARTITION_TIME, env, MINUTE_AGGREGATE_DATA_TB_NAME);
+        stringRedisTemplate.opsForValue().set(maxPartitionMinutesAggKey, maxPartitionMinutesAgg);
+        String maxPartitionUsageCostKey = String.format(REDIS_KEY_MAX_PARTITION_TIME, env, USAGE_COST_TB_NAME);
+        stringRedisTemplate.opsForValue().set(maxPartitionUsageCostKey, maxPartitionUsageCost);
+    }
 
     /**
      * 创建分区
