@@ -131,6 +131,9 @@ rocketmq:
 
 # bitlinks配置项，设置当前项目所有自定义的配置
 ems:
+  max-partition:
+    minutes-agg: "2025-05-28 00:00:00"
+    usage-cost: "2025-06-11 00:00:00"
   starrocks:
     api-url: http://192.168.2.26:8040
     db: acquisition_dev
