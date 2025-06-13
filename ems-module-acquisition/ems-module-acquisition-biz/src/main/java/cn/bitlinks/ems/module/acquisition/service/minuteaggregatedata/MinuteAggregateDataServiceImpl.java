@@ -27,11 +27,13 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.*;
+import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_INIT_FAIL;
 import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_RANGE_FAIL;
 
 /**
@@ -120,7 +122,27 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         }
 
     }
-
+    @Override
+    @TenantIgnore
+    @Transactional
+    public void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO) {
+        try {
+            if(Objects.isNull(minuteAggregateDataDTO)){
+                return;
+            }
+            MinuteAggregateDataDO minuteAggregateDataDO = BeanUtils.toBean(minuteAggregateDataDTO,
+                    MinuteAggregateDataDO.class);
+            // 创建聚合数据表分区
+            partitionService.createPartitions(MINUTE_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDO.getAggregateTime(),minuteAggregateDataDO.getAggregateTime());
+            // 创建聚合数据计算表分区
+            partitionService.createPartitions(USAGE_COST_TB_NAME, minuteAggregateDataDO.getAggregateTime(),minuteAggregateDataDO.getAggregateTime());
+            // 发送给usageCost进行计算
+            sendMsgToUsageCostBatch(Collections.singletonList(minuteAggregateDataDO));
+        } catch (Exception e) {
+            log.error("insertSingleData失败：{}", e.getMessage(), e);
+            throw exception(STREAM_LOAD_INIT_FAIL);
+        }
+    }
 
     @Override
     @TenantIgnore
@@ -130,6 +152,9 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
 
             List<MinuteAggregateDataDO> minuteAggregateDataDOS = splitData(minuteAggDataSplitDTO.getStartDataDO(),
                     minuteAggDataSplitDTO.getEndDataDO());
+            if(CollUtil.isEmpty(minuteAggregateDataDOS)){
+                return;
+            }
             // 创建聚合数据表分区
             partitionService.createPartitions(MINUTE_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDOS.get(0).getAggregateTime(),minuteAggregateDataDOS.get(minuteAggregateDataDOS.size()-1).getAggregateTime());
             // 创建聚合数据计算表分区
