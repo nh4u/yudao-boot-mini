@@ -55,7 +55,10 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
         }
         return CommonResult.success(minuteAggregateDataDTO);
     }
-
+    @Override
+    public void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO) {
+        minuteAggregateDataService.insertSingleData(minuteAggregateDataDTO);
+    }
 
     @Override
     public void insertRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {

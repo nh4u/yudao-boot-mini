@@ -53,7 +53,10 @@ public interface MinuteAggregateDataService {
      * @throws IOException
      */
     void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList) throws IOException;
-
+    /**
+     * 插入单条数据，初始化数据
+     */
+    void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO) ;
     /**
      * 插入时间段数据，需要拆分，起始数据存在
      *

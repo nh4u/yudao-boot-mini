@@ -141,7 +141,7 @@ public class PartitionService {
         List<PartitionDayRange> result = new ArrayList<>();
 
         DateTime start = DateTime.of(Date.from(startDateTime.truncatedTo(ChronoUnit.DAYS).atZone(ZoneId.systemDefault()).toInstant()));
-        DateTime end = DateTime.of(Date.from(endDateTime.plusDays(1L).truncatedTo(ChronoUnit.DAYS).atZone(ZoneId.systemDefault()).toInstant()));
+        DateTime end = DateTime.of(Date.from(endDateTime.truncatedTo(ChronoUnit.DAYS).atZone(ZoneId.systemDefault()).toInstant()));
 
         DateRange range = DateUtil.range(start, end, DateField.DAY_OF_MONTH);
 
