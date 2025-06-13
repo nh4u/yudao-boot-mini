@@ -34,10 +34,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.LABEL_NAME_PREFIX;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_STANDARD_COAL_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_STANDARD_COAL_TABLE;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
 
 /**
  * @Title: ydme-doublecarbon
@@ -317,7 +319,8 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                                 .stream()
                                 .map(time -> {
                                     StandardCoalChartYData vo = new StandardCoalChartYData();
-                                    vo.setStandardCoal(timeCostMap.getOrDefault(time, BigDecimal.ZERO));
+                                    BigDecimal standardCoal = timeCostMap.getOrDefault(time, BigDecimal.ZERO);
+                                    vo.setStandardCoal(dealBigDecimalScale(standardCoal, DEFAULT_SCALE));
                                     return vo;
                                 })
                                 .collect(Collectors.toList());
@@ -385,7 +388,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 List<StandardCoalChartYData> ydata = xdata.stream().map(x -> {
                     BigDecimal standardCoal = timeCostMap.getOrDefault(x, BigDecimal.ZERO);
                     StandardCoalChartYData vo = new StandardCoalChartYData();
-                    vo.setStandardCoal(standardCoal.compareTo(BigDecimal.ZERO) > 0 ? standardCoal : BigDecimal.ZERO);
+                    vo.setStandardCoal(standardCoal.compareTo(BigDecimal.ZERO) > 0 ? dealBigDecimalScale(standardCoal, DEFAULT_SCALE) : BigDecimal.ZERO);
                     return vo;
                 }).collect(Collectors.toList());
 
@@ -411,10 +414,10 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 StatisticsChartYInfoV2VO<StandardCoalChartYData> yInfoV2VO = new StatisticsChartYInfoV2VO<>();
                 StandardCoalChartYData dataV2VO = new StandardCoalChartYData();
                 if (Objects.nonNull(statsResult)) {
-                    dataV2VO.setAvg(statsResult.getAvg());
-                    dataV2VO.setMax(statsResult.getMax());
-                    dataV2VO.setMin(statsResult.getMin());
-                    dataV2VO.setStandardCoal(statsResult.getSum());
+                    dataV2VO.setAvg(dealBigDecimalScale(statsResult.getAvg(),DEFAULT_SCALE));
+                    dataV2VO.setMax(dealBigDecimalScale(statsResult.getMax(),DEFAULT_SCALE));
+                    dataV2VO.setMin(dealBigDecimalScale(statsResult.getMin(),DEFAULT_SCALE));
+                    dataV2VO.setStandardCoal(dealBigDecimalScale(statsResult.getSum(),DEFAULT_SCALE));
                 } else {
                     dataV2VO.setAvg(BigDecimal.ZERO);
                     dataV2VO.setMax(BigDecimal.ZERO);
@@ -539,9 +542,14 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                         info.setLabel4(label4Name);
                         info.setLabel5(label5Name);
 
+                        dataList = dataList.stream().peek(i -> {
+                            i.setStandardCoal(dealBigDecimalScale(i.getStandardCoal(), DEFAULT_SCALE));
+                            i.setConsumption(dealBigDecimalScale(i.getConsumption(), DEFAULT_SCALE));
+                        }).collect(Collectors.toList());
+
                         info.setStandardCoalInfoDataList(dataList);
-                        info.setSumEnergyConsumption(totalConsumption);
-                        info.setSumEnergyStandardCoal(totalCost);
+                        info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, DEFAULT_SCALE));
+                        info.setSumEnergyStandardCoal(dealBigDecimalScale(totalCost, DEFAULT_SCALE));
 
                         resultList.add(info);
                     });
@@ -610,9 +618,14 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                     info.setLabel4(label4Name);
                     info.setLabel5(label5Name);
 
+                    dataList = dataList.stream().peek(i -> {
+                        i.setStandardCoal(dealBigDecimalScale(i.getStandardCoal(), DEFAULT_SCALE));
+                        i.setConsumption(dealBigDecimalScale(i.getConsumption(), DEFAULT_SCALE));
+                    }).collect(Collectors.toList());
+
                     info.setStandardCoalInfoDataList(dataList);
-                    info.setSumEnergyConsumption(totalConsumption);
-                    info.setSumEnergyStandardCoal(totalStandardCoal);
+                    info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, DEFAULT_SCALE));
+                    info.setSumEnergyStandardCoal(dealBigDecimalScale(totalStandardCoal, DEFAULT_SCALE));
 
                     resultList.add(info);
                 });
@@ -664,10 +677,14 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                             .map(StandardCoalInfoData::getStandardCoal)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+                    infoDataV2List = infoDataV2List.stream().peek(i -> {
+                        i.setStandardCoal(dealBigDecimalScale(i.getStandardCoal(), DEFAULT_SCALE));
+                        i.setConsumption(dealBigDecimalScale(i.getConsumption(), DEFAULT_SCALE));
+                    }).collect(Collectors.toList());
                     info.setStandardCoalInfoDataList(infoDataV2List);
 
-                    info.setSumEnergyConsumption(sumEnergyConsumption);
-                    info.setSumEnergyStandardCoal(sumEnergyStandardCoal);
+                    info.setSumEnergyConsumption(dealBigDecimalScale(sumEnergyConsumption, DEFAULT_SCALE));
+                    info.setSumEnergyStandardCoal(dealBigDecimalScale(sumEnergyStandardCoal, DEFAULT_SCALE));
                     return info;
                 })
                 .filter(Objects::nonNull)
