@@ -202,6 +202,9 @@ public class StandingbookServiceImpl implements StandingbookService {
 
         //根据typeIds获取能源ID关联
         List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS = standingbookTmplDaqAttrMapper.selectEnergyMapping(sbTypeIds);
+        if (standingbookTmplDaqAttrDOS.isEmpty()){
+            return result;
+        }
         //获取所有能源ID
         List<Long> energyIds = standingbookTmplDaqAttrDOS.stream().map(StandingbookTmplDaqAttrDO::getEnergyId).collect(Collectors.toList());
         //根据能源ID获取所有能源信息
@@ -281,6 +284,9 @@ public class StandingbookServiceImpl implements StandingbookService {
 
         //根据typeIds获取能源ID关联
         List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS = standingbookTmplDaqAttrMapper.selectEnergyMapping(sbTypeIds);
+        if (standingbookTmplDaqAttrDOS.isEmpty()){
+            return;
+        }
         //获取所有能源ID
         List<Long> energyIds = standingbookTmplDaqAttrDOS.stream().map(StandingbookTmplDaqAttrDO::getEnergyId).collect(Collectors.toList());
         //根据能源ID获取所有能源信息
