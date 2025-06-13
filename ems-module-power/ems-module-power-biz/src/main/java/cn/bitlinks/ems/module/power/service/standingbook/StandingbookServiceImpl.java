@@ -218,7 +218,9 @@ public class StandingbookServiceImpl implements StandingbookService {
         //添加能源信息
         result.forEach(sb -> {
             sb.setEnergyId(energyTypeIdMap.get(sb.getTypeId()));
-            sb.setEnergyName(energyMap.get(energyTypeIdMap.get(sb.getTypeId())).getEnergyName());
+            if(energyMap.get(energyTypeIdMap.get(sb.getTypeId()))!=null){
+                sb.setEnergyName(energyMap.get(energyTypeIdMap.get(sb.getTypeId())).getEnergyName());
+            }
         });
 
         return result;
