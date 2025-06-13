@@ -45,7 +45,7 @@ public class PartitionService {
     private JdbcTemplate jdbcTemplate;
 
     @PostConstruct
-    public void initMaxPartitions(){
+    public void initMaxPartitions() {
         // redis存储的最大的分区时间
         String maxPartitionMinutesAggKey = String.format(REDIS_KEY_MAX_PARTITION_TIME, env, MINUTE_AGGREGATE_DATA_TB_NAME);
         stringRedisTemplate.opsForValue().set(maxPartitionMinutesAggKey, maxPartitionMinutesAgg);
@@ -80,41 +80,29 @@ public class PartitionService {
             return;
         }
 
-        String disableDynamicPartitionSql = "ALTER TABLE " + tableName + " SET (\"dynamic_partition.enable\" = \"false\")";
-        String addPartitionsSql = buildAddPartitionsSQL(tableName, partitionDayRanges); // 构建 ADD PARTITIONS 语句
-        String enableDynamicPartitionSql = "ALTER TABLE " + tableName + " SET (\"dynamic_partition.enable\" = \"true\")";
         try {
-
             // 分开执行
-            jdbcTemplate.execute(disableDynamicPartitionSql);
-            jdbcTemplate.execute(addPartitionsSql);
-            jdbcTemplate.execute(enableDynamicPartitionSql);
+            jdbcTemplate.execute(String.format(DISABLE_DYNAMIC_PARTITION_SQL, tableName));
+            batchAddPartitionsSQL(tableName, partitionDayRanges);
+            jdbcTemplate.execute(String.format(ENABLE_DYNAMIC_PARTITION_SQL, tableName));
             // 把手动维护的分区维护到redis之中
             savePartitions(tableName, partitionNames);
         } catch (Exception ex) {
             log.error("[StarRocksDDL] 创建分区执行 SQL 失败", ex);
-            jdbcTemplate.execute(enableDynamicPartitionSql);
+            jdbcTemplate.execute(String.format(ENABLE_DYNAMIC_PARTITION_SQL, tableName));
             throw new RuntimeException("执行 StarRocks DDL 失败: " + ex.getMessage(), ex);
         }
 
 
     }
 
-    public String buildAddPartitionsSQL(String tableName, List<PartitionDayRange> partitionDayRanges) {
-        StringBuilder sqlBuilder = new StringBuilder();
+    private void batchAddPartitionsSQL(String tableName, List<PartitionDayRange> partitionDayRanges) {
         for (PartitionDayRange p : partitionDayRanges) {
             String partitionSql = String.format(
-                    "ALTER TABLE %s ADD PARTITION %s VALUES [(\"%s\"), (\"%s\"));",
-                    tableName,
-                    p.getPartitionName(),
-                    p.getStartTime(),
-                    p.getEndTime()
-            );
-            sqlBuilder.append(partitionSql).append("\n"); // 每条 SQL 之后加换行方便日志查看
+                    ADD_PARTITIONS_SQL,
+                    tableName, p.getPartitionName(), p.getStartTime(), p.getEndTime());
+            jdbcTemplate.execute(partitionSql);
         }
-
-        return sqlBuilder.toString();
-
     }
 
 
