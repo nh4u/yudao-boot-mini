@@ -112,4 +112,6 @@ public interface StandingbookService {
      * @param createReqVO
      */
     void updAssociationMeasurementInstrument(MeasurementVirtualAssociationSaveReqVO createReqVO);
+
+    void sbOtherField(List<StandingbookRespVO> respVOS);
 }

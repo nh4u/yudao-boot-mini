@@ -70,7 +70,10 @@ public class StandingbookController {
     //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")
     public CommonResult<List<StandingbookRespVO>> getStandingbookPage(@Valid @RequestBody Map<String, String> pageReqVO) {
         List<StandingbookDO> list = standingbookService.getStandingbookList(pageReqVO);
-        return success(BeanUtils.toBean(list, StandingbookRespVO.class));
+        //补充能源信息
+        List<StandingbookRespVO> respVOS = BeanUtils.toBean(list, StandingbookRespVO.class);
+        standingbookService.sbOtherField(respVOS);
+        return success(respVOS);
     }
 
     @PostMapping("/listSbAllWithAssociations")
