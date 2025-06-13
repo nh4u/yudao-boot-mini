@@ -43,6 +43,18 @@ public interface CommonConstants {
      * redis 手动维护的历史分区列表
      */
     String REDIS_KEY_HIS_PARTITION_LIST = "his-partition-list:%s:%s" ;
+    /**
+     * 分区关闭动态
+     */
+    String DISABLE_DYNAMIC_PARTITION_SQL = "ALTER TABLE %s SET (\"dynamic_partition.enable\" = \"false\")";
+    /**
+     * 添加分区语句
+     */
+    String ADD_PARTITIONS_SQL = "ALTER TABLE %s ADD PARTITION %s VALUES [(\"%s\"), (\"%s\"))";
+    /**
+     * 分区开启动态
+     */
+    String ENABLE_DYNAMIC_PARTITION_SQL = "ALTER TABLE %s SET (\"dynamic_partition.enable\" = \"true\")";
 }
 
 
