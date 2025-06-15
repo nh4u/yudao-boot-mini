@@ -1,10 +1,10 @@
 CREATE TABLE usage_cost (
     standingbook_id BIGINT NOT NULL COMMENT '台账ID',
     aggregate_time DATETIME NOT NULL COMMENT '生成时间',
-    current_usage DECIMAL(20, 10) NOT NULL DEFAULT '0.0' COMMENT '当前用量',
-    total_usage DECIMAL(20, 10) NOT NULL DEFAULT '0.0' COMMENT '截至当前总用量',
-    cost DECIMAL(20, 10) NOT NULL DEFAULT '0.0' COMMENT '成本',
-    standard_coal_equivalent DECIMAL(20, 10) NOT NULL DEFAULT '0.0' COMMENT '折标煤',
+    current_usage DECIMAL(30, 10) NOT NULL DEFAULT '0.0' COMMENT '当前用量',
+    total_usage DECIMAL(30, 10) NOT NULL DEFAULT '0.0' COMMENT '截至当前总用量',
+    cost DECIMAL(30, 10) NOT NULL DEFAULT '0.0' COMMENT '成本',
+    standard_coal_equivalent DECIMAL(30, 10) NOT NULL DEFAULT '0.0' COMMENT '折标煤',
     energy_id BIGINT NOT NULL COMMENT '能源类型ID'
 )
  UNIQUE KEY (standingbook_id, aggregate_time)
