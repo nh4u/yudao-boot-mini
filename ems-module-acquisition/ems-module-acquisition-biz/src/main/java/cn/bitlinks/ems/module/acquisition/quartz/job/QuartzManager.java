@@ -11,7 +11,6 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.Objects;
 
-import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_LOCAL;
 
 /**
  *
@@ -135,13 +134,5 @@ public class QuartzManager {
         return scheduleBuilder;
     }
 
-    public void init() throws SchedulerException, InterruptedException {
-        // 本地环境不初始化
-        if (SPRING_PROFILES_ACTIVE_LOCAL.equals(env)) {
-            return;
-        }
-        Thread.sleep(5000L);
-        scheduler.start();
-    }
 
 }
