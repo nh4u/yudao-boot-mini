@@ -403,25 +403,31 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         } else {
             //综合查看
             //根据日期计算最大 / 最小 / 平均 / 总和
-            Map<String, StatsResult> statsResultMap = CalculateUtil.calculateGroupStats(
+             StatsResult statsResult = CalculateUtil.calculateStats(
                     usageCostDataList,
-                    UsageCostData::getTime,
                     UsageCostData::getTotalStandardCoalEquivalent);
 
             List<StatisticsChartYInfoV2VO> ydata = new ArrayList<>();
             xdata.forEach(s -> {
-                StatsResult statsResult = statsResultMap.get(s);
                 StatisticsChartYInfoV2VO<StandardCoalChartYData> yInfoV2VO = new StatisticsChartYInfoV2VO<>();
                 StandardCoalChartYData dataV2VO = new StandardCoalChartYData();
                 if (Objects.nonNull(statsResult)) {
                     dataV2VO.setAvg(dealBigDecimalScale(statsResult.getAvg(),DEFAULT_SCALE));
                     dataV2VO.setMax(dealBigDecimalScale(statsResult.getMax(),DEFAULT_SCALE));
                     dataV2VO.setMin(dealBigDecimalScale(statsResult.getMin(),DEFAULT_SCALE));
-                    dataV2VO.setStandardCoal(dealBigDecimalScale(statsResult.getSum(),DEFAULT_SCALE));
+                    dataV2VO.setSum(dealBigDecimalScale(statsResult.getSum(),DEFAULT_SCALE));
+
+                    List<UsageCostData> collect = usageCostDataList.stream().filter(u -> u.getTime().equals(s)).collect(Collectors.toList());
+                    if (CollectionUtil.isNotEmpty(collect)){
+                        dataV2VO.setStandardCoal(dealBigDecimalScale(collect.get(0).getTotalStandardCoalEquivalent(),DEFAULT_SCALE));
+                    }else {
+                        dataV2VO.setStandardCoal(BigDecimal.ZERO);
+                    }
                 } else {
                     dataV2VO.setAvg(BigDecimal.ZERO);
                     dataV2VO.setMax(BigDecimal.ZERO);
                     dataV2VO.setMin(BigDecimal.ZERO);
+                    dataV2VO.setSum(BigDecimal.ZERO);
                     dataV2VO.setStandardCoal(BigDecimal.ZERO);
                 }
                 yInfoV2VO.setData(Collections.singletonList(dataV2VO));
