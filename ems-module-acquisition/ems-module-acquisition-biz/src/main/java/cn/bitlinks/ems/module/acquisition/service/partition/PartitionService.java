@@ -12,6 +12,7 @@ import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -21,8 +22,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.REDIS_KEY_HIS_PARTITION_LIST;
-import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.REDIS_KEY_MAX_PARTITION_TIME;
+import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.REDIS_MAX_PARTITION_NOT_EXIST;
 
 @Service
@@ -37,8 +37,21 @@ public class PartitionService {
     private static final DateTimeFormatter pureDateFormatter = DatePattern.PURE_DATE_FORMATTER;
     @Value("${spring.profiles.active}")
     private String env;
+    @Value("${ems.max-partition.minutes-agg}")
+    private String maxPartitionMinutesAgg;
+    @Value("${ems.max-partition.usage-cost}")
+    private String maxPartitionUsageCost;
     @Resource
     private JdbcTemplate jdbcTemplate;
+
+    @PostConstruct
+    public void initMaxPartitions() {
+        // redis存储的最大的分区时间
+        String maxPartitionMinutesAggKey = String.format(REDIS_KEY_MAX_PARTITION_TIME, env, MINUTE_AGGREGATE_DATA_TB_NAME);
+        stringRedisTemplate.opsForValue().set(maxPartitionMinutesAggKey, maxPartitionMinutesAgg);
+        String maxPartitionUsageCostKey = String.format(REDIS_KEY_MAX_PARTITION_TIME, env, USAGE_COST_TB_NAME);
+        stringRedisTemplate.opsForValue().set(maxPartitionUsageCostKey, maxPartitionUsageCost);
+    }
 
     /**
      * 创建分区
@@ -67,41 +80,29 @@ public class PartitionService {
             return;
         }
 
-        String disableDynamicPartitionSql = "ALTER TABLE " + tableName + " SET (\"dynamic_partition.enable\" = \"false\")";
-        String addPartitionsSql = buildAddPartitionsSQL(tableName, partitionDayRanges); // 构建 ADD PARTITIONS 语句
-        String enableDynamicPartitionSql = "ALTER TABLE " + tableName + " SET (\"dynamic_partition.enable\" = \"true\")";
         try {
-
             // 分开执行
-            jdbcTemplate.execute(disableDynamicPartitionSql);
-            jdbcTemplate.execute(addPartitionsSql);
-            jdbcTemplate.execute(enableDynamicPartitionSql);
+            jdbcTemplate.execute(String.format(DISABLE_DYNAMIC_PARTITION_SQL, tableName));
+            batchAddPartitionsSQL(tableName, partitionDayRanges);
+            jdbcTemplate.execute(String.format(ENABLE_DYNAMIC_PARTITION_SQL, tableName));
             // 把手动维护的分区维护到redis之中
             savePartitions(tableName, partitionNames);
         } catch (Exception ex) {
             log.error("[StarRocksDDL] 创建分区执行 SQL 失败", ex);
-            jdbcTemplate.execute(enableDynamicPartitionSql);
+            jdbcTemplate.execute(String.format(ENABLE_DYNAMIC_PARTITION_SQL, tableName));
             throw new RuntimeException("执行 StarRocks DDL 失败: " + ex.getMessage(), ex);
         }
 
 
     }
 
-    public String buildAddPartitionsSQL(String tableName, List<PartitionDayRange> partitionDayRanges) {
-        StringBuilder sqlBuilder = new StringBuilder();
+    private void batchAddPartitionsSQL(String tableName, List<PartitionDayRange> partitionDayRanges) {
         for (PartitionDayRange p : partitionDayRanges) {
             String partitionSql = String.format(
-                    "ALTER TABLE %s ADD PARTITION %s VALUES [(\"%s\"), (\"%s\"));",
-                    tableName,
-                    p.getPartitionName(),
-                    p.getStartTime(),
-                    p.getEndTime()
-            );
-            sqlBuilder.append(partitionSql).append("\n"); // 每条 SQL 之后加换行方便日志查看
+                    ADD_PARTITIONS_SQL,
+                    tableName, p.getPartitionName(), p.getStartTime(), p.getEndTime());
+            jdbcTemplate.execute(partitionSql);
         }
-
-        return sqlBuilder.toString();
-
     }
 
 
@@ -140,7 +141,7 @@ public class PartitionService {
         List<PartitionDayRange> result = new ArrayList<>();
 
         DateTime start = DateTime.of(Date.from(startDateTime.truncatedTo(ChronoUnit.DAYS).atZone(ZoneId.systemDefault()).toInstant()));
-        DateTime end = DateTime.of(Date.from(endDateTime.plusDays(1L).truncatedTo(ChronoUnit.DAYS).atZone(ZoneId.systemDefault()).toInstant()));
+        DateTime end = DateTime.of(Date.from(endDateTime.truncatedTo(ChronoUnit.DAYS).atZone(ZoneId.systemDefault()).toInstant()));
 
         DateRange range = DateUtil.range(start, end, DateField.DAY_OF_MONTH);
 

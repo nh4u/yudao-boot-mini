@@ -37,6 +37,14 @@ public interface StandingbookTmplDaqAttrMapper extends BaseMapperX<StandingbookT
     List<Long> selectSbTypeIdsByEnergyId(@Param("energyId") Long energyId);
 
     /**
+     * 根据多个能源ID查询能源相关的台账分类ids
+     *
+     * @param energyIds 能源id列表
+     * @return 台账分类ids
+     */
+    List<Long> selectSbTypeIdsByEnergyIds(@Param("energyIds") List<Long> energyIds);
+
+    /**
      * 查询分类能源关联关系
      * @param typeIds
      * @return

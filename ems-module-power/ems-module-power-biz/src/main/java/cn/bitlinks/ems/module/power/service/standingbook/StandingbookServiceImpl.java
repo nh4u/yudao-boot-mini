@@ -6,10 +6,8 @@ import cn.bitlinks.ems.module.acquisition.api.quartz.QuartzApi;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.AssociationData;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.MeasurementVirtualAssociationSaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookAssociationReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookEnergyTypeVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementdevice.MeasurementDeviceDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementvirtualassociation.MeasurementVirtualAssociationDO;
@@ -19,6 +17,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.acquisition.Stan
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
+import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.measurementassociation.MeasurementAssociationMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.measurementdevice.MeasurementDeviceMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.measurementvirtualassociation.MeasurementVirtualAssociationMapper;
@@ -91,6 +90,14 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Resource
     private StandingbookAcquisitionService standingbookAcquisitionService;
 
+    @Resource
+    @Lazy
+    private EnergyConfigurationMapper energyConfigurationMapper;
+
+    @Resource
+    @Lazy
+    private StandingbookService standingbookService;
+
     @Override
     public Long count(Long typeId) {
 
@@ -161,7 +168,6 @@ public class StandingbookServiceImpl implements StandingbookService {
             paramMap = new HashMap<>();
         }
         paramMap.put(SB_TYPE_ATTR_TOP_TYPE, reqVO.getTopType() + "");
-
         Long sbId = reqVO.getSbId();
 
         List<StandingbookDO> sbList = getStandingbookList(paramMap);
@@ -192,6 +198,32 @@ public class StandingbookServiceImpl implements StandingbookService {
         result.forEach(sb -> {
             sb.setStandingbookTypeId(typeMap.get(sb.getTypeId()).getId());
             sb.setStandingbookTypeName(typeMap.get(sb.getTypeId()).getName());
+        });
+
+        //根据typeIds获取能源ID关联
+        List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS = standingbookTmplDaqAttrMapper.selectEnergyMapping(sbTypeIds);
+        if (standingbookTmplDaqAttrDOS.isEmpty()){
+            return result;
+        }
+        //获取所有能源ID
+        List<Long> energyIds = standingbookTmplDaqAttrDOS.stream().map(StandingbookTmplDaqAttrDO::getEnergyId).collect(Collectors.toList());
+        //根据能源ID获取所有能源信息
+        List<EnergyConfigurationDO> energyConfigurations = energyConfigurationMapper
+                .selectList(new LambdaQueryWrapper<EnergyConfigurationDO>()
+                        .in(EnergyConfigurationDO::getId, energyIds));
+        //能源ID打包成Map
+        Map<Long, EnergyConfigurationDO> energyMap = energyConfigurations
+                .stream()
+                .collect(Collectors.toMap(EnergyConfigurationDO::getId, energyConfigurationDO -> energyConfigurationDO));
+        //Map typeID 与 能源ID关联
+        Map<Long,Long> energyTypeIdMap = standingbookTmplDaqAttrDOS.stream().collect(Collectors.toMap(StandingbookTmplDaqAttrDO::getTypeId, StandingbookTmplDaqAttrDO::getEnergyId));
+
+        //添加能源信息
+        result.forEach(sb -> {
+            sb.setEnergyId(energyTypeIdMap.get(sb.getTypeId()));
+            if(energyMap.get(energyTypeIdMap.get(sb.getTypeId()))!=null){
+                sb.setEnergyName(energyMap.get(energyTypeIdMap.get(sb.getTypeId())).getEnergyName());
+            }
         });
 
         return result;
@@ -241,6 +273,41 @@ public class StandingbookServiceImpl implements StandingbookService {
         measurementVirtualAssociationMapper.insertBatch(toAddList);
     }
 
+    /**
+     * 其他补充属性
+     * @param respVOS
+     */
+    @Override
+    public void sbOtherField(List<StandingbookRespVO> respVOS) {
+        //根据respVOS 获取typeId 列表;
+        List<Long> sbTypeIds = respVOS.stream().map(StandingbookRespVO::getTypeId).collect(Collectors.toList());
+
+        //根据typeIds获取能源ID关联
+        List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS = standingbookTmplDaqAttrMapper.selectEnergyMapping(sbTypeIds);
+        if (standingbookTmplDaqAttrDOS.isEmpty()){
+            return;
+        }
+        //获取所有能源ID
+        List<Long> energyIds = standingbookTmplDaqAttrDOS.stream().map(StandingbookTmplDaqAttrDO::getEnergyId).collect(Collectors.toList());
+        //根据能源ID获取所有能源信息
+        List<EnergyConfigurationDO> energyConfigurations = energyConfigurationMapper
+                .selectList(new LambdaQueryWrapper<EnergyConfigurationDO>()
+                        .in(EnergyConfigurationDO::getId, energyIds));
+        //能源ID打包成Map
+        Map<Long, EnergyConfigurationDO> energyMap = energyConfigurations
+                .stream()
+                .collect(Collectors.toMap(EnergyConfigurationDO::getId, energyConfigurationDO -> energyConfigurationDO));
+        //Map typeID 与 能源ID关联
+        Map<Long,Long> energyTypeIdMap = standingbookTmplDaqAttrDOS.stream().collect(Collectors.toMap(StandingbookTmplDaqAttrDO::getTypeId, StandingbookTmplDaqAttrDO::getEnergyId));
+
+        //添加能源信息
+        respVOS.forEach(sb -> {
+            sb.setEnergyId(energyTypeIdMap.get(sb.getTypeId()));
+            if(energyMap.get(energyTypeIdMap.get(sb.getTypeId()))!=null){
+                sb.setEnergyName(energyMap.get(energyTypeIdMap.get(sb.getTypeId())).getEnergyName());
+            }
+        });
+    }
 
     @Override
     public List<StandingbookDO> getByTypeIds(List<Long> typeIds) {
@@ -502,7 +569,11 @@ public class StandingbookServiceImpl implements StandingbookService {
         String energy = pageReqVO.get(ATTR_ENERGY);
         List<Long> energyTypeIds = new ArrayList<>();
         if (StringUtils.isNotEmpty(energy)) {
-            energyTypeIds = standingbookTmplDaqAttrMapper.selectSbTypeIdsByEnergyId(Long.valueOf(energy));
+            //逗号分割的数据 转为Long类型列表
+            List<Long> energyIds = Arrays.stream(energy.split(StringPool.COMMA))
+                    .map(Long::valueOf)
+                    .collect(Collectors.toList());
+            energyTypeIds = standingbookTmplDaqAttrMapper.selectSbTypeIdsByEnergyIds(energyIds);
             if (CollUtil.isEmpty(energyTypeIds)) {
                 return Collections.emptyList();
             }

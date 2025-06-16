@@ -225,7 +225,7 @@ public class CalcUsageCostService {
                 usageCostDO.setAggregateTime(dto.getAggregateTime());
                 usageCostDO.setCost(cost);
                 usageCostDO.setStandardCoalEquivalent(coalNum);
-                usageCostDO.setTotalUsage(BigDecimal.ZERO);
+                usageCostDO.setTotalUsage(dto.getFullValue());
                 saveList.add(usageCostDO);
 
             });
@@ -281,8 +281,8 @@ public class CalcUsageCostService {
             return execute;
         } else if (energyTimeResultVO.getBillingMethod().equals(BillingMethod.TIME_SPAN_PRICE.getCode())) { //分时段计价
             PriceDetailDO priceDetailDO = priceDetailList.stream()
-                    .filter(pd -> pd.getPeriodStart().isBefore(queryTime.toLocalTime())
-                            && pd.getPeriodEnd().isAfter(queryTime.toLocalTime()))
+                    .filter(pd -> pd.getPeriodStart().compareTo(queryTime.toLocalTime()) <= 0
+                            && pd.getPeriodEnd().compareTo(queryTime.toLocalTime()) >= 0)
                     .findAny().orElse(null);
             if (Objects.isNull(priceDetailDO)) {
                 return BigDecimal.ZERO;
