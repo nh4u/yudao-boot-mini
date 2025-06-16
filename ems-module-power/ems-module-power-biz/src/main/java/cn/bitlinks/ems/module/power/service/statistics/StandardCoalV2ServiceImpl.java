@@ -656,7 +656,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
 
                     StandardCoalInfo info = new StandardCoalInfo();
                     info.setEnergyId(energy.getId());
-                    info.setEnergyName(energy.getName());
+                    info.setEnergyName(energy.getEnergyName());
 
                     List<StandardCoalInfoData> infoDataV2List = usageCostList.stream()
                             .map(usageCost -> new StandardCoalInfoData(

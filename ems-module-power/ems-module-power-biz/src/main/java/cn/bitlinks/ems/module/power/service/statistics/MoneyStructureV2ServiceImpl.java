@@ -446,7 +446,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
 
                     StructureInfo info = new StructureInfo();
                     info.setEnergyId(energy.getId());
-                    info.setEnergyName(energy.getName());
+                    info.setEnergyName(energy.getEnergyName());
 
                     List<StructureInfoData> structureDataList = usageCostList.stream()
                             .map(usageCost -> new StructureInfoData(

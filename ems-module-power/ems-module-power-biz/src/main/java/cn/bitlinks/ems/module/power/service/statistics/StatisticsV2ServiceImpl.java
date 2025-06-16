@@ -377,7 +377,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
                     StatisticsInfoV2 info = new StatisticsInfoV2();
                     info.setEnergyId(energy.getId());
-                    info.setEnergyName(energy.getName());
+                    info.setEnergyName(energy.getEnergyName());
 
 
                     List<StatisticInfoDataV2> infoDataV2List = usageCostList.stream()

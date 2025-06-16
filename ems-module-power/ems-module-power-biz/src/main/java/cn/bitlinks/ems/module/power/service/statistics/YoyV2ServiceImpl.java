@@ -240,7 +240,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
                     // 封装返回结果
                     YoyItemVO vo = new YoyItemVO();
                     vo.setEnergyId(energy.getId());
-                    vo.setEnergyName(energy.getName());
+                    vo.setEnergyName(energy.getEnergyName());
                     vo.setStatisticsRatioDataList(detailList);
                     vo.setSumNow(sumNow);
                     vo.setSumPrevious(sumPrevious);

@@ -450,7 +450,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
 
                     StructureInfo info = new StructureInfo();
                     info.setEnergyId(energy.getId());
-                    info.setEnergyName(energy.getName());
+                    info.setEnergyName(energy.getEnergyName());
 
                     List<StructureInfoData> structureDataList = usageCostList.stream()
                             .map(usageCost -> new StructureInfoData(
