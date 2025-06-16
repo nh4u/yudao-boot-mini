@@ -18,4 +18,5 @@ public class StandardCoalChartYData {
     private BigDecimal min;
     private BigDecimal standardCoal;
     private BigDecimal avg;
+    private BigDecimal sum;
 }
