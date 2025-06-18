@@ -2,6 +2,8 @@ package cn.bitlinks.ems.module.power.utils;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -76,4 +78,14 @@ public class CommonUtil {
 
         return headerList;
     }
+
+
+    public static BigDecimal dealBigDecimalScale(BigDecimal num, Integer scale) {
+        if (num != null) {
+            return num.setScale(scale, RoundingMode.HALF_UP);
+
+        }
+        return null;
+    }
+
 }

@@ -38,6 +38,8 @@ import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUt
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_STANDARD_COAL_STRUCTURE_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_STANDARD_COAL_STRUCTURE_TABLE;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
 
 /**
  * @Title: ydme-doublecarbon
@@ -448,7 +450,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
 
                     StructureInfo info = new StructureInfo();
                     info.setEnergyId(energy.getId());
-                    info.setEnergyName(energy.getName());
+                    info.setEnergyName(energy.getEnergyName());
 
                     List<StructureInfoData> structureDataList = usageCostList.stream()
                             .map(usageCost -> new StructureInfoData(
@@ -494,10 +496,22 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
 
             List<StructureInfoData> statisticsStructureDataList = structureInfo.getStructureInfoDataList();
             statisticsStructureDataList.forEach(s -> {
-                s.setProportion(getProportion(s.getNum(), sumMap.get(s.getDate())));
+                BigDecimal proportion = getProportion(s.getNum(), sumMap.get(s.getDate()));
+                s.setProportion(dealBigDecimalScale(proportion, DEFAULT_SCALE));
             });
 
-            structureInfo.setSumProportion(getProportion(structureInfo.getSumNum(), sumMap.get("sumNum")));
+            BigDecimal proportion = getProportion(structureInfo.getSumNum(), sumMap.get("sumNum"));
+            structureInfo.setSumProportion(dealBigDecimalScale(proportion, DEFAULT_SCALE));
+
+            // 保留有效数字
+            structureInfo.setSumNum(dealBigDecimalScale(structureInfo.getSumNum(),DEFAULT_SCALE));
+
+            statisticsStructureDataList = statisticsStructureDataList.stream().peek(s -> {
+                s.setProportion(dealBigDecimalScale(s.getProportion(), DEFAULT_SCALE));
+                s.setNum(dealBigDecimalScale(s.getNum(), DEFAULT_SCALE));
+            }).collect(Collectors.toList());
+
+            structureInfo.setStructureInfoDataList(statisticsStructureDataList);
         }
 
         return list;
@@ -759,8 +773,8 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
 
                     return new PieItemVO(
                             name,
-                            entry.getValue(),
-                            calculateProportion(entry.getValue(), total)
+                            dealBigDecimalScale(entry.getValue(), DEFAULT_SCALE),
+                            dealBigDecimalScale(calculateProportion(entry.getValue(), total), DEFAULT_SCALE)
                     );
                 })
                 .collect(Collectors.toList());

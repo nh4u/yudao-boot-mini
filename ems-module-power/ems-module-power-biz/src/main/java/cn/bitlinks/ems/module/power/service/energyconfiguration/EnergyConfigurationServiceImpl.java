@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.mybatis.core.query.MPJLambdaWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
@@ -586,13 +587,17 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         if(CollectionUtil.isEmpty(energyIds) && Objects.isNull(energyClassify)){
             return Collections.emptyList();
         }
-        LambdaQueryWrapper<EnergyConfigurationDO> wrapper = new LambdaQueryWrapper<>();
+        MPJLambdaWrapperX<EnergyConfigurationDO> wrapper = new MPJLambdaWrapperX<>();
         if(CollectionUtil.isNotEmpty(energyIds)){
             wrapper.in(EnergyConfigurationDO::getId, energyIds);
-            return energyConfigurationMapper.selectList(wrapper);
+        }else {
+            wrapper.eq(EnergyConfigurationDO::getEnergyClassify, energyClassify);
         }
-        wrapper.eq(EnergyConfigurationDO::getEnergyClassify, energyClassify);
-        return energyConfigurationMapper.selectList(wrapper);
+        wrapper.select("t.id","t.group_id","t.CODE","t.energy_classify","t.energy_icon","t.factor","t.create_time","t.update_time","t.creator","t.updater","t.deleted");
+        wrapper.select("IF(t1.unit is not null,CONCAT( t.energy_name, '(', t1.unit, ')' ),t.energy_name) AS energy_name ");
+        wrapper.leftJoin(EnergyParametersDO.class, EnergyParametersDO::getEnergyId, EnergyConfigurationDO::getId);
+        wrapper.eq(EnergyParametersDO::getUsage,1);
+        return energyConfigurationMapper.selectJoinList(EnergyConfigurationDO.class, wrapper);
     }
 
     @Override
@@ -606,3 +611,4 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         }
     }
 }
+

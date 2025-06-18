@@ -37,6 +37,7 @@ public interface CommonConstants {
 
     Integer YEAR = 366;
 
+    Integer DEFAULT_SCALE = 2;
 
     /**
      * 计量器具id

@@ -270,6 +270,44 @@ public class CalculateUtil {
         return result;
     }
 
+
+    /**
+     * 通用统计方法
+     * @param list 原始数据列表
+     * @param valueExtractor 参与统计字段提取函数（必须是 BigDecimal）
+     * @param <T> 数据类型
+     * @return 原始数据列表 对应的 Stats 统计信息
+     */
+    public static <T> StatsResult calculateStats(List<T> list,
+                                                 Function<T, BigDecimal> valueExtractor) {
+
+        List<BigDecimal> values = list.stream()
+                .map(valueExtractor)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        BigDecimal sum = values.stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal avg = values.isEmpty() ? BigDecimal.ZERO :
+                sum.divide(BigDecimal.valueOf(values.size()), 2, RoundingMode.HALF_UP);
+
+        BigDecimal max = values.stream()
+                .max(Comparator.naturalOrder())
+                .orElse(BigDecimal.ZERO);
+
+        BigDecimal min = values.stream()
+                .min(Comparator.naturalOrder())
+                .orElse(BigDecimal.ZERO);
+
+        StatsResult statsResult = new StatsResult();
+        statsResult.setAvg(avg);
+        statsResult.setSum(sum);
+        statsResult.setMax(max);
+        statsResult.setMin(min);
+
+        return statsResult;
+    }
 }
 
 
