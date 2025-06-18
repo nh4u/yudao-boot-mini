@@ -72,4 +72,5 @@ public interface LabelConfigService {
 
 
     List<LabelConfigDO> getByIds(List<Long> ids);
+    List<LabelConfigDO> getByParentId(List<Long> ids);
 }
