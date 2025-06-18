@@ -150,7 +150,9 @@
         FROM
         usage_cost
         WHERE
-        aggregate_time BETWEEN #{startDate} AND #{endDate}
+
+        aggregate_time &gt; #{startDate}
+        AND aggregate_time &lt;= #{endDate}
         AND standingbook_id IN
         <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
             #{item}
@@ -166,7 +168,8 @@
         FROM
         usage_cost
         WHERE
-        aggregate_time BETWEEN #{startDate} AND #{endDate}
+        aggregate_time &gt; #{startDate}
+        AND aggregate_time &lt;= #{endDate}
         AND standingbook_id IN
         <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
             #{item}
@@ -182,7 +185,9 @@
         FROM
         usage_cost
         WHERE
-        aggregate_time BETWEEN #{startDate} AND #{endDate}
+        aggregate_time &gt; #{startDate}
+        AND aggregate_time &lt;= #{endDate}
+
         AND standingbook_id IN
         <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
             #{item}
