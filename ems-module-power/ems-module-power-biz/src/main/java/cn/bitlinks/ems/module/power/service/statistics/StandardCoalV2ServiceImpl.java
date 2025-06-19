@@ -194,6 +194,33 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
 
         resultVO.setStatisticsInfoList(statisticsInfoList);
 
+        statisticsInfoList.forEach(l -> {
+
+            List<StandardCoalInfoData> newList = new ArrayList<>();
+            List<StandardCoalInfoData> oldList = l.getStandardCoalInfoDataList();
+            if (tableHeader.size() != oldList.size()) {
+                Map<String, List<StandardCoalInfoData>> dateMap = oldList.stream()
+                        .collect(Collectors.groupingBy(StandardCoalInfoData::getDate));
+
+                tableHeader.forEach(date -> {
+                    List<StandardCoalInfoData> standardCoalInfoDataList = dateMap.get(date);
+                    if (standardCoalInfoDataList == null) {
+                        StandardCoalInfoData standardCoalInfoData = new StandardCoalInfoData();
+                        standardCoalInfoData.setDate(date);
+                        standardCoalInfoData.setStandardCoal(BigDecimal.ZERO);
+                        standardCoalInfoData.setConsumption(BigDecimal.ZERO);
+                        newList.add(standardCoalInfoData);
+                    } else {
+                        newList.add(standardCoalInfoDataList.get(0));
+                    }
+                });
+            }
+
+            l.setStandardCoalInfoDataList(newList);
+
+        });
+
+
         // 获取数据更新时间
         LocalDateTime lastTime = usageCostService.getLastTime(
                 paramVO,
@@ -403,7 +430,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         } else {
             //综合查看
             //根据日期计算最大 / 最小 / 平均 / 总和
-             StatsResult statsResult = CalculateUtil.calculateStats(
+            StatsResult statsResult = CalculateUtil.calculateStats(
                     usageCostDataList,
                     UsageCostData::getTotalStandardCoalEquivalent);
 
@@ -412,15 +439,15 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 StatisticsChartYInfoV2VO<StandardCoalChartYData> yInfoV2VO = new StatisticsChartYInfoV2VO<>();
                 StandardCoalChartYData dataV2VO = new StandardCoalChartYData();
                 if (Objects.nonNull(statsResult)) {
-                    dataV2VO.setAvg(dealBigDecimalScale(statsResult.getAvg(),DEFAULT_SCALE));
-                    dataV2VO.setMax(dealBigDecimalScale(statsResult.getMax(),DEFAULT_SCALE));
-                    dataV2VO.setMin(dealBigDecimalScale(statsResult.getMin(),DEFAULT_SCALE));
-                    dataV2VO.setSum(dealBigDecimalScale(statsResult.getSum(),DEFAULT_SCALE));
+                    dataV2VO.setAvg(dealBigDecimalScale(statsResult.getAvg(), DEFAULT_SCALE));
+                    dataV2VO.setMax(dealBigDecimalScale(statsResult.getMax(), DEFAULT_SCALE));
+                    dataV2VO.setMin(dealBigDecimalScale(statsResult.getMin(), DEFAULT_SCALE));
+                    dataV2VO.setSum(dealBigDecimalScale(statsResult.getSum(), DEFAULT_SCALE));
 
                     List<UsageCostData> collect = usageCostDataList.stream().filter(u -> u.getTime().equals(s)).collect(Collectors.toList());
-                    if (CollectionUtil.isNotEmpty(collect)){
-                        dataV2VO.setStandardCoal(dealBigDecimalScale(collect.get(0).getTotalStandardCoalEquivalent(),DEFAULT_SCALE));
-                    }else {
+                    if (CollectionUtil.isNotEmpty(collect)) {
+                        dataV2VO.setStandardCoal(dealBigDecimalScale(collect.get(0).getTotalStandardCoalEquivalent(), DEFAULT_SCALE));
+                    } else {
                         dataV2VO.setStandardCoal(BigDecimal.ZERO);
                     }
                 } else {
@@ -687,6 +714,8 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                         i.setStandardCoal(dealBigDecimalScale(i.getStandardCoal(), DEFAULT_SCALE));
                         i.setConsumption(dealBigDecimalScale(i.getConsumption(), DEFAULT_SCALE));
                     }).collect(Collectors.toList());
+
+
                     info.setStandardCoalInfoDataList(infoDataV2List);
 
                     info.setSumEnergyConsumption(dealBigDecimalScale(sumEnergyConsumption, DEFAULT_SCALE));
