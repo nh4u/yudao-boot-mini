@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
+
 
 /**
  * @author wangl
@@ -55,6 +57,11 @@ public class StatisticsCommonService {
     private static final String CHILD_LABEL_REGEX_PREFIX = "^%s";
     private static final String CHILD_LABEL_REGEX_SUFFIX = "$";
     private static final String CHILD_LABEL_REGEX_ADD = ",\\d+";
+
+    //递归最大深度，目前标签支持5层，递归不包含顶层递归，所以最多是4层，设置5层为了扩宽
+    private static final Integer MAX_DEPTH = 5;
+
+    private static final Map<String, Pattern> PATTERN_CACHE = new ConcurrentHashMap<>();
 
 
     /**
@@ -155,12 +162,11 @@ public class StatisticsCommonService {
     private static List<StandingbookLabelInfoDO> filterStandingbookLabelInfoDO(List<StandingbookLabelInfoDO> byLabelNames, Set<String> childLabelValues, String add) {
 
         List<StandingbookLabelInfoDO> result = new ArrayList<>();
-        if (CollUtil.isEmpty(byLabelNames) || CollUtil.isEmpty(childLabelValues)) {
+        if (CollUtil.isEmpty(byLabelNames) || CollUtil.isEmpty(childLabelValues) || add.length() > MAX_DEPTH * CHILD_LABEL_REGEX_ADD.length()) {
             return result;
         }
 
         Map<String, List<StandingbookLabelInfoDO>> collect = byLabelNames.stream().collect(Collectors.groupingBy(StandingbookLabelInfoDO::getValue));
-        Set<String> childLabelList = new HashSet<>();
         List<StandingbookLabelInfoDO> next = new ArrayList<>();
         Set<String> has = new HashSet<>();
         childLabelValues.forEach(childLabel -> {
@@ -170,8 +176,7 @@ public class StatisticsCommonService {
                 has.add(childLabel);
             }else {
                 collect.forEach((k, v) -> {
-                    String format = String.format(CHILD_LABEL_REGEX_PREFIX, childLabel) + add + CHILD_LABEL_REGEX_SUFFIX;
-                    if (k.matches(format)) {
+                    if (matchesCachedRegex(k, childLabel, add)) {
                         result.addAll(v);
                         has.add(k);
 
@@ -183,13 +188,11 @@ public class StatisticsCommonService {
 
         if(CollUtil.isEmpty(has) && CollUtil.isEmpty(result)){
             next.addAll(byLabelNames);
-            childLabelList.addAll(childLabelValues);
         }else {
 
             List<StandingbookLabelInfoDO> nextList = collect.entrySet()
                     .stream()
                     .filter(entry -> has.stream().noneMatch(prefix -> entry.getKey().startsWith(prefix)))
-                    .peek(entry -> childLabelList.add(entry.getKey()))
                     .flatMap(entry -> entry.getValue().stream())
                     .collect(Collectors.toList());
             next.addAll(nextList);
@@ -201,15 +204,24 @@ public class StatisticsCommonService {
     }
 
 
+    private static boolean matchesCachedRegex(String key, String childLabel, String add) {
+        String regexKey = childLabel + add; // 缓存键：标签+递归层级标识
+        return PATTERN_CACHE
+                .computeIfAbsent(regexKey, k -> Pattern.compile(
+                        String.format(CHILD_LABEL_REGEX_PREFIX, childLabel) + add + CHILD_LABEL_REGEX_SUFFIX
+                ))
+                .matcher(key)
+                .matches();
+    }
 
 
 
     public static void main(String[] args) {
         List<StandingbookLabelInfoDO> byLabelNames = new ArrayList<>();
         Set<String> childLabelValues = new HashSet<>();
-        childLabelValues.add("2");
-        //childLabelValues.add("2,897");
-        //childLabelValues.add("2,896");
+        //childLabelValues.add("2");
+        childLabelValues.add("2,897");
+        childLabelValues.add("2,896");
 
         childLabelValues.add("3,897");
 
@@ -236,7 +248,7 @@ public class StatisticsCommonService {
         byLabelNames.add(infoDO2);
         byLabelNames.add(infoDO3);
         byLabelNames.add(infoDO4);
-        //byLabelNames.add(infoDO5);
+       // byLabelNames.add(infoDO5);
         byLabelNames.add(infoDO6);
         byLabelNames.add(infoDO7);
         byLabelNames.add(infoDO8);
