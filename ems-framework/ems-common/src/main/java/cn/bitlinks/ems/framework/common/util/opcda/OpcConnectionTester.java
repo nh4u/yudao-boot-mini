@@ -132,7 +132,7 @@ public class OpcConnectionTester {
     }
 
     private static boolean retryOperation(RetryableOperation operation, int retryCount) {
-        for (int i = 0; i <= retryCount; i++) {
+        for (int i = 0; i <= retryCount-1; i++) {
             try {
                 if (operation.execute()) {
                     log.info("OPC连接测试成功 (第 {} 次尝试)", i + 1);
@@ -149,7 +149,7 @@ public class OpcConnectionTester {
                 return false;
             }
         }
-        log.error("OPC连接测试失败，重试 {} 次后仍失败", retryCount + 1);
+        log.error("OPC连接测试失败，重试 {} 次后仍失败", retryCount);
         return false;
     }
 
