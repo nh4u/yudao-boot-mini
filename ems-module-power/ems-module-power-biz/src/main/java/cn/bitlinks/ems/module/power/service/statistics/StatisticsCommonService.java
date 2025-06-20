@@ -4,22 +4,28 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookEnergyTypeVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
+import cn.bitlinks.ems.module.power.dal.mysql.measurementassociation.MeasurementAssociationMapper;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
@@ -29,6 +35,8 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
@@ -36,6 +44,7 @@ import cn.hutool.core.util.StrUtil;
  * @date 2025年05月09日 10:10
  */
 @Service
+@Slf4j
 @Validated
 public class StatisticsCommonService {
 
@@ -50,6 +59,9 @@ public class StatisticsCommonService {
 
     @Resource
     private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
+
+    @Resource
+    private MeasurementAssociationMapper measurementAssociationMapper;
 
     @Resource
     private StandingbookService standingbookService;
@@ -133,7 +145,6 @@ public class StatisticsCommonService {
         //标签也可能关联重点设备，需要去除重点设备ID
         List<StandingbookLabelInfoDO> byLabelNames = standingbookLabelInfoService.getByLabelNames(Collections.singletonList(topLabel));
         Set<String> childIds = new HashSet<>();
-        List<StandingbookLabelInfoDO> labelInfoDOList = new ArrayList<>();
         if (StrUtil.isNotBlank(topLabel) && StrUtil.isBlank(childLabels)) {
             String topId = topLabel.split("_")[1];
             List<LabelConfigDO> childId = labelConfigService.getByParentId(Collections.singletonList(Long.valueOf(topId)));
@@ -152,13 +163,20 @@ public class StatisticsCommonService {
                     return childIds.stream().anyMatch(value::startsWith);
                 })
                 .collect(Collectors.toList());
-
-        return filterStandingbookLabelInfoDO(standingbookLabelInfoList, childIds, CHILD_LABEL_REGEX_ADD);
+        List<StandingbookLabelInfoDO> standingbookLabelInfoDOS = filterStandingbookLabelInfoDO(standingbookLabelInfoList, childIds, CHILD_LABEL_REGEX_ADD);
+        log.info("根据标签查询的计量器具数据：top:{}, childLabels:{}, 计量器具：{}", topLabel, childLabels, JSONUtil.toJsonStr(standingbookLabelInfoDOS));
+        return standingbookLabelInfoDOS;
     }
 
 
-
-
+    /**
+     * 获取标签关联的计量器具，当当前标签没有计量器具时则获取下一级所有的计量器具，以此类推
+     *
+     * @param byLabelNames
+     * @param childLabelValues
+     * @param add
+     * @return
+     */
     private static List<StandingbookLabelInfoDO> filterStandingbookLabelInfoDO(List<StandingbookLabelInfoDO> byLabelNames, Set<String> childLabelValues, String add) {
 
         List<StandingbookLabelInfoDO> result = new ArrayList<>();
@@ -174,7 +192,7 @@ public class StatisticsCommonService {
             if (collect.containsKey(childLabel)) {
                 result.addAll(collect.get(childLabel));
                 has.add(childLabel);
-            }else {
+            } else {
                 collect.forEach((k, v) -> {
                     if (matchesCachedRegex(k, childLabel, add)) {
                         result.addAll(v);
@@ -186,9 +204,9 @@ public class StatisticsCommonService {
             }
         });
 
-        if(CollUtil.isEmpty(has) && CollUtil.isEmpty(result)){
+        if (CollUtil.isEmpty(has) && CollUtil.isEmpty(result)) {
             next.addAll(byLabelNames);
-        }else {
+        } else {
 
             List<StandingbookLabelInfoDO> nextList = collect.entrySet()
                     .stream()
@@ -215,9 +233,23 @@ public class StatisticsCommonService {
     }
 
 
+    /**
+     * 根据筛选条件筛选能源ID
+     *
+     * @return
+     */
+    public List<Long> getEnergyByStandingbookIds(List<Long> standingbookIds) {
+
+        List<StandingbookDO> standingbookList = standingbookService.getByStandingbookIds(standingbookIds);
+        List<Long> typeIds = standingbookList.stream().map(StandingbookDO::getTypeId).collect(Collectors.toList());
+        List<StandingbookTmplDaqAttrDO> tmplList = standingbookTmplDaqAttrService.getByTypeIds(typeIds);
+
+        return tmplList.stream().map(StandingbookTmplDaqAttrDO::getEnergyId).collect(Collectors.toList());
+    }
+
 
     public static void main(String[] args) {
-        List<StandingbookLabelInfoDO> byLabelNames = new ArrayList<>();
+     /*   List<StandingbookLabelInfoDO> byLabelNames = new ArrayList<>();
         Set<String> childLabelValues = new HashSet<>();
         //childLabelValues.add("2");
         childLabelValues.add("2,897");
@@ -264,22 +296,158 @@ public class StatisticsCommonService {
         List<StandingbookLabelInfoDO> tt = filterStandingbookLabelInfoDO(standingbookLabelInfoList, childLabelValues, CHILD_LABEL_REGEX_ADD);
         tt.forEach(a -> {
             System.out.println(a.getValue());
+        });*/
+
+
+        List<MeasurementAssociationDO> associations = Arrays.asList(
+                new MeasurementAssociationDO(90L, 1L, 2L),
+                new MeasurementAssociationDO(91L, 2L, 3L),
+                new MeasurementAssociationDO(92L, 3L, 4L), // 循环
+                new MeasurementAssociationDO(93L, 4L, 5L),
+                new MeasurementAssociationDO(94L, 6L, 7L),
+                new MeasurementAssociationDO(94L, 7L, 3L)
+        );
+
+        Map<Long, StandingbookEnergyTypeVO> energyMap = new HashMap<>();
+        energyMap.put(1L, new StandingbookEnergyTypeVO(1L, 2L, 100L)); // 电
+        energyMap.put(2L, new StandingbookEnergyTypeVO(2L, 2L, 100L)); // 电
+        energyMap.put(3L, new StandingbookEnergyTypeVO(3L, 2L, 100L)); // 电
+        energyMap.put(4L, new StandingbookEnergyTypeVO(4L, 2L, 200L)); // 水
+        energyMap.put(5L, new StandingbookEnergyTypeVO(5L, 2L, 300L));
+        energyMap.put(6L, new StandingbookEnergyTypeVO(6L, 2L, 400L)); // 能源不同，6 是根节点
+        energyMap.put(7L, new StandingbookEnergyTypeVO(7L, 2L, 100L)); // 能源不同，6 是根节点
+
+        Set<Long> allNodes = new HashSet<>(energyMap.keySet());
+        Map<Long, Set<Long>> memo = new HashMap<>();
+        Set<Long> finalRoots = new HashSet<>();
+
+
+        // 构建下级 -> 上级映射
+        Map<Long, Set<Long>> childToParents = new HashMap<>();
+        for (MeasurementAssociationDO assoc : associations) {
+            childToParents.computeIfAbsent(assoc.getMeasurementId(), k -> new HashSet<>()).add(assoc.getMeasurementInstrumentId());
+        }
+        for (Long node : allNodes) {
+            Set<Long> roots = findRoot(node, childToParents, energyMap, new HashSet<>(), memo);
+            finalRoots.addAll(roots);
+        }
+
+        System.out.println("根节点: " + finalRoots);
+
+
+        Map<Long, Set<Long>> energyToRoots = new HashMap<>(); // 能源ID -> 根节点集合
+        //Map<Long, Set<Long>> memo = new HashMap<>();
+
+        for (Long node : energyMap.keySet()) {
+            Set<Long> roots = findRoot(node, childToParents, energyMap, new HashSet<>(), memo);
+            StandingbookEnergyTypeVO standingbookEnergyTypeVO = energyMap.get(node);
+            energyToRoots.computeIfAbsent(standingbookEnergyTypeVO.getEnergyId(), k -> new HashSet<>()).addAll(roots);
+        }
+
+        // 打印每个能源类型对应的根节点
+        energyToRoots.forEach((energy, roots) -> {
+            System.out.println("能源类型: " + energy + " 根节点: " + roots);
         });
     }
 
 
     /**
-     * 根据筛选条件筛选能源ID
-     *
-     * @return
+     * 获取每个能源的计量器具根节点
      */
-    public List<Long> getEnergyByStandingbookIds(List<Long> standingbookIds) {
+    public Map<Long, Set<Long>> getRootNodeStandingbooks() {
+        //获取所有台账和能源关系
+        List<StandingbookEnergyTypeVO> allEnergyAndType = standingbookService.getAllEnergyAndType();
+        //台账能源类型map
+        Map<Long, StandingbookEnergyTypeVO> standingbookEnergyTypeVOMap = allEnergyAndType.stream().collect(Collectors.toMap(StandingbookEnergyTypeVO::getStandingbookId, Function.identity()));
 
-        List<StandingbookDO> standingbookList = standingbookService.getByStandingbookIds(standingbookIds);
-        List<Long> typeIds = standingbookList.stream().map(StandingbookDO::getTypeId).collect(Collectors.toList());
-        List<StandingbookTmplDaqAttrDO> tmplList = standingbookTmplDaqAttrService.getByTypeIds(typeIds);
+        //获取所有计量器具关系
+        List<MeasurementAssociationDO> measurementAssociationDOS = measurementAssociationMapper.selectList();
 
-        return tmplList.stream().map(StandingbookTmplDaqAttrDO::getEnergyId).collect(Collectors.toList());
+
+        Map<Long, Set<Long>> energyToRoots = new HashMap<>(); // 能源ID -> 根节点集合
+        Map<Long, Set<Long>> memo = new HashMap<>();
+
+        // 构建下级 -> 上级映射
+        Map<Long, Set<Long>> childToParents = new HashMap<>();
+        for (MeasurementAssociationDO assoc : measurementAssociationDOS) {
+            childToParents.computeIfAbsent(assoc.getMeasurementId(), k -> new HashSet<>()).add(assoc.getMeasurementInstrumentId());
+        }
+
+        for (Long node : standingbookEnergyTypeVOMap.keySet()) {
+            Set<Long> roots = findRoot(node, childToParents, standingbookEnergyTypeVOMap, new HashSet<>(), memo);
+            StandingbookEnergyTypeVO standingbookEnergyTypeVO = standingbookEnergyTypeVOMap.get(node);
+            energyToRoots.computeIfAbsent(standingbookEnergyTypeVO.getEnergyId(), k -> new HashSet<>()).addAll(roots);
+        }
+        // 打印每个能源类型对应的根节点
+        log.info("能源对应的计量器具根节点: {}", JSONUtil.toJsonStr(energyToRoots));
+        return energyToRoots;
+    }
+
+
+    /**
+     * 递归返回节点node的所有根节点集合
+     *
+     * @param node           当前节点
+     * @param childToParents 下级到上级映射
+     * @param energyMap      计量器具ID对应能源ID
+     * @param memo           记忆化缓存
+     * @return 根节点ID
+     */
+    private static Set<Long> findRoot(Long node,
+                                      Map<Long, Set<Long>> childToParents,
+                                      Map<Long, StandingbookEnergyTypeVO> energyMap,
+                                      Set<Long> path,
+                                      Map<Long, Set<Long>> memo) {
+        if (memo.containsKey(node)) {
+            return memo.get(node);
+        }
+
+        // 环检测
+        if (path.contains(node)) {
+            // 环起点就是当前节点，返回单节点集合
+            return Collections.singleton(node);
+        }
+
+        path.add(node);
+
+        StandingbookEnergyTypeVO nodeEnergy = energyMap.get(node);
+        Set<Long> parents = childToParents.getOrDefault(node, Collections.emptySet());
+
+        // 没有父节点，自己就是根
+        if (parents.isEmpty()) {
+            path.remove(node);
+            memo.put(node, Collections.singleton(node));
+            return memo.get(node);
+        }
+
+        Set<Long> roots = new HashSet<>();
+
+        boolean hasDifferentEnergyParent = false;
+        for (Long p : parents) {
+            StandingbookEnergyTypeVO parentEnergy = energyMap.get(p);
+            if (Objects.isNull(parentEnergy) || Objects.isNull(nodeEnergy) || !parentEnergy.getEnergyId().equals(nodeEnergy.getEnergyId())) {
+                // 能源不同，当前节点就是根
+                hasDifferentEnergyParent = true;
+                break;
+            }
+        }
+
+        if (hasDifferentEnergyParent) {
+            path.remove(node);
+            memo.put(node, Collections.singleton(node));
+            return memo.get(node);
+        }
+
+        // 父节点能源都相同，递归查找父节点根节点
+        for (Long p : parents) {
+            Set<Long> parentRoots = findRoot(p, childToParents, energyMap, path, memo);
+            roots.addAll(parentRoots);
+        }
+
+        path.remove(node);
+
+        memo.put(node, roots);
+        return roots;
     }
 
 

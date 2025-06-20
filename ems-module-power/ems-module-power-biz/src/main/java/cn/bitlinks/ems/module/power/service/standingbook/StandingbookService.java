@@ -93,11 +93,17 @@ public interface StandingbookService {
     Map<Long, List<MeasurementAssociationDO>>  getUpStandingbookIdsBySbIds(List<Long> sbIds);
 
     /**
-     * 根据能源ids获取台账模板数据
+     * 根据台账ID获取台账和能源关系
      * @param standingbookIds
      * @return
      */
     List<StandingbookEnergyTypeVO> getEnergyAndTypeByStandingbookIds(List<Long> standingbookIds);
+
+    /**
+     * 获取所有台账和能源关系
+     * @return
+     */
+    List<StandingbookEnergyTypeVO> getAllEnergyAndType();
 
 
     /**
