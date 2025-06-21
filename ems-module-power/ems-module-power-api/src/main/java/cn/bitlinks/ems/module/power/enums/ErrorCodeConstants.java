@@ -151,4 +151,9 @@ public interface ErrorCodeConstants {
     ErrorCode STANDINGBOOK_ACQUISITION_TEST_FAIL =  new ErrorCode(1_002_101_004,"采集失败");
     ErrorCode STANDINGBOOK_ACQUISITION_CRON_FAIL =  new ErrorCode(1_002_101_005,"频率和单位不能为空且频率必须大于0");
     ErrorCode STANDINGBOOK_ACQUISITION_CRON_UNIT_NOT_EXISTS =  new ErrorCode(1_002_101_006,"无效的频率单位: {}");
+
+
+    // ========== COP参数设置  ==========
+    ErrorCode COP_SETTINGS_NOT_EXISTS = new ErrorCode(1_001_102_001, "COP参数设置不存在");
+    ErrorCode STANDINGbOOK_REPEAT = new ErrorCode(1_001_102_001, "COP参数关联台账重复");
 }
