@@ -39,4 +39,20 @@ public class MinuteAggregateDataDTO {
      * 增量（累积值）
      */
     private BigDecimal incrementalValue;
+    /**
+     * 全量/增量（0：全量；1增量。）
+     **/
+    private Integer fullIncrement;
+    /**
+     * 数据特征
+     **/
+    private Integer dataFeature;
+    /**
+     * 数据类型
+     **/
+    private Integer dataType;
+    /**
+     * 是否用量
+     */
+    private Integer usage;
 }

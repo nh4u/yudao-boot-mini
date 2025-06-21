@@ -16,33 +16,6 @@ import java.util.List;
 public interface CollectRawDataMapper {
 
     /**
-     * 批量插入采集详情
-     *
-     * @param standingbookId 台账ID
-     * @param details        采集详情列表
-     * @return 影响行数
-     */
-    @Insert("<script>" +
-            "INSERT INTO collect_raw_data (data_site, sync_time, param_code, energy_flag, standingbook_id, " +
-            "calc_value, raw_value, collect_time, usage) VALUES " +
-            "<foreach collection='details' item='detail' separator=','>" +
-            "(#{detail.dataSite}, #{detail.syncTime}, #{detail.paramCode}, #{detail.energyFlag}, #{standingbookId}, " +
-            "#{detail.calcValue}, #{detail.rawValue},#{detail.collectTime},#{detail.usage})" +
-            "</foreach>" +
-            "</script>")
-    @TenantIgnore
-    void insertBatch(@Param("standingbookId") Long standingbookId,
-                     @Param("details") List<CollectRawDataDO> details);
-
-    /**
-     * 查询台账最新的采集数据
-     *
-     * @param standingbookId 台账id
-     */
-    @TenantIgnore
-    List<CollectRawDataDO> selectLatestByStandingbookId(@Param("standingbookId") Long standingbookId);
-
-    /**
      * 查询台账最新的采集数据
      *
      * @param standingbookIds 台账ids
@@ -51,10 +24,16 @@ public interface CollectRawDataMapper {
     List<CollectRawDataDO> selectLatestByStandingbookIds(@Param("standingbookIds") List<Long> standingbookIds);
 
     /**
-     * 获取最新的台账id
+     * 获取实时数据中的某一分钟的所有稳态值的末尾值
      */
     @TenantIgnore
-    List<CollectRawDataDO> getGroupedData();
+    List<CollectRawDataDO> getGroupedSteadyFinalValue(@Param("startMinute") LocalDateTime startMinute,@Param("endMinute") LocalDateTime endMinute);
+    /**
+     * 获取实时数据中的稳态值参数
+     */
+    @TenantIgnore
+    List<CollectRawDataDO> getGroupedStandingbookIdData();
+
 
     /**
      * 查询每个台账用量参数 当前时间点

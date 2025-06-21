@@ -96,6 +96,13 @@ public interface StandingbookTmplDaqAttrService {
      * @return sbId-attrList
      */
     Map<Long, List<StandingbookTmplDaqAttrDO>> getDaqAttrsBySbIds(List<Long> sbIds);
+    /**
+     * 根据台账ids获取能源参数列表（启用的）
+     *
+     * @param sbIds 台账id
+     * @return sbId-attrList
+     */
+    Map<Long, List<StandingbookTmplDaqAttrDO>> getEnergyDaqAttrsBySbIds(List<Long> sbIds);
 
     /**
      * 获取台账数采属性（启用的）
