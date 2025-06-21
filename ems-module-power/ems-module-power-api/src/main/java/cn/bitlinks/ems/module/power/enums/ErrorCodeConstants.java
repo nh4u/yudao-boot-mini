@@ -40,6 +40,7 @@ public interface ErrorCodeConstants {
     ErrorCode ENERGY_PARAMETER_CODE_DUPLICATE = new ErrorCode(1_001_301_028,"能源参数不可重复");
     ErrorCode ENERGY_CONFIGURATION_TEMPLATE_ASSOCIATED = new ErrorCode(1_001_301_029,"该能源参数已关联计量器具模板，不可删除或更新");
     ErrorCode ENERGY_ID_NOT_EXISTS = new ErrorCode(1_001_301_030, "能源id不存在");
+    ErrorCode ENERGY_PARAMS_NAME_REPEAT = new ErrorCode(1_001_301_031, "同一能源参数名称不可重复");
     // ========== 能源分组 ==========
     ErrorCode ENERGY_GROUP_NOT_EXISTS = new ErrorCode(1_001_301_101, "能源分组不存在");
     ErrorCode ENERGY_GROUP_LIST_NOT_EXISTS = new ErrorCode(1_001_301_102, "能源分组list不存在");
