@@ -62,4 +62,25 @@ public class MinuteAggregateDataDO {
     @JsonProperty("incremental_value")
     private BigDecimal incrementalValue;
 
+    /**
+     * 全量/增量（0：全量；1增量。）
+     **/
+    @JsonProperty("full_increment")
+    private Integer fullIncrement;
+    /**
+     * 数据特征 1累计值2稳态值3状态值
+     **/
+    @JsonProperty("data_feature")
+    private Integer dataFeature;
+    /**
+     * 数据类型 1数字2文本
+     **/
+    @JsonProperty("data_type")
+    private Integer dataType;
+    /**
+     * 是否用量
+     */
+    @JsonProperty("usage")
+    private Integer usage;
+
 }

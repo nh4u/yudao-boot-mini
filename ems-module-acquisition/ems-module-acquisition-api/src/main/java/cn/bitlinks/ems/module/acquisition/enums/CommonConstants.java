@@ -31,6 +31,7 @@ public interface CommonConstants {
      * 聚合任务锁
      */
     String AGG_TASK_LOCK_KEY = "agg-task:%s" ;
+    String AGG_TASK_STEADY_LOCK_KEY = "agg-steady-task:%s" ;
     String MINUTE_AGGREGATE_DATA_TB_NAME = "minute_aggregate_data";
     String USAGE_COST_TB_NAME = "usage_cost";
     int batchSize = 2000;

@@ -49,6 +49,24 @@ public class CalculateUtil {
     }
 
     /**
+     * cop 公式计算
+     * @param expression
+     * @param calcData
+     * @return
+     */
+    public static BigDecimal copCalculate(String expression, Map<String, BigDecimal> calcData) {
+        DefaultContext<String, Object> context = new DefaultContext<>();
+        if (MapUtil.isNotEmpty(calcData)) {
+            context.putAll(calcData);
+        }
+        try {
+            return new BigDecimal(runner.execute(expression, context, null, false, false).toString());
+        } catch (Exception e) {
+            log.error("COP公式计算 执行表达式失败: [{}]，参数: {}", expression, calcData, e);
+            throw new ServiceException(GlobalErrorCodeConstants.EXPRESSION_EXECUTION_FAILED);
+        }
+    }
+    /**
      * 数采公式计算(存在非数值型返回)
      *
      * @param formula 填充值后的公式带符号

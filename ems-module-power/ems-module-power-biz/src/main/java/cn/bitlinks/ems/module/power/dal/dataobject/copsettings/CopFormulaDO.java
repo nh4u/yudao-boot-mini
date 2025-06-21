@@ -20,7 +20,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CopSettingsDO extends BaseDO {
+public class CopFormulaDO extends BaseDO {
 
     /**
      * id
@@ -32,21 +32,8 @@ public class CopSettingsDO extends BaseDO {
      */
     private String copType;
     /**
-     * 公式对应的参数
+     * '公式'
      */
-    private String param;
-    /**
-     * 公式对应的能源参数中文名
-     */
-    private String paramCnName;
-    /**
-     * 台账id
-     */
-    private Long standingbookId;
-    /**
-     * 数据特征 1累计值2稳态值3状态值
-     **/
-    private Integer dataFeature;
-
+    private String formula;
 
 }
