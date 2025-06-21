@@ -1,6 +1,9 @@
 package cn.bitlinks.ems.module.power.service.copsettings;
 
+import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.module.power.controller.admin.copsettings.vo.CopSettingsPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.copsettings.vo.CopSettingsSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.copsettings.CopFormulaDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.copsettings.CopSettingsDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
@@ -8,6 +11,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.copsettings.CopFormulaMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.copsettings.CopSettingsMapper;
 import cn.bitlinks.ems.module.power.service.copsettings.dto.CopSettingsDTO;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
+import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -15,6 +19,10 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.COP_SETTINGS_NOT_EXISTS;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGbOOK_REPEAT;
 
 /**
  * cop报表设置 Service 接口
@@ -79,5 +87,84 @@ public class CopSettingsServiceImpl implements CopSettingsService {
         }
         return result;
 
+    }
+
+    @Override
+    public Long createCopSettings(CopSettingsSaveReqVO createReqVO) {
+        // 插入
+        CopSettingsDO copSettingsDO = BeanUtils.toBean(createReqVO, CopSettingsDO.class);
+        copSettingsMapper.insert(copSettingsDO);
+        // 返回
+        return copSettingsDO.getId();
+    }
+
+    @Override
+    public void updateCopSettings(CopSettingsSaveReqVO updateReqVO) {
+
+        validateCopSettingsExists(updateReqVO.getId());
+        // 插入
+        CopSettingsDO copSettingsDO = BeanUtils.toBean(updateReqVO, CopSettingsDO.class);
+        copSettingsMapper.updateById(copSettingsDO);
+    }
+
+    @Override
+    public void deleteCopSettings(Long id) {
+        validateCopSettingsExists(id);
+        copSettingsMapper.deleteById(id);
+    }
+
+    @Override
+    public CopSettingsDO getCopSettings(Long id) {
+        return copSettingsMapper.selectById(id);
+    }
+
+    @Override
+    public PageResult<CopSettingsDO> getCopSettingsPage(CopSettingsPageReqVO pageReqVO) {
+        return copSettingsMapper.selectPage(pageReqVO);
+    }
+
+    @Override
+    public List<CopSettingsDO> getCopSettingsListByCopType(CopSettingsPageReqVO pageReqVO) {
+        String copType = pageReqVO.getCopType();
+        validateCopTypeExists(copType);
+
+        return copSettingsMapper.getCopSettingsListByCopType(copType);
+
+    }
+
+    @Override
+    public void updateBatch(List<CopSettingsSaveReqVO> copSettingsList) {
+
+        // 公式参数按copType分组 组内台账id不能重复 校验
+        Map<String, List<CopSettingsSaveReqVO>> copTypeMap = copSettingsList.stream()
+                .collect(Collectors.groupingBy(CopSettingsSaveReqVO::getCopType));
+
+        copTypeMap.forEach((k, v) -> {
+            List<Long> collect = v.stream()
+                    .map(CopSettingsSaveReqVO::getStandingbookId)
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            if (collect.size() != v.size()) {
+                throw exception(STANDINGbOOK_REPEAT);
+            }
+        });
+
+        // 统一保存
+        List<CopSettingsDO> list = BeanUtils.toBean(copSettingsList, CopSettingsDO.class);
+        copSettingsMapper.updateBatch(list);
+
+    }
+
+    private void validateCopSettingsExists(Long id) {
+        if (copSettingsMapper.selectById(id) == null) {
+            throw exception(COP_SETTINGS_NOT_EXISTS);
+        }
+    }
+
+    private void validateCopTypeExists(String copType) {
+        if (StrUtil.isEmpty(copType)) {
+            throw exception(COP_SETTINGS_NOT_EXISTS);
+        }
     }
 }
