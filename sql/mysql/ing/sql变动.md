@@ -225,5 +225,11 @@ INSERT INTO `power_cop_formula` ( `cop_type`, `formula`, `tenant_id` )
 VALUES
    ( 'MTS', '4.2*(m1+m2+m3+m4+m5+m6+m7)*(t1-t2)/((W1+W2+W3+W4+W5+W6+W7+W8+W9+W10+W11+W12+W13+W14+W15+W16+W17)*3.6)', 1 );
 ```
+### 6.补录
+#### 采集点
+
+```sql
+ALTER TABLE minute_aggregate_data ADD COLUMN `acq_flag` INT ( 11 ) NULL COMMENT "业务点1，不是业务点0";
 
 ```
+####

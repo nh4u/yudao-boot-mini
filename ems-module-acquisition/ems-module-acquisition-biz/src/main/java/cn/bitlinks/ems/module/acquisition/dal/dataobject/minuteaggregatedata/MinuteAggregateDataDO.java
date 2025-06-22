@@ -83,4 +83,10 @@ public class MinuteAggregateDataDO {
     @JsonProperty("usage")
     private Integer usage;
 
+    /**
+     * 是否业务点
+     */
+    @JsonProperty("acq_flag")
+    private Integer acqFlag;
+
 }
