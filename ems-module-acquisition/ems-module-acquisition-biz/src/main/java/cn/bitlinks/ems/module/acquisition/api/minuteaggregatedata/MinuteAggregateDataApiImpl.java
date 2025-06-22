@@ -21,15 +21,6 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     private MinuteAggregateDataService minuteAggregateDataService;
 
     @Override
-    public CommonResult<MinuteAggregateDataDTO> selectLatestByAggTime(Long standingbookId, LocalDateTime currentCollectTime) {
-        MinuteAggregateDataDTO minuteAggregateDataDTO = minuteAggregateDataService.selectLatestByAggTime(standingbookId, currentCollectTime);
-        if (Objects.isNull(minuteAggregateDataDTO)) {
-            return CommonResult.success(null);
-        }
-        return CommonResult.success(minuteAggregateDataDTO);
-    }
-
-    @Override
     public CommonResult<MinuteAggregateDataDTO> selectByAggTime(Long standingbookId, LocalDateTime thisCollectTime) {
         MinuteAggregateDataDTO minuteAggregateDataDTO = minuteAggregateDataService.selectByAggTime(standingbookId,
                 thisCollectTime);
@@ -71,5 +62,18 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     @Override
     public List<MinuteAggregateDataDTO> getRangeDataRequestParam(List<Long> standingbookIds, LocalDateTime starTime, LocalDateTime endTime) {
         return minuteAggregateDataService.getRangeDataRequestParam(standingbookIds, starTime, endTime);
+    }
+    @Override
+    public MinuteAggregateDataDTO getUsageExistFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
+        return minuteAggregateDataService.getUsageExistFullValue(standingbookId, acquisitionTime);
+    }
+    @Override
+    public MinuteAggregateDataDTO getUsagePrevFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
+        return minuteAggregateDataService.getUsagePrevFullValue(standingbookId, acquisitionTime);
+    }
+
+    @Override
+    public MinuteAggregateDataDTO getUsageNextFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
+        return minuteAggregateDataService.getUsageNextFullValue(standingbookId, acquisitionTime);
     }
 }

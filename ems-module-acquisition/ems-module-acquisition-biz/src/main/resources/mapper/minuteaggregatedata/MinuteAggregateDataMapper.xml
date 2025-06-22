@@ -82,9 +82,22 @@
         AND `usage` = 1
         AND standingbook_id = #{standingbookId}
         AND full_value is not null
+        AND acq_flag = 1
         ORDER BY aggregate_time DESC
         LIMIT 1;
 
+    </select>
+    <select id="getUsageExistFullValue"
+            resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
+        SELECT *
+        FROM minute_aggregate_data
+        WHERE aggregate_time = #{targetTime}
+          AND `usage` = 1
+          AND standingbook_id = #{standingbookId}
+          AND full_value is not null
+          AND acq_flag = 1
+        ORDER BY aggregate_time ASC
+            LIMIT 1;
     </select>
     <select id="getUsageNextFullValue"
             resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
@@ -94,6 +107,7 @@
         AND `usage` = 1
         AND standingbook_id = #{standingbookId}
         AND full_value is not null
+        AND acq_flag = 1
         ORDER BY aggregate_time ASC
         LIMIT 1;
     </select>
@@ -111,4 +125,5 @@
         </if>
 
     </select>
+
 </mapper>
