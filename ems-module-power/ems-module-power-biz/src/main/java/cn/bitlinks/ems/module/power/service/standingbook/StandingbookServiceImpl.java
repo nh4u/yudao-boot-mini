@@ -361,14 +361,14 @@ public class StandingbookServiceImpl implements StandingbookService {
     ) {
         // 1. 将计量器具（sbLeafNodes）分组：pNodeId -> List<leaf>
         Map<String, List<StandingBookTypeTreeRespVO>> leafGroupedByParent =
-                sbLeafNodes.stream().collect(Collectors.groupingBy(StandingBookTypeTreeRespVO::getPNodeId));
+                sbLeafNodes.stream().collect(Collectors.groupingBy(StandingBookTypeTreeRespVO::getParentNodeId));
 
         // 2. 将分类转换为 VO 节点，标记为非叶子（show = false）
         Map<String, StandingBookTypeTreeRespVO> categoryMap = categoryList.stream()
                 .map(cat -> {
                     StandingBookTypeTreeRespVO vo = new StandingBookTypeTreeRespVO();
                     vo.setNodeId(cat.getId() + StringPool.HASH + false);
-                    vo.setPNodeId(cat.getSuperId() + StringPool.HASH + false);
+                    vo.setParentNodeId(cat.getSuperId() + StringPool.HASH + false);
                     vo.setRawId(cat.getId());
                     vo.setNodeName(cat.getName());
                     vo.setShow(false);
@@ -388,8 +388,8 @@ public class StandingbookServiceImpl implements StandingbookService {
         // 4. 构造分类树结构
         List<StandingBookTypeTreeRespVO> roots = new ArrayList<>();
         for (StandingBookTypeTreeRespVO node : categoryMap.values()) {
-            if (categoryMap.containsKey(node.getPNodeId())) {
-                StandingBookTypeTreeRespVO parent = categoryMap.get(node.getPNodeId());
+            if (categoryMap.containsKey(node.getParentNodeId())) {
+                StandingBookTypeTreeRespVO parent = categoryMap.get(node.getParentNodeId());
                 parent.getChildren().add(node);
             } else {
                 roots.add(node);

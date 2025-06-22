@@ -14,7 +14,7 @@ public class StandingBookTypeTreeRespVO {
     /**
      * 节点id#show 上一级节点id
      */
-    private String pNodeId;
+    private String parentNodeId;
 
     /**
      * 分类id/计量器具id

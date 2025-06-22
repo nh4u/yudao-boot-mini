@@ -56,7 +56,7 @@
 
         select
             CONCAT(r.standingbook_id,'#','true') as nodeId,
-            CONCAT(r.type_id,'#','false') as pNodeId,
+            CONCAT(r.type_id,'#','false') as parentNodeId,
             r.standingbook_id as rawId,
             CONCAT( r.sbName,'(', sbCode, ')' ) as nodeName,
             true as `show`
