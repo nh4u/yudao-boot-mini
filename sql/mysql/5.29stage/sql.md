@@ -201,8 +201,16 @@ INSERT INTO `power_cop_settings` (`cop_type`, `param`,`tenant_id`) VALUES ( 'MTS
 INSERT INTO `power_cop_settings` (`cop_type`, `param`,`tenant_id`) VALUES ( 'MTS', 'W17', 1);
 ```
 ```sql
-INSERT INTO `power_cop_formula` (`id`, `cop_type`, `formula`, `actual_formula`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1, 'LTC', '4.2x(ml+m2+m3+m4)x(min(tl,t2,t3,t4)-t5)/((W1+W2+W3)x3.6)', NULL, '', '2025-06-20 13:51:15', '', '2025-06-20 13:57:15', b'0', 1);
-INSERT INTO `power_cop_formula` (`id`, `cop_type`, `formula`, `actual_formula`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (2, 'LTS', '4.2x(ml+m2+m3+m4)x(min(tl,t2,t3,t4)-t5)/((W1+W2+W3+W4+W5+W6)x3.6)', NULL, '', '2025-06-20 13:51:15', '', '2025-06-20 13:51:15', b'0', 1);
-INSERT INTO `power_cop_formula` (`id`, `cop_type`, `formula`, `actual_formula`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (3, 'MTC', '4.2x(ml+m2+m3+m4+m5+m6+m7)x(t1-t2)/((W1+W2+W3+W4+W5)x3.6)', NULL, '', '2025-06-20 13:51:15', '', '2025-06-20 13:51:15', b'0', 1);
-INSERT INTO `power_cop_formula` (`id`, `cop_type`, `formula`, `actual_formula`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (4, 'MTS', '4.2x(ml+m2+m3+m4+m5+m6+m7)x(tl-t2)/((W1+W2+W3+W4+W5+W6+W7+W8+W9+W10+W11+W12+W13+W14+W15+W16+W17)x3.6)', NULL, '', '2025-06-20 13:51:15', '', '2025-06-20 13:51:15', b'0', 1);
+INSERT INTO `power_cop_formula` ( `cop_type`, `formula`, `tenant_id` )
+VALUES
+   ( 'LTC', '4.2*(m1+m2+m3+m4)*(min(t1,t2,t3,t4)-t5)/((W1+W2+W3)*3.6)', 1 );
+INSERT INTO `power_cop_formula` ( `cop_type`, `formula`, `tenant_id` )
+VALUES
+   ( 'LTS', '4.2*(m1+m2+m3+m4)*(min(t1,t2,t3,t4)-t5)/((W1+W2+W3+W4+W5+W6)*3.6)', 1 );
+INSERT INTO `power_cop_formula` ( `cop_type`, `formula`, `tenant_id` )
+VALUES
+   ( 'MTC', '4.2*(m1+m2+m3+m4+m5+m6+m7)*(t1-t2)/((W1+W2+W3+W4+W5)*3.6)', 1 );
+INSERT INTO `power_cop_formula` ( `cop_type`, `formula`, `tenant_id` )
+VALUES
+   ( 'MTS', '4.2*(m1+m2+m3+m4+m5+m6+m7)*(t1-t2)/((W1+W2+W3+W4+W5+W6+W7+W8+W9+W10+W11+W12+W13+W14+W15+W16+W17)*3.6)', 1 );
 ```
