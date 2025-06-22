@@ -71,16 +71,6 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
     }
 
-    @Override
-    @TenantIgnore
-    public MinuteAggregateDataDTO selectLatestByAggTime(Long standingbookId, LocalDateTime currentCollectTime) {
-        MinuteAggregateDataDO minuteAggregateDataDO = minuteAggregateDataMapper.selectLatestDataByAggTime(standingbookId,
-                currentCollectTime);
-        if (Objects.isNull(minuteAggregateDataDO)) {
-            return null;
-        }
-        return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
-    }
 
     @Override
     @TenantIgnore
@@ -264,5 +254,33 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         }
 
         return result;
+    }
+    @Override
+    public MinuteAggregateDataDTO getUsagePrevFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
+        MinuteAggregateDataDO minuteAggregateDataDO =
+                minuteAggregateDataMapper.getUsagePrevFullValue(standingbookId,acquisitionTime);
+        if (Objects.isNull(minuteAggregateDataDO)) {
+            return null;
+        }
+        return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
+    }
+
+    @Override
+    public MinuteAggregateDataDTO getUsageNextFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
+        MinuteAggregateDataDO minuteAggregateDataDO =
+                minuteAggregateDataMapper.getUsageNextFullValue(standingbookId,acquisitionTime);
+        if (Objects.isNull(minuteAggregateDataDO)) {
+            return null;
+        }
+        return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
+    }
+    @Override
+    public MinuteAggregateDataDTO getUsageExistFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
+        MinuteAggregateDataDO minuteAggregateDataDO =
+                minuteAggregateDataMapper.getUsageExistFullValue(standingbookId,acquisitionTime);
+        if (Objects.isNull(minuteAggregateDataDO)) {
+            return null;
+        }
+        return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
     }
 }

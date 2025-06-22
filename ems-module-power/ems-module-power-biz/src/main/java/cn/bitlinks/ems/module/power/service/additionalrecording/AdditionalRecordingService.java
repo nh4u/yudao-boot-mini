@@ -23,9 +23,9 @@ public interface AdditionalRecordingService {
      * @param createReqVO 创建信息
      * @return 编号
      */
-    Long createAdditionalRecording(@Valid AdditionalRecordingSaveReqVO createReqVO);
+    void createAdditionalRecording(@Valid AdditionalRecordingManualSaveReqVO createReqVO);
 
-    AdditionalRecordingLastVO getLastRecord(Long standingbookId, LocalDateTime currentCollectTime);
+    AdditionalRecordingExistAcqDataRespVO getExistDataRange(Long standingbookId, LocalDateTime currentCollectTime);
 
     List<Long> createAdditionalRecordingByVoucherId(List<Long> VoucherIds,Long standingbookId);
 

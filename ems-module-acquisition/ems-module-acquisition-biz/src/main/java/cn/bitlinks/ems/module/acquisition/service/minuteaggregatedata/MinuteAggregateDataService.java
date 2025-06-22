@@ -22,15 +22,6 @@ public interface MinuteAggregateDataService {
     MinuteAggregateDataDTO selectByAggTime(Long standingbookId, LocalDateTime thisCollectTime);
 
     /**
-     * 获取指定时间的上次聚合数据
-     *
-     * @param standingbookId     台账id
-     * @param currentCollectTime 指定聚合时间
-     * @return 聚合数据
-     */
-    MinuteAggregateDataDTO selectLatestByAggTime(Long standingbookId, LocalDateTime currentCollectTime);
-
-    /**
      * 查询台账最老数据
      *
      * @param standingbookId
@@ -83,4 +74,27 @@ public interface MinuteAggregateDataService {
      * @return
      */
     List<MinuteAggregateDataDTO> getRangeDataRequestParam(List<Long> standingbookIds, LocalDateTime starTime, LocalDateTime endTime);
+    /**
+     * 获取该台账的上一个全量值
+     * @param standingbookId
+     * @param acquisitionTime
+     * @return
+     */
+    MinuteAggregateDataDTO getUsagePrevFullValue(Long standingbookId, LocalDateTime acquisitionTime);
+
+    /**
+     * 获取该台账的下一个全量值
+     * @param standingbookId
+     * @param acquisitionTime
+     * @return
+     */
+    MinuteAggregateDataDTO getUsageNextFullValue(Long standingbookId, LocalDateTime acquisitionTime);
+
+    /**
+     * 获取该台账的当前业务点全量值
+     * @param standingbookId
+     * @param acquisitionTime
+     * @return
+     */
+    MinuteAggregateDataDTO getUsageExistFullValue(Long standingbookId, LocalDateTime acquisitionTime);
 }

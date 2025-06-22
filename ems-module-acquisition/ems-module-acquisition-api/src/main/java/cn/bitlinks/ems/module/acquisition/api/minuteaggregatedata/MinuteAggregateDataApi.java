@@ -26,18 +26,6 @@ public interface MinuteAggregateDataApi {
     String PREFIX = ApiConstants.PREFIX + "/minuteAggregateData";
 
     /**
-     * 获取当前时间上次的最新数据
-     *
-     * @param standingbookId     台账id
-     * @param currentCollectTime 指定时间（分钟级别）
-     * @return
-     */
-    @GetMapping(PREFIX + "/selectLatestByAggTime")
-    @Operation(summary = "查询设备指定时间的上次聚合数据")
-    CommonResult<MinuteAggregateDataDTO> selectLatestByAggTime(@RequestParam("standingbookId") Long standingbookId,
-                                                               @RequestParam("currentCollectTime") @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime currentCollectTime);
-
-    /**
      * 获取当前数据
      *
      * @param thisCollectTime 当前采集时间点（分钟级别）
@@ -102,4 +90,35 @@ public interface MinuteAggregateDataApi {
                                                           @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime starTime,
                                                           @RequestParam("endTime")
                                                           @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime endTime);
+    /**
+     * 获取该台账的当前业务点全量值
+     * @param standingbookId
+     * @param acquisitionTime
+     * @return
+     */
+    @GetMapping(PREFIX + "/getUsageExistFullValue")
+    @Operation(summary = "获取该台账的当前业务点全量值")
+    MinuteAggregateDataDTO getUsageExistFullValue(@RequestParam("standingbookId") Long standingbookId,
+                                                 @RequestParam("acquisitionTime")@DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime acquisitionTime);
+    /**
+     * 获取当前时间的上一个全量值
+     * @param standingbookId 台账id
+     * @param acquisitionTime 采集时间
+     * @return
+     */
+    @GetMapping(PREFIX + "/getUsagePrevFullValue")
+    @Operation(summary = "获取当前时间的上一个全量值")
+    MinuteAggregateDataDTO getUsagePrevFullValue(@RequestParam("standingbookId") Long standingbookId,
+                                                 @RequestParam("acquisitionTime")@DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime acquisitionTime);
+    /**
+     * 获取当前时间的下一个全量值
+     * @param standingbookId 台账id
+     * @param acquisitionTime 采集时间
+     * @return
+     */
+    @GetMapping(PREFIX + "/getUsageNextFullValue")
+    @Operation(summary = "获取当前时间的下一个全量值")
+    MinuteAggregateDataDTO getUsageNextFullValue(@RequestParam("standingbookId") Long standingbookId,
+                                                 @RequestParam("acquisitionTime")@DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime acquisitionTime);
+
 }

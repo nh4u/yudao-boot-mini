@@ -69,20 +69,26 @@ public interface MinuteAggregateDataMapper {
     void deleteDataByMinute(@Param("aggregateTime") LocalDateTime aggregateTime, @Param("standingbookId") Long standingbookId);
 
     /**
-     * 获取该台账的上一个全量值
+     * 获取该台账的上一个业务点全量值
      * @param standingbookId
      * @return
      */
     MinuteAggregateDataDO getUsagePrevFullValue(@Param("standingbookId") Long standingbookId,
                                                 @Param("targetTime") LocalDateTime targetTime);
     /**
-     * 获取该台账的下一个全量值
+     * 获取该台账的下一个业务点全量值
      * @param standingbookId
      * @return
      */
     MinuteAggregateDataDO getUsageNextFullValue(@Param("standingbookId") Long standingbookId,
                                                 @Param("targetTime") LocalDateTime targetTime);
-
+    /**
+     * 获取该台账的当前业务点全量值
+     * @param standingbookId
+     * @return
+     */
+    MinuteAggregateDataDO getUsageExistFullValue(@Param("standingbookId") Long standingbookId,
+                                                 @Param("targetTime") LocalDateTime targetTime);
     /**
      * 获取聚合数据
      * @param standingbookIds
@@ -91,4 +97,6 @@ public interface MinuteAggregateDataMapper {
      * @return
      */
     List<MinuteAggregateDataDO> getRangeDataRequestParam(List<Long> standingbookIds, LocalDateTime starTime, LocalDateTime endTime);
+
+
 }

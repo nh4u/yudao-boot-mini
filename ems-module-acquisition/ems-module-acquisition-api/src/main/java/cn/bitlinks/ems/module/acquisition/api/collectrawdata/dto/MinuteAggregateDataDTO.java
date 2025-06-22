@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 /**
@@ -55,4 +56,8 @@ public class MinuteAggregateDataDTO {
      * 是否用量
      */
     private Integer usage;
+    /**
+     * 是否业务点
+     */
+    private Integer acqFlag;
 }

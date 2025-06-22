@@ -70,6 +70,12 @@ public interface ErrorCodeConstants {
     ErrorCode ADDITIONAL_RECORDING_SPLIT_ERROR = new ErrorCode(1_001_301_215, "补录拆分失败，无法补录");
     ErrorCode LAST_COLLECT_TIME_TOO_LATE = new ErrorCode(1_001_301_216, "上次采集时间需早于本次采集时间");
     ErrorCode MINUTE_DATA_HISTORY_NOT_EXIST=new ErrorCode(1_001_301_217,"无历史数据，无法补录");
+    ErrorCode INCREMENT_TIME_NOT_NULL = new ErrorCode(1_001_301_218,"增量补录起止时间不能为空");
+    ErrorCode INCREMENT_VALUE_MUST_GT_ZERO = new ErrorCode(1_001_301_219,"增量必须大于等于0");
+    ErrorCode FULL_INCREMENT_TYPE_ERROR = new ErrorCode(1_001_301_220,"请选择全量/增量");
+    ErrorCode FULL_TIME_NOT_NULL = new ErrorCode(1_001_301_221,"全量补录时间不能为空");
+    ErrorCode FULL_VALUE_MUST_GT_LEFT = new ErrorCode(1_001_301_222,"全量值必须大于等于上一全量值{}");
+    ErrorCode FULL_VALUE_MUST_LT_RIGHT = new ErrorCode(1_001_301_223,"全量值必须小于等于下一全量值{}");
     // ========== 台账类型 ==========
     ErrorCode STANDINGBOOK_TYPE_NOT_EXISTS = new ErrorCode(1_001_202_000, "台账类型不存在");
     ErrorCode STANDINGBOOK_TYPE_EXITS_CHILDREN = new ErrorCode(1_001_202_001, "存在存在子台账类型，无法删除");
