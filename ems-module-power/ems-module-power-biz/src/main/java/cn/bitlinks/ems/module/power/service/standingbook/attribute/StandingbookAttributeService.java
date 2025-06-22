@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.standingbook.attribute;
 
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingBookTypeTreeRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 
 import java.util.List;
@@ -68,4 +69,13 @@ public interface StandingbookAttributeService {
      * @return 台账属性列表分组列表
      */
     Map<Long, List<StandingbookAttributeDO>> getAttributesBySbIds(List<Long> sbIds);
+
+    /**
+     * 根据编码和名称模糊查询所有实体计量器具
+     * @param sbCode
+     * @param sbName
+     * @param sbIds
+     * @return
+     */
+    List<StandingBookTypeTreeRespVO> getStandingbookByCodeAndName(String sbCode, String sbName, List<Long> sbIds);
 }
