@@ -224,6 +224,13 @@ VALUES
 INSERT INTO `power_cop_formula` ( `cop_type`, `formula`, `tenant_id` )
 VALUES
    ( 'MTS', '4.2*(m1+m2+m3+m4+m5+m6+m7)*(t1-t2)/((W1+W2+W3+W4+W5+W6+W7+W8+W9+W10+W11+W12+W13+W14+W15+W16+W17)*3.6)', 1 );
+
+INSERT INTO `system_dict_type` ( `name`, `type`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `deleted_time`) VALUES ('COP系统类型', 'cop_type', 0, 'COP系统类型', '1', '2025-05-09 13:40:13', '1', '2025-06-22 16:27:56', b'0', '2025-05-12 15:34:02');
+INSERT INTO `system_dict_data` ( `sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES ( 1, '低温冷机', 'LTC', 'cop_type', 0, '', '', '', '1', '2025-06-22 16:28:41', '1', '2025-06-22 16:28:41', b'0');
+INSERT INTO `system_dict_data` ( `sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES ( 2, '低温系统', 'LTS', 'cop_type', 0, '', '', '', '1', '2025-06-22 16:28:52', '1', '2025-06-22 16:28:52', b'0');
+INSERT INTO `system_dict_data` ( `sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES ( 3, '中温冷机', 'MTC', 'cop_type', 0, '', '', '', '1', '2025-06-22 16:29:11', '1', '2025-06-22 16:29:11', b'0');
+INSERT INTO `system_dict_data` ( `sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (4, '中温系统', 'MTS', 'cop_type', 0, '', '', '', '1', '2025-06-22 16:29:23', '1', '2025-06-22 16:29:23', b'0');
+
 ```
 ### 6.补录
 #### 采集点
