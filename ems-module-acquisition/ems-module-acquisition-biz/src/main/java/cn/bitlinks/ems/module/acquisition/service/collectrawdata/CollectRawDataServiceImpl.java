@@ -24,18 +24,6 @@ public class CollectRawDataServiceImpl implements CollectRawDataService {
 
     @Override
     @TenantIgnore
-    public void insertBatch(Long standingbookId, List<CollectRawDataDO> collectRawDataDOList) {
-        collectRawDataMapper.insertBatch(standingbookId, collectRawDataDOList);
-    }
-
-    @Override
-    @TenantIgnore
-    public List<CollectRawDataDO> selectLatestByStandingbookId(Long standingbookId) {
-        return collectRawDataMapper.selectLatestByStandingbookId(standingbookId);
-    }
-
-    @Override
-    @TenantIgnore
     public List<CollectRawDataDO> selectLatestByStandingbookIds(List<Long> standingbookIds) {
         return collectRawDataMapper.selectLatestByStandingbookIds(standingbookIds);
     }

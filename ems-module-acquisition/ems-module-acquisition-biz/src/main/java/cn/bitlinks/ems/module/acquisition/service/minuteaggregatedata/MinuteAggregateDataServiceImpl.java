@@ -59,6 +59,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
 
     @Resource
     private PartitionService partitionService;
+
     @Override
     @TenantIgnore
     public MinuteAggregateDataDTO selectByAggTime(Long standingbookId, LocalDateTime thisCollectTime) {
@@ -70,16 +71,6 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
     }
 
-    @Override
-    @TenantIgnore
-    public MinuteAggregateDataDTO selectLatestByAggTime(Long standingbookId, LocalDateTime currentCollectTime) {
-        MinuteAggregateDataDO minuteAggregateDataDO = minuteAggregateDataMapper.selectLatestDataByAggTime(standingbookId,
-                currentCollectTime);
-        if (Objects.isNull(minuteAggregateDataDO)) {
-            return null;
-        }
-        return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
-    }
 
     @Override
     @TenantIgnore
@@ -104,6 +95,25 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     }
 
     @Override
+    public void insertSteadyAggDataBatch(List<MinuteAggregateDataDO> aggDataList) throws IOException {
+        if (CollUtil.isEmpty(aggDataList)) {
+            return;
+        }
+        List<List<MinuteAggregateDataDO>> batchList = CollUtil.split(aggDataList, batchSize);
+        for (List<MinuteAggregateDataDO> batch : batchList) {
+            // 执行你的批量插入操作，比如：
+            String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
+            starRocksStreamLoadService.streamLoadData(batch, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
+//            // 发送mq消息
+//            String topicName = deviceSteadyAggTopic;
+//            // 发送消息
+//            Message<List<MinuteAggregateDataDTO>> msg =
+//                    MessageBuilder.withPayload(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class)).build();
+//            rocketMQTemplate.send(topicName, msg);
+        }
+    }
+
+    @Override
     public void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList) throws IOException {
         if (CollUtil.isEmpty(aggDataList)) {
             return;
@@ -122,20 +132,21 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         }
 
     }
+
     @Override
     @TenantIgnore
     @Transactional
     public void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO) {
         try {
-            if(Objects.isNull(minuteAggregateDataDTO)){
+            if (Objects.isNull(minuteAggregateDataDTO)) {
                 return;
             }
             MinuteAggregateDataDO minuteAggregateDataDO = BeanUtils.toBean(minuteAggregateDataDTO,
                     MinuteAggregateDataDO.class);
             // 创建聚合数据表分区
-            partitionService.createPartitions(MINUTE_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDO.getAggregateTime(),minuteAggregateDataDO.getAggregateTime());
+            partitionService.createPartitions(MINUTE_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDO.getAggregateTime(), minuteAggregateDataDO.getAggregateTime());
             // 创建聚合数据计算表分区
-            partitionService.createPartitions(USAGE_COST_TB_NAME, minuteAggregateDataDO.getAggregateTime(),minuteAggregateDataDO.getAggregateTime());
+            partitionService.createPartitions(USAGE_COST_TB_NAME, minuteAggregateDataDO.getAggregateTime(), minuteAggregateDataDO.getAggregateTime());
             // 发送给usageCost进行计算
             sendMsgToUsageCostBatch(Collections.singletonList(minuteAggregateDataDO));
         } catch (Exception e) {
@@ -152,19 +163,30 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
 
             List<MinuteAggregateDataDO> minuteAggregateDataDOS = splitData(minuteAggDataSplitDTO.getStartDataDO(),
                     minuteAggDataSplitDTO.getEndDataDO());
-            if(CollUtil.isEmpty(minuteAggregateDataDOS)){
+            if (CollUtil.isEmpty(minuteAggregateDataDOS)) {
                 return;
             }
             // 创建聚合数据表分区
-            partitionService.createPartitions(MINUTE_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDOS.get(0).getAggregateTime(),minuteAggregateDataDOS.get(minuteAggregateDataDOS.size()-1).getAggregateTime());
+            partitionService.createPartitions(MINUTE_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDOS.get(0).getAggregateTime(), minuteAggregateDataDOS.get(minuteAggregateDataDOS.size() - 1).getAggregateTime());
             // 创建聚合数据计算表分区
-            partitionService.createPartitions(USAGE_COST_TB_NAME, minuteAggregateDataDOS.get(0).getAggregateTime(),minuteAggregateDataDOS.get(minuteAggregateDataDOS.size()-1).getAggregateTime());
+            partitionService.createPartitions(USAGE_COST_TB_NAME, minuteAggregateDataDOS.get(0).getAggregateTime(), minuteAggregateDataDOS.get(minuteAggregateDataDOS.size() - 1).getAggregateTime());
             // 发送给usageCost进行计算
             sendMsgToUsageCostBatch(minuteAggregateDataDOS);
         } catch (Exception e) {
             log.error("insertRangeData失败：{}", e.getMessage(), e);
             throw exception(STREAM_LOAD_RANGE_FAIL);
         }
+    }
+
+
+    @Override
+    public List<MinuteAggregateDataDTO> getRangeDataRequestParam(List<Long> standingbookIds, LocalDateTime starTime, LocalDateTime endTime) {
+        List<MinuteAggregateDataDO> minuteAggregateDataDOS =
+                minuteAggregateDataMapper.getRangeDataRequestParam(standingbookIds, starTime, endTime);
+        if (CollUtil.isEmpty(minuteAggregateDataDOS)) {
+            return null;
+        }
+        return BeanUtils.toBean(minuteAggregateDataDOS, MinuteAggregateDataDTO.class);
     }
 
     /**
@@ -232,5 +254,33 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         }
 
         return result;
+    }
+    @Override
+    public MinuteAggregateDataDTO getUsagePrevFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
+        MinuteAggregateDataDO minuteAggregateDataDO =
+                minuteAggregateDataMapper.getUsagePrevFullValue(standingbookId,acquisitionTime);
+        if (Objects.isNull(minuteAggregateDataDO)) {
+            return null;
+        }
+        return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
+    }
+
+    @Override
+    public MinuteAggregateDataDTO getUsageNextFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
+        MinuteAggregateDataDO minuteAggregateDataDO =
+                minuteAggregateDataMapper.getUsageNextFullValue(standingbookId,acquisitionTime);
+        if (Objects.isNull(minuteAggregateDataDO)) {
+            return null;
+        }
+        return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
+    }
+    @Override
+    public MinuteAggregateDataDTO getUsageExistFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
+        MinuteAggregateDataDO minuteAggregateDataDO =
+                minuteAggregateDataMapper.getUsageExistFullValue(standingbookId,acquisitionTime);
+        if (Objects.isNull(minuteAggregateDataDO)) {
+            return null;
+        }
+        return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
     }
 }

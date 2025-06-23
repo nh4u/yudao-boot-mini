@@ -1,9 +1,7 @@
 package cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata;
 
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
-import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
-import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -15,12 +13,6 @@ import java.util.List;
  */
 @Mapper
 public interface MinuteAggregateDataMapper {
-
-//    /**
-//     * 获取最新的聚合数据
-//     * @return 最新的聚合数据
-//     */
-//    List<MinuteAggregateDataDO> getLatestData();
 
     /**
      * 获取当前时间的聚合数据
@@ -50,42 +42,61 @@ public interface MinuteAggregateDataMapper {
     @TenantIgnore
     List<MinuteAggregateDataDO> getLatestData();
 
-    /**
-     * 批量插入
-     *
-     * @param aggregateDataDOS
-     */
-    @Insert("<script>" +
-            "INSERT INTO minute_aggregate_data (aggregate_time, param_code, energy_flag, data_site, standingbook_id, " +
-            "full_value, incremental_value) VALUES " +
-            "<foreach collection='aggregateDataDOS' item='aggregateDataDO' separator=','>" +
-            "(#{aggregateDataDO.aggregateTime}, #{aggregateDataDO.paramCode}, #{aggregateDataDO.energyFlag}, " +
-            "#{aggregateDataDO.dataSite}, " +
-            "#{aggregateDataDO.standingbookId}, #{aggregateDataDO.fullValue},#{aggregateDataDO.incrementalValue})" +
-            "</foreach>" +
-            "</script>")
-    @TenantIgnore
-    void insertBatch(@Param("aggregateDataDOS") List<MinuteAggregateDataDO> aggregateDataDOS);
 
     /**
      * 查询聚合数据中最老的
+     *
      * @param standingbookId
      * @return
      */
-    MinuteAggregateDataDO selectOldestByStandingBookId(@Param("standingbookId")Long standingbookId);
+    MinuteAggregateDataDO selectOldestByStandingBookId(@Param("standingbookId") Long standingbookId);
 
     /**
      * 查询聚合数据中最新的数据
+     *
      * @param standingbookId
      * @return
      */
 
-    MinuteAggregateDataDO selectLatestByStandingBookId(@Param("standingbookId")Long standingbookId);
+    MinuteAggregateDataDO selectLatestByStandingBookId(@Param("standingbookId") Long standingbookId);
 
     /**
      * 删除台账的指定时间的数据
+     *
      * @param aggregateTime
      * @param standingbookId
      */
-    void deleteDataByMinute(@Param("aggregateTime")LocalDateTime aggregateTime, @Param("standingbookId") Long standingbookId);
+    void deleteDataByMinute(@Param("aggregateTime") LocalDateTime aggregateTime, @Param("standingbookId") Long standingbookId);
+
+    /**
+     * 获取该台账的上一个业务点全量值
+     * @param standingbookId
+     * @return
+     */
+    MinuteAggregateDataDO getUsagePrevFullValue(@Param("standingbookId") Long standingbookId,
+                                                @Param("targetTime") LocalDateTime targetTime);
+    /**
+     * 获取该台账的下一个业务点全量值
+     * @param standingbookId
+     * @return
+     */
+    MinuteAggregateDataDO getUsageNextFullValue(@Param("standingbookId") Long standingbookId,
+                                                @Param("targetTime") LocalDateTime targetTime);
+    /**
+     * 获取该台账的当前业务点全量值
+     * @param standingbookId
+     * @return
+     */
+    MinuteAggregateDataDO getUsageExistFullValue(@Param("standingbookId") Long standingbookId,
+                                                 @Param("targetTime") LocalDateTime targetTime);
+    /**
+     * 获取聚合数据
+     * @param standingbookIds
+     * @param starTime
+     * @param endTime
+     * @return
+     */
+    List<MinuteAggregateDataDO> getRangeDataRequestParam(List<Long> standingbookIds, LocalDateTime starTime, LocalDateTime endTime);
+
+
 }

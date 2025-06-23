@@ -15,10 +15,14 @@ import java.time.LocalDateTime;
  **/
 @Data
 @ToString(callSuper = true)
-public class AdditionalRecordingLastVO {
-    @Schema(description = "上次采集时间")
-    private LocalDateTime lastCollectTime;
+public class AdditionalRecordingExistAcqDataRespVO {
 
-    @Schema(description = "上次数值")
-    private BigDecimal lastValue;
+    @Schema(description = "场景")
+    private Integer scene;
+
+    @Schema(description = "上一个业务点时间")
+    private LocalDateTime preTime;
+
+    @Schema(description = "下一个业务点时间")
+    private LocalDateTime nextTime;
 }
