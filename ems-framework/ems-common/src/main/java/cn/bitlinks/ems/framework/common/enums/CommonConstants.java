@@ -4,6 +4,7 @@ import java.util.regex.Pattern;
 
 public interface CommonConstants {
     String SPRING_PROFILES_ACTIVE_LOCAL = "local";
+    String SPRING_PROFILES_ACTIVE_DEV = "dev";
     /**
      * 数采公式：匹配格式获取公式中的参数
      */

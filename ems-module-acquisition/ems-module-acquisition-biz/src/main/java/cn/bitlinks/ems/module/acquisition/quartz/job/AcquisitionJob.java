@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_DEV;
 import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_LOCAL;
 import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.*;
 
@@ -111,7 +112,7 @@ public class AcquisitionJob implements Job {
 
             // 采集有io的参数的真实数据
             Map<String, ItemStatus> itemStatusMap;
-            if(env.equals(SPRING_PROFILES_ACTIVE_LOCAL)){
+            if(env.equals(SPRING_PROFILES_ACTIVE_LOCAL) || env.equals(SPRING_PROFILES_ACTIVE_DEV)){
                 itemStatusMap = mockData(dataSites);
             }else{
                 ServiceSettingsDTO serviceSettingsDTO =
