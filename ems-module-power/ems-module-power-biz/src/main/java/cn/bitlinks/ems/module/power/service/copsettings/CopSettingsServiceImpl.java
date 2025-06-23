@@ -151,16 +151,17 @@ public class CopSettingsServiceImpl implements CopSettingsService {
         Map<String, List<CopSettingsSaveReqVO>> copTypeMap = copSettingsList.stream()
                 .collect(Collectors.groupingBy(CopSettingsSaveReqVO::getCopType));
 
-        copTypeMap.forEach((k, v) -> {
-            List<Long> collect = v.stream()
-                    .map(CopSettingsSaveReqVO::getStandingbookId)
-                    .distinct()
-                    .collect(Collectors.toList());
-
-            if (collect.size() != v.size()) {
-                throw exception(STANDINGbOOK_REPEAT);
-            }
-        });
+        // TODO: 2025/6/23 目前台账太少 需要先关闭重复校验，等联调完再放开
+//        copTypeMap.forEach((k, v) -> {
+//            List<Long> collect = v.stream()
+//                    .map(CopSettingsSaveReqVO::getStandingbookId)
+//                    .distinct()
+//                    .collect(Collectors.toList());
+//
+//            if (collect.size() != v.size()) {
+//                throw exception(STANDINGbOOK_REPEAT);
+//            }
+//        });
 
         // 统一保存
         List<CopSettingsDO> list = BeanUtils.toBean(copSettingsList, CopSettingsDO.class);
