@@ -66,6 +66,11 @@ public interface StandingbookTypeService {
      * @return map
      */
     Map<Long,StandingbookTypeDO> getStandingbookTypeIdMap(List<Long> typeIds);
+    /**
+     * 获得台账类型列表Map<id,DO>
+     * @return map
+     */
+    List<StandingbookTypeDO> getStandingbookTypeIdList(List<Long> typeIds);
 
     /**
      * 递归查询子节点 id

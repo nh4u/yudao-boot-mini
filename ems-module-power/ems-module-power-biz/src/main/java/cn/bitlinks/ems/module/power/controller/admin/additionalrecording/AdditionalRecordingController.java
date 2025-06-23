@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,8 +40,9 @@ public class AdditionalRecordingController {
     @PostMapping("/create")
     @Operation(summary = "手动补录")
     //@PreAuthorize("@ss.hasPermission('power:additional-recording:create')")
-    public CommonResult<Long> createAdditionalRecording(@Valid @RequestBody AdditionalRecordingSaveReqVO createReqVO) {
-        return success(additionalRecordingService.createAdditionalRecording(createReqVO));
+    public CommonResult<Boolean> createAdditionalRecording(@Valid @RequestBody AdditionalRecordingManualSaveReqVO createReqVO) {
+        additionalRecordingService.createAdditionalRecording(createReqVO);
+        return success(true);
     }
 
     @PostMapping("/createByVoucherId")
@@ -60,16 +60,14 @@ public class AdditionalRecordingController {
     public CommonResult<List<Long>> getVoucherIdsByStandingbookId(@RequestParam("standingbookId") Long standingbookId) {
         return success(additionalRecordingService.getVoucherIdsByStandingbookId(standingbookId));
     }
-
-
-    @GetMapping("/last-record")
-    @Operation(summary = "获取上次记录")
-    public CommonResult<AdditionalRecordingLastVO> getLastRecord(
+    @GetMapping("/getExistDataRange")
+    @Operation(summary = "全量-选择补录时间后查询原有数据")
+    public CommonResult<AdditionalRecordingExistAcqDataRespVO> getExistDataRange(
             @RequestParam("standingbookId") Long standingbookId,
             @RequestParam("currentCollectTime")
             @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
             LocalDateTime currentCollectTime) {
-        return CommonResult.success(additionalRecordingService.getLastRecord(standingbookId, currentCollectTime));
+        return CommonResult.success(additionalRecordingService.getExistDataRange(standingbookId, currentCollectTime));
     }
 
     @PutMapping("/update")

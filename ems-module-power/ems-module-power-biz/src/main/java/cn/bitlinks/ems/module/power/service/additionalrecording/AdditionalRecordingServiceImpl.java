@@ -1,13 +1,15 @@
 package cn.bitlinks.ems.module.power.service.additionalrecording;
 
+import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
+import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.common.enums.FullIncrementEnum;
-import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingLastVO;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingExistAcqDataRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingManualSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
@@ -15,6 +17,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.Standingboo
 import cn.bitlinks.ems.module.power.dal.mysql.additionalrecording.AdditionalRecordingMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.enums.RecordMethodEnum;
+import cn.bitlinks.ems.module.power.enums.additionalrecording.AdditionalRecordingScene;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +27,8 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -60,15 +65,9 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     @Resource
     private MinuteAggregateDataApi minuteAggregateDataApi;
 
-
     @Override
-    public Long createAdditionalRecording(AdditionalRecordingSaveReqVO createReqVO) {
+    public void createAdditionalRecording(AdditionalRecordingManualSaveReqVO createReqVO) {
 
-        // 参数校验
-        // 上次采集时间不为空且，不早于此次采集时间，给出提示
-        if (Objects.nonNull(createReqVO.getLastCollectTime()) && !createReqVO.getLastCollectTime().truncatedTo(ChronoUnit.MINUTES).isBefore(createReqVO.getThisCollectTime().truncatedTo(ChronoUnit.MINUTES))) {
-            throw exception(LAST_COLLECT_TIME_TOO_LATE);
-        }
         // 1.获取能源用量参数，如果没有，不可补录
         StandingbookTmplDaqAttrDO daqAttrDO =
                 standingbookTmplDaqAttrService.getUsageAttrBySbId(createReqVO.getStandingbookId());
@@ -76,18 +75,112 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         if (Objects.isNull(daqAttrDO)) {
             throw exception(ADDITIONAL_RECORDING_ENERGY_NOT_EXISTS);
         }
-        // 进行数据拆分时校验补录的时间是否合法，不合法则提示无法补录
-        try {
-            splitData(daqAttrDO, createReqVO.getStandingbookId(), createReqVO.getValueType(),
-                    createReqVO.getLastCollectTime(),
-                    createReqVO.getThisCollectTime(), createReqVO.getLastValue(), createReqVO.getThisValue());
-        } catch (ServiceException e) {
-            log.error(e.getMessage(), e);
-            throw e;
-        } catch (Exception e) {
-            log.error("补录拆分数据失败，失败原因:{}", e.getMessage(), e);
-            throw exception(ADDITIONAL_RECORDING_SPLIT_ERROR);
+        if (FullIncrementEnum.codeOf(createReqVO.getValueType()) == null) {
+            throw exception(FULL_INCREMENT_TYPE_ERROR);
         }
+        // 0.参数校验
+        // 0.1增量校验[两个时间不能为空&增量值必须要大于=0] 废弃了暂不做增量补录
+        if (FullIncrementEnum.INCREMENT.getCode().equals(createReqVO.getValueType())) {
+            return;
+        }
+
+        // 0.2全量校验[补录时间点不能为空&上一个全量值 <= 补录值 <=下一个全量值  没有值就单边比较即可，询问了无右边值的话数采采的值可能会出现增量为负数的情况，会影响后续的全量值，直到全量值>=该变更的全量值为止
+        // 上一个业务点的全量值 <= 当前补录值 <=下一个业务点的全量值
+        // 获取当前时间点上下两条业务点数据
+        // 补录时间点不能为空
+        if (Objects.isNull(createReqVO.getThisCollectTime())) {
+            throw exception(FULL_TIME_NOT_NULL);
+        }
+        // 获取上下两个全量值（valueType == 0）与当前采集点可能相等
+        MinuteAggregateDataDTO prevFullValue = minuteAggregateDataApi.getUsagePrevFullValue(createReqVO.getStandingbookId(), createReqVO.getThisCollectTime());
+        MinuteAggregateDataDTO nextFullValue = minuteAggregateDataApi.getUsageNextFullValue(createReqVO.getStandingbookId(), createReqVO.getThisCollectTime());
+
+        MinuteAggregateDataDTO originalDTO = new MinuteAggregateDataDTO();
+        originalDTO.setStandingbookId(createReqVO.getStandingbookId());
+        originalDTO.setEnergyFlag(daqAttrDO.getEnergyFlag());
+        originalDTO.setParamCode(daqAttrDO.getCode());
+        originalDTO.setUsage(daqAttrDO.getUsage());
+        originalDTO.setDataType(daqAttrDO.getDataType());
+        originalDTO.setFullIncrement(createReqVO.getValueType());
+        originalDTO.setDataFeature(daqAttrDO.getDataType());
+        // 无历史数据，无采集点可以比较
+        if (prevFullValue == null && nextFullValue == null) {
+            // 全量进行单条补录
+            MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
+            minuteAggregateDataDTO.setAggregateTime(createReqVO.getThisCollectTime().truncatedTo(ChronoUnit.MINUTES));
+            minuteAggregateDataDTO.setFullValue(createReqVO.getThisValue());
+            minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
+            minuteAggregateDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
+            minuteAggregateDataApi.insertSingleData(minuteAggregateDataDTO);
+            return;
+        }
+
+        if (prevFullValue != null && nextFullValue != null) {
+            if (prevFullValue.getFullValue().compareTo(createReqVO.getThisValue()) > 0) {
+                throw exception(FULL_VALUE_MUST_GT_LEFT, prevFullValue.getFullValue());
+            }
+            if (createReqVO.getThisValue().compareTo(nextFullValue.getFullValue()) > 0) {
+                throw exception(FULL_VALUE_MUST_LT_RIGHT, nextFullValue.getFullValue());
+            }
+            // 将全量数据拆分到前一个业务点、后一个业务点
+            // 计算与前一分钟的增量
+            // 计算每分钟的增量值
+            long minutes = Duration.between(prevFullValue.getAggregateTime(), createReqVO.getThisCollectTime()).toMinutes();
+            BigDecimal totalIncrement = prevFullValue.getFullValue().subtract(createReqVO.getThisValue());
+            BigDecimal perMinuteIncrement = totalIncrement.divide(BigDecimal.valueOf(minutes), 10, RoundingMode.HALF_UP);
+
+            MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
+            minuteAggregateDataDTO.setAggregateTime(createReqVO.getThisCollectTime().truncatedTo(ChronoUnit.MINUTES));
+            minuteAggregateDataDTO.setFullValue(createReqVO.getThisValue());
+            minuteAggregateDataDTO.setDataSite(prevFullValue.getDataSite());
+            minuteAggregateDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
+            minuteAggregateDataDTO.setIncrementalValue(perMinuteIncrement);
+            MinuteAggDataSplitDTO preMinuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
+            preMinuteAggDataSplitDTO.setStartDataDO(prevFullValue);
+            preMinuteAggDataSplitDTO.setEndDataDO(minuteAggregateDataDTO);
+            minuteAggregateDataApi.insertRangeData(preMinuteAggDataSplitDTO);
+
+            // 将全量数据拆分到下一个业务点 为止
+            MinuteAggDataSplitDTO nextMinuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
+            nextMinuteAggDataSplitDTO.setStartDataDO(minuteAggregateDataDTO);
+            nextMinuteAggDataSplitDTO.setEndDataDO(nextFullValue);
+            minuteAggregateDataApi.insertRangeData(nextMinuteAggDataSplitDTO);
+            return;
+        }
+        if (prevFullValue != null) {
+            if (prevFullValue.getFullValue().compareTo(createReqVO.getThisValue()) > 0) {
+                throw exception(FULL_VALUE_MUST_GT_LEFT, prevFullValue.getFullValue());
+            }
+            // 将全量数据拆分到前一个业务点 为止
+            MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
+            minuteAggregateDataDTO.setAggregateTime(createReqVO.getThisCollectTime().truncatedTo(ChronoUnit.MINUTES));
+            minuteAggregateDataDTO.setFullValue(createReqVO.getThisValue());
+            minuteAggregateDataDTO.setDataSite(prevFullValue.getDataSite());
+            minuteAggregateDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
+            //minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);需要拆分计算出来
+            MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
+            minuteAggDataSplitDTO.setStartDataDO(prevFullValue);
+            minuteAggDataSplitDTO.setEndDataDO(minuteAggregateDataDTO);
+            minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
+            return;
+        }
+        if (createReqVO.getThisValue().compareTo(nextFullValue.getFullValue()) > 0) {
+            throw exception(FULL_VALUE_MUST_LT_RIGHT);
+        }
+        // 将全量数据拆分到下一个业务点 为止
+        MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
+        minuteAggregateDataDTO.setAggregateTime(createReqVO.getThisCollectTime().truncatedTo(ChronoUnit.MINUTES));
+        minuteAggregateDataDTO.setFullValue(createReqVO.getThisValue());
+        minuteAggregateDataDTO.setDataSite(nextFullValue.getDataSite());
+        minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
+        minuteAggregateDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
+        MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
+        minuteAggDataSplitDTO.setStartDataDO(minuteAggregateDataDTO);
+        minuteAggDataSplitDTO.setEndDataDO(nextFullValue);
+        minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
+
+
+        // 1.补录数据
         AdditionalRecordingDO additionalRecording = BeanUtils.toBean(createReqVO, AdditionalRecordingDO.class);
         if (createReqVO.getRecordPerson() == null) {
             createReqVO.setRecordPerson(getLoginUserNickname());
@@ -98,233 +191,37 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         // 插入数据库
         additionalRecordingMapper.insert(additionalRecording);
 
-        return additionalRecording.getId();
     }
-
-    /**
-     * 数据拆分
-     *
-     * @param standingbookId
-     * @param valueType
-     * @param preCollectTime
-     * @param currentCollectTime
-     */
-    private void splitData(StandingbookTmplDaqAttrDO daqAttrDO, Long standingbookId, Integer valueType,
-                           LocalDateTime preCollectTime,
-                           LocalDateTime currentCollectTime, BigDecimal preValue, BigDecimal thisValue) {
-        // 获取此时聚合数据的最新和最老数据
-        MinuteAggregateDataDTO oldestData =
-                minuteAggregateDataApi.selectOldestByStandingBookId(standingbookId).getData();
-        MinuteAggregateDataDTO latestData =
-                minuteAggregateDataApi.selectLatestByStandingBookId(standingbookId).getData();
-        // 0.0本次采集时间必须要小于上次采集时间且要小于当前时间的前十分钟点
-        if (!LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(10L).isAfter(currentCollectTime)) {
-            throw exception(CURRENT_TIME_ERROR);
-        }
-        MinuteAggregateDataDTO originalDTO = new MinuteAggregateDataDTO();
-        originalDTO.setStandingbookId(standingbookId);
-        originalDTO.setEnergyFlag(daqAttrDO.getEnergyFlag());
-        originalDTO.setParamCode(daqAttrDO.getCode());
-        originalDTO.setStandingbookId(standingbookId);
-        //
-//        // 0.1 如果聚合表无历史数据。按照本次采集点进行补录, 忽略上次采集时间，全量增量都按照全量
-//        if (Objects.isNull(oldestData)) {
-//            throw exception(MINUTE_DATA_HISTORY_NOT_EXIST);
-//        }
-        if (Objects.isNull(oldestData)) {
-            if (FullIncrementEnum.INCREMENT.getCode().equals(valueType)) {
-                //throw exception(INCREMENT_HISTORY_NOT_EXISTS);
-                // 增量按照时间段进行补录
-                MinuteAggregateDataDTO startDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-                startDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
-                startDTO.setFullValue(BigDecimal.ZERO);
-                startDTO.setIncrementalValue(BigDecimal.ZERO);
-
-                MinuteAggregateDataDTO endDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-                endDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
-                endDTO.setFullValue(thisValue);
-                // 增量需要计算出来
-                MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
-                minuteAggDataSplitDTO.setStartDataDO(startDTO);
-                minuteAggDataSplitDTO.setEndDataDO(endDTO);
-                minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
-
-            } else {
-                // 全量进行单条补录
-                MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-                minuteAggregateDataDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
-                minuteAggregateDataDTO.setFullValue(thisValue);
-                minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
-                minuteAggregateDataApi.insertSingleData(minuteAggregateDataDTO);
-            }
-
-            return;
-        }
-
-        // 0.2 如果聚合表有历史数据，
-        if (FullIncrementEnum.FULL.getCode().equals(valueType)) {
-            // 1.1 判断本次采集时间是否在oldestData和latestData之内，
-            if (!currentCollectTime.isBefore(oldestData.getAggregateTime()) && !currentCollectTime.isAfter(latestData.getAggregateTime())) {
-                // 1.2.0 如果本次采集时间在 oldestData 和 latestData 之间，提示已有数据
-                throw exception(THIS_TIME_EXISTS_DATA);
-            }
-            // 1.2.1 如果本次采集时间在oldestData之前，需要修改oldestData的增量，
-            if (currentCollectTime.isBefore(oldestData.getAggregateTime())) {
-                //1.2.1.1 是全量
-                // 本次值如果大于oldestData的值，
-                if (thisValue.compareTo(oldestData.getFullValue()) > 0) {
-                    throw exception(CURRENT_TIME_TOO_BIG_ERROR);
-                }
-
-                // 进行补录拆分到分钟
-                // 进行补录
-                MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-                minuteAggregateDataDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
-                minuteAggregateDataDTO.setFullValue(thisValue);
-                minuteAggregateDataDTO.setDataSite(oldestData.getDataSite());
-                minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
-                MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
-                minuteAggDataSplitDTO.setStartDataDO(minuteAggregateDataDTO);
-                minuteAggDataSplitDTO.setEndDataDO(oldestData);
-                minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
-                return;
-            }
-            // 1.2.2 如果本次采集时间在latestData之后，补录到currentCollectTime此分钟,不需要修改历史数据
-            if (thisValue.compareTo(latestData.getFullValue()) < 0) {
-                throw exception(CURRENT_TIME_TOO_SMALL_ERROR);
-            }
-            // 进行补录拆分到分钟
-            // 进行补录
-            MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-            minuteAggregateDataDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
-            minuteAggregateDataDTO.setFullValue(thisValue);
-            minuteAggregateDataDTO.setDataSite(oldestData.getDataSite());
-            //minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);需要拆分计算出来
-            MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
-            minuteAggDataSplitDTO.setStartDataDO(latestData);
-            minuteAggDataSplitDTO.setEndDataDO(minuteAggregateDataDTO);
-            minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
-            return;
-        } else if (FullIncrementEnum.INCREMENT.getCode().equals(valueType)) {
-            // 1.2.1 只允许存在两种情况，，本次采集时间为oldestData的时间上次采集时间在oldestdata之前，或者 上次采集时间为latestData，本次采集时间在latestData之后
-            // 1.2.1 如果本次采集时间在oldestData之前，需要修改oldestData的增量，
-            if (preCollectTime == null) {
-                throw exception(RANGE_TIME_NOT_NULL);
-            }
-
-            boolean validCase1 =
-                    currentCollectTime.equals(oldestData.getAggregateTime()) && preCollectTime.isBefore(oldestData.getAggregateTime());
-
-            boolean validCase2 =
-                    preCollectTime.equals(latestData.getAggregateTime()) && currentCollectTime.isAfter(latestData.getAggregateTime());
-
-            if (validCase1) {
-                //本次采集时间为oldestData的时间上次采集时间在oldestdata之前
-                // 则上次采集时间的值为oldestData-本次值
-                if (thisValue.compareTo(oldestData.getFullValue()) > 0) {
-                    throw exception(CURRENT_TIME_TOO_BIG_ERROR);
-                }
-                //
-                BigDecimal initValue = oldestData.getFullValue().subtract(thisValue);
-                // 进行补录
-                MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-                minuteAggregateDataDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
-                minuteAggregateDataDTO.setFullValue(initValue);
-                minuteAggregateDataDTO.setDataSite(oldestData.getDataSite());
-                minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
-                MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
-                minuteAggDataSplitDTO.setStartDataDO(minuteAggregateDataDTO);
-                minuteAggDataSplitDTO.setEndDataDO(oldestData);
-                minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
-                return;
-            } else if (validCase2) {
-                //上次采集时间为latestData，本次采集时间在latestData之后
-
-                BigDecimal latestValue = latestData.getFullValue().add(thisValue);
-
-                MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-                minuteAggregateDataDTO.setAggregateTime(currentCollectTime.truncatedTo(ChronoUnit.MINUTES));
-                minuteAggregateDataDTO.setFullValue(latestValue);
-                minuteAggregateDataDTO.setDataSite(oldestData.getDataSite());
-                //minuteAggregateDataDTO.setIncrementalValue();需要拆分计算出来
-                MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
-                minuteAggDataSplitDTO.setStartDataDO(latestData);
-                minuteAggDataSplitDTO.setEndDataDO(minuteAggregateDataDTO);
-                minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
-                return;
-            }
-            throw exception(RANGE_TIME_ERROR);
-        }
-        throw exception(VALUE_TYPE_REQUIRED);
-
-    }
-
-
-//    private boolean isCollectTimeDuplicate(Long standingbookId, LocalDateTime collectTime) {
-//        QueryWrapper<AdditionalRecordingDO> queryWrapper = new QueryWrapper<>();
-//        queryWrapper.eq("standingbook_id", standingbookId)
-//                .eq("this_collect_time", collectTime);
-//        return additionalRecordingMapper.selectCount(queryWrapper) > 0;
-//    }
-
-
-//    /**
-//     * 校验抄表数值是否符合规则：本次值 ≥ 上次值 且 ≤ 下次值
-//     */
-//    private void checkMeterReadingValue(Long standingbookId, LocalDateTime currentCollectTime, BigDecimal currentValue) {
-//
-//        // 获取上次记录（早于当前时间的最新记录）
-//        AdditionalRecordingDO lastRecord = getNeighborRecord(standingbookId, currentCollectTime, false);
-//        // 获取下次记录（晚于当前时间的最早记录）
-//        AdditionalRecordingDO nextRecord = getNeighborRecord(standingbookId, currentCollectTime, true);
-//
-//        // 校验：当前值 ≥ 上次值
-//        if (lastRecord != null && currentValue.compareTo(lastRecord.getThisValue()) < 0) {
-//            throw exception(THIS_VALUE_NOT_LESS);
-//        }
-//
-//        // 校验：当前值 ≤ 下次值
-//        if (nextRecord != null && currentValue.compareTo(nextRecord.getThisValue()) > 0) {
-//            throw exception(THIS_VALUE_NOT_MORE);
-//        }
-//    }
-
-//    /**
-//     * 获取相邻记录（上次或下次）
-//     * @param isNext true表示查询下次记录，false表示查询上次记录
-//     */
-//    private AdditionalRecordingDO getNeighborRecord(Long standingbookId, LocalDateTime currentCollectTime, boolean isNext) {
-//        QueryWrapper<AdditionalRecordingDO> queryWrapper = new QueryWrapper<>();
-//        queryWrapper.eq("standingbook_id", standingbookId)
-//                .eq("value_type", "全量")  // 只处理全量数据
-//                .select("this_collect_time", "this_value");
-//
-//        // 时间条件：上次记录（<当前时间）或下次记录（>当前时间）
-//        if (isNext) {
-//            queryWrapper.gt("this_collect_time", currentCollectTime)
-//                    .orderByAsc("this_collect_time");
-//        } else {
-//            queryWrapper.lt("this_collect_time", currentCollectTime)
-//                    .orderByDesc("this_collect_time");
-//        }
-//
-//        queryWrapper.last("LIMIT 1");
-//        return additionalRecordingMapper.selectOne(queryWrapper);
-//    }
 
     @Override
-    public AdditionalRecordingLastVO getLastRecord(Long standingbookId, LocalDateTime currentCollectTime) {
+    public AdditionalRecordingExistAcqDataRespVO getExistDataRange(Long standingbookId, LocalDateTime currentCollectTime) {
+        // 获取上下两个全量值（valueType == 0）与当前采集点可能相等
+        MinuteAggregateDataDTO prevFullValue = minuteAggregateDataApi.getUsagePrevFullValue(standingbookId, currentCollectTime);
+        MinuteAggregateDataDTO nextFullValue = minuteAggregateDataApi.getUsageNextFullValue(standingbookId, currentCollectTime);
+        int state = (prevFullValue != null ? 1 : 0) << 1 | (nextFullValue != null ? 1 : 0);
 
-        MinuteAggregateDataDTO minuteAggregateDataDTO =
-                minuteAggregateDataApi.selectLatestByAggTime(standingbookId,
-                        currentCollectTime).getData();
-        if (Objects.isNull(minuteAggregateDataDTO)) {
-            return null;
+        AdditionalRecordingExistAcqDataRespVO additionalRecordingExistAcqDataRespVO = new AdditionalRecordingExistAcqDataRespVO();
+        switch (state) {
+            case 0b00:
+                additionalRecordingExistAcqDataRespVO.setScene(AdditionalRecordingScene.NO_HIS.getCode());
+                break;     // 无前也无后
+            case 0b11:
+                additionalRecordingExistAcqDataRespVO.setScene(AdditionalRecordingScene.TWO_POINT.getCode());
+                break;  // 前后都有
+            case 0b01:
+                additionalRecordingExistAcqDataRespVO.setScene(AdditionalRecordingScene.ONE_NEXT.getCode());
+                break;   // 只有后
+            case 0b10:
+                additionalRecordingExistAcqDataRespVO.setScene(AdditionalRecordingScene.ONE_PRE.getCode());
+                break;    // 只有前
+            default:
+                throw new IllegalStateException("无此补录场景: " + state);
         }
-        AdditionalRecordingLastVO additionalRecordingLastVO = new AdditionalRecordingLastVO();
-        additionalRecordingLastVO.setLastValue(minuteAggregateDataDTO.getFullValue());
-        additionalRecordingLastVO.setLastCollectTime(minuteAggregateDataDTO.getAggregateTime());
-        return additionalRecordingLastVO;
+
+        additionalRecordingExistAcqDataRespVO.setPreTime(prevFullValue != null ? prevFullValue.getAggregateTime() : null);
+        additionalRecordingExistAcqDataRespVO.setNextTime(nextFullValue != null ? nextFullValue.getAggregateTime() : null);
+
+        return additionalRecordingExistAcqDataRespVO;
     }
 
     @Override

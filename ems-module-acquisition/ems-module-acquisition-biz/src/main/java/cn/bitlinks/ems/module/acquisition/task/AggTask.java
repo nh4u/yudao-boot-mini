@@ -1,6 +1,8 @@
 package cn.bitlinks.ems.module.acquisition.task;
 
 
+import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
+import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectRawDataDO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
@@ -127,6 +129,8 @@ public class AggTask {
             minuteAggregateDataDO.setAggregateTime(currentMinute);
             minuteAggregateDataDO.setFullValue(new BigDecimal(finalValue.getCalcValue()));
             minuteAggregateDataDO.setIncrementalValue(null);
+            // 稳态值的分钟数据都是采集点，因为不是采集点的不会在表中出现
+            minuteAggregateDataDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
             currentAggDataList.add(minuteAggregateDataDO);
         });
 
@@ -233,6 +237,7 @@ public class AggTask {
                 currentMinuteAggregateDataDO.setAggregateTime(targetTime);
                 currentMinuteAggregateDataDO.setFullValue(currentValue);
                 currentMinuteAggregateDataDO.setIncrementalValue(BigDecimal.ZERO);
+                currentMinuteAggregateDataDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
                 currentDataList.add(currentMinuteAggregateDataDO);
                 return;
             }
@@ -245,6 +250,7 @@ public class AggTask {
                 currentMinuteAggregateDataDO.setAggregateTime(targetTime);
                 currentMinuteAggregateDataDO.setFullValue(currentValue);
                 currentMinuteAggregateDataDO.setIncrementalValue(currentValue.subtract(latestAggData.getFullValue()));
+                currentMinuteAggregateDataDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
                 currentDataList.add(currentMinuteAggregateDataDO);
                 return;
             }
@@ -252,11 +258,12 @@ public class AggTask {
             // 需要从上一个聚合时间 latestAggTime 的下一分钟 开始，补到 targetTime 为止
 
             // 上次实时推送数据早于 与 最新的聚合时间差距一分钟以上，需要田中，最新聚合时间与上次实时推送数据之间的分钟数据。
-            // 需要补充聚合数据最新时间和上次实时数据时间点时间的数据。todo
+            // 需要补充聚合数据最新时间和上次实时数据时间点时间的数据。
             MinuteAggregateDataDO endDO = BeanUtils.toBean(latestAggData, MinuteAggregateDataDO.class);
             endDO.setAggregateTime(targetTime);
             endDO.setFullValue(currentValue);
             endDO.setIncrementalValue(null);
+            endDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
             splitData(currentDataList, latestAggData, latestAggData, endDO);
             return;
         }
@@ -283,11 +290,12 @@ public class AggTask {
                 prevValue = latestAggData.getFullValue();
             } else if (prevTime.isAfter(latestAggTime.plusMinutes(1L))) {
                 // 上次实时推送数据早于 与 最新的聚合时间差距一分钟以上，需要田中，最新聚合时间与上次实时推送数据之间的分钟数据。
-                // 需要补充聚合数据最新时间和上次实时数据时间点时间的数据。todo
+                // 需要补充聚合数据最新时间和上次实时数据时间点时间的数据。
                 MinuteAggregateDataDO endDO = BeanUtils.toBean(latestAggData, MinuteAggregateDataDO.class);
                 endDO.setAggregateTime(prevTime);
                 endDO.setFullValue(prevValue);
                 endDO.setIncrementalValue(null);
+                endDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
                 splitData(currentDataList, latestAggData, latestAggData, endDO);
             }
         }
@@ -312,6 +320,7 @@ public class AggTask {
                 .divide(BigDecimal.valueOf(totalSeconds), 10, RoundingMode.HALF_UP);
         long elapsedSeconds = Duration.between(prevTime, targetTime).getSeconds();
         endDO.setFullValue(prevValue.add(rate.multiply(BigDecimal.valueOf(elapsedSeconds))));
+        endDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
         splitData(currentDataList, latestAggData, startDO, endDO);
 
     }
@@ -346,6 +355,7 @@ public class AggTask {
             MinuteAggregateDataDO data = BeanUtils.toBean(startData, MinuteAggregateDataDO.class);
             data.setAggregateTime(minutePoint);
             data.setFullValue(interpolatedValue);
+            data.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
             if (lastData == null) {
                 data.setIncrementalValue(BigDecimal.ZERO);
             } else {

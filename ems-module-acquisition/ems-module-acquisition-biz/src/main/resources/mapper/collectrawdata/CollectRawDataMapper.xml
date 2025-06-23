@@ -47,7 +47,7 @@
         WHERE sync_time >= #{startMinute}
         AND sync_time &lt;  #{endMinute}
         AND data_feature = 2  -- 只取稳态值
-        AND `usage` = 0;
+        AND `usage` = 0
         ) t
         WHERE rn = 1;
     </select>

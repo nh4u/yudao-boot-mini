@@ -42,13 +42,10 @@ public class AdditionalRecordingDO extends BaseDO {
      */
     private Integer valueType;
     /**
-     * 上次采集时间
+     * 上次采集时间（增量补录的时间段）
      */
     private LocalDateTime preCollectTime;
-    /**
-     * 上次数值
-     */
-    private BigDecimal preValue;
+
     /**
      * 本次采集时间
      */

@@ -55,7 +55,7 @@ public class CopHourAggTask {
     @Resource
     private MinuteAggregateDataApi minuteAggregateDataApi;
 
-    //@Scheduled(cron = "0 20 * * * ?") // 每小时的20分钟时执行一次 todo
+    @Scheduled(cron = "0 20 * * * ?") // 每小时的20分钟时执行一次
     @TenantJob
     public void execute() {
         // 从聚合表中计算当前小时的值

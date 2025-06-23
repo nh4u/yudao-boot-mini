@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingBookTypeTreeRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
@@ -411,6 +412,11 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
 
         return attrs.stream()
                 .collect(Collectors.groupingBy(StandingbookAttributeDO::getStandingbookId));
+    }
+
+    @Override
+    public List<StandingBookTypeTreeRespVO> getStandingbookByCodeAndName(String sbCode, String sbName, List<Long> sbIds) {
+        return standingbookAttributeMapper.selectSbNodeByCodeAndName(sbCode, sbName, sbIds);
     }
 
 

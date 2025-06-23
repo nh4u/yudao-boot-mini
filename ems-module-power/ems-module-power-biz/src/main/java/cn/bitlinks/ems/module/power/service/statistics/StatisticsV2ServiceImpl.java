@@ -161,6 +161,16 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             resultVO.setDataTime(LocalDateTime.now());
             return resultVO;
         }
+        //按能源查看就需要找对应的根节点待定 TODO
+/*        if(QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)){
+            //能源与计量器具根节点map
+            Map<Long, Set<Long>> rootNodeStandingbooks = statisticsCommonService.getRootNodeStandingbooks();
+            standingBookIds = energyIds.stream()
+                    .filter(rootNodeStandingbooks::containsKey)
+                    .flatMap(id -> rootNodeStandingbooks.get(id).stream())
+                    .collect(Collectors.toList());
+
+        }*/
 
 
         //能源参数
@@ -496,11 +506,22 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             resultV2VO.setDataTime(LocalDateTime.now());
             return resultV2VO;
         }
+        Integer queryType = paramVO.getQueryType();
+        //按能源查看就需要找对应的根节点 待定  TODO
+/*        if(QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)){
+            //能源与计量器具根节点map
+            Map<Long, Set<Long>> rootNodeStandingbooks = statisticsCommonService.getRootNodeStandingbooks();
+            standingBookIds = energyIds.stream()
+                    .filter(rootNodeStandingbooks::containsKey)
+                    .flatMap(id -> rootNodeStandingbooks.get(id).stream())
+                    .collect(Collectors.toList());
+
+        }*/
         //能源参数
         //根据台账ID查询用量跟成本
         List<UsageCostData> usageCostDataList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
         LocalDateTime lastTime = usageCostService.getLastTime(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
-        Integer queryType = paramVO.getQueryType();
+
 
         // x轴
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], dataTypeEnum);
@@ -546,8 +567,9 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             //涉及到的标签
             //key是一级标签
             // 过滤并按标签名分组
+            List<Long> finalStandingBookIds = standingBookIds;
             Map<String, List<StandingbookLabelInfoDO>> labelGrouped = standingbookIdsByLabel.stream()
-                    .filter(label -> standingBookIds.contains(label.getStandingbookId()))
+                    .filter(label -> finalStandingBookIds.contains(label.getStandingbookId()))
                     .collect(Collectors.groupingBy(StandingbookLabelInfoDO::getName));
 
             // 提取一级标签ID

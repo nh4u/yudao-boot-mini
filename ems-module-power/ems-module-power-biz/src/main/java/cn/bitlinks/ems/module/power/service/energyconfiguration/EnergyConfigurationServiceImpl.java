@@ -85,6 +85,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
 
     @Override
     public Long createEnergyConfiguration(EnergyConfigurationSaveReqVO createReqVO) {
+        validParamNameNoRepeat(createReqVO.getEnergyParameters());
         //  检查能源编码是否重复
         checkEnergyCodeDuplicate(createReqVO.getCode(), null);
         //  子表编码查重（新增逻辑）
@@ -105,9 +106,28 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         return energyId;
     }
 
+    /**
+     * 能源参数的参数名不允许重复
+     * @param energyParams
+     */
+    private void validParamNameNoRepeat(List<EnergyParametersSaveReqVO> energyParams){
+        if (CollUtil.isEmpty(energyParams)) {
+            return;
+        }
+
+        Set<String> seen = new HashSet<>();
+        for (EnergyParametersSaveReqVO param : energyParams) {
+            String name = param.getParameter();
+            if (!seen.add(name)) {
+                throw exception(ENERGY_PARAMS_NAME_REPEAT);
+            }
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateEnergyConfiguration(EnergyConfigurationSaveReqVO updateReqVO) {
+        validParamNameNoRepeat(updateReqVO.getEnergyParameters());
         Long energyId = updateReqVO.getId();
         // 1. 校验主表存在性
         EnergyConfigurationDO old = validateEnergyConfigurationExists(energyId);

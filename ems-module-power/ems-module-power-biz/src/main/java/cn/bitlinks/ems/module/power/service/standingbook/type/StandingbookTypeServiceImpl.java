@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.standingbook.type;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeSaveReqVO;
@@ -298,15 +299,13 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         }
         return rootNodes;
     }
-
+    @Override
+    public List<StandingbookTypeDO> getStandingbookTypeIdList(List<Long> typeIds) {
+        return standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>().inIfPresent(StandingbookTypeDO::getId, typeIds));
+    }
     @Override
     public Map<Long, StandingbookTypeDO> getStandingbookTypeIdMap(List<Long> typeIds) {
-        List<StandingbookTypeDO> allList;
-        if (CollUtil.isEmpty(typeIds)) {
-            allList = standingbookTypeMapper.selectList();
-        } else {
-            allList = standingbookTypeMapper.selectList(new LambdaQueryWrapper<StandingbookTypeDO>().in(StandingbookTypeDO::getId, typeIds));
-        }
+        List<StandingbookTypeDO> allList = getStandingbookTypeIdList(typeIds);
 
         if (CollUtil.isEmpty(allList)) {
             return new HashMap<>();
