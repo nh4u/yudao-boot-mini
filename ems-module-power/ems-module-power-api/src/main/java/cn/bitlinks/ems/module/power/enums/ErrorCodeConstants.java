@@ -138,6 +138,7 @@ public interface ErrorCodeConstants {
     ErrorCode QUERY_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_003, "查看类型不存在");
     ErrorCode DATE_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_004, "时间类型不存在");
     ErrorCode BENCH_MARK_NOT_EXISTS = new ErrorCode(1_001_601_005, "基准年限不存在");
+    ErrorCode SYSTEM_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_004, "系统类型不存在");
     // ========== 服务设置  ==========
     ErrorCode SERVICE_SETTINGS_NOT_EXISTS = new ErrorCode(1_001_901_001, "服务设置不存在");
     ErrorCode SERVICE_SETTINGS_ADD_ERROR = new ErrorCode(1_001_901_002, "服务设置添加失败，请检查服务设置信息是否正确");
@@ -155,5 +156,7 @@ public interface ErrorCodeConstants {
 
     // ========== COP参数设置  ==========
     ErrorCode COP_SETTINGS_NOT_EXISTS = new ErrorCode(1_001_102_001, "COP参数设置不存在");
-    ErrorCode STANDINGbOOK_REPEAT = new ErrorCode(1_001_102_001, "COP参数关联台账重复");
+    ErrorCode STANDINGbOOK_REPEAT = new ErrorCode(1_001_102_002, "COP参数关联台账重复");
+    ErrorCode COP_SETTINGS_LIST_NOT_EXISTS = new ErrorCode(1_001_102_003, "COP参数list不存在");
+    ErrorCode COP_SETTINGS_STANDINGbOOK_NOT_EMPTY = new ErrorCode(1_001_102_003, "COP公式参数关联的台账不能为空");
 }
