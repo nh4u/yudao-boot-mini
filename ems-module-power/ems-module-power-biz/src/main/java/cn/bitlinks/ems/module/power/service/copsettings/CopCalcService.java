@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.copsettings;
 
 import cn.bitlinks.ems.framework.common.util.calc.CalculateUtil;
+import cn.bitlinks.ems.framework.tenant.core.job.TenantJob;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
 import cn.bitlinks.ems.module.acquisition.api.starrocks.StreamLoadApi;
@@ -50,15 +51,19 @@ public class CopCalcService {
      * @param endHour
      * @param newHourData
      */
+    @TenantJob
     public void calculateCop(LocalDateTime startHour, LocalDateTime endHour, List<MinuteAggregateDataDTO> newHourData) {
+        log.info("COP计算开始，影响小时区间：{} ~ {}", startHour, endHour);
         // 1. 加载 COP 参数设置（可从数据库提前缓存成 Map）
         List<CopSettingsDTO> settings = copSettingsService.getCopSettingsWithParamsList();
         if (CollUtil.isEmpty(settings)) {
+            log.info("COP计算，无COP参数设置数据");
             return;
         }
         // 2. 获取cop 公式
         List<CopFormulaDO> copFormulaDOS = copSettingsService.getCopFormulaList();
         if (CollUtil.isEmpty(copFormulaDOS)) {
+            log.info("COP计算，无COP公式配置");
             return;
         }
 
