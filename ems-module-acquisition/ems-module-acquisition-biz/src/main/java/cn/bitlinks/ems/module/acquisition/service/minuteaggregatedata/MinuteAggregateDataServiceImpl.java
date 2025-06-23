@@ -12,6 +12,7 @@ import cn.bitlinks.ems.module.acquisition.starrocks.StarRocksStreamLoadService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,10 +28,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.*;
@@ -119,7 +118,8 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         if (CollUtil.isEmpty(aggDataList)) {
             return;
         }
-        List<List<MinuteAggregateDataDO>> batchList = CollUtil.split(aggDataList, batchSize);
+        List<List<MinuteAggregateDataDO>> batchList = getHourGroupBatch(aggDataList);
+
         for (List<MinuteAggregateDataDO> batch : batchList) {
             // 执行你的批量插入操作，比如：
             String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
@@ -131,7 +131,47 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
                     MessageBuilder.withPayload(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class)).build();
             rocketMQTemplate.send(topicName, msg);
         }
+    }
 
+    /**
+     * 台账+小时粒度 分批次数据
+     * @param aggDataList
+     * @return
+     */
+    private List<List<MinuteAggregateDataDO>> getHourGroupBatch(List<MinuteAggregateDataDO> aggDataList){
+        // 1. 按 台账 + 整点小时 分组
+        Map<String, List<MinuteAggregateDataDO>> groupMap = aggDataList.stream()
+                .collect(Collectors.groupingBy(data -> {
+                    Long sbId = data.getStandingbookId();
+                    LocalDateTime hour = data.getAggregateTime().withMinute(0).withSecond(0).withNano(0);
+                    return sbId + StringPool.UNDERSCORE + hour;
+                }));
+
+        // 2. 转成分组列表，并按照 "小时时间" 升序排序
+        List<Map.Entry<String, List<MinuteAggregateDataDO>>> sortedGroups = groupMap.entrySet()
+                .stream()
+                .sorted(Comparator.comparing(entry -> entry.getValue().get(0).getAggregateTime().withMinute(0).withSecond(0).withNano(0)))
+                .collect(Collectors.toList());
+        List<List<MinuteAggregateDataDO>> finalBatches = new ArrayList<>();
+        List<MinuteAggregateDataDO> currentBatch = new ArrayList<>();
+
+        for (Map.Entry<String, List<MinuteAggregateDataDO>> entry : sortedGroups) {
+            List<MinuteAggregateDataDO> group = entry.getValue();
+
+            // 判断是否超出最大批次
+            if (currentBatch.size() + group.size() > batchSize) {
+                finalBatches.add(new ArrayList<>(currentBatch));
+                currentBatch.clear();
+            }
+
+            currentBatch.addAll(group);
+        }
+
+        // 最后一批加入
+        if (!currentBatch.isEmpty()) {
+            finalBatches.add(currentBatch);
+        }
+        return finalBatches;
     }
 
     @Override
