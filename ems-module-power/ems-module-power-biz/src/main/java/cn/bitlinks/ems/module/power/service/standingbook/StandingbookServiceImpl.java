@@ -954,4 +954,38 @@ public class StandingbookServiceImpl implements StandingbookService {
         return result;
     }
 
+    @Override
+    public List<StandingbookEnergyTypeVO> getAllEnergyAndType() {
+        LambdaQueryWrapper<StandingbookDO> standingbookWrapper = new LambdaQueryWrapper<>();
+        standingbookWrapper.select(StandingbookDO::getId,StandingbookDO::getTypeId);
+        List<StandingbookDO> standingbookDOS = standingbookMapper.selectList(standingbookWrapper);
+
+        Set<Long> typeIds = standingbookDOS.stream().map(StandingbookDO::getTypeId).collect(Collectors.toSet());
+
+        LambdaQueryWrapper<StandingbookTmplDaqAttrDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(StandingbookTmplDaqAttrDO::getTypeId,StandingbookTmplDaqAttrDO::getEnergyId);
+        wrapper.in(StandingbookTmplDaqAttrDO::getTypeId, typeIds);
+        wrapper.eq(StandingbookTmplDaqAttrDO::getEnergyFlag, true);
+        wrapper.groupBy(StandingbookTmplDaqAttrDO::getTypeId,StandingbookTmplDaqAttrDO::getEnergyId);
+        List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS = standingbookTmplDaqAttrMapper.selectList(wrapper);
+        Map<Long, StandingbookTmplDaqAttrDO> typeTmplMap = standingbookTmplDaqAttrDOS.stream().collect(Collectors.toMap(StandingbookTmplDaqAttrDO::getTypeId, Function.identity()));
+
+        List<StandingbookEnergyTypeVO> result = new ArrayList<>();
+        standingbookDOS.forEach(standingbookDO ->{
+
+            if(Objects.nonNull(typeTmplMap.get(standingbookDO.getTypeId()))){
+                StandingbookEnergyTypeVO vo = new StandingbookEnergyTypeVO();
+                vo.setStandingbookId(standingbookDO.getId());
+                vo.setTypeId(standingbookDO.getTypeId());
+                StandingbookTmplDaqAttrDO standingbookTmplDaqAttrDO = typeTmplMap.get(standingbookDO.getTypeId());
+                vo.setEnergyId(standingbookTmplDaqAttrDO.getEnergyId());
+                result.add(vo);
+            }
+
+
+        });
+
+        return result;
+    }
+
 }
