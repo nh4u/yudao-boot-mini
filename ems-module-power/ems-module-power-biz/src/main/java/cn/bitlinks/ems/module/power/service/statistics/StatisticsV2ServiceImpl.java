@@ -249,6 +249,8 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                 String[] labelIds = valueKey.split(",");
                 String label2Name = getLabelName(labelMap, labelIds, 0);
                 String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : "/";
+                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : "/";
+                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : "/";
 
                 labelInfoList.forEach(labelInfo -> {
                     List<UsageCostData> usageList = energyUsageMap.get(labelInfo.getStandingbookId());
@@ -281,6 +283,8 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                         info.setLabel1(topLabel.getLabelName());
                         info.setLabel2(label2Name);
                         info.setLabel3(label3Name);
+                        info.setLabel4(label4Name);
+                        info.setLabel5(label5Name);
 
                         dataList = dataList.stream().peek(i -> {
                             i.setMoney(dealBigDecimalScale(i.getMoney(), scale));
@@ -325,6 +329,8 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                 String[] labelIds = valueKey.split(",");
                 String label2Name = getLabelName(labelMap, labelIds, 0);
                 String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : "/";
+                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : "/";
+                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : "/";
 
                 labelInfoList.forEach(labelInfo -> {
                     List<UsageCostData> usageList = energyUsageMap.get(labelInfo.getStandingbookId());
@@ -352,6 +358,8 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                     info.setLabel1(topLabel.getLabelName());
                     info.setLabel2(label2Name);
                     info.setLabel3(label3Name);
+                    info.setLabel4(label4Name);
+                    info.setLabel5(label5Name);
 
                     dataList = dataList.stream().peek(i -> {
                         i.setMoney(dealBigDecimalScale(i.getMoney(), scale));
