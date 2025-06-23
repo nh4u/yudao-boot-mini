@@ -1,6 +1,8 @@
 package cn.bitlinks.ems.module.acquisition.task;
 
 
+import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
+import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectRawDataDO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
@@ -30,9 +32,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.AGG_TASK_LOCK_KEY;
+import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.AGG_TASK_STEADY_LOCK_KEY;
 
 /**
- * 聚合数据任务
+ * 聚合数据任务(用量+稳态值)
  */
 @Slf4j
 @Component
@@ -59,22 +62,84 @@ public class AggTask {
         RLock lock = redissonClient.getLock(LOCK_KEY);
         try {
             if (!lock.tryLock(5000L, TimeUnit.MICROSECONDS)) {
-                log.info("聚合任务Task 已由其他节点执行");
+                log.info("聚合任务[用量]Task 已由其他节点执行");
             }
             try {
-                log.info("聚合任务Task 开始执行");
+                log.info("聚合任务[用量]Task 开始执行");
                 insertMinuteData();
-                log.info("聚合任务Task 执行完成");
+                log.info("聚合任务[用量]Task 执行完成");
             } finally {
                 lock.unlock();
             }
         } catch (Exception e) {
-            log.error("聚合任务Task 执行失败", e);
+            log.error("聚合任务[用量]Task 执行失败", e);
         }
 
     }
 
     /**
+     * 聚合任务-稳态值
+     */
+    @Scheduled(cron = "30 0/1 * * * ? ") // 每分钟的 30 秒执行一次
+    public void executeSteady() {
+        String LOCK_KEY = String.format(AGG_TASK_STEADY_LOCK_KEY, env);
+
+        RLock lock = redissonClient.getLock(LOCK_KEY);
+        try {
+            if (!lock.tryLock(5000L, TimeUnit.MICROSECONDS)) {
+                log.info("聚合任务[稳态值]Task 已由其他节点执行");
+            }
+            try {
+                log.info("聚合任务[稳态值]Task 开始执行");
+                insertSteadyData();
+                log.info("聚合任务[稳态值]Task 执行完成");
+            } finally {
+                lock.unlock();
+            }
+        } catch (Exception e) {
+            log.error("聚合任务[稳态值]Task 执行失败", e);
+        }
+
+    }
+
+    /**
+     * 聚合稳态值
+     */
+    private void insertSteadyData() throws IOException {
+        //只要台账有稳态值的话，数采的频率需要在一分钟内
+//        1、所有稳态值都要聚合（指1分钟的值），稳态值聚合规则如下：
+//        取1分钟内采集到的末尾值作为该1分钟的值。
+//        例如：12:58:13 值8->12:58:30 值4->12:58:50  值15    。则12:59分的值是15。
+//        2、COP报表稳态值取值规则如下：
+//        取1小时内聚合的末尾值作为该1小时的值。
+//        例如：如上时间顺序的聚合值。COP报表中，13时的值是15。
+        LocalDateTime currentMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(10L);
+
+        //        LocalDateTime currentMinute = LocalDateTime.of(2025, 6, 9, 19, 20, 0);
+        // List<MinuteAggregateDataDO> list = new ArrayList<>();
+        // 1.获取每个台账的所有编码对应的该分钟的上一分钟的末尾值当成此分钟点的稳态值
+        List<CollectRawDataDO> collectRawDataDOList = collectRawDataMapper.getGroupedSteadyFinalValue(currentMinute.minusMinutes(1L), currentMinute);
+        if (CollUtil.isEmpty(collectRawDataDOList)) {
+            return;
+        }
+        // 2.把实时数据转为聚合数据
+        List<MinuteAggregateDataDO> currentAggDataList = new ArrayList<>();
+        collectRawDataDOList.forEach(finalValue -> {
+            MinuteAggregateDataDO minuteAggregateDataDO = BeanUtils.toBean(finalValue, MinuteAggregateDataDO.class);
+            minuteAggregateDataDO.setAggregateTime(currentMinute);
+            minuteAggregateDataDO.setFullValue(new BigDecimal(finalValue.getCalcValue()));
+            minuteAggregateDataDO.setIncrementalValue(null);
+            // 稳态值的分钟数据都是采集点，因为不是采集点的不会在表中出现
+            minuteAggregateDataDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
+            currentAggDataList.add(minuteAggregateDataDO);
+        });
+
+        // 4.将计算出的当前分钟的聚合数据插入到聚合数据表中
+        minuteAggregateDataService.insertSteadyAggDataBatch(currentAggDataList);
+    }
+
+    /**
+     * 聚合用量值
      * 当前分钟（-10min）的聚合时间的数据计算与插入
      */
     private void insertMinuteData() throws IOException {
@@ -83,7 +148,7 @@ public class AggTask {
 //
 //        2025-06-09 19:47:12
         // 1.先获取所有的台账id、能源参数、和id
-        List<CollectRawDataDO> collectRawDataDOList = collectRawDataMapper.getGroupedData();
+        List<CollectRawDataDO> collectRawDataDOList = collectRawDataMapper.getGroupedStandingbookIdData();
         if (CollUtil.isEmpty(collectRawDataDOList)) {
             return;
         }
@@ -172,6 +237,7 @@ public class AggTask {
                 currentMinuteAggregateDataDO.setAggregateTime(targetTime);
                 currentMinuteAggregateDataDO.setFullValue(currentValue);
                 currentMinuteAggregateDataDO.setIncrementalValue(BigDecimal.ZERO);
+                currentMinuteAggregateDataDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
                 currentDataList.add(currentMinuteAggregateDataDO);
                 return;
             }
@@ -184,6 +250,7 @@ public class AggTask {
                 currentMinuteAggregateDataDO.setAggregateTime(targetTime);
                 currentMinuteAggregateDataDO.setFullValue(currentValue);
                 currentMinuteAggregateDataDO.setIncrementalValue(currentValue.subtract(latestAggData.getFullValue()));
+                currentMinuteAggregateDataDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
                 currentDataList.add(currentMinuteAggregateDataDO);
                 return;
             }
@@ -191,11 +258,12 @@ public class AggTask {
             // 需要从上一个聚合时间 latestAggTime 的下一分钟 开始，补到 targetTime 为止
 
             // 上次实时推送数据早于 与 最新的聚合时间差距一分钟以上，需要田中，最新聚合时间与上次实时推送数据之间的分钟数据。
-            // 需要补充聚合数据最新时间和上次实时数据时间点时间的数据。todo
+            // 需要补充聚合数据最新时间和上次实时数据时间点时间的数据。
             MinuteAggregateDataDO endDO = BeanUtils.toBean(latestAggData, MinuteAggregateDataDO.class);
             endDO.setAggregateTime(targetTime);
             endDO.setFullValue(currentValue);
             endDO.setIncrementalValue(null);
+            endDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
             splitData(currentDataList, latestAggData, latestAggData, endDO);
             return;
         }
@@ -222,11 +290,12 @@ public class AggTask {
                 prevValue = latestAggData.getFullValue();
             } else if (prevTime.isAfter(latestAggTime.plusMinutes(1L))) {
                 // 上次实时推送数据早于 与 最新的聚合时间差距一分钟以上，需要田中，最新聚合时间与上次实时推送数据之间的分钟数据。
-                // 需要补充聚合数据最新时间和上次实时数据时间点时间的数据。todo
+                // 需要补充聚合数据最新时间和上次实时数据时间点时间的数据。
                 MinuteAggregateDataDO endDO = BeanUtils.toBean(latestAggData, MinuteAggregateDataDO.class);
                 endDO.setAggregateTime(prevTime);
                 endDO.setFullValue(prevValue);
                 endDO.setIncrementalValue(null);
+                endDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
                 splitData(currentDataList, latestAggData, latestAggData, endDO);
             }
         }
@@ -251,6 +320,7 @@ public class AggTask {
                 .divide(BigDecimal.valueOf(totalSeconds), 10, RoundingMode.HALF_UP);
         long elapsedSeconds = Duration.between(prevTime, targetTime).getSeconds();
         endDO.setFullValue(prevValue.add(rate.multiply(BigDecimal.valueOf(elapsedSeconds))));
+        endDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
         splitData(currentDataList, latestAggData, startDO, endDO);
 
     }
@@ -285,6 +355,7 @@ public class AggTask {
             MinuteAggregateDataDO data = BeanUtils.toBean(startData, MinuteAggregateDataDO.class);
             data.setAggregateTime(minutePoint);
             data.setFullValue(interpolatedValue);
+            data.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
             if (lastData == null) {
                 data.setIncrementalValue(BigDecimal.ZERO);
             } else {

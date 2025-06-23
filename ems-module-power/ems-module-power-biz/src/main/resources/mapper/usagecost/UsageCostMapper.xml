@@ -59,7 +59,8 @@
         FROM
         usage_cost
         WHERE
-        aggregate_time BETWEEN #{startDate} AND #{endDate}
+        aggregate_time &gt; #{startDate}
+        AND aggregate_time &lt;= #{endDate}
             AND standingbook_id IN
             <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
                 #{item}
@@ -107,7 +108,8 @@
         FROM
         usage_cost
         WHERE
-        aggregate_time BETWEEN #{startDate} AND #{endDate}
+        aggregate_time &gt; #{startDate}
+        AND aggregate_time &lt;= #{endDate}
         AND standingbook_id IN
         <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
             #{item}
@@ -127,7 +129,9 @@
         FROM
         usage_cost
         WHERE
-        DATE_FORMAT(aggregate_time, '%Y-%m-%d') BETWEEN DATE_FORMAT(#{startDate}, '%Y-%m-%d') AND DATE_FORMAT(#{endDate}, '%Y-%m-%d')
+        DATE_FORMAT(aggregate_time, '%Y-%m-%d')  &gt; #{startDate}
+        AND DATE_FORMAT(aggregate_time, '%Y-%m-%d')  &lt;= #{endDate}
+
         AND energy_id IN
         <foreach collection="energyIdList" item="item" open="(" separator="," close=")">
             #{item}
@@ -146,7 +150,9 @@
         FROM
         usage_cost
         WHERE
-        aggregate_time BETWEEN #{startDate} AND #{endDate}
+
+        aggregate_time &gt; #{startDate}
+        AND aggregate_time &lt;= #{endDate}
         AND standingbook_id IN
         <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
             #{item}
@@ -162,7 +168,8 @@
         FROM
         usage_cost
         WHERE
-        aggregate_time BETWEEN #{startDate} AND #{endDate}
+        aggregate_time &gt; #{startDate}
+        AND aggregate_time &lt;= #{endDate}
         AND standingbook_id IN
         <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
             #{item}
@@ -178,7 +185,9 @@
         FROM
         usage_cost
         WHERE
-        aggregate_time BETWEEN #{startDate} AND #{endDate}
+        aggregate_time &gt; #{startDate}
+        AND aggregate_time &lt;= #{endDate}
+
         AND standingbook_id IN
         <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
             #{item}

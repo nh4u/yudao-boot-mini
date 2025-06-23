@@ -22,15 +22,6 @@ public interface MinuteAggregateDataService {
     MinuteAggregateDataDTO selectByAggTime(Long standingbookId, LocalDateTime thisCollectTime);
 
     /**
-     * 获取指定时间的上次聚合数据
-     *
-     * @param standingbookId     台账id
-     * @param currentCollectTime 指定聚合时间
-     * @return 聚合数据
-     */
-    MinuteAggregateDataDTO selectLatestByAggTime(Long standingbookId, LocalDateTime currentCollectTime);
-
-    /**
      * 查询台账最老数据
      *
      * @param standingbookId
@@ -47,20 +38,63 @@ public interface MinuteAggregateDataService {
     MinuteAggregateDataDTO selectLatestByStandingBookId(Long standingbookId);
 
     /**
+     * 聚合数据的新增[稳态值]
+     *
+     * @param aggDataList
+     * @throws IOException
+     */
+    void insertSteadyAggDataBatch(List<MinuteAggregateDataDO> aggDataList) throws IOException;
+
+    /**
      * 通用的聚合数据改动发送给usagecost
      *
      * @param aggDataList
      * @throws IOException
      */
     void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList) throws IOException;
+
     /**
      * 插入单条数据，初始化数据
      */
-    void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO) ;
+    void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO);
+
     /**
      * 插入时间段数据，需要拆分，起始数据存在
      *
      * @param minuteAggDataSplitDTO
      */
     void insertRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO);
+
+    /**
+     * 获取指定时间段的聚合数据
+     *
+     * @param standingbookIds
+     * @param starTime
+     * @param endTime
+     * @return
+     */
+    List<MinuteAggregateDataDTO> getRangeDataRequestParam(List<Long> standingbookIds, LocalDateTime starTime, LocalDateTime endTime);
+    /**
+     * 获取该台账的上一个全量值
+     * @param standingbookId
+     * @param acquisitionTime
+     * @return
+     */
+    MinuteAggregateDataDTO getUsagePrevFullValue(Long standingbookId, LocalDateTime acquisitionTime);
+
+    /**
+     * 获取该台账的下一个全量值
+     * @param standingbookId
+     * @param acquisitionTime
+     * @return
+     */
+    MinuteAggregateDataDTO getUsageNextFullValue(Long standingbookId, LocalDateTime acquisitionTime);
+
+    /**
+     * 获取该台账的当前业务点全量值
+     * @param standingbookId
+     * @param acquisitionTime
+     * @return
+     */
+    MinuteAggregateDataDTO getUsageExistFullValue(Long standingbookId, LocalDateTime acquisitionTime);
 }

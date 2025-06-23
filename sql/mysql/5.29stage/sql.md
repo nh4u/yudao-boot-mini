@@ -122,4 +122,3 @@ INSERT INTO `infra_file_config` VALUES (1, 'minio', 20, '', b'1', '{\"@class\":\
 INSERT INTO `system_users` VALUES (1, 'admin', '$2a$10$mRMIYLDtRHlf6.9ipiqH1.Z.bh/R9dO9d5iHiGYPigi6r5KOoR2Wm', 'admin', '管理员', 1, '[]', 'xx@qq.com', '', 2, '', 0, '127.0.0.1', '2025-05-28 11:21:43', 'admin', '2021-01-05 17:03:47', NULL, '2025-05-28 19:11:39', b'0', 1);
 
 ```
-

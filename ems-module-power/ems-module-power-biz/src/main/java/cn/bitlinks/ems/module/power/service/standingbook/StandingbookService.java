@@ -1,10 +1,7 @@
 package cn.bitlinks.ems.module.power.service.standingbook;
 
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.MeasurementVirtualAssociationSaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookAssociationReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookEnergyTypeVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 
@@ -93,11 +90,17 @@ public interface StandingbookService {
     Map<Long, List<MeasurementAssociationDO>>  getUpStandingbookIdsBySbIds(List<Long> sbIds);
 
     /**
-     * 根据能源ids获取台账模板数据
+     * 根据台账ID获取台账和能源关系
      * @param standingbookIds
      * @return
      */
     List<StandingbookEnergyTypeVO> getEnergyAndTypeByStandingbookIds(List<Long> standingbookIds);
+
+    /**
+     * 获取所有台账和能源关系
+     * @return
+     */
+    List<StandingbookEnergyTypeVO> getAllEnergyAndType();
 
 
     /**
@@ -114,4 +117,11 @@ public interface StandingbookService {
     void updAssociationMeasurementInstrument(MeasurementVirtualAssociationSaveReqVO createReqVO);
 
     void sbOtherField(List<StandingbookRespVO> respVOS);
+
+    /**
+     * 根据能源参数查询台账id
+     * @param standingbookEnergyParamReqVO
+     * @return
+     */
+    List<StandingBookTypeTreeRespVO> treeWithEnergyParam(StandingbookEnergyParamReqVO standingbookEnergyParamReqVO);
 }

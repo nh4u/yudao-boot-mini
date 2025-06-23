@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 
 @Slf4j
@@ -29,14 +30,6 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
         return CommonResult.success(minuteAggregateDataDTO);
     }
 
-    @Override
-    public CommonResult<MinuteAggregateDataDTO> selectLatestByAggTime(Long standingbookId, LocalDateTime currentCollectTime) {
-        MinuteAggregateDataDTO minuteAggregateDataDTO = minuteAggregateDataService.selectLatestByAggTime(standingbookId, currentCollectTime);
-        if (Objects.isNull(minuteAggregateDataDTO)) {
-            return CommonResult.success(null);
-        }
-        return CommonResult.success(minuteAggregateDataDTO);
-    }
 
     @Override
     public CommonResult<MinuteAggregateDataDTO> selectOldestByStandingBookId(Long standingbookId) {
@@ -55,6 +48,7 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
         }
         return CommonResult.success(minuteAggregateDataDTO);
     }
+
     @Override
     public void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO) {
         minuteAggregateDataService.insertSingleData(minuteAggregateDataDTO);
@@ -63,5 +57,23 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     @Override
     public void insertRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
         minuteAggregateDataService.insertRangeData(minuteAggDataSplitDTO);
+    }
+
+    @Override
+    public List<MinuteAggregateDataDTO> getRangeDataRequestParam(List<Long> standingbookIds, LocalDateTime starTime, LocalDateTime endTime) {
+        return minuteAggregateDataService.getRangeDataRequestParam(standingbookIds, starTime, endTime);
+    }
+    @Override
+    public MinuteAggregateDataDTO getUsageExistFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
+        return minuteAggregateDataService.getUsageExistFullValue(standingbookId, acquisitionTime);
+    }
+    @Override
+    public MinuteAggregateDataDTO getUsagePrevFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
+        return minuteAggregateDataService.getUsagePrevFullValue(standingbookId, acquisitionTime);
+    }
+
+    @Override
+    public MinuteAggregateDataDTO getUsageNextFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
+        return minuteAggregateDataService.getUsageNextFullValue(standingbookId, acquisitionTime);
     }
 }

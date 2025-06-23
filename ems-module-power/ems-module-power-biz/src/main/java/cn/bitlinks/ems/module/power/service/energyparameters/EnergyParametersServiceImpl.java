@@ -1,24 +1,25 @@
 package cn.bitlinks.ems.module.power.service.energyparameters;
 
+import cn.bitlinks.ems.framework.common.pojo.PageResult;
+import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.module.power.controller.admin.energyparameters.vo.EnergyParametersPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.energyparameters.vo.EnergyParametersSaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
+import cn.bitlinks.ems.module.power.dal.mysql.energyparameters.EnergyParametersMapper;
+import cn.hutool.core.util.ArrayUtil;
 import com.alibaba.nacos.client.naming.utils.CollectionUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Service;
-import javax.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
-import cn.bitlinks.ems.module.power.controller.admin.energyparameters.vo.*;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
-import cn.bitlinks.ems.framework.common.pojo.PageResult;
-import cn.bitlinks.ems.framework.common.pojo.PageParam;
-import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-
-import cn.bitlinks.ems.module.power.dal.mysql.energyparameters.EnergyParametersMapper;
-import cn.hutool.core.util.ArrayUtil;
+import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.ENERGY_PARAMETERS_NOT_EXISTS;
 
 /**
  * 能源参数 Service 实现类
@@ -94,13 +95,28 @@ public class EnergyParametersServiceImpl implements EnergyParametersService {
 
     @Override
     public List<EnergyParametersDO> getUsageParamsByEnergyIds(List<Long> energyIds, Boolean usage) {
-        if(ArrayUtil.isEmpty(energyIds) || Objects.isNull(usage)){
+        if (ArrayUtil.isEmpty(energyIds) || Objects.isNull(usage)) {
             return new ArrayList<>();
         }
         LambdaQueryWrapper<EnergyParametersDO> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(EnergyParametersDO::getUsage, usage);
         queryWrapper.in(EnergyParametersDO::getEnergyId, energyIds);
         return energyParametersMapper.selectList(queryWrapper);
+    }
+
+    @Override
+    public List<Long> getByEnergyIdByParamName(String paramName) {
+        return energyParametersMapper.selectObjs(
+                        new LambdaQueryWrapper<EnergyParametersDO>()
+                                .select(EnergyParametersDO::getEnergyId) // 只查 energy_id 字段
+                                .eq(EnergyParametersDO::getParameter, paramName)
+                                .eq(EnergyParametersDO::getDeleted, false)
+                ).stream()
+                .map(obj -> (Long) obj)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
     }
 
 }

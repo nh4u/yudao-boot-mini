@@ -29,8 +29,10 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookType
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
 import cn.bitlinks.ems.module.power.enums.standingbook.StandingbookTypeTopEnum;
+import cn.bitlinks.ems.module.power.service.energyparameters.EnergyParametersService;
 import cn.bitlinks.ems.module.power.service.standingbook.acquisition.StandingbookAcquisitionService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
+import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
 import cn.bitlinks.ems.module.power.service.warningstrategy.WarningStrategyService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONObject;
@@ -72,6 +74,9 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Resource
     private StandingbookTypeMapper standingbookTypeMapper;
     @Resource
+    @Lazy
+    private StandingbookTypeService standingbookTypeService;
+    @Resource
     private StandingbookTmplDaqAttrMapper standingbookTmplDaqAttrMapper;
     @Resource
     private StandingbookAttributeMapper standingbookAttributeMapper;
@@ -94,6 +99,9 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Lazy
     private EnergyConfigurationMapper energyConfigurationMapper;
 
+    @Resource
+    @Lazy
+    private EnergyParametersService energyParametersService;
     @Resource
     @Lazy
     private StandingbookService standingbookService;
@@ -202,7 +210,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
         //根据typeIds获取能源ID关联
         List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS = standingbookTmplDaqAttrMapper.selectEnergyMapping(sbTypeIds);
-        if (standingbookTmplDaqAttrDOS.isEmpty()){
+        if (standingbookTmplDaqAttrDOS.isEmpty()) {
             return result;
         }
         //获取所有能源ID
@@ -216,12 +224,12 @@ public class StandingbookServiceImpl implements StandingbookService {
                 .stream()
                 .collect(Collectors.toMap(EnergyConfigurationDO::getId, energyConfigurationDO -> energyConfigurationDO));
         //Map typeID 与 能源ID关联
-        Map<Long,Long> energyTypeIdMap = standingbookTmplDaqAttrDOS.stream().collect(Collectors.toMap(StandingbookTmplDaqAttrDO::getTypeId, StandingbookTmplDaqAttrDO::getEnergyId));
+        Map<Long, Long> energyTypeIdMap = standingbookTmplDaqAttrDOS.stream().collect(Collectors.toMap(StandingbookTmplDaqAttrDO::getTypeId, StandingbookTmplDaqAttrDO::getEnergyId));
 
         //添加能源信息
         result.forEach(sb -> {
             sb.setEnergyId(energyTypeIdMap.get(sb.getTypeId()));
-            if(energyMap.get(energyTypeIdMap.get(sb.getTypeId()))!=null){
+            if (energyMap.get(energyTypeIdMap.get(sb.getTypeId())) != null) {
                 sb.setEnergyName(energyMap.get(energyTypeIdMap.get(sb.getTypeId())).getEnergyName());
             }
         });
@@ -275,6 +283,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     /**
      * 其他补充属性
+     *
      * @param respVOS
      */
     @Override
@@ -284,7 +293,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
         //根据typeIds获取能源ID关联
         List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS = standingbookTmplDaqAttrMapper.selectEnergyMapping(sbTypeIds);
-        if (standingbookTmplDaqAttrDOS.isEmpty()){
+        if (standingbookTmplDaqAttrDOS.isEmpty()) {
             return;
         }
         //获取所有能源ID
@@ -298,20 +307,130 @@ public class StandingbookServiceImpl implements StandingbookService {
                 .stream()
                 .collect(Collectors.toMap(EnergyConfigurationDO::getId, energyConfigurationDO -> energyConfigurationDO));
         //Map typeID 与 能源ID关联
-        Map<Long,Long> energyTypeIdMap = standingbookTmplDaqAttrDOS.stream().collect(Collectors.toMap(StandingbookTmplDaqAttrDO::getTypeId, StandingbookTmplDaqAttrDO::getEnergyId));
+        Map<Long, Long> energyTypeIdMap = standingbookTmplDaqAttrDOS.stream().collect(Collectors.toMap(StandingbookTmplDaqAttrDO::getTypeId, StandingbookTmplDaqAttrDO::getEnergyId));
 
         //添加能源信息
         respVOS.forEach(sb -> {
             sb.setEnergyId(energyTypeIdMap.get(sb.getTypeId()));
-            if(energyMap.get(energyTypeIdMap.get(sb.getTypeId()))!=null){
+            if (energyMap.get(energyTypeIdMap.get(sb.getTypeId())) != null) {
                 sb.setEnergyName(energyMap.get(energyTypeIdMap.get(sb.getTypeId())).getEnergyName());
             }
         });
     }
 
     @Override
+    public List<StandingBookTypeTreeRespVO> treeWithEnergyParam(StandingbookEnergyParamReqVO standingbookEnergyParamReqVO) {
+        // 根据能源参数筛选出能源然后筛选出台账分类，
+        List<Long> energyIds = energyParametersService.getByEnergyIdByParamName(standingbookEnergyParamReqVO.getEnergyParamCnName());
+        if (CollUtil.isEmpty(energyIds)) {
+            return Collections.emptyList();
+        }
+        // 再筛选一遍能源挂在哪个台账分类下，
+        List<Long> energyTypeIds = standingbookTmplDaqAttrMapper.selectSbTypeIdsByEnergyIds(energyIds);
+        if (CollUtil.isEmpty(energyTypeIds)) {
+            return Collections.emptyList();
+        }
+        // 根据台账分类查询台账
+        List<Long> sbIds = standingbookMapper.selectStandingbookIdByCondition(null, energyTypeIds, null, null);
+        if (CollUtil.isEmpty(sbIds)) {
+            return Collections.emptyList();
+        }
+        // 根据台账名称和台账编码模糊搜出台账
+        List<StandingBookTypeTreeRespVO> sbNodes = standingbookAttributeService.getStandingbookByCodeAndName(standingbookEnergyParamReqVO.getSbCode(), standingbookEnergyParamReqVO.getSbName(), sbIds);
+        if (CollUtil.isEmpty(sbNodes)) {
+            return Collections.emptyList();
+        }
+
+        // 台账分类属性结构
+        List<StandingbookTypeDO> standingbookTypeDOTree = standingbookTypeService.getStandingbookTypeIdList(energyTypeIds);
+        return buildTreeWithDevices(standingbookTypeDOTree, sbNodes);
+
+
+
+    }
+
+    /**
+     * 分类list和台账节点list
+     * @param categoryList
+     * @param sbLeafNodes
+     * @return
+     */
+    private List<StandingBookTypeTreeRespVO> buildTreeWithDevices(
+            List<StandingbookTypeDO> categoryList,
+            List<StandingBookTypeTreeRespVO> sbLeafNodes
+    ) {
+        // 1. 将计量器具（sbLeafNodes）分组：pNodeId -> List<leaf>
+        Map<String, List<StandingBookTypeTreeRespVO>> leafGroupedByParent =
+                sbLeafNodes.stream().collect(Collectors.groupingBy(StandingBookTypeTreeRespVO::getParentNodeId));
+
+        // 2. 将分类转换为 VO 节点，标记为非叶子（show = false）
+        Map<String, StandingBookTypeTreeRespVO> categoryMap = categoryList.stream()
+                .map(cat -> {
+                    StandingBookTypeTreeRespVO vo = new StandingBookTypeTreeRespVO();
+                    vo.setNodeId(cat.getId() + StringPool.HASH + false);
+                    vo.setParentNodeId(cat.getSuperId() + StringPool.HASH + false);
+                    vo.setRawId(cat.getId());
+                    vo.setNodeName(cat.getName());
+                    vo.setShow(false);
+                    vo.setChildren(new ArrayList<>());
+                    return vo;
+                })
+                .collect(Collectors.toMap(StandingBookTypeTreeRespVO::getNodeId, Function.identity()));
+
+        // 3. 将叶子节点挂到对应的分类上
+        leafGroupedByParent.forEach((parentId, leaves) -> {
+            StandingBookTypeTreeRespVO parent = categoryMap.get(parentId);
+            if (parent != null) {
+                parent.getChildren().addAll(leaves);
+            }
+        });
+
+        // 4. 构造分类树结构
+        List<StandingBookTypeTreeRespVO> roots = new ArrayList<>();
+        for (StandingBookTypeTreeRespVO node : categoryMap.values()) {
+            if (categoryMap.containsKey(node.getParentNodeId())) {
+                StandingBookTypeTreeRespVO parent = categoryMap.get(node.getParentNodeId());
+                parent.getChildren().add(node);
+            } else {
+                roots.add(node);
+            }
+        }
+
+        // 5. 剪枝：递归保留含有计量器具的分支
+        return roots.stream()
+                .map(this::filterNodeWithLeaf)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 剪枝辅助方法：只保留包含叶子的节点
+     * @param node
+     * @return
+     */
+    private StandingBookTypeTreeRespVO filterNodeWithLeaf(StandingBookTypeTreeRespVO node) {
+        if (node.isShow()) {
+            return node; // 是计量器具，保留
+        }
+
+        List<StandingBookTypeTreeRespVO> filteredChildren = Optional.ofNullable(node.getChildren())
+                .orElse(Collections.emptyList())
+                .stream()
+                .map(this::filterNodeWithLeaf)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        if (!filteredChildren.isEmpty()) {
+            node.setChildren(filteredChildren);
+            return node;
+        }
+
+        return null; // 没有叶子，不保留该分类节点
+    }
+
+    @Override
     public List<StandingbookDO> getByTypeIds(List<Long> typeIds) {
-        if (CollUtil.isNotEmpty(typeIds)){
+        if (CollUtil.isNotEmpty(typeIds)) {
             LambdaQueryWrapper<StandingbookDO> wrapper = new LambdaQueryWrapper<>();
             wrapper.in(StandingbookDO::getTypeId, typeIds);
             return standingbookMapper.selectList(wrapper);
@@ -767,10 +886,11 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     /**
      * 查询所有台账关联的下级计量器具
+     *
      * @param sbIds
      */
     @Override
-    public Map<Long, List<MeasurementAssociationDO>>  getSubStandingbookIdsBySbIds(List<Long> sbIds){
+    public Map<Long, List<MeasurementAssociationDO>> getSubStandingbookIdsBySbIds(List<Long> sbIds) {
         // 查询所有台账关联的下级计量器具
         List<MeasurementAssociationDO> assosicationSbList = measurementAssociationMapper.selectList(
                 new LambdaQueryWrapper<MeasurementAssociationDO>().in(MeasurementAssociationDO::getMeasurementInstrumentId, sbIds));
@@ -787,10 +907,11 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     /**
      * 查询所有台账关联的下级计量器具
+     *
      * @param sbIds
      */
     @Override
-    public Map<Long, List<MeasurementAssociationDO>>  getUpStandingbookIdsBySbIds(List<Long> sbIds){
+    public Map<Long, List<MeasurementAssociationDO>> getUpStandingbookIdsBySbIds(List<Long> sbIds) {
         // 查询所有台账关联的下级计量器具
         List<MeasurementAssociationDO> assosicationSbList = measurementAssociationMapper.selectList(
                 new LambdaQueryWrapper<MeasurementAssociationDO>().in(MeasurementAssociationDO::getMeasurementId, sbIds));
@@ -813,6 +934,35 @@ public class StandingbookServiceImpl implements StandingbookService {
         Set<Long> typeIds = standingbookDOS.stream().map(StandingbookDO::getTypeId).collect(Collectors.toSet());
 
         LambdaQueryWrapper<StandingbookTmplDaqAttrDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(StandingbookTmplDaqAttrDO::getTypeId, StandingbookTmplDaqAttrDO::getEnergyId);
+        wrapper.in(StandingbookTmplDaqAttrDO::getTypeId, typeIds);
+        wrapper.eq(StandingbookTmplDaqAttrDO::getEnergyFlag, true);
+        wrapper.groupBy(StandingbookTmplDaqAttrDO::getTypeId, StandingbookTmplDaqAttrDO::getEnergyId);
+        List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS = standingbookTmplDaqAttrMapper.selectList(wrapper);
+        Map<Long, StandingbookTmplDaqAttrDO> typeTmplMap = standingbookTmplDaqAttrDOS.stream().collect(Collectors.toMap(StandingbookTmplDaqAttrDO::getTypeId, Function.identity()));
+
+        List<StandingbookEnergyTypeVO> result = new ArrayList<>();
+        standingbookDOS.forEach(standingbookDO -> {
+            StandingbookEnergyTypeVO vo = new StandingbookEnergyTypeVO();
+            vo.setStandingbookId(standingbookDO.getId());
+            vo.setTypeId(standingbookDO.getTypeId());
+            StandingbookTmplDaqAttrDO standingbookTmplDaqAttrDO = typeTmplMap.get(standingbookDO.getTypeId());
+            vo.setEnergyId(standingbookTmplDaqAttrDO.getEnergyId());
+            result.add(vo);
+        });
+
+        return result;
+    }
+
+    @Override
+    public List<StandingbookEnergyTypeVO> getAllEnergyAndType() {
+        LambdaQueryWrapper<StandingbookDO> standingbookWrapper = new LambdaQueryWrapper<>();
+        standingbookWrapper.select(StandingbookDO::getId,StandingbookDO::getTypeId);
+        List<StandingbookDO> standingbookDOS = standingbookMapper.selectList(standingbookWrapper);
+
+        Set<Long> typeIds = standingbookDOS.stream().map(StandingbookDO::getTypeId).collect(Collectors.toSet());
+
+        LambdaQueryWrapper<StandingbookTmplDaqAttrDO> wrapper = new LambdaQueryWrapper<>();
         wrapper.select(StandingbookTmplDaqAttrDO::getTypeId,StandingbookTmplDaqAttrDO::getEnergyId);
         wrapper.in(StandingbookTmplDaqAttrDO::getTypeId, typeIds);
         wrapper.eq(StandingbookTmplDaqAttrDO::getEnergyFlag, true);
@@ -822,12 +972,17 @@ public class StandingbookServiceImpl implements StandingbookService {
 
         List<StandingbookEnergyTypeVO> result = new ArrayList<>();
         standingbookDOS.forEach(standingbookDO ->{
-            StandingbookEnergyTypeVO vo = new StandingbookEnergyTypeVO();
-            vo.setStandingbookId(standingbookDO.getId());
-            vo.setTypeId(standingbookDO.getTypeId());
-            StandingbookTmplDaqAttrDO standingbookTmplDaqAttrDO = typeTmplMap.get(standingbookDO.getTypeId());
-            vo.setEnergyId(standingbookTmplDaqAttrDO.getEnergyId());
-            result.add(vo);
+
+            if(Objects.nonNull(typeTmplMap.get(standingbookDO.getTypeId()))){
+                StandingbookEnergyTypeVO vo = new StandingbookEnergyTypeVO();
+                vo.setStandingbookId(standingbookDO.getId());
+                vo.setTypeId(standingbookDO.getTypeId());
+                StandingbookTmplDaqAttrDO standingbookTmplDaqAttrDO = typeTmplMap.get(standingbookDO.getTypeId());
+                vo.setEnergyId(standingbookTmplDaqAttrDO.getEnergyId());
+                result.add(vo);
+            }
+
+
         });
 
         return result;

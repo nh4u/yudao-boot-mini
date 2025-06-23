@@ -67,6 +67,7 @@ public class BaseConsumer implements MessageListenerConcurrently {
                     collectRawDataDO.setStandingbookId(acquisitionMessage.getStandingbookId());
                     collectRawDataDO.setSyncTime(acquisitionMessage.getJobTime());
                     collectRawDataDO.setParamCode(detail.getCode());
+
                     collectRawDataDO.setUsage(detail.getUsage());
                     collectRawDataDO.setEnergyFlag(detail.getEnergyFlag());
                     collectRawDataDO.setCalcValue(calcValue);
@@ -76,6 +77,9 @@ public class BaseConsumer implements MessageListenerConcurrently {
                         collectRawDataDO.setCollectTime(itemStatus.getTime());
                     }
                     collectRawDataDO.setCreateTime(LocalDateTime.now());
+                    collectRawDataDO.setFullIncrement(detail.getFullIncrement());
+                    collectRawDataDO.setDataType(detail.getDataType());
+                    collectRawDataDO.setDataFeature(detail.getDataFeature());
                     collectRawDataDOList.add(collectRawDataDO);
                 });
 

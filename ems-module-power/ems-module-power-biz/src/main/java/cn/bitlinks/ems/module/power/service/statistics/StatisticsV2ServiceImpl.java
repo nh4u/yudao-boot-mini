@@ -56,6 +56,8 @@ import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_TYPE_NO
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.END_TIME_MUST_AFTER_START_TIME;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_TABLE;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
 
 /**
  * 用能分析 Service 实现类
@@ -83,6 +85,8 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
     @Resource
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
 
+    // 后续可能根据三目运算符来取动态的有效数字位scale
+    private Integer scale = DEFAULT_SCALE;
 
     @Override
     public StatisticsResultV2VO<StatisticsInfoV2> moneyAnalysisTable(StatisticsParamV2VO paramVO) {
@@ -157,6 +161,16 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             resultVO.setDataTime(LocalDateTime.now());
             return resultVO;
         }
+        //按能源查看就需要找对应的根节点待定 TODO
+/*        if(QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)){
+            //能源与计量器具根节点map
+            Map<Long, Set<Long>> rootNodeStandingbooks = statisticsCommonService.getRootNodeStandingbooks();
+            standingBookIds = energyIds.stream()
+                    .filter(rootNodeStandingbooks::containsKey)
+                    .flatMap(id -> rootNodeStandingbooks.get(id).stream())
+                    .collect(Collectors.toList());
+
+        }*/
 
 
         //能源参数
@@ -235,6 +249,8 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                 String[] labelIds = valueKey.split(",");
                 String label2Name = getLabelName(labelMap, labelIds, 0);
                 String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : "/";
+                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : "/";
+                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : "/";
 
                 labelInfoList.forEach(labelInfo -> {
                     List<UsageCostData> usageList = energyUsageMap.get(labelInfo.getStandingbookId());
@@ -267,9 +283,17 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                         info.setLabel1(topLabel.getLabelName());
                         info.setLabel2(label2Name);
                         info.setLabel3(label3Name);
+                        info.setLabel4(label4Name);
+                        info.setLabel5(label5Name);
+
+                        dataList = dataList.stream().peek(i -> {
+                            i.setMoney(dealBigDecimalScale(i.getMoney(), scale));
+                            i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
+                        }).collect(Collectors.toList());
+
                         info.setStatisticsDateDataList(dataList);
-                        info.setSumEnergyConsumption(totalConsumption);
-                        info.setSumEnergyMoney(totalCost);
+                        info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
+                        info.setSumEnergyMoney(dealBigDecimalScale(totalCost, scale));
 
                         resultList.add(info);
                     });
@@ -305,6 +329,8 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                 String[] labelIds = valueKey.split(",");
                 String label2Name = getLabelName(labelMap, labelIds, 0);
                 String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : "/";
+                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : "/";
+                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : "/";
 
                 labelInfoList.forEach(labelInfo -> {
                     List<UsageCostData> usageList = energyUsageMap.get(labelInfo.getStandingbookId());
@@ -332,9 +358,18 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                     info.setLabel1(topLabel.getLabelName());
                     info.setLabel2(label2Name);
                     info.setLabel3(label3Name);
+                    info.setLabel4(label4Name);
+                    info.setLabel5(label5Name);
+
+                    dataList = dataList.stream().peek(i -> {
+                        i.setMoney(dealBigDecimalScale(i.getMoney(), scale));
+                        i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
+                    }).collect(Collectors.toList());
+
+
                     info.setStatisticsDateDataList(dataList);
-                    info.setSumEnergyConsumption(totalConsumption);
-                    info.setSumEnergyMoney(totalCost);
+                    info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
+                    info.setSumEnergyMoney(dealBigDecimalScale(totalCost, scale));
 
                     resultList.add(info);
                 });
@@ -392,10 +427,15 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                     BigDecimal sumEnergyConsumption = infoDataV2List.stream().map(StatisticInfoDataV2::getConsumption).reduce(BigDecimal.ZERO, BigDecimal::add);
                     BigDecimal sumEnergyMoney = infoDataV2List.stream().map(StatisticInfoDataV2::getMoney).reduce(BigDecimal.ZERO, BigDecimal::add);
 
+                    infoDataV2List = infoDataV2List.stream().peek(i -> {
+                        i.setMoney(dealBigDecimalScale(i.getMoney(), scale));
+                        i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
+                    }).collect(Collectors.toList());
+
                     info.setStatisticsDateDataList(infoDataV2List);
 
-                    info.setSumEnergyConsumption(sumEnergyConsumption);
-                    info.setSumEnergyMoney(sumEnergyMoney);
+                    info.setSumEnergyConsumption(dealBigDecimalScale(sumEnergyConsumption, scale));
+                    info.setSumEnergyMoney(dealBigDecimalScale(sumEnergyMoney, scale));
                     return info;
                 })
                 .filter(Objects::nonNull)
@@ -474,11 +514,22 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             resultV2VO.setDataTime(LocalDateTime.now());
             return resultV2VO;
         }
+        Integer queryType = paramVO.getQueryType();
+        //按能源查看就需要找对应的根节点 待定  TODO
+/*        if(QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)){
+            //能源与计量器具根节点map
+            Map<Long, Set<Long>> rootNodeStandingbooks = statisticsCommonService.getRootNodeStandingbooks();
+            standingBookIds = energyIds.stream()
+                    .filter(rootNodeStandingbooks::containsKey)
+                    .flatMap(id -> rootNodeStandingbooks.get(id).stream())
+                    .collect(Collectors.toList());
+
+        }*/
         //能源参数
         //根据台账ID查询用量跟成本
         List<UsageCostData> usageCostDataList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
         LocalDateTime lastTime = usageCostService.getLastTime(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
-        Integer queryType = paramVO.getQueryType();
+
 
         // x轴
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], dataTypeEnum);
@@ -506,7 +557,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
                         List<StatisticsChartYDataV2VO> dataList = xdata.stream().map(time -> {
                             StatisticsChartYDataV2VO vo = new StatisticsChartYDataV2VO();
-                            vo.setCost(timeCostMap.getOrDefault(time, BigDecimal.ZERO));
+                            vo.setCost(dealBigDecimalScale(timeCostMap.getOrDefault(time, BigDecimal.ZERO), scale));
                             return vo;
                         }).collect(Collectors.toList());
 
@@ -524,8 +575,9 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             //涉及到的标签
             //key是一级标签
             // 过滤并按标签名分组
+            List<Long> finalStandingBookIds = standingBookIds;
             Map<String, List<StandingbookLabelInfoDO>> labelGrouped = standingbookIdsByLabel.stream()
-                    .filter(label -> standingBookIds.contains(label.getStandingbookId()))
+                    .filter(label -> finalStandingBookIds.contains(label.getStandingbookId()))
                     .collect(Collectors.groupingBy(StandingbookLabelInfoDO::getName));
 
             // 提取一级标签ID
@@ -590,10 +642,10 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                 StatisticsChartYInfoV2VO yInfoV2VO = new StatisticsChartYInfoV2VO();
                 StatisticsChartYDataV2VO dataV2VO = new StatisticsChartYDataV2VO();
                 if (Objects.nonNull(statsResult)) {
-                    dataV2VO.setAvg(statsResult.getAvg());
-                    dataV2VO.setMax(statsResult.getMax());
-                    dataV2VO.setMin(statsResult.getMin());
-                    dataV2VO.setCost(statsResult.getSum());
+                    dataV2VO.setAvg(dealBigDecimalScale(statsResult.getAvg(), scale));
+                    dataV2VO.setMax(dealBigDecimalScale(statsResult.getMax(), scale));
+                    dataV2VO.setMin(dealBigDecimalScale(statsResult.getMin(), scale));
+                    dataV2VO.setCost(dealBigDecimalScale(statsResult.getSum(), scale));
                 } else {
                     dataV2VO.setAvg(BigDecimal.ZERO);
                     dataV2VO.setMax(BigDecimal.ZERO);
