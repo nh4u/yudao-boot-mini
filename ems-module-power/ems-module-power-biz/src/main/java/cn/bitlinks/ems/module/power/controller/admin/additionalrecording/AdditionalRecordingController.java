@@ -9,12 +9,15 @@ import cn.bitlinks.ems.framework.excel.core.util.ExcelUtils;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
 import cn.bitlinks.ems.module.power.service.additionalrecording.AdditionalRecordingService;
+import cn.bitlinks.ems.module.power.service.additionalrecording.ExcelMeterDataProcessor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
@@ -25,17 +28,22 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
+import static cn.bitlinks.ems.framework.common.pojo.CommonResult.error;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.IMPORT_EXCEL_ERROR;
 
 @Tag(name = "管理后台 - 补录")
 @RestController
 @RequestMapping("/power/additional-recording")
 @Validated
+@Slf4j
 public class AdditionalRecordingController {
 
     @Resource
     private AdditionalRecordingService additionalRecordingService;
+    @Resource
+    private ExcelMeterDataProcessor excelMeterDataProcessor;
 
     @PostMapping("/create")
     @Operation(summary = "手动补录")
@@ -60,6 +68,7 @@ public class AdditionalRecordingController {
     public CommonResult<List<Long>> getVoucherIdsByStandingbookId(@RequestParam("standingbookId") Long standingbookId) {
         return success(additionalRecordingService.getVoucherIdsByStandingbookId(standingbookId));
     }
+
     @GetMapping("/getExistDataRange")
     @Operation(summary = "全量-选择补录时间后查询原有数据")
     public CommonResult<AdditionalRecordingExistAcqDataRespVO> getExistDataRange(
@@ -138,5 +147,31 @@ public class AdditionalRecordingController {
             LocalDateTime startEnterTime, LocalDateTime endEnterTime) {
         return success(additionalRecordingService.selectByCondition(minThisValue, maxThisValue, recordPerson, recordMethod, startThisCollectTime, endThisCollectTime, startEnterTime, endEnterTime));
     }
+
+
+    /**
+     * 批量导入
+     *
+     * @param file
+     * @param acqNameStart
+     * @param acqNameEnd
+     * @param acqTimeStart
+     * @param acqTimeEnd
+     * @return
+     */
+    @Operation(summary = "批量导入")
+    @PostMapping("/importExcelData")
+    public CommonResult<AcqDataExcelListResultVO> importExcelData(@RequestParam(value = "file") MultipartFile file,
+                                                                  @RequestParam String acqNameStart, @RequestParam String acqNameEnd,
+                                                                  @RequestParam String acqTimeStart, @RequestParam String acqTimeEnd) {
+        try {
+            return success(excelMeterDataProcessor.process(file.getInputStream(), acqNameStart, acqNameEnd, acqTimeStart, acqTimeEnd));
+        } catch (IOException e) {
+            log.error("Excel解析失败{}", e.getMessage(), e);
+            return error(IMPORT_EXCEL_ERROR);
+        }
+
+    }
+
 
 }

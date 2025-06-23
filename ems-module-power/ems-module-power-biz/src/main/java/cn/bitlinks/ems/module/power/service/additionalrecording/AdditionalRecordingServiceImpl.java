@@ -8,10 +8,7 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingExistAcqDataRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingManualSaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingPageReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.mysql.additionalrecording.AdditionalRecordingMapper;
@@ -24,8 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
@@ -56,6 +55,8 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     @Resource
     @Lazy
     private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
+    @Resource
+    private ExcelMeterDataProcessor excelMeterDataProcessor;
     //    @Resource
 //    private VoucherService voucherService;
 //    @Resource
@@ -112,6 +113,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
             minuteAggregateDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
             minuteAggregateDataApi.insertSingleData(minuteAggregateDataDTO);
+            saveAdditionalRecording(createReqVO);
             return;
         }
 
@@ -145,6 +147,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             nextMinuteAggDataSplitDTO.setStartDataDO(minuteAggregateDataDTO);
             nextMinuteAggDataSplitDTO.setEndDataDO(nextFullValue);
             minuteAggregateDataApi.insertRangeData(nextMinuteAggDataSplitDTO);
+            saveAdditionalRecording(createReqVO);
             return;
         }
         if (prevFullValue != null) {
@@ -162,6 +165,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             minuteAggDataSplitDTO.setStartDataDO(prevFullValue);
             minuteAggDataSplitDTO.setEndDataDO(minuteAggregateDataDTO);
             minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
+            saveAdditionalRecording(createReqVO);
             return;
         }
         if (createReqVO.getThisValue().compareTo(nextFullValue.getFullValue()) > 0) {
@@ -178,8 +182,15 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         minuteAggDataSplitDTO.setStartDataDO(minuteAggregateDataDTO);
         minuteAggDataSplitDTO.setEndDataDO(nextFullValue);
         minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
+        saveAdditionalRecording(createReqVO);
 
+    }
 
+    /**
+     * 手动补录新增
+     * @param createReqVO
+     */
+    private void saveAdditionalRecording(AdditionalRecordingManualSaveReqVO createReqVO){
         // 1.补录数据
         AdditionalRecordingDO additionalRecording = BeanUtils.toBean(createReqVO, AdditionalRecordingDO.class);
         if (createReqVO.getRecordPerson() == null) {
@@ -190,7 +201,6 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         additionalRecording.setRecordMethod(RecordMethodEnum.IMPORT_MANUAL.getCode()); // 手动录入
         // 插入数据库
         additionalRecordingMapper.insert(additionalRecording);
-
     }
 
     @Override
@@ -360,5 +370,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         }
         return additionalRecordingMapper.selectList(queryWrapper);
     }
+
+
 
 }

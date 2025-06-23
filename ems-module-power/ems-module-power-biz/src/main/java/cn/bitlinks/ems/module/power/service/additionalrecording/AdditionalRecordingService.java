@@ -9,6 +9,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.Additiona
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.pojo.PageParam;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 补录 Service 接口
@@ -75,5 +76,6 @@ public interface AdditionalRecordingService {
             Integer recordMethod,
             LocalDateTime startThisCollectTime, LocalDateTime endThisCollectTime,
             LocalDateTime startEnterTime, LocalDateTime endEnterTime);
+
 
 }

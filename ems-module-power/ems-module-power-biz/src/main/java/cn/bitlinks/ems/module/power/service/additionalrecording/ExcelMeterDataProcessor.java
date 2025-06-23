@@ -1,5 +1,10 @@
 package cn.bitlinks.ems.module.power.service.additionalrecording;
 
+import cn.bitlinks.ems.framework.common.enums.FullIncrementEnum;
+import cn.bitlinks.ems.framework.common.exception.ServiceException;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelListResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingManualSaveReqVO;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -7,6 +12,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -15,21 +21,15 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -44,6 +44,10 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
 import lombok.extern.slf4j.Slf4j;
 
+import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
+import static cn.hutool.core.date.DatePattern.NORM_DATETIME_MINUTE_FORMATTER;
+
 @Slf4j
 @Service
 @Validated
@@ -51,23 +55,25 @@ public class ExcelMeterDataProcessor {
 
     @Resource
     private HeaderCodeMappingMapper headerCodeMappingMapper;
+    @Resource
+    @Lazy
+    private AdditionalRecordingService additionalRecordingService;
 
     public static void main(String[] args) {
-        try (FileInputStream fis = new FileInputStream(new File("D:/全是文档/燕东/5105.xls"))) {
+        try (FileInputStream fis = new FileInputStream(new File("D:/工作文件/燕东/51051.xls"))) {
             ExcelMeterDataProcessor processor = new ExcelMeterDataProcessor();
-            List<MinuteAggregateDataDTO> result = processor.process(fis, "A4", "A27", "B3", "S3");
+            AcqDataExcelListResultVO result = processor.process(fis, "A4", "A6", "B3", "C3");
 
-            result.sort(Comparator.comparing(MinuteAggregateDataDTO::getAggregateTime));
-            result.stream()
-                    //.filter(s -> s.getStandingbookId().equals("5105F1-a 水泵 正向有功电能"))
-                    .forEach(System.out::println);
-            System.out.println("共生成分钟数据条数: " + result.size());
+//            result.sort(Comparator.comparing(MinuteAggregateDataDTO::getAggregateTime));
+//            result.stream()
+//                    //.filter(s -> s.getStandingbookId().equals("5105F1-a 水泵 正向有功电能"))
+//                    .forEach(System.out::println);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public List<MinuteAggregateDataDTO> process(InputStream file, String timeStartCell, String timeEndCell,
+    public AcqDataExcelListResultVO process(InputStream file, String timeStartCell, String timeEndCell,
                                                 String meterStartCell, String meterEndCell) throws IOException {
 
         int[] timeStart = parseCell(timeStartCell);
@@ -206,17 +212,18 @@ public class ExcelMeterDataProcessor {
     }
 
     /**
-     * 计算分钟数据 00:00 时间数据不设置增量，整点数据以表中数据为准
      *
      * @param meterValuesMap
      * @param times
      * @return
      */
-    private List<MinuteAggregateDataDTO> calculateMinuteDataParallel(Map<String, List<BigDecimal>> meterValuesMap, List<LocalDateTime> times, List<String> meterNames) {
+    private AcqDataExcelListResultVO calculateMinuteDataParallel(Map<String, List<BigDecimal>> meterValuesMap, List<LocalDateTime> times, List<String> meterNames) {
         int availableProcessors = Runtime.getRuntime().availableProcessors();
         ExecutorService executor = Executors.newFixedThreadPool(Math.min(availableProcessors * 2, meterValuesMap.size()));
-
-        List<Future<List<MinuteAggregateDataDTO>>> futures = new ArrayList<>();
+        AcqDataExcelListResultVO resultVO = new AcqDataExcelListResultVO();
+        List<AcqDataExcelResultVO> failMsgList = new ArrayList<>();
+        AtomicInteger acqFailCount = new AtomicInteger();
+        List<Future<List<AcqDataExcelResultVO>>> futures = new ArrayList<>();
         //获取表头与台账关系
         Map<String, HeaderCodeMappingVO> standingbookInfo = getStandingbookInfo(meterNames);
 
@@ -224,62 +231,59 @@ public class ExcelMeterDataProcessor {
             String meter = entry.getKey();
             List<BigDecimal> values = entry.getValue();
             if (MapUtil.isEmpty(standingbookInfo) || standingbookInfo.containsKey(meter)) {
+                failMsgList.add(AcqDataExcelResultVO.builder().acqCode(meter).mistake(IMPORT_ACQ_MISTAKE.getMsg()).mistakeDetail(IMPORT_ACQ_MISTAKE_DETAIL.getMsg()).build());
                 log.info("暂无报表与台账关联信息，不进行计算, 表头：{}", meter);
-                break;
+                acqFailCount.addAndGet(values.size());
+                continue;
             }
             HeaderCodeMappingVO headerCodeMappingVO = standingbookInfo.get(meter);
             futures.add(executor.submit(() -> {
-                List<MinuteAggregateDataDTO> subResult = new ArrayList<>();
-                for (int i = 0; i < times.size() - 1; i++) {
+                List<AcqDataExcelResultVO> subResult = new ArrayList<>();
+                for (int i = 0; i <=  times.size() - 1; i++) {
                     LocalDateTime start = times.get(i);
-                    LocalDateTime end = times.get(i + 1);
-                    BigDecimal diff = values.get(i + 1).subtract(values.get(i));
-                    long minutes = Duration.between(start, end).toMinutes();
-                    if (minutes <= 0) continue;
-
-                    BigDecimal perMinute = BigDecimal.ZERO;
-                    if (diff.compareTo(BigDecimal.ZERO) != 0) {
-                        perMinute = diff.divide(BigDecimal.valueOf(minutes), 10, RoundingMode.HALF_UP);
-                    }
-
-                    BigDecimal nowAll = values.get(i);
-                    for (int m = 0; m < minutes; m++) {
-                        LocalDateTime current = start.plusMinutes(m);
-
-                        if (m == 0 && current.toLocalTime().equals(LocalTime.MIDNIGHT)) {
-                            //00:00 时间数据不设置增量
-                            MinuteAggregateDataDTO dto = buildMinuteAggregateDataDO(current, values.get(i), BigDecimal.ZERO, headerCodeMappingVO.getStandingbookId());
-                            //subResult.add(new MinuteData(meter, current, BigDecimal.ZERO, values.get(i)));
-                            subResult.add(dto);
-                        } else if (m == 0 && current.getMinute() == 0) {
-                            //整点数据以表中数据为准
-                            //subResult.add(new MinuteData(meter, current, perMinute, values.get(i)));
-                            MinuteAggregateDataDTO dto = buildMinuteAggregateDataDO(current, values.get(i), perMinute, headerCodeMappingVO.getStandingbookId());
-                            subResult.add(dto);
-                        } else {
-                            //其他分钟数据全量相加
-                            nowAll = nowAll.add(perMinute);
-                            MinuteAggregateDataDTO dto = buildMinuteAggregateDataDO(current, nowAll, perMinute, headerCodeMappingVO.getStandingbookId());
-                            //subResult.add(new MinuteData(meter, current, perMinute, nowAll));
-                            subResult.add(dto);
+                    try {
+                        // 不是最后一行，需要校验，全量》=上一个数值
+                        if(i != times.size()-1){
+                            BigDecimal diff = values.get(i + 1).subtract(values.get(i));
+                            if (diff.compareTo(BigDecimal.ZERO) < 0) {
+                                throw exception(FULL_VALUE_MUST_GT_LEFT);
+                            }
                         }
+
+                        AdditionalRecordingManualSaveReqVO additionalRecordingManualSaveReqVO = new AdditionalRecordingManualSaveReqVO();
+                        additionalRecordingManualSaveReqVO.setValueType(FullIncrementEnum.FULL.getCode());
+                        additionalRecordingManualSaveReqVO.setStandingbookId(headerCodeMappingVO.getStandingbookId());
+                        additionalRecordingManualSaveReqVO.setThisCollectTime(start);
+                        additionalRecordingManualSaveReqVO.setThisValue(values.get(i));
+                        additionalRecordingService.createAdditionalRecording(additionalRecordingManualSaveReqVO);
+                    }catch (ServiceException e){
+                        subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(start.format(NORM_DATETIME_MINUTE_FORMATTER))
+                                .mistake(e.getMessage()).mistakeDetail(e.getMessage()).build());
+                        acqFailCount.addAndGet(1);
+                        log.error("采集点【{}】,采集时间【{}】,采集数值【{}】数据解析失败，数据异常{}",meter,start,values.get(i),e.getMessage(),e);
+                    } catch (Exception e){
+                        acqFailCount.addAndGet(1);
+                        subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(start.format(NORM_DATETIME_MINUTE_FORMATTER))
+                                .mistake(IMPORT_ACQ_MISTAKE.getMsg()).mistakeDetail(IMPORT_ACQ_MISTAKE_DETAIL.getMsg()).build());
+                        log.error("采集点【{}】,采集时间【{}】,采集数值【{}】数据解析失败，数据异常{}",meter,start,values.get(i),e.getMessage(),e);
                     }
                 }
                 return subResult;
             }));
         }
 
-        List<MinuteAggregateDataDTO> result = new ArrayList<>();
-        for (Future<List<MinuteAggregateDataDTO>> future : futures) {
+        for (Future<List<AcqDataExcelResultVO>> future : futures) {
             try {
-                result.addAll(future.get());
+                failMsgList.addAll(future.get());
             } catch (InterruptedException | ExecutionException e) {
                 Thread.currentThread().interrupt();
                 e.printStackTrace();
             }
         }
         executor.shutdown();
-        return result;
+        resultVO.setFailList(failMsgList);
+        resultVO.setFailAcqTotal(acqFailCount.get());
+        return resultVO;
     }
 
     /**
