@@ -8,10 +8,7 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingExistAcqDataRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingManualSaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingPageReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.mysql.additionalrecording.AdditionalRecordingMapper;
@@ -24,8 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
@@ -56,6 +55,8 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     @Resource
     @Lazy
     private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
+    @Resource
+    private ExcelMeterDataProcessor excelMeterDataProcessor;
     //    @Resource
 //    private VoucherService voucherService;
 //    @Resource
@@ -359,6 +360,18 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             queryWrapper.le("enter_time", endEnterTime);
         }
         return additionalRecordingMapper.selectList(queryWrapper);
+    }
+
+    @Override
+    public AcqDataExcelListResultVO importExcelData(MultipartFile file, String acqNameStart, String acqNameEnd, String acqTimeStart, String acqTimeEnd) {
+//        try {
+//             excelMeterDataProcessor.process(file.getInputStream(), acqNameStart, acqNameEnd, acqTimeStart, acqTimeEnd);
+//             re
+//        } catch (IOException e) {
+//            log.error("Excel解析数据失败", e);
+//            throw exception(ADDITIONAL_RECORDING_IMPORT_ERROR);
+//        }
+        return null;
     }
 
 }

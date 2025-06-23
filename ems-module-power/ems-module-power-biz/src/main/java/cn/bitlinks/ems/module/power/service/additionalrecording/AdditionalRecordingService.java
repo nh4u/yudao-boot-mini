@@ -9,6 +9,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.Additiona
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.pojo.PageParam;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 补录 Service 接口
@@ -76,4 +77,14 @@ public interface AdditionalRecordingService {
             LocalDateTime startThisCollectTime, LocalDateTime endThisCollectTime,
             LocalDateTime startEnterTime, LocalDateTime endEnterTime);
 
+    /**
+     * 批量导入
+     * @param file
+     * @param acqNameStart
+     * @param acqNameEnd
+     * @param acqTimeStart
+     * @param acqTimeEnd
+     * @return
+     */
+    AcqDataExcelListResultVO importExcelData(MultipartFile file, String acqNameStart, String acqNameEnd, String acqTimeStart, String acqTimeEnd);
 }

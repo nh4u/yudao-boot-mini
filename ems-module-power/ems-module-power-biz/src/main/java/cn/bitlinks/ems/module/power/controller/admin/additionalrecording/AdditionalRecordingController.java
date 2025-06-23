@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
@@ -27,6 +28,7 @@ import java.util.List;
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.EXCEL_WAIT;
 
 @Tag(name = "管理后台 - 补录")
 @RestController
@@ -138,5 +140,28 @@ public class AdditionalRecordingController {
             LocalDateTime startEnterTime, LocalDateTime endEnterTime) {
         return success(additionalRecordingService.selectByCondition(minThisValue, maxThisValue, recordPerson, recordMethod, startThisCollectTime, endThisCollectTime, startEnterTime, endEnterTime));
     }
+
+
+
+    /**
+     * 批量导入
+     *
+     * @param file
+     * @param acqNameStart
+     * @param acqNameEnd
+     * @param acqTimeStart
+     * @param acqTimeEnd
+     * @return
+     */
+    @Operation(summary = "批量导入")
+    @PostMapping("/importExcelData")
+    public CommonResult<AcqDataExcelListResultVO> importExcelData(@RequestParam(value = "file") MultipartFile file,
+                             @RequestParam String acqNameStart, @RequestParam String acqNameEnd,
+                             @RequestParam String acqTimeStart, @RequestParam String acqTimeEnd) {
+        AcqDataExcelListResultVO resultVO = additionalRecordingService.importExcelData(file, acqNameStart, acqNameEnd, acqTimeStart, acqTimeEnd);
+
+        return success(resultVO).setMsg(EXCEL_WAIT);
+    }
+
 
 }
