@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata;
 
+import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
@@ -226,6 +227,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             data.setDataSite(startData.getDataSite());
             data.setAggregateTime(currentTime);
             data.setFullValue(currentFullValue);
+            data.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
             data.setIncrementalValue(perMinuteIncrement);
             if (i == 0) {
                 if (Objects.isNull(endData.getIncrementalValue())) {
@@ -241,8 +243,19 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
                     //这个是历史时间段之前添加的连续数据，都是全量，第一个时间点的增量为0不需要动，需要计算出最后一个时间点的增量和时间范围之间的分钟级别数据的增量
                     data.setIncrementalValue(BigDecimal.ZERO);
                 }
+                if (startData.getAcqFlag() != null) {
+                    data.setAcqFlag(startData.getAcqFlag());
+                } else {
+                    data.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
+                }
             }
             if (i == minutes) {
+                data.setAcqFlag(AcqFlagEnum.ACQ.getCode());
+                if (endData.getAcqFlag() != null) {
+                    data.setAcqFlag(endData.getAcqFlag());
+                } else {
+                    data.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
+                }
                 data.setFullValue(endValue);
             }
 
@@ -255,10 +268,11 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
 
         return result;
     }
+
     @Override
     public MinuteAggregateDataDTO getUsagePrevFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
         MinuteAggregateDataDO minuteAggregateDataDO =
-                minuteAggregateDataMapper.getUsagePrevFullValue(standingbookId,acquisitionTime);
+                minuteAggregateDataMapper.getUsagePrevFullValue(standingbookId, acquisitionTime);
         if (Objects.isNull(minuteAggregateDataDO)) {
             return null;
         }
@@ -268,16 +282,17 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     @Override
     public MinuteAggregateDataDTO getUsageNextFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
         MinuteAggregateDataDO minuteAggregateDataDO =
-                minuteAggregateDataMapper.getUsageNextFullValue(standingbookId,acquisitionTime);
+                minuteAggregateDataMapper.getUsageNextFullValue(standingbookId, acquisitionTime);
         if (Objects.isNull(minuteAggregateDataDO)) {
             return null;
         }
         return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
     }
+
     @Override
     public MinuteAggregateDataDTO getUsageExistFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
         MinuteAggregateDataDO minuteAggregateDataDO =
-                minuteAggregateDataMapper.getUsageExistFullValue(standingbookId,acquisitionTime);
+                minuteAggregateDataMapper.getUsageExistFullValue(standingbookId, acquisitionTime);
         if (Objects.isNull(minuteAggregateDataDO)) {
             return null;
         }
