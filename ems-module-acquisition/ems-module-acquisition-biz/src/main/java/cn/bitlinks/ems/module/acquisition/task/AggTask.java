@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.acquisition.task;
 
 
+import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
 import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectRawDataDO;
@@ -129,7 +130,7 @@ public class AggTask {
             minuteAggregateDataDO.setFullValue(new BigDecimal(finalValue.getCalcValue()));
             minuteAggregateDataDO.setIncrementalValue(null);
             // 稳态值的分钟数据都是采集点，因为不是采集点的不会在表中出现
-            minuteAggregateDataDO.setAcqFlag(CommonStatusEnum.ENABLE.getStatus());
+            minuteAggregateDataDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
             currentAggDataList.add(minuteAggregateDataDO);
         });
 
@@ -236,7 +237,7 @@ public class AggTask {
                 currentMinuteAggregateDataDO.setAggregateTime(targetTime);
                 currentMinuteAggregateDataDO.setFullValue(currentValue);
                 currentMinuteAggregateDataDO.setIncrementalValue(BigDecimal.ZERO);
-                currentMinuteAggregateDataDO.setAcqFlag(CommonStatusEnum.ENABLE.getStatus());
+                currentMinuteAggregateDataDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
                 currentDataList.add(currentMinuteAggregateDataDO);
                 return;
             }
@@ -249,7 +250,7 @@ public class AggTask {
                 currentMinuteAggregateDataDO.setAggregateTime(targetTime);
                 currentMinuteAggregateDataDO.setFullValue(currentValue);
                 currentMinuteAggregateDataDO.setIncrementalValue(currentValue.subtract(latestAggData.getFullValue()));
-                currentMinuteAggregateDataDO.setAcqFlag(CommonStatusEnum.ENABLE.getStatus());
+                currentMinuteAggregateDataDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
                 currentDataList.add(currentMinuteAggregateDataDO);
                 return;
             }
@@ -262,7 +263,7 @@ public class AggTask {
             endDO.setAggregateTime(targetTime);
             endDO.setFullValue(currentValue);
             endDO.setIncrementalValue(null);
-            endDO.setAcqFlag(CommonStatusEnum.ENABLE.getStatus());
+            endDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
             splitData(currentDataList, latestAggData, latestAggData, endDO);
             return;
         }
@@ -294,7 +295,7 @@ public class AggTask {
                 endDO.setAggregateTime(prevTime);
                 endDO.setFullValue(prevValue);
                 endDO.setIncrementalValue(null);
-                endDO.setAcqFlag(CommonStatusEnum.ENABLE.getStatus());
+                endDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
                 splitData(currentDataList, latestAggData, latestAggData, endDO);
             }
         }
@@ -319,7 +320,7 @@ public class AggTask {
                 .divide(BigDecimal.valueOf(totalSeconds), 10, RoundingMode.HALF_UP);
         long elapsedSeconds = Duration.between(prevTime, targetTime).getSeconds();
         endDO.setFullValue(prevValue.add(rate.multiply(BigDecimal.valueOf(elapsedSeconds))));
-        endDO.setAcqFlag(CommonStatusEnum.ENABLE.getStatus());
+        endDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
         splitData(currentDataList, latestAggData, startDO, endDO);
 
     }
@@ -354,7 +355,7 @@ public class AggTask {
             MinuteAggregateDataDO data = BeanUtils.toBean(startData, MinuteAggregateDataDO.class);
             data.setAggregateTime(minutePoint);
             data.setFullValue(interpolatedValue);
-            data.setAcqFlag(CommonStatusEnum.DISABLE.getStatus());
+            data.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
             if (lastData == null) {
                 data.setIncrementalValue(BigDecimal.ZERO);
             } else {
