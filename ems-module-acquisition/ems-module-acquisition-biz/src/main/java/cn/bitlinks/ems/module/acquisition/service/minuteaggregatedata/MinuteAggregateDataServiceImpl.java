@@ -224,10 +224,16 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             data.setStandingbookId(startData.getStandingbookId());
             data.setParamCode(startData.getParamCode());
             data.setEnergyFlag(startData.getEnergyFlag());
+            data.setFullIncrement(startData.getFullIncrement());
             data.setDataSite(startData.getDataSite());
+            data.setDataFeature(startData.getDataFeature());
+            data.setDataType(startData.getDataType());
+            data.setUsage(startData.getUsage());
+            data.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
+
+
             data.setAggregateTime(currentTime);
             data.setFullValue(currentFullValue);
-            data.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
             data.setIncrementalValue(perMinuteIncrement);
             if (i == 0) {
                 if (Objects.isNull(endData.getIncrementalValue())) {
