@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.additionalrecording;
 
+import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
 import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.common.enums.FullIncrementEnum;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
@@ -109,7 +110,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             minuteAggregateDataDTO.setAggregateTime(createReqVO.getThisCollectTime().truncatedTo(ChronoUnit.MINUTES));
             minuteAggregateDataDTO.setFullValue(createReqVO.getThisValue());
             minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
-            minuteAggregateDataDTO.setAcqFlag(CommonStatusEnum.ENABLE.getStatus());
+            minuteAggregateDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
             minuteAggregateDataApi.insertSingleData(minuteAggregateDataDTO);
             return;
         }
@@ -132,7 +133,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             minuteAggregateDataDTO.setAggregateTime(createReqVO.getThisCollectTime().truncatedTo(ChronoUnit.MINUTES));
             minuteAggregateDataDTO.setFullValue(createReqVO.getThisValue());
             minuteAggregateDataDTO.setDataSite(prevFullValue.getDataSite());
-            minuteAggregateDataDTO.setAcqFlag(CommonStatusEnum.ENABLE.getStatus());
+            minuteAggregateDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
             minuteAggregateDataDTO.setIncrementalValue(perMinuteIncrement);
             MinuteAggDataSplitDTO preMinuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
             preMinuteAggDataSplitDTO.setStartDataDO(prevFullValue);
@@ -155,7 +156,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             minuteAggregateDataDTO.setAggregateTime(createReqVO.getThisCollectTime().truncatedTo(ChronoUnit.MINUTES));
             minuteAggregateDataDTO.setFullValue(createReqVO.getThisValue());
             minuteAggregateDataDTO.setDataSite(prevFullValue.getDataSite());
-            minuteAggregateDataDTO.setAcqFlag(CommonStatusEnum.ENABLE.getStatus());
+            minuteAggregateDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
             //minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);需要拆分计算出来
             MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
             minuteAggDataSplitDTO.setStartDataDO(prevFullValue);
@@ -172,7 +173,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         minuteAggregateDataDTO.setFullValue(createReqVO.getThisValue());
         minuteAggregateDataDTO.setDataSite(nextFullValue.getDataSite());
         minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
-        minuteAggregateDataDTO.setAcqFlag(CommonStatusEnum.ENABLE.getStatus());
+        minuteAggregateDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
         MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
         minuteAggDataSplitDTO.setStartDataDO(minuteAggregateDataDTO);
         minuteAggDataSplitDTO.setEndDataDO(nextFullValue);
