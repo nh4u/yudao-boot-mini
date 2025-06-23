@@ -8,7 +8,7 @@ import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import static cn.hutool.core.date.DatePattern.NORM_DATETIME_MINUTE_PATTERN;
+import static cn.hutool.core.date.DatePattern.NORM_DATETIME_PATTERN;
 
 @Schema(description = "管理后台 - 手动补录新增 Request VO")
 @Data
@@ -22,11 +22,11 @@ public class AdditionalRecordingManualSaveReqVO {
 
     @Schema(description = "增量：开始时间")
 
-    @DateTimeFormat(pattern = NORM_DATETIME_MINUTE_PATTERN)
+    @DateTimeFormat(pattern = NORM_DATETIME_PATTERN)
     private LocalDateTime preCollectTime;
 
     @Schema(description = "全量：补录时间点/增量：结束时间")
-    @DateTimeFormat(pattern = NORM_DATETIME_MINUTE_PATTERN)
+    @DateTimeFormat(pattern = NORM_DATETIME_PATTERN)
     private LocalDateTime thisCollectTime;
 
     @Schema(description = "补录数值")
