@@ -105,7 +105,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         // 无历史数据，无采集点可以比较
         if (prevFullValue == null && nextFullValue == null) {
             // 全量进行单条补录
-            MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(prevFullValue, MinuteAggregateDataDTO.class);
+            MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
             minuteAggregateDataDTO.setAggregateTime(createReqVO.getThisCollectTime().truncatedTo(ChronoUnit.MINUTES));
             minuteAggregateDataDTO.setFullValue(createReqVO.getThisValue());
             minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
