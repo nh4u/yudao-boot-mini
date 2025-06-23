@@ -11,6 +11,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.copsettings.CopFormulaMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.copsettings.CopSettingsMapper;
 import cn.bitlinks.ems.module.power.service.copsettings.dto.CopSettingsDTO;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,8 +22,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.COP_SETTINGS_NOT_EXISTS;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGbOOK_REPEAT;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
 /**
  * cop报表设置 Service 接口
@@ -134,6 +134,18 @@ public class CopSettingsServiceImpl implements CopSettingsService {
 
     @Override
     public void updateBatch(List<CopSettingsSaveReqVO> copSettingsList) {
+
+        // 校验
+        if (CollectionUtil.isEmpty(copSettingsList)) {
+            throw exception(COP_SETTINGS_LIST_NOT_EXISTS);
+        }
+
+        for (CopSettingsSaveReqVO copSettingsSaveReqVO : copSettingsList) {
+            Long standingbookId = copSettingsSaveReqVO.getStandingbookId();
+            if (Objects.isNull(standingbookId)) {
+                throw exception(COP_SETTINGS_STANDINGbOOK_NOT_EMPTY);
+            }
+        }
 
         // 公式参数按copType分组 组内台账id不能重复 校验
         Map<String, List<CopSettingsSaveReqVO>> copTypeMap = copSettingsList.stream()

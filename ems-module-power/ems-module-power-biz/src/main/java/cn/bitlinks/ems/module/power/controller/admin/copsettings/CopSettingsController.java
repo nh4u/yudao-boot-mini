@@ -24,7 +24,7 @@ import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 /**
  * @author liumingqiang
  */
-@Tag(name = "管理后台 - 配置标签")
+@Tag(name = "管理后台 - COP公式参数配置")
 @RestController
 @RequestMapping("/power/copSettings")
 @Validated
