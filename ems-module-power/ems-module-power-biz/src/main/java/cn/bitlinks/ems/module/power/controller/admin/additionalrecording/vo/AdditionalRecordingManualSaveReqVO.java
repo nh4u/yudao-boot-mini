@@ -21,7 +21,6 @@ public class AdditionalRecordingManualSaveReqVO {
     private Integer valueType;
 
     @Schema(description = "增量：开始时间")
-
     @DateTimeFormat(pattern = NORM_DATETIME_PATTERN)
     private LocalDateTime preCollectTime;
 

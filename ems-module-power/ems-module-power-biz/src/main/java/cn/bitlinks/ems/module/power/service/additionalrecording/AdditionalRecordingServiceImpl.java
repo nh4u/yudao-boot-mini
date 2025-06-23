@@ -362,16 +362,6 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         return additionalRecordingMapper.selectList(queryWrapper);
     }
 
-    @Override
-    public AcqDataExcelListResultVO importExcelData(MultipartFile file, String acqNameStart, String acqNameEnd, String acqTimeStart, String acqTimeEnd) {
-//        try {
-//             excelMeterDataProcessor.process(file.getInputStream(), acqNameStart, acqNameEnd, acqTimeStart, acqTimeEnd);
-//             re
-//        } catch (IOException e) {
-//            log.error("Excel解析数据失败", e);
-//            throw exception(ADDITIONAL_RECORDING_IMPORT_ERROR);
-//        }
-        return null;
-    }
+
 
 }

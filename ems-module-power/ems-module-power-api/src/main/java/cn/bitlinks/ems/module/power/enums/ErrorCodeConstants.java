@@ -76,6 +76,11 @@ public interface ErrorCodeConstants {
     ErrorCode FULL_TIME_NOT_NULL = new ErrorCode(1_001_301_221,"全量补录时间不能为空");
     ErrorCode FULL_VALUE_MUST_GT_LEFT = new ErrorCode(1_001_301_222,"全量值必须大于等于上一全量值{}");
     ErrorCode FULL_VALUE_MUST_LT_RIGHT = new ErrorCode(1_001_301_223,"全量值必须小于等于下一全量值{}");
+
+    ErrorCode IMPORT_ACQ_MISTAKE = new ErrorCode(1_001_301_224,"采集点错误");
+    ErrorCode IMPORT_ACQ_MISTAKE_DETAIL = new ErrorCode(1_001_301_225,"采集点不存在或未匹配，请检查采集点与系统采集点编号是否完全一致");
+    ErrorCode IMPORT_EXCEL_ERROR = new ErrorCode(1_001_301_226,"Excel解析失败{}");
+
     // ========== 台账类型 ==========
     ErrorCode STANDINGBOOK_TYPE_NOT_EXISTS = new ErrorCode(1_001_202_000, "台账类型不存在");
     ErrorCode STANDINGBOOK_TYPE_EXITS_CHILDREN = new ErrorCode(1_001_202_001, "存在存在子台账类型，无法删除");

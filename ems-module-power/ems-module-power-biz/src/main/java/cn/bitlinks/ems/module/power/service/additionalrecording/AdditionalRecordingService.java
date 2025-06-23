@@ -77,14 +77,5 @@ public interface AdditionalRecordingService {
             LocalDateTime startThisCollectTime, LocalDateTime endThisCollectTime,
             LocalDateTime startEnterTime, LocalDateTime endEnterTime);
 
-    /**
-     * 批量导入
-     * @param file
-     * @param acqNameStart
-     * @param acqNameEnd
-     * @param acqTimeStart
-     * @param acqTimeEnd
-     * @return
-     */
-    AcqDataExcelListResultVO importExcelData(MultipartFile file, String acqNameStart, String acqNameEnd, String acqTimeStart, String acqTimeEnd);
+
 }

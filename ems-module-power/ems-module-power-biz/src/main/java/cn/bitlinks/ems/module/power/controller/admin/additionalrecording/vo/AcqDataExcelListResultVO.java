@@ -8,8 +8,7 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * @author bmqi
- * @date 2023/7/18 10:06
+ * 批量补录失败项
  */
 @Data
 @NoArgsConstructor
@@ -19,35 +18,12 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = false)
 @Builder
 public class AcqDataExcelListResultVO implements Serializable {
-    /**
-     * 成功项
-     */
-    @Schema(description = "成功项")
-    private List<AcqDataExcelResultVO> successList;
 
     /**
      * 失败项
      */
     @Schema(description = "失败项")
     private List<AcqDataExcelResultVO> failList;
-
-    /**
-     * 成功项数量
-     */
-    @Schema(description = "成功项数量")
-    private int successTotal;
-
-    /**
-     * 失败项数量
-     */
-    @Schema(description = "失败项数量")
-    private int failTotal;
-
-    /**
-     * 成功采集点数量
-     */
-    @Schema(description = "成功采集点数量")
-    private int successAcqTotal;
 
     /**
      * 失败采集点数量
