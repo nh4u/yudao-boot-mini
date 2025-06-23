@@ -113,6 +113,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
             minuteAggregateDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
             minuteAggregateDataApi.insertSingleData(minuteAggregateDataDTO);
+            saveAdditionalRecording(createReqVO);
             return;
         }
 
@@ -146,6 +147,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             nextMinuteAggDataSplitDTO.setStartDataDO(minuteAggregateDataDTO);
             nextMinuteAggDataSplitDTO.setEndDataDO(nextFullValue);
             minuteAggregateDataApi.insertRangeData(nextMinuteAggDataSplitDTO);
+            saveAdditionalRecording(createReqVO);
             return;
         }
         if (prevFullValue != null) {
@@ -163,6 +165,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             minuteAggDataSplitDTO.setStartDataDO(prevFullValue);
             minuteAggDataSplitDTO.setEndDataDO(minuteAggregateDataDTO);
             minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
+            saveAdditionalRecording(createReqVO);
             return;
         }
         if (createReqVO.getThisValue().compareTo(nextFullValue.getFullValue()) > 0) {
@@ -179,8 +182,15 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         minuteAggDataSplitDTO.setStartDataDO(minuteAggregateDataDTO);
         minuteAggDataSplitDTO.setEndDataDO(nextFullValue);
         minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
+        saveAdditionalRecording(createReqVO);
 
+    }
 
+    /**
+     * 手动补录新增
+     * @param createReqVO
+     */
+    private void saveAdditionalRecording(AdditionalRecordingManualSaveReqVO createReqVO){
         // 1.补录数据
         AdditionalRecordingDO additionalRecording = BeanUtils.toBean(createReqVO, AdditionalRecordingDO.class);
         if (createReqVO.getRecordPerson() == null) {
@@ -191,7 +201,6 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         additionalRecording.setRecordMethod(RecordMethodEnum.IMPORT_MANUAL.getCode()); // 手动录入
         // 插入数据库
         additionalRecordingMapper.insert(additionalRecording);
-
     }
 
     @Override
