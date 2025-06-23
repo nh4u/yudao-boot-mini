@@ -49,6 +49,7 @@ public interface MinuteAggregateDataMapper {
      * @param standingbookId
      * @return
      */
+    @TenantIgnore
     MinuteAggregateDataDO selectOldestByStandingBookId(@Param("standingbookId") Long standingbookId);
 
     /**
@@ -57,7 +58,7 @@ public interface MinuteAggregateDataMapper {
      * @param standingbookId
      * @return
      */
-
+    @TenantIgnore
     MinuteAggregateDataDO selectLatestByStandingBookId(@Param("standingbookId") Long standingbookId);
 
     /**
@@ -66,6 +67,7 @@ public interface MinuteAggregateDataMapper {
      * @param aggregateTime
      * @param standingbookId
      */
+    @TenantIgnore
     void deleteDataByMinute(@Param("aggregateTime") LocalDateTime aggregateTime, @Param("standingbookId") Long standingbookId);
 
     /**
@@ -73,6 +75,7 @@ public interface MinuteAggregateDataMapper {
      * @param standingbookId
      * @return
      */
+    @TenantIgnore
     MinuteAggregateDataDO getUsagePrevFullValue(@Param("standingbookId") Long standingbookId,
                                                 @Param("targetTime") LocalDateTime targetTime);
     /**
@@ -80,6 +83,7 @@ public interface MinuteAggregateDataMapper {
      * @param standingbookId
      * @return
      */
+    @TenantIgnore
     MinuteAggregateDataDO getUsageNextFullValue(@Param("standingbookId") Long standingbookId,
                                                 @Param("targetTime") LocalDateTime targetTime);
     /**
@@ -87,6 +91,7 @@ public interface MinuteAggregateDataMapper {
      * @param standingbookId
      * @return
      */
+    @TenantIgnore
     MinuteAggregateDataDO getUsageExistFullValue(@Param("standingbookId") Long standingbookId,
                                                  @Param("targetTime") LocalDateTime targetTime);
     /**
@@ -96,6 +101,7 @@ public interface MinuteAggregateDataMapper {
      * @param endTime
      * @return
      */
+    @TenantIgnore
     List<MinuteAggregateDataDO> getRangeDataRequestParam(List<Long> standingbookIds, LocalDateTime starTime, LocalDateTime endTime);
 
 
