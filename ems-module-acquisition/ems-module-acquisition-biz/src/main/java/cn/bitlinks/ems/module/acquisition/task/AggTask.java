@@ -257,7 +257,7 @@ public class AggTask {
             // 需要从上一个聚合时间 latestAggTime 的下一分钟 开始，补到 targetTime 为止
 
             // 上次实时推送数据早于 与 最新的聚合时间差距一分钟以上，需要田中，最新聚合时间与上次实时推送数据之间的分钟数据。
-            // 需要补充聚合数据最新时间和上次实时数据时间点时间的数据。todo
+            // 需要补充聚合数据最新时间和上次实时数据时间点时间的数据。
             MinuteAggregateDataDO endDO = BeanUtils.toBean(latestAggData, MinuteAggregateDataDO.class);
             endDO.setAggregateTime(targetTime);
             endDO.setFullValue(currentValue);
@@ -289,11 +289,12 @@ public class AggTask {
                 prevValue = latestAggData.getFullValue();
             } else if (prevTime.isAfter(latestAggTime.plusMinutes(1L))) {
                 // 上次实时推送数据早于 与 最新的聚合时间差距一分钟以上，需要田中，最新聚合时间与上次实时推送数据之间的分钟数据。
-                // 需要补充聚合数据最新时间和上次实时数据时间点时间的数据。todo
+                // 需要补充聚合数据最新时间和上次实时数据时间点时间的数据。
                 MinuteAggregateDataDO endDO = BeanUtils.toBean(latestAggData, MinuteAggregateDataDO.class);
                 endDO.setAggregateTime(prevTime);
                 endDO.setFullValue(prevValue);
                 endDO.setIncrementalValue(null);
+                endDO.setAcqFlag(CommonStatusEnum.ENABLE.getStatus());
                 splitData(currentDataList, latestAggData, latestAggData, endDO);
             }
         }
@@ -318,6 +319,7 @@ public class AggTask {
                 .divide(BigDecimal.valueOf(totalSeconds), 10, RoundingMode.HALF_UP);
         long elapsedSeconds = Duration.between(prevTime, targetTime).getSeconds();
         endDO.setFullValue(prevValue.add(rate.multiply(BigDecimal.valueOf(elapsedSeconds))));
+        endDO.setAcqFlag(CommonStatusEnum.ENABLE.getStatus());
         splitData(currentDataList, latestAggData, startDO, endDO);
 
     }
