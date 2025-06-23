@@ -8,6 +8,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,10 +18,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,99 +30,63 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+import javax.annotation.Resource;
+
+import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.HeaderCodeMappingVO;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.reportcod.HeaderCodeMappingMapper;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.map.MapUtil;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
+@Validated
 public class ExcelMeterDataProcessor {
 
-    public static class MinuteData {
-        public String meterName;
-        public LocalDateTime time;
-        public BigDecimal value;
-        public BigDecimal all;
+    @Resource
+    private HeaderCodeMappingMapper headerCodeMappingMapper;
 
-        public MinuteData(String meterName, LocalDateTime time, BigDecimal value, BigDecimal all) {
-            this.meterName = meterName;
-            this.time = time;
-            this.value = value;
-            this.all = all;
-        }
+    public static void main(String[] args) {
+        try (FileInputStream fis = new FileInputStream(new File("D:/全是文档/燕东/5105.xls"))) {
+            ExcelMeterDataProcessor processor = new ExcelMeterDataProcessor();
+            List<MinuteAggregateDataDTO> result = processor.process(fis, "A4", "A27", "B3", "S3");
 
-        public String getMeterName() {
-            return meterName;
-        }
-
-        public void setMeterName(String meterName) {
-            this.meterName = meterName;
-        }
-
-        public LocalDateTime getTime() {
-            return time;
-        }
-
-        public void setTime(LocalDateTime time) {
-            this.time = time;
-        }
-
-        public BigDecimal getValue() {
-            return value;
-        }
-
-        public void setValue(BigDecimal value) {
-            this.value = value;
-        }
-
-        public BigDecimal getAll() {
-            return all;
-        }
-
-        public void setAll(BigDecimal all) {
-            this.all = all;
-        }
-
-        @Override
-        public String toString() {
-            return "MinuteData{" +
-                    "meterName='" + meterName + '\'' +
-                    ", time=" + time +
-                    ", value=" + value +
-                    ", all=" + all +
-                    '}';
+            result.sort(Comparator.comparing(MinuteAggregateDataDTO::getAggregateTime));
+            result.stream()
+                    //.filter(s -> s.getStandingbookId().equals("5105F1-a 水泵 正向有功电能"))
+                    .forEach(System.out::println);
+            System.out.println("共生成分钟数据条数: " + result.size());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
+    public List<MinuteAggregateDataDTO> process(InputStream file, String timeStartCell, String timeEndCell,
+                                                String meterStartCell, String meterEndCell) throws IOException {
 
-    public static void main(String[] args) {
-        try {
-            long l = System.currentTimeMillis();
-            // 1. 指定本地 Excel 文件路径（可绝对或相对路径）
-            String filePath = "D:\\全是文档\\燕东\\5105.xls"; // <-- 替换为你本地文件路径
-            FileInputStream fis = new FileInputStream(new File(filePath));
+        int[] timeStart = parseCell(timeStartCell);
+        int[] timeEnd = parseCell(timeEndCell);
+        int[] meterStart = parseCell(meterStartCell);
+        int[] meterEnd = parseCell(meterEndCell);
 
+        boolean timeVertical = timeStart[1] == timeEnd[1];
+        boolean meterHorizontal = meterStart[0] == meterEnd[0];
 
-            // 3. 调用处理器（构造时传入 workbook 而不是 MultipartFile）
-            ExcelMeterDataProcessor processor = new ExcelMeterDataProcessor();
+        try (Workbook workbook = WorkbookFactory.create(file)) {
+            //只判断一个sheet页的数据
+            Sheet sheet = workbook.getSheetAt(0);
 
-            // 提供单元格范围参数
-            List<MinuteData> result = processor.process(
-                    fis,
-                    "A4",  // 时间起始单元格
-                    "A27", // 时间结束单元格
-                    "B3",  // 计量器具起始单元格
-                    "S3"   // 计量器具结束单元格
-            );
+            List<String> meterNames = parseMeterNames(sheet, meterStart, meterEnd, meterHorizontal);
+            List<LocalDateTime> times = parseTimeSeries(sheet, timeStart, timeEnd, timeVertical);
+            Map<String, List<BigDecimal>> meterValuesMap = extractMeterValues(sheet, meterNames, timeStart, times, meterStart, timeVertical, meterHorizontal);
 
-            // 4. 打印结果
-            Collections.sort(result, Comparator.comparing(MinuteData::getTime));
-            result.stream().filter(s -> s.getMeterName().equals("5105F3-d 备用 正向有功电能")).forEach(System.out::println);
-            System.out.println("共生成分钟数据条数: " + result.size());
-
-
-            fis.close();
-            System.out.println("耗时: " + (System.currentTimeMillis() - l) + "ms");
-        } catch (Exception e) {
-            e.printStackTrace();
+            return calculateMinuteDataParallel(meterValuesMap, times, meterNames);
         }
     }
 
@@ -132,163 +97,197 @@ public class ExcelMeterDataProcessor {
      * @return
      */
     public static int[] parseCell(String cellRef) {
-        Pattern pattern = Pattern.compile("([A-Z]+)([0-9]+)");
-        Matcher matcher = pattern.matcher(cellRef.toUpperCase());
-        if (!matcher.matches()) {
+        Matcher matcher = Pattern.compile("([A-Z]+)([0-9]+)").matcher(cellRef.toUpperCase());
+        if (!matcher.matches())
             throw new IllegalArgumentException("Invalid cell reference: " + cellRef);
-        }
-        String colStr = matcher.group(1);
-        int row = Integer.parseInt(matcher.group(2)) - 1;
 
+        int row = Integer.parseInt(matcher.group(2)) - 1;
         int col = 0;
-        for (int i = 0; i < colStr.length(); i++) {
-            col *= 26;
-            col += colStr.charAt(i) - 'A' + 1;
+        for (char ch : matcher.group(1).toCharArray()) {
+            col = col * 26 + (ch - 'A' + 1);
         }
         return new int[]{row, col - 1};
     }
 
-    public List<MinuteData> process(InputStream file,
-                                    String timeStartCell,
-                                    String timeEndCell,
-                                    String meterStartCell,
-                                    String meterEndCell) throws IOException {
-
-        int[] timeStart = parseCell(timeStartCell);
-        int[] timeEnd = parseCell(timeEndCell);
-        int[] meterStart = parseCell(meterStartCell);
-        int[] meterEnd = parseCell(meterEndCell);
-        //判断时间方向是否列
-        boolean timeVertical = timeStart[1] == timeEnd[1];
-        //判断计量器具方向是否行
-        boolean meterHorizontal = meterStart[0] == meterEnd[0];
-
-        Workbook workbook = WorkbookFactory.create(file);
-        Sheet sheet = workbook.getSheetAt(0);
-        //表中计量器具名称
+    /**
+     * 获取所有计量器名称
+     *
+     * @param sheet
+     * @param start
+     * @param end
+     * @param horizontal
+     * @return
+     */
+    private List<String> parseMeterNames(Sheet sheet, int[] start, int[] end, boolean horizontal) {
         List<String> meterNames = new ArrayList<>();
-        //横向计量器
-        if (meterHorizontal) {
-            Row meterRow = sheet.getRow(meterStart[0]);
-            for (int c = meterStart[1]; c <= meterEnd[1]; c++) {
-                Cell cell = meterRow.getCell(c);
+        if (horizontal) {
+            Row row = sheet.getRow(start[0]);
+            for (int c = start[1]; c <= end[1]; c++) {
+                Cell cell = row.getCell(c);
                 meterNames.add(cell == null ? "" : cell.toString());
             }
         } else {
-            for (int r = meterStart[0]; r <= meterEnd[0]; r++) {
+            for (int r = start[0]; r <= end[0]; r++) {
                 Row row = sheet.getRow(r);
-                if (row == null) meterNames.add("");
-                else {
-                    Cell cell = row.getCell(meterStart[1]);
-                    meterNames.add(cell == null ? "" : cell.toString());
-                }
+                Cell cell = row == null ? null : row.getCell(start[1]);
+                meterNames.add(cell == null ? "" : cell.toString());
             }
         }
-        //时间列表
+        return meterNames;
+    }
+
+    /**
+     * 获取表中的时间数据
+     *
+     * @param sheet
+     * @param start
+     * @param end
+     * @param vertical
+     * @return
+     */
+    private List<LocalDateTime> parseTimeSeries(Sheet sheet, int[] start, int[] end, boolean vertical) {
         List<LocalDateTime> times = new ArrayList<>();
-        //纵向时间
-        if (timeVertical) {
-            int col = timeStart[1];
-            for (int r = timeStart[0]; r <= timeEnd[0]; r++) {
+        if (vertical) {
+            for (int r = start[0]; r <= end[0]; r++) {
                 Row row = sheet.getRow(r);
-                if (row == null) continue;
-                Cell cell = row.getCell(col);
+                Cell cell = row == null ? null : row.getCell(start[1]);
                 LocalDateTime dt = parseTime(cell);
                 if (dt != null) times.add(dt);
             }
         } else {
-            int rowIdx = timeStart[0];
-            Row row = sheet.getRow(rowIdx);
-            if (row != null) {
-                for (int c = timeStart[1]; c <= timeEnd[1]; c++) {
-                    Cell cell = row.getCell(c);
-                    LocalDateTime dt = parseTime(cell);
-                    if (dt != null) times.add(dt);
-                }
+            Row row = sheet.getRow(start[0]);
+            for (int c = start[1]; c <= end[1]; c++) {
+                Cell cell = row == null ? null : row.getCell(c);
+                LocalDateTime dt = parseTime(cell);
+                if (dt != null) times.add(dt);
             }
         }
+        return times;
+    }
 
-        Map<String, List<BigDecimal>> meterValuesMap = new LinkedHashMap<>();
-        meterNames.forEach(name -> meterValuesMap.put(name, new ArrayList<>()));
-        //纵向时间横向计量器具
+    /**
+     * 计量器具关联的数值
+     *
+     * @param sheet
+     * @param meterNames
+     * @param timeStart
+     * @param times
+     * @param meterStart
+     * @param timeVertical
+     * @param meterHorizontal
+     * @return
+     */
+    private Map<String, List<BigDecimal>> extractMeterValues(Sheet sheet, List<String> meterNames,
+                                                             int[] timeStart, List<LocalDateTime> times,
+                                                             int[] meterStart, boolean timeVertical, boolean meterHorizontal) {
+        Map<String, List<BigDecimal>> map = new LinkedHashMap<>();
+        meterNames.forEach(name -> map.put(name, new ArrayList<>(times.size())));
+
         if (timeVertical && meterHorizontal) {
-            int timeRowStart = timeStart[0];
-            for (int r = timeRowStart; r < timeRowStart + times.size(); r++) {
+            for (int r = timeStart[0]; r < timeStart[0] + times.size(); r++) {
                 Row row = sheet.getRow(r);
                 if (row == null) continue;
                 for (int i = 0; i < meterNames.size(); i++) {
                     Cell cell = row.getCell(meterStart[1] + i);
-                    meterValuesMap.get(meterNames.get(i)).add(getNumericValue(cell));
+                    map.get(meterNames.get(i)).add(getNumericValue(cell));
                 }
             }
-        } else {//横向时间纵向计量器具
+        } else {
             for (int c = timeStart[1]; c < timeStart[1] + times.size(); c++) {
                 for (int i = 0; i < meterNames.size(); i++) {
                     Row row = sheet.getRow(meterStart[0] + i);
                     if (row == null) continue;
                     Cell cell = row.getCell(c);
-                    meterValuesMap.get(meterNames.get(i)).add(getNumericValue(cell));
+                    map.get(meterNames.get(i)).add(getNumericValue(cell));
                 }
             }
         }
+        return map;
+    }
 
-        ExecutorService executor = Executors.newFixedThreadPool(Math.min(meterNames.size(), Runtime.getRuntime().availableProcessors()));
-        List<Future<List<MinuteData>>> futures = new ArrayList<>();
+    /**
+     * 计算分钟数据 00:00 时间数据不设置增量，整点数据以表中数据为准
+     *
+     * @param meterValuesMap
+     * @param times
+     * @return
+     */
+    private List<MinuteAggregateDataDTO> calculateMinuteDataParallel(Map<String, List<BigDecimal>> meterValuesMap, List<LocalDateTime> times, List<String> meterNames) {
+        int availableProcessors = Runtime.getRuntime().availableProcessors();
+        ExecutorService executor = Executors.newFixedThreadPool(Math.min(availableProcessors * 2, meterValuesMap.size()));
+
+        List<Future<List<MinuteAggregateDataDTO>>> futures = new ArrayList<>();
+        //获取表头与台账关系
+        Map<String, HeaderCodeMappingVO> standingbookInfo = getStandingbookInfo(meterNames);
 
         for (Map.Entry<String, List<BigDecimal>> entry : meterValuesMap.entrySet()) {
             String meter = entry.getKey();
             List<BigDecimal> values = entry.getValue();
-
+            if (MapUtil.isEmpty(standingbookInfo) || standingbookInfo.containsKey(meter)) {
+                log.info("暂无报表与台账关联信息，不进行计算, 表头：{}", meter);
+                break;
+            }
+            HeaderCodeMappingVO headerCodeMappingVO = standingbookInfo.get(meter);
             futures.add(executor.submit(() -> {
-                List<MinuteData> subResult = new ArrayList<>();
+                List<MinuteAggregateDataDTO> subResult = new ArrayList<>();
                 for (int i = 0; i < times.size() - 1; i++) {
                     LocalDateTime start = times.get(i);
                     LocalDateTime end = times.get(i + 1);
                     BigDecimal diff = values.get(i + 1).subtract(values.get(i));
                     long minutes = Duration.between(start, end).toMinutes();
-                    // 跳过非法或零时长区间
                     if (minutes <= 0) continue;
+
                     BigDecimal perMinute = BigDecimal.ZERO;
-                    if (!(diff.compareTo(BigDecimal.ZERO) == 0)) {
-                        // 计算每分钟的增量值，保留10位小数
+                    if (diff.compareTo(BigDecimal.ZERO) != 0) {
                         perMinute = diff.divide(BigDecimal.valueOf(minutes), 10, RoundingMode.HALF_UP);
                     }
+
                     BigDecimal nowAll = values.get(i);
                     for (int m = 0; m < minutes; m++) {
+                        LocalDateTime current = start.plusMinutes(m);
 
-                        if (m == 0 && start.getHour() == 0 && start.getMinute() == 0) {
-                            // 判断是否是整点零时（00:00）开头，第一分钟增量为0
-                            subResult.add(new MinuteData(meter, start.plusMinutes(m), BigDecimal.ZERO, values.get(i)));
-                        }
-                        if (m == 0 && start.getMinute() == 0 && start.getHour() > 0) {
-                            // 判断是否是其他整点时间，第一分钟使用当前整点表底值，无需累加
-                            subResult.add(new MinuteData(meter, start.plusMinutes(m), perMinute, values.get(i)));
+                        if (m == 0 && current.toLocalTime().equals(LocalTime.MIDNIGHT)) {
+                            //00:00 时间数据不设置增量
+                            MinuteAggregateDataDTO dto = buildMinuteAggregateDataDO(current, values.get(i), BigDecimal.ZERO, headerCodeMappingVO.getStandingbookId());
+                            //subResult.add(new MinuteData(meter, current, BigDecimal.ZERO, values.get(i)));
+                            subResult.add(dto);
+                        } else if (m == 0 && current.getMinute() == 0) {
+                            //整点数据以表中数据为准
+                            //subResult.add(new MinuteData(meter, current, perMinute, values.get(i)));
+                            MinuteAggregateDataDTO dto = buildMinuteAggregateDataDO(current, values.get(i), perMinute, headerCodeMappingVO.getStandingbookId());
+                            subResult.add(dto);
                         } else {
-                            // 普通分钟，累加当前增量
-                            LocalDateTime localDateTime = start.plusMinutes(m);
+                            //其他分钟数据全量相加
                             nowAll = nowAll.add(perMinute);
-                            subResult.add(new MinuteData(meter, localDateTime, perMinute, nowAll));
+                            MinuteAggregateDataDTO dto = buildMinuteAggregateDataDO(current, nowAll, perMinute, headerCodeMappingVO.getStandingbookId());
+                            //subResult.add(new MinuteData(meter, current, perMinute, nowAll));
+                            subResult.add(dto);
                         }
-
                     }
                 }
                 return subResult;
             }));
         }
 
-        List<MinuteData> result = new ArrayList<>();
-        for (Future<List<MinuteData>> future : futures) {
+        List<MinuteAggregateDataDTO> result = new ArrayList<>();
+        for (Future<List<MinuteAggregateDataDTO>> future : futures) {
             try {
                 result.addAll(future.get());
             } catch (InterruptedException | ExecutionException e) {
+                Thread.currentThread().interrupt();
                 e.printStackTrace();
             }
         }
         executor.shutdown();
-        workbook.close();
         return result;
     }
 
+    /**
+     * 时间格式化
+     *
+     * @param cell
+     * @return
+     */
     private LocalDateTime parseTime(Cell cell) {
         if (cell == null) return null;
         if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
@@ -298,9 +297,7 @@ public class ExcelMeterDataProcessor {
             String val = cell.getStringCellValue().trim();
             try {
                 if (val.matches("\\d{1,2}:\\d{2}")) {
-                    LocalDateTime now = LocalDateTime.now();
-                    String today = now.toLocalDate().toString();
-                    return LocalDateTime.parse(today + " " + val, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+                    return LocalDateTime.parse(LocalDateTime.now().toLocalDate() + " " + val, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
                 }
                 return LocalDateTime.parse(val, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
             } catch (DateTimeParseException e) {
@@ -311,24 +308,44 @@ public class ExcelMeterDataProcessor {
     }
 
     /**
-     * 获取表中数字
+     * 转为数值 不能转为数值的按0处理
      *
      * @param cell
      * @return
      */
     private BigDecimal getNumericValue(Cell cell) {
         if (cell == null) return BigDecimal.ZERO;
-        if (cell.getCellType() == CellType.NUMERIC) {
+        if (cell.getCellType() == CellType.NUMERIC)
             return BigDecimal.valueOf(cell.getNumericCellValue());
-        }
         if (cell.getCellType() == CellType.STRING) {
             try {
-                return BigDecimal.valueOf(Double.parseDouble(cell.getStringCellValue()));
+                return new BigDecimal(cell.getStringCellValue());
             } catch (NumberFormatException e) {
+                log.error("{} not a number", cell.getStringCellValue());
                 return BigDecimal.ZERO;
             }
         }
         return BigDecimal.ZERO;
+    }
+
+    private Map<String, HeaderCodeMappingVO> getStandingbookInfo(List<String> headList) {
+        List<HeaderCodeMappingVO> headerCodeMappingVOS = headerCodeMappingMapper.selectByHeaderCode(headList);
+        if (CollUtil.isEmpty(headerCodeMappingVOS)) {
+            return null;
+        }
+        return headerCodeMappingVOS.stream().collect(Collectors.toMap(HeaderCodeMappingVO::getHeader, Function.identity()));
+    }
+
+    private MinuteAggregateDataDTO buildMinuteAggregateDataDO(LocalDateTime aggregateTime, BigDecimal fullValue, BigDecimal incrementalValue, Long standingbookId) {
+        MinuteAggregateDataDTO dto = new MinuteAggregateDataDTO();
+        dto.setAggregateTime(aggregateTime);
+        dto.setFullValue(fullValue);
+        dto.setIncrementalValue(incrementalValue);
+        dto.setParamCode("");
+        dto.setStandingbookId(standingbookId);
+        dto.setEnergyFlag(true);
+
+        return dto;
     }
 }
 
