@@ -11,6 +11,7 @@ import cn.bitlinks.ems.module.acquisition.dal.mysql.collectrawdata.CollectRawDat
 import cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata.MinuteAggregateDataMapper;
 import cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata.MinuteAggregateDataService;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -144,8 +145,9 @@ public class AggTask {
      * 当前分钟（-10min）的聚合时间的数据计算与插入
      */
     private void insertMinuteData() throws IOException {
+
         LocalDateTime currentMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(1L);
-//        LocalDateTime currentMinute = LocalDateTime.of(2025, 6, 9, 19, 20, 0);
+//        LocalDateTime currentMinute = LocalDateTime.of(2025, 6, 24, 21, 35, 0);
 //
 //        2025-06-09 19:47:12
         // 1.先获取所有的台账id、能源参数、和id
@@ -283,12 +285,17 @@ public class AggTask {
         // 聚合数据表没有最新数据，则第一条的增量为0；
 
         // 聚合数据表有最新数据，
+        MinuteAggregateDataDO startDO = new MinuteAggregateDataDO();
+        startDO.setAggregateTime(prevTime);
+        startDO.setFullValue(prevValue);
         if (Objects.nonNull(latestAggData)) {
             LocalDateTime latestAggTime = latestAggData.getAggregateTime();
             // 上次实时推送数据早于 < 最新的聚合时间，则以最新的聚合时间开始进行计算
             if (prevTime.isBefore(latestAggTime)) {
-                prevTime = latestAggTime;
-                prevValue = latestAggData.getFullValue();
+                startDO.setAggregateTime(latestAggTime);
+                startDO.setFullValue(latestAggData.getFullValue());
+                startDO.setIncrementalValue(latestAggData.getIncrementalValue());
+                startDO.setAcqFlag(latestAggData.getAcqFlag());
             } else if (prevTime.isAfter(latestAggTime.plusMinutes(1L))) {
                 // 上次实时推送数据早于 与 最新的聚合时间差距一分钟以上，需要田中，最新聚合时间与上次实时推送数据之间的分钟数据。
                 // 需要补充聚合数据最新时间和上次实时数据时间点时间的数据。
@@ -305,28 +312,27 @@ public class AggTask {
             log.info("台账id {} 当前分钟的聚合数据 无后实时数据，无法生成当前值", standingbookId);
             return;
         }
-
-        MinuteAggregateDataDO startDO = new MinuteAggregateDataDO();
-        startDO.setAggregateTime(prevTime);
-        startDO.setFullValue(prevValue);
-        startDO.setIncrementalValue(null);
         startDO.setStandingbookId(standingbookId);
         startDO.setParamCode(prev.getParamCode());
         startDO.setEnergyFlag(prev.getEnergyFlag());
         startDO.setDataSite(prev.getDataSite());
-        startDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
         startDO.setUsage(prev.getUsage());
         startDO.setDataType(prev.getDataType());
         startDO.setDataFeature(prev.getDataFeature());
         startDO.setFullIncrement(prev.getFullIncrement());
         MinuteAggregateDataDO endDO = BeanUtils.toBean(startDO, MinuteAggregateDataDO.class);
+
         endDO.setAggregateTime(targetTime);
         long totalSeconds = Duration.between(prevTime, next.getSyncTime()).getSeconds();
         BigDecimal rate = new BigDecimal(next.getCalcValue()).subtract(prevValue)
                 .divide(BigDecimal.valueOf(totalSeconds), 10, RoundingMode.HALF_UP);
         long elapsedSeconds = Duration.between(prevTime, targetTime).getSeconds();
         endDO.setFullValue(prevValue.add(rate.multiply(BigDecimal.valueOf(elapsedSeconds))));
-        endDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
+        if(prevTime.truncatedTo(ChronoUnit.MINUTES).equals(targetTime.truncatedTo(ChronoUnit.MINUTES)) || next.getSyncTime().truncatedTo(ChronoUnit.MINUTES).equals(targetTime.truncatedTo(ChronoUnit.MINUTES))){
+            endDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
+        }else{
+            endDO.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
+        }
         splitData(currentDataList, latestAggData, startDO, endDO);
 
     }
@@ -362,13 +368,7 @@ public class AggTask {
             data.setAggregateTime(minutePoint);
             data.setFullValue(interpolatedValue);
             data.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
-            if(minutePoint.equals(prevTime.truncatedTo(ChronoUnit.MINUTES).plusMinutes(1L))){
-                if (startData.getAcqFlag() != null) {
-                    data.setAcqFlag(startData.getAcqFlag());
-                } else {
-                    data.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
-                }
-            }
+
             if(minutePoint.equals(nextTime)){
                 if (endData.getAcqFlag() != null) {
                     data.setAcqFlag(endData.getAcqFlag());
