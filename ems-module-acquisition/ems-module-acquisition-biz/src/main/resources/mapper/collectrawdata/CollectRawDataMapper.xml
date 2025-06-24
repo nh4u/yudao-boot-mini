@@ -76,7 +76,7 @@
     </select>
     <select id="selectPrevDataBatch"
             resultMap="BaseResultMap">
-        SELECT distinct cr.data_site,cr.sync_time,cr.param_code,cr.energy_flag,cr.standingbook_id,cr.calc_value,cr.raw_value,cr.collect_time, cr.full_increment,cr.data_feature,cr.data_type
+        SELECT distinct cr.data_site,cr.sync_time,cr.param_code,cr.energy_flag,cr.standingbook_id,cr.calc_value,cr.raw_value,cr.collect_time, cr.full_increment,cr.data_feature,cr.data_type,cr.usage
         FROM collect_raw_data cr
         JOIN (
         SELECT standingbook_id, MAX(sync_time) AS max_time
@@ -94,7 +94,7 @@
     </select>
     <select id="selectNextDataBatch"
             resultMap="BaseResultMap">
-        SELECT distinct cr.data_site,cr.sync_time,cr.param_code,cr.energy_flag,cr.standingbook_id,cr.calc_value,cr.raw_value,cr.collect_time,cr.full_increment,cr.data_feature,cr.data_type
+        SELECT distinct cr.data_site,cr.sync_time,cr.param_code,cr.energy_flag,cr.standingbook_id,cr.calc_value,cr.raw_value,cr.collect_time,cr.full_increment,cr.data_feature,cr.data_type,cr.usage
         FROM collect_raw_data cr
         JOIN (
         SELECT standingbook_id, MIN(sync_time) AS min_time
