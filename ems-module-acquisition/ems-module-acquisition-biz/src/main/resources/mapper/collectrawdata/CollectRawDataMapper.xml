@@ -17,6 +17,7 @@
         <result column="calc_value" property="calcValue"/>
         <result column="raw_value" property="rawValue"/>
         <result column="collect_time" property="collectTime"/>
+        <result column="usage" property="usage"/>
         <result column="full_increment" property="fullIncrement"/>
         <result column="data_feature" property="dataFeature"/>
         <result column="data_type" property="dataType"/>
