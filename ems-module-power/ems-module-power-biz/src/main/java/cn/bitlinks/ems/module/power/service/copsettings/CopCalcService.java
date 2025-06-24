@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.util.calc.CalculateUtil;
 import cn.bitlinks.ems.framework.tenant.core.job.TenantJob;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.api.starrocks.StreamLoadApi;
 import cn.bitlinks.ems.module.acquisition.api.starrocks.dto.StreamLoadDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.copsettings.CopFormulaDO;
@@ -88,9 +89,12 @@ public class CopCalcService {
                 log.info("COP [{}] ，缺失台账数据", copFormulaDO.getCopType());
                 continue;
             }
-            String allSbIdsStr = String.join(StrPool.COMMA, allSbIds.stream().map(String::valueOf).collect(Collectors.toList()));
+            MinuteRangeDataParamDTO minuteRangeDataParamDTO = new MinuteRangeDataParamDTO();
+            minuteRangeDataParamDTO.setSbIds(allSbIds);
+            minuteRangeDataParamDTO.setStarTime(startHour);
+            minuteRangeDataParamDTO.setEndTime(endHour);
             // 依赖的所有台账id和参数的数据们
-            List<MinuteAggregateDataDTO> dbHourData = minuteAggregateDataApi.getRangeDataRequestParam(allSbIdsStr, startHour, endHour).getData();
+            List<MinuteAggregateDataDTO> dbHourData = minuteAggregateDataApi.getRangeDataRequestParam(minuteRangeDataParamDTO).getData();
 
             // 筛选出newHourData中台账这些夏普手机哦的
             // 3.5 循环影响的小时，计算cop的小时值
