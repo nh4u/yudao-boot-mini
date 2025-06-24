@@ -86,7 +86,7 @@ public class CopCalcService {
                     .collect(Collectors.toList());
             if (CollUtil.isEmpty(allSbIds)) {
                 log.info("COP [{}] ，缺失台账数据", copFormulaDO.getCopType());
-                return;
+                continue;
             }
             String allSbIdsStr = String.join(StrPool.COMMA, allSbIds.stream().map(String::valueOf).collect(Collectors.toList()));
             // 依赖的所有台账id和参数的数据们
@@ -191,8 +191,7 @@ public class CopCalcService {
             log.info("COP计算逻辑，多cop无数据: 没有可计算的数据");
             return;
         }
-        System.err.println(JSONUtil.toJsonStr(copHourAggDataBatchToAdd));
-//        saveCopHourList(copHourAggDataBatchToAdd);
+        saveCopHourList(copHourAggDataBatchToAdd);
 
     }
 
