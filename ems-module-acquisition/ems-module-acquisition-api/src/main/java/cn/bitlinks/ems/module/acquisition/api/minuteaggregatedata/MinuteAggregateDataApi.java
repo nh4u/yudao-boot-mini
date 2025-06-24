@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.annotation.security.PermitAll;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -83,6 +84,7 @@ public interface MinuteAggregateDataApi {
      */
     @PostMapping(PREFIX + "/getRangeDataRequestParam")
     @Operation(summary = "根据两条数据进行拆分")
+    @PermitAll
     CommonResult<List<MinuteAggregateDataDTO>> getRangeDataRequestParam(@RequestBody MinuteRangeDataParamDTO minuteRangeDataParamDTO);
     /**
      * 获取该台账的当前业务点全量值
