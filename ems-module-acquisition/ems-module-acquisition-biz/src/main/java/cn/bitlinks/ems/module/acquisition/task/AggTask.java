@@ -361,6 +361,21 @@ public class AggTask {
             MinuteAggregateDataDO data = BeanUtils.toBean(startData, MinuteAggregateDataDO.class);
             data.setAggregateTime(minutePoint);
             data.setFullValue(interpolatedValue);
+            if(minutePoint.equals(prevTime.truncatedTo(ChronoUnit.MINUTES).plusMinutes(1L))){
+                if (startData.getAcqFlag() != null) {
+                    data.setAcqFlag(startData.getAcqFlag());
+                } else {
+                    data.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
+                }
+            }
+            if(minutePoint.equals(nextTime)){
+                if (endData.getAcqFlag() != null) {
+                    data.setAcqFlag(endData.getAcqFlag());
+                } else {
+                    data.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
+                }
+            }
+//
             data.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
             if (lastData == null) {
                 data.setIncrementalValue(BigDecimal.ZERO);
