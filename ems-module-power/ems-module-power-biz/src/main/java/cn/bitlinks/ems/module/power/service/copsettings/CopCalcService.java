@@ -11,6 +11,7 @@ import cn.bitlinks.ems.module.power.dto.CopHourAggDataDTO;
 import cn.bitlinks.ems.module.power.enums.energyparam.ParamDataFeatureEnum;
 import cn.bitlinks.ems.module.power.service.copsettings.dto.CopSettingsDTO;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.StrPool;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -83,9 +84,13 @@ public class CopCalcService {
                     .map(CopSettingsDTO::getStandingbookId)
                     .distinct()
                     .collect(Collectors.toList());
-
+            if (CollUtil.isEmpty(allSbIds)) {
+                log.info("COP [{}] ，缺失台账数据", copFormulaDO.getCopType());
+                return;
+            }
+            String allSbIdsStr = String.join(StrPool.COMMA, allSbIds.stream().map(String::valueOf).collect(Collectors.toList()));
             // 依赖的所有台账id和参数的数据们
-            List<MinuteAggregateDataDTO> dbHourData = minuteAggregateDataApi.getRangeDataRequestParam(allSbIds, startHour, endHour);
+            List<MinuteAggregateDataDTO> dbHourData = minuteAggregateDataApi.getRangeDataRequestParam(allSbIdsStr, startHour, endHour).getData();
 
             // 筛选出newHourData中台账这些夏普手机哦的
             // 3.5 循环影响的小时，计算cop的小时值
@@ -186,8 +191,8 @@ public class CopCalcService {
             log.info("COP计算逻辑，多cop无数据: 没有可计算的数据");
             return;
         }
-
-        saveCopHourList(copHourAggDataBatchToAdd);
+        System.err.println(JSONUtil.toJsonStr(copHourAggDataBatchToAdd));
+//        saveCopHourList(copHourAggDataBatchToAdd);
 
     }
 

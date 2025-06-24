@@ -4,14 +4,20 @@ import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata.MinuteAggregateDataService;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.StrPool;
+import com.alibaba.cloud.commons.lang.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController // 提供 RESTful API 接口，给 Feign 调用
@@ -60,8 +66,18 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     }
 
     @Override
-    public List<MinuteAggregateDataDTO> getRangeDataRequestParam(List<Long> standingbookIds, LocalDateTime starTime, LocalDateTime endTime) {
-        return minuteAggregateDataService.getRangeDataRequestParam(standingbookIds, starTime, endTime);
+    public CommonResult<List<MinuteAggregateDataDTO>> getRangeDataRequestParam(String standingbookIdsStr,LocalDateTime starTime, LocalDateTime endTime) {
+        List<Long> standingbookIds = Collections.emptyList();
+        if (StringUtils.isNotBlank(standingbookIdsStr)) {
+            standingbookIds = Arrays.stream(standingbookIdsStr.split(StrPool.COMMA))
+                    .map(Long::valueOf)
+                    .collect(Collectors.toList());
+        }
+        List<MinuteAggregateDataDTO> list=  minuteAggregateDataService.getRangeDataRequestParam(standingbookIds, starTime, endTime);
+        if (CollUtil.isEmpty(list)) {
+            return CommonResult.success(null);
+        }
+        return CommonResult.success(list);
     }
     @Override
     public MinuteAggregateDataDTO getUsageExistFullValue(Long standingbookId, LocalDateTime acquisitionTime) {

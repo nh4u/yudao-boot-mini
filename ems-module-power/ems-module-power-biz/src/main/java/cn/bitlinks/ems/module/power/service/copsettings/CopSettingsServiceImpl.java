@@ -76,7 +76,7 @@ public class CopSettingsServiceImpl implements CopSettingsService {
                     .findFirst();
 
             if (!matched.isPresent()) {
-                log.info("未找到该COP参数【{}】中文名匹配的能源参数编码，跳过该COP", setting.getParam());
+                log.info("未找到该COP【{}】参数【{}】中文名匹配的能源参数编码，跳过该COP", setting.getCopType(),setting.getParam());
                 continue;
             }
             String paramCode = matched.get().getCode();
