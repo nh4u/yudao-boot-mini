@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.util.calc.CalculateUtil;
 import cn.bitlinks.ems.framework.tenant.core.job.TenantJob;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.api.starrocks.StreamLoadApi;
 import cn.bitlinks.ems.module.acquisition.api.starrocks.dto.StreamLoadDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.copsettings.CopFormulaDO;
@@ -83,10 +84,17 @@ public class CopCalcService {
                     .map(CopSettingsDTO::getStandingbookId)
                     .distinct()
                     .collect(Collectors.toList());
-
+            if (CollUtil.isEmpty(allSbIds)) {
+                log.info("COP [{}] ，缺失台账数据", copFormulaDO.getCopType());
+                continue;
+            }
+            MinuteRangeDataParamDTO minuteRangeDataParamDTO = new MinuteRangeDataParamDTO();
+            minuteRangeDataParamDTO.setSbIds(allSbIds);
+            minuteRangeDataParamDTO.setStarTime(startHour);
+            minuteRangeDataParamDTO.setEndTime(endHour);
             // 依赖的所有台账id和参数的数据们
-            List<MinuteAggregateDataDTO> dbHourData = minuteAggregateDataApi.getRangeDataRequestParam(allSbIds, startHour, endHour);
-
+            List<MinuteAggregateDataDTO> dbHourData = minuteAggregateDataApi.getRangeDataRequestParam(minuteRangeDataParamDTO).getData();
+            log.info("COP [{}] ，影响小时区间：{} ~ {}，数据库原有数据：{}", copFormulaDO.getCopType(), startHour, endHour, dbHourData);
             // 筛选出newHourData中台账这些夏普手机哦的
             // 3.5 循环影响的小时，计算cop的小时值
             LocalDateTime cursor = startHour;   //15：01：01   19：01：01
@@ -158,7 +166,7 @@ public class CopCalcService {
                 });
                 // 3.5.2 校验这一小时的所需要的参数值是否齐全
                 boolean complete = copParams.stream()
-                        .allMatch(param -> formulaVariables.containsKey(param.getParamCode()));
+                        .allMatch(param -> formulaVariables.containsKey(param.getParam()));
 
                 if (!complete) {
                     log.warn("COP [{}] 时间范围[{},{}) 参数不全，跳过", copFormulaDO.getCopType(), hourStart, hourEnd);
@@ -186,7 +194,6 @@ public class CopCalcService {
             log.info("COP计算逻辑，多cop无数据: 没有可计算的数据");
             return;
         }
-
         saveCopHourList(copHourAggDataBatchToAdd);
 
     }

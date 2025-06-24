@@ -41,6 +41,8 @@ public class PartitionService {
     private String maxPartitionMinutesAgg;
     @Value("${ems.max-partition.usage-cost}")
     private String maxPartitionUsageCost;
+    @Value("${ems.max-partition.cop-hour-agg}")
+    private String maxPartitionCopHourAgg;
     @Resource
     private JdbcTemplate jdbcTemplate;
 
@@ -51,6 +53,8 @@ public class PartitionService {
         stringRedisTemplate.opsForValue().set(maxPartitionMinutesAggKey, maxPartitionMinutesAgg);
         String maxPartitionUsageCostKey = String.format(REDIS_KEY_MAX_PARTITION_TIME, env, USAGE_COST_TB_NAME);
         stringRedisTemplate.opsForValue().set(maxPartitionUsageCostKey, maxPartitionUsageCost);
+        String maxPartitionCopHourAggKey = String.format(REDIS_KEY_MAX_PARTITION_TIME, env, COP_HOUR_AGGREGATE_DATA_TB_NAME);
+        stringRedisTemplate.opsForValue().set(maxPartitionCopHourAggKey, maxPartitionCopHourAgg);
     }
 
     /**

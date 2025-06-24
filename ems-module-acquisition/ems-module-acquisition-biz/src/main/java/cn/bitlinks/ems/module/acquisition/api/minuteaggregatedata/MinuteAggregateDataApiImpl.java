@@ -3,15 +3,22 @@ package cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata.MinuteAggregateDataService;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.StrPool;
+import com.alibaba.cloud.commons.lang.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController // 提供 RESTful API 接口，给 Feign 调用
@@ -60,8 +67,15 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     }
 
     @Override
-    public List<MinuteAggregateDataDTO> getRangeDataRequestParam(List<Long> standingbookIds, LocalDateTime starTime, LocalDateTime endTime) {
-        return minuteAggregateDataService.getRangeDataRequestParam(standingbookIds, starTime, endTime);
+    public CommonResult<List<MinuteAggregateDataDTO>> getRangeDataRequestParam(MinuteRangeDataParamDTO minuteRangeDataParamDTO){
+        // 根据传入的参数，调用minuteAggregateDataService的getRangeDataRequestParam方法，获取MinuteAggregateDataDTO类型的列表
+        List<MinuteAggregateDataDTO> list=  minuteAggregateDataService.getRangeDataRequestParam(minuteRangeDataParamDTO.getSbIds(), minuteRangeDataParamDTO.getStarTime(), minuteRangeDataParamDTO.getEndTime());
+        // 如果列表为空，则返回一个成功的CommonResult，其中包含null
+        if (CollUtil.isEmpty(list)) {
+            return CommonResult.success(null);
+        }
+        // 否则，返回一个成功的CommonResult，其中包含列表
+        return CommonResult.success(list);
     }
     @Override
     public MinuteAggregateDataDTO getUsageExistFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
