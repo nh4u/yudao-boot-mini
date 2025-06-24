@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.acquisition.task;
 
 import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
 import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
+import cn.bitlinks.ems.framework.common.enums.FullIncrementEnum;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectRawDataDO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
@@ -305,11 +306,19 @@ public class AggTask {
             return;
         }
 
-        MinuteAggregateDataDO startDO = BeanUtils.toBean(prev, MinuteAggregateDataDO.class);
+        MinuteAggregateDataDO startDO = new MinuteAggregateDataDO();
         startDO.setAggregateTime(prevTime);
         startDO.setFullValue(prevValue);
         startDO.setIncrementalValue(null);
+        startDO.setStandingbookId(standingbookId);
+        startDO.setParamCode(prev.getParamCode());
+        startDO.setEnergyFlag(prev.getEnergyFlag());
+        startDO.setDataSite(prev.getDataSite());
         startDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
+
+        startDO.setDataType(prev.getDataType());
+        startDO.setDataFeature(prev.getDataFeature());
+        startDO.setFullIncrement(prev.getFullIncrement());
         MinuteAggregateDataDO endDO = BeanUtils.toBean(startDO, MinuteAggregateDataDO.class);
         endDO.setAggregateTime(targetTime);
         long totalSeconds = Duration.between(prevTime, next.getSyncTime()).getSeconds();
