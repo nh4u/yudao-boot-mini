@@ -102,7 +102,7 @@ public interface MinuteAggregateDataMapper {
      * @return
      */
     @TenantIgnore
-    List<MinuteAggregateDataDO> getRangeDataRequestParam(List<Long> standingbookIds, LocalDateTime starTime, LocalDateTime endTime);
+    List<MinuteAggregateDataDO> getRangeDataRequestParam(@Param("standingbookIds")List<Long> standingbookIds, @Param("starTime")LocalDateTime starTime, @Param("endTime")LocalDateTime endTime);
 
 
 }
