@@ -305,14 +305,11 @@ public class AggTask {
             return;
         }
 
-        MinuteAggregateDataDO startDO = new MinuteAggregateDataDO();
+        MinuteAggregateDataDO startDO = BeanUtils.toBean(prev, MinuteAggregateDataDO.class);
         startDO.setAggregateTime(prevTime);
         startDO.setFullValue(prevValue);
         startDO.setIncrementalValue(null);
-        startDO.setStandingbookId(standingbookId);
-        startDO.setParamCode(prev.getParamCode());
-        startDO.setEnergyFlag(prev.getEnergyFlag());
-        startDO.setDataSite(prev.getDataSite());
+        startDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
         MinuteAggregateDataDO endDO = BeanUtils.toBean(startDO, MinuteAggregateDataDO.class);
         endDO.setAggregateTime(targetTime);
         long totalSeconds = Duration.between(prevTime, next.getSyncTime()).getSeconds();
