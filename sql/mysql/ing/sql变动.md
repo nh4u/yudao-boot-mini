@@ -102,7 +102,7 @@ DISTRIBUTED BY HASH(`aggregate_time`, `cop_type`) BUCKETS 16
 PROPERTIES (
 "compression" = "LZ4",
 "datacache.enable" = "true",
-"dynamic_partition.enable" = "false",
+"dynamic_partition.enable" = "true",
 "dynamic_partition.end" = "3",
 "dynamic_partition.history_partition_num" = "0",
 "dynamic_partition.prefix" = "p",
