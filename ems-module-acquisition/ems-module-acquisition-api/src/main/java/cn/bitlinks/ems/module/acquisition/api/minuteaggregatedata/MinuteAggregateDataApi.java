@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.enums.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -78,17 +79,11 @@ public interface MinuteAggregateDataApi {
     /**
      * 获取台账们稳态值、用量的时间范围内数据
      *
-     * @param starTime        开始时间
-     * @param endTime         结束时间
      * @return
      */
-    @GetMapping(PREFIX + "/getRangeDataRequestParam")
+    @PostMapping(PREFIX + "/getRangeDataRequestParam")
     @Operation(summary = "根据两条数据进行拆分")
-    CommonResult<List<MinuteAggregateDataDTO>> getRangeDataRequestParam(@RequestParam("standingbookIds") String standingbookIdsStr,
-                                                          @RequestParam("startTime")
-                                                          @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime starTime,
-                                                          @RequestParam("endTime")
-                                                          @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime endTime);
+    CommonResult<List<MinuteAggregateDataDTO>> getRangeDataRequestParam(@RequestBody MinuteRangeDataParamDTO minuteRangeDataParamDTO);
     /**
      * 获取该台账的当前业务点全量值
      * @param standingbookId

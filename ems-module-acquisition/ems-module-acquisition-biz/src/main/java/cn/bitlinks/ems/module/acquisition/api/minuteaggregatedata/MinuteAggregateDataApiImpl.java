@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata.MinuteAggregateDataService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.StrPool;
@@ -66,17 +67,14 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     }
 
     @Override
-    public CommonResult<List<MinuteAggregateDataDTO>> getRangeDataRequestParam(String standingbookIdsStr,LocalDateTime starTime, LocalDateTime endTime) {
-        List<Long> standingbookIds = Collections.emptyList();
-        if (StringUtils.isNotBlank(standingbookIdsStr)) {
-            standingbookIds = Arrays.stream(standingbookIdsStr.split(StrPool.COMMA))
-                    .map(Long::valueOf)
-                    .collect(Collectors.toList());
-        }
-        List<MinuteAggregateDataDTO> list=  minuteAggregateDataService.getRangeDataRequestParam(standingbookIds, starTime, endTime);
+    public CommonResult<List<MinuteAggregateDataDTO>> getRangeDataRequestParam(MinuteRangeDataParamDTO minuteRangeDataParamDTO){
+        // 根据传入的参数，调用minuteAggregateDataService的getRangeDataRequestParam方法，获取MinuteAggregateDataDTO类型的列表
+        List<MinuteAggregateDataDTO> list=  minuteAggregateDataService.getRangeDataRequestParam(minuteRangeDataParamDTO.getSbIds(), minuteRangeDataParamDTO.getStarTime(), minuteRangeDataParamDTO.getEndTime());
+        // 如果列表为空，则返回一个成功的CommonResult，其中包含null
         if (CollUtil.isEmpty(list)) {
             return CommonResult.success(null);
         }
+        // 否则，返回一个成功的CommonResult，其中包含列表
         return CommonResult.success(list);
     }
     @Override
