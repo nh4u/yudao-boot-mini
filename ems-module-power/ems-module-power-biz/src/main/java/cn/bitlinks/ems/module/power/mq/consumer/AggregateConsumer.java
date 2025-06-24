@@ -50,7 +50,7 @@ public class AggregateConsumer implements RocketMQListener<List<MinuteAggregateD
             return;
         }
         // 计算、重算cop逻辑
-        copCalcService.calculateCop(minHour, maxHour, messages);
+        copCalcService.calculateCop(minHour, maxHour.plusHours(1L), messages);
         log.info("AggregateConsumer end");
     }
 }
