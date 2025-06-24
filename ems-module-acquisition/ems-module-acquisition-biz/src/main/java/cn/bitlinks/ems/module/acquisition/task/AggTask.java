@@ -113,7 +113,7 @@ public class AggTask {
 //        2、COP报表稳态值取值规则如下：
 //        取1小时内聚合的末尾值作为该1小时的值。
 //        例如：如上时间顺序的聚合值。COP报表中，13时的值是15。
-        LocalDateTime currentMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(10L);
+        LocalDateTime currentMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(1L);
 
         //        LocalDateTime currentMinute = LocalDateTime.of(2025, 6, 9, 19, 20, 0);
         // List<MinuteAggregateDataDO> list = new ArrayList<>();
@@ -143,7 +143,7 @@ public class AggTask {
      * 当前分钟（-10min）的聚合时间的数据计算与插入
      */
     private void insertMinuteData() throws IOException {
-        LocalDateTime currentMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(10L);
+        LocalDateTime currentMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(1L);
 //        LocalDateTime currentMinute = LocalDateTime.of(2025, 6, 9, 19, 20, 0);
 //
 //        2025-06-09 19:47:12
