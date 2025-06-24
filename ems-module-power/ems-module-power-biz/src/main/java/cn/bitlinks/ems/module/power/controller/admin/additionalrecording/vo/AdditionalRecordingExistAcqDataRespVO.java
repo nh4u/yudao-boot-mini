@@ -23,6 +23,9 @@ public class AdditionalRecordingExistAcqDataRespVO {
     @Schema(description = "上一个业务点时间")
     private LocalDateTime preTime;
 
+    @Schema(description = "当前时间业务点时间")
+    private LocalDateTime curTime;
+
     @Schema(description = "下一个业务点时间")
     private LocalDateTime nextTime;
 }
