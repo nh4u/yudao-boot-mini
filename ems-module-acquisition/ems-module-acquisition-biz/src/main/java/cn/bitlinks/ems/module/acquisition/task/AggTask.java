@@ -315,7 +315,7 @@ public class AggTask {
         startDO.setEnergyFlag(prev.getEnergyFlag());
         startDO.setDataSite(prev.getDataSite());
         startDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
-
+        startDO.setUsage(prev.getUsage());
         startDO.setDataType(prev.getDataType());
         startDO.setDataFeature(prev.getDataFeature());
         startDO.setFullIncrement(prev.getFullIncrement());
