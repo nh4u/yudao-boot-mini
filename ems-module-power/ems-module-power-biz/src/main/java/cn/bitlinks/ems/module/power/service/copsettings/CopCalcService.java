@@ -12,7 +12,6 @@ import cn.bitlinks.ems.module.power.dto.CopHourAggDataDTO;
 import cn.bitlinks.ems.module.power.enums.energyparam.ParamDataFeatureEnum;
 import cn.bitlinks.ems.module.power.service.copsettings.dto.CopSettingsDTO;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.text.StrPool;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -95,7 +94,7 @@ public class CopCalcService {
             minuteRangeDataParamDTO.setEndTime(endHour);
             // 依赖的所有台账id和参数的数据们
             List<MinuteAggregateDataDTO> dbHourData = minuteAggregateDataApi.getRangeDataRequestParam(minuteRangeDataParamDTO).getData();
-
+            log.info("COP [{}] ，影响小时区间：{} ~ {}，数据库原有数据：{}", copFormulaDO.getCopType(), startHour, endHour, dbHourData);
             // 筛选出newHourData中台账这些夏普手机哦的
             // 3.5 循环影响的小时，计算cop的小时值
             LocalDateTime cursor = startHour;   //15：01：01   19：01：01
@@ -167,7 +166,7 @@ public class CopCalcService {
                 });
                 // 3.5.2 校验这一小时的所需要的参数值是否齐全
                 boolean complete = copParams.stream()
-                        .allMatch(param -> formulaVariables.containsKey(param.getParamCode()));
+                        .allMatch(param -> formulaVariables.containsKey(param.getParam()));
 
                 if (!complete) {
                     log.warn("COP [{}] 时间范围[{},{}) 参数不全，跳过", copFormulaDO.getCopType(), hourStart, hourEnd);
