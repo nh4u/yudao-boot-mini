@@ -8,6 +8,7 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelListResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.HeaderCodeMappingVO;
@@ -226,11 +227,21 @@ public class ExcelMeterDataProcessor {
         List<Future<List<AcqDataExcelResultVO>>> futures = new ArrayList<>();
         //获取表头与台账关系
         Map<String, HeaderCodeMappingVO> standingbookInfo = getStandingbookInfo(meterNames);
+
         // 获取每个采集点 在时间段前后的聚合数据
         //获取表头与台账关系
         LocalDateTime startTime = times.get(0);
         LocalDateTime endTime = times.get(times.size() - 1);
-        Map<Long, MinuteAggDataSplitDTO> standingboookUsageRangeTimePreNextAggDataMap = new HashMap<>();
+        List<Long> sbIds = Optional.ofNullable(standingbookInfo)
+                .orElse(Collections.emptyMap())
+                .values().stream()
+                .filter(Objects::nonNull)
+                .map(HeaderCodeMappingVO::getStandingbookId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        MinuteRangeDataParamDTO paramDTO = new MinuteRangeDataParamDTO();paramDTO.setStarTime(startTime);paramDTO.setEndTime(endTime);paramDTO.setSbIds(sbIds);
+        Map<Long, MinuteAggDataSplitDTO> standingboookUsageRangeTimePreNextAggDataMap = minuteAggregateDataApi.getPreAndNextData(paramDTO).getData();
 
         for (Map.Entry<String, List<BigDecimal>> entry : meterValuesMap.entrySet()) {
             String meter = entry.getKey();
@@ -299,20 +310,11 @@ public class ExcelMeterDataProcessor {
                                     rangDTO.setStartDataDO(preDTO);
                                     rangDTO.setEndDataDO(startDataDTO);
                                     CommonResult<String> result = minuteAggregateDataApi.insertRangeDataError(rangDTO);
-                                    if (result.isError()) {
-                                        subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(cur.format(NORM_DATETIME_MINUTE_FORMATTER))
-                                                .mistake(result.getMsg()).mistakeDetail(result.getMsg()).build());
-                                        acqFailCount.addAndGet(1);
-                                        log.error("采集点【{}】,采集时间【{}】,采集数值【{}】1数据解析失败，数据异常{}", meter, cur, values.get(i), result.getMsg());
-                                    }
-                                }
-                                // 无上一条数据，则插入单条
-                                CommonResult<String> result = minuteAggregateDataApi.insertSingleDataError(startDataDTO);
-                                if (result.isError()) {
-                                    subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(cur.format(NORM_DATETIME_MINUTE_FORMATTER))
-                                            .mistake(result.getMsg()).mistakeDetail(result.getMsg()).build());
-                                    acqFailCount.addAndGet(1);
-                                    log.error("采集点【{}】,采集时间【{}】,采集数值【{}】1数据解析失败，数据异常{}", meter, cur, values.get(i), result.getMsg());
+                                    handleApiResult(result, subResult, acqFailCount, meter, cur.format(NORM_DATETIME_MINUTE_FORMATTER), values.get(i));
+                                }else{
+                                    // 无上一条数据，则插入单条
+                                    CommonResult<String> result = minuteAggregateDataApi.insertSingleDataError(startDataDTO);
+                                    handleApiResult(result, subResult, acqFailCount, meter, cur.format(NORM_DATETIME_MINUTE_FORMATTER), values.get(i));
                                 }
                             }
                             MinuteAggDataSplitDTO rangDTO = new MinuteAggDataSplitDTO();
@@ -325,12 +327,7 @@ public class ExcelMeterDataProcessor {
                             endDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
                             rangDTO.setEndDataDO(endDataDTO);
                             CommonResult<String> result = minuteAggregateDataApi.insertRangeDataError(rangDTO);
-                            if (result.isError()) {
-                                subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(cur.format(NORM_DATETIME_MINUTE_FORMATTER))
-                                        .mistake(result.getMsg()).mistakeDetail(result.getMsg()).build());
-                                acqFailCount.addAndGet(1);
-                                log.error("采集点【{}】,采集时间【{}】,采集数值【{}】2数据解析失败，数据异常{}", meter, cur, values.get(i), result.getMsg());
-                            }
+                            handleApiResult(result, subResult, acqFailCount, meter, cur.format(NORM_DATETIME_MINUTE_FORMATTER), values.get(i));
 
                         }
 
@@ -402,6 +399,19 @@ public class ExcelMeterDataProcessor {
             }
         }
         return null;
+    }
+
+    private void handleApiResult(CommonResult<?> result, List<AcqDataExcelResultVO> subResult, AtomicInteger acqFailCount, String meter, String time, BigDecimal value) {
+        if (result.isError()) {
+            subResult.add(AcqDataExcelResultVO.builder()
+                    .acqCode(meter)
+                    .acqTime(time)
+                    .mistake(result.getMsg())
+                    .mistakeDetail(result.getMsg())
+                    .build());
+            acqFailCount.incrementAndGet();
+            log.error("采集点【{}】,采集时间【{}】,采集数值【{}】远程调用失败：{}", meter, time, value, result.getMsg());
+        }
     }
 
     /**

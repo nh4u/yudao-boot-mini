@@ -103,6 +103,17 @@ public interface MinuteAggregateDataMapper {
      */
     @TenantIgnore
     List<MinuteAggregateDataDO> getRangeDataRequestParam(@Param("standingbookIds")List<Long> standingbookIds, @Param("starTime")LocalDateTime starTime, @Param("endTime")LocalDateTime endTime);
-
+    /**
+     * 获取多个台账的上一个业务点全量值
+     * @return
+     */
+    @TenantIgnore
+    List<MinuteAggregateDataDO> getSbIdsUsagePrevFullValue(@Param("standingbookIds")List<Long> standingbookIds, @Param("targetTime")LocalDateTime targetTime);
+    /**
+     * 获取多个台账的下一个业务点全量值
+     * @return
+     */
+    @TenantIgnore
+    List<MinuteAggregateDataDO> getSbIdsUsageNextFullValue(@Param("standingbookIds")List<Long> standingbookIds, @Param("targetTime")LocalDateTime targetTime);
 
 }

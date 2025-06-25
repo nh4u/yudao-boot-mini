@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_RANGE_FAIL;
@@ -81,6 +83,16 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
             log.error("insertRangeDataError", e);
             return CommonResult.error(STREAM_LOAD_RANGE_FAIL);
         }
+    }
+
+    @Override
+    public CommonResult<Map<Long, MinuteAggDataSplitDTO>> getPreAndNextData(MinuteRangeDataParamDTO minuteRangeDataParamDTO) {
+        Map<Long, MinuteAggDataSplitDTO> dataSplitDTOMap =  minuteAggregateDataService.getPreAndNextData(minuteRangeDataParamDTO);
+        if (CollUtil.isEmpty(dataSplitDTOMap)) {
+            return CommonResult.success(Collections.emptyMap());
+        }
+        // 否则，返回一个成功的CommonResult，其中包含列表
+        return CommonResult.success(dataSplitDTOMap);
     }
 
     @Override

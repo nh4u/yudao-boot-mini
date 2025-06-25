@@ -5,6 +5,7 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
 import cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata.MinuteAggregateDataMapper;
 import cn.bitlinks.ems.module.acquisition.service.partition.PartitionService;
@@ -32,6 +33,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -387,5 +389,42 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             return null;
         }
         return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
+    }
+
+    @Override
+    public Map<Long, MinuteAggDataSplitDTO> getPreAndNextData( MinuteRangeDataParamDTO paramDTO) {
+        if(CollUtil.isEmpty(paramDTO.getSbIds())){
+            return Collections.emptyMap();
+        }
+        // 查询多个台账id对应用量的 某时间点的上一条数据
+        Map<Long, MinuteAggDataSplitDTO> resultMap = new HashMap<>();
+
+        // 1. 查询前一条数据（按台账 ID）
+        List<MinuteAggregateDataDO> preDOs = minuteAggregateDataMapper.getSbIdsUsagePrevFullValue(paramDTO.getSbIds(), paramDTO.getStarTime());
+        List<MinuteAggregateDataDTO> preDTOList = CollUtil.isNotEmpty(preDOs) ? BeanUtils.toBean(preDOs, MinuteAggregateDataDTO.class) : Collections.emptyList();
+
+        // 2. 查询后一条数据（按台账 ID）
+        List<MinuteAggregateDataDO> nextDOs = minuteAggregateDataMapper.getSbIdsUsageNextFullValue(paramDTO.getSbIds(), paramDTO.getStarTime());
+        List<MinuteAggregateDataDTO> nextDTOList = CollUtil.isNotEmpty(nextDOs) ? BeanUtils.toBean(nextDOs, MinuteAggregateDataDTO.class) : Collections.emptyList();
+
+        // 3. 整理成 Map
+        Map<Long, MinuteAggregateDataDTO> preMap = preDTOList.stream()
+                .collect(Collectors.toMap(MinuteAggregateDataDTO::getStandingbookId, Function.identity(), (v1, v2) -> v1));
+        Map<Long, MinuteAggregateDataDTO> nextMap = nextDTOList.stream()
+                .collect(Collectors.toMap(MinuteAggregateDataDTO::getStandingbookId, Function.identity(), (v1, v2) -> v1));
+
+        // 4. 封装结果
+        for (Long sbId : paramDTO.getSbIds()) {
+            MinuteAggregateDataDTO preDTO = preMap.get(sbId);
+            MinuteAggregateDataDTO nextDTO = nextMap.get(sbId);
+            if (preDTO != null || nextDTO != null) {
+                MinuteAggDataSplitDTO splitDTO = new MinuteAggDataSplitDTO();
+                splitDTO.setStartDataDO(preDTO);
+                splitDTO.setEndDataDO(nextDTO);
+                resultMap.put(sbId, splitDTO);
+            }
+        }
+
+        return resultMap;
     }
 }

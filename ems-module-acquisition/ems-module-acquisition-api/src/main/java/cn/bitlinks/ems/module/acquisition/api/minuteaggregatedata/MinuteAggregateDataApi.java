@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import javax.annotation.security.PermitAll;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 
@@ -93,7 +94,9 @@ public interface MinuteAggregateDataApi {
     @Operation(summary = "根据两条数据进行拆分")
     CommonResult<String> insertRangeDataError(@RequestBody MinuteAggDataSplitDTO minuteAggDataSplitDTO);
 
-
+    @PostMapping(PREFIX + "/getPreAndNextData")
+    @Operation(summary = "获取时间段首尾两端附近的数据")
+    CommonResult<Map<Long, MinuteAggDataSplitDTO>> getPreAndNextData(@RequestBody MinuteRangeDataParamDTO minuteRangeDataParamDTO);
     /**
      * 获取台账们稳态值、用量的时间范围内数据
      *
