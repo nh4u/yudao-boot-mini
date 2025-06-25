@@ -322,18 +322,8 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             data.setFullValue(currentFullValue);
             data.setIncrementalValue(perMinuteIncrement);
             if (i == 0) {
-                if (Objects.isNull(endData.getIncrementalValue())) {
-                    //这个是历史时间段之后添加的连续数据，两个时间点全量都有，需要计算出最后一个时间点的增量和，时间范围之间的分钟级数据的增量
-                    //第一条数据的值，还是第一条数据的值，不需要加入新增的队列中
+                if (Objects.nonNull(startData.getIncrementalValue())) {
                     data.setIncrementalValue(startData.getIncrementalValue());
-                    // 更新当前时间和全量值
-                    currentTime = currentTime.plusMinutes(1);
-                    currentFullValue = currentFullValue.add(perMinuteIncrement);
-                    continue;
-                }
-                if (endData.getIncrementalValue().equals(BigDecimal.ZERO)) {
-                    //这个是历史时间段之前添加的连续数据，都是全量，第一个时间点的增量为0不需要动，需要计算出最后一个时间点的增量和时间范围之间的分钟级别数据的增量
-                    data.setIncrementalValue(BigDecimal.ZERO);
                 }
                 if (startData.getAcqFlag() != null) {
                     data.setAcqFlag(startData.getAcqFlag());
@@ -342,7 +332,6 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
                 }
             }
             if (i == minutes) {
-                data.setAcqFlag(AcqFlagEnum.ACQ.getCode());
                 if (endData.getAcqFlag() != null) {
                     data.setAcqFlag(endData.getAcqFlag());
                 } else {

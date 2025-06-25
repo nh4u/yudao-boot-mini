@@ -77,7 +77,7 @@ public interface MinuteAggregateDataApi {
     CommonResult<String> insertSingleDataError(@RequestBody MinuteAggregateDataDTO minuteAggregateDataDTO);
 
     /**
-     * 根据两条数据进行拆分
+     * 根据两条数据进行拆分,
      *
      * @param minuteAggDataSplitDTO
      */

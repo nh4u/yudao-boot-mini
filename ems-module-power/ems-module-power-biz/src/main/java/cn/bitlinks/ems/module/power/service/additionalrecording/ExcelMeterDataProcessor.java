@@ -29,6 +29,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -240,7 +242,10 @@ public class ExcelMeterDataProcessor {
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
-        MinuteRangeDataParamDTO paramDTO = new MinuteRangeDataParamDTO();paramDTO.setStarTime(startTime);paramDTO.setEndTime(endTime);paramDTO.setSbIds(sbIds);
+        MinuteRangeDataParamDTO paramDTO = new MinuteRangeDataParamDTO();
+        paramDTO.setStarTime(startTime);
+        paramDTO.setEndTime(endTime);
+        paramDTO.setSbIds(sbIds);
         Map<Long, MinuteAggDataSplitDTO> standingboookUsageRangeTimePreNextAggDataMap = minuteAggregateDataApi.getPreAndNextData(paramDTO).getData();
 
         for (Map.Entry<String, List<BigDecimal>> entry : meterValuesMap.entrySet()) {
@@ -279,7 +284,7 @@ public class ExcelMeterDataProcessor {
                         MinuteAggregateDataDTO startDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
                         startDataDTO.setAggregateTime(cur);
                         startDataDTO.setFullValue(values.get(i));
-                        startDataDTO.setIncrementalValue(BigDecimal.ZERO);
+                        //startDataDTO.setIncrementalValue(BigDecimal.ZERO);
                         startDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
                         // 如果是第一个采集点的话，特殊处理，需要更改当前时间对应的增量
                         if (i == times.size() - 1) {
@@ -287,7 +292,8 @@ public class ExcelMeterDataProcessor {
                             if (minuteAggDataSplitDTO != null && minuteAggDataSplitDTO.getEndDataDO() != null) {
                                 MinuteAggregateDataDTO lastDTO = minuteAggDataSplitDTO.getEndDataDO();
                                 // 重新设置影响的下一条的增量值
-                                lastDTO.setIncrementalValue(lastDTO.getFullValue().subtract(values.get(i)));
+                                //lastDTO.setIncrementalValue(lastDTO.getFullValue().subtract(values.get(i)));
+                                startDataDTO.setIncrementalValue(calcEndMinuteIncrementValue(times.get(i - 1), cur, values.get(i-1), values.get(i)));
                                 MinuteAggDataSplitDTO rangDTO = new MinuteAggDataSplitDTO();
                                 rangDTO.setStartDataDO(startDataDTO);
                                 rangDTO.setEndDataDO(lastDTO);
@@ -305,17 +311,20 @@ public class ExcelMeterDataProcessor {
                                 if (minuteAggDataSplitDTO != null && minuteAggDataSplitDTO.getStartDataDO() != null) {
                                     MinuteAggregateDataDTO preDTO = minuteAggDataSplitDTO.getStartDataDO();
                                     // 计算第一条数据的增量
-                                    startDataDTO.setIncrementalValue(values.get(i).subtract(preDTO.getFullValue()));
                                     MinuteAggDataSplitDTO rangDTO = new MinuteAggDataSplitDTO();
                                     rangDTO.setStartDataDO(preDTO);
                                     rangDTO.setEndDataDO(startDataDTO);
                                     CommonResult<String> result = minuteAggregateDataApi.insertRangeDataError(rangDTO);
                                     handleApiResult(result, subResult, acqFailCount, meter, cur.format(NORM_DATETIME_MINUTE_FORMATTER), values.get(i));
-                                }else{
+                                    startDataDTO.setIncrementalValue(calcEndMinuteIncrementValue(preDTO.getAggregateTime(), cur, preDTO.getFullValue(), values.get(i)));
+                                } else {
                                     // 无上一条数据，则插入单条
                                     CommonResult<String> result = minuteAggregateDataApi.insertSingleDataError(startDataDTO);
                                     handleApiResult(result, subResult, acqFailCount, meter, cur.format(NORM_DATETIME_MINUTE_FORMATTER), values.get(i));
+                                    startDataDTO.setIncrementalValue(BigDecimal.ZERO);
                                 }
+                            } else {
+                                startDataDTO.setIncrementalValue(calcEndMinuteIncrementValue(times.get(i - 1), cur, values.get(i - 1), values.get(i)));
                             }
                             MinuteAggDataSplitDTO rangDTO = new MinuteAggDataSplitDTO();
                             rangDTO.setStartDataDO(startDataDTO);
@@ -399,6 +408,26 @@ public class ExcelMeterDataProcessor {
             }
         }
         return null;
+    }
+
+    /**
+     * 计算最后一分钟的增量
+     *
+     * @param start
+     * @param end
+     * @param startFull
+     * @param endFull
+     * @return
+     */
+    private BigDecimal calcEndMinuteIncrementValue(LocalDateTime start, LocalDateTime end, BigDecimal startFull, BigDecimal endFull) {
+        long minutes = Duration.between(start, end).toMinutes();
+        if (minutes <= 0) {
+            return BigDecimal.ZERO;
+        }
+
+        // 平均每分钟的增量
+        BigDecimal totalIncrement = endFull.subtract(startFull);
+        return totalIncrement.divide(BigDecimal.valueOf(minutes), 10, RoundingMode.HALF_UP);
     }
 
     private void handleApiResult(CommonResult<?> result, List<AcqDataExcelResultVO> subResult, AtomicInteger acqFailCount, String meter, String time, BigDecimal value) {
