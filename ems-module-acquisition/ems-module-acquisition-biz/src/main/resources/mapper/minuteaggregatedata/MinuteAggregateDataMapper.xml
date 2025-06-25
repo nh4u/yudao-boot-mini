@@ -87,6 +87,26 @@
         LIMIT 1;
 
     </select>
+    <select id="getSbIdsUsagePrevFullValue"
+            resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
+        SELECT *
+        FROM (
+        SELECT *,
+        ROW_NUMBER() OVER (PARTITION BY standingbook_id ORDER BY aggregate_time DESC) AS rn
+        FROM minute_aggregate_data
+        WHERE aggregate_time &lt; #{targetTime}
+        AND `usage` = 1
+        <if test="standingbookIds != null and standingbookIds.size() != 0">
+            AND standingbook_id IN
+            <foreach collection="standingbookIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        AND full_value IS NOT NULL
+        -- AND acq_flag = 1
+        ) t
+        WHERE t.rn = 1;
+    </select>
     <select id="getUsageExistFullValue"
             resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
         SELECT *
@@ -110,6 +130,27 @@
         AND acq_flag = 1
         ORDER BY aggregate_time ASC
         LIMIT 1;
+    </select>
+    <select id="getSbIdsUsageNextFullValue"
+            resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
+        SELECT *
+        FROM (
+        SELECT *,
+        ROW_NUMBER() OVER (PARTITION BY standingbook_id ORDER BY aggregate_time DESC) AS rn
+        FROM minute_aggregate_data
+        WHERE aggregate_time > #{targetTime}
+        AND `usage` = 1
+        <if test="standingbookIds != null and standingbookIds.size() != 0">
+            AND standingbook_id IN
+            <foreach collection="standingbookIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+
+        AND full_value IS NOT NULL
+        -- AND acq_flag = 1
+        ) t
+        WHERE t.rn = 1;
     </select>
     <select id="getRangeDataRequestParam"
             resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
