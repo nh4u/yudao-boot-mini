@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
 import cn.bitlinks.ems.framework.common.util.calc.CalculateUtil;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -26,14 +27,6 @@ import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.pojo.StatsResult;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticInfoDataV2;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsChartResultV2VO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsChartYDataV2VO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsChartYInfoV2VO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsInfoV2;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
@@ -217,6 +210,34 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             statisticsInfoList.addAll(statisticsInfoV2s);
         }
         resultVO.setStatisticsInfoList(statisticsInfoList);
+
+        // 无数据的填充0
+        statisticsInfoList.forEach(l -> {
+
+            List<StatisticInfoDataV2> newList = new ArrayList<>();
+            List<StatisticInfoDataV2> oldList = l.getStatisticsDateDataList();
+            if (tableHeader.size() != oldList.size()) {
+                Map<String, List<StatisticInfoDataV2>> dateMap = oldList.stream()
+                        .collect(Collectors.groupingBy(StatisticInfoDataV2::getDate));
+
+                tableHeader.forEach(date -> {
+                    List<StatisticInfoDataV2> standardCoalInfoDataList = dateMap.get(date);
+                    if (standardCoalInfoDataList == null) {
+                        StatisticInfoDataV2 standardCoalInfoData = new StatisticInfoDataV2();
+                        standardCoalInfoData.setDate(date);
+                        standardCoalInfoData.setMoney(BigDecimal.ZERO);
+                        standardCoalInfoData.setConsumption(BigDecimal.ZERO);
+                        newList.add(standardCoalInfoData);
+                    } else {
+                        newList.add(standardCoalInfoDataList.get(0));
+                    }
+                });
+            }
+
+            l.setStatisticsDateDataList(newList);
+
+        });
+
         resultVO.setDataTime(lastTime);
         String jsonStr = JSONUtil.toJsonStr(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);

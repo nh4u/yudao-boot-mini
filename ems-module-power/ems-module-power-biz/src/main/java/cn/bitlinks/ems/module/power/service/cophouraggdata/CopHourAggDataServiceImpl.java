@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.SYSTEM_TYPE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
-
+import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 
 /**
  * @author liumingqiang
@@ -43,7 +43,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
     @Override
     public List<Map<String, Object>> copTable(ReportParamVO paramVO) {
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND);
 
         // 1.校验时间范围
         LocalDateTime[] range = validateRange(paramVO.getRange());
