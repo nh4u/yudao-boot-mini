@@ -1,24 +1,18 @@
 package cn.bitlinks.ems.module.power.service.additionalrecording;
 
-import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
 import cn.bitlinks.ems.framework.common.enums.FullIncrementEnum;
 import cn.bitlinks.ems.framework.common.exception.ServiceException;
-import cn.bitlinks.ems.framework.common.pojo.CommonResult;
-import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
-import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelListResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingManualSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.HeaderCodeMappingVO;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.reportcod.HeaderCodeMappingMapper;
-import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
-import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -31,7 +25,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,23 +39,20 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_RANGE_FAIL;
+import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.hutool.core.date.DatePattern.NORM_DATETIME_MINUTE_FORMATTER;
 
 @Slf4j
 @Service
 @Validated
-public class ExcelMeterDataProcessor {
+public class ExcelMeterDataProcessorV0 {
 
     @Resource
     private HeaderCodeMappingMapper headerCodeMappingMapper;
-
     @Resource
-    private MinuteAggregateDataApi minuteAggregateDataApi;
-
-    @Resource
-    private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
+    @Lazy
+    private AdditionalRecordingService additionalRecordingService;
 
     public static void main(String[] args) {
         try (FileInputStream fis = new FileInputStream(new File("D:/工作文件/燕东/51051.xls"))) {
@@ -75,7 +69,7 @@ public class ExcelMeterDataProcessor {
     }
 
     public AcqDataExcelListResultVO process(InputStream file, String timeStartCell, String timeEndCell,
-                                            String meterStartCell, String meterEndCell) throws IOException {
+                                                String meterStartCell, String meterEndCell) throws IOException {
 
         int[] timeStart = parseCell(timeStartCell);
         int[] timeEnd = parseCell(timeEndCell);
@@ -213,6 +207,7 @@ public class ExcelMeterDataProcessor {
     }
 
     /**
+     *
      * @param meterValuesMap
      * @param times
      * @return
@@ -226,129 +221,46 @@ public class ExcelMeterDataProcessor {
         List<Future<List<AcqDataExcelResultVO>>> futures = new ArrayList<>();
         //获取表头与台账关系
         Map<String, HeaderCodeMappingVO> standingbookInfo = getStandingbookInfo(meterNames);
-        // 获取每个采集点 在时间段前后的聚合数据
-        //获取表头与台账关系
-        LocalDateTime startTime = times.get(0);
-        LocalDateTime endTime = times.get(times.size() - 1);
-        Map<Long, MinuteAggDataSplitDTO> standingboookUsageRangeTimePreNextAggDataMap = new HashMap<>();
 
         for (Map.Entry<String, List<BigDecimal>> entry : meterValuesMap.entrySet()) {
             String meter = entry.getKey();
             List<BigDecimal> values = entry.getValue();
-            if (MapUtil.isEmpty(standingbookInfo) || !standingbookInfo.containsKey(meter)) {
+            if (MapUtil.isEmpty(standingbookInfo) || standingbookInfo.containsKey(meter)) {
                 failMsgList.add(AcqDataExcelResultVO.builder().acqCode(meter).mistake(IMPORT_ACQ_MISTAKE.getMsg()).mistakeDetail(IMPORT_ACQ_MISTAKE_DETAIL.getMsg()).build());
                 log.info("暂无报表与台账关联信息，不进行计算, 表头：{}", meter);
                 acqFailCount.addAndGet(values.size());
                 continue;
             }
             HeaderCodeMappingVO headerCodeMappingVO = standingbookInfo.get(meter);
-            StandingbookTmplDaqAttrDO daqAttrDO =
-                    standingbookTmplDaqAttrService.getUsageAttrBySbId(headerCodeMappingVO.getStandingbookId());
-            if (Objects.isNull(daqAttrDO)) {
-                failMsgList.add(AcqDataExcelResultVO.builder().acqCode(meter).mistake(ADDITIONAL_RECORDING_ENERGY_NOT_EXISTS.getMsg()).mistakeDetail(ADDITIONAL_RECORDING_ENERGY_NOT_EXISTS.getMsg()).build());
-                log.info("无对应能源用量，不可进行补录, 表头：{}", meter);
-                acqFailCount.addAndGet(values.size());
-                continue;
-            }
-            MinuteAggregateDataDTO originalDTO = new MinuteAggregateDataDTO();
-            originalDTO.setStandingbookId(headerCodeMappingVO.getStandingbookId());
-            originalDTO.setEnergyFlag(daqAttrDO.getEnergyFlag());
-            originalDTO.setParamCode(daqAttrDO.getCode());
-            originalDTO.setUsage(daqAttrDO.getUsage());
-            originalDTO.setDataType(daqAttrDO.getDataType());
-            originalDTO.setFullIncrement(FullIncrementEnum.FULL.getCode());
-            originalDTO.setDataFeature(daqAttrDO.getDataType());
-
             futures.add(executor.submit(() -> {
-                MinuteAggDataSplitDTO minuteAggDataSplitDTO = standingboookUsageRangeTimePreNextAggDataMap.get(headerCodeMappingVO.getStandingbookId());
                 List<AcqDataExcelResultVO> subResult = new ArrayList<>();
-                for (int i = 0; i <= times.size() - 1; i++) {
-                    LocalDateTime cur = times.get(i);
+                for (int i = 0; i <=  times.size() - 1; i++) {
+                    LocalDateTime start = times.get(i);
                     try {
-                        MinuteAggregateDataDTO startDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-                        startDataDTO.setAggregateTime(cur);
-                        startDataDTO.setFullValue(values.get(i));
-                        startDataDTO.setIncrementalValue(BigDecimal.ZERO);
-                        startDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
-                        // 如果是第一个采集点的话，特殊处理，需要更改当前时间对应的增量
-                        if (i == times.size() - 1) {
-                            // 如果是最后一个采集点的话，需要更改最后一个采集点的下一条原有数据的增量
-                            if (minuteAggDataSplitDTO != null && minuteAggDataSplitDTO.getEndDataDO() != null) {
-                                MinuteAggregateDataDTO lastDTO = minuteAggDataSplitDTO.getEndDataDO();
-                                // 重新设置影响的下一条的增量值
-                                lastDTO.setIncrementalValue(lastDTO.getFullValue().subtract(values.get(i)));
-                                MinuteAggDataSplitDTO rangDTO = new MinuteAggDataSplitDTO();
-                                rangDTO.setStartDataDO(startDataDTO);
-                                rangDTO.setEndDataDO(lastDTO);
-                                CommonResult<String> result = minuteAggregateDataApi.insertRangeDataError(rangDTO);
-                                if (result.isError()) {
-                                    subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(cur.format(NORM_DATETIME_MINUTE_FORMATTER))
-                                            .mistake(result.getMsg()).mistakeDetail(result.getMsg()).build());
-                                    acqFailCount.addAndGet(1);
-                                    log.error("采集点【{}】,采集时间【{}】,采集数值【{}】1数据解析失败，数据异常{}", meter, cur, values.get(i), result.getMsg());
-                                }
+                        // 不是最后一行，需要校验，全量》=上一个数值
+                        if(i != times.size()-1){
+                            BigDecimal diff = values.get(i + 1).subtract(values.get(i));
+                            if (diff.compareTo(BigDecimal.ZERO) <= 0) {
+                                throw exception(FULL_VALUE_MUST_GT_LEFT);
                             }
-                            // 无最后一条的下一条则不处理，
-                        } else {
-                            if (i == 0) {
-                                if (minuteAggDataSplitDTO != null && minuteAggDataSplitDTO.getStartDataDO() != null) {
-                                    MinuteAggregateDataDTO preDTO = minuteAggDataSplitDTO.getStartDataDO();
-                                    // 计算第一条数据的增量
-                                    startDataDTO.setIncrementalValue(values.get(i).subtract(preDTO.getFullValue()));
-                                    MinuteAggDataSplitDTO rangDTO = new MinuteAggDataSplitDTO();
-                                    rangDTO.setStartDataDO(preDTO);
-                                    rangDTO.setEndDataDO(startDataDTO);
-                                    CommonResult<String> result = minuteAggregateDataApi.insertRangeDataError(rangDTO);
-                                    if (result.isError()) {
-                                        subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(cur.format(NORM_DATETIME_MINUTE_FORMATTER))
-                                                .mistake(result.getMsg()).mistakeDetail(result.getMsg()).build());
-                                        acqFailCount.addAndGet(1);
-                                        log.error("采集点【{}】,采集时间【{}】,采集数值【{}】1数据解析失败，数据异常{}", meter, cur, values.get(i), result.getMsg());
-                                    }
-                                }
-                                // 无上一条数据，则插入单条
-                                CommonResult<String> result = minuteAggregateDataApi.insertSingleDataError(startDataDTO);
-                                if (result.isError()) {
-                                    subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(cur.format(NORM_DATETIME_MINUTE_FORMATTER))
-                                            .mistake(result.getMsg()).mistakeDetail(result.getMsg()).build());
-                                    acqFailCount.addAndGet(1);
-                                    log.error("采集点【{}】,采集时间【{}】,采集数值【{}】1数据解析失败，数据异常{}", meter, cur, values.get(i), result.getMsg());
-                                }
-                            }
-                            MinuteAggDataSplitDTO rangDTO = new MinuteAggDataSplitDTO();
-                            rangDTO.setStartDataDO(startDataDTO);
-                            MinuteAggregateDataDTO endDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-                            endDataDTO.setAggregateTime(times.get(i + 1));
-                            endDataDTO.setFullValue(values.get(i + 1));
-                            //需要计算
-                            endDataDTO.setIncrementalValue(null);
-                            endDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
-                            rangDTO.setEndDataDO(endDataDTO);
-                            CommonResult<String> result = minuteAggregateDataApi.insertRangeDataError(rangDTO);
-                            if (result.isError()) {
-                                subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(cur.format(NORM_DATETIME_MINUTE_FORMATTER))
-                                        .mistake(result.getMsg()).mistakeDetail(result.getMsg()).build());
-                                acqFailCount.addAndGet(1);
-                                log.error("采集点【{}】,采集时间【{}】,采集数值【{}】2数据解析失败，数据异常{}", meter, cur, values.get(i), result.getMsg());
-                            }
-
                         }
-
-                    } catch (ServiceException e) {
-                        if (e.getCode().equals(STREAM_LOAD_RANGE_FAIL.getCode())) {
-                            subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(cur.format(NORM_DATETIME_MINUTE_FORMATTER))
-                                    .mistake(IMPORT_DATA_STREAM_LOAD_ERROR.getMsg()).mistakeDetail(IMPORT_DATA_STREAM_LOAD_ERROR.getMsg()).build());
-                        } else {
-                            subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(cur.format(NORM_DATETIME_MINUTE_FORMATTER))
-                                    .mistake(e.getMessage()).mistakeDetail(e.getMessage()).build());
-                        }
+//                        // 传入值
+                        AdditionalRecordingManualSaveReqVO additionalRecordingManualSaveReqVO = new AdditionalRecordingManualSaveReqVO();
+                        additionalRecordingManualSaveReqVO.setValueType(FullIncrementEnum.FULL.getCode());
+                        additionalRecordingManualSaveReqVO.setStandingbookId(headerCodeMappingVO.getStandingbookId());
+                        additionalRecordingManualSaveReqVO.setThisCollectTime(start);
+                        additionalRecordingManualSaveReqVO.setThisValue(values.get(i));
+                        additionalRecordingService.createAdditionalRecording(additionalRecordingManualSaveReqVO);
+                    }catch (ServiceException e){
+                        subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(start.format(NORM_DATETIME_MINUTE_FORMATTER))
+                                .mistake(e.getMessage()).mistakeDetail(e.getMessage()).build());
                         acqFailCount.addAndGet(1);
-                        log.error("采集点【{}】,采集时间【{}】,采集数值【{}】3数据解析失败，数据异常{}", meter, cur, values.get(i), e.getMessage(), e);
-                    } catch (Exception e) {
+                        log.error("采集点【{}】,采集时间【{}】,采集数值【{}】数据解析失败，数据异常{}",meter,start,values.get(i),e.getMessage(),e);
+                    } catch (Exception e){
                         acqFailCount.addAndGet(1);
-                        subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(cur.format(NORM_DATETIME_MINUTE_FORMATTER))
-                                .mistake(IMPORT_ACQ_MISTAKE.getMsg()).mistakeDetail(IMPORT_ACQ_MISTAKE.getMsg()).build());
-                        log.error("采集点【{}】,采集时间【{}】,采集数值【{}】4数据解析失败，数据异常{}", meter, cur, values.get(i), e.getMessage(), e);
+                        subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(start.format(NORM_DATETIME_MINUTE_FORMATTER))
+                                .mistake(IMPORT_ACQ_MISTAKE.getMsg()).mistakeDetail(IMPORT_ACQ_MISTAKE_DETAIL.getMsg()).build());
+                        log.error("采集点【{}】,采集时间【{}】,采集数值【{}】数据解析失败，数据异常{}",meter,start,values.get(i),e.getMessage(),e);
                     }
                 }
                 return subResult;
@@ -358,19 +270,9 @@ public class ExcelMeterDataProcessor {
         for (Future<List<AcqDataExcelResultVO>> future : futures) {
             try {
                 failMsgList.addAll(future.get());
-            } catch (InterruptedException e) {
+            } catch (InterruptedException | ExecutionException e) {
                 Thread.currentThread().interrupt();
-                log.error("线程中断异常", e);
-            } catch (ExecutionException e) {
-                Throwable cause = e.getCause(); // 🟢 获取线程中抛出的真实异常
-                if (cause instanceof FeignException) {
-                    FeignException fe = (FeignException) cause;
-                    String body = fe.contentUTF8();
-                    log.error("远程调用失败：{}", body, fe);
-                    // 如果你有失败列表，也可以补上一个失败记录
-                } else {
-                    log.error("线程中执行任务时发生未知异常", cause);
-                }
+                e.printStackTrace();
             }
         }
         executor.shutdown();
