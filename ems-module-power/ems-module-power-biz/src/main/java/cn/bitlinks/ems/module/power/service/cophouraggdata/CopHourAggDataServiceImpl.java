@@ -74,20 +74,21 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
 
                     // 拼接时间
                     int monthValue = tempStartTime.getMonthValue();
+                    int year = tempStartTime.getYear();
                     try {
-                        LocalDateTime currentTime = LocalDateTime.of(tempStartTime.getYear(), monthValue, i, j, 0, 0);
+                        LocalDateTime currentTime = LocalDateTime.of(year, monthValue, i, j, 0, 0);
                         List<CopHourAggData> copHourAggDatas = copHourAggDataMap.get(currentTime.format(formatter));
 
                         if (CollectionUtil.isNotEmpty(copHourAggDatas)) {
                             copHourAggDatas.forEach(c -> {
                                 BigDecimal copValue = c.getCopValue();
                                 String copType = c.getCopType();
-                                String key = copType + "-" + monthValue;
+                                String key = copType + "_" + year + "-" + monthValue;
                                 map.put(key, copValue);
                             });
                         } else {
                             copTypes.forEach(c -> {
-                                String key = c + "-" + monthValue;
+                                String key = c + "_" + year + "-" + monthValue;
                                 map.put(key, BigDecimal.ZERO);
                             });
                         }
@@ -296,10 +297,10 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
         if (!startTime.isBefore(endTime)) {
             throw exception(END_TIME_MUST_AFTER_START_TIME);
         }
-        // 时间不能相差1年
-        if (!LocalDateTimeUtils.isWithinDays(startTime, endTime, CommonConstants.YEAR)) {
-            throw exception(DATE_RANGE_EXCEED_LIMIT);
-        }
+//        // 时间不能相差1年
+//        if (!LocalDateTimeUtils.isWithinDays(startTime, endTime, CommonConstants.YEAR)) {
+//            throw exception(DATE_RANGE_EXCEED_LIMIT);
+//        }
 
         return rangeOrigin;
     }
