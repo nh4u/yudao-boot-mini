@@ -2,11 +2,13 @@ package cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata;
 
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 分钟聚合数据service
@@ -97,4 +99,10 @@ public interface MinuteAggregateDataService {
      * @return
      */
     MinuteAggregateDataDTO getUsageExistFullValue(Long standingbookId, LocalDateTime acquisitionTime);
+
+    /**
+     * 获取时间段首尾两端附近的数据
+     * @return
+     */
+    Map<Long, MinuteAggDataSplitDTO> getPreAndNextData(MinuteRangeDataParamDTO minuteRangeDataParamDTO);
 }

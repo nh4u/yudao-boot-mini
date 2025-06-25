@@ -8,6 +8,7 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelListResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.HeaderCodeMappingVO;
@@ -28,6 +29,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -226,11 +229,24 @@ public class ExcelMeterDataProcessor {
         List<Future<List<AcqDataExcelResultVO>>> futures = new ArrayList<>();
         //获取表头与台账关系
         Map<String, HeaderCodeMappingVO> standingbookInfo = getStandingbookInfo(meterNames);
+
         // 获取每个采集点 在时间段前后的聚合数据
         //获取表头与台账关系
         LocalDateTime startTime = times.get(0);
         LocalDateTime endTime = times.get(times.size() - 1);
-        Map<Long, MinuteAggDataSplitDTO> standingboookUsageRangeTimePreNextAggDataMap = new HashMap<>();
+        List<Long> sbIds = Optional.ofNullable(standingbookInfo)
+                .orElse(Collections.emptyMap())
+                .values().stream()
+                .filter(Objects::nonNull)
+                .map(HeaderCodeMappingVO::getStandingbookId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        MinuteRangeDataParamDTO paramDTO = new MinuteRangeDataParamDTO();
+        paramDTO.setStarTime(startTime);
+        paramDTO.setEndTime(endTime);
+        paramDTO.setSbIds(sbIds);
+        Map<Long, MinuteAggDataSplitDTO> standingboookUsageRangeTimePreNextAggDataMap = minuteAggregateDataApi.getPreAndNextData(paramDTO).getData();
 
         for (Map.Entry<String, List<BigDecimal>> entry : meterValuesMap.entrySet()) {
             String meter = entry.getKey();
@@ -268,7 +284,7 @@ public class ExcelMeterDataProcessor {
                         MinuteAggregateDataDTO startDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
                         startDataDTO.setAggregateTime(cur);
                         startDataDTO.setFullValue(values.get(i));
-                        startDataDTO.setIncrementalValue(BigDecimal.ZERO);
+                        //startDataDTO.setIncrementalValue(BigDecimal.ZERO);
                         startDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
                         // 如果是第一个采集点的话，特殊处理，需要更改当前时间对应的增量
                         if (i == times.size() - 1) {
@@ -276,7 +292,8 @@ public class ExcelMeterDataProcessor {
                             if (minuteAggDataSplitDTO != null && minuteAggDataSplitDTO.getEndDataDO() != null) {
                                 MinuteAggregateDataDTO lastDTO = minuteAggDataSplitDTO.getEndDataDO();
                                 // 重新设置影响的下一条的增量值
-                                lastDTO.setIncrementalValue(lastDTO.getFullValue().subtract(values.get(i)));
+                                //lastDTO.setIncrementalValue(lastDTO.getFullValue().subtract(values.get(i)));
+                                startDataDTO.setIncrementalValue(calcEndMinuteIncrementValue(times.get(i - 1), cur, values.get(i-1), values.get(i)));
                                 MinuteAggDataSplitDTO rangDTO = new MinuteAggDataSplitDTO();
                                 rangDTO.setStartDataDO(startDataDTO);
                                 rangDTO.setEndDataDO(lastDTO);
@@ -294,26 +311,20 @@ public class ExcelMeterDataProcessor {
                                 if (minuteAggDataSplitDTO != null && minuteAggDataSplitDTO.getStartDataDO() != null) {
                                     MinuteAggregateDataDTO preDTO = minuteAggDataSplitDTO.getStartDataDO();
                                     // 计算第一条数据的增量
-                                    startDataDTO.setIncrementalValue(values.get(i).subtract(preDTO.getFullValue()));
                                     MinuteAggDataSplitDTO rangDTO = new MinuteAggDataSplitDTO();
                                     rangDTO.setStartDataDO(preDTO);
                                     rangDTO.setEndDataDO(startDataDTO);
                                     CommonResult<String> result = minuteAggregateDataApi.insertRangeDataError(rangDTO);
-                                    if (result.isError()) {
-                                        subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(cur.format(NORM_DATETIME_MINUTE_FORMATTER))
-                                                .mistake(result.getMsg()).mistakeDetail(result.getMsg()).build());
-                                        acqFailCount.addAndGet(1);
-                                        log.error("采集点【{}】,采集时间【{}】,采集数值【{}】1数据解析失败，数据异常{}", meter, cur, values.get(i), result.getMsg());
-                                    }
+                                    handleApiResult(result, subResult, acqFailCount, meter, cur.format(NORM_DATETIME_MINUTE_FORMATTER), values.get(i));
+                                    startDataDTO.setIncrementalValue(calcEndMinuteIncrementValue(preDTO.getAggregateTime(), cur, preDTO.getFullValue(), values.get(i)));
+                                } else {
+                                    // 无上一条数据，则插入单条
+                                    CommonResult<String> result = minuteAggregateDataApi.insertSingleDataError(startDataDTO);
+                                    handleApiResult(result, subResult, acqFailCount, meter, cur.format(NORM_DATETIME_MINUTE_FORMATTER), values.get(i));
+                                    startDataDTO.setIncrementalValue(BigDecimal.ZERO);
                                 }
-                                // 无上一条数据，则插入单条
-                                CommonResult<String> result = minuteAggregateDataApi.insertSingleDataError(startDataDTO);
-                                if (result.isError()) {
-                                    subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(cur.format(NORM_DATETIME_MINUTE_FORMATTER))
-                                            .mistake(result.getMsg()).mistakeDetail(result.getMsg()).build());
-                                    acqFailCount.addAndGet(1);
-                                    log.error("采集点【{}】,采集时间【{}】,采集数值【{}】1数据解析失败，数据异常{}", meter, cur, values.get(i), result.getMsg());
-                                }
+                            } else {
+                                startDataDTO.setIncrementalValue(calcEndMinuteIncrementValue(times.get(i - 1), cur, values.get(i - 1), values.get(i)));
                             }
                             MinuteAggDataSplitDTO rangDTO = new MinuteAggDataSplitDTO();
                             rangDTO.setStartDataDO(startDataDTO);
@@ -325,12 +336,7 @@ public class ExcelMeterDataProcessor {
                             endDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
                             rangDTO.setEndDataDO(endDataDTO);
                             CommonResult<String> result = minuteAggregateDataApi.insertRangeDataError(rangDTO);
-                            if (result.isError()) {
-                                subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(cur.format(NORM_DATETIME_MINUTE_FORMATTER))
-                                        .mistake(result.getMsg()).mistakeDetail(result.getMsg()).build());
-                                acqFailCount.addAndGet(1);
-                                log.error("采集点【{}】,采集时间【{}】,采集数值【{}】2数据解析失败，数据异常{}", meter, cur, values.get(i), result.getMsg());
-                            }
+                            handleApiResult(result, subResult, acqFailCount, meter, cur.format(NORM_DATETIME_MINUTE_FORMATTER), values.get(i));
 
                         }
 
@@ -402,6 +408,39 @@ public class ExcelMeterDataProcessor {
             }
         }
         return null;
+    }
+
+    /**
+     * 计算最后一分钟的增量
+     *
+     * @param start
+     * @param end
+     * @param startFull
+     * @param endFull
+     * @return
+     */
+    private BigDecimal calcEndMinuteIncrementValue(LocalDateTime start, LocalDateTime end, BigDecimal startFull, BigDecimal endFull) {
+        long minutes = Duration.between(start, end).toMinutes();
+        if (minutes <= 0) {
+            return BigDecimal.ZERO;
+        }
+
+        // 平均每分钟的增量
+        BigDecimal totalIncrement = endFull.subtract(startFull);
+        return totalIncrement.divide(BigDecimal.valueOf(minutes), 10, RoundingMode.HALF_UP);
+    }
+
+    private void handleApiResult(CommonResult<?> result, List<AcqDataExcelResultVO> subResult, AtomicInteger acqFailCount, String meter, String time, BigDecimal value) {
+        if (result.isError()) {
+            subResult.add(AcqDataExcelResultVO.builder()
+                    .acqCode(meter)
+                    .acqTime(time)
+                    .mistake(result.getMsg())
+                    .mistakeDetail(result.getMsg())
+                    .build());
+            acqFailCount.incrementAndGet();
+            log.error("采集点【{}】,采集时间【{}】,采集数值【{}】远程调用失败：{}", meter, time, value, result.getMsg());
+        }
     }
 
     /**
