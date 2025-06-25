@@ -66,6 +66,14 @@ public interface MinuteAggregateDataApi {
     @PostMapping(PREFIX + "/insertSingleData")
     @Operation(summary = "直接插入数据")
     void insertSingleData(@RequestBody MinuteAggregateDataDTO minuteAggregateDataDTO);
+    /**
+     * 直接插入单条数据
+     *
+     * @param minuteAggregateDataDTO
+     */
+    @PostMapping(PREFIX + "/insertSingleDataError")
+    @Operation(summary = "直接插入数据")
+    CommonResult<String> insertSingleDataError(@RequestBody MinuteAggregateDataDTO minuteAggregateDataDTO);
 
     /**
      * 根据两条数据进行拆分
@@ -75,6 +83,15 @@ public interface MinuteAggregateDataApi {
     @PostMapping(PREFIX + "/insertRangeData")
     @Operation(summary = "根据两条数据进行拆分")
     void insertRangeData(@RequestBody MinuteAggDataSplitDTO minuteAggDataSplitDTO);
+
+    /**
+     * 根据两条数据进行拆分
+     *
+     * @param minuteAggDataSplitDTO
+     */
+    @PostMapping(PREFIX + "/insertRangeDataError")
+    @Operation(summary = "根据两条数据进行拆分")
+    CommonResult<String> insertRangeDataError(@RequestBody MinuteAggDataSplitDTO minuteAggDataSplitDTO);
 
 
     /**
