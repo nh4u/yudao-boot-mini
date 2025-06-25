@@ -29,12 +29,14 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.*;
-import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_INIT_FAIL;
-import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_RANGE_FAIL;
+import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.*;
 
 /**
  * 分钟聚合数据service
@@ -113,8 +115,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         }
     }
 
-    @Override
-    public void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList) throws IOException {
+    public void sendMsgToUsageCostBatchOld(List<MinuteAggregateDataDO> aggDataList) throws IOException {
         if (CollUtil.isEmpty(aggDataList)) {
             return;
         }
@@ -133,12 +134,54 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         }
     }
 
+    @Override
+    public void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList) throws IOException {
+        if (CollUtil.isEmpty(aggDataList)) {
+            return;
+        }
+
+        List<List<MinuteAggregateDataDO>> batchList = getHourGroupBatch(aggDataList);
+        int poolSize = Math.min(batchList.size(), Runtime.getRuntime().availableProcessors() * 2);
+        ExecutorService executor = Executors.newFixedThreadPool(poolSize);
+        List<Future<Void>> futures = new ArrayList<>();
+
+        for (List<MinuteAggregateDataDO> batch : batchList) {
+            futures.add(executor.submit(() -> {
+                try {
+                    String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
+                    starRocksStreamLoadService.streamLoadData(batch, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
+
+                    // 发送 MQ 消息
+                    String topicName = deviceAggTopic;
+                    Message<List<MinuteAggregateDataDTO>> msg =
+                            MessageBuilder.withPayload(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class)).build();
+                    rocketMQTemplate.send(topicName, msg);
+                } catch (Exception e) {
+                    log.error("sendMsgToUsageCostBatch: 批次处理失败", e);
+                    throw e;
+                }
+                return null;
+            }));
+        }
+
+        for (Future<Void> future : futures) {
+            try {
+                future.get(); // 等待所有线程完成，可加超时 future.get(60, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                log.error("sendMsgToUsageCostBatch: 多线程批量处理异常", e);
+                throw new IOException("sendMsgToUsageCostBatch 多线程处理失败", e);
+            }
+        }
+        executor.shutdown();
+    }
+
     /**
      * 台账+小时粒度 分批次数据
+     *
      * @param aggDataList
      * @return
      */
-    private List<List<MinuteAggregateDataDO>> getHourGroupBatch(List<MinuteAggregateDataDO> aggDataList){
+    private List<List<MinuteAggregateDataDO>> getHourGroupBatch(List<MinuteAggregateDataDO> aggDataList) {
         // 1. 按 台账 + 整点小时 分组
         Map<String, List<MinuteAggregateDataDO>> groupMap = aggDataList.stream()
                 .collect(Collectors.groupingBy(data -> {
@@ -188,20 +231,20 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             partitionService.createPartitions(MINUTE_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDO.getAggregateTime(), minuteAggregateDataDO.getAggregateTime());
             // 创建聚合数据计算表分区
             partitionService.createPartitions(USAGE_COST_TB_NAME, minuteAggregateDataDO.getAggregateTime(), minuteAggregateDataDO.getAggregateTime());
+            // 创建聚合数据计算表分区
+            partitionService.createPartitions(COP_HOUR_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDO.getAggregateTime(), minuteAggregateDataDO.getAggregateTime());
             // 发送给usageCost进行计算
             sendMsgToUsageCostBatch(Collections.singletonList(minuteAggregateDataDO));
         } catch (Exception e) {
             log.error("insertSingleData失败：{}", e.getMessage(), e);
-            throw exception(STREAM_LOAD_INIT_FAIL);
+            throw exception(STREAM_LOAD_SINGLE_FAIL);
         }
     }
 
     @Override
     @TenantIgnore
-    @Transactional
     public void insertRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
         try {
-
             List<MinuteAggregateDataDO> minuteAggregateDataDOS = splitData(minuteAggDataSplitDTO.getStartDataDO(),
                     minuteAggDataSplitDTO.getEndDataDO());
             if (CollUtil.isEmpty(minuteAggregateDataDOS)) {
@@ -220,7 +263,6 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             throw exception(STREAM_LOAD_RANGE_FAIL);
         }
     }
-
 
     @Override
     public List<MinuteAggregateDataDTO> getRangeDataRequestParam(List<Long> standingbookIds, LocalDateTime starTime, LocalDateTime endTime) {
