@@ -58,7 +58,7 @@ public interface ErrorCodeConstants {
     ErrorCode VALUE_TYPE_REQUIRED = new ErrorCode(1_001_301_204, "该计量器具能源用量的数值特征为累积值，需要指定数据是全量还是增量");
     ErrorCode PURCHASE_TIME_OVER_CURRENT = new ErrorCode(1_001_301_205, "购入时间不可大于当前时间");
     ErrorCode ADDITIONAL_RECORDING_ENERGY_NOT_EXISTS = new ErrorCode(1_001_301_206, "无对应能源用量，不可进行补录");
-    ErrorCode CURRENT_TIME_ERROR=new ErrorCode(1_001_301_207,"为保证数据准确，本次采集时间必须要小于当前时间的前十分钟点！");
+    ErrorCode CURRENT_TIME_ERROR=new ErrorCode(1_001_301_207,"补录时间不可大于当前时间");
     ErrorCode CURRENT_TIME_TOO_BIG_ERROR=new ErrorCode(1_001_301_208,"本次采集数据值不可大于已有数据！");
     ErrorCode CURRENT_TIME_TOO_SMALL_ERROR=new ErrorCode(1_001_301_209,"本次采集数据值不可小于已有数据！");
     ErrorCode INCREMENT_HISTORY_NOT_EXISTS=new ErrorCode(1_001_301_210,"无历史数据，不可单独补录增量，请选择全量进行补录！");

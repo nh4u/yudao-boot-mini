@@ -92,6 +92,10 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         if (Objects.isNull(createReqVO.getThisCollectTime())) {
             throw exception(FULL_TIME_NOT_NULL);
         }
+        // 不能大于当前时间
+        if (createReqVO.getThisCollectTime().isAfter(LocalDateTime.now())) {
+            throw exception(CURRENT_TIME_ERROR);
+        }
         // 获取上下两个全量值（valueType == 0）与当前采集点可能相等
         MinuteAggregateDataDTO prevFullValue = minuteAggregateDataApi.getUsagePrevFullValue(createReqVO.getStandingbookId(), createReqVO.getThisCollectTime());
         MinuteAggregateDataDTO nextFullValue = minuteAggregateDataApi.getUsageNextFullValue(createReqVO.getStandingbookId(), createReqVO.getThisCollectTime());
