@@ -464,7 +464,36 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
         }
         return standingbookTmplDaqAttrDOS.get(0).getEnergyId();
     }
+    @Override
+    public Map<Long, List<StandingbookTmplDaqAttrDO>> getEnergyDaqAttrsBySbIds(List<Long> sbIds) {
 
+        MPJLambdaWrapperX<StandingbookTmplDaqAttrDO> query = new MPJLambdaWrapperX<StandingbookTmplDaqAttrDO>()
+                .selectAll(StandingbookTmplDaqAttrDO.class)
+                .selectAs(StandingbookDO::getId, SQL_SB_ID)
+                .eq(StandingbookTmplDaqAttrDO::getStatus, true)
+                .eq(StandingbookTmplDaqAttrDO::getEnergyFlag, true)
+                .orderByDesc(StandingbookTmplDaqAttrDO::getSort);
+
+        query.rightJoin(StandingbookDO.class, StandingbookDO::getTypeId, StandingbookTmplDaqAttrDO::getTypeId)
+                .in(StandingbookDO::getId, sbIds);
+
+        List<StandingbookTmplDaqAttrSbRespVO> standingbookTmplDaqAttrDOS =
+                standingbookTmplDaqAttrMapper.selectJoinList(StandingbookTmplDaqAttrSbRespVO.class, query);
+        if (CollUtil.isEmpty(standingbookTmplDaqAttrDOS)) {
+            return Collections.emptyMap();
+        }
+        Map<Long, List<StandingbookTmplDaqAttrSbRespVO>> originalMap = standingbookTmplDaqAttrDOS.stream().collect(Collectors.groupingBy(StandingbookTmplDaqAttrSbRespVO::getSbId));
+
+        return originalMap.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().stream()
+                                .map(respVO -> BeanUtil.toBean(respVO, StandingbookTmplDaqAttrDO.class))
+                                .collect(Collectors.toList())
+                ));
+
+
+    }
     @Override
     public Map<Long, List<StandingbookTmplDaqAttrDO>> getDaqAttrsBySbIds(List<Long> sbIds) {
 

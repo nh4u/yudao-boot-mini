@@ -23,8 +23,8 @@ import javax.annotation.Resource;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_PROD;
-import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_STAGE;
+import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_DEV;
+import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_LOCAL;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.SERVICE_NAME_FORMAT;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.SUCCESS_PROBABILITY;
@@ -152,10 +152,10 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
 
     @Override
     public Boolean testLink(ServiceSettingsTestReqVO createReqVO) {
-        if (env.equals(SPRING_PROFILES_ACTIVE_PROD) || env.equals(SPRING_PROFILES_ACTIVE_STAGE)) {
-            return OpcConnectionTester.testLink(createReqVO.getIpAddress(), createReqVO.getUsername(), createReqVO.getPassword(), createReqVO.getClsid(), createReqVO.getRetryCount());
-        } else {
+        if (env.equals(SPRING_PROFILES_ACTIVE_LOCAL) || env.equals(SPRING_PROFILES_ACTIVE_DEV)) {
             return mockTestLink();
+        } else {
+            return OpcConnectionTester.testLink(createReqVO.getIpAddress(), createReqVO.getUsername(), createReqVO.getPassword(), createReqVO.getClsid(), createReqVO.getRetryCount());
         }
     }
 

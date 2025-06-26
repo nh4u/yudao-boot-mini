@@ -25,8 +25,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_PROD;
-import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_STAGE;
+import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_DEV;
+import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_LOCAL;
 import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.*;
 
 /**
@@ -112,16 +112,17 @@ public class AcquisitionJob implements Job {
 
             // 采集有io的参数的真实数据
             Map<String, ItemStatus> itemStatusMap;
-            if (env.equals(SPRING_PROFILES_ACTIVE_PROD) || env.equals(SPRING_PROFILES_ACTIVE_STAGE)) {
+            if(env.equals(SPRING_PROFILES_ACTIVE_LOCAL) || env.equals(SPRING_PROFILES_ACTIVE_DEV)){
+                itemStatusMap = mockData(dataSites);
+            }else{
                 ServiceSettingsDTO serviceSettingsDTO =
                         (ServiceSettingsDTO) jobDataMap.get(ACQUISITION_JOB_DATA_MAP_KEY_SERVICE_SETTINGS);
                 // 采集所有参数
                 itemStatusMap = OpcDaUtils.batchGetValue(serviceSettingsDTO.getIpAddress(),
                         serviceSettingsDTO.getUsername(),
                         serviceSettingsDTO.getPassword(), serviceSettingsDTO.getClsid(), dataSites);
-            } else {
-                itemStatusMap = mockData(dataSites);
             }
+
             if (CollUtil.isEmpty(itemStatusMap)) {
                 log.info("设备[{}] 无可采集参数, 配置的io采集不到数据!", standingbookId);
                 return;

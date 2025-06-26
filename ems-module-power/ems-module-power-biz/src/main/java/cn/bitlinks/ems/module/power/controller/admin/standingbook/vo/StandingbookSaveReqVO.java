@@ -15,14 +15,8 @@ public class StandingbookSaveReqVO {
     @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "29246")
     private Long id;
 
-    @Schema(description = "属性名字", example = "王五")
-    private String name;
-
-    @Schema(description = "类型ID", example = "10220")
-
+    @Schema(description = "台账模版id", example = "10220")
     private Long typeId;
-    @Schema(description = "简介", example = "你猜")
-    private String description;
 
     @Schema(description = "标签信息")
     @ExcelProperty("标签信息")

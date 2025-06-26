@@ -3,9 +3,7 @@ package cn.bitlinks.ems.module.power.controller.admin.standingbook;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.MeasurementVirtualAssociationSaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookAssociationReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -70,7 +68,10 @@ public class StandingbookController {
     //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")
     public CommonResult<List<StandingbookRespVO>> getStandingbookPage(@Valid @RequestBody Map<String, String> pageReqVO) {
         List<StandingbookDO> list = standingbookService.getStandingbookList(pageReqVO);
-        return success(BeanUtils.toBean(list, StandingbookRespVO.class));
+        //补充能源信息
+        List<StandingbookRespVO> respVOS = BeanUtils.toBean(list, StandingbookRespVO.class);
+        standingbookService.sbOtherField(respVOS);
+        return success(respVOS);
     }
 
     @PostMapping("/listSbAllWithAssociations")
@@ -101,6 +102,14 @@ public class StandingbookController {
     public CommonResult<List<StandingbookWithAssociations>> getStandingbookListWithAssociations(@RequestBody Map<String, String> pageReqVO) {
         List<StandingbookWithAssociations> list = standingbookService.getStandingbookListWithAssociations(pageReqVO);
         return success(BeanUtils.toBean(list, StandingbookWithAssociations.class));
+    }
+
+
+    @PostMapping("/treeWithEnergyParam")
+    @Operation(summary = "根据能源参数名称查询所有的实体计量器具，分类->计量器具名称（编号）")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")
+    public CommonResult<List<StandingBookTypeTreeRespVO>> treeWithEnergyParam(@RequestBody StandingbookEnergyParamReqVO standingbookEnergyParamReqVO) {
+        return success(standingbookService.treeWithEnergyParam(standingbookEnergyParamReqVO));
     }
 
 

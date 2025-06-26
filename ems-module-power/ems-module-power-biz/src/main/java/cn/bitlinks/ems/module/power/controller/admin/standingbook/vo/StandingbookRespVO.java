@@ -43,6 +43,11 @@ public class StandingbookRespVO {
     private LocalDateTime createTime;
     List<StandingbookAttributeRespVO> children = new ArrayList<>();
 
+    @Schema(description = "能源ID")
+    private Long energyId;
+
+    @Schema(description = "能源名称")
+    private String energyName;
 
     @Schema(description = "计量器具类型id")
     private Long standingbookTypeId;

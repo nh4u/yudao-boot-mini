@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.mybatis.core.query.MPJLambdaWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
@@ -84,6 +85,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
 
     @Override
     public Long createEnergyConfiguration(EnergyConfigurationSaveReqVO createReqVO) {
+        validParamNameNoRepeat(createReqVO.getEnergyParameters());
         //  检查能源编码是否重复
         checkEnergyCodeDuplicate(createReqVO.getCode(), null);
         //  子表编码查重（新增逻辑）
@@ -104,9 +106,28 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         return energyId;
     }
 
+    /**
+     * 能源参数的参数名不允许重复
+     * @param energyParams
+     */
+    private void validParamNameNoRepeat(List<EnergyParametersSaveReqVO> energyParams){
+        if (CollUtil.isEmpty(energyParams)) {
+            return;
+        }
+
+        Set<String> seen = new HashSet<>();
+        for (EnergyParametersSaveReqVO param : energyParams) {
+            String name = param.getParameter();
+            if (!seen.add(name)) {
+                throw exception(ENERGY_PARAMS_NAME_REPEAT);
+            }
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateEnergyConfiguration(EnergyConfigurationSaveReqVO updateReqVO) {
+        validParamNameNoRepeat(updateReqVO.getEnergyParameters());
         Long energyId = updateReqVO.getId();
         // 1. 校验主表存在性
         EnergyConfigurationDO old = validateEnergyConfigurationExists(energyId);
@@ -530,7 +551,6 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
             daParamFormulaDO = DaParamFormulaDO.builder()
                     .energyFormula(updateReqVO.getCoalFormula())
                     .energyId(updateReqVO.getId())
-                    .startEffectiveTime(now)
                     .formulaScale(StrUtil.isNotEmpty(coalScale) ? Integer.valueOf(coalScale) : null)
                     .formulaType(formulaType).build();
         } else {
@@ -539,7 +559,6 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
             daParamFormulaDO = DaParamFormulaDO.builder()
                     .energyFormula(updateReqVO.getUnitPriceFormula())
                     .energyId(updateReqVO.getId())
-                    .startEffectiveTime(now)
                     .formulaScale(StrUtil.isNotEmpty(unitPriceScale) ? Integer.valueOf(unitPriceScale) : null)
                     .formulaType(formulaType).build();
         }
@@ -547,7 +566,6 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         // 先要更新对应的能源id   formulaType 的上一条数据更新一下结束时间
         DaParamFormulaDO latestOne = daParamFormulaMapper.getLatestOne(daParamFormulaDO);
         if (latestOne != null) {
-            latestOne.setEndEffectiveTime(now);
             daParamFormulaMapper.updateById(latestOne);
         }
 
@@ -589,13 +607,17 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         if(CollectionUtil.isEmpty(energyIds) && Objects.isNull(energyClassify)){
             return Collections.emptyList();
         }
-        LambdaQueryWrapper<EnergyConfigurationDO> wrapper = new LambdaQueryWrapper<>();
+        MPJLambdaWrapperX<EnergyConfigurationDO> wrapper = new MPJLambdaWrapperX<>();
         if(CollectionUtil.isNotEmpty(energyIds)){
             wrapper.in(EnergyConfigurationDO::getId, energyIds);
-            return energyConfigurationMapper.selectList(wrapper);
+        }else {
+            wrapper.eq(EnergyConfigurationDO::getEnergyClassify, energyClassify);
         }
-        wrapper.eq(EnergyConfigurationDO::getEnergyClassify, energyClassify);
-        return energyConfigurationMapper.selectList(wrapper);
+        wrapper.select("t.id","t.group_id","t.CODE","t.energy_classify","t.energy_icon","t.factor","t.create_time","t.update_time","t.creator","t.updater","t.deleted");
+        wrapper.select("IF(t1.unit is not null,CONCAT( t.energy_name, '(', t1.unit, ')' ),t.energy_name) AS energy_name ");
+        wrapper.leftJoin(EnergyParametersDO.class, EnergyParametersDO::getEnergyId, EnergyConfigurationDO::getId);
+        wrapper.eq(EnergyParametersDO::getUsage,1);
+        return energyConfigurationMapper.selectJoinList(EnergyConfigurationDO.class, wrapper);
     }
 
     @Override
@@ -609,3 +631,4 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         }
     }
 }
+

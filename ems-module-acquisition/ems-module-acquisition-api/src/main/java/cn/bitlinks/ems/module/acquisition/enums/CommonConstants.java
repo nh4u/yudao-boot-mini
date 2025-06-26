@@ -31,6 +31,32 @@ public interface CommonConstants {
      * 聚合任务锁
      */
     String AGG_TASK_LOCK_KEY = "agg-task:%s" ;
+    String AGG_TASK_STEADY_LOCK_KEY = "agg-steady-task:%s" ;
+    String MINUTE_AGGREGATE_DATA_TB_NAME = "minute_aggregate_data";
+    String USAGE_COST_TB_NAME = "usage_cost";
+    String COP_HOUR_AGGREGATE_DATA_TB_NAME = "cop_hour_aggregate_data";
+    int batchSize = 2000;
+    /**
+     * redis 创建分区的上限分区:dev:tbName
+     */
+    String REDIS_KEY_MAX_PARTITION_TIME = "max-partition-time:%s:%s" ;
+
+    /**
+     * redis 手动维护的历史分区列表
+     */
+    String REDIS_KEY_HIS_PARTITION_LIST = "his-partition-list:%s:%s" ;
+    /**
+     * 分区关闭动态
+     */
+    String DISABLE_DYNAMIC_PARTITION_SQL = "ALTER TABLE %s SET (\"dynamic_partition.enable\" = \"false\")";
+    /**
+     * 添加分区语句
+     */
+    String ADD_PARTITIONS_SQL = "ALTER TABLE %s ADD PARTITION %s VALUES [(\"%s\"), (\"%s\"))";
+    /**
+     * 分区开启动态
+     */
+    String ENABLE_DYNAMIC_PARTITION_SQL = "ALTER TABLE %s SET (\"dynamic_partition.enable\" = \"true\")";
 }
 
 

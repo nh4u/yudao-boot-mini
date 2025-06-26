@@ -3,16 +3,23 @@ package cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.enums.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.annotation.security.PermitAll;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 
 
 @FeignClient(name = ApiConstants.NAME) // TODO bitlinks：fallbackFactory =
@@ -30,19 +37,7 @@ public interface MinuteAggregateDataApi {
     @GetMapping(PREFIX + "/selectByAggTime")
     @Operation(summary = "查询设备指定时间的聚合数据")
     CommonResult<MinuteAggregateDataDTO> selectByAggTime(@RequestParam("standingbookId") Long standingbookId,
-                                                         @RequestParam("thisCollectTime") LocalDateTime thisCollectTime);
-
-    /**
-     * 获取当前时间上次的最新数据
-     *
-     * @param standingbookId     台账id
-     * @param currentCollectTime 指定时间（分钟级别）
-     * @return
-     */
-    @GetMapping(PREFIX + "/selectLatestByAggTime")
-    @Operation(summary = "查询设备指定时间的上次聚合数据")
-    CommonResult<MinuteAggregateDataDTO> selectLatestByAggTime(@RequestParam("standingbookId") Long standingbookId,
-                                                               @RequestParam("currentCollectTime") LocalDateTime currentCollectTime);
+                                                         @RequestParam("thisCollectTime") @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime thisCollectTime);
 
     /**
      * 获取台账对应的最早的聚合数据
@@ -72,22 +67,74 @@ public interface MinuteAggregateDataApi {
     @PostMapping(PREFIX + "/insertSingleData")
     @Operation(summary = "直接插入数据")
     void insertSingleData(@RequestBody MinuteAggregateDataDTO minuteAggregateDataDTO);
-
     /**
-     * 根据两条数据进行拆分，并且修改最后一条的增量
+     * 直接插入单条数据
      *
-     * @param minuteAggDataSplitDTO
+     * @param minuteAggregateDataDTO
      */
-    @PostMapping(PREFIX + "/insertDelRangeData")
-    @Operation(summary = "根据两条数据进行拆分，并且修改最后一条的增量")
-    void insertDelRangeData(@RequestBody MinuteAggDataSplitDTO minuteAggDataSplitDTO);
+    @PostMapping(PREFIX + "/insertSingleDataError")
+    @Operation(summary = "直接插入数据")
+    CommonResult<String> insertSingleDataError(@RequestBody MinuteAggregateDataDTO minuteAggregateDataDTO);
 
     /**
-     * 根据两条数据进行拆分
+     * 根据两条数据进行拆分,
      *
      * @param minuteAggDataSplitDTO
      */
     @PostMapping(PREFIX + "/insertRangeData")
     @Operation(summary = "根据两条数据进行拆分")
     void insertRangeData(@RequestBody MinuteAggDataSplitDTO minuteAggDataSplitDTO);
+
+    /**
+     * 根据两条数据进行拆分
+     *
+     * @param minuteAggDataSplitDTO
+     */
+    @PostMapping(PREFIX + "/insertRangeDataError")
+    @Operation(summary = "根据两条数据进行拆分")
+    CommonResult<String> insertRangeDataError(@RequestBody MinuteAggDataSplitDTO minuteAggDataSplitDTO);
+
+    @PostMapping(PREFIX + "/getPreAndNextData")
+    @Operation(summary = "获取时间段首尾两端附近的数据")
+    CommonResult<Map<Long, MinuteAggDataSplitDTO>> getPreAndNextData(@RequestBody MinuteRangeDataParamDTO minuteRangeDataParamDTO);
+    /**
+     * 获取台账们稳态值、用量的时间范围内数据
+     *
+     * @return
+     */
+    @PostMapping(PREFIX + "/getRangeDataRequestParam")
+    @Operation(summary = "根据两条数据进行拆分")
+    @PermitAll
+    CommonResult<List<MinuteAggregateDataDTO>> getRangeDataRequestParam(@RequestBody MinuteRangeDataParamDTO minuteRangeDataParamDTO);
+    /**
+     * 获取该台账的当前业务点全量值
+     * @param standingbookId
+     * @param acquisitionTime
+     * @return
+     */
+    @GetMapping(PREFIX + "/getUsageExistFullValue")
+    @Operation(summary = "获取该台账的当前业务点全量值")
+    MinuteAggregateDataDTO getUsageExistFullValue(@RequestParam("standingbookId") Long standingbookId,
+                                                 @RequestParam("acquisitionTime")@DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime acquisitionTime);
+    /**
+     * 获取当前时间的上一个全量值
+     * @param standingbookId 台账id
+     * @param acquisitionTime 采集时间
+     * @return
+     */
+    @GetMapping(PREFIX + "/getUsagePrevFullValue")
+    @Operation(summary = "获取当前时间的上一个全量值")
+    MinuteAggregateDataDTO getUsagePrevFullValue(@RequestParam("standingbookId") Long standingbookId,
+                                                 @RequestParam("acquisitionTime")@DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime acquisitionTime);
+    /**
+     * 获取当前时间的下一个全量值
+     * @param standingbookId 台账id
+     * @param acquisitionTime 采集时间
+     * @return
+     */
+    @GetMapping(PREFIX + "/getUsageNextFullValue")
+    @Operation(summary = "获取当前时间的下一个全量值")
+    MinuteAggregateDataDTO getUsageNextFullValue(@RequestParam("standingbookId") Long standingbookId,
+                                                 @RequestParam("acquisitionTime")@DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime acquisitionTime);
+
 }

@@ -4,7 +4,7 @@
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        data_site,sync_time,param_code,energy_flag,standingbook_id,calc_value,raw_value,collect_time
+        data_site,sync_time,param_code,energy_flag,standingbook_id,calc_value,raw_value,collect_time,full_increment,data_feature,data_type
     </sql>
 
     <resultMap id="BaseResultMap"
@@ -17,19 +17,12 @@
         <result column="calc_value" property="calcValue"/>
         <result column="raw_value" property="rawValue"/>
         <result column="collect_time" property="collectTime"/>
+        <result column="usage" property="usage"/>
+        <result column="full_increment" property="fullIncrement"/>
+        <result column="data_feature" property="dataFeature"/>
+        <result column="data_type" property="dataType"/>
     </resultMap>
-    <select id="selectLatestByStandingbookId"
-            resultMap="BaseResultMap">
-        SELECT
-        t.*
-        FROM
-        ( SELECT *, DENSE_RANK() OVER ( PARTITION BY standingbook_id ORDER BY sync_time DESC ) AS rnk FROM
-        collect_raw_data WHERE standingbook_id = #{standingbookId} ) t
-        WHERE
-        t.rnk = 1
-        ORDER BY
-        sync_time DESC
-    </select>
+
     <select id="selectLatestByStandingbookIds"
             resultMap="BaseResultMap">
         SELECT t.* FROM (
@@ -42,7 +35,24 @@
         ) t WHERE t.rnk = 1
         ORDER BY sync_time DESC
     </select>
-    <select id="getGroupedData"
+    <select id="getGroupedSteadyFinalValue"
+            resultMap="BaseResultMap">
+        SELECT *
+        FROM (
+        SELECT *,
+        ROW_NUMBER() OVER (
+        PARTITION BY standingbook_id, param_code, energy_flag
+        ORDER BY sync_time DESC
+        ) AS rn
+        FROM collect_raw_data
+        WHERE sync_time >= #{startMinute}
+        AND sync_time &lt;  #{endMinute}
+        AND data_feature = 2  -- 只取稳态值
+        AND `usage` = 0
+        ) t
+        WHERE rn = 1;
+    </select>
+    <select id="getGroupedStandingbookIdData"
             resultMap="BaseResultMap">
         SELECT DISTINCT
         standingbook_id
@@ -66,7 +76,7 @@
     </select>
     <select id="selectPrevDataBatch"
             resultMap="BaseResultMap">
-        SELECT cr.*
+        SELECT distinct cr.data_site,cr.sync_time,cr.param_code,cr.energy_flag,cr.standingbook_id,cr.calc_value,cr.raw_value,cr.collect_time, cr.full_increment,cr.data_feature,cr.data_type,cr.usage
         FROM collect_raw_data cr
         JOIN (
         SELECT standingbook_id, MAX(sync_time) AS max_time
@@ -84,8 +94,7 @@
     </select>
     <select id="selectNextDataBatch"
             resultMap="BaseResultMap">
-
-        SELECT cr.*
+        SELECT distinct cr.data_site,cr.sync_time,cr.param_code,cr.energy_flag,cr.standingbook_id,cr.calc_value,cr.raw_value,cr.collect_time,cr.full_increment,cr.data_feature,cr.data_type,cr.usage
         FROM collect_raw_data cr
         JOIN (
         SELECT standingbook_id, MIN(sync_time) AS min_time
@@ -98,7 +107,7 @@
         AND sync_time > #{targetTime}
         GROUP BY standingbook_id
         ) latest
-        ON cr.standingbook_id = latest.standingbook_id and `usage`=1
+        ON cr.standingbook_id = latest.standingbook_id and `usage`= 1
         AND cr.sync_time = latest.min_time
     </select>
 </mapper>

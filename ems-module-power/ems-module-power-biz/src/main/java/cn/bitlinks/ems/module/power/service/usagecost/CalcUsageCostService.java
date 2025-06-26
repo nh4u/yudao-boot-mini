@@ -33,6 +33,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.usagecost.UsageCostDO;
 import cn.bitlinks.ems.module.power.dal.mysql.unitpriceconfiguration.UnitPriceConfigurationMapper;
 import cn.bitlinks.ems.module.power.dto.UsageCostDTO;
 import cn.bitlinks.ems.module.power.enums.BillingMethod;
+import cn.bitlinks.ems.module.power.enums.CalculateParamsEnum;
 import cn.bitlinks.ems.module.power.enums.FormulaTypeEnum;
 import cn.bitlinks.ems.module.power.service.coalfactorhistory.CoalFactorHistoryService;
 import cn.bitlinks.ems.module.power.service.daparamformula.DaParamFormulaService;
@@ -77,9 +78,6 @@ public class CalcUsageCostService {
     @Value("${ems.calc.scale}")
     private Integer scale;
 
-    private static final String COAL_FACTOR = "折标煤系数";
-    private static final String PRICE = "单价";
-    private static final String USAGE = "用量";
 
 
 
@@ -227,7 +225,7 @@ public class CalcUsageCostService {
                 usageCostDO.setAggregateTime(dto.getAggregateTime());
                 usageCostDO.setCost(cost);
                 usageCostDO.setStandardCoalEquivalent(coalNum);
-                usageCostDO.setTotalUsage(BigDecimal.ZERO);
+                usageCostDO.setTotalUsage(dto.getFullValue());
                 saveList.add(usageCostDO);
 
             });
@@ -251,8 +249,8 @@ public class CalcUsageCostService {
             return BigDecimal.ZERO;
         }
         Map<String, Object> calcData = new HashMap<>();
-        calcData.put(USAGE, currentUsage);
-        calcData.put(COAL_FACTOR, coalFactorFormulaData.getFactor());
+        calcData.put(CalculateParamsEnum.ENERGY_CONSUMPTION.getDetail(), currentUsage);
+        calcData.put(CalculateParamsEnum.STANDARD_COAL_COEFFICIENT.getDetail(), coalFactorFormulaData.getFactor());
         Integer formulaScale = coalFactorFormulaData.getFormulaScale();
         //结果
         BigDecimal execute = (BigDecimal) CalculateUtil.execute(coalFactorFormulaData.getEnergyFormula(), calcData);
@@ -276,23 +274,23 @@ public class CalcUsageCostService {
             PriceDetailDO priceDetailDOS = priceDetailList.get(0);
             BigDecimal unitPrice = priceDetailDOS.getUnitPrice();
             Map<String, Object> calcData = new HashMap<>();
-            calcData.put(USAGE, currentUsage);
-            calcData.put(PRICE, unitPrice);
+            calcData.put(CalculateParamsEnum.ENERGY_CONSUMPTION.getDetail(), currentUsage);
+            calcData.put(CalculateParamsEnum.PRICE.getDetail(), unitPrice);
             //结果
             BigDecimal execute = (BigDecimal) CalculateUtil.execute(energyTimeResultVO.getEnergyFormula(), calcData);
             return execute;
         } else if (energyTimeResultVO.getBillingMethod().equals(BillingMethod.TIME_SPAN_PRICE.getCode())) { //分时段计价
             PriceDetailDO priceDetailDO = priceDetailList.stream()
-                    .filter(pd -> pd.getPeriodStart().isBefore(queryTime.toLocalTime())
-                            && pd.getPeriodEnd().isAfter(queryTime.toLocalTime()))
+                    .filter(pd -> pd.getPeriodStart().compareTo(queryTime.toLocalTime()) <= 0
+                            && pd.getPeriodEnd().compareTo(queryTime.toLocalTime()) >= 0)
                     .findAny().orElse(null);
             if (Objects.isNull(priceDetailDO)) {
                 return BigDecimal.ZERO;
             } else {
                 BigDecimal unitPrice = priceDetailDO.getUnitPrice();
                 Map<String, Object> calcData = new HashMap<>();
-                calcData.put(USAGE, currentUsage);
-                calcData.put(PRICE, unitPrice);
+                calcData.put(CalculateParamsEnum.ENERGY_CONSUMPTION.getDetail(), currentUsage);
+                calcData.put(CalculateParamsEnum.PRICE.getDetail(), unitPrice);
                 //结果
                 BigDecimal execute = (BigDecimal) CalculateUtil.execute(energyTimeResultVO.getEnergyFormula(), calcData);
                 return execute;

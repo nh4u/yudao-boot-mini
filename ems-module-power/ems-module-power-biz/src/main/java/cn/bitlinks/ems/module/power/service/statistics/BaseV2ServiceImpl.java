@@ -240,7 +240,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                     // 封装返回结果
                     BaseItemVO vo = new BaseItemVO();
                     vo.setEnergyId(energy.getId());
-                    vo.setEnergyName(energy.getName());
+                    vo.setEnergyName(energy.getEnergyName());
                     vo.setStatisticsRatioDataList(detailList);
                     vo.setSumNow(sumNow);
                     vo.setSumPrevious(sumPrevious);

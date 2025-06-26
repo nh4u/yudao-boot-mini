@@ -242,7 +242,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                     // 封装返回结果
                     ComparisonItemVO vo = new ComparisonItemVO();
                     vo.setEnergyId(energy.getId());
-                    vo.setEnergyName(energy.getName());
+                    vo.setEnergyName(energy.getEnergyName());
                     vo.setStatisticsRatioDataList(detailList);
                     vo.setSumNow(sumNow);
                     vo.setSumPrevious(sumPrevious);

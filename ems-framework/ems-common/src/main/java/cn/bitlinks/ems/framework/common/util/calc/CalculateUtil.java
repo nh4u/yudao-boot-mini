@@ -49,6 +49,26 @@ public class CalculateUtil {
     }
 
     /**
+     * cop 公式计算
+     * @param expression
+     * @param calcData
+     * @return
+     */
+    public static Object copCalculate(String expression, Map<String, BigDecimal> calcData) {
+        DefaultContext<String, Object> context = new DefaultContext<>();
+        if (MapUtil.isNotEmpty(calcData)) {
+            context.putAll(calcData);
+        }
+        try {
+            ExpressRunner runner = new ExpressRunner(true, false);
+            runner.addFunction(FORMUlA_AVG, new AvgOperator());
+            return runner.execute(expression, context, null, false, false);
+        } catch (Exception e) {
+            log.error("COP公式计算 执行表达式失败: [{}]，参数: {}", expression, calcData, e);
+            throw new ServiceException(GlobalErrorCodeConstants.EXPRESSION_EXECUTION_FAILED);
+        }
+    }
+    /**
      * 数采公式计算(存在非数值型返回)
      *
      * @param formula 填充值后的公式带符号
@@ -270,6 +290,44 @@ public class CalculateUtil {
         return result;
     }
 
+
+    /**
+     * 通用统计方法
+     * @param list 原始数据列表
+     * @param valueExtractor 参与统计字段提取函数（必须是 BigDecimal）
+     * @param <T> 数据类型
+     * @return 原始数据列表 对应的 Stats 统计信息
+     */
+    public static <T> StatsResult calculateStats(List<T> list,
+                                                 Function<T, BigDecimal> valueExtractor) {
+
+        List<BigDecimal> values = list.stream()
+                .map(valueExtractor)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        BigDecimal sum = values.stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal avg = values.isEmpty() ? BigDecimal.ZERO :
+                sum.divide(BigDecimal.valueOf(values.size()), 2, RoundingMode.HALF_UP);
+
+        BigDecimal max = values.stream()
+                .max(Comparator.naturalOrder())
+                .orElse(BigDecimal.ZERO);
+
+        BigDecimal min = values.stream()
+                .min(Comparator.naturalOrder())
+                .orElse(BigDecimal.ZERO);
+
+        StatsResult statsResult = new StatsResult();
+        statsResult.setAvg(avg);
+        statsResult.setSum(sum);
+        statsResult.setMax(max);
+        statsResult.setMin(min);
+
+        return statsResult;
+    }
 }
 
 

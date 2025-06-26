@@ -9,6 +9,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.Additiona
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.pojo.PageParam;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 补录 Service 接口
@@ -23,9 +24,9 @@ public interface AdditionalRecordingService {
      * @param createReqVO 创建信息
      * @return 编号
      */
-    Long createAdditionalRecording(@Valid AdditionalRecordingSaveReqVO createReqVO);
+    void createAdditionalRecording(@Valid AdditionalRecordingManualSaveReqVO createReqVO);
 
-    AdditionalRecordingLastVO getLastRecord(Long standingbookId, LocalDateTime currentCollectTime);
+    AdditionalRecordingExistAcqDataRespVO getExistDataRange(Long standingbookId, LocalDateTime currentCollectTime);
 
     List<Long> createAdditionalRecordingByVoucherId(List<Long> VoucherIds,Long standingbookId);
 
@@ -75,5 +76,6 @@ public interface AdditionalRecordingService {
             Integer recordMethod,
             LocalDateTime startThisCollectTime, LocalDateTime endThisCollectTime,
             LocalDateTime startEnterTime, LocalDateTime endEnterTime);
+
 
 }

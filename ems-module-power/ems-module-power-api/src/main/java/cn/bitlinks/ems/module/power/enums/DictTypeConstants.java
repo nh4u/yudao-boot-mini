@@ -19,4 +19,8 @@ public interface DictTypeConstants {
     String WARNING_INFO_LEVEL = "warning_level"; // 告警等级
     String ACQUISITION_PROTOCOL = "acquisition_protocol"; // 数采服务协议
     String ACQUISITION_FREQUENCY = "acquisition_frequency"; // 数采采集频率
+    /**
+     * 系统类型 低温冷机 LTC,低温系统 LTS,中温冷机 MTC,中温系统 MTS
+     */
+    String SYSTEM_TYPE = "cop_type";
 }

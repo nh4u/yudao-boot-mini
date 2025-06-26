@@ -123,6 +123,10 @@ lock4j:
 
 # bitlinks配置项，设置当前项目所有自定义的配置
 ems:
+  max-partition:
+    minutes-agg: "2025-01-01 00:00:00"
+    usage-cost: "2025-01-01 00:00:00"
+    cop-hour-agg: "2025-01-01 00:00:00"
   starrocks:
     api-url: http://192.168.91.68:8040
     db: acquisition
