@@ -45,6 +45,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_RANGE_FAIL;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.hutool.core.date.DatePattern.NORM_DATETIME_MINUTE_FORMATTER;
@@ -229,7 +230,11 @@ public class ExcelMeterDataProcessor {
         List<Future<List<AcqDataExcelResultVO>>> futures = new ArrayList<>();
         //获取表头与台账关系
         Map<String, HeaderCodeMappingVO> standingbookInfo = getStandingbookInfo(meterNames);
-
+        if(CollUtil.isEmpty(standingbookInfo)){
+            log.warn("暂无报表与台账关联信息，不进行计算");
+            throw exception(IMPORT_NO_MAPPING);
+        }
+        // 如果没有的话
         // 获取每个采集点 在时间段前后的聚合数据
         //获取表头与台账关系
         LocalDateTime startTime = times.get(0);
