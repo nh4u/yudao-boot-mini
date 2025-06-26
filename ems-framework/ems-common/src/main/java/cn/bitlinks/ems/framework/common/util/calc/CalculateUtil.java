@@ -54,13 +54,15 @@ public class CalculateUtil {
      * @param calcData
      * @return
      */
-    public static BigDecimal copCalculate(String expression, Map<String, BigDecimal> calcData) {
+    public static Object copCalculate(String expression, Map<String, BigDecimal> calcData) {
         DefaultContext<String, Object> context = new DefaultContext<>();
         if (MapUtil.isNotEmpty(calcData)) {
             context.putAll(calcData);
         }
         try {
-            return new BigDecimal(runner.execute(expression, context, null, false, false).toString());
+            ExpressRunner runner = new ExpressRunner(true, false);
+            runner.addFunction(FORMUlA_AVG, new AvgOperator());
+            return runner.execute(expression, context, null, false, false);
         } catch (Exception e) {
             log.error("COP公式计算 执行表达式失败: [{}]，参数: {}", expression, calcData, e);
             throw new ServiceException(GlobalErrorCodeConstants.EXPRESSION_EXECUTION_FAILED);
