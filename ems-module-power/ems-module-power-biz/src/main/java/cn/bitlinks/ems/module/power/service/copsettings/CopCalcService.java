@@ -176,12 +176,14 @@ public class CopCalcService {
 
                 // 3.5.3 执行该小时的cop公式计算出cop值保存。
                 try {
-                    BigDecimal result = CalculateUtil.copCalculate(formula, formulaVariables);
-                    CopHourAggDataDTO copHourAggDataDTO = new CopHourAggDataDTO();
-                    copHourAggDataDTO.setCopType(copFormulaDO.getCopType());
-                    copHourAggDataDTO.setCopValue(result);
-                    copHourAggDataDTO.setAggregateTime(hourEnd);
-                    copHourAggDataBatchToAdd.add(copHourAggDataDTO);
+                    Object result = CalculateUtil.copCalculate(formula, formulaVariables);
+                    if(result != null) {
+                        CopHourAggDataDTO copHourAggDataDTO = new CopHourAggDataDTO();
+                        copHourAggDataDTO.setCopType(copFormulaDO.getCopType());
+                        copHourAggDataDTO.setCopValue(new BigDecimal(result.toString()));
+                        copHourAggDataDTO.setAggregateTime(hourEnd);
+                        copHourAggDataBatchToAdd.add(copHourAggDataDTO);
+                    }
                     log.info("COP [{}] 时间范围[{},{})  计算结果: {}", copFormulaDO.getCopType(), hourStart, hourEnd, result);
                 } catch (Exception e) {
                     log.error("COP [{}] 时间范围[{},{})  计算失败: {}", copFormulaDO.getCopType(), hourStart, hourEnd, e.getMessage(), e);
