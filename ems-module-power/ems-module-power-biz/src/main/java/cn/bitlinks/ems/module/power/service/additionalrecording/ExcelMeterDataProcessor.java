@@ -256,7 +256,7 @@ public class ExcelMeterDataProcessor {
         for (Map.Entry<String, List<BigDecimal>> entry : meterValuesMap.entrySet()) {
             String meter = entry.getKey();
             List<BigDecimal> values = entry.getValue();
-            if (MapUtil.isEmpty(standingbookInfo) || !standingbookInfo.containsKey(meter)) {
+            if (MapUtil.isEmpty(standingbookInfo) || !standingbookInfo.containsKey(meter) || Objects.isNull(standingbookInfo.get(meter).getStandingbookId())) {
                 failMsgList.add(AcqDataExcelResultVO.builder().acqCode(meter).mistake(IMPORT_ACQ_MISTAKE.getMsg()).mistakeDetail(IMPORT_ACQ_MISTAKE_DETAIL.getMsg()).build());
                 log.info("暂无报表与台账关联信息，不进行计算, 表头：{}", meter);
                 acqFailCount.addAndGet(values.size());
