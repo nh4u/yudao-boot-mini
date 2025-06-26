@@ -80,12 +80,33 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
                         List<CopHourAggData> copHourAggDatas = copHourAggDataMap.get(currentTime.format(formatter));
 
                         if (CollectionUtil.isNotEmpty(copHourAggDatas)) {
-                            copHourAggDatas.forEach(c -> {
-                                BigDecimal copValue = c.getCopValue();
-                                String copType = c.getCopType();
-                                String key = copType + "_" + year + "-" + monthValue;
-                                map.put(key, copValue);
-                            });
+
+                            if (copHourAggDatas.size() == copTypes.size()) {
+                                // 相等
+                                copHourAggDatas.forEach(c -> {
+                                    BigDecimal copValue = c.getCopValue();
+                                    String copType = c.getCopType();
+                                    String key = copType + "_" + year + "-" + monthValue;
+                                    map.put(key, copValue);
+                                });
+                            } else {
+                                // 不等的情况
+
+                                Map<String, CopHourAggData> copHourAggDatasMap = copHourAggDatas.stream()
+                                        .collect(Collectors.toMap(CopHourAggData::getCopType, Function.identity()));
+
+                                copTypes.forEach(c -> {
+                                    String key = c + "_" + year + "-" + monthValue;
+                                    CopHourAggData copHourAggData = copHourAggDatasMap.get(c);
+
+                                    if (Objects.isNull(copHourAggData)) {
+                                        map.put(key, BigDecimal.ZERO);
+                                    } else {
+                                        map.put(key, copHourAggData.getCopValue());
+                                    }
+                                });
+                            }
+
                         } else {
                             copTypes.forEach(c -> {
                                 String key = c + "_" + year + "-" + monthValue;
