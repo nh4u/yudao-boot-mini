@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -11,7 +12,8 @@ import lombok.Data;
  * @date 2025年05月22日 17:48
  */
 @Data
-public class MinuteAggregateDataDTO {
+public class MinuteAggregateDataDTO implements Serializable {
+    private static final long serialVersionUID = 1L; // 推荐指定序列化版本
     /**
      * 聚合时间
      */

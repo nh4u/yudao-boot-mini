@@ -34,6 +34,7 @@ public interface CommonConstants {
     String AGG_TASK_STEADY_LOCK_KEY = "agg-steady-task:%s" ;
     String MINUTE_AGGREGATE_DATA_TB_NAME = "minute_aggregate_data";
     String USAGE_COST_TB_NAME = "usage_cost";
+    String COP_HOUR_AGGREGATE_DATA_TB_NAME = "cop_hour_aggregate_data";
     int batchSize = 2000;
     /**
      * redis 创建分区的上限分区:dev:tbName

@@ -1,14 +1,16 @@
 package cn.bitlinks.ems.module.power.service.additionalrecording;
 
 import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
-import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.common.enums.FullIncrementEnum;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.*;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingExistAcqDataRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingManualSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.mysql.additionalrecording.AdditionalRecordingMapper;
@@ -21,10 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
@@ -188,9 +188,10 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
 
     /**
      * 手动补录新增
+     *
      * @param createReqVO
      */
-    private void saveAdditionalRecording(AdditionalRecordingManualSaveReqVO createReqVO){
+    private void saveAdditionalRecording(AdditionalRecordingManualSaveReqVO createReqVO) {
         // 1.补录数据
         AdditionalRecordingDO additionalRecording = BeanUtils.toBean(createReqVO, AdditionalRecordingDO.class);
         if (createReqVO.getRecordPerson() == null) {
@@ -207,31 +208,49 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     public AdditionalRecordingExistAcqDataRespVO getExistDataRange(Long standingbookId, LocalDateTime currentCollectTime) {
         // 获取上下两个全量值（valueType == 0）与当前采集点可能相等
         MinuteAggregateDataDTO prevFullValue = minuteAggregateDataApi.getUsagePrevFullValue(standingbookId, currentCollectTime);
+        MinuteAggregateDataDTO existFullValue = minuteAggregateDataApi.getUsageExistFullValue(standingbookId, currentCollectTime);
         MinuteAggregateDataDTO nextFullValue = minuteAggregateDataApi.getUsageNextFullValue(standingbookId, currentCollectTime);
-        int state = (prevFullValue != null ? 1 : 0) << 1 | (nextFullValue != null ? 1 : 0);
+        int state = (prevFullValue != null ? 1 : 0) << 2
+                | (existFullValue != null ? 1 : 0) << 1
+                | (nextFullValue != null ? 1 : 0);
 
-        AdditionalRecordingExistAcqDataRespVO additionalRecordingExistAcqDataRespVO = new AdditionalRecordingExistAcqDataRespVO();
+        AdditionalRecordingExistAcqDataRespVO respVO = new AdditionalRecordingExistAcqDataRespVO();
+
         switch (state) {
-            case 0b00:
-                additionalRecordingExistAcqDataRespVO.setScene(AdditionalRecordingScene.NO_HIS.getCode());
-                break;     // 无前也无后
-            case 0b11:
-                additionalRecordingExistAcqDataRespVO.setScene(AdditionalRecordingScene.TWO_POINT.getCode());
-                break;  // 前后都有
-            case 0b01:
-                additionalRecordingExistAcqDataRespVO.setScene(AdditionalRecordingScene.ONE_NEXT.getCode());
-                break;   // 只有后
-            case 0b10:
-                additionalRecordingExistAcqDataRespVO.setScene(AdditionalRecordingScene.ONE_PRE.getCode());
-                break;    // 只有前
+            case 0b000:
+                respVO.setScene(AdditionalRecordingScene.NO_HIS.getCode());
+                break;//无任何值
+            case 0b001:
+                respVO.setScene(AdditionalRecordingScene.ONE_NEXT.getCode());
+                break;//只有后值
+            case 0b010:
+                respVO.setScene(AdditionalRecordingScene.NO_HIS_COVER.getCode());
+                break;//只有当前值
+            case 0b011:
+                respVO.setScene(AdditionalRecordingScene.TWO_PRE_COVER.getCode());
+                break;//当前 + 后值
+            case 0b100:
+                respVO.setScene(AdditionalRecordingScene.ONE_PRE.getCode());
+                break;//只有前值
+            case 0b101:
+                respVO.setScene(AdditionalRecordingScene.TWO_POINT.getCode());
+                break;//前 + 后（当前无）
+            case 0b110:
+                respVO.setScene(AdditionalRecordingScene.TWO_NEXT_COVER.getCode());
+                break;//前 + 当前
+            case 0b111:
+                respVO.setScene(AdditionalRecordingScene.TWO_POINT_COVER.getCode());
+                break;//三值全有
             default:
-                throw new IllegalStateException("无此补录场景: " + state);
+                throw new IllegalStateException("未识别的补录场景 state=" + state);
         }
 
-        additionalRecordingExistAcqDataRespVO.setPreTime(prevFullValue != null ? prevFullValue.getAggregateTime() : null);
-        additionalRecordingExistAcqDataRespVO.setNextTime(nextFullValue != null ? nextFullValue.getAggregateTime() : null);
 
-        return additionalRecordingExistAcqDataRespVO;
+        respVO.setPreTime(prevFullValue != null ? prevFullValue.getAggregateTime() : null);
+        respVO.setCurTime(existFullValue != null ? existFullValue.getAggregateTime() : null);
+        respVO.setNextTime(nextFullValue != null ? nextFullValue.getAggregateTime() : null);
+
+        return respVO;
     }
 
     @Override
@@ -370,7 +389,6 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         }
         return additionalRecordingMapper.selectList(queryWrapper);
     }
-
 
 
 }

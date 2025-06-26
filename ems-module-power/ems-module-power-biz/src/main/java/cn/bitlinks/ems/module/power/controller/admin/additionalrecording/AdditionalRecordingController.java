@@ -165,7 +165,7 @@ public class AdditionalRecordingController {
                                                                   @RequestParam String acqNameStart, @RequestParam String acqNameEnd,
                                                                   @RequestParam String acqTimeStart, @RequestParam String acqTimeEnd) {
         try {
-            return success(excelMeterDataProcessor.process(file.getInputStream(), acqNameStart, acqNameEnd, acqTimeStart, acqTimeEnd));
+            return success(excelMeterDataProcessor.process(file.getInputStream(), acqTimeStart, acqTimeEnd,acqNameStart, acqNameEnd));
         } catch (IOException e) {
             log.error("Excel解析失败{}", e.getMessage(), e);
             return error(IMPORT_EXCEL_ERROR);

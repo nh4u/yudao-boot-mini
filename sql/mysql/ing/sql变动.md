@@ -102,7 +102,7 @@ DISTRIBUTED BY HASH(`aggregate_time`, `cop_type`) BUCKETS 16
 PROPERTIES (
 "compression" = "LZ4",
 "datacache.enable" = "true",
-"dynamic_partition.enable" = "false",
+"dynamic_partition.enable" = "true",
 "dynamic_partition.end" = "3",
 "dynamic_partition.history_partition_num" = "0",
 "dynamic_partition.prefix" = "p",
@@ -136,11 +136,14 @@ INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ('LTC', 1, 'm2', '正累积',  1);
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ('LTC', 1, 'm3', '正累积',  1);
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ('LTC', 1, 'm4', '正累积',  1);
+INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ('LTC', 1, 'm5', '正累积',  1);
+INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ('LTC', 1, 'm6', '正累积',  1);
+INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ('LTC', 1, 'm7', '正累积',  1);
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ('LTC', 2, 't1', '瞬时温度',  1);
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ('LTC', 2, 't2', '瞬时温度',  1);
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ('LTC', 2, 't3', '瞬时温度',  1);
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ('LTC', 2, 't4', '瞬时温度',  1);
-INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTC', 2, 't5', '瞬时温度',  1);
+
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTC', 1, 'W1', '正向有功电能',  1);
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTC', 1, 'W2', '正向有功电能',  1);
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTC', 1, 'W3', '正向有功电能',  1);
@@ -148,11 +151,14 @@ INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTS', 1, 'm2', '正累积',  1);
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTS', 1, 'm3', '正累积',  1);
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTS', 1, 'm4', '正累积',  1);
+INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTS', 1, 'm5', '正累积',  1);
+INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTS', 1, 'm6', '正累积',  1);
+INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTS', 1, 'm7', '正累积',  1);
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTS', 2, 't1', '瞬时温度',  1);
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTS', 2, 't2', '瞬时温度',  1);
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTS', 2, 't3', '瞬时温度',  1);
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTS', 2, 't4', '瞬时温度',  1);
-INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTS', 2, 't5', '瞬时温度',  1);
+
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTS', 1, 'W1', '正向有功电能',  1);
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTS', 1, 'W2', '正向有功电能',  1);
 INSERT INTO `power_cop_settings` (`cop_type`, `data_feature`, `param`, `param_cn_name`, `tenant_id`) VALUES ( 'LTS', 1, 'W3', '正向有功电能',  1);

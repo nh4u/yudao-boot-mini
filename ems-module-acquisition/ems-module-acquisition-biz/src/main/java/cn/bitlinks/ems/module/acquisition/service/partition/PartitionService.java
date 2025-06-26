@@ -23,6 +23,7 @@ import java.util.*;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.*;
+import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.CREATE_PARTITION_ERROR;
 import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.REDIS_MAX_PARTITION_NOT_EXIST;
 
 @Service
@@ -41,6 +42,8 @@ public class PartitionService {
     private String maxPartitionMinutesAgg;
     @Value("${ems.max-partition.usage-cost}")
     private String maxPartitionUsageCost;
+    @Value("${ems.max-partition.cop-hour-agg}")
+    private String maxPartitionCopHourAgg;
     @Resource
     private JdbcTemplate jdbcTemplate;
 
@@ -51,6 +54,8 @@ public class PartitionService {
         stringRedisTemplate.opsForValue().set(maxPartitionMinutesAggKey, maxPartitionMinutesAgg);
         String maxPartitionUsageCostKey = String.format(REDIS_KEY_MAX_PARTITION_TIME, env, USAGE_COST_TB_NAME);
         stringRedisTemplate.opsForValue().set(maxPartitionUsageCostKey, maxPartitionUsageCost);
+        String maxPartitionCopHourAggKey = String.format(REDIS_KEY_MAX_PARTITION_TIME, env, COP_HOUR_AGGREGATE_DATA_TB_NAME);
+        stringRedisTemplate.opsForValue().set(maxPartitionCopHourAggKey, maxPartitionCopHourAgg);
     }
 
     /**
@@ -90,7 +95,7 @@ public class PartitionService {
         } catch (Exception ex) {
             log.error("[StarRocksDDL] 创建分区执行 SQL 失败", ex);
             jdbcTemplate.execute(String.format(ENABLE_DYNAMIC_PARTITION_SQL, tableName));
-            throw new RuntimeException("执行 StarRocks DDL 失败: " + ex.getMessage(), ex);
+            throw exception(CREATE_PARTITION_ERROR);
         }
 
 

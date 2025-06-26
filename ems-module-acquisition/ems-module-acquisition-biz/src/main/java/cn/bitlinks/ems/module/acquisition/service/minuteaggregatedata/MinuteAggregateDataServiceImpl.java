@@ -5,6 +5,7 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
 import cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata.MinuteAggregateDataMapper;
 import cn.bitlinks.ems.module.acquisition.service.partition.PartitionService;
@@ -29,12 +30,15 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.*;
-import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_INIT_FAIL;
-import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_RANGE_FAIL;
+import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.*;
 
 /**
  * 分钟聚合数据service
@@ -113,8 +117,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         }
     }
 
-    @Override
-    public void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList) throws IOException {
+    public void sendMsgToUsageCostBatchOld(List<MinuteAggregateDataDO> aggDataList) throws IOException {
         if (CollUtil.isEmpty(aggDataList)) {
             return;
         }
@@ -133,12 +136,54 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         }
     }
 
+    @Override
+    public void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList) throws IOException {
+        if (CollUtil.isEmpty(aggDataList)) {
+            return;
+        }
+
+        List<List<MinuteAggregateDataDO>> batchList = getHourGroupBatch(aggDataList);
+        int poolSize = Math.min(batchList.size(), Runtime.getRuntime().availableProcessors() * 2);
+        ExecutorService executor = Executors.newFixedThreadPool(poolSize);
+        List<Future<Void>> futures = new ArrayList<>();
+
+        for (List<MinuteAggregateDataDO> batch : batchList) {
+            futures.add(executor.submit(() -> {
+                try {
+                    String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
+                    starRocksStreamLoadService.streamLoadData(batch, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
+
+                    // 发送 MQ 消息
+                    String topicName = deviceAggTopic;
+                    Message<List<MinuteAggregateDataDTO>> msg =
+                            MessageBuilder.withPayload(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class)).build();
+                    rocketMQTemplate.send(topicName, msg);
+                } catch (Exception e) {
+                    log.error("sendMsgToUsageCostBatch: 批次处理失败", e);
+                    throw e;
+                }
+                return null;
+            }));
+        }
+
+        for (Future<Void> future : futures) {
+            try {
+                future.get(); // 等待所有线程完成，可加超时 future.get(60, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                log.error("sendMsgToUsageCostBatch: 多线程批量处理异常", e);
+                throw new IOException("sendMsgToUsageCostBatch 多线程处理失败", e);
+            }
+        }
+        executor.shutdown();
+    }
+
     /**
      * 台账+小时粒度 分批次数据
+     *
      * @param aggDataList
      * @return
      */
-    private List<List<MinuteAggregateDataDO>> getHourGroupBatch(List<MinuteAggregateDataDO> aggDataList){
+    private List<List<MinuteAggregateDataDO>> getHourGroupBatch(List<MinuteAggregateDataDO> aggDataList) {
         // 1. 按 台账 + 整点小时 分组
         Map<String, List<MinuteAggregateDataDO>> groupMap = aggDataList.stream()
                 .collect(Collectors.groupingBy(data -> {
@@ -188,20 +233,20 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             partitionService.createPartitions(MINUTE_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDO.getAggregateTime(), minuteAggregateDataDO.getAggregateTime());
             // 创建聚合数据计算表分区
             partitionService.createPartitions(USAGE_COST_TB_NAME, minuteAggregateDataDO.getAggregateTime(), minuteAggregateDataDO.getAggregateTime());
+            // 创建聚合数据计算表分区
+            partitionService.createPartitions(COP_HOUR_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDO.getAggregateTime(), minuteAggregateDataDO.getAggregateTime());
             // 发送给usageCost进行计算
             sendMsgToUsageCostBatch(Collections.singletonList(minuteAggregateDataDO));
         } catch (Exception e) {
             log.error("insertSingleData失败：{}", e.getMessage(), e);
-            throw exception(STREAM_LOAD_INIT_FAIL);
+            throw exception(STREAM_LOAD_SINGLE_FAIL);
         }
     }
 
     @Override
     @TenantIgnore
-    @Transactional
     public void insertRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
         try {
-
             List<MinuteAggregateDataDO> minuteAggregateDataDOS = splitData(minuteAggDataSplitDTO.getStartDataDO(),
                     minuteAggDataSplitDTO.getEndDataDO());
             if (CollUtil.isEmpty(minuteAggregateDataDOS)) {
@@ -211,6 +256,8 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             partitionService.createPartitions(MINUTE_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDOS.get(0).getAggregateTime(), minuteAggregateDataDOS.get(minuteAggregateDataDOS.size() - 1).getAggregateTime());
             // 创建聚合数据计算表分区
             partitionService.createPartitions(USAGE_COST_TB_NAME, minuteAggregateDataDOS.get(0).getAggregateTime(), minuteAggregateDataDOS.get(minuteAggregateDataDOS.size() - 1).getAggregateTime());
+            // 创建聚合数据计算表分区
+            partitionService.createPartitions(COP_HOUR_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDOS.get(0).getAggregateTime(), minuteAggregateDataDOS.get(minuteAggregateDataDOS.size() - 1).getAggregateTime());
             // 发送给usageCost进行计算
             sendMsgToUsageCostBatch(minuteAggregateDataDOS);
         } catch (Exception e) {
@@ -218,7 +265,6 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             throw exception(STREAM_LOAD_RANGE_FAIL);
         }
     }
-
 
     @Override
     public List<MinuteAggregateDataDTO> getRangeDataRequestParam(List<Long> standingbookIds, LocalDateTime starTime, LocalDateTime endTime) {
@@ -276,18 +322,8 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             data.setFullValue(currentFullValue);
             data.setIncrementalValue(perMinuteIncrement);
             if (i == 0) {
-                if (Objects.isNull(endData.getIncrementalValue())) {
-                    //这个是历史时间段之后添加的连续数据，两个时间点全量都有，需要计算出最后一个时间点的增量和，时间范围之间的分钟级数据的增量
-                    //第一条数据的值，还是第一条数据的值，不需要加入新增的队列中
+                if (Objects.nonNull(startData.getIncrementalValue())) {
                     data.setIncrementalValue(startData.getIncrementalValue());
-                    // 更新当前时间和全量值
-                    currentTime = currentTime.plusMinutes(1);
-                    currentFullValue = currentFullValue.add(perMinuteIncrement);
-                    continue;
-                }
-                if (endData.getIncrementalValue().equals(BigDecimal.ZERO)) {
-                    //这个是历史时间段之前添加的连续数据，都是全量，第一个时间点的增量为0不需要动，需要计算出最后一个时间点的增量和时间范围之间的分钟级别数据的增量
-                    data.setIncrementalValue(BigDecimal.ZERO);
                 }
                 if (startData.getAcqFlag() != null) {
                     data.setAcqFlag(startData.getAcqFlag());
@@ -296,7 +332,6 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
                 }
             }
             if (i == minutes) {
-                data.setAcqFlag(AcqFlagEnum.ACQ.getCode());
                 if (endData.getAcqFlag() != null) {
                     data.setAcqFlag(endData.getAcqFlag());
                 } else {
@@ -343,5 +378,42 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             return null;
         }
         return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
+    }
+
+    @Override
+    public Map<Long, MinuteAggDataSplitDTO> getPreAndNextData( MinuteRangeDataParamDTO paramDTO) {
+        if(CollUtil.isEmpty(paramDTO.getSbIds())){
+            return Collections.emptyMap();
+        }
+        // 查询多个台账id对应用量的 某时间点的上一条数据
+        Map<Long, MinuteAggDataSplitDTO> resultMap = new HashMap<>();
+
+        // 1. 查询前一条数据（按台账 ID）
+        List<MinuteAggregateDataDO> preDOs = minuteAggregateDataMapper.getSbIdsUsagePrevFullValue(paramDTO.getSbIds(), paramDTO.getStarTime());
+        List<MinuteAggregateDataDTO> preDTOList = CollUtil.isNotEmpty(preDOs) ? BeanUtils.toBean(preDOs, MinuteAggregateDataDTO.class) : Collections.emptyList();
+
+        // 2. 查询后一条数据（按台账 ID）
+        List<MinuteAggregateDataDO> nextDOs = minuteAggregateDataMapper.getSbIdsUsageNextFullValue(paramDTO.getSbIds(), paramDTO.getStarTime());
+        List<MinuteAggregateDataDTO> nextDTOList = CollUtil.isNotEmpty(nextDOs) ? BeanUtils.toBean(nextDOs, MinuteAggregateDataDTO.class) : Collections.emptyList();
+
+        // 3. 整理成 Map
+        Map<Long, MinuteAggregateDataDTO> preMap = preDTOList.stream()
+                .collect(Collectors.toMap(MinuteAggregateDataDTO::getStandingbookId, Function.identity(), (v1, v2) -> v1));
+        Map<Long, MinuteAggregateDataDTO> nextMap = nextDTOList.stream()
+                .collect(Collectors.toMap(MinuteAggregateDataDTO::getStandingbookId, Function.identity(), (v1, v2) -> v1));
+
+        // 4. 封装结果
+        for (Long sbId : paramDTO.getSbIds()) {
+            MinuteAggregateDataDTO preDTO = preMap.get(sbId);
+            MinuteAggregateDataDTO nextDTO = nextMap.get(sbId);
+            if (preDTO != null || nextDTO != null) {
+                MinuteAggDataSplitDTO splitDTO = new MinuteAggDataSplitDTO();
+                splitDTO.setStartDataDO(preDTO);
+                splitDTO.setEndDataDO(nextDTO);
+                resultMap.put(sbId, splitDTO);
+            }
+        }
+
+        return resultMap;
     }
 }
