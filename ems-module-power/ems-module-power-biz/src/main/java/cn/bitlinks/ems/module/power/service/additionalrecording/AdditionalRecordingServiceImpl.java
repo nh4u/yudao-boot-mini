@@ -173,7 +173,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             return;
         }
         if (createReqVO.getThisValue().compareTo(nextFullValue.getFullValue()) > 0) {
-            throw exception(FULL_VALUE_MUST_LT_RIGHT);
+            throw exception(FULL_VALUE_MUST_LT_RIGHT, nextFullValue.getFullValue());
         }
         // 将全量数据拆分到下一个业务点 为止
         MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
