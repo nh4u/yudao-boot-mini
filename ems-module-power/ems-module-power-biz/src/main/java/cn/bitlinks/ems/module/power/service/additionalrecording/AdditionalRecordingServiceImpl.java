@@ -92,6 +92,10 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         if (Objects.isNull(createReqVO.getThisCollectTime())) {
             throw exception(FULL_TIME_NOT_NULL);
         }
+        // 不能大于当前时间
+        if (createReqVO.getThisCollectTime().isAfter(LocalDateTime.now())) {
+            throw exception(CURRENT_TIME_ERROR);
+        }
         // 获取上下两个全量值（valueType == 0）与当前采集点可能相等
         MinuteAggregateDataDTO prevFullValue = minuteAggregateDataApi.getUsagePrevFullValue(createReqVO.getStandingbookId(), createReqVO.getThisCollectTime());
         MinuteAggregateDataDTO nextFullValue = minuteAggregateDataApi.getUsageNextFullValue(createReqVO.getStandingbookId(), createReqVO.getThisCollectTime());
@@ -169,7 +173,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             return;
         }
         if (createReqVO.getThisValue().compareTo(nextFullValue.getFullValue()) > 0) {
-            throw exception(FULL_VALUE_MUST_LT_RIGHT);
+            throw exception(FULL_VALUE_MUST_LT_RIGHT, nextFullValue.getFullValue());
         }
         // 将全量数据拆分到下一个业务点 为止
         MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);

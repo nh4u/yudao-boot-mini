@@ -2,8 +2,6 @@ package cn.bitlinks.ems.module.acquisition.task;
 
 
 import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
-import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
-import cn.bitlinks.ems.framework.common.enums.FullIncrementEnum;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.collectrawdata.CollectRawDataDO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
@@ -11,7 +9,6 @@ import cn.bitlinks.ems.module.acquisition.dal.mysql.collectrawdata.CollectRawDat
 import cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata.MinuteAggregateDataMapper;
 import cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata.MinuteAggregateDataService;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.json.JSONUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -115,7 +112,7 @@ public class AggTask {
 //        2、COP报表稳态值取值规则如下：
 //        取1小时内聚合的末尾值作为该1小时的值。
 //        例如：如上时间顺序的聚合值。COP报表中，13时的值是15。
-        LocalDateTime currentMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(1L);
+        LocalDateTime currentMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(10L);
 
         //        LocalDateTime currentMinute = LocalDateTime.of(2025, 6, 9, 19, 20, 0);
         // List<MinuteAggregateDataDO> list = new ArrayList<>();
@@ -146,7 +143,7 @@ public class AggTask {
      */
     private void insertMinuteData() throws IOException {
 
-        LocalDateTime currentMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(1L);
+        LocalDateTime currentMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(10L);
 //        LocalDateTime currentMinute = LocalDateTime.of(2025, 6, 24, 21, 35, 0);
 //
 //        2025-06-09 19:47:12
@@ -328,9 +325,9 @@ public class AggTask {
                 .divide(BigDecimal.valueOf(totalSeconds), 10, RoundingMode.HALF_UP);
         long elapsedSeconds = Duration.between(prevTime, targetTime).getSeconds();
         endDO.setFullValue(prevValue.add(rate.multiply(BigDecimal.valueOf(elapsedSeconds))));
-        if(prevTime.truncatedTo(ChronoUnit.MINUTES).equals(targetTime.truncatedTo(ChronoUnit.MINUTES)) || next.getSyncTime().truncatedTo(ChronoUnit.MINUTES).equals(targetTime.truncatedTo(ChronoUnit.MINUTES))){
+        if (prevTime.truncatedTo(ChronoUnit.MINUTES).equals(targetTime.truncatedTo(ChronoUnit.MINUTES)) || next.getSyncTime().truncatedTo(ChronoUnit.MINUTES).equals(targetTime.truncatedTo(ChronoUnit.MINUTES))) {
             endDO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
-        }else{
+        } else {
             endDO.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
         }
         splitData(currentDataList, latestAggData, startDO, endDO);
@@ -369,7 +366,7 @@ public class AggTask {
             data.setFullValue(interpolatedValue);
             data.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
 
-            if(minutePoint.equals(nextTime)){
+            if (minutePoint.equals(nextTime)) {
                 if (endData.getAcqFlag() != null) {
                     data.setAcqFlag(endData.getAcqFlag());
                 } else {
