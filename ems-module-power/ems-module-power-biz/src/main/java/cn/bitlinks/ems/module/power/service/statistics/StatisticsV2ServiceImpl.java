@@ -671,8 +671,8 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             List<StatisticsChartYInfoV2VO> ydata = new ArrayList<>();
             xdata.forEach(s -> {
                 // substring 返回 endIndex-beginIndex哥字符 因为是[ )
-                String substring = s.substring(0, 13);
-                StatsResult statsResult = statsResultMap.get(substring);
+                String subs = s.length() > 13 ? s.substring(0, 13) : s;
+                StatsResult statsResult = statsResultMap.get(subs);
                 StatisticsChartYInfoV2VO yInfoV2VO = new StatisticsChartYInfoV2VO();
                 StatisticsChartYDataV2VO dataV2VO = new StatisticsChartYDataV2VO();
                 if (Objects.nonNull(statsResult)) {
