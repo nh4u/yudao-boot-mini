@@ -247,8 +247,8 @@ public class UnitPriceConfigurationServiceImpl implements UnitPriceConfiguration
         UnitPriceConfigurationDO config = unitPriceConfigurationMapper.selectOne(
                 Wrappers.<UnitPriceConfigurationDO>lambdaQuery()
                         .eq(UnitPriceConfigurationDO::getEnergyId, energyId)
-                        .le(UnitPriceConfigurationDO::getStartTime, LocalDateTime.now())
-                        .ge(UnitPriceConfigurationDO::getEndTime, LocalDateTime.now())
+                        .le(UnitPriceConfigurationDO::getStartTime, LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES))
+                        .ge(UnitPriceConfigurationDO::getEndTime, LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES))
         );
 
         if (Objects.isNull(config)) {
