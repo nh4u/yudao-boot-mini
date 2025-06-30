@@ -443,7 +443,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                     dataV2VO.setMin(dealBigDecimalScale(statsResult.getMin(), DEFAULT_SCALE));
                     dataV2VO.setSum(dealBigDecimalScale(statsResult.getSum(), DEFAULT_SCALE));
                     // substring 返回 endIndex-beginIndex哥字符 因为是[ )
-                    String subs = s.substring(0, 13);
+                    String subs = s.length() > 13 ? s.substring(0, 13) : s;
                     List<UsageCostData> collect = usageCostDataList.stream().filter(u -> u.getTime().equals(subs)).collect(Collectors.toList());
                     if (CollectionUtil.isNotEmpty(collect)) {
                         dataV2VO.setStandardCoal(dealBigDecimalScale(collect.get(0).getTotalStandardCoalEquivalent(), DEFAULT_SCALE));
