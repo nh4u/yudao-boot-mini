@@ -43,6 +43,7 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -432,7 +433,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
             vo.setEnergyParameters(paramsMap.getOrDefault(doObj.getId(), Collections.emptyList()));
 
             // 原有逻辑：设置单价和创建人昵称
-            LocalDateTime currentDateTime = LocalDateTime.now();
+            LocalDateTime currentDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
             UnitPriceConfigurationDO unitPriceConfigurationDO = unitPriceConfigurationService.getCurrentUnitConfigByEnergyId(doObj.getId());
             Long groupId = vo.getGroupId();
             EnergyGroupDO energyGroupDO = energyGroupService.getEnergyGroup(groupId);
