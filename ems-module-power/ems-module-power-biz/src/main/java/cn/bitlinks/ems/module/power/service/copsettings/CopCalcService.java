@@ -94,7 +94,7 @@ public class CopCalcService {
             minuteRangeDataParamDTO.setEndTime(endHour);
             // 依赖的所有台账id和参数的数据们
             List<MinuteAggregateDataDTO> dbHourData = minuteAggregateDataApi.getRangeDataRequestParam(minuteRangeDataParamDTO).getData();
-            log.info("COP [{}] ，影响小时区间：{} ~ {}，数据库原有数据：{}", copFormulaDO.getCopType(), startHour, endHour, dbHourData);
+            log.info("COP [{}] ，影响小时区间：{} ~ {}", copFormulaDO.getCopType(), startHour, endHour);
             // 筛选出newHourData中台账这些夏普手机哦的
             // 3.5 循环影响的小时，计算cop的小时值
             LocalDateTime cursor = startHour;   //15：01：01   19：01：01
