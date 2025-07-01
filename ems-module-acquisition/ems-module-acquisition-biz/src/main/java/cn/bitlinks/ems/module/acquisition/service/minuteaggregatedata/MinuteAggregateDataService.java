@@ -53,7 +53,7 @@ public interface MinuteAggregateDataService {
      * @param aggDataList
      * @throws IOException
      */
-    void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList) throws IOException;
+    void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList, Boolean copFlag) throws IOException;
 
     /**
      * 插入单条数据，初始化数据
