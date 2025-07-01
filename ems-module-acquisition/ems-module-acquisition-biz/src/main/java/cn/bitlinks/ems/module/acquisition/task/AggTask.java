@@ -210,7 +210,7 @@ public class AggTask {
             log.info("所有台账，当前分钟的聚合数据为空，未获取到任何当前值");
         }
         // 4.将计算出的当前分钟的聚合数据插入到聚合数据表中
-        minuteAggregateDataService.sendMsgToUsageCostBatch(currentAggDataList);
+        minuteAggregateDataService.sendMsgToUsageCostBatch(currentAggDataList,false);
 //        System.err.println(JSONUtil.toJsonStr(currentAggDataList));
 
     }
