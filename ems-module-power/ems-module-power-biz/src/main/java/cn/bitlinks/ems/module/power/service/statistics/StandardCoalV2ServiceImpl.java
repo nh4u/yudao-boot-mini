@@ -34,6 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.LABEL_NAME_PREFIX;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
@@ -344,6 +345,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                         List<StandardCoalChartYData> dataList = xdata
                                 .stream()
                                 .map(time -> {
+                                    time = dealStrTime(time);
                                     StandardCoalChartYData vo = new StandardCoalChartYData();
                                     BigDecimal standardCoal = timeCostMap.getOrDefault(time, BigDecimal.ZERO);
                                     vo.setStandardCoal(dealBigDecimalScale(standardCoal, DEFAULT_SCALE));
@@ -412,6 +414,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 }
 
                 List<StandardCoalChartYData> ydata = xdata.stream().map(x -> {
+                    x = dealStrTime(x);
                     BigDecimal standardCoal = timeCostMap.getOrDefault(x, BigDecimal.ZERO);
                     StandardCoalChartYData vo = new StandardCoalChartYData();
                     vo.setStandardCoal(standardCoal.compareTo(BigDecimal.ZERO) > 0 ? dealBigDecimalScale(standardCoal, DEFAULT_SCALE) : BigDecimal.ZERO);
@@ -443,7 +446,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                     dataV2VO.setMin(dealBigDecimalScale(statsResult.getMin(), DEFAULT_SCALE));
                     dataV2VO.setSum(dealBigDecimalScale(statsResult.getSum(), DEFAULT_SCALE));
                     // substring 返回 endIndex-beginIndex哥字符 因为是[ )
-                    String subs = s.length() > 13 ? s.substring(0, 13) : s;
+                    String subs = dealStrTime(s);
                     List<UsageCostData> collect = usageCostDataList.stream().filter(u -> u.getTime().equals(subs)).collect(Collectors.toList());
                     if (CollectionUtil.isNotEmpty(collect)) {
                         dataV2VO.setStandardCoal(dealBigDecimalScale(collect.get(0).getTotalStandardCoalEquivalent(), DEFAULT_SCALE));
