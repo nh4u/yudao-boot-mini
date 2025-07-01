@@ -214,10 +214,9 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                         newList.add(standardCoalInfoDataList.get(0));
                     }
                 });
+
+                l.setStandardCoalInfoDataList(newList);
             }
-
-            l.setStandardCoalInfoDataList(newList);
-
         });
 
 
@@ -443,8 +442,9 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                     dataV2VO.setMax(dealBigDecimalScale(statsResult.getMax(), DEFAULT_SCALE));
                     dataV2VO.setMin(dealBigDecimalScale(statsResult.getMin(), DEFAULT_SCALE));
                     dataV2VO.setSum(dealBigDecimalScale(statsResult.getSum(), DEFAULT_SCALE));
-
-                    List<UsageCostData> collect = usageCostDataList.stream().filter(u -> u.getTime().equals(s)).collect(Collectors.toList());
+                    // substring 返回 endIndex-beginIndex哥字符 因为是[ )
+                    String subs = s.length() > 13 ? s.substring(0, 13) : s;
+                    List<UsageCostData> collect = usageCostDataList.stream().filter(u -> u.getTime().equals(subs)).collect(Collectors.toList());
                     if (CollectionUtil.isNotEmpty(collect)) {
                         dataV2VO.setStandardCoal(dealBigDecimalScale(collect.get(0).getTotalStandardCoalEquivalent(), DEFAULT_SCALE));
                     } else {
@@ -507,7 +507,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
 
         // 聚合数据按台账id分组
-        Map<Long, List<UsageCostData>> energyUsageMap = usageCostDataList.stream()
+        Map<Long, List<UsageCostData>> standingBookUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
 
         List<StandardCoalInfo> resultList = new ArrayList<>();
@@ -529,63 +529,66 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : "/";
                 String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : "/";
 
+                List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
+
+                // 获取标签关联的台账id，并取到对应的数据
                 labelInfoList.forEach(labelInfo -> {
-                    List<UsageCostData> usageList = energyUsageMap.get(labelInfo.getStandingbookId());
+                    List<UsageCostData> usageList = standingBookUsageMap.get(labelInfo.getStandingbookId());
                     if (usageList == null || usageList.isEmpty()) {
                         return; // 计量器具没有数据，跳过
                     }
+                    labelUsageCostDataList.addAll(usageList);
+                });
 
-                    // 用量数据按能源分组
-                    Map<Long, List<UsageCostData>> energyUsageCostMap = usageList
-                            .stream()
-                            .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
+                Map<Long, List<UsageCostData>> energyUsageCostMap = labelUsageCostDataList
+                        .stream()
+                        .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
 
-                    energyUsageCostMap.forEach((energyId, usageCostList) -> {
+                energyUsageCostMap.forEach((energyId, usageCostList) -> {
 
-                        // 获取能源数据
-                        EnergyConfigurationDO energyConfigurationDO = energyMap.get(energyId);
+                    // 获取能源数据
+                    EnergyConfigurationDO energyConfigurationDO = energyMap.get(energyId);
 
-                        // 聚合数据 转换成 StandardCoalInfoData
-                        List<StandardCoalInfoData> dataList = usageList.stream()
-                                .map(usage -> new StandardCoalInfoData(
-                                        //DateUtil.format(usage.getTime(), dataType.getFormat()),
-                                        usage.getTime(),
-                                        usage.getCurrentTotalUsage(),
-                                        usage.getTotalStandardCoalEquivalent()
-                                ))
-                                .collect(Collectors.toList());
+                    // 聚合数据 转换成 StandardCoalInfoData
+                    List<StandardCoalInfoData> dataList = usageCostList.stream()
+                            .map(usage -> new StandardCoalInfoData(
+                                    //DateUtil.format(usage.getTime(), dataType.getFormat()),
+                                    usage.getTime(),
+                                    usage.getCurrentTotalUsage(),
+                                    usage.getTotalStandardCoalEquivalent()
+                            ))
+                            .collect(Collectors.toList());
 
-                        // 用量数据求和
-                        BigDecimal totalConsumption = dataList.stream()
-                                .map(StandardCoalInfoData::getConsumption)
-                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    // 用量数据求和
+                    BigDecimal totalConsumption = dataList.stream()
+                            .map(StandardCoalInfoData::getConsumption)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                        // 折标煤数据求和
-                        BigDecimal totalCost = dataList.stream()
-                                .map(StandardCoalInfoData::getStandardCoal)
-                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    // 折标煤数据求和
+                    BigDecimal totalCost = dataList.stream()
+                            .map(StandardCoalInfoData::getStandardCoal)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
 
-                        StandardCoalInfo info = new StandardCoalInfo();
-                        info.setEnergyId(energyId);
-                        info.setEnergyName(energyConfigurationDO.getEnergyName());
-                        info.setLabel1(topLabel.getLabelName());
-                        info.setLabel2(label2Name);
-                        info.setLabel3(label3Name);
-                        info.setLabel4(label4Name);
-                        info.setLabel5(label5Name);
+                    StandardCoalInfo info = new StandardCoalInfo();
+                    info.setEnergyId(energyId);
+                    info.setEnergyName(energyConfigurationDO.getEnergyName());
+                    info.setLabel1(topLabel.getLabelName());
+                    info.setLabel2(label2Name);
+                    info.setLabel3(label3Name);
+                    info.setLabel4(label4Name);
+                    info.setLabel5(label5Name);
 
-                        dataList = dataList.stream().peek(i -> {
-                            i.setStandardCoal(dealBigDecimalScale(i.getStandardCoal(), DEFAULT_SCALE));
-                            i.setConsumption(dealBigDecimalScale(i.getConsumption(), DEFAULT_SCALE));
-                        }).collect(Collectors.toList());
+                    dataList = dataList.stream().peek(i -> {
+                        i.setStandardCoal(dealBigDecimalScale(i.getStandardCoal(), DEFAULT_SCALE));
+                        i.setConsumption(dealBigDecimalScale(i.getConsumption(), DEFAULT_SCALE));
+                    }).collect(Collectors.toList());
 
-                        info.setStandardCoalInfoDataList(dataList);
-                        info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, DEFAULT_SCALE));
-                        info.setSumEnergyStandardCoal(dealBigDecimalScale(totalCost, DEFAULT_SCALE));
+                    info.setStandardCoalInfoDataList(dataList);
+                    info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, DEFAULT_SCALE));
+                    info.setSumEnergyStandardCoal(dealBigDecimalScale(totalCost, DEFAULT_SCALE));
 
-                        resultList.add(info);
-                    });
+                    resultList.add(info);
                 });
             });
         });
@@ -600,7 +603,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                                                List<UsageCostData> usageCostDataList,
                                                DataTypeEnum dataType) {
 
-        Map<Long, List<UsageCostData>> energyUsageMap = usageCostDataList.stream()
+        Map<Long, List<UsageCostData>> standingBookUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
 
         Map<Long, LabelConfigDO> labelMap = labelConfigService.getAllLabelConfig()
@@ -622,46 +625,49 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : "/";
                 String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : "/";
 
+                List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
+                // 获取标签关联的台账id，并取到对应的数据
                 labelInfoList.forEach(labelInfo -> {
-                    List<UsageCostData> usageList = energyUsageMap.get(labelInfo.getStandingbookId());
+                    List<UsageCostData> usageList = standingBookUsageMap.get(labelInfo.getStandingbookId());
                     if (usageList == null || usageList.isEmpty()) {
                         return; // 计量器具没有数据，跳过
                     }
-
-                    List<StandardCoalInfoData> dataList = usageList.stream()
-                            .map(usage -> new StandardCoalInfoData(
-                                    //DateUtil.format(usage.getTime(), dataType.getFormat()),
-                                    usage.getTime(),
-                                    usage.getCurrentTotalUsage(),
-                                    usage.getTotalStandardCoalEquivalent()
-                            ))
-                            .collect(Collectors.toList());
-
-                    BigDecimal totalConsumption = dataList.stream()
-                            .map(StandardCoalInfoData::getConsumption)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-                    BigDecimal totalStandardCoal = dataList.stream()
-                            .map(StandardCoalInfoData::getStandardCoal)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                    StandardCoalInfo info = new StandardCoalInfo();
-                    info.setLabel1(topLabel.getLabelName());
-                    info.setLabel2(label2Name);
-                    info.setLabel3(label3Name);
-                    info.setLabel4(label4Name);
-                    info.setLabel5(label5Name);
-
-                    dataList = dataList.stream().peek(i -> {
-                        i.setStandardCoal(dealBigDecimalScale(i.getStandardCoal(), DEFAULT_SCALE));
-                        i.setConsumption(dealBigDecimalScale(i.getConsumption(), DEFAULT_SCALE));
-                    }).collect(Collectors.toList());
-
-                    info.setStandardCoalInfoDataList(dataList);
-                    info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, DEFAULT_SCALE));
-                    info.setSumEnergyStandardCoal(dealBigDecimalScale(totalStandardCoal, DEFAULT_SCALE));
-
-                    resultList.add(info);
+                    labelUsageCostDataList.addAll(usageList);
                 });
+
+                List<StandardCoalInfoData> dataList = labelUsageCostDataList.stream()
+                        .map(usage -> new StandardCoalInfoData(
+                                //DateUtil.format(usage.getTime(), dataType.getFormat()),
+                                usage.getTime(),
+                                usage.getCurrentTotalUsage(),
+                                usage.getTotalStandardCoalEquivalent()
+                        ))
+                        .collect(Collectors.toList());
+
+                BigDecimal totalConsumption = dataList.stream()
+                        .map(StandardCoalInfoData::getConsumption)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal totalStandardCoal = dataList.stream()
+                        .map(StandardCoalInfoData::getStandardCoal)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                StandardCoalInfo info = new StandardCoalInfo();
+                info.setLabel1(topLabel.getLabelName());
+                info.setLabel2(label2Name);
+                info.setLabel3(label3Name);
+                info.setLabel4(label4Name);
+                info.setLabel5(label5Name);
+
+                dataList = dataList.stream().peek(i -> {
+                    i.setStandardCoal(dealBigDecimalScale(i.getStandardCoal(), DEFAULT_SCALE));
+                    i.setConsumption(dealBigDecimalScale(i.getConsumption(), DEFAULT_SCALE));
+                }).collect(Collectors.toList());
+
+                info.setStandardCoalInfoDataList(dataList);
+                info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, DEFAULT_SCALE));
+                info.setSumEnergyStandardCoal(dealBigDecimalScale(totalStandardCoal, DEFAULT_SCALE));
+
+                resultList.add(info);
             });
         });
 

@@ -5,6 +5,7 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
+import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MultiMinuteAggDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
 import cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata.MinuteAggregateDataMapper;
@@ -60,6 +61,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     private RocketMQTemplate rocketMQTemplate;
     @Value("${rocketmq.topic.device-aggregate}")
     private String deviceAggTopic;
+
 
     @Resource
     private PartitionService partitionService;
@@ -137,7 +139,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     }
 
     @Override
-    public void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList) throws IOException {
+    public void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList,Boolean copFlag) throws IOException {
         if (CollUtil.isEmpty(aggDataList)) {
             return;
         }
@@ -155,8 +157,12 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
 
                     // 发送 MQ 消息
                     String topicName = deviceAggTopic;
-                    Message<List<MinuteAggregateDataDTO>> msg =
-                            MessageBuilder.withPayload(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class)).build();
+
+                    MultiMinuteAggDataDTO msgDTO = new MultiMinuteAggDataDTO();
+                    msgDTO.setCopFlag(copFlag);
+                    msgDTO.setMinuteAggregateDataDTOList(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class));
+                    Message<MultiMinuteAggDataDTO> msg =
+                            MessageBuilder.withPayload(msgDTO).build();
                     rocketMQTemplate.send(topicName, msg);
                 } catch (Exception e) {
                     log.error("sendMsgToUsageCostBatch: 批次处理失败", e);
@@ -236,7 +242,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             // 创建聚合数据计算表分区
             partitionService.createPartitions(COP_HOUR_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDO.getAggregateTime(), minuteAggregateDataDO.getAggregateTime());
             // 发送给usageCost进行计算
-            sendMsgToUsageCostBatch(Collections.singletonList(minuteAggregateDataDO));
+            sendMsgToUsageCostBatch(Collections.singletonList(minuteAggregateDataDO),true);
         } catch (Exception e) {
             log.error("insertSingleData失败：{}", e.getMessage(), e);
             throw exception(STREAM_LOAD_SINGLE_FAIL);
@@ -259,7 +265,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             // 创建聚合数据计算表分区
             partitionService.createPartitions(COP_HOUR_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDOS.get(0).getAggregateTime(), minuteAggregateDataDOS.get(minuteAggregateDataDOS.size() - 1).getAggregateTime());
             // 发送给usageCost进行计算
-            sendMsgToUsageCostBatch(minuteAggregateDataDOS);
+            sendMsgToUsageCostBatch(minuteAggregateDataDOS,true);
         } catch (Exception e) {
             log.error("insertRangeData失败：{}", e.getMessage(), e);
             throw exception(STREAM_LOAD_RANGE_FAIL);
