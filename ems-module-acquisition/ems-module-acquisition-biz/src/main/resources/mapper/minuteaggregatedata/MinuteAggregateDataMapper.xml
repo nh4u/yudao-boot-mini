@@ -162,6 +162,7 @@
         WHERE
 
         aggregate_time BETWEEN #{starTime} AND #{endTime}
+        and `usage` = 1
         <if test="standingbookIds != null and standingbookIds.size() != 0">
             AND standingbook_id IN
             <foreach collection="standingbookIds" item="id" open="(" separator="," close=")">
@@ -201,6 +202,7 @@
         WHERE
         aggregate_time >= #{starTime}
         AND aggregate_time &lt; #{endTime}
+        AND data_feature = 2
         <if test="standingbookIds != null and standingbookIds.size() != 0">
             AND standingbook_id IN
             <foreach collection="standingbookIds" item="id" open="(" separator="," close=")">
