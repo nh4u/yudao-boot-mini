@@ -264,7 +264,7 @@ public class CopCalcService {
                         copHourAggDataDTO.setAggregateTime(hourEnd);
                         copHourAggDataBatchToAdd.add(copHourAggDataDTO);
                     }
-                    log.info("COP [{}] 时间范围[{},{})  计算结果: {}", copFormulaDO.getCopType(), hourStart, hourEnd, result);
+                    log.info("COP [{}] 时间范围[{},{})  计算结果: {},参数：{}", copFormulaDO.getCopType(), hourStart, hourEnd, result,JSONUtil.toJsonStr(formulaVariables));
                 } catch (Exception e) {
                     log.error("COP [{}] 时间范围[{},{})  计算失败: {}", copFormulaDO.getCopType(), hourStart, hourEnd, e.getMessage(), e);
                 }
