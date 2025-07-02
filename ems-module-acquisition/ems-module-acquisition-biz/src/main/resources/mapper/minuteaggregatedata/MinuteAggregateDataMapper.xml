@@ -27,18 +27,18 @@
             resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
         SELECT mad.*
         FROM minute_aggregate_data mad
-        INNER JOIN (
-        SELECT
-        standingbook_id,
-        MAX(aggregate_time) AS max_time
-        FROM
-        minute_aggregate_data
-        GROUP BY
-        standingbook_id
+                 INNER JOIN (
+            SELECT
+                standingbook_id,
+                `usage`,
+                MAX(aggregate_time) AS max_time
+            FROM minute_aggregate_data
+            WHERE usage = 1
+            GROUP BY standingbook_id, `usage`
         ) latest
         ON mad.standingbook_id = latest.standingbook_id
-        AND mad.aggregate_time = latest.max_time;
-
+            AND mad.usage = latest.`usage`
+            AND mad.aggregate_time = latest.max_time;
     </select>
     <select id="selectExactData"
             resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
