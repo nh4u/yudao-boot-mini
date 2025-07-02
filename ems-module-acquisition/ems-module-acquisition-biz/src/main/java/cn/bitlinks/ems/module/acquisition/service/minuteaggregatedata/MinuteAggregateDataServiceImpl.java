@@ -273,9 +273,18 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     }
 
     @Override
-    public List<MinuteAggregateDataDTO> getRangeDataRequestParam(List<Long> standingbookIds, LocalDateTime starTime, LocalDateTime endTime) {
+    public List<MinuteAggregateDataDTO> getCopRangeData(List<Long> standingbookIds,List<String> paramCodes, LocalDateTime starTime, LocalDateTime endTime){
         List<MinuteAggregateDataDO> minuteAggregateDataDOS =
-                minuteAggregateDataMapper.getRangeDataRequestParam(standingbookIds, starTime, endTime);
+                minuteAggregateDataMapper.getCopRangeData(standingbookIds, paramCodes,starTime, endTime);
+        if (CollUtil.isEmpty(minuteAggregateDataDOS)) {
+            return null;
+        }
+        return BeanUtils.toBean(minuteAggregateDataDOS, MinuteAggregateDataDTO.class);
+    }
+    @Override
+    public List<MinuteAggregateDataDTO> getCopRangeDataSteady(List<Long> standingbookIds,List<String> paramCodes, LocalDateTime starTime, LocalDateTime endTime){
+        List<MinuteAggregateDataDO> minuteAggregateDataDOS =
+                minuteAggregateDataMapper.getCopRangeData(standingbookIds, paramCodes,starTime, endTime);
         if (CollUtil.isEmpty(minuteAggregateDataDOS)) {
             return null;
         }

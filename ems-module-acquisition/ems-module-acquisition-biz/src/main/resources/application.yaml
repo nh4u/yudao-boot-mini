@@ -135,6 +135,7 @@ ems:
     enable: true
     ignore-urls:
       - /rpc-api/acquisition/streamLoad/insertBatch
-      - /rpc-api/acquisition/minuteAggregateData/getRangeDataRequestParam
+      - /rpc-api/acquisition/minuteAggregateData/getCopRangeData
+      - /rpc-api/acquisition/minuteAggregateData/getCopRangeDataSteady
 
 debug: false

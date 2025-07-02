@@ -4,7 +4,7 @@ import cn.bitlinks.ems.framework.common.util.calc.CalculateUtil;
 import cn.bitlinks.ems.framework.tenant.core.job.TenantJob;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
-import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataCopParamDTO;
 import cn.bitlinks.ems.module.acquisition.api.starrocks.StreamLoadApi;
 import cn.bitlinks.ems.module.acquisition.api.starrocks.dto.StreamLoadDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.copsettings.CopFormulaDO;
@@ -23,6 +23,7 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.STREAM_LOAD_PREFIX;
@@ -76,25 +77,68 @@ public class CopCalcService {
             List<CopSettingsDTO> copParams = settings.stream()
                     .filter(s -> copFormulaDO.getCopType().equals(s.getCopType()))
                     .collect(Collectors.toList());
-
-//            LocalDateTime startHour = aggTime.truncatedTo(ChronoUnit.HOURS);
-//            LocalDateTime endHour = aggTime.plusHours(1);
-            // 3.4 一次性查询数据库，查询cop对应的台账采集参数，
-            List<Long> allSbIds = copParams.stream()
-                    .map(CopSettingsDTO::getStandingbookId)
-                    .distinct()
-                    .collect(Collectors.toList());
-            if (CollUtil.isEmpty(allSbIds)) {
-                log.info("COP [{}] ，缺失台账数据", copFormulaDO.getCopType());
-                continue;
+            // 按照 dataFeature 分组 ,稳态值查询所有的末尾值、累积值查询 小时级别数据中的差值、
+            Map<Integer, List<CopSettingsDTO>> groupedByDataFeature = copParams.stream()
+                    .collect(Collectors.groupingBy(CopSettingsDTO::getDataFeature));
+            List<MinuteAggregateDataDTO> dbUsageDataList = new ArrayList<>();
+            List<MinuteAggregateDataDTO> dbSteadyDataList = new ArrayList<>();
+            for(Map.Entry<Integer, List<CopSettingsDTO>> entry : groupedByDataFeature.entrySet()){
+                if(ParamDataFeatureEnum.Accumulated.getCode().equals(entry.getKey())){
+                    // 查询小时级别数据，多查前一小时的全量值
+                    List<CopSettingsDTO> copSettingsDTOS = entry.getValue();
+                    if (CollUtil.isEmpty(copSettingsDTOS)) {
+                        log.info("COP [{}] ，缺失台账/参数设置", copFormulaDO.getCopType());
+                        continue;
+                    }
+                    List<Long> sbIds = copSettingsDTOS.stream()
+                            .map(CopSettingsDTO::getStandingbookId)
+                            .distinct()
+                            .collect(Collectors.toList());
+                    List<String> paramCodes = copSettingsDTOS.stream()
+                            .map(CopSettingsDTO::getParamCode)
+                            .distinct()
+                            .collect(Collectors.toList());
+                    if (CollUtil.isEmpty(sbIds) || CollUtil.isEmpty(paramCodes)) {
+                        log.info("COP [{}] ，缺失台账/参数设置", copFormulaDO.getCopType());
+                        continue;
+                    }
+                    // 获取所有台账id和所有的参数编码
+                    MinuteRangeDataCopParamDTO minuteRangeDataCopParamDTO = new MinuteRangeDataCopParamDTO();
+                    minuteRangeDataCopParamDTO.setParamCodes(paramCodes);
+                    minuteRangeDataCopParamDTO.setSbIds(sbIds);
+                    minuteRangeDataCopParamDTO.setStarTime(startHour);
+                    minuteRangeDataCopParamDTO.setEndTime(endHour);
+                    dbUsageDataList = minuteAggregateDataApi.getCopRangeData(minuteRangeDataCopParamDTO).getData();
+                }else if(ParamDataFeatureEnum.STEADY.getCode().equals(entry.getKey())){
+                    // 查询小时数据的末尾值
+                    List<CopSettingsDTO> copSettingsDTOS = entry.getValue();
+                    if (CollUtil.isEmpty(copSettingsDTOS)) {
+                        log.info("COP [{}] ，缺失台账/参数设置", copFormulaDO.getCopType());
+                        continue;
+                    }
+                    List<Long> sbIds = copSettingsDTOS.stream()
+                            .map(CopSettingsDTO::getStandingbookId)
+                            .distinct()
+                            .collect(Collectors.toList());
+                    List<String> paramCodes = copSettingsDTOS.stream()
+                            .map(CopSettingsDTO::getParamCode)
+                            .distinct()
+                            .collect(Collectors.toList());
+                    if (CollUtil.isEmpty(sbIds) || CollUtil.isEmpty(paramCodes)) {
+                        log.info("COP [{}] ，缺失台账/参数设置", copFormulaDO.getCopType());
+                        continue;
+                    }
+                    // 获取所有台账id和所有的参数编码
+                    MinuteRangeDataCopParamDTO minuteRangeDataCopParamDTO = new MinuteRangeDataCopParamDTO();
+                    minuteRangeDataCopParamDTO.setParamCodes(paramCodes);
+                    minuteRangeDataCopParamDTO.setSbIds(sbIds);
+                    minuteRangeDataCopParamDTO.setStarTime(startHour);
+                    minuteRangeDataCopParamDTO.setEndTime(endHour);
+                    dbSteadyDataList = minuteAggregateDataApi.getCopRangeDataSteady(minuteRangeDataCopParamDTO).getData();
+                }
             }
-            MinuteRangeDataParamDTO minuteRangeDataParamDTO = new MinuteRangeDataParamDTO();
-            minuteRangeDataParamDTO.setSbIds(allSbIds);
-            minuteRangeDataParamDTO.setStarTime(startHour);
-            minuteRangeDataParamDTO.setEndTime(endHour);
-            // 依赖的所有台账id和参数的数据们
-            List<MinuteAggregateDataDTO> dbHourData = minuteAggregateDataApi.getRangeDataRequestParam(minuteRangeDataParamDTO).getData();
-            log.info("COP [{}] ，影响小时区间：{} ~ {}，数据库原有数据：{}", copFormulaDO.getCopType(), startHour, endHour, dbHourData);
+
+            log.info("COP [{}] ，影响小时区间：{} ~ {}", copFormulaDO.getCopType(), startHour, endHour);
             // 筛选出newHourData中台账这些夏普手机哦的
             // 3.5 循环影响的小时，计算cop的小时值
             LocalDateTime cursor = startHour;   //15：01：01   19：01：01
@@ -105,63 +149,99 @@ public class CopCalcService {
 
                 // 3.5.1 循环所有的参数，计算该小时的cop公式值
                 Map<String, BigDecimal> formulaVariables = new HashMap<>();
+                List<MinuteAggregateDataDTO> finalDbUsageDataList = dbUsageDataList;
+                List<MinuteAggregateDataDTO> finalDbSteadyDataList = dbSteadyDataList;
                 copParams.forEach(copParam -> {
                     Long sbId = copParam.getStandingbookId();
                     String paramCode = copParam.getParamCode();
                     String formulaParam = copParam.getParam();
+                    Integer dataFeature = copParam.getDataFeature();
                     // 最终合并后的值（用于计算公式）
-                    List<MinuteAggregateDataDTO> mergedValues;
-
-                    // 先构建 dbValues 和 newHourValues（你已有代码）
-
                     Map<LocalDateTime, MinuteAggregateDataDTO> mergedMap = new LinkedHashMap<>();
-                    // 数据库的该小时的该参数值
-                    if (CollUtil.isNotEmpty(dbHourData)) {
-                        List<MinuteAggregateDataDTO> dbValues = dbHourData.stream()
-                                .filter(d -> sbId.equals(d.getStandingbookId()) && paramCode.equals(d.getParamCode())
-                                        &&
-                                        (!d.getAggregateTime().isBefore(hourStart) && d.getAggregateTime().isBefore(hourEnd)))
-                                .sorted(Comparator.comparing(MinuteAggregateDataDTO::getAggregateTime))
-                                .collect(Collectors.toList());
-                        if (CollUtil.isNotEmpty(dbValues)) {
-                            dbValues.forEach(d -> mergedMap.put(d.getAggregateTime(), d));
+                    // 先构建 dbValues 和 newHourValues（你已有代码）
+                    // 如果是用量
+                    if(ParamDataFeatureEnum.Accumulated.getCode().equals(dataFeature)){
+                        // 数据库的该小时的该参数值
+                        if (CollUtil.isNotEmpty(finalDbUsageDataList)) {
+                            List<MinuteAggregateDataDTO> dbValues = finalDbUsageDataList.stream()
+                                    .filter(d -> sbId.equals(d.getStandingbookId()) && paramCode.equals(d.getParamCode())
+                                            &&
+                                            (!d.getAggregateTime().isBefore(hourStart) && !d.getAggregateTime().isAfter(hourEnd)))
+                                    .sorted(Comparator.comparing(MinuteAggregateDataDTO::getAggregateTime))
+                                    .collect(Collectors.toList());
+                            if (CollUtil.isNotEmpty(dbValues)) {
+                                dbValues.forEach(d -> mergedMap.put(d.getAggregateTime(), d));
+                            }
                         }
-                    }
-
-                    // 如果有新修改的数据，筛选出新修改的该小时的该参数值
-                    if (CollUtil.isNotEmpty(newHourData)) {
-                        List<MinuteAggregateDataDTO> newHourValues = newHourData.stream()
-                                .filter(d -> sbId.equals(d.getStandingbookId()) && paramCode.equals(d.getParamCode())
-                                        &&
-                                        (!d.getAggregateTime().isBefore(hourStart) && d.getAggregateTime().isBefore(hourEnd)))
-                                .sorted(Comparator.comparing(MinuteAggregateDataDTO::getAggregateTime))
-                                .collect(Collectors.toList());
+                        // 如果有新修改的数据，筛选出新修改的该小时的该参数值
                         if (CollUtil.isNotEmpty(newHourData)) {
-                            newHourValues.forEach(d -> mergedMap.put(d.getAggregateTime(), d)); // 覆盖相同时间点
+                            List<MinuteAggregateDataDTO> newHourValues = newHourData.stream()
+                                    .filter(d -> sbId.equals(d.getStandingbookId()) && paramCode.equals(d.getParamCode())
+                                            &&
+                                            (!d.getAggregateTime().isBefore(hourStart) && !d.getAggregateTime().isAfter(hourEnd)))
+                                    .sorted(Comparator.comparing(MinuteAggregateDataDTO::getAggregateTime))
+                                    .collect(Collectors.toList());
+                            if (CollUtil.isNotEmpty(newHourData)) {
+                                newHourValues.forEach(d -> mergedMap.put(d.getAggregateTime(), d)); // 覆盖相同时间点
+                            }
                         }
-
-                    }
-                    if (CollUtil.isEmpty(mergedMap.values())) {
-                        log.info("COP [{}] 时间范围[{},{}) ，参数【{}】缺失数据", copFormulaDO.getCopType(), hourStart, hourEnd, formulaParam);
-                        return;
-                    }
-                    // 3. 转回 List，按时间排序
-                    mergedValues = mergedMap.values().stream()
-                            .sorted(Comparator.comparing(MinuteAggregateDataDTO::getAggregateTime))
-                            .collect(Collectors.toList());
-
-
-                    // 放入变量Map中
-                    if (ParamDataFeatureEnum.Accumulated.getCode().equals(copParam.getDataFeature())) {
-                        // 累加 mergedValues 所有的增量值
-                        BigDecimal sumIncremental = mergedValues.stream()
-                                .map(MinuteAggregateDataDTO::getIncrementalValue)
-                                .filter(Objects::nonNull)
-                                .reduce(BigDecimal.ZERO, BigDecimal::add);
-                        formulaVariables.put(formulaParam, sumIncremental);
-                    } else if (ParamDataFeatureEnum.STEADY.getCode().equals(copParam.getDataFeature())) {
+                        if (CollUtil.isEmpty(mergedMap.values())) {
+                            log.info("COP [{}] 时间范围[{},{}) ，参数【{}】缺失数据", copFormulaDO.getCopType(), hourStart, hourEnd, formulaParam);
+                            return;
+                        }
                         // 获取当前小时最晚的时间值
-                        formulaVariables.put(formulaParam, mergedValues.get(mergedValues.size() - 1).getFullValue());
+                        Optional<MinuteAggregateDataDTO> optionalOldest = mergedMap.entrySet().stream()
+                                .min(Map.Entry.comparingByKey())
+                                .map(Map.Entry::getValue);
+
+                        // 获取当前小时最晚的时间值
+                        Optional<MinuteAggregateDataDTO> optionalLatest = mergedMap.entrySet().stream()
+                                .min(Map.Entry.comparingByKey())
+                                .map(Map.Entry::getValue);
+                        if (!optionalLatest.isPresent() || !optionalOldest.isPresent()) {
+                            log.info("COP [{}] 时间范围[{},{}) ，参数【{}】缺失数据", copFormulaDO.getCopType(), hourStart, hourEnd, formulaParam);
+                            return;
+                        }
+                        formulaVariables.put(formulaParam, optionalLatest.get().getFullValue().subtract(optionalOldest.get().getFullValue()));
+
+                    }else if(ParamDataFeatureEnum.STEADY.getCode().equals(dataFeature)){
+                        // 数据库的该小时的该参数值
+                        if (CollUtil.isNotEmpty(finalDbSteadyDataList)) {
+                            List<MinuteAggregateDataDTO> dbValues = finalDbSteadyDataList.stream()
+                                    .filter(d -> sbId.equals(d.getStandingbookId()) && paramCode.equals(d.getParamCode())
+                                            &&
+                                            (!d.getAggregateTime().isBefore(hourStart) && d.getAggregateTime().isBefore(hourEnd)))
+                                    .sorted(Comparator.comparing(MinuteAggregateDataDTO::getAggregateTime))
+                                    .collect(Collectors.toList());
+                            if (CollUtil.isNotEmpty(dbValues)) {
+                                dbValues.forEach(d -> mergedMap.put(d.getAggregateTime(), d));
+                            }
+                        }
+                        // 如果有新修改的数据，筛选出新修改的该小时的该参数值
+                        if (CollUtil.isNotEmpty(newHourData)) {
+                            List<MinuteAggregateDataDTO> newHourValues = newHourData.stream()
+                                    .filter(d -> sbId.equals(d.getStandingbookId()) && paramCode.equals(d.getParamCode())
+                                            &&
+                                            (!d.getAggregateTime().isBefore(hourStart) && d.getAggregateTime().isBefore(hourEnd)))
+                                    .sorted(Comparator.comparing(MinuteAggregateDataDTO::getAggregateTime))
+                                    .collect(Collectors.toList());
+                            if (CollUtil.isNotEmpty(newHourData)) {
+                                newHourValues.forEach(d -> mergedMap.put(d.getAggregateTime(), d)); // 覆盖相同时间点
+                            }
+                        }
+                        if (CollUtil.isEmpty(mergedMap.values())) {
+                            log.info("COP [{}] 时间范围[{},{}) ，参数【{}】缺失数据", copFormulaDO.getCopType(), hourStart, hourEnd, formulaParam);
+                            return;
+                        }
+                        // 获取当前小时最晚的时间值
+                        Optional<MinuteAggregateDataDTO> optionalLatest = mergedMap.entrySet().stream()
+                                .min(Map.Entry.comparingByKey())
+                                .map(Map.Entry::getValue);
+                        if (!optionalLatest.isPresent()) {
+                            log.info("COP [{}] 时间范围[{},{}) ，参数【{}】缺失数据", copFormulaDO.getCopType(), hourStart, hourEnd, formulaParam);
+                            return;
+                        }
+                        formulaVariables.put(formulaParam, optionalLatest.get().getFullValue());
                     }
                 });
                 // 3.5.2 校验这一小时的所需要的参数值是否齐全
