@@ -75,7 +75,16 @@ public interface MinuteAggregateDataService {
      * @param endTime
      * @return
      */
-    List<MinuteAggregateDataDTO> getRangeDataRequestParam(List<Long> standingbookIds, LocalDateTime starTime, LocalDateTime endTime);
+    List<MinuteAggregateDataDTO> getCopRangeData(List<Long> standingbookIds,List<String> paramCodes, LocalDateTime starTime, LocalDateTime endTime);
+    /**
+     * 获取指定时间段的聚合数据
+     *
+     * @param standingbookIds
+     * @param starTime
+     * @param endTime
+     * @return
+     */
+    List<MinuteAggregateDataDTO> getCopRangeDataSteady(List<Long> standingbookIds,List<String> paramCodes, LocalDateTime starTime, LocalDateTime endTime);
     /**
      * 获取该台账的上一个全量值
      * @param standingbookId

@@ -152,11 +152,54 @@
         ) t
         WHERE t.rn = 1;
     </select>
-    <select id="getRangeDataRequestParam"
+    <select id="getCopRangeData"
             resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
-        SELECT *
+        WITH base_data AS (
+        SELECT *,
+        DATE_FORMAT(aggregate_time, '%Y-%m-%d %H') AS hour_bucket,
+        IF(MINUTE(aggregate_time) = 0 AND SECOND(aggregate_time) = 0, 1, 0) AS is_exact_hour
         FROM minute_aggregate_data
-        WHERE aggregate_time >= #{starTime}
+        WHERE
+
+        aggregate_time BETWEEN #{starTime} AND #{endTime}
+        <if test="standingbookIds != null and standingbookIds.size() != 0">
+            AND standingbook_id IN
+            <foreach collection="standingbookIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        <if test="paramCodes != null and paramCodes.size() != 0">
+            AND param_code IN
+            <foreach collection="paramCodes" item="paramCode" open="(" separator="," close=")">
+                #{paramCode}
+            </foreach>
+        </if>
+        ),
+        ranked_data AS (
+        SELECT *,
+        ROW_NUMBER() OVER (
+        PARTITION BY standingbook_id, param_code, hour_bucket
+        ORDER BY is_exact_hour DESC, aggregate_time ASC
+        ) AS rn
+        FROM base_data
+        )
+        SELECT *
+        FROM ranked_data
+        WHERE rn = 1
+        ORDER BY standingbook_id, param_code, aggregate_time;
+
+    </select>
+    <select id="getCopRangeDataSteady"
+            resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
+        WITH ranked_data AS (
+        SELECT *,
+        ROW_NUMBER() OVER (
+        PARTITION BY standingbook_id, param_code, DATE_TRUNC('hour', aggregate_time)
+        ORDER BY aggregate_time DESC
+        ) AS rn
+        FROM minute_aggregate_data
+        WHERE
+        aggregate_time >= #{starTime}
         AND aggregate_time &lt; #{endTime}
         <if test="standingbookIds != null and standingbookIds.size() != 0">
             AND standingbook_id IN
@@ -164,6 +207,17 @@
                 #{id}
             </foreach>
         </if>
+        <if test="paramCodes != null and paramCodes.size() != 0">
+            AND param_code IN
+            <foreach collection="paramCodes" item="paramCode" open="(" separator="," close=")">
+                #{paramCode}
+            </foreach>
+        </if>
+        )
+        SELECT *
+        FROM ranked_data
+        WHERE rn = 1
+        ORDER BY standingbook_id, param_code, aggregate_time;
 
     </select>
 

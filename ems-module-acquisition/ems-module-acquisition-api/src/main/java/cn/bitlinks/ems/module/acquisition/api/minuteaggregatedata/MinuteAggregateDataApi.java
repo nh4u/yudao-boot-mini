@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataCopParamDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.enums.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
@@ -67,6 +68,7 @@ public interface MinuteAggregateDataApi {
     @PostMapping(PREFIX + "/insertSingleData")
     @Operation(summary = "直接插入数据")
     void insertSingleData(@RequestBody MinuteAggregateDataDTO minuteAggregateDataDTO);
+
     /**
      * 直接插入单条数据
      *
@@ -97,17 +99,29 @@ public interface MinuteAggregateDataApi {
     @PostMapping(PREFIX + "/getPreAndNextData")
     @Operation(summary = "获取时间段首尾两端附近的数据")
     CommonResult<Map<Long, MinuteAggDataSplitDTO>> getPreAndNextData(@RequestBody MinuteRangeDataParamDTO minuteRangeDataParamDTO);
+
     /**
      * 获取台账们稳态值、用量的时间范围内数据
      *
      * @return
      */
-    @PostMapping(PREFIX + "/getRangeDataRequestParam")
-    @Operation(summary = "根据两条数据进行拆分")
+    @PostMapping(PREFIX + "/getCopRangeData")
+    @Operation(summary = "获取台账们、用量的时间范围内数据")
     @PermitAll
-    CommonResult<List<MinuteAggregateDataDTO>> getRangeDataRequestParam(@RequestBody MinuteRangeDataParamDTO minuteRangeDataParamDTO);
+    CommonResult<List<MinuteAggregateDataDTO>> getCopRangeData(@RequestBody MinuteRangeDataCopParamDTO minuteRangeDataParamDTO);
+    /**
+     * 获取台账们稳态值、用量的时间范围内数据
+     *
+     * @return
+     */
+    @PostMapping(PREFIX + "/getCopRangeDataSteady")
+    @Operation(summary = "获取台账们稳态值")
+    @PermitAll
+    CommonResult<List<MinuteAggregateDataDTO>> getCopRangeDataSteady(@RequestBody MinuteRangeDataCopParamDTO minuteRangeDataParamDTO);
+
     /**
      * 获取该台账的当前业务点全量值
+     *
      * @param standingbookId
      * @param acquisitionTime
      * @return
@@ -115,26 +129,30 @@ public interface MinuteAggregateDataApi {
     @GetMapping(PREFIX + "/getUsageExistFullValue")
     @Operation(summary = "获取该台账的当前业务点全量值")
     MinuteAggregateDataDTO getUsageExistFullValue(@RequestParam("standingbookId") Long standingbookId,
-                                                 @RequestParam("acquisitionTime")@DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime acquisitionTime);
+                                                  @RequestParam("acquisitionTime") @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime acquisitionTime);
+
     /**
      * 获取当前时间的上一个全量值
-     * @param standingbookId 台账id
+     *
+     * @param standingbookId  台账id
      * @param acquisitionTime 采集时间
      * @return
      */
     @GetMapping(PREFIX + "/getUsagePrevFullValue")
     @Operation(summary = "获取当前时间的上一个全量值")
     MinuteAggregateDataDTO getUsagePrevFullValue(@RequestParam("standingbookId") Long standingbookId,
-                                                 @RequestParam("acquisitionTime")@DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime acquisitionTime);
+                                                 @RequestParam("acquisitionTime") @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime acquisitionTime);
+
     /**
      * 获取当前时间的下一个全量值
-     * @param standingbookId 台账id
+     *
+     * @param standingbookId  台账id
      * @param acquisitionTime 采集时间
      * @return
      */
     @GetMapping(PREFIX + "/getUsageNextFullValue")
     @Operation(summary = "获取当前时间的下一个全量值")
     MinuteAggregateDataDTO getUsageNextFullValue(@RequestParam("standingbookId") Long standingbookId,
-                                                 @RequestParam("acquisitionTime")@DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime acquisitionTime);
+                                                 @RequestParam("acquisitionTime") @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime acquisitionTime);
 
 }
