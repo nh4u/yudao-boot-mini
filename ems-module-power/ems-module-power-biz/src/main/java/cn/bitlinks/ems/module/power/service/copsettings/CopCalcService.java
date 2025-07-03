@@ -196,7 +196,7 @@ public class CopCalcService {
 
                         // 获取当前小时最晚的时间值
                         Optional<MinuteAggregateDataDTO> optionalLatest = mergedMap.entrySet().stream()
-                                .min(Map.Entry.comparingByKey())
+                                .max(Map.Entry.comparingByKey())
                                 .map(Map.Entry::getValue);
                         if (!optionalLatest.isPresent() || !optionalOldest.isPresent()) {
                             log.info("COP [{}] 时间范围[{},{}) ，参数【{}】缺失数据", copFormulaDO.getCopType(), hourStart, hourEnd, formulaParam);
@@ -235,7 +235,7 @@ public class CopCalcService {
                         }
                         // 获取当前小时最晚的时间值
                         Optional<MinuteAggregateDataDTO> optionalLatest = mergedMap.entrySet().stream()
-                                .min(Map.Entry.comparingByKey())
+                                .max(Map.Entry.comparingByKey())
                                 .map(Map.Entry::getValue);
                         if (!optionalLatest.isPresent()) {
                             log.info("COP [{}] 时间范围[{},{}) ，参数【{}】缺失数据", copFormulaDO.getCopType(), hourStart, hourEnd, formulaParam);
