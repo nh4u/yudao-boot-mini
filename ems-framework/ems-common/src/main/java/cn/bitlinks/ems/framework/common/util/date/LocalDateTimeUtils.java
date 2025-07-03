@@ -637,7 +637,6 @@ public class LocalDateTimeUtils {
     }
 
 
-
     /**
      * 格式时间对应  2025-06-12 17 和 2025-06-12 17:00:00 对应处理
      *
@@ -648,4 +647,22 @@ public class LocalDateTimeUtils {
         return strTime.length() > 13 ? strTime.substring(0, 13) : strTime;
     }
 
+    /**
+     * 根据时间字符串 来返回去年同期时间字符串 边界情况测试（闰年也OK）
+     *
+     * @param dateStr 时间字符串
+     * @param format  时间格式
+     * @return
+     */
+    public static String getSamePeriodLastYear(String dateStr, String format) {
+        // 1. 定义日期时间格式（与输入字符串一致）
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
+        // 2. 解析字符串为 LocalDateTime
+        LocalDateTime dateTime = LocalDateTime.parse(dateStr, formatter);
+        // 3. 减去 1 年
+        LocalDateTime lastYearDateTime = dateTime.minusYears(1);
+
+        // 4. 重新格式化为字符串
+        return lastYearDateTime.format(formatter);
+    }
 }
