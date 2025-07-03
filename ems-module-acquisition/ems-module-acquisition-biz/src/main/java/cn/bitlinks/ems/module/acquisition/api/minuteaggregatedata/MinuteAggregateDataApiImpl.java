@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataCopParamDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata.MinuteAggregateDataService;
 import cn.hutool.core.collection.CollUtil;
@@ -60,6 +61,7 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     public void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO) {
         minuteAggregateDataService.insertSingleData(minuteAggregateDataDTO);
     }
+
     @Override
     public CommonResult<String> insertSingleDataError(MinuteAggregateDataDTO minuteAggregateDataDTO) {
         try {
@@ -72,6 +74,7 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
             return CommonResult.error(STREAM_LOAD_RANGE_FAIL);
         }
     }
+
     @Override
     public CommonResult<String> insertRangeDataError(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
         try {
@@ -87,7 +90,7 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
 
     @Override
     public CommonResult<Map<Long, MinuteAggDataSplitDTO>> getPreAndNextData(MinuteRangeDataParamDTO minuteRangeDataParamDTO) {
-        Map<Long, MinuteAggDataSplitDTO> dataSplitDTOMap =  minuteAggregateDataService.getPreAndNextData(minuteRangeDataParamDTO);
+        Map<Long, MinuteAggDataSplitDTO> dataSplitDTOMap = minuteAggregateDataService.getPreAndNextData(minuteRangeDataParamDTO);
         if (CollUtil.isEmpty(dataSplitDTOMap)) {
             return CommonResult.success(Collections.emptyMap());
         }
@@ -101,9 +104,21 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     }
 
     @Override
-    public CommonResult<List<MinuteAggregateDataDTO>> getRangeDataRequestParam(MinuteRangeDataParamDTO minuteRangeDataParamDTO) {
+    public CommonResult<List<MinuteAggregateDataDTO>> getCopRangeData(MinuteRangeDataCopParamDTO minuteRangeDataCopParamDTO) {
         // 根据传入的参数，调用minuteAggregateDataService的getRangeDataRequestParam方法，获取MinuteAggregateDataDTO类型的列表
-        List<MinuteAggregateDataDTO> list = minuteAggregateDataService.getRangeDataRequestParam(minuteRangeDataParamDTO.getSbIds(), minuteRangeDataParamDTO.getStarTime(), minuteRangeDataParamDTO.getEndTime());
+        List<MinuteAggregateDataDTO> list = minuteAggregateDataService.getCopRangeData(minuteRangeDataCopParamDTO.getSbIds(), minuteRangeDataCopParamDTO.getParamCodes(),minuteRangeDataCopParamDTO.getStarTime(), minuteRangeDataCopParamDTO.getEndTime());
+        // 如果列表为空，则返回一个成功的CommonResult，其中包含null
+        if (CollUtil.isEmpty(list)) {
+            return CommonResult.success(null);
+        }
+        // 否则，返回一个成功的CommonResult，其中包含列表
+        return CommonResult.success(list);
+    }
+
+    @Override
+    public CommonResult<List<MinuteAggregateDataDTO>> getCopRangeDataSteady(MinuteRangeDataCopParamDTO minuteRangeDataCopParamDTO) {
+        // 根据传入的参数，调用minuteAggregateDataService的getRangeDataRequestParam方法，获取MinuteAggregateDataDTO类型的列表
+        List<MinuteAggregateDataDTO> list = minuteAggregateDataService.getCopRangeDataSteady(minuteRangeDataCopParamDTO.getSbIds(), minuteRangeDataCopParamDTO.getParamCodes(),minuteRangeDataCopParamDTO.getStarTime(), minuteRangeDataCopParamDTO.getEndTime());
         // 如果列表为空，则返回一个成功的CommonResult，其中包含null
         if (CollUtil.isEmpty(list)) {
             return CommonResult.success(null);

@@ -102,7 +102,16 @@ public interface MinuteAggregateDataMapper {
      * @return
      */
     @TenantIgnore
-    List<MinuteAggregateDataDO> getRangeDataRequestParam(@Param("standingbookIds")List<Long> standingbookIds, @Param("starTime")LocalDateTime starTime, @Param("endTime")LocalDateTime endTime);
+    List<MinuteAggregateDataDO> getCopRangeData(@Param("standingbookIds")List<Long> standingbookIds, @Param("paramCodes")List<String> paramCodes, @Param("starTime")LocalDateTime starTime, @Param("endTime")LocalDateTime endTime);
+    /**
+     * 获取聚合数据
+     * @param standingbookIds
+     * @param starTime
+     * @param endTime
+     * @return
+     */
+    @TenantIgnore
+    List<MinuteAggregateDataDO> getCopRangeDataSteady(@Param("standingbookIds")List<Long> standingbookIds, @Param("paramCodes")List<String> paramCodes, @Param("starTime")LocalDateTime starTime, @Param("endTime")LocalDateTime endTime);
     /**
      * 获取多个台账的上一个业务点全量值
      * @return
