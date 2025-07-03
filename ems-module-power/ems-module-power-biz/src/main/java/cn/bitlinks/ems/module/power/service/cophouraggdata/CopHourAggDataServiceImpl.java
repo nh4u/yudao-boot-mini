@@ -10,6 +10,7 @@ import cn.bitlinks.ems.module.power.controller.admin.report.vo.ReportParamVO;
 import cn.bitlinks.ems.module.power.dal.mysql.copsettings.CopHourAggDataMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.date.DatePattern;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getSamePeriodLastYear;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.SYSTEM_TYPE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
@@ -189,7 +191,10 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
 
         xdata.forEach(x -> {
             List<CopHourAggData> nowCopAggDatas = nowCopAggDataMap.get(x);
-            List<CopHourAggData> preCopAggDatas = preCopAggDataMap.get(x);
+
+            // 时间处理 x是当前年份，所以年份要减去1 即： 2025-06-09 01:00:00 => 2024-06-09 01:00:00
+            String samePeriodLastYear = getSamePeriodLastYear(x, DatePattern.NORM_DATETIME_PATTERN);
+            List<CopHourAggData> preCopAggDatas = preCopAggDataMap.get(samePeriodLastYear);
             // 当前
             dealYList(nowCopAggDatas, copTypes, ltcNow, ltsNow, mtcNow, mtsNow);
             // 去年同期
