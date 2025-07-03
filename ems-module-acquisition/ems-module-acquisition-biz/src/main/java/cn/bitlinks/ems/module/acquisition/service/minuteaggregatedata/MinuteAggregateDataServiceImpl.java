@@ -284,7 +284,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     @Override
     public List<MinuteAggregateDataDTO> getCopRangeDataSteady(List<Long> standingbookIds,List<String> paramCodes, LocalDateTime starTime, LocalDateTime endTime){
         List<MinuteAggregateDataDO> minuteAggregateDataDOS =
-                minuteAggregateDataMapper.getCopRangeData(standingbookIds, paramCodes,starTime, endTime);
+                minuteAggregateDataMapper.getCopRangeDataSteady(standingbookIds, paramCodes,starTime, endTime);
         if (CollUtil.isEmpty(minuteAggregateDataDOS)) {
             return null;
         }
