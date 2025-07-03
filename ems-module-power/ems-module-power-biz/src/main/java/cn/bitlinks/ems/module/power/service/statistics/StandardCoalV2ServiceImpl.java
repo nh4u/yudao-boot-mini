@@ -615,6 +615,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
 
         List<StandardCoalInfo> resultList = new ArrayList<>();
 
+        log.info("==============================================================================");
         grouped.forEach((topLabelKey, labelInfoGroup) -> {
             Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
             LabelConfigDO topLabel = labelMap.get(topLabelId);
@@ -654,6 +655,10 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                         .map(StandardCoalInfoData::getStandardCoal)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+                log.info("dataList: " + dataList);
+                log.info("totalConsumption: " + totalConsumption);
+                log.info("totalStandardCoal: " + totalStandardCoal);
+
                 StandardCoalInfo info = new StandardCoalInfo();
                 info.setLabel1(topLabel.getLabelName());
                 info.setLabel2(label2Name);
@@ -673,7 +678,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 resultList.add(info);
             });
         });
-
+        log.info("==============================================================================");
         return resultList;
     }
 
