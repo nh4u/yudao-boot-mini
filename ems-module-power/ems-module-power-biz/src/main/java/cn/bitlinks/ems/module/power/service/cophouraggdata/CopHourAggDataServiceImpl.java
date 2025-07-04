@@ -216,8 +216,8 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
         if (CollectionUtil.isNotEmpty(ltsNow)) {
             copChartYData.setLtsNow(ltsNow);
         }
-        if (CollectionUtil.isNotEmpty(ltcPre)) {
-            copChartYData.setLtsPre(ltcPre);
+        if (CollectionUtil.isNotEmpty(ltsPre)) {
+            copChartYData.setLtsPre(ltsPre);
         }
 
         // MTC
