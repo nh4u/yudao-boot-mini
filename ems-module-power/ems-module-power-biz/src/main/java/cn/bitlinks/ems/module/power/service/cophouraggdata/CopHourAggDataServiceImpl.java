@@ -8,9 +8,9 @@ import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopChartYData;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopHourAggData;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.ReportParamVO;
 import cn.bitlinks.ems.module.power.dal.mysql.copsettings.CopHourAggDataMapper;
-import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DatePattern;
+import com.alibaba.excel.util.ListUtils;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,10 +25,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getSamePeriodLastYear;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.SYSTEM_TYPE;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
-import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_TYPE_NOT_EXISTS;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.END_TIME_MUST_AFTER_START_TIME;
 
 /**
  * @author liumingqiang
@@ -85,7 +86,12 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
 
                             if (copHourAggDatas.size() == copTypes.size()) {
                                 // 相等
-                                copHourAggDatas.forEach(c -> {
+                                List<CopHourAggData> sortedCopHourAggDatas = copHourAggDatas.stream()
+                                        // 升序
+                                        .sorted(Comparator.comparing(CopHourAggData::getCopType))
+                                        .collect(Collectors.toList());
+
+                                sortedCopHourAggDatas.forEach(c -> {
                                     BigDecimal copValue = c.getCopValue();
                                     String copType = c.getCopType();
                                     String key = copType + "_" + year + "-" + monthValue;
@@ -131,6 +137,130 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
 
 
         return result;
+    }
+
+    @Override
+    public List<List<Object>> getExcelData(ReportParamVO paramVO) {
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND);
+
+        // 1.校验时间范围
+        LocalDateTime[] range = validateRange(paramVO.getRange());
+        // 2.时间处理
+        LocalDateTime startTime = LocalDateTimeUtils.beginOfMonth(range[0]);
+        LocalDateTime endTime = LocalDateTimeUtils.endOfMonth(range[1]);
+
+        List<String> copyTypeList = paramVO.getCopType();
+
+        // 结果list
+        List<List<Object>> result = ListUtils.newArrayList();
+
+        // 3.字段拼接
+        List<CopHourAggData> copHourAggDataList = copHourAggDataMapper.getCopHourAggDataList(range[0], range[1], copyTypeList);
+        Map<String, List<CopHourAggData>> copHourAggDataMap = copHourAggDataList.stream().collect(Collectors.groupingBy(CopHourAggData::getTime));
+
+        List<String> copTypes = dealSystemType(copyTypeList);
+
+        // 月份最多31天
+        for (int i = 1; i <= 31; i++) {
+            for (int j = 0; j <= 23; j++) {
+                List<Object> data = ListUtils.newArrayList();
+                data.add(i + "日" + j + ":00:00");
+
+                // 月份处理
+                LocalDateTime tempStartTime = startTime;
+                while (tempStartTime.isBefore(endTime) || tempStartTime.equals(endTime)) {
+
+                    // 拼接时间
+                    int monthValue = tempStartTime.getMonthValue();
+                    int year = tempStartTime.getYear();
+                    try {
+                        LocalDateTime currentTime = LocalDateTime.of(year, monthValue, i, j, 0, 0);
+                        List<CopHourAggData> copHourAggDatas = copHourAggDataMap.get(currentTime.format(formatter));
+
+                        if (CollectionUtil.isNotEmpty(copHourAggDatas)) {
+
+                            if (copHourAggDatas.size() == copTypes.size()) {
+                                // 相等
+                                List<CopHourAggData> sortedCopHourAggDatas = copHourAggDatas.stream()
+                                        // 升序
+                                        .sorted(Comparator.comparing(CopHourAggData::getCopType))
+                                        .collect(Collectors.toList());
+
+                                sortedCopHourAggDatas.forEach(c -> {
+                                    BigDecimal copValue = c.getCopValue();
+                                    data.add(copValue);
+                                });
+                            } else {
+                                // 不等的情况
+                                Map<String, CopHourAggData> copHourAggDatasMap = copHourAggDatas.stream()
+                                        .collect(Collectors.toMap(CopHourAggData::getCopType, Function.identity()));
+
+                                copTypes.forEach(c -> {
+                                    String key = c + "_" + year + "-" + monthValue;
+                                    CopHourAggData copHourAggData = copHourAggDatasMap.get(c);
+
+                                    if (Objects.isNull(copHourAggData)) {
+                                        data.add("/");
+                                    } else {
+                                        data.add(copHourAggData.getCopValue());
+                                    }
+                                });
+                            }
+
+                        } else {
+                            copTypes.forEach(c -> {
+                                data.add("/");
+                            });
+                        }
+                    } catch (Exception e) {
+                        log.error(e.getMessage());
+                        copTypes.forEach(c -> {
+                            data.add("/");
+                        });
+                    }
+
+                    tempStartTime = tempStartTime.plusMonths(1);
+                }
+                result.add(data);
+            }
+        }
+
+        return result;
+    }
+
+    @Override
+    public List<List<String>> getExcelHeader(ReportParamVO paramVO) {
+        Map<String, String> map = new HashMap<>();
+        map.put("LTC", "低温冷机");
+        map.put("LTS", "低温系统");
+        map.put("MTC", "中温冷机");
+        map.put("MTS", "中温系统");
+
+        // 1.校验时间范围
+        LocalDateTime[] range = validateRange(paramVO.getRange());
+        // 2.时间处理
+        LocalDateTime startTime = LocalDateTimeUtils.beginOfMonth(range[0]);
+        LocalDateTime endTime = LocalDateTimeUtils.endOfMonth(range[1]);
+
+        List<String> copyTypeList = paramVO.getCopType();
+        List<String> copTypes = dealSystemType(copyTypeList);
+
+        List<List<String>> list = ListUtils.newArrayList();
+        // 第一格处理
+        list.add(Arrays.asList("", ""));
+
+        // 月份处理
+        DataTypeEnum dataTypeEnum = validateDateType(1);
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, dataTypeEnum);
+
+        xdata.forEach(x -> {
+            copTypes.forEach(c -> {
+                list.add(Arrays.asList(x, map.get(c)));
+            });
+        });
+
+        return list;
     }
 
     @Override
@@ -345,7 +475,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
             systemType = DictFrameworkUtils.getDictDataLabelList(SYSTEM_TYPE);
         }
 
-        return systemType;
+        return systemType.stream().sorted().collect(Collectors.toList());
     }
 
     /**

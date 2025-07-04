@@ -14,5 +14,9 @@ public interface CopHourAggDataService {
 
     List<Map<String,Object>> copTable(ReportParamVO paramVO);
 
+    List<List<Object>> getExcelData(ReportParamVO paramVO);
+
+    List<List<String>>  getExcelHeader(ReportParamVO paramVO);
+
     CopChartResultVO copChart(ReportParamVO paramVO);
 }
