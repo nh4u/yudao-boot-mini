@@ -616,6 +616,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         List<StandardCoalInfo> resultList = new ArrayList<>();
 
         log.info("==============================================================================");
+        log.info("grouped: " + grouped);
         grouped.forEach((topLabelKey, labelInfoGroup) -> {
             Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
             LabelConfigDO topLabel = labelMap.get(topLabelId);
@@ -654,7 +655,8 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 BigDecimal totalStandardCoal = dataList.stream()
                         .map(StandardCoalInfoData::getStandardCoal)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
-
+                log.info("----------------------------------------------------------------------------------");
+                log.info("labelUsageCostDataList: " + labelUsageCostDataList);
                 log.info("dataList: " + dataList);
                 log.info("totalConsumption: " + totalConsumption);
                 log.info("totalStandardCoal: " + totalStandardCoal);
@@ -672,6 +674,8 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 }).collect(Collectors.toList());
 
                 info.setStandardCoalInfoDataList(dataList);
+                log.info("StandardCoalInfoDataList: " + info.getStandardCoalInfoDataList());
+                log.info("----------------------------------------------------------------------------------");
                 info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, DEFAULT_SCALE));
                 info.setSumEnergyStandardCoal(dealBigDecimalScale(totalStandardCoal, DEFAULT_SCALE));
 
