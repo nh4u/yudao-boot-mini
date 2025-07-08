@@ -28,44 +28,11 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     @Resource
     private MinuteAggregateDataService minuteAggregateDataService;
 
-    @Override
-    public CommonResult<MinuteAggregateDataDTO> selectByAggTime(Long standingbookId, LocalDateTime thisCollectTime) {
-        MinuteAggregateDataDTO minuteAggregateDataDTO = minuteAggregateDataService.selectByAggTime(standingbookId,
-                thisCollectTime);
-        if (Objects.isNull(minuteAggregateDataDTO)) {
-            return CommonResult.success(null);
-        }
-        return CommonResult.success(minuteAggregateDataDTO);
-    }
-
 
     @Override
-    public CommonResult<MinuteAggregateDataDTO> selectOldestByStandingBookId(Long standingbookId) {
-        MinuteAggregateDataDTO minuteAggregateDataDTO = minuteAggregateDataService.selectOldestByStandingBookId(standingbookId);
-        if (Objects.isNull(minuteAggregateDataDTO)) {
-            return CommonResult.success(null);
-        }
-        return CommonResult.success(minuteAggregateDataDTO);
-    }
-
-    @Override
-    public CommonResult<MinuteAggregateDataDTO> selectLatestByStandingBookId(Long standingbookId) {
-        MinuteAggregateDataDTO minuteAggregateDataDTO = minuteAggregateDataService.selectLatestByStandingBookId(standingbookId);
-        if (Objects.isNull(minuteAggregateDataDTO)) {
-            return CommonResult.success(null);
-        }
-        return CommonResult.success(minuteAggregateDataDTO);
-    }
-
-    @Override
-    public void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO) {
-        minuteAggregateDataService.insertSingleData(minuteAggregateDataDTO);
-    }
-
-    @Override
-    public CommonResult<String> insertSingleDataError(MinuteAggregateDataDTO minuteAggregateDataDTO) {
+    public CommonResult<String> insertDataBatch(List<MinuteAggregateDataDTO> minuteAggregateDataDTOList) {
         try {
-            minuteAggregateDataService.insertSingleData(minuteAggregateDataDTO);
+            minuteAggregateDataService.insertDataBatch(minuteAggregateDataDTOList);
             return CommonResult.success(null);
         } catch (ServiceException e) {
             return CommonResult.error(e);
@@ -76,7 +43,7 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     }
 
     @Override
-    public CommonResult<String> insertRangeDataError(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
+    public CommonResult<String> insertRangeDataSplit(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
         try {
             minuteAggregateDataService.insertRangeData(minuteAggDataSplitDTO);
             return CommonResult.success(null);
@@ -96,11 +63,6 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
         }
         // 否则，返回一个成功的CommonResult，其中包含列表
         return CommonResult.success(dataSplitDTOMap);
-    }
-
-    @Override
-    public void insertRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
-        minuteAggregateDataService.insertRangeData(minuteAggDataSplitDTO);
     }
 
     @Override

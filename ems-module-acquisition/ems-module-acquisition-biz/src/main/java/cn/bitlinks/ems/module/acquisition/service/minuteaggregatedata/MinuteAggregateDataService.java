@@ -14,30 +14,6 @@ import java.util.Map;
  * 分钟聚合数据service
  */
 public interface MinuteAggregateDataService {
-    /**
-     * 获取指定时间的聚合数据
-     *
-     * @param standingbookId  台账id
-     * @param thisCollectTime 指定聚合时间
-     * @return 聚合数据
-     */
-    MinuteAggregateDataDTO selectByAggTime(Long standingbookId, LocalDateTime thisCollectTime);
-
-    /**
-     * 查询台账最老数据
-     *
-     * @param standingbookId
-     * @return
-     */
-    MinuteAggregateDataDTO selectOldestByStandingBookId(Long standingbookId);
-
-    /**
-     * 查询台账最新数据
-     *
-     * @param standingbookId
-     * @return
-     */
-    MinuteAggregateDataDTO selectLatestByStandingBookId(Long standingbookId);
 
     /**
      * 聚合数据的新增[稳态值]
@@ -58,7 +34,7 @@ public interface MinuteAggregateDataService {
     /**
      * 插入单条数据，初始化数据
      */
-    void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO);
+    void insertDataBatch(List<MinuteAggregateDataDTO> minuteAggregateDataDTOList);
 
     /**
      * 插入时间段数据，需要拆分，起始数据存在

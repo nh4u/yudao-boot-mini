@@ -58,6 +58,11 @@ public class PartitionService {
         stringRedisTemplate.opsForValue().set(maxPartitionCopHourAggKey, maxPartitionCopHourAgg);
     }
 
+    public void ensurePartitionsExist(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+        createPartitions(MINUTE_AGGREGATE_DATA_TB_NAME, startDateTime, endDateTime);
+        createPartitions(USAGE_COST_TB_NAME, startDateTime, endDateTime);
+        createPartitions(COP_HOUR_AGGREGATE_DATA_TB_NAME, startDateTime, endDateTime);
+    }
     /**
      * 创建分区
      *

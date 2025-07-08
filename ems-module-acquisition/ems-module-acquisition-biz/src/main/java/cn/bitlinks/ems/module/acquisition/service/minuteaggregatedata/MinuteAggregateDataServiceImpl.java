@@ -15,6 +15,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
+import com.google.common.util.concurrent.RateLimiter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -31,9 +33,7 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -61,45 +61,85 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     private RocketMQTemplate rocketMQTemplate;
     @Value("${rocketmq.topic.device-aggregate}")
     private String deviceAggTopic;
-
+    private static final int THREAD_POOL_SIZE = 4;
+    private static final RateLimiter MQ_RATE_LIMITER = RateLimiter.create(200); // 每秒200条消息
+    // MQ异步发送队列
+    private final BlockingQueue<MultiMinuteAggDataDTO> mqQueue = new LinkedBlockingQueue<>(10000);
 
     @Resource
     private PartitionService partitionService;
-
-    @Override
-    @TenantIgnore
-    public MinuteAggregateDataDTO selectByAggTime(Long standingbookId, LocalDateTime thisCollectTime) {
-        MinuteAggregateDataDO minuteAggregateDataDO = minuteAggregateDataMapper.selectExactData(standingbookId,
-                thisCollectTime);
-        if (Objects.isNull(minuteAggregateDataDO)) {
-            return null;
-        }
-        return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
+    // 启动MQ推送线程（建议在 @PostConstruct 中调用一次）
+    @PostConstruct
+    public void init() {
+        startMqSenderThread();
+    }
+    public void startMqSenderThread() {
+        new Thread(() -> {
+            while (true) {
+                try {
+                    MultiMinuteAggDataDTO dto = mqQueue.take(); // 阻塞获取
+                    MQ_RATE_LIMITER.acquire(); // 限速
+                    Message<MultiMinuteAggDataDTO> msg = MessageBuilder.withPayload(dto).build();
+                    rocketMQTemplate.send(deviceAggTopic, msg);
+                    log.info("MQ消息已发送，header: {}", msg.getHeaders());
+                } catch (Exception e) {
+                    log.error("MQ发送失败", e);
+                }
+            }
+        }, "mq-sender-thread").start();
     }
 
 
-    @Override
-    @TenantIgnore
-    public MinuteAggregateDataDTO selectOldestByStandingBookId(Long standingbookId) {
-        MinuteAggregateDataDO minuteAggregateDataDO =
-                minuteAggregateDataMapper.selectOldestByStandingBookId(standingbookId);
-        if (Objects.isNull(minuteAggregateDataDO)) {
-            return null;
-        }
-        return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
-    }
 
-    @Override
     @TenantIgnore
-    public MinuteAggregateDataDTO selectLatestByStandingBookId(Long standingbookId) {
-        MinuteAggregateDataDO minuteAggregateDataDO =
-                minuteAggregateDataMapper.selectLatestByStandingBookId(standingbookId);
-        if (Objects.isNull(minuteAggregateDataDO)) {
-            return null;
+    public void sendMsgToUsageCostBatchNew(List<MinuteAggregateDataDO> aggDataList, Boolean copFlag) throws IOException {
+        if (CollUtil.isEmpty(aggDataList)) {
+            return;
         }
-        return BeanUtils.toBean(minuteAggregateDataDO, MinuteAggregateDataDTO.class);
-    }
 
+        // 1. 按小时分组，再按100条拆分小批
+        List<List<MinuteAggregateDataDO>> batchList = getHourGroupBatch(aggDataList);
+
+        ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+        List<Future<Void>> futures = new ArrayList<>();
+
+        for (List<MinuteAggregateDataDO> batch : batchList) {
+            futures.add(executor.submit(() -> {
+                try {
+                    // 2. 写入 StarRocks
+                    String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
+                    starRocksStreamLoadService.streamLoadData(batch, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
+
+                    // 3. 构造 MQ DTO 并加入队列（异步发送）
+                    MultiMinuteAggDataDTO msgDTO = new MultiMinuteAggDataDTO();
+                    msgDTO.setCopFlag(copFlag);
+                    msgDTO.setMinuteAggregateDataDTOList(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class));
+
+                    boolean offered = mqQueue.offer(msgDTO, 5, TimeUnit.SECONDS);
+                    if (!offered) {
+                        log.warn("MQ消息队列已满，消息被丢弃！");
+                    }
+
+                } catch (Exception e) {
+                    log.error("批次处理失败", e);
+                    throw e;
+                }
+                return null;
+            }));
+        }
+
+        // 4. 等待所有线程完成（可加超时）
+        for (Future<Void> future : futures) {
+            try {
+                future.get(); // 也可以加 future.get(60, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                log.error("多线程处理异常", e);
+                throw new IOException("sendMsgToUsageCostBatch 多线程失败", e);
+            }
+        }
+
+        executor.shutdown();
+    }
     @Override
     public void insertSteadyAggDataBatch(List<MinuteAggregateDataDO> aggDataList) throws IOException {
         if (CollUtil.isEmpty(aggDataList)) {
@@ -110,12 +150,6 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             // 执行你的批量插入操作，比如：
             String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
             starRocksStreamLoadService.streamLoadData(batch, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
-//            // 发送mq消息
-//            String topicName = deviceSteadyAggTopic;
-//            // 发送消息
-//            Message<List<MinuteAggregateDataDTO>> msg =
-//                    MessageBuilder.withPayload(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class)).build();
-//            rocketMQTemplate.send(topicName, msg);
         }
     }
 
@@ -209,22 +243,29 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
 
     @Override
     @TenantIgnore
-    @Transactional
-    public void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO) {
+    public void insertDataBatch(List<MinuteAggregateDataDTO> minuteAggregateDataDTO) {
         try {
             if (Objects.isNull(minuteAggregateDataDTO)) {
                 return;
             }
-            MinuteAggregateDataDO minuteAggregateDataDO = BeanUtils.toBean(minuteAggregateDataDTO,
+            List<MinuteAggregateDataDO> minuteAggregateDataDOList = BeanUtils.toBean(minuteAggregateDataDTO,
                     MinuteAggregateDataDO.class);
-            // 创建聚合数据表分区
-            partitionService.createPartitions(MINUTE_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDO.getAggregateTime(), minuteAggregateDataDO.getAggregateTime());
-            // 创建聚合数据计算表分区
-            partitionService.createPartitions(USAGE_COST_TB_NAME, minuteAggregateDataDO.getAggregateTime(), minuteAggregateDataDO.getAggregateTime());
-            // 创建聚合数据计算表分区
-            partitionService.createPartitions(COP_HOUR_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDO.getAggregateTime(), minuteAggregateDataDO.getAggregateTime());
+            LocalDateTime maxTime = minuteAggregateDataDOList.stream()
+                    .map(MinuteAggregateDataDO::getAggregateTime)
+                    .filter(Objects::nonNull)
+                    .max(Comparator.naturalOrder())
+                    .orElse(null);
+            LocalDateTime minTime = minuteAggregateDataDOList.stream()
+                    .map(MinuteAggregateDataDO::getAggregateTime)
+                    .filter(Objects::nonNull)
+                    .min(Comparator.naturalOrder())
+                    .orElse(null);
+            // 先进行业务点的分区建设
+            // 检查并创建数据表分区
+            partitionService.ensurePartitionsExist(minTime,maxTime);
+
             // 发送给usageCost进行计算
-            sendMsgToUsageCostBatch(Collections.singletonList(minuteAggregateDataDO),true);
+            sendMsgToUsageCostBatch(minuteAggregateDataDOList,true);
         } catch (Exception e) {
             log.error("insertSingleData失败：{}", e.getMessage(), e);
             throw exception(STREAM_LOAD_SINGLE_FAIL);
@@ -240,12 +281,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             if (CollUtil.isEmpty(minuteAggregateDataDOS)) {
                 return;
             }
-            // 创建聚合数据表分区
-            partitionService.createPartitions(MINUTE_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDOS.get(0).getAggregateTime(), minuteAggregateDataDOS.get(minuteAggregateDataDOS.size() - 1).getAggregateTime());
-            // 创建聚合数据计算表分区
-            partitionService.createPartitions(USAGE_COST_TB_NAME, minuteAggregateDataDOS.get(0).getAggregateTime(), minuteAggregateDataDOS.get(minuteAggregateDataDOS.size() - 1).getAggregateTime());
-            // 创建聚合数据计算表分区
-            partitionService.createPartitions(COP_HOUR_AGGREGATE_DATA_TB_NAME, minuteAggregateDataDOS.get(0).getAggregateTime(), minuteAggregateDataDOS.get(minuteAggregateDataDOS.size() - 1).getAggregateTime());
+            partitionService.ensurePartitionsExist(minuteAggregateDataDOS.get(0).getAggregateTime(), minuteAggregateDataDOS.get(minuteAggregateDataDOS.size() - 1).getAggregateTime());
             // 发送给usageCost进行计算
             sendMsgToUsageCostBatch(minuteAggregateDataDOS,true);
         } catch (Exception e) {
