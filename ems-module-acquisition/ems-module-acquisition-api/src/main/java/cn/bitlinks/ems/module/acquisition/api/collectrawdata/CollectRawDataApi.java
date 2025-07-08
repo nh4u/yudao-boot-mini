@@ -9,6 +9,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.annotation.security.PermitAll;
 import java.util.List;
 
 
@@ -20,6 +21,7 @@ public interface CollectRawDataApi {
 
     @GetMapping(PREFIX + "/getCollectRawDataListByStandingBookIds")
     @Operation(summary = "删除指定设备的数据采集任务")
+    @PermitAll
     CommonResult<List<CollectRawDataDTO>> getCollectRawDataListByStandingBookIds(@RequestParam("standingBookIds") List<Long> standingBookIds);
 
 }

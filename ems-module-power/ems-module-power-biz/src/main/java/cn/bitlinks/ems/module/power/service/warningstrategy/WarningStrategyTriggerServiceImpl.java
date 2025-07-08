@@ -96,7 +96,9 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                 }
                 // 获取该策略对应的设备和设备分类下的所有设备
                 List<Long> deviceScopeIds = warningStrategyDO.getDeviceScope();
-
+                if(CollUtil.isEmpty(deviceScopeIds)){
+                    deviceScopeIds = new ArrayList<>();
+                }
                 // 1.1 查询台账分类范围下的所有设备id todo 循环递归问题, 待优化
                 List<Long> typeIds = warningStrategyDO.getDeviceTypeScope();
                 // 1.1.1 获取台账分类下所有的台账ids
