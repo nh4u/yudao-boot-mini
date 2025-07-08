@@ -63,6 +63,4 @@ public interface VoucherService {
 
 
     String recognition(String url);
-
-    String getKkFileViewUrl();
 }

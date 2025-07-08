@@ -146,5 +146,5 @@ ems:
     uploadUrl: http://192.168.91.64:8090/api/ocr_table
     token: 11
   kkFileView:
-    url: http://192.168.97.96:8096
+    url: http://192.168.97.96:8096/onlinePreview?url=
   #demo: true # 开启演示模式

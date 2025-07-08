@@ -167,7 +167,7 @@ ems:
     uploadUrl: http://192.168.2.45:8090/api/ocr_table
     token: 11
   kkFileView:
-    url: http://113.250.189.23:8096
+    url: http://113.250.189.23:8096/onlinePreview?url=
   env: # 多环境的配置项
     tag: ${HOSTNAME}
   security:

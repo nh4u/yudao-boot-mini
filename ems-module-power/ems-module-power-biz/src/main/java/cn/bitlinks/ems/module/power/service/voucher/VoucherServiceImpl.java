@@ -177,14 +177,6 @@ public class VoucherServiceImpl implements VoucherService {
         return OcrUtil.ocrRecognition(url,ocrProperties);
     }
 
-    /**
-     *  返回kkfileview 的地址
-     * @return
-     */
-    @Override
-    public String getKkFileViewUrl() {
-        return url;
-    }
 
     private void validateVoucherNotLinked(List<Long> voucherIds) {
         List<String> codes = additionalRecordingMapper.countByVoucherIds(voucherIds);
