@@ -26,7 +26,7 @@
     <select id="selectLatestByStandingbookIds"
             resultMap="BaseResultMap">
         SELECT t.* FROM (
-        SELECT *, DENSE_RANK() OVER (PARTITION BY standingbook_id ORDER BY sync_time DESC) AS rnk
+        SELECT *, DENSE_RANK() OVER (PARTITION BY standingbook_id,param_code ORDER BY sync_time DESC) AS rnk
         FROM collect_raw_data
         WHERE standingbook_id IN
         <foreach collection="standingbookIds" item="id" open="(" separator="," close=")">
