@@ -111,4 +111,11 @@ public class VoucherController {
         return success(result);
     }
 
+
+    @GetMapping("/getKkFileViewUrl")
+    @Operation(summary = "获取kkFileView url")
+    public CommonResult<String> getKkFileViewUrl() {
+        return success(voucherService.getKkFileViewUrl());
+    }
+
 }
