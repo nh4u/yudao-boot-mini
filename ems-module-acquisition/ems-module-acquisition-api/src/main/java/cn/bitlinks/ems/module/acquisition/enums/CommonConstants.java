@@ -57,6 +57,14 @@ public interface CommonConstants {
      * 分区开启动态
      */
     String ENABLE_DYNAMIC_PARTITION_SQL = "ALTER TABLE %s SET (\"dynamic_partition.enable\" = \"true\")";
+    /**
+     * 拆分任务队列 redis key
+     */
+    String SPLIT_TASK_QUEUE_REDIS_KEY_PREFIX="split_task_queue:";
+    /**
+     * 拆分任务队列 redis key
+     */
+    String SPLIT_TASK_QUEUE_REDIS_KEY_PATTERN="split_task_queue:*";
 }
 
 

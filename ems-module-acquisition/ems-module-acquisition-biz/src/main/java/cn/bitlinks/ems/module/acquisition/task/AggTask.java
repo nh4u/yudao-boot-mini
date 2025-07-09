@@ -60,7 +60,7 @@ public class AggTask {
 
         RLock lock = redissonClient.getLock(LOCK_KEY);
         try {
-            if (!lock.tryLock(5000L, TimeUnit.MICROSECONDS)) {
+            if (!lock.tryLock(5000L, TimeUnit.MILLISECONDS)) {
                 log.info("聚合任务[用量]Task 已由其他节点执行");
             }
             try {
@@ -85,7 +85,7 @@ public class AggTask {
 
         RLock lock = redissonClient.getLock(LOCK_KEY);
         try {
-            if (!lock.tryLock(5000L, TimeUnit.MICROSECONDS)) {
+            if (!lock.tryLock(5000L, TimeUnit.MILLISECONDS)) {
                 log.info("聚合任务[稳态值]Task 已由其他节点执行");
             }
             try {

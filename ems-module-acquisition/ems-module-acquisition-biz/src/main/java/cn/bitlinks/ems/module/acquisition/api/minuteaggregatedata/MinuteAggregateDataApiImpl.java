@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregate
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataCopParamDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata.MinuteAggregateDataService;
+import cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata.SplitTaskDispatcher;
 import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
@@ -17,7 +18,6 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_RANGE_FAIL;
 
@@ -28,64 +28,30 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     @Resource
     private MinuteAggregateDataService minuteAggregateDataService;
 
-    @Override
-    public CommonResult<MinuteAggregateDataDTO> selectByAggTime(Long standingbookId, LocalDateTime thisCollectTime) {
-        MinuteAggregateDataDTO minuteAggregateDataDTO = minuteAggregateDataService.selectByAggTime(standingbookId,
-                thisCollectTime);
-        if (Objects.isNull(minuteAggregateDataDTO)) {
-            return CommonResult.success(null);
-        }
-        return CommonResult.success(minuteAggregateDataDTO);
-    }
-
+    @Resource
+    private SplitTaskDispatcher splitTaskDispatcher;
 
     @Override
-    public CommonResult<MinuteAggregateDataDTO> selectOldestByStandingBookId(Long standingbookId) {
-        MinuteAggregateDataDTO minuteAggregateDataDTO = minuteAggregateDataService.selectOldestByStandingBookId(standingbookId);
-        if (Objects.isNull(minuteAggregateDataDTO)) {
-            return CommonResult.success(null);
-        }
-        return CommonResult.success(minuteAggregateDataDTO);
-    }
-
-    @Override
-    public CommonResult<MinuteAggregateDataDTO> selectLatestByStandingBookId(Long standingbookId) {
-        MinuteAggregateDataDTO minuteAggregateDataDTO = minuteAggregateDataService.selectLatestByStandingBookId(standingbookId);
-        if (Objects.isNull(minuteAggregateDataDTO)) {
-            return CommonResult.success(null);
-        }
-        return CommonResult.success(minuteAggregateDataDTO);
-    }
-
-    @Override
-    public void insertSingleData(MinuteAggregateDataDTO minuteAggregateDataDTO) {
-        minuteAggregateDataService.insertSingleData(minuteAggregateDataDTO);
-    }
-
-    @Override
-    public CommonResult<String> insertSingleDataError(MinuteAggregateDataDTO minuteAggregateDataDTO) {
+    public CommonResult<String> insertDataBatch(List<MinuteAggregateDataDTO> minuteAggregateDataDTOList) {
         try {
-            minuteAggregateDataService.insertSingleData(minuteAggregateDataDTO);
+            minuteAggregateDataService.insertDataBatch(minuteAggregateDataDTOList);
             return CommonResult.success(null);
         } catch (ServiceException e) {
             return CommonResult.error(e);
         } catch (Exception e) {
-            log.error("insertSingleDataError", e);
+            log.error("insertDataBatchError", e);
             return CommonResult.error(STREAM_LOAD_RANGE_FAIL);
         }
     }
 
     @Override
-    public CommonResult<String> insertRangeDataError(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
-        try {
-            minuteAggregateDataService.insertRangeData(minuteAggDataSplitDTO);
-            return CommonResult.success(null);
-        } catch (ServiceException e) {
-            return CommonResult.error(e);
-        } catch (Exception e) {
-            log.error("insertRangeDataError", e);
-            return CommonResult.error(STREAM_LOAD_RANGE_FAIL);
+    public void asyncInsertRangeDataSplitList(List<MinuteAggDataSplitDTO> minuteAggDataSplitDTOList) {
+        // 遍历列表，进行每个数据的异步处理
+        for (MinuteAggDataSplitDTO minuteAggDataSplitDTO : minuteAggDataSplitDTOList) {
+            // 执行异步插入拆分操作
+            splitTaskDispatcher.dispatchSplitTask(minuteAggDataSplitDTO);
         }
+
     }
 
     @Override
@@ -99,14 +65,9 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     }
 
     @Override
-    public void insertRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
-        minuteAggregateDataService.insertRangeData(minuteAggDataSplitDTO);
-    }
-
-    @Override
     public CommonResult<List<MinuteAggregateDataDTO>> getCopRangeData(MinuteRangeDataCopParamDTO minuteRangeDataCopParamDTO) {
         // 根据传入的参数，调用minuteAggregateDataService的getRangeDataRequestParam方法，获取MinuteAggregateDataDTO类型的列表
-        List<MinuteAggregateDataDTO> list = minuteAggregateDataService.getCopRangeData(minuteRangeDataCopParamDTO.getSbIds(), minuteRangeDataCopParamDTO.getParamCodes(),minuteRangeDataCopParamDTO.getStarTime(), minuteRangeDataCopParamDTO.getEndTime());
+        List<MinuteAggregateDataDTO> list = minuteAggregateDataService.getCopRangeData(minuteRangeDataCopParamDTO.getSbIds(), minuteRangeDataCopParamDTO.getParamCodes(), minuteRangeDataCopParamDTO.getStarTime(), minuteRangeDataCopParamDTO.getEndTime());
         // 如果列表为空，则返回一个成功的CommonResult，其中包含null
         if (CollUtil.isEmpty(list)) {
             return CommonResult.success(null);
@@ -118,7 +79,7 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     @Override
     public CommonResult<List<MinuteAggregateDataDTO>> getCopRangeDataSteady(MinuteRangeDataCopParamDTO minuteRangeDataCopParamDTO) {
         // 根据传入的参数，调用minuteAggregateDataService的getRangeDataRequestParam方法，获取MinuteAggregateDataDTO类型的列表
-        List<MinuteAggregateDataDTO> list = minuteAggregateDataService.getCopRangeDataSteady(minuteRangeDataCopParamDTO.getSbIds(), minuteRangeDataCopParamDTO.getParamCodes(),minuteRangeDataCopParamDTO.getStarTime(), minuteRangeDataCopParamDTO.getEndTime());
+        List<MinuteAggregateDataDTO> list = minuteAggregateDataService.getCopRangeDataSteady(minuteRangeDataCopParamDTO.getSbIds(), minuteRangeDataCopParamDTO.getParamCodes(), minuteRangeDataCopParamDTO.getStarTime(), minuteRangeDataCopParamDTO.getEndTime());
         // 如果列表为空，则返回一个成功的CommonResult，其中包含null
         if (CollUtil.isEmpty(list)) {
             return CommonResult.success(null);

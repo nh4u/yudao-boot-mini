@@ -44,8 +44,9 @@ public class WarningTriggerTask {
 
         RLock lock = redissonClient.getLock(LOCK_KEY);
         try {
-            if (!lock.tryLock(5000L, TimeUnit.MICROSECONDS)) {
+            if (!lock.tryLock(5000L, TimeUnit.MILLISECONDS)) {
                 log.info("告警策略任务Task 已由其他节点执行");
+                return;
             }
             try {
                 log.info("告警策略任务Task 开始执行");
