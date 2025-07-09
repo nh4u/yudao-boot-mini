@@ -1,6 +1,5 @@
 package cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata;
 
-import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
@@ -27,9 +26,6 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
@@ -39,7 +35,6 @@ import java.util.stream.Collectors;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_RANGE_FAIL;
-import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_SINGLE_FAIL;
 
 /**
  * 分钟聚合数据service
@@ -268,25 +263,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             // 发送给usageCost进行计算
             sendMsgToUsageCostBatch(minuteAggregateDataDOList, true);
         } catch (Exception e) {
-            log.error("insertSingleData失败：{}", e.getMessage(), e);
-            throw exception(STREAM_LOAD_SINGLE_FAIL);
-        }
-    }
-
-    @Override
-    @TenantIgnore
-    public void insertRangeData(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
-        try {
-            List<MinuteAggregateDataDO> minuteAggregateDataDOS = splitData(minuteAggDataSplitDTO.getStartDataDO(),
-                    minuteAggDataSplitDTO.getEndDataDO());
-            if (CollUtil.isEmpty(minuteAggregateDataDOS)) {
-                return;
-            }
-            partitionService.ensurePartitionsExist(minuteAggregateDataDOS.get(0).getAggregateTime(), minuteAggregateDataDOS.get(minuteAggregateDataDOS.size() - 1).getAggregateTime());
-            // 发送给usageCost进行计算
-            sendMsgToUsageCostBatch(minuteAggregateDataDOS, true);
-        } catch (Exception e) {
-            log.error("insertRangeData失败：{}", e.getMessage(), e);
+            log.error("insertDataBatch失败：{}", e.getMessage(), e);
             throw exception(STREAM_LOAD_RANGE_FAIL);
         }
     }
@@ -309,80 +286,6 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             return null;
         }
         return BeanUtils.toBean(minuteAggregateDataDOS, MinuteAggregateDataDTO.class);
-    }
-
-    /**
-     * 根据分钟级的数据进行数据拆分，填充两端时间之间的分钟级别数据，计算出全量和增量值，塞到MinuteAggregateDataDO中
-     *
-     * @param startData 开始数据
-     * @param endData   结束数据
-     */
-    private List<MinuteAggregateDataDO> splitData(MinuteAggregateDataDTO startData, MinuteAggregateDataDTO endData) {
-
-        LocalDateTime startTime = startData.getAggregateTime();
-        LocalDateTime endTime = endData.getAggregateTime();
-        BigDecimal startValue = startData.getFullValue();
-        BigDecimal endValue = endData.getFullValue();
-
-        List<MinuteAggregateDataDO> result = new ArrayList<>();
-
-        // 计算时间差（分钟）
-        long minutes = Duration.between(startTime, endTime).toMinutes();
-        if (minutes <= 0) {
-            return result; // 无需处理
-        }
-
-        // 计算每分钟的增量值
-        BigDecimal totalIncrement = endValue.subtract(startValue);
-        BigDecimal perMinuteIncrement = totalIncrement.divide(BigDecimal.valueOf(minutes), 10, RoundingMode.HALF_UP);
-
-        // 初始化当前时间和当前全量值
-        LocalDateTime currentTime = startTime;
-        BigDecimal currentFullValue = startValue;
-
-        for (int i = 0; i <= minutes; i++) {
-            MinuteAggregateDataDO data = new MinuteAggregateDataDO();
-            data.setStandingbookId(startData.getStandingbookId());
-            data.setParamCode(startData.getParamCode());
-            data.setEnergyFlag(startData.getEnergyFlag());
-            data.setFullIncrement(startData.getFullIncrement());
-            data.setDataSite(startData.getDataSite());
-            data.setDataFeature(startData.getDataFeature());
-            data.setDataType(startData.getDataType());
-            data.setUsage(startData.getUsage());
-            data.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
-
-
-            data.setAggregateTime(currentTime);
-            data.setFullValue(currentFullValue);
-            data.setIncrementalValue(perMinuteIncrement);
-            if (i == 0) {
-                if (Objects.nonNull(startData.getIncrementalValue())) {
-                    data.setIncrementalValue(startData.getIncrementalValue());
-                }
-                if (startData.getAcqFlag() != null) {
-                    data.setAcqFlag(startData.getAcqFlag());
-                } else {
-                    data.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
-                }
-            }
-            if (i == minutes) {
-                if (endData.getAcqFlag() != null) {
-                    data.setAcqFlag(endData.getAcqFlag());
-                } else {
-                    data.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
-                }
-                data.setFullValue(endValue);
-            }
-
-            // 如果开始时间为空，按
-            result.add(data);
-            // 更新当前时间和全量值
-            currentTime = currentTime.plusMinutes(1);
-            currentFullValue = currentFullValue.add(perMinuteIncrement);
-        }
-
-        return result;
     }
 
     @Override

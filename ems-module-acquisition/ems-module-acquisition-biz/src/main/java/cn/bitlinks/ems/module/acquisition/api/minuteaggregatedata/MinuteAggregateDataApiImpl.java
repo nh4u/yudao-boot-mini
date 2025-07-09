@@ -40,7 +40,7 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
         } catch (ServiceException e) {
             return CommonResult.error(e);
         } catch (Exception e) {
-            log.error("insertSingleDataError", e);
+            log.error("insertDataBatchError", e);
             return CommonResult.error(STREAM_LOAD_RANGE_FAIL);
         }
     }
