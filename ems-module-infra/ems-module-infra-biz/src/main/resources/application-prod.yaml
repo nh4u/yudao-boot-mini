@@ -128,4 +128,6 @@ spring:
 
 # bitlinks配置项，设置当前项目所有自定义的配置
 ems:
+  kkFileView:
+    url: http://192.168.97.96:8096/onlinePreview?url=
   #demo: true # 开启演示模式
