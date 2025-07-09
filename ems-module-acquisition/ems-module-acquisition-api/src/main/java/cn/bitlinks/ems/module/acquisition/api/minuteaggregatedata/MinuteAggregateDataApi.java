@@ -43,9 +43,9 @@ public interface MinuteAggregateDataApi {
      *
      * @param minuteAggDataSplitDTO
      */
-    @PostMapping(PREFIX + "/insertRangeDataSplit")
-    @Operation(summary = "根据两条数据进行拆分")
-    CommonResult<String> insertRangeDataSplit(@RequestBody MinuteAggDataSplitDTO minuteAggDataSplitDTO);
+    @PostMapping(PREFIX + "/asyncInsertRangeDataSplit")
+    @Operation(summary = "根据两条数据进行拆分(异步拆分)")
+    void asyncInsertRangeDataSplit(@RequestBody MinuteAggDataSplitDTO minuteAggDataSplitDTO);
 
     @PostMapping(PREFIX + "/getPreAndNextData")
     @Operation(summary = "获取时间段首尾两端附近的数据")

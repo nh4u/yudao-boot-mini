@@ -22,7 +22,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.PostConstruct;
@@ -39,7 +38,8 @@ import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.*;
-import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.*;
+import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_RANGE_FAIL;
+import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_SINGLE_FAIL;
 
 /**
  * 分钟聚合数据service
@@ -68,11 +68,13 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
 
     @Resource
     private PartitionService partitionService;
+
     // 启动MQ推送线程（建议在 @PostConstruct 中调用一次）
     @PostConstruct
     public void init() {
         startMqSenderThread();
     }
+
     public void startMqSenderThread() {
         new Thread(() -> {
             while (true) {
@@ -88,7 +90,6 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             }
         }, "mq-sender-thread").start();
     }
-
 
 
     @TenantIgnore
@@ -140,6 +141,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
 
         executor.shutdown();
     }
+
     @Override
     public void insertSteadyAggDataBatch(List<MinuteAggregateDataDO> aggDataList) throws IOException {
         if (CollUtil.isEmpty(aggDataList)) {
@@ -154,7 +156,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     }
 
     @Override
-    public void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList,Boolean copFlag) throws IOException {
+    public void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList, Boolean copFlag) throws IOException {
         if (CollUtil.isEmpty(aggDataList)) {
             return;
         }
@@ -262,10 +264,9 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
                     .orElse(null);
             // 先进行业务点的分区建设
             // 检查并创建数据表分区
-            partitionService.ensurePartitionsExist(minTime,maxTime);
-
+            partitionService.ensurePartitionsExist(minTime, maxTime);
             // 发送给usageCost进行计算
-            sendMsgToUsageCostBatch(minuteAggregateDataDOList,true);
+            sendMsgToUsageCostBatch(minuteAggregateDataDOList, true);
         } catch (Exception e) {
             log.error("insertSingleData失败：{}", e.getMessage(), e);
             throw exception(STREAM_LOAD_SINGLE_FAIL);
@@ -283,7 +284,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             }
             partitionService.ensurePartitionsExist(minuteAggregateDataDOS.get(0).getAggregateTime(), minuteAggregateDataDOS.get(minuteAggregateDataDOS.size() - 1).getAggregateTime());
             // 发送给usageCost进行计算
-            sendMsgToUsageCostBatch(minuteAggregateDataDOS,true);
+            sendMsgToUsageCostBatch(minuteAggregateDataDOS, true);
         } catch (Exception e) {
             log.error("insertRangeData失败：{}", e.getMessage(), e);
             throw exception(STREAM_LOAD_RANGE_FAIL);
@@ -291,18 +292,19 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     }
 
     @Override
-    public List<MinuteAggregateDataDTO> getCopRangeData(List<Long> standingbookIds,List<String> paramCodes, LocalDateTime starTime, LocalDateTime endTime){
+    public List<MinuteAggregateDataDTO> getCopRangeData(List<Long> standingbookIds, List<String> paramCodes, LocalDateTime starTime, LocalDateTime endTime) {
         List<MinuteAggregateDataDO> minuteAggregateDataDOS =
-                minuteAggregateDataMapper.getCopRangeData(standingbookIds, paramCodes,starTime, endTime);
+                minuteAggregateDataMapper.getCopRangeData(standingbookIds, paramCodes, starTime, endTime);
         if (CollUtil.isEmpty(minuteAggregateDataDOS)) {
             return null;
         }
         return BeanUtils.toBean(minuteAggregateDataDOS, MinuteAggregateDataDTO.class);
     }
+
     @Override
-    public List<MinuteAggregateDataDTO> getCopRangeDataSteady(List<Long> standingbookIds,List<String> paramCodes, LocalDateTime starTime, LocalDateTime endTime){
+    public List<MinuteAggregateDataDTO> getCopRangeDataSteady(List<Long> standingbookIds, List<String> paramCodes, LocalDateTime starTime, LocalDateTime endTime) {
         List<MinuteAggregateDataDO> minuteAggregateDataDOS =
-                minuteAggregateDataMapper.getCopRangeDataSteady(standingbookIds, paramCodes,starTime, endTime);
+                minuteAggregateDataMapper.getCopRangeDataSteady(standingbookIds, paramCodes, starTime, endTime);
         if (CollUtil.isEmpty(minuteAggregateDataDOS)) {
             return null;
         }
@@ -414,8 +416,8 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     }
 
     @Override
-    public Map<Long, MinuteAggDataSplitDTO> getPreAndNextData( MinuteRangeDataParamDTO paramDTO) {
-        if(CollUtil.isEmpty(paramDTO.getSbIds())){
+    public Map<Long, MinuteAggDataSplitDTO> getPreAndNextData(MinuteRangeDataParamDTO paramDTO) {
+        if (CollUtil.isEmpty(paramDTO.getSbIds())) {
             return Collections.emptyMap();
         }
         // 查询多个台账id对应用量的 某时间点的上一条数据

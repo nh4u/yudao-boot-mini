@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregate
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataCopParamDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata.MinuteAggregateDataService;
+import cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata.SplitTaskDispatcher;
 import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
@@ -28,6 +29,8 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     @Resource
     private MinuteAggregateDataService minuteAggregateDataService;
 
+    @Resource
+    private SplitTaskDispatcher splitTaskDispatcher;
 
     @Override
     public CommonResult<String> insertDataBatch(List<MinuteAggregateDataDTO> minuteAggregateDataDTOList) {
@@ -43,16 +46,8 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     }
 
     @Override
-    public CommonResult<String> insertRangeDataSplit(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
-        try {
-            minuteAggregateDataService.insertRangeData(minuteAggDataSplitDTO);
-            return CommonResult.success(null);
-        } catch (ServiceException e) {
-            return CommonResult.error(e);
-        } catch (Exception e) {
-            log.error("insertRangeDataError", e);
-            return CommonResult.error(STREAM_LOAD_RANGE_FAIL);
-        }
+    public void asyncInsertRangeDataSplit(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
+        splitTaskDispatcher.dispatchSplitTask(minuteAggDataSplitDTO);
     }
 
     @Override
