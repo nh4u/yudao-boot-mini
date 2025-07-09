@@ -18,6 +18,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.additionalrecording.AdditionalReco
 import cn.bitlinks.ems.module.power.enums.RecordMethodEnum;
 import cn.bitlinks.ems.module.power.enums.additionalrecording.AdditionalRecordingScene;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -28,10 +29,7 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.security.core.util.SecurityFrameworkUtils.getLoginUserNickname;
@@ -118,8 +116,8 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             insertAndRecord(Arrays.asList(baseDTO, next), createReqVO);
 
             // 异步拆分
-            minuteAggregateDataApi.asyncInsertRangeDataSplit(new MinuteAggDataSplitDTO(prev, baseDTO));
-            minuteAggregateDataApi.asyncInsertRangeDataSplit(new MinuteAggDataSplitDTO(baseDTO, next));
+            List<MinuteAggDataSplitDTO> splitList = Arrays.asList(new MinuteAggDataSplitDTO(prev, baseDTO), new MinuteAggDataSplitDTO(baseDTO, next));
+            minuteAggregateDataApi.asyncInsertRangeDataSplitList(splitList);
             return;
         }
 
@@ -133,7 +131,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             // 插入补录数据以及操作记录
             insertAndRecord(Collections.singletonList(baseDTO), createReqVO);
             // 异步拆分
-            minuteAggregateDataApi.asyncInsertRangeDataSplit(new MinuteAggDataSplitDTO(prev, baseDTO));
+            minuteAggregateDataApi.asyncInsertRangeDataSplitList(Collections.singletonList(new MinuteAggDataSplitDTO(prev, baseDTO)));
             return;
         }
 
@@ -147,7 +145,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         // 插入补录数据以及操作记录
         insertAndRecord(Arrays.asList(baseDTO, next), createReqVO);
         // 异步拆分
-        minuteAggregateDataApi.asyncInsertRangeDataSplit(new MinuteAggDataSplitDTO(baseDTO, next));
+        minuteAggregateDataApi.asyncInsertRangeDataSplitList(Collections.singletonList(new MinuteAggDataSplitDTO(baseDTO, next)));
     }
 
     /**
@@ -205,6 +203,33 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         if (current.compareTo(right) > 0) {
             throw exception(FULL_VALUE_MUST_LT_RIGHT, right);
         }
+    }
+
+    /**
+     * 手动补录新增历史记录
+     *
+     * @param minuteAggAcqDataList
+     */
+    public void saveAdditionalRecordingBatch(List<MinuteAggregateDataDTO> minuteAggAcqDataList) {
+        if (CollUtil.isEmpty(minuteAggAcqDataList)) {
+            return;
+        }
+        List<AdditionalRecordingDO> additionalRecordings = new ArrayList<>();
+        minuteAggAcqDataList.forEach(minuteAggDTO -> {
+            // 1.补录数据
+            AdditionalRecordingDO additionalRecording = new AdditionalRecordingDO();
+            additionalRecording.setValueType(FullIncrementEnum.FULL.getCode());
+            additionalRecording.setThisCollectTime(minuteAggDTO.getAggregateTime());
+            additionalRecording.setThisValue(minuteAggDTO.getFullValue());
+            additionalRecording.setStandingbookId(minuteAggDTO.getStandingbookId());
+            // 设置录入时间为当前时间
+            additionalRecording.setEnterTime(LocalDateTime.now());
+            additionalRecording.setRecordMethod(RecordMethodEnum.IMPORT_MANUAL.getCode()); // 手动录入
+
+            additionalRecordings.add(additionalRecording);
+        });
+        // 插入数据库
+        additionalRecordingMapper.insert(additionalRecordings);
     }
 
     /**

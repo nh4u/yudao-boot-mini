@@ -18,7 +18,6 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_RANGE_FAIL;
 
@@ -46,8 +45,13 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     }
 
     @Override
-    public void asyncInsertRangeDataSplit(MinuteAggDataSplitDTO minuteAggDataSplitDTO) {
-        splitTaskDispatcher.dispatchSplitTask(minuteAggDataSplitDTO);
+    public void asyncInsertRangeDataSplitList(List<MinuteAggDataSplitDTO> minuteAggDataSplitDTOList) {
+        // 遍历列表，进行每个数据的异步处理
+        for (MinuteAggDataSplitDTO minuteAggDataSplitDTO : minuteAggDataSplitDTOList) {
+            // 执行异步插入拆分操作
+            splitTaskDispatcher.dispatchSplitTask(minuteAggDataSplitDTO);
+        }
+
     }
 
     @Override
@@ -63,7 +67,7 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     @Override
     public CommonResult<List<MinuteAggregateDataDTO>> getCopRangeData(MinuteRangeDataCopParamDTO minuteRangeDataCopParamDTO) {
         // 根据传入的参数，调用minuteAggregateDataService的getRangeDataRequestParam方法，获取MinuteAggregateDataDTO类型的列表
-        List<MinuteAggregateDataDTO> list = minuteAggregateDataService.getCopRangeData(minuteRangeDataCopParamDTO.getSbIds(), minuteRangeDataCopParamDTO.getParamCodes(),minuteRangeDataCopParamDTO.getStarTime(), minuteRangeDataCopParamDTO.getEndTime());
+        List<MinuteAggregateDataDTO> list = minuteAggregateDataService.getCopRangeData(minuteRangeDataCopParamDTO.getSbIds(), minuteRangeDataCopParamDTO.getParamCodes(), minuteRangeDataCopParamDTO.getStarTime(), minuteRangeDataCopParamDTO.getEndTime());
         // 如果列表为空，则返回一个成功的CommonResult，其中包含null
         if (CollUtil.isEmpty(list)) {
             return CommonResult.success(null);
@@ -75,7 +79,7 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     @Override
     public CommonResult<List<MinuteAggregateDataDTO>> getCopRangeDataSteady(MinuteRangeDataCopParamDTO minuteRangeDataCopParamDTO) {
         // 根据传入的参数，调用minuteAggregateDataService的getRangeDataRequestParam方法，获取MinuteAggregateDataDTO类型的列表
-        List<MinuteAggregateDataDTO> list = minuteAggregateDataService.getCopRangeDataSteady(minuteRangeDataCopParamDTO.getSbIds(), minuteRangeDataCopParamDTO.getParamCodes(),minuteRangeDataCopParamDTO.getStarTime(), minuteRangeDataCopParamDTO.getEndTime());
+        List<MinuteAggregateDataDTO> list = minuteAggregateDataService.getCopRangeDataSteady(minuteRangeDataCopParamDTO.getSbIds(), minuteRangeDataCopParamDTO.getParamCodes(), minuteRangeDataCopParamDTO.getStarTime(), minuteRangeDataCopParamDTO.getEndTime());
         // 如果列表为空，则返回一个成功的CommonResult，其中包含null
         if (CollUtil.isEmpty(list)) {
             return CommonResult.success(null);

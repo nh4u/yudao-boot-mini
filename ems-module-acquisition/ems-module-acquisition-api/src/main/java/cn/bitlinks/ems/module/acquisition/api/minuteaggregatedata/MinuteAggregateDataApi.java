@@ -38,14 +38,15 @@ public interface MinuteAggregateDataApi {
     @Operation(summary = "直接插入数据")
     CommonResult<String> insertDataBatch(@RequestBody List<MinuteAggregateDataDTO> minuteAggregateDataDTO);
 
+
     /**
-     * 根据分钟级别的时间段进行数据拆分
+     * 根据分钟级别的时间段进行数据拆分(集合)
      *
-     * @param minuteAggDataSplitDTO
+     * @param minuteAggDataSplitDTOList
      */
-    @PostMapping(PREFIX + "/asyncInsertRangeDataSplit")
-    @Operation(summary = "根据两条数据进行拆分(异步拆分)")
-    void asyncInsertRangeDataSplit(@RequestBody MinuteAggDataSplitDTO minuteAggDataSplitDTO);
+    @PostMapping(PREFIX + "/asyncInsertRangeDataSplitList")
+    @Operation(summary = "根据两条数据进行拆分(异步拆分得到两条数据之间的数据)")
+    void asyncInsertRangeDataSplitList(@RequestBody List<MinuteAggDataSplitDTO> minuteAggDataSplitDTOList);
 
     @PostMapping(PREFIX + "/getPreAndNextData")
     @Operation(summary = "获取时间段首尾两端附近的数据")
@@ -60,6 +61,7 @@ public interface MinuteAggregateDataApi {
     @Operation(summary = "获取台账们、用量的时间范围内数据")
     @PermitAll
     CommonResult<List<MinuteAggregateDataDTO>> getCopRangeData(@RequestBody MinuteRangeDataCopParamDTO minuteRangeDataParamDTO);
+
     /**
      * 获取台账们稳态值、用量的时间范围内数据
      *
