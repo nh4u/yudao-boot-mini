@@ -47,8 +47,6 @@ public class VoucherServiceImpl implements VoucherService {
     @Resource
     private OcrProperties ocrProperties;
 
-    @Value("${ems.kkFileView.url}")
-    private String url = "";
 
     @Override
     public VoucherDO createVoucher(VoucherSaveReqVO createReqVO) {
