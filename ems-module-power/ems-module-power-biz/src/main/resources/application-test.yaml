@@ -144,4 +144,6 @@ ems:
   ocr:
     uploadUrl: http://82.157.40.213:8130/api/ocr_table
     token: 11
+  kkFileView:
+    url: http://192.168.97.96:8096/onlinePreview?url=
   #demo: true # 开启演示模式

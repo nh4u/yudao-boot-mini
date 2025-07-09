@@ -119,25 +119,6 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         }
     }
 
-    public void sendMsgToUsageCostBatchOld(List<MinuteAggregateDataDO> aggDataList) throws IOException {
-        if (CollUtil.isEmpty(aggDataList)) {
-            return;
-        }
-        List<List<MinuteAggregateDataDO>> batchList = getHourGroupBatch(aggDataList);
-
-        for (List<MinuteAggregateDataDO> batch : batchList) {
-            // 执行你的批量插入操作，比如：
-            String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
-            starRocksStreamLoadService.streamLoadData(batch, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
-            // 发送mq消息
-            String topicName = deviceAggTopic;
-            // 发送消息
-            Message<List<MinuteAggregateDataDTO>> msg =
-                    MessageBuilder.withPayload(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class)).build();
-            rocketMQTemplate.send(topicName, msg);
-        }
-    }
-
     @Override
     public void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList,Boolean copFlag) throws IOException {
         if (CollUtil.isEmpty(aggDataList)) {
@@ -145,7 +126,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         }
 
         List<List<MinuteAggregateDataDO>> batchList = getHourGroupBatch(aggDataList);
-        int poolSize = Math.min(batchList.size(), Runtime.getRuntime().availableProcessors() * 2);
+        int poolSize = Math.min(4, Runtime.getRuntime().availableProcessors());
         ExecutorService executor = Executors.newFixedThreadPool(poolSize);
         List<Future<Void>> futures = new ArrayList<>();
 
@@ -164,6 +145,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
                     Message<MultiMinuteAggDataDTO> msg =
                             MessageBuilder.withPayload(msgDTO).build();
                     rocketMQTemplate.send(topicName, msg);
+                    log.info("成本计算消息发送，msg header【{}】", msg.getHeaders());
                 } catch (Exception e) {
                     log.error("sendMsgToUsageCostBatch: 批次处理失败", e);
                     throw e;

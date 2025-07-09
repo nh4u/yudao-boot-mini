@@ -24,6 +24,9 @@ public class FileRespVO {
     @Schema(description = "文件 URL", requiredMode = Schema.RequiredMode.REQUIRED, example = "https://www.bitlinks.cn/ems.jpg")
     private String url;
 
+    @Schema(description = "文件预览 URL")
+    private String previewUrl;
+
     @Schema(description = "文件MIME类型", example = "application/octet-stream")
     private String type;
 

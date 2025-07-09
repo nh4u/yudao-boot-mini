@@ -14,6 +14,7 @@ import cn.bitlinks.ems.module.power.utils.OcrUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.StrPool;
 import cn.hutool.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -45,6 +46,9 @@ public class VoucherServiceImpl implements VoucherService {
 
     @Resource
     private OcrProperties ocrProperties;
+
+    @Value("${ems.kkFileView.url}")
+    private String url = "";
 
     @Override
     public VoucherDO createVoucher(VoucherSaveReqVO createReqVO) {
@@ -172,6 +176,7 @@ public class VoucherServiceImpl implements VoucherService {
 
         return OcrUtil.ocrRecognition(url,ocrProperties);
     }
+
 
     private void validateVoucherNotLinked(List<Long> voucherIds) {
         List<String> codes = additionalRecordingMapper.countByVoucherIds(voucherIds);
