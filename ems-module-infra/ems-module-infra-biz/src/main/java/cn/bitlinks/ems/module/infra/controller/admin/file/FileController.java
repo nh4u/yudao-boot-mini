@@ -62,7 +62,7 @@ public class FileController {
         String path = uploadReqVO.getPath();
         FileDO fileDO = fileService.emsCreateFile(file.getOriginalFilename(), path, IoUtil.readBytes(file.getInputStream()));
         FileRespVO fileRespVO = BeanUtils.toBean(fileDO, FileRespVO.class);
-        String fileDownloadUrl = fileDO.getUrl()+ StrPool.SLASH + path;
+        String fileDownloadUrl = fileDO.getUrl();
         String previewUrl = kkFileViewUrl + Base64.getEncoder().encodeToString(fileDownloadUrl.getBytes());
         fileRespVO.setPreviewUrl(previewUrl);
         return success(fileRespVO);
