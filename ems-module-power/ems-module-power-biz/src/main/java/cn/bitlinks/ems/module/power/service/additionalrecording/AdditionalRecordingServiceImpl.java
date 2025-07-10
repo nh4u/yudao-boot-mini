@@ -50,8 +50,8 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     @Resource
     @Lazy
     private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
-    @Resource
-    private ExcelMeterDataProcessor excelMeterDataProcessor;
+//    @Resource
+//    private ExcelMeterDataProcessor excelMeterDataProcessor;
     //    @Resource
 //    private VoucherService voucherService;
 //    @Resource
