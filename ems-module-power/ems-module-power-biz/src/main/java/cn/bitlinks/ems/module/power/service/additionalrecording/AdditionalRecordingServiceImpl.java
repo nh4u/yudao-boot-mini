@@ -7,6 +7,7 @@ import cn.bitlinks.ems.framework.common.util.calc.AggSplitUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
+import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinutePrevExistNextDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingExistAcqDataRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingManualSaveReqVO;
@@ -253,9 +254,11 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     @Override
     public AdditionalRecordingExistAcqDataRespVO getExistDataRange(Long standingbookId, LocalDateTime currentCollectTime) {
         // 获取上下两个全量值（valueType == 0）与当前采集点可能相等
-        MinuteAggregateDataDTO prevFullValue = minuteAggregateDataApi.getUsagePrevFullValue(standingbookId, currentCollectTime);
-        MinuteAggregateDataDTO existFullValue = minuteAggregateDataApi.getUsageExistFullValue(standingbookId, currentCollectTime);
-        MinuteAggregateDataDTO nextFullValue = minuteAggregateDataApi.getUsageNextFullValue(standingbookId, currentCollectTime);
+        MinutePrevExistNextDataDTO  minutePrevExistNextDataDTO= minuteAggregateDataApi.getUsagePrevExistNextFullValue(standingbookId, currentCollectTime);
+        MinuteAggregateDataDTO existFullValue = minutePrevExistNextDataDTO.getExistFullValue();
+        MinuteAggregateDataDTO prevFullValue = minutePrevExistNextDataDTO.getPrevFullValue();
+        MinuteAggregateDataDTO nextFullValue = minutePrevExistNextDataDTO.getNextFullValue();
+        minuteAggregateDataApi.getUsagePrevExistNextFullValue(standingbookId, currentCollectTime);
         int state = (prevFullValue != null ? 1 : 0) << 2
                 | (existFullValue != null ? 1 : 0) << 1
                 | (nextFullValue != null ? 1 : 0);
