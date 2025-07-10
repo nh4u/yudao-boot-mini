@@ -1,4 +1,4 @@
-package cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata;
+package cn.bitlinks.ems.module.power.service.additionalrecording;
 
 import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
 import cn.bitlinks.ems.framework.common.util.calc.AggSplitUtils;
@@ -30,6 +30,13 @@ public class SplitTaskDispatcher {
         for (MinuteAggDataSplitDTO task : dailyTasks) {
             String key = getQueueKey(task.getStartDataDO().getAggregateTime());
             redisTemplate.opsForList().leftPush(key, JsonUtils.toJsonString(task));
+        }
+    }
+    public void dispatchSplitTaskBatch(List<MinuteAggDataSplitDTO> inputList) {
+        // 遍历列表，进行每个数据的异步处理
+        for (MinuteAggDataSplitDTO minuteAggDataSplitDTO : inputList) {
+            // 执行异步插入拆分操作
+            dispatchSplitTask(minuteAggDataSplitDTO);
         }
     }
 
