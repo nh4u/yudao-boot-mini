@@ -741,6 +741,11 @@
                 <artifactId>logback-classic</artifactId>
                 <version>${logback.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.module</groupId>
+                <artifactId>jackson-module-afterburner</artifactId>
+                <version>2.13.5</version> <!-- 和 jackson-databind 保持一致 -->
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

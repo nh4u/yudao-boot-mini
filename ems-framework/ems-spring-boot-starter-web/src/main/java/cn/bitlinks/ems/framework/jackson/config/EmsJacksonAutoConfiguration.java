@@ -7,6 +7,8 @@ import cn.bitlinks.ems.framework.common.util.json.databind.NumberSerializer;
 import cn.bitlinks.ems.framework.common.util.json.databind.TimestampLocalDateTimeDeserializer;
 import cn.bitlinks.ems.framework.common.util.json.databind.TimestampLocalDateTimeSerializer;
 import cn.hutool.core.date.DatePattern;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
@@ -15,6 +17,8 @@ import com.fasterxml.jackson.datatype.jsr310.deser.LocalTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
+import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -48,7 +52,12 @@ public class EmsJacksonAutoConfiguration {
                 .addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(DateTimeFormatter.ofPattern(DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)))
                 .addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(DateTimeFormatter.ofPattern(DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)));
         // 1.2 注册到 objectMapper
-        objectMappers.forEach(objectMapper -> objectMapper.registerModule(simpleModule));
+        //objectMappers.forEach(objectMapper -> objectMapper.registerModule(simpleModule));
+        objectMappers.forEach(objectMapper -> {
+            objectMapper.registerModule(simpleModule);
+            objectMapper.registerModule(new AfterburnerModule()); // 加速模块
+            objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        });
 
         // 2. 设置 objectMapper 到 JsonUtils
         JsonUtils.init(CollUtil.getFirst(objectMappers));
