@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSp
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.hutool.core.bean.BeanUtil;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -25,6 +26,7 @@ public class SplitTaskDispatcher {
     @Resource
     private RedisTemplate<String, String> redisTemplate;
 
+    @Async
     public void dispatchSplitTask(MinuteAggDataSplitDTO input) {
         List<MinuteAggDataSplitDTO> dailyTasks = splitIntoDailyTasks(input);
         for (MinuteAggDataSplitDTO task : dailyTasks) {
@@ -32,6 +34,7 @@ public class SplitTaskDispatcher {
             redisTemplate.opsForList().leftPush(key, JsonUtils.toJsonString(task));
         }
     }
+    @Async
     public void dispatchSplitTaskBatch(List<MinuteAggDataSplitDTO> inputList) {
         // 遍历列表，进行每个数据的异步处理
         for (MinuteAggDataSplitDTO minuteAggDataSplitDTO : inputList) {
