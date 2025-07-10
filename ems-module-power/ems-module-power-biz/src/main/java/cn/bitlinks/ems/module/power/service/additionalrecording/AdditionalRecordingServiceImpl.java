@@ -134,7 +134,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             // 插入补录数据以及操作记录
             insertAndRecord(Collections.singletonList(baseDTO), createReqVO);
             // 异步拆分
-            splitTaskDispatcher.dispatchSplitTask(new MinuteAggDataSplitDTO(prev, baseDTO));
+            splitTaskDispatcher.dispatchSplitTaskBatch(Collections.singletonList(new MinuteAggDataSplitDTO(prev, baseDTO)));
             return;
         }
 
@@ -148,7 +148,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         // 插入补录数据以及操作记录
         insertAndRecord(Arrays.asList(baseDTO, next), createReqVO);
         // 异步拆分
-        splitTaskDispatcher.dispatchSplitTask(new MinuteAggDataSplitDTO(baseDTO, next));
+        splitTaskDispatcher.dispatchSplitTaskBatch(Collections.singletonList(new MinuteAggDataSplitDTO(baseDTO, next)));
     }
 
     /**

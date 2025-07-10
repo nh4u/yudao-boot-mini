@@ -98,5 +98,9 @@ public interface CommonConstants {
     String COP_HOUR_AGG_RECALC_TASK_LOCK_KEY = "cop-hour-agg-recalc-task:%s" ;
 
     String COP_HOUR_AGG_TABLE_NAME="cop_hour_aggregate_data";
+    /**
+     * 拆分任务队列 redis key
+     */
+    String SPLIT_TASK_QUEUE_REDIS_KEY_PREFIX="split_task_queue:";
 
 }
