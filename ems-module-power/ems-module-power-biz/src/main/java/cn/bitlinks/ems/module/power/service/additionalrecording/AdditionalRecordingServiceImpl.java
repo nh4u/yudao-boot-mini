@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.additionalrecording;
 import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
 import cn.bitlinks.ems.framework.common.enums.FullIncrementEnum;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
+import cn.bitlinks.ems.framework.common.util.calc.AggSplitUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
@@ -14,10 +15,10 @@ import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.Addi
 import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.mysql.additionalrecording.AdditionalRecordingMapper;
-import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.enums.RecordMethodEnum;
 import cn.bitlinks.ems.module.power.enums.additionalrecording.AdditionalRecordingScene;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -26,13 +27,9 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.security.core.util.SecurityFrameworkUtils.getLoginUserNickname;
@@ -51,12 +48,10 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     @Resource
     private AdditionalRecordingMapper additionalRecordingMapper;
     @Resource
-    private StandingbookTypeMapper standingbookTypeMapper;
-    @Resource
     @Lazy
     private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
-    @Resource
-    private ExcelMeterDataProcessor excelMeterDataProcessor;
+//    @Resource
+//    private ExcelMeterDataProcessor excelMeterDataProcessor;
     //    @Resource
 //    private VoucherService voucherService;
 //    @Resource
@@ -96,98 +91,145 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         if (createReqVO.getThisCollectTime().isAfter(LocalDateTime.now())) {
             throw exception(CURRENT_TIME_ERROR);
         }
-        // 获取上下两个全量值（valueType == 0）与当前采集点可能相等
-        MinuteAggregateDataDTO prevFullValue = minuteAggregateDataApi.getUsagePrevFullValue(createReqVO.getStandingbookId(), createReqVO.getThisCollectTime());
-        MinuteAggregateDataDTO nextFullValue = minuteAggregateDataApi.getUsageNextFullValue(createReqVO.getStandingbookId(), createReqVO.getThisCollectTime());
+        // 获取上下业务点的两个全量值两个全量值（valueType == 0）与当前采集点可能相等
+        MinuteAggregateDataDTO prev = minuteAggregateDataApi.getUsagePrevFullValue(createReqVO.getStandingbookId(), createReqVO.getThisCollectTime());
+        MinuteAggregateDataDTO next = minuteAggregateDataApi.getUsageNextFullValue(createReqVO.getStandingbookId(), createReqVO.getThisCollectTime());
 
-        MinuteAggregateDataDTO originalDTO = new MinuteAggregateDataDTO();
-        originalDTO.setStandingbookId(createReqVO.getStandingbookId());
-        originalDTO.setEnergyFlag(daqAttrDO.getEnergyFlag());
-        originalDTO.setParamCode(daqAttrDO.getCode());
-        originalDTO.setUsage(daqAttrDO.getUsage());
-        originalDTO.setDataType(daqAttrDO.getDataType());
-        originalDTO.setFullIncrement(createReqVO.getValueType());
-        originalDTO.setDataFeature(daqAttrDO.getDataType());
-        // 无历史数据，无采集点可以比较
-        if (prevFullValue == null && nextFullValue == null) {
-            // 全量进行单条补录
-            MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-            minuteAggregateDataDTO.setAggregateTime(createReqVO.getThisCollectTime().truncatedTo(ChronoUnit.MINUTES));
-            minuteAggregateDataDTO.setFullValue(createReqVO.getThisValue());
-            minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
-            minuteAggregateDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
-            minuteAggregateDataApi.insertSingleData(minuteAggregateDataDTO);
-            saveAdditionalRecording(createReqVO);
+        // 构造基础 DTO
+        MinuteAggregateDataDTO baseDTO = buildBaseDTO(createReqVO, daqAttrDO);
+
+        if (prev == null && next == null) {
+            baseDTO.setIncrementalValue(BigDecimal.ZERO);
+            insertAndRecord(Collections.singletonList(baseDTO), createReqVO);
             return;
         }
 
-        if (prevFullValue != null && nextFullValue != null) {
-            if (prevFullValue.getFullValue().compareTo(createReqVO.getThisValue()) > 0) {
-                throw exception(FULL_VALUE_MUST_GT_LEFT, prevFullValue.getFullValue());
-            }
-            if (createReqVO.getThisValue().compareTo(nextFullValue.getFullValue()) > 0) {
-                throw exception(FULL_VALUE_MUST_LT_RIGHT, nextFullValue.getFullValue());
-            }
-            // 将全量数据拆分到前一个业务点、后一个业务点
-            // 计算与前一分钟的增量
-            // 计算每分钟的增量值
-            long minutes = Duration.between(prevFullValue.getAggregateTime(), createReqVO.getThisCollectTime()).toMinutes();
-            BigDecimal totalIncrement = prevFullValue.getFullValue().subtract(createReqVO.getThisValue());
-            BigDecimal perMinuteIncrement = totalIncrement.divide(BigDecimal.valueOf(minutes), 10, RoundingMode.HALF_UP);
+        if (prev != null && next != null) {
+            validateRange(prev.getFullValue(), baseDTO.getFullValue(), next.getFullValue());
 
-            MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-            minuteAggregateDataDTO.setAggregateTime(createReqVO.getThisCollectTime().truncatedTo(ChronoUnit.MINUTES));
-            minuteAggregateDataDTO.setFullValue(createReqVO.getThisValue());
-            minuteAggregateDataDTO.setDataSite(prevFullValue.getDataSite());
-            minuteAggregateDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
-            minuteAggregateDataDTO.setIncrementalValue(perMinuteIncrement);
-            MinuteAggDataSplitDTO preMinuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
-            preMinuteAggDataSplitDTO.setStartDataDO(prevFullValue);
-            preMinuteAggDataSplitDTO.setEndDataDO(minuteAggregateDataDTO);
-            minuteAggregateDataApi.insertRangeData(preMinuteAggDataSplitDTO);
+            // 计算增量
+            baseDTO.setDataSite(prev.getDataSite());
+            baseDTO.setIncrementalValue(AggSplitUtils.calculatePerMinuteIncrement(prev.getAggregateTime(), baseDTO.getAggregateTime(), prev.getFullValue(), baseDTO.getFullValue()));
+            next.setIncrementalValue(AggSplitUtils.calculatePerMinuteIncrement(baseDTO.getAggregateTime(), next.getAggregateTime(), baseDTO.getFullValue(), next.getFullValue()));
 
-            // 将全量数据拆分到下一个业务点 为止
-            MinuteAggDataSplitDTO nextMinuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
-            nextMinuteAggDataSplitDTO.setStartDataDO(minuteAggregateDataDTO);
-            nextMinuteAggDataSplitDTO.setEndDataDO(nextFullValue);
-            minuteAggregateDataApi.insertRangeData(nextMinuteAggDataSplitDTO);
-            saveAdditionalRecording(createReqVO);
+            // 插入补录数据以及操作记录
+            insertAndRecord(Arrays.asList(baseDTO, next), createReqVO);
+
+            // 异步拆分
+            List<MinuteAggDataSplitDTO> splitList = Arrays.asList(new MinuteAggDataSplitDTO(prev, baseDTO), new MinuteAggDataSplitDTO(baseDTO, next));
+            minuteAggregateDataApi.asyncInsertRangeDataSplitList(splitList);
             return;
         }
-        if (prevFullValue != null) {
-            if (prevFullValue.getFullValue().compareTo(createReqVO.getThisValue()) > 0) {
-                throw exception(FULL_VALUE_MUST_GT_LEFT, prevFullValue.getFullValue());
-            }
-            // 将全量数据拆分到前一个业务点 为止
-            MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-            minuteAggregateDataDTO.setAggregateTime(createReqVO.getThisCollectTime().truncatedTo(ChronoUnit.MINUTES));
-            minuteAggregateDataDTO.setFullValue(createReqVO.getThisValue());
-            minuteAggregateDataDTO.setDataSite(prevFullValue.getDataSite());
-            minuteAggregateDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
-            //minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);需要拆分计算出来
-            MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
-            minuteAggDataSplitDTO.setStartDataDO(prevFullValue);
-            minuteAggDataSplitDTO.setEndDataDO(minuteAggregateDataDTO);
-            minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
-            saveAdditionalRecording(createReqVO);
+
+        if (prev != null) {
+            validateLeft(prev.getFullValue(), baseDTO.getFullValue());
+
+            // 计算增量
+            baseDTO.setDataSite(prev.getDataSite());
+            baseDTO.setIncrementalValue(AggSplitUtils.calculatePerMinuteIncrement(prev.getAggregateTime(), baseDTO.getAggregateTime(), prev.getFullValue(), baseDTO.getFullValue()));
+
+            // 插入补录数据以及操作记录
+            insertAndRecord(Collections.singletonList(baseDTO), createReqVO);
+            // 异步拆分
+            minuteAggregateDataApi.asyncInsertRangeDataSplitList(Collections.singletonList(new MinuteAggDataSplitDTO(prev, baseDTO)));
             return;
         }
-        if (createReqVO.getThisValue().compareTo(nextFullValue.getFullValue()) > 0) {
-            throw exception(FULL_VALUE_MUST_LT_RIGHT, nextFullValue.getFullValue());
-        }
-        // 将全量数据拆分到下一个业务点 为止
-        MinuteAggregateDataDTO minuteAggregateDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-        minuteAggregateDataDTO.setAggregateTime(createReqVO.getThisCollectTime().truncatedTo(ChronoUnit.MINUTES));
-        minuteAggregateDataDTO.setFullValue(createReqVO.getThisValue());
-        minuteAggregateDataDTO.setDataSite(nextFullValue.getDataSite());
-        minuteAggregateDataDTO.setIncrementalValue(BigDecimal.ZERO);
-        minuteAggregateDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
-        MinuteAggDataSplitDTO minuteAggDataSplitDTO = new MinuteAggDataSplitDTO();
-        minuteAggDataSplitDTO.setStartDataDO(minuteAggregateDataDTO);
-        minuteAggDataSplitDTO.setEndDataDO(nextFullValue);
-        minuteAggregateDataApi.insertRangeData(minuteAggDataSplitDTO);
-        saveAdditionalRecording(createReqVO);
 
+        // only next != null
+        validateRight(baseDTO.getFullValue(), next.getFullValue());
+
+        baseDTO.setDataSite(next.getDataSite());
+        baseDTO.setIncrementalValue(BigDecimal.ZERO);
+        next.setIncrementalValue(AggSplitUtils.calculatePerMinuteIncrement(baseDTO.getAggregateTime(), next.getAggregateTime(), baseDTO.getFullValue(), next.getFullValue()));
+
+        // 插入补录数据以及操作记录
+        insertAndRecord(Arrays.asList(baseDTO, next), createReqVO);
+        // 异步拆分
+        minuteAggregateDataApi.asyncInsertRangeDataSplitList(Collections.singletonList(new MinuteAggDataSplitDTO(baseDTO, next)));
+    }
+
+    /**
+     * 构建基础补录 DTO
+     *
+     * @param req
+     * @param attr
+     * @return
+     */
+    private MinuteAggregateDataDTO buildBaseDTO(AdditionalRecordingManualSaveReqVO req, StandingbookTmplDaqAttrDO attr) {
+        MinuteAggregateDataDTO dto = new MinuteAggregateDataDTO();
+        dto.setStandingbookId(req.getStandingbookId());
+        dto.setEnergyFlag(attr.getEnergyFlag());
+        dto.setParamCode(attr.getCode());
+        dto.setUsage(attr.getUsage());
+        dto.setDataType(attr.getDataType());
+        dto.setFullIncrement(req.getValueType());
+        dto.setDataFeature(attr.getDataType());
+        dto.setAggregateTime(req.getThisCollectTime().truncatedTo(ChronoUnit.MINUTES));
+        dto.setFullValue(req.getThisValue());
+        dto.setAcqFlag(AcqFlagEnum.ACQ.getCode());
+        return dto;
+    }
+
+    /**
+     * 插入业务点数据 + 插入历史操作记录
+     *
+     * @param list
+     * @param req
+     */
+    private void insertAndRecord(List<MinuteAggregateDataDTO> list, AdditionalRecordingManualSaveReqVO req) {
+        minuteAggregateDataApi.insertDataBatch(list);
+        saveAdditionalRecording(req);
+    }
+
+    // 抽取验证方法
+    private void validateRange(BigDecimal left, BigDecimal current, BigDecimal right) {
+        if (left.compareTo(current) > 0) {
+            throw exception(FULL_VALUE_MUST_GT_LEFT, left);
+        }
+        if (current.compareTo(right) > 0) {
+            throw exception(FULL_VALUE_MUST_LT_RIGHT, right);
+        }
+    }
+
+    // 验证全量值
+    private void validateLeft(BigDecimal left, BigDecimal current) {
+        if (left.compareTo(current) > 0) {
+            throw exception(FULL_VALUE_MUST_GT_LEFT, left);
+        }
+    }
+
+    // 验证全量值
+    private void validateRight(BigDecimal current, BigDecimal right) {
+        if (current.compareTo(right) > 0) {
+            throw exception(FULL_VALUE_MUST_LT_RIGHT, right);
+        }
+    }
+
+    /**
+     * 手动补录新增历史记录
+     *
+     * @param minuteAggAcqDataList
+     */
+    public void saveAdditionalRecordingBatch(List<MinuteAggregateDataDTO> minuteAggAcqDataList) {
+        if (CollUtil.isEmpty(minuteAggAcqDataList)) {
+            return;
+        }
+        List<AdditionalRecordingDO> additionalRecordings = new ArrayList<>();
+        minuteAggAcqDataList.forEach(minuteAggDTO -> {
+            // 1.补录数据
+            AdditionalRecordingDO additionalRecording = new AdditionalRecordingDO();
+            additionalRecording.setValueType(FullIncrementEnum.FULL.getCode());
+            additionalRecording.setThisCollectTime(minuteAggDTO.getAggregateTime());
+            additionalRecording.setThisValue(minuteAggDTO.getFullValue());
+            additionalRecording.setStandingbookId(minuteAggDTO.getStandingbookId());
+            // 设置录入时间为当前时间
+            additionalRecording.setEnterTime(LocalDateTime.now());
+            additionalRecording.setRecordMethod(RecordMethodEnum.IMPORT_MANUAL.getCode()); // 手动录入
+
+            additionalRecordings.add(additionalRecording);
+        });
+        // 插入数据库
+        additionalRecordingMapper.insert(additionalRecordings);
     }
 
     /**

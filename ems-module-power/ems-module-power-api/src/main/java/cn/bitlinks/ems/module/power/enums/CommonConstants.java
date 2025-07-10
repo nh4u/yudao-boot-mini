@@ -92,6 +92,10 @@ public interface CommonConstants {
      * cop聚合任务，锁
      */
     String COP_HOUR_AGG_TASK_LOCK_KEY = "cop-hour-agg-task:%s" ;
+    /**
+     * cop重算任务，锁
+     */
+    String COP_HOUR_AGG_RECALC_TASK_LOCK_KEY = "cop-hour-agg-recalc-task:%s" ;
 
     String COP_HOUR_AGG_TABLE_NAME="cop_hour_aggregate_data";
 
