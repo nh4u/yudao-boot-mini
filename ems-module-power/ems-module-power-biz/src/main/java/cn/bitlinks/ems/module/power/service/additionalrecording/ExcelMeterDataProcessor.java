@@ -63,6 +63,8 @@ public class ExcelMeterDataProcessor {
     private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
     @Resource
     private AdditionalRecordingService additionalRecordingService;
+    @Resource
+    private SplitTaskDispatcher splitTaskDispatcher;
 
     public static void main(String[] args) {
         try (FileInputStream fis = new FileInputStream(new File("D:/工作文件/燕东/51051.xls"))) {
@@ -254,7 +256,8 @@ public class ExcelMeterDataProcessor {
         paramDTO.setEndTime(endTime);
         paramDTO.setSbIds(sbIds);
         Map<Long, MinuteAggDataSplitDTO> standingboookUsageRangeTimePreNextAggDataMap = minuteAggregateDataApi.getPreAndNextData(paramDTO).getData();
-
+        List<MinuteAggregateDataDTO> toAddAllAcqList = new ArrayList<>();
+        List<MinuteAggDataSplitDTO> toAddAllNotAcqSplitList = new ArrayList<>();
         for (Map.Entry<String, List<BigDecimal>> entry : meterValuesMap.entrySet()) {
             String meter = entry.getKey();
             List<BigDecimal> values = entry.getValue();
@@ -338,11 +341,10 @@ public class ExcelMeterDataProcessor {
 
                     }
                     // 插入补录数据
-                    minuteAggregateDataApi.insertDataBatch(toAddAcqDataList);
-                    // 插入操作记录
-                    additionalRecordingService.saveAdditionalRecordingBatch(toAddAcqDataList);
-                    // 异步拆分数据
-                    minuteAggregateDataApi.asyncInsertRangeDataSplitList(toAddNotAcqSplitDataList);
+                    toAddAllAcqList.addAll(toAddAcqDataList);
+                    toAddAllNotAcqSplitList.addAll(toAddNotAcqSplitDataList);
+
+
                 } catch (ServiceException e) {
                     if (e.getCode().equals(STREAM_LOAD_RANGE_FAIL.getCode())) {
                         subResult.add(AcqDataExcelResultVO.builder().acqCode(meter)
@@ -362,6 +364,12 @@ public class ExcelMeterDataProcessor {
                 return subResult;
             }));
         }
+        // 插入业务点
+        minuteAggregateDataApi.insertDataBatch(toAddAllAcqList);
+        // 插入操作记录
+        additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
+        // 异步拆分数据
+        splitTaskDispatcher.dispatchSplitTaskBatch(toAddAllNotAcqSplitList);
 
         for (Future<List<AcqDataExcelResultVO>> future : futures) {
             try {
