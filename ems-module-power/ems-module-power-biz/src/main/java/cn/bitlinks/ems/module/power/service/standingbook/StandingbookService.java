@@ -40,6 +40,13 @@ public interface StandingbookService {
     StandingbookDO getStandingbook(Long id);
 
     /**
+     * 获得台账属性
+     *
+     * @return 台账属性
+     */
+    List<StandingbookDO> getByIds(List<Long> ids);
+
+    /**
      * 条件查询台账（标签、属性、分类ids、分类id、topType、环节、创建时间）
      *
      * @param pageReqVO 条件map

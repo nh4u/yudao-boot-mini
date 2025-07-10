@@ -20,7 +20,10 @@
             <groupId>cn.bitlinks.ems</groupId>
             <artifactId>ems-common</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-afterburner</artifactId>
+        </dependency>
         <!-- Spring Boot 配置所需依赖 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
