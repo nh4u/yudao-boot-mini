@@ -30,71 +30,23 @@ public interface MinuteAggregateDataApi {
     String PREFIX = ApiConstants.PREFIX + "/minuteAggregateData";
 
     /**
-     * 获取当前数据
-     *
-     * @param thisCollectTime 当前采集时间点（分钟级别）
-     * @return
-     */
-    @GetMapping(PREFIX + "/selectByAggTime")
-    @Operation(summary = "查询设备指定时间的聚合数据")
-    CommonResult<MinuteAggregateDataDTO> selectByAggTime(@RequestParam("standingbookId") Long standingbookId,
-                                                         @RequestParam("thisCollectTime") @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime thisCollectTime);
-
-    /**
-     * 获取台账对应的最早的聚合数据
-     *
-     * @param standingbookId 台账id
-     * @return
-     */
-    @GetMapping(PREFIX + "/selectOldestByStandingBookId")
-    @Operation(summary = "获取台账对应的最早的聚合数据")
-    CommonResult<MinuteAggregateDataDTO> selectOldestByStandingBookId(@RequestParam("standingbookId") Long standingbookId);
-
-    /**
-     * 获取台账对应的最新的聚合数据
-     *
-     * @param standingbookId 台账id
-     * @return
-     */
-    @GetMapping(PREFIX + "/selectLatestByStandingBookId")
-    @Operation(summary = "获取台账对应的最新的聚合数据")
-    CommonResult<MinuteAggregateDataDTO> selectLatestByStandingBookId(@RequestParam("standingbookId") Long standingbookId);
-
-    /**
-     * 直接插入单条数据
+     * 直接插入数据(业务点数据)
      *
      * @param minuteAggregateDataDTO
      */
-    @PostMapping(PREFIX + "/insertSingleData")
+    @PostMapping(PREFIX + "/insertDataBatch")
     @Operation(summary = "直接插入数据")
-    void insertSingleData(@RequestBody MinuteAggregateDataDTO minuteAggregateDataDTO);
+    CommonResult<String> insertDataBatch(@RequestBody List<MinuteAggregateDataDTO> minuteAggregateDataDTO);
+
 
     /**
-     * 直接插入单条数据
+     * 根据分钟级别的时间段进行数据拆分(集合)
      *
-     * @param minuteAggregateDataDTO
+     * @param minuteAggDataSplitDTOList
      */
-    @PostMapping(PREFIX + "/insertSingleDataError")
-    @Operation(summary = "直接插入数据")
-    CommonResult<String> insertSingleDataError(@RequestBody MinuteAggregateDataDTO minuteAggregateDataDTO);
-
-    /**
-     * 根据两条数据进行拆分,
-     *
-     * @param minuteAggDataSplitDTO
-     */
-    @PostMapping(PREFIX + "/insertRangeData")
-    @Operation(summary = "根据两条数据进行拆分")
-    void insertRangeData(@RequestBody MinuteAggDataSplitDTO minuteAggDataSplitDTO);
-
-    /**
-     * 根据两条数据进行拆分
-     *
-     * @param minuteAggDataSplitDTO
-     */
-    @PostMapping(PREFIX + "/insertRangeDataError")
-    @Operation(summary = "根据两条数据进行拆分")
-    CommonResult<String> insertRangeDataError(@RequestBody MinuteAggDataSplitDTO minuteAggDataSplitDTO);
+    @PostMapping(PREFIX + "/asyncInsertRangeDataSplitList")
+    @Operation(summary = "根据两条数据进行拆分(异步拆分得到两条数据之间的数据)")
+    void asyncInsertRangeDataSplitList(@RequestBody List<MinuteAggDataSplitDTO> minuteAggDataSplitDTOList);
 
     @PostMapping(PREFIX + "/getPreAndNextData")
     @Operation(summary = "获取时间段首尾两端附近的数据")
@@ -109,6 +61,7 @@ public interface MinuteAggregateDataApi {
     @Operation(summary = "获取台账们、用量的时间范围内数据")
     @PermitAll
     CommonResult<List<MinuteAggregateDataDTO>> getCopRangeData(@RequestBody MinuteRangeDataCopParamDTO minuteRangeDataParamDTO);
+
     /**
      * 获取台账们稳态值、用量的时间范围内数据
      *

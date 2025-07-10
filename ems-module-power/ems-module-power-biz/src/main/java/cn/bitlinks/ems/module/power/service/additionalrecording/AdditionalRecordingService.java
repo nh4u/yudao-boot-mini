@@ -1,15 +1,17 @@
 package cn.bitlinks.ems.module.power.service.additionalrecording;
 
+import cn.bitlinks.ems.framework.common.pojo.PageResult;
+import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingExistAcqDataRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingManualSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingSaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
+
+import javax.validation.Valid;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.*;
-import javax.validation.*;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.*;
-import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
-import cn.bitlinks.ems.framework.common.pojo.PageResult;
-import cn.bitlinks.ems.framework.common.pojo.PageParam;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
-import org.springframework.web.multipart.MultipartFile;
+import java.util.List;
 
 /**
  * 补录 Service 接口
@@ -28,7 +30,14 @@ public interface AdditionalRecordingService {
 
     AdditionalRecordingExistAcqDataRespVO getExistDataRange(Long standingbookId, LocalDateTime currentCollectTime);
 
-    List<Long> createAdditionalRecordingByVoucherId(List<Long> VoucherIds,Long standingbookId);
+    /**
+     * 批量创建补录操作记录
+     *
+     * @param minuteAggAcqDataList
+     */
+    void saveAdditionalRecordingBatch(List<MinuteAggregateDataDTO> minuteAggAcqDataList);
+
+    List<Long> createAdditionalRecordingByVoucherId(List<Long> VoucherIds, Long standingbookId);
 
     List<Long> getVoucherIdsByStandingbookId(Long standingbookId);
 
