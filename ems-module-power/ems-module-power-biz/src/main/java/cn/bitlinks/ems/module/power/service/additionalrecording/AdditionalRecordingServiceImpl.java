@@ -61,6 +61,8 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
 //    private EnergyParametersMapper energyParametersMapper;
     @Resource
     private MinuteAggregateDataApi minuteAggregateDataApi;
+    @Resource
+    private SplitTaskDispatcher splitTaskDispatcher;
 
     @Override
     public void createAdditionalRecording(AdditionalRecordingManualSaveReqVO createReqVO) {
@@ -93,9 +95,9 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             throw exception(CURRENT_TIME_ERROR);
         }
         // 获取上下业务点的两个全量值两个全量值（valueType == 0）与当前采集点可能相等
-        MinuteAggregateDataDTO prev = minuteAggregateDataApi.getUsagePrevFullValue(createReqVO.getStandingbookId(), createReqVO.getThisCollectTime());
-        MinuteAggregateDataDTO next = minuteAggregateDataApi.getUsageNextFullValue(createReqVO.getStandingbookId(), createReqVO.getThisCollectTime());
-
+        MinutePrevExistNextDataDTO  minutePrevExistNextDataDTO= minuteAggregateDataApi.getUsagePrevExistNextFullValue(createReqVO.getStandingbookId(), createReqVO.getThisCollectTime());
+        MinuteAggregateDataDTO prev = minutePrevExistNextDataDTO.getPrevFullValue();
+        MinuteAggregateDataDTO next = minutePrevExistNextDataDTO.getNextFullValue();
         // 构造基础 DTO
         MinuteAggregateDataDTO baseDTO = buildBaseDTO(createReqVO, daqAttrDO);
 
@@ -118,7 +120,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
 
             // 异步拆分
             List<MinuteAggDataSplitDTO> splitList = Arrays.asList(new MinuteAggDataSplitDTO(prev, baseDTO), new MinuteAggDataSplitDTO(baseDTO, next));
-            minuteAggregateDataApi.asyncInsertRangeDataSplitList(splitList);
+            splitTaskDispatcher.dispatchSplitTaskBatch(splitList);
             return;
         }
 
@@ -132,7 +134,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             // 插入补录数据以及操作记录
             insertAndRecord(Collections.singletonList(baseDTO), createReqVO);
             // 异步拆分
-            minuteAggregateDataApi.asyncInsertRangeDataSplitList(Collections.singletonList(new MinuteAggDataSplitDTO(prev, baseDTO)));
+            splitTaskDispatcher.dispatchSplitTask(new MinuteAggDataSplitDTO(prev, baseDTO));
             return;
         }
 
@@ -146,7 +148,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
         // 插入补录数据以及操作记录
         insertAndRecord(Arrays.asList(baseDTO, next), createReqVO);
         // 异步拆分
-        minuteAggregateDataApi.asyncInsertRangeDataSplitList(Collections.singletonList(new MinuteAggDataSplitDTO(baseDTO, next)));
+        splitTaskDispatcher.dispatchSplitTask(new MinuteAggDataSplitDTO(baseDTO, next));
     }
 
     /**

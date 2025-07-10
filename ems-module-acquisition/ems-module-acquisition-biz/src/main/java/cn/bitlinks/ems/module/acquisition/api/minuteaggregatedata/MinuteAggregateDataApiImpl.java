@@ -8,7 +8,6 @@ import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinutePrevExist
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataCopParamDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata.MinuteAggregateDataService;
-import cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata.SplitTaskDispatcher;
 import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
@@ -29,8 +28,6 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     @Resource
     private MinuteAggregateDataService minuteAggregateDataService;
 
-    @Resource
-    private SplitTaskDispatcher splitTaskDispatcher;
 
     @Override
     public CommonResult<String> insertDataBatch(List<MinuteAggregateDataDTO> minuteAggregateDataDTOList) {
@@ -45,15 +42,6 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
         }
     }
 
-    @Override
-    public void asyncInsertRangeDataSplitList(List<MinuteAggDataSplitDTO> minuteAggDataSplitDTOList) {
-        // 遍历列表，进行每个数据的异步处理
-        for (MinuteAggDataSplitDTO minuteAggDataSplitDTO : minuteAggDataSplitDTOList) {
-            // 执行异步插入拆分操作
-            splitTaskDispatcher.dispatchSplitTask(minuteAggDataSplitDTO);
-        }
-
-    }
 
     @Override
     public CommonResult<Map<Long, MinuteAggDataSplitDTO>> getPreAndNextData(MinuteRangeDataParamDTO minuteRangeDataParamDTO) {
@@ -99,6 +87,7 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     public MinuteAggregateDataDTO getUsageNextFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
         return minuteAggregateDataService.getUsageNextFullValue(standingbookId, acquisitionTime);
     }
+
     @Override
     public MinutePrevExistNextDataDTO getUsagePrevExistNextFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
         MinuteAggregateDataDTO prevFullValue = minuteAggregateDataService.getUsagePrevFullValue(standingbookId, acquisitionTime);
