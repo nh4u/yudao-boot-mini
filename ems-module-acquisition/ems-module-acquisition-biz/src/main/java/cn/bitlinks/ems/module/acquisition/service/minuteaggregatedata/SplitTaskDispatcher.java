@@ -61,26 +61,26 @@ public class SplitTaskDispatcher {
             LocalDateTime segEnd = segStart.toLocalDate().atTime(23, 59);
             if (segEnd.isAfter(end)) segEnd = end;
 
-            MinuteAggregateDataDTO startDTO = BeanUtil.copyProperties(input.getStartDataDO(), MinuteAggregateDataDTO.class);
-            MinuteAggregateDataDTO endDTO = BeanUtil.copyProperties(input.getEndDataDO(), MinuteAggregateDataDTO.class);
+            MinuteAggregateDataDTO toAddStartDTO = BeanUtil.copyProperties(input.getStartDataDO(), MinuteAggregateDataDTO.class);
+            MinuteAggregateDataDTO toAddEndDTO = BeanUtil.copyProperties(input.getEndDataDO(), MinuteAggregateDataDTO.class);
 
-            startDTO.setAggregateTime(segStart);
-            startDTO.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
-            endDTO.setAggregateTime(segEnd);
-            endDTO.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
+            toAddStartDTO.setAggregateTime(segStart);
+            toAddStartDTO.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
+            toAddEndDTO.setAggregateTime(segEnd);
+            toAddEndDTO.setAcqFlag(AcqFlagEnum.NOT_ACQ.getCode());
 
             // 计算每个时间段的
-            long startMinutes = Duration.between(start, segStart).toMinutes();
+            long startMinutes = Duration.between(startDataDO.getAggregateTime(), segStart).toMinutes();
             BigDecimal startIncr = increment.multiply(new BigDecimal(startMinutes));
-            startDTO.setFullValue(startDataDO.getFullValue().add(startIncr));
-            startDTO.setIncrementalValue(startIncr);
+            toAddStartDTO.setFullValue(startDataDO.getFullValue().add(startIncr));
+            toAddStartDTO.setIncrementalValue(startIncr);
 
-            long endMinutes = Duration.between(start, segEnd).toMinutes();
+            long endMinutes = Duration.between(startDataDO.getAggregateTime(), segEnd).toMinutes();
             BigDecimal endIncr = increment.multiply(new BigDecimal(endMinutes));
-            endDTO.setFullValue(startDataDO.getFullValue().add(endIncr));
-            endDTO.setIncrementalValue(endIncr);
+            toAddEndDTO.setFullValue(startDataDO.getFullValue().add(endIncr));
+            toAddEndDTO.setIncrementalValue(increment);
 
-            result.add(new MinuteAggDataSplitDTO(startDTO, endDTO));
+            result.add(new MinuteAggDataSplitDTO(toAddStartDTO, toAddEndDTO));
             start = segEnd.plusMinutes(1);
         }
         return result;
