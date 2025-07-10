@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
+import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinutePrevExistNextDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataCopParamDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.enums.ApiConstants;
@@ -73,18 +74,6 @@ public interface MinuteAggregateDataApi {
     CommonResult<List<MinuteAggregateDataDTO>> getCopRangeDataSteady(@RequestBody MinuteRangeDataCopParamDTO minuteRangeDataParamDTO);
 
     /**
-     * 获取该台账的当前业务点全量值
-     *
-     * @param standingbookId
-     * @param acquisitionTime
-     * @return
-     */
-    @GetMapping(PREFIX + "/getUsageExistFullValue")
-    @Operation(summary = "获取该台账的当前业务点全量值")
-    MinuteAggregateDataDTO getUsageExistFullValue(@RequestParam("standingbookId") Long standingbookId,
-                                                  @RequestParam("acquisitionTime") @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime acquisitionTime);
-
-    /**
      * 获取当前时间的上一个全量值
      *
      * @param standingbookId  台账id
@@ -107,5 +96,10 @@ public interface MinuteAggregateDataApi {
     @Operation(summary = "获取当前时间的下一个全量值")
     MinuteAggregateDataDTO getUsageNextFullValue(@RequestParam("standingbookId") Long standingbookId,
                                                  @RequestParam("acquisitionTime") @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime acquisitionTime);
+
+    @GetMapping(PREFIX + "/getUsagePrevExistNextFullValue")
+    @Operation(summary = "获取当前时间的三个全量值")
+    MinutePrevExistNextDataDTO getUsagePrevExistNextFullValue(@RequestParam("standingbookId") Long standingbookId,
+                                                              @RequestParam("acquisitionTime") @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND) LocalDateTime acquisitionTime);
 
 }
