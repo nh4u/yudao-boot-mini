@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
+import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinutePrevExistNextDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataCopParamDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.service.minuteaggregatedata.MinuteAggregateDataService;
@@ -88,10 +89,6 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
         return CommonResult.success(list);
     }
 
-    @Override
-    public MinuteAggregateDataDTO getUsageExistFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
-        return minuteAggregateDataService.getUsageExistFullValue(standingbookId, acquisitionTime);
-    }
 
     @Override
     public MinuteAggregateDataDTO getUsagePrevFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
@@ -101,5 +98,16 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
     @Override
     public MinuteAggregateDataDTO getUsageNextFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
         return minuteAggregateDataService.getUsageNextFullValue(standingbookId, acquisitionTime);
+    }
+    @Override
+    public MinutePrevExistNextDataDTO getUsagePrevExistNextFullValue(Long standingbookId, LocalDateTime acquisitionTime) {
+        MinuteAggregateDataDTO prevFullValue = minuteAggregateDataService.getUsagePrevFullValue(standingbookId, acquisitionTime);
+        MinuteAggregateDataDTO existFullValue = minuteAggregateDataService.getUsageExistFullValue(standingbookId, acquisitionTime);
+        MinuteAggregateDataDTO nextFullValue = minuteAggregateDataService.getUsageNextFullValue(standingbookId, acquisitionTime);
+        MinutePrevExistNextDataDTO minutePrevExistNextDataDTO = new MinutePrevExistNextDataDTO();
+        minutePrevExistNextDataDTO.setPrevFullValue(prevFullValue);
+        minutePrevExistNextDataDTO.setExistFullValue(existFullValue);
+        minutePrevExistNextDataDTO.setNextFullValue(nextFullValue);
+        return minutePrevExistNextDataDTO;
     }
 }
