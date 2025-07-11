@@ -15,13 +15,10 @@
         <result column="data_feature" property="dataFeature"/>
         <result column="data_type" property="dataType"/>
         <result column="usage" property="usage"/>
+        <result column="acq_flag" property="acqFlag"/>
 
     </resultMap>
-    <delete id="deleteDataByMinute">
-        DELETE FROM minute_aggregate_data
-        WHERE aggregate_time = #{aggregateTime}
-        AND standingbook_id = #{standingbookId}
-    </delete>
+
 
     <select id="getLatestData"
             resultType="cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO">
@@ -103,7 +100,7 @@
             </foreach>
         </if>
         AND full_value IS NOT NULL
-        -- AND acq_flag = 1
+        AND acq_flag = 1
         ) t
         WHERE t.rn = 1;
     </select>
@@ -136,7 +133,7 @@
         SELECT *
         FROM (
         SELECT *,
-        ROW_NUMBER() OVER (PARTITION BY standingbook_id ORDER BY aggregate_time DESC) AS rn
+        ROW_NUMBER() OVER (PARTITION BY standingbook_id ORDER BY aggregate_time asc) AS rn
         FROM minute_aggregate_data
         WHERE aggregate_time > #{targetTime}
         AND `usage` = 1
@@ -148,7 +145,7 @@
         </if>
 
         AND full_value IS NOT NULL
-        -- AND acq_flag = 1
+        AND acq_flag = 1
         ) t
         WHERE t.rn = 1;
     </select>
