@@ -102,7 +102,7 @@ public class MailSendServiceImpl implements MailSendService {
         MailTemplateDO mailTemplateDO = new MailTemplateDO();
         mailTemplateDO.setId(templateId);
         mailTemplateDO.setCode(templateCode);
-        mailTemplateDO.setNickname(templateName);
+        mailTemplateDO.setNickname(account.getUsername());
         mailTemplateDO.setTitle(title);
         mailTemplateDO.setContent(content);
         Long sendLogId = mailLogService.createMailLogCustom(userId, userType, mail,
