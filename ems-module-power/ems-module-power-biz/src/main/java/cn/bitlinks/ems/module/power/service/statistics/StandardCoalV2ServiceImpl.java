@@ -15,7 +15,9 @@ import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -83,7 +85,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         String cacheKey = USAGE_STANDARD_COAL_TABLE + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
-        if (StrUtil.isNotEmpty(cacheRes)) {
+        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
             return JSONUtil.toBean(cacheRes, StatisticsResultV2VO.class);
         }
@@ -99,7 +101,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         // 4.2.能源id处理
         List<EnergyConfigurationDO> energyList = energyConfigurationService
                 .getByEnergyClassify(
-                        CollectionUtil.isNotEmpty(paramVO.getEnergyIds()) ? new HashSet<>(paramVO.getEnergyIds()) : new HashSet<>(),
+                        CollUtil.isNotEmpty(paramVO.getEnergyIds()) ? new HashSet<>(paramVO.getEnergyIds()) : new HashSet<>(),
                         paramVO.getEnergyClassify());
         List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
 
@@ -113,16 +115,19 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 .collect(Collectors.toList());
 
         // 4.3.2.根据标签id查询
+        String topLabel = paramVO.getTopLabel();
+        String childLabels = paramVO.getChildLabels();
         List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService
-                .getStandingbookIdsByLabel(paramVO.getTopLabel(), paramVO.getChildLabels(), standingBookIdList);
+                .getStandingbookIdsByLabel(topLabel, childLabels);
 
         // 4.3.3.能源台账ids和标签台账ids是否有交集。如果有就取交集，如果没有则取能源台账ids
-        if (CollectionUtil.isNotEmpty(standingbookIdsByLabel)) {
+        if (CollUtil.isNotEmpty(standingbookIdsByLabel)) {
             List<Long> sids = standingbookIdsByLabel
                     .stream()
                     .map(StandingbookLabelInfoDO::getStandingbookId)
                     .collect(Collectors.toList());
 
+            // 取标签台账和能源台账之间的交集
             List<StandingbookDO> collect = standingbookIdsByEnergy
                     .stream()
                     .filter(s -> sids.contains(s.getId()))
@@ -139,7 +144,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         }
 
         // 4.4.台账id为空直接返回结果
-        if (CollectionUtil.isEmpty(standingBookIds)) {
+        if (CollUtil.isEmpty(standingBookIds)) {
             return resultVO;
         }
 
@@ -155,41 +160,17 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         List<StandardCoalInfo> statisticsInfoList = new ArrayList<>();
         // 1、按能源查看
         if (QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)) {
-            List<StandardCoalInfo> standardCoalInfos = queryByEnergy(energyList, usageCostDataList, dataTypeEnum);
+            List<StandardCoalInfo> standardCoalInfos = queryByEnergy(energyList, usageCostDataList);
             statisticsInfoList.addAll(standardCoalInfos);
 
         } else if (QueryDimensionEnum.LABEL_REVIEW.getCode().equals(queryType)) {
             // 2、按标签查看
-            // 标签查询条件处理
-            //根据能源ID分组
-            // 使用 Collectors.groupingBy 根据 name 和 value 分组
-            Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
-                    .filter(s -> standingBookIds.contains(s.getStandingbookId()))
-                    .collect(Collectors.groupingBy(
-                            // 第一个分组条件：按 name
-                            StandingbookLabelInfoDO::getName,
-                            // 第二个分组条件：按 value
-                            Collectors.groupingBy(StandingbookLabelInfoDO::getValue)
-                    ));
-
-            List<StandardCoalInfo> standardCoalInfos = queryByLabel(grouped, usageCostDataList, dataTypeEnum);
+            List<StandardCoalInfo> standardCoalInfos = queryByLabel(topLabel, childLabels, standingbookIdsByLabel, usageCostDataList);
             statisticsInfoList.addAll(standardCoalInfos);
 
         } else {
             // 0、综合查看（默认）
-            // 标签查询条件处理
-            //根据能源ID分组
-            // 使用 Collectors.groupingBy 根据 name 和 value 分组
-            Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
-                    .filter(s -> standingBookIds.contains(s.getStandingbookId()))
-                    .collect(Collectors.groupingBy(
-                            // 第一个分组条件：按 name
-                            StandingbookLabelInfoDO::getName,
-                            // 第二个分组条件：按 value
-                            Collectors.groupingBy(StandingbookLabelInfoDO::getValue)
-                    ));
-
-            List<StandardCoalInfo> statisticsInfoV2s = queryDefault(grouped, usageCostDataList, dataTypeEnum);
+            List<StandardCoalInfo> statisticsInfoV2s = queryDefault(topLabel, childLabels, standingbookIdsByLabel, usageCostDataList);
             statisticsInfoList.addAll(statisticsInfoV2s);
         }
 
@@ -251,7 +232,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         String cacheKey = USAGE_STANDARD_COAL_CHART + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
-        if (StrUtil.isNotEmpty(cacheRes)) {
+        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
             return JSONUtil.toBean(cacheRes, StatisticsChartResultV2VO.class);
         }
@@ -267,7 +248,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         // 4.2.能源id处理
         List<EnergyConfigurationDO> energyList = energyConfigurationService
                 .getByEnergyClassify(
-                        CollectionUtil.isNotEmpty(paramVO.getEnergyIds()) ? new HashSet<>(paramVO.getEnergyIds()) : new HashSet<>(),
+                        CollUtil.isNotEmpty(paramVO.getEnergyIds()) ? new HashSet<>(paramVO.getEnergyIds()) : new HashSet<>(),
                         paramVO.getEnergyClassify());
         List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
 
@@ -286,7 +267,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 .getStandingbookIdsByLabel(paramVO.getTopLabel(), paramVO.getChildLabels(), standingBookIdList);
 
         // 4.3.3.能源台账ids和标签台账ids是否有交集。如果有就取交集，如果没有则取能源台账ids
-        if (CollectionUtil.isNotEmpty(standingbookIdsByLabel)) {
+        if (CollUtil.isNotEmpty(standingbookIdsByLabel)) {
             List<Long> sids = standingbookIdsByLabel
                     .stream()
                     .map(StandingbookLabelInfoDO::getStandingbookId)
@@ -308,7 +289,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         }
 
         // 4.4.台账id为空直接返回结果
-        if (CollectionUtil.isEmpty(standingBookIds)) {
+        if (CollUtil.isEmpty(standingBookIds)) {
             return resultV2VO;
         }
 
@@ -448,7 +429,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                     // substring 返回 endIndex-beginIndex哥字符 因为是[ )
                     String subs = dealStrTime(s);
                     List<UsageCostData> collect = usageCostDataList.stream().filter(u -> u.getTime().equals(subs)).collect(Collectors.toList());
-                    if (CollectionUtil.isNotEmpty(collect)) {
+                    if (CollUtil.isNotEmpty(collect)) {
                         dataV2VO.setStandardCoal(dealBigDecimalScale(collect.get(0).getTotalStandardCoalEquivalent(), DEFAULT_SCALE));
                     } else {
                         dataV2VO.setStandardCoal(BigDecimal.ZERO);
@@ -484,10 +465,10 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
 
     }
 
-
-    public List<StandardCoalInfo> queryDefault(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped,
-                                               List<UsageCostData> usageCostDataList,
-                                               DataTypeEnum dataType) {
+    public List<StandardCoalInfo> queryDefault(String topLabel,
+                                               String childLabels,
+                                               List<StandingbookLabelInfoDO> standingbookIdsByLabel,
+                                               List<UsageCostData> usageCostDataList) {
 
         // 实际用到的能源ids
         Set<Long> energyIdSet = usageCostDataList
@@ -512,6 +493,122 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         // 聚合数据按台账id分组
         Map<Long, List<UsageCostData>> standingBookUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
+
+        if (CharSequenceUtil.isNotBlank(topLabel) && CharSequenceUtil.isBlank(childLabels)) {
+            // 只有顶级标签
+            return queryDefaultTopLabel(standingBookUsageMap, labelMap, standingbookIdsByLabel, energyMap);
+        } else {
+            // 有顶级、有子集标签
+            return queryDefaultSubLabel(standingBookUsageMap, labelMap, standingbookIdsByLabel, energyMap);
+        }
+    }
+
+    /**
+     * 有顶级喝有子集标签处理
+     *
+     * @param standingBookUsageMap
+     * @param labelMap
+     * @param standingbookIdsByLabel
+     * @return
+     */
+    public List<StandardCoalInfo> queryDefaultTopLabel(Map<Long, List<UsageCostData>> standingBookUsageMap,
+                                                       Map<Long, LabelConfigDO> labelMap,
+                                                       List<StandingbookLabelInfoDO> standingbookIdsByLabel,
+                                                       Map<Long, EnergyConfigurationDO> energyMap) {
+        List<StandardCoalInfo> resultList = new ArrayList<>();
+        List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
+
+        // 获取标签关联的台账id，并取到对应的数据
+        standingbookIdsByLabel.forEach(labelInfo -> {
+            List<UsageCostData> usageList = standingBookUsageMap.get(labelInfo.getStandingbookId());
+            if (usageList == null || usageList.isEmpty()) {
+                return; // 计量器具没有数据，跳过
+            }
+            labelUsageCostDataList.addAll(usageList);
+        });
+
+        Map<Long, List<UsageCostData>> energyUsageCostMap = labelUsageCostDataList
+                .stream()
+                .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
+
+        energyUsageCostMap.forEach((energyId, usageCostList) -> {
+
+            // 获取能源数据
+            EnergyConfigurationDO energyConfigurationDO = energyMap.get(energyId);
+
+            // 由于数采数据是按 台账 日期能源进行分组的 而一个标签关联多个台账，那么标签同一个日期就会有多条不同台账的数据，所以要按日期进行合并
+            // 聚合数据 转换成 StandardCoalInfoData
+            List<StandardCoalInfoData> dataList = new ArrayList<>(usageCostList.stream().collect(Collectors.groupingBy(
+                    UsageCostData::getTime,
+                    Collectors.collectingAndThen(
+                            Collectors.toList(),
+                            list -> {
+                                BigDecimal totalConsumption = list.stream()
+                                        .map(UsageCostData::getCurrentTotalUsage)
+                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                BigDecimal totalStandardCoal = list.stream()
+                                        .map(UsageCostData::getTotalStandardCoalEquivalent)
+                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                return new StandardCoalInfoData(list.get(0).getTime(), totalConsumption, totalStandardCoal);
+                            }
+                    )
+            )).values());
+
+            // 用量数据求和
+            BigDecimal totalConsumption = dataList.stream()
+                    .map(StandardCoalInfoData::getConsumption)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            // 折标煤数据求和
+            BigDecimal totalCost = dataList.stream()
+                    .map(StandardCoalInfoData::getStandardCoal)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+
+            StandardCoalInfo info = new StandardCoalInfo();
+            info.setEnergyId(energyId);
+            info.setEnergyName(energyConfigurationDO.getEnergyName());
+
+            StandingbookLabelInfoDO standingbookLabelInfoDO = standingbookIdsByLabel.get(0);
+            String topLabelKey = standingbookLabelInfoDO.getName();
+            Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
+            LabelConfigDO topLabel = labelMap.get(topLabelId);
+
+            info.setLabel1(topLabel.getLabelName());
+            info.setLabel2("/");
+            info.setLabel3("/");
+            info.setLabel4("/");
+            info.setLabel5("/");
+
+            dataList = dataList.stream().peek(i -> {
+                i.setStandardCoal(dealBigDecimalScale(i.getStandardCoal(), DEFAULT_SCALE));
+                i.setConsumption(dealBigDecimalScale(i.getConsumption(), DEFAULT_SCALE));
+            }).collect(Collectors.toList());
+
+            info.setStandardCoalInfoDataList(dataList);
+            info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, DEFAULT_SCALE));
+            info.setSumEnergyStandardCoal(dealBigDecimalScale(totalCost, DEFAULT_SCALE));
+
+            resultList.add(info);
+        });
+
+        return resultList;
+    }
+
+    public List<StandardCoalInfo> queryDefaultSubLabel(Map<Long, List<UsageCostData>> standingBookUsageMap,
+                                                       Map<Long, LabelConfigDO> labelMap,
+                                                       List<StandingbookLabelInfoDO> standingbookIdsByLabel,
+                                                       Map<Long, EnergyConfigurationDO> energyMap) {
+        // 标签查询条件处理
+        //根据能源ID分组
+        // 使用 Collectors.groupingBy 根据 name 和 value 分组
+        Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
+                .collect(Collectors.groupingBy(
+                        // 第一个分组条件：按 name
+                        StandingbookLabelInfoDO::getName,
+                        // 第二个分组条件：按 value
+                        Collectors.groupingBy(StandingbookLabelInfoDO::getValue)
+                ));
 
         List<StandardCoalInfo> resultList = new ArrayList<>();
 
@@ -552,15 +649,24 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                     // 获取能源数据
                     EnergyConfigurationDO energyConfigurationDO = energyMap.get(energyId);
 
+                    // 因为数采数据按台账id合并并包含多个时间  但一个标签关联了多个台账 所以还需要按照日期再聚合一下 要重新考虑一下
+                    //  usageCostData数据按能源、台账进行分组了，现在的分组方式 会导致用量数据无法累加。
                     // 聚合数据 转换成 StandardCoalInfoData
-                    List<StandardCoalInfoData> dataList = usageCostList.stream()
-                            .map(usage -> new StandardCoalInfoData(
-                                    //DateUtil.format(usage.getTime(), dataType.getFormat()),
-                                    usage.getTime(),
-                                    usage.getCurrentTotalUsage(),
-                                    usage.getTotalStandardCoalEquivalent()
-                            ))
-                            .collect(Collectors.toList());
+                    List<StandardCoalInfoData> dataList = new ArrayList<>(usageCostList.stream().collect(Collectors.groupingBy(
+                            UsageCostData::getTime,
+                            Collectors.collectingAndThen(
+                                    Collectors.toList(),
+                                    list -> {
+                                        BigDecimal totalConsumption = list.stream()
+                                                .map(UsageCostData::getCurrentTotalUsage)
+                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                        BigDecimal totalStandardCoal = list.stream()
+                                                .map(UsageCostData::getTotalStandardCoalEquivalent)
+                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                        return new StandardCoalInfoData(list.get(0).getTime(), totalConsumption, totalStandardCoal);
+                                    }
+                            )
+                    )).values());
 
                     // 用量数据求和
                     BigDecimal totalConsumption = dataList.stream()
@@ -601,10 +707,10 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
 
     }
 
-
-    public List<StandardCoalInfo> queryByLabel(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped,
-                                               List<UsageCostData> usageCostDataList,
-                                               DataTypeEnum dataType) {
+    public List<StandardCoalInfo> queryByLabel(String topLabel,
+                                               String childLabels,
+                                               List<StandingbookLabelInfoDO> standingbookIdsByLabel,
+                                               List<UsageCostData> usageCostDataList) {
 
         Map<Long, List<UsageCostData>> standingBookUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
@@ -612,6 +718,117 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         Map<Long, LabelConfigDO> labelMap = labelConfigService.getAllLabelConfig()
                 .stream()
                 .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
+
+
+        if (CharSequenceUtil.isNotBlank(topLabel) && CharSequenceUtil.isBlank(childLabels)) {
+            // 只有顶级标签
+            return queryByTopLabel(standingBookUsageMap, labelMap, standingbookIdsByLabel);
+        } else {
+            // 有顶级、有子集标签
+            return queryBySubLabel(standingBookUsageMap, labelMap, standingbookIdsByLabel);
+        }
+    }
+
+    /**
+     * 只有顶级标签处理
+     *
+     * @param standingBookUsageMap
+     * @param labelMap
+     * @param standingbookIdsByLabel
+     * @return
+     */
+    public List<StandardCoalInfo> queryByTopLabel(Map<Long, List<UsageCostData>> standingBookUsageMap,
+                                                  Map<Long, LabelConfigDO> labelMap,
+                                                  List<StandingbookLabelInfoDO> standingbookIdsByLabel) {
+
+        List<StandardCoalInfo> resultList = new ArrayList<>();
+
+        List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
+        // 获取标签关联的台账id，并取到对应的数据
+        standingbookIdsByLabel.forEach(labelInfo -> {
+            List<UsageCostData> usageList = standingBookUsageMap.get(labelInfo.getStandingbookId());
+            if (usageList == null || usageList.isEmpty()) {
+                return; // 计量器具没有数据，跳过
+            }
+            labelUsageCostDataList.addAll(usageList);
+        });
+
+        // 由于数采数据是按 台账 日期能源进行分组的 而一个标签关联多个台账，那么标签同一个日期就会有多条不同台账的数据，所以要按日期进行合并
+        List<StandardCoalInfoData> dataList = new ArrayList<>(labelUsageCostDataList.stream()
+                .collect(Collectors.groupingBy(
+                        UsageCostData::getTime,
+                        Collectors.collectingAndThen(
+                                Collectors.toList(),
+                                list -> {
+                                    BigDecimal totalConsumption = list.stream()
+                                            .map(UsageCostData::getCurrentTotalUsage)
+                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                    BigDecimal totalStandardCoal = list.stream()
+                                            .map(UsageCostData::getTotalStandardCoalEquivalent)
+                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                    return new StandardCoalInfoData(list.get(0).getTime(), totalConsumption, totalStandardCoal);
+                                }
+                        )
+                )).values());
+
+
+        BigDecimal totalConsumption = dataList.stream()
+                .map(StandardCoalInfoData::getConsumption)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalStandardCoal = dataList.stream()
+                .map(StandardCoalInfoData::getStandardCoal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        StandardCoalInfo info = new StandardCoalInfo();
+        StandingbookLabelInfoDO standingbookLabelInfoDO = standingbookIdsByLabel.get(0);
+
+        String topLabelKey = standingbookLabelInfoDO.getName();
+        Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
+        LabelConfigDO topLabel = labelMap.get(topLabelId);
+
+        info.setLabel1(topLabel.getLabelName());
+        info.setLabel2("/");
+        info.setLabel3("/");
+        info.setLabel4("/");
+        info.setLabel5("/");
+
+        dataList = dataList.stream().peek(i -> {
+            i.setStandardCoal(dealBigDecimalScale(i.getStandardCoal(), DEFAULT_SCALE));
+            i.setConsumption(dealBigDecimalScale(i.getConsumption(), DEFAULT_SCALE));
+        }).collect(Collectors.toList());
+
+        info.setStandardCoalInfoDataList(dataList);
+        info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, DEFAULT_SCALE));
+        info.setSumEnergyStandardCoal(dealBigDecimalScale(totalStandardCoal, DEFAULT_SCALE));
+
+        resultList.add(info);
+
+        return resultList;
+    }
+
+    /**
+     * 有顶级喝有子集标签处理
+     *
+     * @param standingBookUsageMap
+     * @param labelMap
+     * @param standingbookIdsByLabel
+     * @return
+     */
+    public List<StandardCoalInfo> queryBySubLabel(Map<Long, List<UsageCostData>> standingBookUsageMap,
+                                                  Map<Long, LabelConfigDO> labelMap,
+                                                  List<StandingbookLabelInfoDO> standingbookIdsByLabel) {
+        // 标签查询条件处理
+        //根据能源ID分组
+        // 使用 Collectors.groupingBy 根据 name 和 value 分组
+        // 此处不应该过滤，因为如果指定5个标签 因为有一个标签 和能源没有交集，则改标签在取用量数据时候，是取不到的， 而且该标签还需要展示对应数据
+        // 所以不需要过滤 ：即选中五个标签 那么就要展示五个标签，如果过滤的话 那么 标签就有可能过滤掉然后不展示
+        Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
+                .collect(Collectors.groupingBy(
+                        // 第一个分组条件：按 name
+                        StandingbookLabelInfoDO::getName,
+                        // 第二个分组条件：按 value
+                        Collectors.groupingBy(StandingbookLabelInfoDO::getValue)
+                ));
 
         List<StandardCoalInfo> resultList = new ArrayList<>();
 
@@ -640,14 +857,24 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                     labelUsageCostDataList.addAll(usageList);
                 });
 
-                List<StandardCoalInfoData> dataList = labelUsageCostDataList.stream()
-                        .map(usage -> new StandardCoalInfoData(
-                                //DateUtil.format(usage.getTime(), dataType.getFormat()),
-                                usage.getTime(),
-                                usage.getCurrentTotalUsage(),
-                                usage.getTotalStandardCoalEquivalent()
-                        ))
-                        .collect(Collectors.toList());
+
+                // 由于数采数据是按 台账 日期能源进行分组的 而一个标签关联多个台账，那么标签同一个日期就会有多条不同台账的数据，所以要按日期进行合并
+                List<StandardCoalInfoData> dataList = new ArrayList<>(labelUsageCostDataList.stream()
+                        .collect(Collectors.groupingBy(
+                                UsageCostData::getTime,
+                                Collectors.collectingAndThen(
+                                        Collectors.toList(),
+                                        list -> {
+                                            BigDecimal totalConsumption = list.stream()
+                                                    .map(UsageCostData::getCurrentTotalUsage)
+                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            BigDecimal totalStandardCoal = list.stream()
+                                                    .map(UsageCostData::getTotalStandardCoalEquivalent)
+                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            return new StandardCoalInfoData(list.get(0).getTime(), totalConsumption, totalStandardCoal);
+                                        }
+                                )
+                        )).values());
 
                 BigDecimal totalConsumption = dataList.stream()
                         .map(StandardCoalInfoData::getConsumption)
@@ -690,8 +917,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
      * 根据能源查看
      */
     public List<StandardCoalInfo> queryByEnergy(List<EnergyConfigurationDO> energyList,
-                                                List<UsageCostData> usageCostDataList,
-                                                DataTypeEnum dataType) {
+                                                List<UsageCostData> usageCostDataList) {
         // 按能源ID分组
         Map<Long, List<UsageCostData>> energyUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
@@ -701,7 +927,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 .map(energy -> {
                     // 获取与当前能源相关的用量数据
                     List<UsageCostData> usageCostList = energyUsageMap.get(energy.getId());
-                    if (CollectionUtil.isEmpty(usageCostList)) {
+                    if (CollUtil.isEmpty(usageCostList)) {
                         return null; // 没有数据的不返回
                     }
 
