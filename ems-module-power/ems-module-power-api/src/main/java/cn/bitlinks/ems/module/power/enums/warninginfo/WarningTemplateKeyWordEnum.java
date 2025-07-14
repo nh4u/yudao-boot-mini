@@ -60,7 +60,7 @@ public enum WarningTemplateKeyWordEnum {
      * @return 是否超出唯一关键字
      */
     public static boolean areAnyKeywordsOutsideUniqueRange(List<String> params) {
-        return params.stream().anyMatch(param -> uniqueKeyWordOf(param) != null);
+        return params.stream().allMatch(param -> uniqueKeyWordOf(param) != null);
     }
 }
 
