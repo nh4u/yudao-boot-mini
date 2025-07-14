@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -126,6 +127,26 @@ public class StatisticsCommonService {
         return labelInfoDOList;
     }
 
+    /**
+     * 根据筛选条件筛选台账ID
+     *
+     * @return
+     */
+    public List<StandingbookLabelInfoDO> getStandingbookIdsByLabel(String topLabel, String childLabels) {
+
+        if (CharSequenceUtil.isBlank(topLabel)) {
+            return Collections.emptyList();
+        } else {
+            if (CharSequenceUtil.isBlank(childLabels)) {
+                //只有顶级标签
+                return standingbookLabelInfoService.getByLabelNames(Collections.singletonList(topLabel));
+            }else {
+                // 只有子标签
+                List<String> childLabelValues = StrSplitter.split(childLabels, "#", 0, true, true);
+                return standingbookLabelInfoService.getByValues(childLabelValues);
+            }
+        }
+    }
 
     /**
      * 根据筛选条件筛选台账ID
