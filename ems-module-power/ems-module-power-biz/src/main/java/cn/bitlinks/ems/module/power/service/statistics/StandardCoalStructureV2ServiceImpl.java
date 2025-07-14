@@ -14,7 +14,8 @@ import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
-import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -111,7 +112,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         // 4.2.能源id处理
         List<EnergyConfigurationDO> energyList = energyConfigurationService
                 .getByEnergyClassify(
-                        CollectionUtil.isNotEmpty(paramVO.getEnergyIds()) ? new HashSet<>(paramVO.getEnergyIds()) : new HashSet<>(),
+                        CollUtil.isNotEmpty(paramVO.getEnergyIds()) ? new HashSet<>(paramVO.getEnergyIds()) : new HashSet<>(),
                         paramVO.getEnergyClassify());
         List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
 
@@ -125,11 +126,13 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                 .collect(Collectors.toList());
 
         // 4.3.2.根据标签id查询
+        String topLabel = paramVO.getTopLabel();
+        String childLabels = paramVO.getChildLabels();
         List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService
-                .getStandingbookIdsByLabel(paramVO.getTopLabel(), paramVO.getChildLabels(), standingBookIdList);
+                .getStandingbookIdsByLabel(topLabel, childLabels);
 
         // 4.3.3.能源台账ids和标签台账ids是否有交集。如果有就取交集，如果没有则取能源台账ids
-        if (CollectionUtil.isNotEmpty(standingbookIdsByLabel)) {
+        if (CollUtil.isNotEmpty(standingbookIdsByLabel)) {
             List<Long> sids = standingbookIdsByLabel
                     .stream()
                     .map(StandingbookLabelInfoDO::getStandingbookId)
@@ -151,7 +154,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         }
 
         // 4.4.台账id为空直接返回结果
-        if (CollectionUtil.isEmpty(standingBookIds)) {
+        if (CollUtil.isEmpty(standingBookIds)) {
             return resultVO;
         }
 
@@ -171,36 +174,12 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
 
         } else if (QueryDimensionEnum.LABEL_REVIEW.getCode().equals(queryType)) {
             // 2、按标签查看
-            // 标签查询条件处理
-            //根据能源ID分组
-            // 使用 Collectors.groupingBy 根据 name 和 value 分组
-            Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
-                    .filter(s -> standingBookIds.contains(s.getStandingbookId()))
-                    .collect(Collectors.groupingBy(
-                            // 第一个分组条件：按 name
-                            StandingbookLabelInfoDO::getName,
-                            // 第二个分组条件：按 value
-                            Collectors.groupingBy(StandingbookLabelInfoDO::getValue)
-                    ));
-
-            List<StructureInfo> structureInfos = queryByLabel(grouped, usageCostDataList);
-            statisticsInfoList.addAll(structureInfos);
+            List<StructureInfo> standardCoalInfos = queryByLabel(topLabel, childLabels, standingbookIdsByLabel, usageCostDataList);
+            statisticsInfoList.addAll(standardCoalInfos);
 
         } else {
             // 0、综合查看（默认）
-            // 标签查询条件处理
-            //根据能源ID分组
-            // 使用 Collectors.groupingBy 根据 name 和 value 分组
-            Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
-                    .filter(s -> standingBookIds.contains(s.getStandingbookId()))
-                    .collect(Collectors.groupingBy(
-                            // 第一个分组条件：按 name
-                            StandingbookLabelInfoDO::getName,
-                            // 第二个分组条件：按 value
-                            Collectors.groupingBy(StandingbookLabelInfoDO::getValue)
-                    ));
-
-            List<StructureInfo> structureInfos = queryDefault(grouped, usageCostDataList);
+            List<StructureInfo> structureInfos = queryDefault(topLabel, childLabels, standingbookIdsByLabel, usageCostDataList);
             statisticsInfoList.addAll(structureInfos);
         }
 
@@ -268,8 +247,9 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
 
     }
 
-
-    public List<StructureInfo> queryDefault(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped,
+    public List<StructureInfo> queryDefault(String topLabel,
+                                            String childLabels,
+                                            List<StandingbookLabelInfoDO> standingbookIdsByLabel,
                                             List<UsageCostData> usageCostDataList) {
 
         // 实际用到的能源ids
@@ -293,8 +273,104 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                 .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
 
         // 聚合数据按台账id分组
-        Map<Long, List<UsageCostData>> energyUsageMap = usageCostDataList.stream()
+        Map<Long, List<UsageCostData>> standingBookUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
+
+        if (CharSequenceUtil.isNotBlank(topLabel) && CharSequenceUtil.isBlank(childLabels)) {
+            // 只有顶级标签
+            return queryDefaultTopLabel(standingBookUsageMap, labelMap, standingbookIdsByLabel, energyMap);
+        } else {
+            // 有顶级、有子集标签
+            return queryDefaultSubLabel(standingBookUsageMap, labelMap, standingbookIdsByLabel, energyMap);
+        }
+    }
+
+    public List<StructureInfo> queryDefaultTopLabel(Map<Long, List<UsageCostData>> standingBookUsageMap,
+                                                    Map<Long, LabelConfigDO> labelMap,
+                                                    List<StandingbookLabelInfoDO> standingbookIdsByLabel,
+                                                    Map<Long, EnergyConfigurationDO> energyMap) {
+
+        List<StructureInfo> resultList = new ArrayList<>();
+        List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
+
+        // 获取标签关联的台账id，并取到对应的数据
+        standingbookIdsByLabel.forEach(labelInfo -> {
+            List<UsageCostData> usageList = standingBookUsageMap.get(labelInfo.getStandingbookId());
+            if (usageList == null || usageList.isEmpty()) {
+                return; // 计量器具没有数据，跳过
+            }
+            labelUsageCostDataList.addAll(usageList);
+        });
+
+        Map<Long, List<UsageCostData>> energyUsageCostMap = labelUsageCostDataList
+                .stream()
+                .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
+
+        energyUsageCostMap.forEach((energyId, usageCostList) -> {
+
+            // 获取能源数据
+            EnergyConfigurationDO energyConfigurationDO = energyMap.get(energyId);
+
+            // 由于数采数据是按 台账 日期能源进行分组的 而一个标签关联多个台账，那么标签同一个日期就会有多条不同台账的数据，所以要按日期进行合并
+            // 聚合数据 转换成 StandardCoalInfoData
+            List<StructureInfoData> dataList = new ArrayList<>(usageCostList.stream().collect(Collectors.groupingBy(
+                    UsageCostData::getTime,
+                    Collectors.collectingAndThen(
+                            Collectors.toList(),
+                            list -> {
+                                BigDecimal totalStandardCoal = list.stream()
+                                        .map(UsageCostData::getTotalStandardCoalEquivalent)
+                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                return new StructureInfoData(list.get(0).getTime(), totalStandardCoal, null);
+                            }
+                    )
+            )).values());
+
+            BigDecimal totalNum = dataList.stream()
+                    .map(StructureInfoData::getNum)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            StructureInfo info = new StructureInfo();
+            info.setEnergyId(energyId);
+            info.setEnergyName(energyConfigurationDO.getEnergyName());
+
+            StandingbookLabelInfoDO standingbookLabelInfoDO = standingbookIdsByLabel.get(0);
+            String topLabelKey = standingbookLabelInfoDO.getName();
+            Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
+            LabelConfigDO topLabel = labelMap.get(topLabelId);
+
+            info.setLabel1(topLabel.getLabelName());
+            info.setLabel2("/");
+            info.setLabel3("/");
+            info.setLabel4("/");
+            info.setLabel5("/");
+            info.setStructureInfoDataList(dataList);
+            info.setSumNum(totalNum);
+            info.setSumProportion(null);
+
+            resultList.add(info);
+        });
+
+        return getStructureResultList(resultList);
+    }
+
+
+    public List<StructureInfo> queryDefaultSubLabel(Map<Long, List<UsageCostData>> standingBookUsageMap,
+                                                    Map<Long, LabelConfigDO> labelMap,
+                                                    List<StandingbookLabelInfoDO> standingbookIdsByLabel,
+                                                    Map<Long, EnergyConfigurationDO> energyMap) {
+        // 标签查询条件处理
+        //根据能源ID分组
+        // 使用 Collectors.groupingBy 根据 name 和 value 分组
+        // 此处不应该过滤，因为如果指定5个标签 因为有一个标签 和能源没有交集，则改标签在取用量数据时候，是取不到的， 而且该标签还需要展示对应数据
+        // 所以不需要过滤 ：即选中五个标签 那么就要展示五个标签，如果过滤的话 那么 标签就有可能过滤掉然后不展示
+        Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
+                .collect(Collectors.groupingBy(
+                        // 第一个分组条件：按 name
+                        StandingbookLabelInfoDO::getName,
+                        // 第二个分组条件：按 value
+                        Collectors.groupingBy(StandingbookLabelInfoDO::getValue)
+                ));
 
         List<StructureInfo> resultList = new ArrayList<>();
 
@@ -312,73 +388,177 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                 String[] labelIds = valueKey.split(",");
                 String label2Name = getLabelName(labelMap, labelIds, 0);
                 String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : "/";
+                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : "/";
+                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : "/";
 
+                List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
+                // 获取标签关联的台账id，并取到对应的数据
                 labelInfoList.forEach(labelInfo -> {
-                    List<UsageCostData> usageList = energyUsageMap.get(labelInfo.getStandingbookId());
+                    List<UsageCostData> usageList = standingBookUsageMap.get(labelInfo.getStandingbookId());
                     if (usageList == null || usageList.isEmpty()) {
                         return; // 计量器具没有数据，跳过
                     }
-
-                    // 用量数据按能源分组
-                    Map<Long, List<UsageCostData>> energyUsageCostMap = usageList
-                            .stream()
-                            .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
-
-                    List<StructureInfo> tempResultList = new ArrayList<>();
-                    energyUsageCostMap.forEach((energyId, usageCostList) -> {
-
-                        // 获取能源数据
-                        EnergyConfigurationDO energyConfigurationDO = energyMap.get(energyId);
-
-                        // 聚合数据 转换成 StandardCoalInfoData
-                        List<StructureInfoData> dataList = usageCostList.stream()
-                                .map(usage -> new StructureInfoData(
-                                        //DateUtil.format(usage.getTime(), dataType.getFormat()),
-                                        usage.getTime(),
-                                        usage.getTotalStandardCoalEquivalent(),
-                                        null
-                                ))
-                                .collect(Collectors.toList());
-
-                        // 折标煤数据求和
-                        BigDecimal totalNum = dataList.stream()
-                                .map(StructureInfoData::getNum)
-                                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-
-                        StructureInfo info = new StructureInfo();
-                        info.setEnergyId(energyId);
-                        info.setEnergyName(energyConfigurationDO.getEnergyName());
-                        info.setLabel1(topLabel.getLabelName());
-                        info.setLabel2(label2Name);
-                        info.setLabel3(label3Name);
-                        info.setStructureInfoDataList(dataList);
-                        info.setSumNum(totalNum);
-                        info.setSumProportion(null);
-
-                        tempResultList.add(info);
-                    });
-                    List<StructureInfo> structureResultList = getStructureResultList(tempResultList);
-                    resultList.addAll(structureResultList);
+                    labelUsageCostDataList.addAll(usageList);
                 });
+
+                // 用量数据按能源分组
+                Map<Long, List<UsageCostData>> energyUsageCostMap = labelUsageCostDataList
+                        .stream()
+                        .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
+
+                List<StructureInfo> tempResultList = new ArrayList<>();
+                energyUsageCostMap.forEach((energyId, usageCostList) -> {
+
+                    // 获取能源数据
+                    EnergyConfigurationDO energyConfigurationDO = energyMap.get(energyId);
+
+                    // 由于数采数据是按 台账 日期能源进行分组的 而一个标签关联多个台账，那么标签同一个日期就会有多条不同台账的数据，所以要按日期进行合并
+                    // 聚合数据 转换成 StandardCoalInfoData
+                    List<StructureInfoData> dataList = new ArrayList<>(usageCostList.stream().collect(Collectors.groupingBy(
+                            UsageCostData::getTime,
+                            Collectors.collectingAndThen(
+                                    Collectors.toList(),
+                                    list -> {
+                                        BigDecimal totalStandardCoal = list.stream()
+                                                .map(UsageCostData::getTotalStandardCoalEquivalent)
+                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                        return new StructureInfoData(list.get(0).getTime(), totalStandardCoal, null);
+                                    }
+                            )
+                    )).values());
+
+                    // 折标煤数据求和
+                    BigDecimal totalNum = dataList.stream()
+                            .map(StructureInfoData::getNum)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+
+                    StructureInfo info = new StructureInfo();
+                    info.setEnergyId(energyId);
+                    info.setEnergyName(energyConfigurationDO.getEnergyName());
+                    info.setLabel1(topLabel.getLabelName());
+                    info.setLabel2(label2Name);
+                    info.setLabel3(label3Name);
+                    info.setLabel4(label4Name);
+                    info.setLabel5(label5Name);
+                    info.setStructureInfoDataList(dataList);
+                    info.setSumNum(totalNum);
+                    info.setSumProportion(null);
+
+                    tempResultList.add(info);
+                });
+                List<StructureInfo> structureResultList = getStructureResultList(tempResultList);
+                resultList.addAll(structureResultList);
             });
         });
 
         return resultList;
-
-
     }
 
-
-    public List<StructureInfo> queryByLabel(Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped,
+    public List<StructureInfo> queryByLabel(String topLabel,
+                                            String childLabels,
+                                            List<StandingbookLabelInfoDO> standingbookIdsByLabel,
                                             List<UsageCostData> usageCostDataList) {
 
-        Map<Long, List<UsageCostData>> energyUsageMap = usageCostDataList.stream()
+        Map<Long, List<UsageCostData>> standingBookUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
 
         Map<Long, LabelConfigDO> labelMap = labelConfigService.getAllLabelConfig()
                 .stream()
                 .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
+
+
+        if (CharSequenceUtil.isNotBlank(topLabel) && CharSequenceUtil.isBlank(childLabels)) {
+            // 只有顶级标签
+            return queryByTopLabel(standingBookUsageMap, labelMap, standingbookIdsByLabel);
+        } else {
+            // 有顶级、有子集标签
+            return queryBySubLabel(standingBookUsageMap, labelMap, standingbookIdsByLabel);
+        }
+    }
+
+    /**
+     * 只有顶级标签处理
+     *
+     * @param standingBookUsageMap
+     * @param labelMap
+     * @param standingbookIdsByLabel
+     * @return
+     */
+    public List<StructureInfo> queryByTopLabel(Map<Long, List<UsageCostData>> standingBookUsageMap,
+                                               Map<Long, LabelConfigDO> labelMap,
+                                               List<StandingbookLabelInfoDO> standingbookIdsByLabel) {
+
+        List<StructureInfo> resultList = new ArrayList<>();
+
+        List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
+        // 获取标签关联的台账id，并取到对应的数据
+        standingbookIdsByLabel.forEach(labelInfo -> {
+            List<UsageCostData> usageList = standingBookUsageMap.get(labelInfo.getStandingbookId());
+            if (usageList == null || usageList.isEmpty()) {
+                return; // 计量器具没有数据，跳过
+            }
+            labelUsageCostDataList.addAll(usageList);
+        });
+
+        // 由于数采数据是按 台账 日期能源进行分组的 而一个标签关联多个台账，那么标签同一个日期就会有多条不同台账的数据，所以要按日期进行合并
+        List<StructureInfoData> dataList = new ArrayList<>(labelUsageCostDataList.stream()
+                .collect(Collectors.groupingBy(
+                        UsageCostData::getTime,
+                        Collectors.collectingAndThen(
+                                Collectors.toList(),
+                                list -> {
+                                    BigDecimal totalStandardCoal = list.stream()
+                                            .map(UsageCostData::getTotalStandardCoalEquivalent)
+                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                    return new StructureInfoData(list.get(0).getTime(), totalStandardCoal, null);
+                                }
+                        )
+                )).values());
+
+
+        BigDecimal totalNum = dataList.stream()
+                .map(StructureInfoData::getNum)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+
+        StructureInfo info = new StructureInfo();
+        StandingbookLabelInfoDO standingbookLabelInfoDO = standingbookIdsByLabel.get(0);
+
+        String topLabelKey = standingbookLabelInfoDO.getName();
+        Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
+        LabelConfigDO topLabel = labelMap.get(topLabelId);
+
+        info.setLabel1(topLabel.getLabelName());
+        info.setLabel2("/");
+        info.setLabel3("/");
+        info.setLabel4("/");
+        info.setLabel5("/");
+        info.setStructureInfoDataList(dataList);
+        info.setSumNum(totalNum);
+        info.setSumProportion(null);
+
+        resultList.add(info);
+
+        return getStructureResultList(resultList);
+    }
+
+    public List<StructureInfo> queryBySubLabel(Map<Long, List<UsageCostData>> standingBookUsageMap,
+                                               Map<Long, LabelConfigDO> labelMap,
+                                               List<StandingbookLabelInfoDO> standingbookIdsByLabel) {
+
+        // 标签查询条件处理
+        //根据能源ID分组
+        // 使用 Collectors.groupingBy 根据 name 和 value 分组
+        // 此处不应该过滤，因为如果指定5个标签 因为有一个标签 和能源没有交集，则改标签在取用量数据时候，是取不到的， 而且该标签还需要展示对应数据
+        // 所以不需要过滤 ：即选中五个标签 那么就要展示五个标签，如果过滤的话 那么 标签就有可能过滤掉然后不展示
+        Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
+                .collect(Collectors.groupingBy(
+                        // 第一个分组条件：按 name
+                        StandingbookLabelInfoDO::getName,
+                        // 第二个分组条件：按 value
+                        Collectors.groupingBy(StandingbookLabelInfoDO::getValue)
+                ));
 
         List<StructureInfo> resultList = new ArrayList<>();
 
@@ -392,36 +572,50 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                 String[] labelIds = valueKey.split(",");
                 String label2Name = getLabelName(labelMap, labelIds, 0);
                 String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : "/";
+                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : "/";
+                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : "/";
 
+                List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
+                // 获取标签关联的台账id，并取到对应的数据
                 labelInfoList.forEach(labelInfo -> {
-                    List<UsageCostData> usageList = energyUsageMap.get(labelInfo.getStandingbookId());
+                    List<UsageCostData> usageList = standingBookUsageMap.get(labelInfo.getStandingbookId());
                     if (usageList == null || usageList.isEmpty()) {
                         return; // 计量器具没有数据，跳过
                     }
-
-                    List<StructureInfoData> dataList = usageList.stream()
-                            .map(usage -> new StructureInfoData(
-                                    //DateUtil.format(usage.getTime(), dataType.getFormat()),
-                                    usage.getTime(),
-                                    usage.getTotalStandardCoalEquivalent(),
-                                    null
-                            ))
-                            .collect(Collectors.toList());
-
-                    BigDecimal totalNum = dataList.stream()
-                            .map(StructureInfoData::getNum)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                    StructureInfo info = new StructureInfo();
-                    info.setLabel1(topLabel.getLabelName());
-                    info.setLabel2(label2Name);
-                    info.setLabel3(label3Name);
-                    info.setStructureInfoDataList(dataList);
-                    info.setSumNum(totalNum);
-                    info.setSumProportion(null);
-
-                    resultList.add(info);
+                    labelUsageCostDataList.addAll(usageList);
                 });
+
+                // 由于数采数据是按 台账 日期能源进行分组的 而一个标签关联多个台账，那么标签同一个日期就会有多条不同台账的数据，所以要按日期进行合并
+                List<StructureInfoData> dataList = new ArrayList<>(labelUsageCostDataList.stream()
+                        .collect(Collectors.groupingBy(
+                                UsageCostData::getTime,
+                                Collectors.collectingAndThen(
+                                        Collectors.toList(),
+                                        list -> {
+                                            BigDecimal totalStandardCoal = list.stream()
+                                                    .map(UsageCostData::getTotalStandardCoalEquivalent)
+                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            return new StructureInfoData(list.get(0).getTime(), totalStandardCoal, null);
+                                        }
+                                )
+                        )).values());
+
+                BigDecimal totalNum = dataList.stream()
+                        .map(StructureInfoData::getNum)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                StructureInfo info = new StructureInfo();
+                info.setLabel1(topLabel.getLabelName());
+                info.setLabel2(label2Name);
+                info.setLabel3(label3Name);
+                info.setLabel4(label4Name);
+                info.setLabel5(label5Name);
+                info.setStructureInfoDataList(dataList);
+                info.setSumNum(totalNum);
+                info.setSumProportion(null);
+
+                resultList.add(info);
+
             });
         });
 
@@ -443,7 +637,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                 .map(energy -> {
                     // 获取与当前能源相关的用量数据
                     List<UsageCostData> usageCostList = energyUsageMap.get(energy.getId());
-                    if (CollectionUtil.isEmpty(usageCostList)) {
+                    if (CollUtil.isEmpty(usageCostList)) {
                         // 没有数据的不返回
                         return null;
                     }
@@ -504,7 +698,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
             structureInfo.setSumProportion(dealBigDecimalScale(proportion, DEFAULT_SCALE));
 
             // 保留有效数字
-            structureInfo.setSumNum(dealBigDecimalScale(structureInfo.getSumNum(),DEFAULT_SCALE));
+            structureInfo.setSumNum(dealBigDecimalScale(structureInfo.getSumNum(), DEFAULT_SCALE));
 
             statisticsStructureDataList = statisticsStructureDataList.stream().peek(s -> {
                 s.setProportion(dealBigDecimalScale(s.getProportion(), DEFAULT_SCALE));
@@ -716,7 +910,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         EnergyConfigurationPageReqVO queryVO = new EnergyConfigurationPageReqVO();
 
         List<Long> energyIds = paramVO.getEnergyIds();
-        if (CollectionUtil.isNotEmpty(energyIds)) {
+        if (CollUtil.isNotEmpty(energyIds)) {
             queryVO.setEnergyIds(energyIds);
         } else {
             // 默认 外购能源全部

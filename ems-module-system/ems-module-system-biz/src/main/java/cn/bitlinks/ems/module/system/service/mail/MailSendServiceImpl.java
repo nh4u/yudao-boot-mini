@@ -12,6 +12,7 @@ import cn.bitlinks.ems.module.system.service.user.AdminUserService;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailAccount;
 import cn.hutool.extra.mail.MailUtil;
+import cn.hutool.http.HtmlUtil;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -139,7 +140,21 @@ public class MailSendServiceImpl implements MailSendService {
         return sendLogId;
     }
 
+    /**
+     * 将纯文本格式内容转为 HTML 格式，保留换行和空格，适用于邮件或网页显示
+     */
+    private String plainTextToHtml(String plainText) {
+        if (StrUtil.isBlank(plainText)) return "";
 
+        // 1. 转义 HTML 特殊字符（防止出现 < > & 破坏结构）
+        String escaped = HtmlUtil.escape(plainText);
+
+        // 2. 替换空格和换行
+        return escaped
+                .replace(" ", "&nbsp;")
+                .replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;")
+                .replace("\n", "<br/>");
+    }
     @Override
     public void doSendMail(MailSendMessage message) {
         // 1. 创建发送账号
@@ -148,7 +163,7 @@ public class MailSendServiceImpl implements MailSendService {
         // 2. 发送邮件
         try {
             String messageId = MailUtil.send(mailAccount, message.getMail(),
-                    message.getTitle(), message.getContent(), true);
+                    message.getTitle(), plainTextToHtml(message.getContent()), true);
             // 3. 更新结果（成功）
             mailLogService.updateMailSendResult(message.getLogId(), messageId, null);
         } catch (Exception e) {
