@@ -2,7 +2,6 @@ package cn.bitlinks.ems.module.power.service.warningstrategy;
 
 import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
-import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.CollectRawDataApi;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.CollectRawDataDTO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
@@ -16,6 +15,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrate
 import cn.bitlinks.ems.module.power.dal.dataobject.warningtemplate.WarningTemplateDO;
 import cn.bitlinks.ems.module.power.dal.mysql.warninginfo.WarningInfoMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyConditionMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningtemplate.WarningTemplateMapper;
 import cn.bitlinks.ems.module.power.enums.DictTypeConstants;
 import cn.bitlinks.ems.module.power.enums.warninginfo.WarningStrategyConnectorEnum;
@@ -30,6 +30,7 @@ import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -40,6 +41,7 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.*;
@@ -61,6 +63,8 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
     private WarningStrategyConditionMapper warningStrategyConditionMapper;
     @Resource
     private WarningInfoMapper warningInfoMapper;
+    @Resource
+    private WarningStrategyMapper warningStrategyMapper;
     @Resource
     private WarningTemplateMapper warningTemplateMapper;
     @Resource
@@ -89,6 +93,8 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
     public void triggerWarning(List<WarningStrategyDO> warningStrategyDOS, LocalDateTime triggerTime) {
         for (WarningStrategyDO warningStrategyDO : warningStrategyDOS) {
             try {
+                // 触发告警的最新异常时间
+                AtomicReference<LocalDateTime> maxTime = new AtomicReference<>(null);
                 Long strategyId = warningStrategyDO.getId();
                 // 如果该策略的状态是关闭
                 if (CommonStatusEnum.DISABLE.getStatus().equals(warningStrategyDO.getStatus())) {
@@ -96,7 +102,7 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                 }
                 // 获取该策略对应的设备和设备分类下的所有设备
                 List<Long> deviceScopeIds = warningStrategyDO.getDeviceScope();
-                if(CollUtil.isEmpty(deviceScopeIds)){
+                if (CollUtil.isEmpty(deviceScopeIds)) {
                     deviceScopeIds = new ArrayList<>();
                 }
                 // 1.1 查询台账分类范围下的所有设备id todo 循环递归问题, 待优化
@@ -166,10 +172,7 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                 Map<Long, List<StandingbookAttributeDO>> attrsMap = standingbookAttributeService.getAttributesBySbIds(deviceScopeIds);
                 Map<Long, List<StandingbookTmplDaqAttrDO>> daqAttrsMap =
                         standingbookTmplDaqAttrService.getDaqAttrsBySbIds(deviceScopeIds);
-                // 2.2 查询 台账id-> 台账
-                List<StandingbookDO> standingbookDOList = standingbookService.getByStandingbookIds(deviceScopeIds);
-                Map<Long, StandingbookDO> standingbookDOMap = standingbookDOList.stream()
-                        .collect(Collectors.toMap(StandingbookDO::getId, item -> item));
+
                 // 2.2 查询 台账分类id-> 台账分类
                 List<StandingbookTypeDO> standingbookTypeList = standingbookTypeService.getStandingbookTypeList(new StandingbookTypeListReqVO());
                 Map<Long, StandingbookTypeDO> standingbookTypeDOMap = standingbookTypeList.stream()
@@ -250,8 +253,19 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                         conditionParamsMapList.add(conditionParamsMap);
                         String deviceRel = String.format("%s(%s)", sbName, sbCode);
                         deviceRelList.add(deviceRel);
+                        // 处理最大时间
+                        LocalDateTime curTime = collectRawDataDTO.getCollectTime();
+                        // 更新最大时间
+                        maxTime.updateAndGet(prev -> (prev == null || curTime.isAfter(prev)) ? curTime : prev);
+
                     });
                 });
+
+                //------------------------------ 该策略的最新异常时间不满足的话直接return ------------------------
+                if (warningStrategyDO.getLastExpTime() != null && !maxTime.get().isAfter(warningStrategyDO.getLastExpTime())) {
+                    log.info("该策略 id {},已触发过相同时间告警内容", strategyId);
+                    continue;
+                }
 
 
                 //------------------------------（还差收件人、标题、内容未填充）------------------------
@@ -275,6 +289,8 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                 if (mailTemplateDO != null) {
                     sendSiteMsg(mailUserIds, mailTemplateDO, conditionParamsMapList, null);
                 }
+                // 更新告警规则的最新异常时间
+                warningStrategyMapper.update(new LambdaUpdateWrapper<WarningStrategyDO>().set(WarningStrategyDO::getLastExpTime, triggerTime).eq(WarningStrategyDO::getId, strategyId));
             } catch (Exception e) {
                 log.error("该策略 id {} ,告警触发异常", warningStrategyDO.getId(), e);
             }
@@ -348,7 +364,7 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
      */
     private CollectRawDataDTO filterMatchCollectRawDataDTOByStandingbookId(WarningStrategyConditionDO conditionVO,
                                                                            Long standingbookId, Map<Long, Map<String,
-            CollectRawDataDTO>> collectRawDataMap) {
+                    CollectRawDataDTO>> collectRawDataMap) {
         List<String> paramIds = conditionVO.getParamId();
         // 获取参数编码
         String conditionCodeAndEnergyFlag = paramIds.get(paramIds.size() - 1);
