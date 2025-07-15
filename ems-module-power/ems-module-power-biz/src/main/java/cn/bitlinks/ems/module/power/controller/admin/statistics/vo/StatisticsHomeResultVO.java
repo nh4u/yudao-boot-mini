@@ -44,6 +44,8 @@ public class StatisticsHomeResultVO {
     @Schema(description = "能源转换率", example = "能源转换率")
     private BigDecimal energyConversionRate;
 
+    @Schema(description = "能源列表数据", example = "能源列表数据")
+    private List<StatisticsOverviewEnergyData> statisticsOverviewEnergyDataList;
 
     @Schema(description = "折标煤用量统计", example = "折标煤用量统计", hidden = true)
     private List<StatisticsHomeData> standardCoalStatistics;

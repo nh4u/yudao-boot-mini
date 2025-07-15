@@ -20,14 +20,15 @@ public interface UsageCostMapper {
                                 @Param("startDate") LocalDateTime startDate,
                                 @Param("endDate") LocalDateTime endDate,
                                 @Param("standingBookIds") List<Long> standingBookIds);
+
     LocalDateTime getLastTime(@Param("queryParam") StatisticsParamV2VO paramVO,
-                                @Param("startDate") LocalDateTime startDate,
-                                @Param("endDate") LocalDateTime endDate,
-                                @Param("standingBookIds") List<Long> standingBookIds);
+                              @Param("startDate") LocalDateTime startDate,
+                              @Param("endDate") LocalDateTime endDate,
+                              @Param("standingBookIds") List<Long> standingBookIds);
 
     List<UsageCostData> getListOfHome(@Param("startDate") LocalDateTime startDate,
-                                @Param("endDate") LocalDateTime endDate,
-                                @Param("energyIdList") List<Long> energyIdList);
+                                      @Param("endDate") LocalDateTime endDate,
+                                      @Param("energyIdList") List<Long> energyIdList);
 
 
     List<UsageCostData> getEnergyAndSbStandardCoal(
@@ -44,4 +45,8 @@ public interface UsageCostMapper {
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate,
             @Param("standingBookIds") List<Long> standingBookIds);
+
+    List<UsageCostData> getEnergyStandardCoalByEnergyIds(@Param("startDate") LocalDateTime startDate,
+                                                         @Param("endDate") LocalDateTime endDate,
+                                                         @Param("energyIds") List<Long> energyIds);
 }

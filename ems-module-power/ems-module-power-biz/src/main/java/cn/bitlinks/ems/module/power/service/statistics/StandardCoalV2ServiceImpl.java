@@ -771,10 +771,10 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                         )
                 )).values());
 
-
-        BigDecimal totalConsumption = dataList.stream()
-                .map(StandardCoalInfoData::getConsumption)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        //按标签统计时候 用量不用合计
+//        BigDecimal totalConsumption = dataList.stream()
+//                .map(StandardCoalInfoData::getConsumption)
+//                .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal totalStandardCoal = dataList.stream()
                 .map(StandardCoalInfoData::getStandardCoal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -798,7 +798,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         }).collect(Collectors.toList());
 
         info.setStandardCoalInfoDataList(dataList);
-        info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, DEFAULT_SCALE));
+        info.setSumEnergyConsumption(dealBigDecimalScale(BigDecimal.ZERO, DEFAULT_SCALE));
         info.setSumEnergyStandardCoal(dealBigDecimalScale(totalStandardCoal, DEFAULT_SCALE));
 
         resultList.add(info);
@@ -832,8 +832,6 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
 
         List<StandardCoalInfo> resultList = new ArrayList<>();
 
-        log.info("==============================================================================");
-        log.info("grouped: " + grouped);
         grouped.forEach((topLabelKey, labelInfoGroup) -> {
             Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
             LabelConfigDO topLabel = labelMap.get(topLabelId);
@@ -876,17 +874,13 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                                 )
                         )).values());
 
-                BigDecimal totalConsumption = dataList.stream()
-                        .map(StandardCoalInfoData::getConsumption)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                //按标签统计时候 用量不用合计
+//                BigDecimal totalConsumption = dataList.stream()
+//                        .map(StandardCoalInfoData::getConsumption)
+//                        .reduce(BigDecimal.ZERO, BigDecimal::add);
                 BigDecimal totalStandardCoal = dataList.stream()
                         .map(StandardCoalInfoData::getStandardCoal)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
-                log.info("----------------------------------------------------------------------------------");
-                log.info("labelUsageCostDataList: " + labelUsageCostDataList);
-                log.info("dataList: " + dataList);
-                log.info("totalConsumption: " + totalConsumption);
-                log.info("totalStandardCoal: " + totalStandardCoal);
 
                 StandardCoalInfo info = new StandardCoalInfo();
                 info.setLabel1(topLabel.getLabelName());
@@ -901,15 +895,12 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 }).collect(Collectors.toList());
 
                 info.setStandardCoalInfoDataList(dataList);
-                log.info("StandardCoalInfoDataList: " + info.getStandardCoalInfoDataList());
-                log.info("----------------------------------------------------------------------------------");
-                info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, DEFAULT_SCALE));
+                info.setSumEnergyConsumption(dealBigDecimalScale(BigDecimal.ZERO, DEFAULT_SCALE));
                 info.setSumEnergyStandardCoal(dealBigDecimalScale(totalStandardCoal, DEFAULT_SCALE));
 
                 resultList.add(info);
             });
         });
-        log.info("==============================================================================");
         return resultList;
     }
 

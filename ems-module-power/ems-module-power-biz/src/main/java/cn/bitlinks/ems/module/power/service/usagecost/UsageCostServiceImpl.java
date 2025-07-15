@@ -102,6 +102,20 @@ public class UsageCostServiceImpl implements UsageCostService {
     }
 
     /**
+     * 按能源分组
+     *
+     * @param startDate
+     * @param endDate
+     * @param energyIds
+     * @return
+     */
+    @Override
+    @TenantIgnore
+    public List<UsageCostData> getEnergyStandardCoalByEnergyIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds) {
+        return usageCostMapper.getEnergyStandardCoalByEnergyIds(startDate, endDate, energyIds);
+    }
+
+    /**
      * 按台账分组
      *
      * @param startDate
