@@ -489,10 +489,10 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                                 }
                         )
                 )).values());
-
-        BigDecimal totalConsumption = dataList.stream()
-                .map(StatisticInfoDataV2::getConsumption)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        //按标签统计时候 用量不用合计
+//        BigDecimal totalConsumption = dataList.stream()
+//                .map(StatisticInfoDataV2::getConsumption)
+//                .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal totalCost = dataList.stream()
                 .map(StatisticInfoDataV2::getMoney)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -517,7 +517,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         }).collect(Collectors.toList());
 
         info.setStatisticsDateDataList(dataList);
-        info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
+        info.setSumEnergyConsumption(dealBigDecimalScale(BigDecimal.ZERO, scale));
         info.setSumEnergyMoney(dealBigDecimalScale(totalCost, scale));
 
         resultList.add(info);
@@ -587,9 +587,10 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                                 )
                         )).values());
 
-                BigDecimal totalConsumption = dataList.stream()
-                        .map(StatisticInfoDataV2::getConsumption)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                //按标签统计时候 用量不用合计
+//                BigDecimal totalConsumption = dataList.stream()
+//                        .map(StatisticInfoDataV2::getConsumption)
+//                        .reduce(BigDecimal.ZERO, BigDecimal::add);
                 BigDecimal totalCost = dataList.stream()
                         .map(StatisticInfoDataV2::getMoney)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -608,7 +609,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
 
                 info.setStatisticsDateDataList(dataList);
-                info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
+                info.setSumEnergyConsumption(dealBigDecimalScale(BigDecimal.ZERO, scale));
                 info.setSumEnergyMoney(dealBigDecimalScale(totalCost, scale));
 
                 resultList.add(info);
