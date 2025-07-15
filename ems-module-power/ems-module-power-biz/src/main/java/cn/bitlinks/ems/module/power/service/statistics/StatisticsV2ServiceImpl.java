@@ -513,7 +513,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
         dataList = dataList.stream().peek(i -> {
             i.setMoney(dealBigDecimalScale(i.getMoney(), scale));
-            i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
+            i.setConsumption(dealBigDecimalScale(BigDecimal.ZERO, scale));
         }).collect(Collectors.toList());
 
         info.setStatisticsDateDataList(dataList);
@@ -604,7 +604,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
                 dataList = dataList.stream().peek(i -> {
                     i.setMoney(dealBigDecimalScale(i.getMoney(), scale));
-                    i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
+                    i.setConsumption(dealBigDecimalScale(BigDecimal.ZERO, scale));
                 }).collect(Collectors.toList());
 
 
