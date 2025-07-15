@@ -5,6 +5,7 @@ import cn.bitlinks.ems.framework.common.enums.UserTypeEnum;
 import cn.bitlinks.ems.module.system.dal.dataobject.mail.MailAccountDO;
 import cn.bitlinks.ems.module.system.dal.dataobject.mail.MailTemplateDO;
 import cn.bitlinks.ems.module.system.dal.dataobject.user.AdminUserDO;
+import cn.bitlinks.ems.module.system.framework.mail.HtmlFormatter;
 import cn.bitlinks.ems.module.system.mq.message.mail.MailSendMessage;
 import cn.bitlinks.ems.module.system.mq.producer.mail.MailProducer;
 import cn.bitlinks.ems.module.system.service.member.MemberService;
@@ -20,6 +21,8 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.system.enums.ErrorCodeConstants.*;
@@ -110,7 +113,7 @@ public class MailSendServiceImpl implements MailSendService {
                 account, mailTemplateDO, true);
         // 发送 MQ 消息，异步执行发送短信
         mailProducer.sendMailSendMessage(sendLogId, mail, account.getId(),
-                templateName, title, content);
+                account.getUsername(), title, content);
         return sendLogId;
     }
 
@@ -140,21 +143,7 @@ public class MailSendServiceImpl implements MailSendService {
         return sendLogId;
     }
 
-    /**
-     * 将纯文本格式内容转为 HTML 格式，保留换行和空格，适用于邮件或网页显示
-     */
-    private String plainTextToHtml(String plainText) {
-        if (StrUtil.isBlank(plainText)) return "";
 
-        // 1. 转义 HTML 特殊字符（防止出现 < > & 破坏结构）
-        String escaped = HtmlUtil.escape(plainText);
-
-        // 2. 替换空格和换行
-        return escaped
-                .replace(" ", "&nbsp;")
-                .replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;")
-                .replace("\n", "<br/>");
-    }
     @Override
     public void doSendMail(MailSendMessage message) {
         // 1. 创建发送账号
@@ -163,7 +152,7 @@ public class MailSendServiceImpl implements MailSendService {
         // 2. 发送邮件
         try {
             String messageId = MailUtil.send(mailAccount, message.getMail(),
-                    message.getTitle(), plainTextToHtml(message.getContent()), true);
+                    message.getTitle(), HtmlFormatter.formatHtml(message.getContent()), true);
             // 3. 更新结果（成功）
             mailLogService.updateMailSendResult(message.getLogId(), messageId, null);
         } catch (Exception e) {
