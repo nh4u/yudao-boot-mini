@@ -794,7 +794,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
 
         dataList = dataList.stream().peek(i -> {
             i.setStandardCoal(dealBigDecimalScale(i.getStandardCoal(), DEFAULT_SCALE));
-            i.setConsumption(dealBigDecimalScale(i.getConsumption(), DEFAULT_SCALE));
+            i.setConsumption(dealBigDecimalScale(BigDecimal.ZERO, DEFAULT_SCALE));
         }).collect(Collectors.toList());
 
         info.setStandardCoalInfoDataList(dataList);
@@ -891,7 +891,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
 
                 dataList = dataList.stream().peek(i -> {
                     i.setStandardCoal(dealBigDecimalScale(i.getStandardCoal(), DEFAULT_SCALE));
-                    i.setConsumption(dealBigDecimalScale(i.getConsumption(), DEFAULT_SCALE));
+                    i.setConsumption(dealBigDecimalScale(BigDecimal.ZERO, DEFAULT_SCALE));
                 }).collect(Collectors.toList());
 
                 info.setStandardCoalInfoDataList(dataList);
