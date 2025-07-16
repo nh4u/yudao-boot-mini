@@ -49,7 +49,7 @@ public class StatisticsHomeController {
     }
 
     @PostMapping("/energy")
-    @Operation(summary = "折标煤分析图")
+    @Operation(summary = "首页能源数据")
     public CommonResult<List<StatisticsOverviewEnergyData>> energy(@Valid @RequestBody StatisticsParamHomeV2VO paramVO) {
         return success(statisticsHomeService.energy(paramVO));
     }
