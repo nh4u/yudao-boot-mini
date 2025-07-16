@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.controller.admin.statistics.vo;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -11,6 +12,7 @@ import lombok.NoArgsConstructor;
  * @date 2025年05月10日 16:35
  */
 @Data
+@AllArgsConstructor
 @NoArgsConstructor
 public class UsageCostData {
     /**
