@@ -64,9 +64,9 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
     @Resource
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
 
-    public static final String NOW = "now";
-    public static final String PREVIOUS = "previous";
-    public static final String RATIO = "ratio";
+    public static final String NOW = "当期";
+    public static final String PREVIOUS = "上期";
+    public static final String RATIO = "环比";
 
     public static final String DEFAULT_GROUP_NAME = "总";
 
