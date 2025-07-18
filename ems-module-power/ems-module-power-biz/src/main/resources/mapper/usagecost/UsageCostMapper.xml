@@ -59,7 +59,7 @@
         FROM
         usage_cost
         WHERE
-        aggregate_time &gt; #{startDate}
+        aggregate_time &gt;= #{startDate}
         AND aggregate_time &lt;= #{endDate}
             AND standingbook_id IN
             <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
@@ -108,7 +108,7 @@
         FROM
         usage_cost
         WHERE
-        aggregate_time &gt; #{startDate}
+        aggregate_time &gt;= #{startDate}
         AND aggregate_time &lt;= #{endDate}
         AND standingbook_id IN
         <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
@@ -151,7 +151,7 @@
         usage_cost
         WHERE
 
-        aggregate_time &gt; #{startDate}
+        aggregate_time &gt;= #{startDate}
         AND aggregate_time &lt;= #{endDate}
         AND standingbook_id IN
         <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
@@ -168,7 +168,7 @@
         FROM
         usage_cost
         WHERE
-        aggregate_time &gt; #{startDate}
+        aggregate_time &gt;= #{startDate}
         AND aggregate_time &lt;= #{endDate}
         AND standingbook_id IN
         <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
@@ -183,7 +183,7 @@
         SUM( current_usage ) AS currentTotalUsage,
         SUM( standard_coal_equivalent ) AS totalStandardCoalEquivalent
         FROM usage_cost
-        WHERE aggregate_time &gt; #{startDate}
+        WHERE aggregate_time &gt;= #{startDate}
         AND aggregate_time &lt;= #{endDate}
         AND energy_id IN
         <foreach collection="energyIds" item="item" open="(" separator="," close=")">
@@ -199,7 +199,7 @@
         FROM
         usage_cost
         WHERE
-        aggregate_time &gt; #{startDate}
+        aggregate_time &gt;= #{startDate}
         AND aggregate_time &lt;= #{endDate}
 
         AND standingbook_id IN

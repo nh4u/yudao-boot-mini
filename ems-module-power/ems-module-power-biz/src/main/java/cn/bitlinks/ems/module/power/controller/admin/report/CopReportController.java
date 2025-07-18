@@ -115,17 +115,16 @@ public class CopReportController {
         List<List<String>> header = copHourAggDataService.getExcelHeader(pageReqVO);
         List<List<Object>> dataList = copHourAggDataService.getExcelData(pageReqVO);
 
+        // 放在 write前配置response才会生效，放在后面不生效
+        // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
+        response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
+        response.setContentType("application/vnd.ms-excel;charset=UTF-8");
+
         EasyExcel.write(response.getOutputStream())
                 // 动态头
                 .head(header)
                 .sheet("数据")
                 // 表格数据
                 .doWrite(dataList);
-
-
-        // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
-        response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
-        response.setContentType("application/vnd.ms-excel;charset=UTF-8");
-
     }
 }
