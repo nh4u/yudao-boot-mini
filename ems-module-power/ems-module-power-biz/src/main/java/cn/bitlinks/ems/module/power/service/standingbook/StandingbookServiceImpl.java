@@ -1,9 +1,13 @@
 package cn.bitlinks.ems.module.power.service.standingbook;
 
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
+import cn.bitlinks.ems.module.power.enums.RedisKeyConstants;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,12 +34,6 @@ import cn.bitlinks.ems.module.acquisition.api.quartz.QuartzApi;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.AssociationData;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.MeasurementVirtualAssociationSaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingBookTypeTreeRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookAssociationReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookEnergyParamReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookEnergyTypeVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementdevice.MeasurementDeviceDO;
@@ -126,15 +124,12 @@ public class StandingbookServiceImpl implements StandingbookService {
     private StandingbookAcquisitionService standingbookAcquisitionService;
 
     @Resource
-    @Lazy
     private EnergyConfigurationMapper energyConfigurationMapper;
 
     @Resource
     @Lazy
     private EnergyParametersService energyParametersService;
-    @Resource
-    @Lazy
-    private StandingbookService standingbookService;
+
 
     @Override
     public Long count(Long typeId) {
@@ -378,6 +373,13 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     }
 
+    @Override
+    @Cacheable(value = RedisKeyConstants.STANDING_BOOK_MAP, key = "'all'", unless = "#result == null || #result.isEmpty()")
+    public Map<Long, StandingbookDTO> getStandingbookDTOMap() {
+        List<StandingbookDTO> list =  standingbookAttributeMapper.getStandingbookDTO();
+        return list.stream().collect(Collectors.toMap(StandingbookDTO::getStandingbookId, Function.identity()));
+    }
+
     /**
      * 分类list和台账节点list
      *
@@ -520,6 +522,8 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     @Transactional
+    @CacheEvict(value = RedisKeyConstants.STANDING_BOOK_MAP, allEntries = true)
+
     public Long createStandingbook(Map<String, String> createReqVO) {
         // 插入
         if (!createReqVO.containsKey(ATTR_TYPE_ID)) {
@@ -602,6 +606,8 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     @Transactional
+    @CacheEvict(value = RedisKeyConstants.STANDING_BOOK_MAP, allEntries = true)
+
     public void updateStandingbook(Map<String, String> updateReqVO) {
         // 校验存在
         validateStandingbookExists(Long.valueOf(updateReqVO.get("id")));
@@ -640,6 +646,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Transactional
     @Override
+    @CacheEvict(value = RedisKeyConstants.STANDING_BOOK_MAP, allEntries = true)
     public void deleteStandingbookBatch(List<Long> ids) {
         if (CollUtil.isEmpty(ids)) {
             return;
