@@ -13,12 +13,15 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.Standingboo
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.templ.StandingbookTmplDaqAttrMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.enums.ApiConstants;
+import cn.bitlinks.ems.module.power.enums.RedisKeyConstants;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -53,6 +56,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
 
     @Transactional
     @Override
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_TYPE_TREE, RedisKeyConstants.STANDING_BOOK_TYPE_ID_NAME_MAP}, allEntries = true)
     public Long createStandingbookType(StandingbookTypeSaveReqVO createReqVO) {
         // 校验父级类型编号的有效性
         validateParentStandingbookType(null, createReqVO.getSuperId());
@@ -74,6 +78,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
 
     @Transactional
     @Override
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_TYPE_TREE, RedisKeyConstants.STANDING_BOOK_TYPE_ID_NAME_MAP}, allEntries = true)
     public void updateStandingbookType(StandingbookTypeSaveReqVO updateReqVO) {
         // 校验台账是否存在
         StandingbookTypeDO standingbookTypeDO = standingbookTypeMapper.selectById(updateReqVO.getId());
@@ -95,6 +100,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
 
     /**
      * 校验分类名称和编码是否修改
+     *
      * @param updateObj
      * @param existDO
      * @return
@@ -137,6 +143,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
     }
 
     @Override
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_TYPE_TREE, RedisKeyConstants.STANDING_BOOK_TYPE_ID_NAME_MAP}, allEntries = true)
     public void deleteStandingbookType(Long id) {
         ArrayList<Long> ids = new ArrayList<>();
         recursiveDeletion(ids, id);
@@ -272,6 +279,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
     }
 
     @Override
+    @Cacheable(value = RedisKeyConstants.STANDING_BOOK_TYPE_TREE, key = "'all'", unless = "#result == null or #result.isEmpty()")
     public List<StandingbookTypeDO> getStandingbookTypeNode() {
         List<StandingbookTypeDO> nodes = standingbookTypeMapper.selectNotDelete();
 
@@ -299,10 +307,12 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         }
         return rootNodes;
     }
+
     @Override
     public List<StandingbookTypeDO> getStandingbookTypeIdList(List<Long> typeIds) {
         return standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>().inIfPresent(StandingbookTypeDO::getId, typeIds));
     }
+
     @Override
     public Map<Long, StandingbookTypeDO> getStandingbookTypeIdMap(List<Long> typeIds) {
         List<StandingbookTypeDO> allList = getStandingbookTypeIdList(typeIds);
@@ -376,6 +386,20 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         List<Long> subtreeIds = getSubtreeIds(typeList, id);
         List<StandingbookDO> standingbookDOList = standingbookService.getByTypeIds(subtreeIds);
         return CollUtil.isNotEmpty(standingbookDOList);
+    }
+
+    @Override
+    @Cacheable(value = RedisKeyConstants.STANDING_BOOK_TYPE_ID_NAME_MAP, key = "'all'", unless = "#result == null || #result.isEmpty()")
+    public Map<Long, String> getStandingbookTypeIdNameMap() {
+        Map<Long, String> result = new HashMap<>();
+        List<StandingbookTypeDO> typeList = standingbookTypeMapper.selectList();
+        if (CollUtil.isEmpty(typeList)) {
+            return result;
+        }
+        for (StandingbookTypeDO type : typeList) {
+            result.put(type.getId(), type.getName());
+        }
+        return result;
     }
 
 

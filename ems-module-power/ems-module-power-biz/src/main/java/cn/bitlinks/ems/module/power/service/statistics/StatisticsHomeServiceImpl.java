@@ -239,8 +239,17 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
                 StatisticsOverviewEnergyData energyData = new StatisticsOverviewEnergyData();
                 energyData.setName(energyConfigurationDO.getEnergyName());
                 energyData.setEnergyIcon(energyConfigurationDO.getEnergyIcon());
+                energyData.setMoney(BigDecimal.ZERO);
+                energyData.setStandardCoal(BigDecimal.ZERO);
+                energyData.setConsumption(BigDecimal.ZERO);
                 result.add(energyData);
             });
+
+            StatisticsOverviewEnergyData sum = new StatisticsOverviewEnergyData();
+            sum.setName("综合");
+            sum.setMoney(BigDecimal.ZERO);
+            sum.setStandardCoal(BigDecimal.ZERO);
+            result.add(sum);
             return result;
         }
         return energy(usageCostDataList, energyList);
@@ -272,6 +281,10 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
                 energyData.setMoney(usageCostData.getTotalCost());
                 energyData.setStandardCoal(usageCostData.getTotalStandardCoalEquivalent());
                 energyData.setConsumption(usageCostData.getTotalCost());
+            } else {
+                energyData.setMoney(BigDecimal.ZERO);
+                energyData.setStandardCoal(BigDecimal.ZERO);
+                energyData.setConsumption(BigDecimal.ZERO);
             }
             result.add(energyData);
         });
