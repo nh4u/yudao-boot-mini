@@ -16,12 +16,11 @@ import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurat
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ArrayUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
+import com.alibaba.excel.util.ListUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -425,7 +424,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                                         BigDecimal totalStandardCoal = list.stream()
                                                 .map(UsageCostData::getTotalStandardCoalEquivalent)
                                                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-                                        return new UsageCostData(null,null,list.get(0).getTime(), totalConsumption, null,totalStandardCoal);
+                                        return new UsageCostData(null, null, list.get(0).getTime(), totalConsumption, null, totalStandardCoal);
                                     }
                             )
                     )).values());
@@ -481,6 +480,50 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         // 返回查询结果。
         return resultV2VO;
 
+    }
+
+    @Override
+    public List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO) {
+
+        // 1.校验时间范围
+        LocalDateTime[] range = validateRange(paramVO.getRange());
+        // 2.时间处理
+        LocalDateTime startTime = range[0];
+        LocalDateTime endTime = range[1];
+
+        List<List<String>> list = ListUtils.newArrayList();
+        // 标签处理 能源处理
+        list.add(Arrays.asList("标签1", "标签1"));
+        list.add(Arrays.asList("能源", "能源"));
+        // 月份数据处理
+        DataTypeEnum dataTypeEnum = validateDateType(paramVO.getDateType());
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, dataTypeEnum);
+
+        xdata.forEach(x -> {
+            list.add(Arrays.asList(x, "用量"));
+            list.add(Arrays.asList(x, "折标煤"));
+        });
+
+        // 周期合计
+        list.add(Arrays.asList("周期合计", "用量"));
+        list.add(Arrays.asList("周期合计", "折标煤"));
+        return list;
+
+    }
+
+    @Override
+    public List<List<Object>> getExcelData(StatisticsParamV2VO pageReqVO) {
+        // 结果list
+        List<List<Object>> result = ListUtils.newArrayList();
+        List<Object> data = ListUtils.newArrayList();
+        data.add("每月合计");
+        data.add("每月合计");
+        data.add("/");
+        data.add(32232.33);
+        data.add("/");
+        data.add(32232.33);
+        result.add(data);
+        return result;
     }
 
     public List<StandardCoalInfo> queryDefault(String topLabel,

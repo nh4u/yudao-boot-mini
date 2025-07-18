@@ -2,6 +2,8 @@ package cn.bitlinks.ems.module.power.service.statistics;
 
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 
+import java.util.List;
+
 /**
  * @Title: ydme-ems
  * @description:
@@ -24,4 +26,8 @@ public interface StandardCoalV2Service {
      * @return
      */
     StatisticsChartResultV2VO standardCoalAnalysisChart(StatisticsParamV2VO paramVO);
+
+    List<List<String>> getExcelHeader(StatisticsParamV2VO pageReqVO);
+
+    List<List<Object>> getExcelData(StatisticsParamV2VO pageReqVO);
 }
