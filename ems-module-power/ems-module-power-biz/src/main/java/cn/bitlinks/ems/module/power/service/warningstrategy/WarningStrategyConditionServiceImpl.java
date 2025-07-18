@@ -85,9 +85,9 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
             AttributeTreeNode typeNode = new AttributeTreeNode();
             typeNode.setPId(String.valueOf(0L));
             typeNode.setType(AttributeTreeNodeTypeEnum.SB_TYPE.getCode());
-            typeNode.setId(typeId+StringPool.HASH+typeNode.getType());
+            typeNode.setId(String.valueOf(typeId));
             typeNode.setName(Objects.isNull(standingbookTypeDO) ? StringPool.EMPTY : standingbookTypeDO.getName());
-            typeNode.setAttrChildren(convertDaqAttrNode(typeNode.getId(), attrDOS));
+            typeNode.setAttrChildren(convertDaqAttrNode(String.valueOf(typeId), attrDOS));
             result.add(typeNode);
         });
         return result;
@@ -179,7 +179,7 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
         List<StandingbookDO> measureList = groupSb.get(false);
         if (CollUtil.isNotEmpty(measureList)) {
             List<Long> mIds = measureList.stream().map(StandingbookDO::getId).collect(Collectors.toList());
-            List<AttributeTreeNode> measureNode = getMeasureRelNode(String.valueOf(0L), mIds, allAttrMap, allDaqAttrMap,
+            List<AttributeTreeNode> measureNode = getMeasureRelNode(0L, mIds, allAttrMap, allDaqAttrMap,
                     measurementAssociationDOS);
             result.addAll(measureNode);
         }
@@ -220,7 +220,7 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
             AttributeTreeNode deviceRoot = new AttributeTreeNode();
             deviceRoot.setPId(String.valueOf(0L));
             deviceRoot.setType(AttributeTreeNodeTypeEnum.EQUIPMENT.getCode());
-            deviceRoot.setId(device.getId() + StringPool.HASH + deviceRoot.getType());
+            deviceRoot.setId(String.valueOf(device.getId()));
             deviceRoot.setAttrChildren(convertDaqAttrNode(deviceRoot.getId(), attrDOS));
             List<StandingbookAttributeDO> attributeDOS = allAttrMap.get(device.getId());
             Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream()
@@ -240,7 +240,7 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
             }
             List<Long> measureRelIds = measurementDeviceDOS.stream().map(MeasurementDeviceDO::getMeasurementInstrumentId).collect(Collectors.toList());
             // 构造下级计量器具节点
-            List<AttributeTreeNode> measureNode = getMeasureRelNode(deviceRoot.getId(), measureRelIds, allAttrMap,
+            List<AttributeTreeNode> measureNode = getMeasureRelNode(device.getId(), measureRelIds, allAttrMap,
                     allDaqAttrMap, measurementAssociationDOS);
             if (CollUtil.isEmpty(measureNode)) {
                 result.add(deviceRoot);
@@ -262,7 +262,7 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
      * @param measurementAssociationDOS 计量器具关联下级计量器具列表
      * @return 组合数采参数树形结构 List<AttributeTreeNode>
      */
-    private List<AttributeTreeNode> getMeasureRelNode(String pId,
+    private List<AttributeTreeNode> getMeasureRelNode(Long pId,
                                                       List<Long> measureIds,
                                                       Map<Long, List<StandingbookAttributeDO>> allAttrMap,
                                                       Map<Long, List<StandingbookTmplDaqAttrDO>> allDaqAttrMap,
@@ -281,10 +281,10 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
             }
             // 组装计量器具节点
             AttributeTreeNode measureNode = new AttributeTreeNode();
-            measureNode.setPId(pId);
+            measureNode.setPId(String.valueOf(pId));
             measureNode.setType(AttributeTreeNodeTypeEnum.MEASURING.getCode());
-            measureNode.setId(measureId+StringPool.HASH+measureNode.getType());
-            measureNode.setAttrChildren(convertDaqAttrNode(measureNode.getId(), attrDOS));
+            measureNode.setId(String.valueOf(measureId));
+            measureNode.setAttrChildren(convertDaqAttrNode(String.valueOf(measureId), attrDOS));
 
             List<StandingbookAttributeDO> measureAttrDOS = allAttrMap.get(measureId);
             Optional<StandingbookAttributeDO> measureNameOptional = measureAttrDOS.stream()
@@ -306,7 +306,7 @@ public class WarningStrategyConditionServiceImpl implements WarningStrategyCondi
             // 1.获取关联的id
             List<Long> measureRelIds = measureAssociationList.stream().map(MeasurementVirtualAssociationDO::getMeasurementId).collect(Collectors.toList());
             // 把下一级的计量器具节点补充完整
-            List<AttributeTreeNode> childList = getMeasureRelNode(measureNode.getId(), measureRelIds, allAttrMap, allDaqAttrMap,
+            List<AttributeTreeNode> childList = getMeasureRelNode(measureId, measureRelIds, allAttrMap, allDaqAttrMap,
                     measurementAssociationDOS);
             if (CollUtil.isEmpty(childList)) {
                 result.add(measureNode);
