@@ -548,7 +548,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             // 获取上期
             usageCostList.forEach(u -> {
                 String previousTime = LocalDateTimeUtils.getPreviousTime(u.getTime(), dateTypeEnum);
-                String key = u.getStandingbookId() + "_" + previousTime;
+                String key = u.getStandingbookId() + "_" + energyId + "_" + previousTime;
                 UsageCostData previous = lastMap.get(key);
                 if (Objects.isNull(previous)) {
                     return; // 计量器具没有数据，跳过
@@ -668,7 +668,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                     // 获取上期
                     usageCostList.forEach(u -> {
                         String previousTime = LocalDateTimeUtils.getPreviousTime(u.getTime(), dateTypeEnum);
-                        String key = u.getStandingbookId() + "_" + previousTime;
+                        String key = u.getStandingbookId() + "_" + energyId + "_" + previousTime;
                         UsageCostData previous = lastMap.get(key);
                         if (Objects.isNull(previous)) {
                             return; // 计量器具没有数据，跳过
