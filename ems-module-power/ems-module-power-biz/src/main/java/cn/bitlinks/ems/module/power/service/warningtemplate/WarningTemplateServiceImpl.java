@@ -193,7 +193,7 @@ public class WarningTemplateServiceImpl implements WarningTemplateService {
             // 如果没有表格，按照整体内容处理
             if (!templateStr.contains("<table>")) {
                 conditionParamsMapList.forEach(paramMap -> {
-                    sb.append(StrUtil.format(templateStr, paramMap));
+                    sb.append(StrUtil.format(templateStr, paramMap));sb.append("\n");
                 });
                 return sb.toString();
             }
