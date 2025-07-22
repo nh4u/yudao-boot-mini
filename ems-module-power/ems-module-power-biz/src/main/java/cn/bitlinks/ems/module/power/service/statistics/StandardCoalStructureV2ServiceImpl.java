@@ -406,7 +406,6 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                         .stream()
                         .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
 
-                List<StructureInfo> tempResultList = new ArrayList<>();
                 energyUsageCostMap.forEach((energyId, usageCostList) -> {
 
                     // 获取能源数据
@@ -432,7 +431,6 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                             .map(StructureInfoData::getNum)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-
                     StructureInfo info = new StructureInfo();
                     info.setEnergyId(energyId);
                     info.setEnergyName(energyConfigurationDO.getEnergyName());
@@ -445,14 +443,12 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                     info.setSumNum(totalNum);
                     info.setSumProportion(null);
 
-                    tempResultList.add(info);
+                    resultList.add(info);
                 });
-                List<StructureInfo> structureResultList = getStructureResultList(tempResultList);
-                resultList.addAll(structureResultList);
             });
         });
 
-        return resultList;
+        return getStructureResultList(resultList);
     }
 
     public List<StructureInfo> queryByLabel(String topLabel,
@@ -520,7 +516,6 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         BigDecimal totalNum = dataList.stream()
                 .map(StructureInfoData::getNum)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-
 
         StructureInfo info = new StructureInfo();
         StandingbookLabelInfoDO standingbookLabelInfoDO = standingbookIdsByLabel.get(0);
