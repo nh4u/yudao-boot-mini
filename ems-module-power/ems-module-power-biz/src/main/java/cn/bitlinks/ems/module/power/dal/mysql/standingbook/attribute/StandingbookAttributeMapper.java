@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute;
 
 import cn.bitlinks.ems.framework.mybatis.core.mapper.BaseMapperX;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingBookTypeTreeRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -47,4 +48,10 @@ public interface StandingbookAttributeMapper extends BaseMapperX<StandingbookAtt
      * @return
      */
     List<StandingBookTypeTreeRespVO> selectSbNodeByCodeAndName(@Param("sbCode")String sbCode, @Param("sbName")String sbName,@Param("sbIds") List<Long> sbIds);
+
+    /**
+     * 查询全部台账的id、name、code
+     * @return
+     */
+    List<StandingbookDTO> getStandingbookDTO();
 }
