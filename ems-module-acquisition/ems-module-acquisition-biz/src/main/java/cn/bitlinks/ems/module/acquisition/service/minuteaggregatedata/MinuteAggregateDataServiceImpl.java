@@ -331,7 +331,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         List<MinuteAggregateDataDTO> preDTOList = CollUtil.isNotEmpty(preDOs) ? BeanUtils.toBean(preDOs, MinuteAggregateDataDTO.class) : Collections.emptyList();
 
         // 2. 查询后一条数据（按台账 ID）
-        List<MinuteAggregateDataDO> nextDOs = minuteAggregateDataMapper.getSbIdsUsageNextFullValue(paramDTO.getSbIds(), paramDTO.getStarTime());
+        List<MinuteAggregateDataDO> nextDOs = minuteAggregateDataMapper.getSbIdsUsageNextFullValue(paramDTO.getSbIds(), paramDTO.getEndTime());
         List<MinuteAggregateDataDTO> nextDTOList = CollUtil.isNotEmpty(nextDOs) ? BeanUtils.toBean(nextDOs, MinuteAggregateDataDTO.class) : Collections.emptyList();
 
         // 3. 整理成 Map
