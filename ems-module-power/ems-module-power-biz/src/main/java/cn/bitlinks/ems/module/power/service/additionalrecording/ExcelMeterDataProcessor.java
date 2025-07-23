@@ -2,7 +2,6 @@ package cn.bitlinks.ems.module.power.service.additionalrecording;
 
 import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
 import cn.bitlinks.ems.framework.common.enums.FullIncrementEnum;
-import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.calc.AggSplitUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
@@ -13,21 +12,21 @@ import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRang
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelListResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.HeaderCodeMappingVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingBookHeaderDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
-import cn.bitlinks.ems.module.power.dal.mysql.standingbook.reportcod.HeaderCodeMappingMapper;
+import cn.bitlinks.ems.module.power.service.standingbook.StandingbookServiceImpl;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
 import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -46,7 +45,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_RANGE_FAIL;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
 @Slf4j
@@ -54,8 +52,6 @@ import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 @Validated
 public class ExcelMeterDataProcessor {
 
-    @Resource
-    private HeaderCodeMappingMapper headerCodeMappingMapper;
 
     @Resource
     private MinuteAggregateDataApi minuteAggregateDataApi;
@@ -66,20 +62,9 @@ public class ExcelMeterDataProcessor {
     private AdditionalRecordingService additionalRecordingService;
     @Resource
     private SplitTaskDispatcher splitTaskDispatcher;
+    @Autowired
+    private StandingbookServiceImpl standingbookService;
 
-    public static void main(String[] args) {
-        try (FileInputStream fis = new FileInputStream(new File("D:/工作文件/燕东/51051.xls"))) {
-            ExcelMeterDataProcessorV0 processor = new ExcelMeterDataProcessorV0();
-            AcqDataExcelListResultVO result = processor.process(fis, "A4", "A6", "B3", "C3");
-
-//            result.sort(Comparator.comparing(MinuteAggregateDataDTO::getAggregateTime));
-//            result.stream()
-//                    //.filter(s -> s.getStandingbookId().equals("5105F1-a 水泵 正向有功电能"))
-//                    .forEach(System.out::println);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     public AcqDataExcelListResultVO process(InputStream file, String timeStartCell, String timeEndCell,
                                             String meterStartCell, String meterEndCell) throws IOException {
@@ -234,7 +219,7 @@ public class ExcelMeterDataProcessor {
         AtomicInteger acqFailCount = new AtomicInteger();
         List<Future<Pair<List<MinuteAggregateDataDTO>, List<MinuteAggDataSplitDTO>>>> futures = new ArrayList<>();
 
-        Map<String, HeaderCodeMappingVO> standingbookInfo = getStandingbookInfo(meterNames);
+        Map<String, StandingBookHeaderDTO> standingbookInfo = getStandingbookInfo(meterNames);
         if (CollUtil.isEmpty(standingbookInfo)) {
             log.warn("暂无报表与台账关联信息，不进行计算");
             throw exception(IMPORT_NO_MAPPING);
@@ -244,7 +229,7 @@ public class ExcelMeterDataProcessor {
         LocalDateTime endTime = times.get(times.size() - 1);
         List<Long> sbIds = standingbookInfo.values().stream()
                 .filter(Objects::nonNull)
-                .map(HeaderCodeMappingVO::getStandingbookId)
+                .map(StandingBookHeaderDTO::getStandingbookId)
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
@@ -266,8 +251,8 @@ public class ExcelMeterDataProcessor {
                 continue;
             }
 
-            HeaderCodeMappingVO headerCodeMappingVO = standingbookInfo.get(meter);
-            StandingbookTmplDaqAttrDO daqAttrDO = standingbookTmplDaqAttrService.getUsageAttrBySbId(headerCodeMappingVO.getStandingbookId());
+            StandingBookHeaderDTO standingBookHeaderDTO = standingbookInfo.get(meter);
+            StandingbookTmplDaqAttrDO daqAttrDO = standingbookTmplDaqAttrService.getUsageAttrBySbId(standingBookHeaderDTO.getStandingbookId());
             if (Objects.isNull(daqAttrDO)) {
                 failMsgList.add(AcqDataExcelResultVO.builder().acqCode(meter).mistake(ADDITIONAL_RECORDING_ENERGY_NOT_EXISTS.getMsg()).mistakeDetail(ADDITIONAL_RECORDING_ENERGY_NOT_EXISTS.getMsg()).build());
                 log.info("无对应能源用量，不可进行补录, 表头：{}", meter);
@@ -276,7 +261,7 @@ public class ExcelMeterDataProcessor {
             }
 
             MinuteAggregateDataDTO baseDTO = new MinuteAggregateDataDTO();
-            baseDTO.setStandingbookId(headerCodeMappingVO.getStandingbookId());
+            baseDTO.setStandingbookId(standingBookHeaderDTO.getStandingbookId());
             baseDTO.setEnergyFlag(daqAttrDO.getEnergyFlag());
             baseDTO.setParamCode(daqAttrDO.getCode());
             baseDTO.setUsage(daqAttrDO.getUsage());
@@ -286,7 +271,7 @@ public class ExcelMeterDataProcessor {
             baseDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
 
             futures.add(executor.submit(() -> {
-                MinuteAggDataSplitDTO minuteAggDataSplitDTO = standingboookUsageRangeTimePreNextAggDataMap.get(headerCodeMappingVO.getStandingbookId());
+                MinuteAggDataSplitDTO minuteAggDataSplitDTO = standingboookUsageRangeTimePreNextAggDataMap.get(standingBookHeaderDTO.getStandingbookId());
                 List<MinuteAggregateDataDTO> toAddAcqDataList = new ArrayList<>();
                 List<MinuteAggDataSplitDTO> toAddNotAcqSplitDataList = new ArrayList<>();
 
@@ -388,26 +373,7 @@ public class ExcelMeterDataProcessor {
         }
         return null;
     }
-//
-//    /**
-//     * 计算最后一分钟的增量
-//     *
-//     * @param start
-//     * @param end
-//     * @param startFull
-//     * @param endFull
-//     * @return
-//     */
-//    private BigDecimal calcEndMinuteIncrementValue(LocalDateTime start, LocalDateTime end, BigDecimal startFull, BigDecimal endFull) {
-//        long minutes = Duration.between(start, end).toMinutes();
-//        if (minutes <= 0) {
-//            return BigDecimal.ZERO;
-//        }
-//
-//        // 平均每分钟的增量
-//        BigDecimal totalIncrement = endFull.subtract(startFull);
-//        return totalIncrement.divide(BigDecimal.valueOf(minutes), 10, RoundingMode.HALF_UP);
-//    }
+
 
     private void handleApiResult(CommonResult<?> result, List<AcqDataExcelResultVO> subResult, AtomicInteger acqFailCount, String meter, String time, BigDecimal value) {
         if (result.isError()) {
@@ -443,24 +409,12 @@ public class ExcelMeterDataProcessor {
         return BigDecimal.ZERO;
     }
 
-    private Map<String, HeaderCodeMappingVO> getStandingbookInfo(List<String> headList) {
-        List<HeaderCodeMappingVO> headerCodeMappingVOS = headerCodeMappingMapper.selectByHeaderCode(headList);
-        if (CollUtil.isEmpty(headerCodeMappingVOS)) {
+    private Map<String, StandingBookHeaderDTO> getStandingbookInfo(List<String> headList) {
+        List<StandingBookHeaderDTO> standingBookHeaderDTOS = standingbookService.getStandingBookHeadersByHeaders(headList);
+        if (CollUtil.isEmpty(standingBookHeaderDTOS)) {
             return null;
         }
-        return headerCodeMappingVOS.stream().collect(Collectors.toMap(HeaderCodeMappingVO::getHeader, Function.identity()));
-    }
-
-    private MinuteAggregateDataDTO buildMinuteAggregateDataDO(LocalDateTime aggregateTime, BigDecimal fullValue, BigDecimal incrementalValue, Long standingbookId) {
-        MinuteAggregateDataDTO dto = new MinuteAggregateDataDTO();
-        dto.setAggregateTime(aggregateTime);
-        dto.setFullValue(fullValue);
-        dto.setIncrementalValue(incrementalValue);
-        dto.setParamCode("");
-        dto.setStandingbookId(standingbookId);
-        dto.setEnergyFlag(true);
-
-        return dto;
+        return standingBookHeaderDTOS.stream().collect(Collectors.toMap(StandingBookHeaderDTO::getHeader, Function.identity()));
     }
 }
 
