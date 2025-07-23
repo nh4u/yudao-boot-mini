@@ -136,4 +136,6 @@ public interface StandingbookService {
      * @return
      */
     Map<Long, StandingbookDTO> getStandingbookDTOMap();
+
+    List<StandingBookHeaderDTO> getStandingBookHeadersByHeaders(List<String> headList);
 }
