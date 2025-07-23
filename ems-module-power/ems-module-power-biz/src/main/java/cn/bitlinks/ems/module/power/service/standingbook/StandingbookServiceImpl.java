@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.standingbook;
 
+import cn.bitlinks.ems.framework.common.util.collection.CollectionUtils;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
 import cn.bitlinks.ems.module.power.enums.RedisKeyConstants;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -379,6 +380,64 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<StandingbookDTO> list =  standingbookAttributeMapper.getStandingbookDTO();
         return list.stream().collect(Collectors.toMap(StandingbookDTO::getStandingbookId, Function.identity()));
     }
+
+    @Cacheable(value = RedisKeyConstants.STANDING_BOOK_CODE_KEYMAP, key = "'codeKeyAll'", unless = "#result == null || #result.isEmpty()")
+    public Map<String, StandingBookHeaderDTO> getStandingBookCodeKeyMap() {
+        List<StandingbookDTO> list = standingbookAttributeMapper.getStandingbookDTO();
+        List<StandingBookHeaderDTO> standingBookHeaderDTOList = BeanUtils.toBean(list, StandingBookHeaderDTO.class);
+        return CollectionUtils.convertMap(standingBookHeaderDTOList, StandingBookHeaderDTO::getCode, Function.identity());
+    }
+
+    /**
+     * 根据excel表头来获取对应的台账信息
+     *
+     * @param headList 表头s
+     * @return
+     */
+    @Override
+    public List<StandingBookHeaderDTO> getStandingBookHeadersByHeaders(List<String> headList) {
+        if (CollUtil.isEmpty(headList)) {
+            return null;
+        }
+
+        // 去重
+        List<String> collect = headList.stream().distinct().collect(Collectors.toList());
+
+        // 获取已有台账数据
+        Map<String, StandingBookHeaderDTO> standingBookHeaderMap = getStandingBookCodeKeyMap();
+
+        List<StandingBookHeaderDTO> standingBookHeaderDTOList = new ArrayList<>();
+
+        for (String header : collect) {
+            String s = header.split(" ")[0];
+
+            for (String value : standingBookHeaderMap.keySet()) {
+                // 编码完全匹配0 编码前部匹配1 编码后部匹配2
+                if (s.equals(value) || value.startsWith(s) || value.endsWith(s)) {
+                    StandingBookHeaderDTO standingBookHeader = standingBookHeaderMap.get(value);
+                    standingBookHeader.setHeader(header);
+                    standingBookHeaderDTOList.add(standingBookHeader);
+                    break;
+                }
+
+                // 如果code包含了-D- 才会做去-操作
+                if (s.contains("-D-")) {
+
+                    String s1 = s.replaceAll("-(?![\\s\\S]*-)", "");
+
+                    // 与清洗后的s 编码完全匹配5 编码前部匹配6 编码后部匹配7
+                    if (s1.equals(value) || value.startsWith(s1) || value.endsWith(s1)) {
+                        StandingBookHeaderDTO standingBookHeader = standingBookHeaderMap.get(value);
+                        standingBookHeader.setHeader(header);
+                        standingBookHeaderDTOList.add(standingBookHeader);
+                        break;
+                    }
+                }
+            }
+        }
+        return standingBookHeaderDTOList;
+    }
+
 
     /**
      * 分类list和台账节点list
