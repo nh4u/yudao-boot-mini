@@ -5,6 +5,7 @@ import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
 import cn.bitlinks.ems.framework.common.util.opcda.OpcDaUtils;
 import cn.bitlinks.ems.module.acquisition.api.quartz.dto.ServiceSettingsDTO;
 import cn.bitlinks.ems.module.acquisition.mq.message.AcquisitionMessage;
+import cn.bitlinks.ems.module.acquisition.mq.producer.AcquisitionMessageBufferManager;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.json.JSONUtil;
@@ -15,7 +16,6 @@ import org.quartz.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.Message;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -23,6 +23,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_DEV;
@@ -47,6 +49,8 @@ public class AcquisitionJob implements Job {
     private String env;
     @Resource
     private RedisTemplate<String, String> redisTemplate;
+    @Resource
+    private AcquisitionMessageBufferManager bufferManager;
 
     /**
      * mock数据初始值 上限
@@ -75,6 +79,8 @@ public class AcquisitionJob implements Job {
             Long standingbookId =
                     (Long) jobDataMap.get(ACQUISITION_JOB_DATA_MAP_KEY_STANDING_BOOK_ID);
             List<StandingbookAcquisitionDetailDTO> details = (List<StandingbookAcquisitionDetailDTO>) jobDataMap.get(ACQUISITION_JOB_DATA_MAP_KEY_DETAILS);
+            ServiceSettingsDTO serviceSettingsDTO =
+                    (ServiceSettingsDTO) jobDataMap.get(ACQUISITION_JOB_DATA_MAP_KEY_SERVICE_SETTINGS);
             Boolean deviceStatus =
                     (Boolean) jobDataMap.get(ACQUISITION_JOB_DATA_MAP_KEY_STATUS);
             if (!Boolean.TRUE.equals(deviceStatus)) {
@@ -112,13 +118,11 @@ public class AcquisitionJob implements Job {
 
             // 采集有io的参数的真实数据
             Map<String, ItemStatus> itemStatusMap;
-            if(env.equals(SPRING_PROFILES_ACTIVE_LOCAL) || env.equals(SPRING_PROFILES_ACTIVE_DEV)){
+            if (env.equals(SPRING_PROFILES_ACTIVE_LOCAL) || env.equals(SPRING_PROFILES_ACTIVE_DEV)) {
                 itemStatusMap = mockData(dataSites);
-            }else{
-                ServiceSettingsDTO serviceSettingsDTO =
-                        (ServiceSettingsDTO) jobDataMap.get(ACQUISITION_JOB_DATA_MAP_KEY_SERVICE_SETTINGS);
-                // 采集所有参数
-                itemStatusMap = OpcDaUtils.batchGetValue(serviceSettingsDTO.getIpAddress(),
+            } else {
+                // 从redis中获取对应协议客户端的数据，
+                itemStatusMap = OpcDaUtils.readOnly(serviceSettingsDTO.getIpAddress(),
                         serviceSettingsDTO.getUsername(),
                         serviceSettingsDTO.getPassword(), serviceSettingsDTO.getClsid(), dataSites);
             }
@@ -134,15 +138,16 @@ public class AcquisitionJob implements Job {
             acquisitionMessage.setDetails(paramDetails);
             acquisitionMessage.setJobTime(DateUtil.toLocalDateTime(context.getFireTime()));
             acquisitionMessage.setItemStatusMap(itemStatusMap);
-            // 构建 RocketMQ 消息
-            Message<AcquisitionMessage> msg = MessageBuilder.withPayload(acquisitionMessage).build();
 
             // 选择 topic（基于 jobName）
             String topicName = getTopicName(jobName);
-
-            // 发送消息
-            rocketMQTemplate.send(topicName, msg);
+            boolean success = bufferManager.enqueueMessageWithTimeout(topicName, acquisitionMessage);
+            if (!success) {
+                // 队列满，消息没能入队
+                log.error("【AcquisitionMessageSender】消息入队失败，需要额外处理, topic:{}, 消息内容: {}", topicName, JSONUtil.toJsonStr(acquisitionMessage));
+            }
             log.info("数据采集任务[{}] 发送MQ消息: topic={}, payload={}", jobName, topicName, JSONUtil.toJsonStr(acquisitionMessage));
+            log.info("数据采集任务[{}] 完成", jobName);
         } catch (Exception e) {
             log.error("数据采集任务[{}] 发送 MQ 消息失败", jobName, e);
         }
