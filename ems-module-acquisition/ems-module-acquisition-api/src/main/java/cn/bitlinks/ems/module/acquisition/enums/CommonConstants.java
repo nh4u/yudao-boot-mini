@@ -27,6 +27,7 @@ public interface CommonConstants {
      */
     String ACQUISITION_JOB_REDIS_KEY = "ACQUISITION_JOB_LATEST_VALUE_%s:%s";
     String STREAM_LOAD_PREFIX = "_streamload_";
+    String STREAM_LOAD_COP_PREFIX = "_cop_streamload_";
     String STREAM_LOAD_BUFFER_PREFIX = "_buffer_streamload_";
     /**
      * 聚合任务锁
