@@ -1,13 +1,16 @@
 package cn.bitlinks.ems.module.power.utils;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.text.StrSplitter;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.LABEL_MAX_DISPLAY_DEEP;
 
 /**
  * @Title: ydme-ems
@@ -88,4 +91,54 @@ public class CommonUtil {
         return null;
     }
 
+    public static Integer getLabelDeep(String childLabels) {
+
+        Integer defaultDeep = 1;
+        // 下级标签
+        List<String> childLabelValues = StrSplitter.split(childLabels, "#", 0, true, true);
+        if (CollUtil.isNotEmpty(childLabelValues)) {
+            Optional<Integer> max = childLabelValues.stream()
+                    .map(c -> {
+                        List<String> split = StrSplitter.split(c, ",", 0, true, true);
+                        return split.size();
+                    }).max(Comparator.naturalOrder());
+            if (max.isPresent()) {
+                // 最多五层 top已经占了一层 deep最多是4
+                Integer deep = max.get() + defaultDeep;
+                if (deep > LABEL_MAX_DISPLAY_DEEP) {
+                    return LABEL_MAX_DISPLAY_DEEP;
+                }
+                return deep;
+            }
+        }
+
+        return defaultDeep;
+    }
+
+    /**
+     * 两个数据相加
+     *
+     * @param first  1
+     * @param second 2
+     * @return add
+     */
+    public static BigDecimal addBigDecimal(BigDecimal first, BigDecimal second) {
+
+        if (Objects.isNull(first)) {
+            return second;
+        } else {
+            return first.add(second);
+        }
+
+    }
+
+    /**
+     * 根据数据返回对应数据 or /
+     *
+     * @param num 对应list
+     * @return
+     */
+    public static Object getConvertData(BigDecimal num) {
+        return !Objects.isNull(num) && num.compareTo(BigDecimal.ZERO) != 0 ? num : "/";
+    }
 }

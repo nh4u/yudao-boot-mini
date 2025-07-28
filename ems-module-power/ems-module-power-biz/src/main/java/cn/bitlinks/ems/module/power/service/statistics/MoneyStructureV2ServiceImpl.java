@@ -44,7 +44,7 @@ import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.DEFAULT;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_STRUCTURE_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_STRUCTURE_TABLE;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
 /**
  * @Title: ydme-doublecarbon
@@ -286,7 +286,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
             case 1:
                 // 按能源
                 sheetName = COST_STRUCTURE_ENERGY;
-                list.add(Arrays.asList(sheetName, labelName, strTime, "能源", "能源"));
+                list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "能源", "能源"));
                 break;
             case 2:
                 // 按标签
@@ -337,30 +337,6 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         List<LabelConfigDO> labels = labelConfigService.getByIds(labelIds);
 
         return labels.stream().map(LabelConfigDO::getLabelName).collect(Collectors.joining("、"));
-    }
-
-    public Integer getLabelDeep(String childLabels) {
-
-        Integer defaultDeep = 1;
-        // 下级标签
-        List<String> childLabelValues = StrSplitter.split(childLabels, "#", 0, true, true);
-        if (CollUtil.isNotEmpty(childLabelValues)) {
-            Optional<Integer> max = childLabelValues.stream()
-                    .map(c -> {
-                        List<String> split = StrSplitter.split(c, ",", 0, true, true);
-                        return split.size();
-                    }).max(Comparator.naturalOrder());
-            if (max.isPresent()) {
-                // 最多五层 top已经占了一层 deep最多是4
-                Integer deep = max.get() + defaultDeep;
-                if (deep > LABEL_MAX_DISPLAY_DEEP) {
-                    return LABEL_MAX_DISPLAY_DEEP;
-                }
-                return deep;
-            }
-        }
-
-        return defaultDeep;
     }
 
     @Override
@@ -511,17 +487,6 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
 
         return result;
     }
-
-    /**
-     * 根据数据返回对应数据 or /
-     *
-     * @param num 对应list
-     * @return
-     */
-    private Object getConvertData(BigDecimal num) {
-        return !Objects.isNull(num) && num.compareTo(BigDecimal.ZERO) != 0 ? num : "/";
-    }
-
 
     public List<StructureInfo> queryDefault(String topLabel,
                                             String childLabels,
@@ -1015,22 +980,6 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         return proportion;
     }
 
-    /**
-     * 两个数据相加
-     *
-     * @param first  1
-     * @param second 2
-     * @return add
-     */
-    private BigDecimal addBigDecimal(BigDecimal first, BigDecimal second) {
-
-        if (Objects.isNull(first)) {
-            return second;
-        } else {
-            return first.add(second);
-        }
-
-    }
 
     /**
      * 根据 label id 数组和索引，安全获取 label 名称

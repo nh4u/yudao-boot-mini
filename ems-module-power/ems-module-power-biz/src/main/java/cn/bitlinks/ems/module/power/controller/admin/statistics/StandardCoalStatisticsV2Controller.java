@@ -33,6 +33,7 @@ import java.util.List;
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.getLabelDeep;
 
 /**
  * @author liumingqiang
@@ -73,7 +74,7 @@ public class StandardCoalStatisticsV2Controller {
                                                 HttpServletResponse response) throws IOException {
 
         String childLabels = paramVO.getChildLabels();
-        Integer labelDeep = standardCoalV2Service.getLabelDeep(childLabels);
+        Integer labelDeep = getLabelDeep(childLabels);
         Integer mergeIndex = 0;
         // 文件名字处理
         Integer queryType = paramVO.getQueryType();
@@ -168,7 +169,7 @@ public class StandardCoalStatisticsV2Controller {
                                                          HttpServletResponse response) throws IOException {
 
         String childLabels = paramVO.getChildLabels();
-        Integer labelDeep = standardCoalV2Service.getLabelDeep(childLabels);
+        Integer labelDeep = getLabelDeep(childLabels);
         Integer mergeIndex = 0;
         // 文件名字处理
         Integer queryType = paramVO.getQueryType();
