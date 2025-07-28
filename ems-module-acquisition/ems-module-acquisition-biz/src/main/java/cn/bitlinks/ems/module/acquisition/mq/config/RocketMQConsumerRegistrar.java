@@ -47,8 +47,8 @@ public class RocketMQConsumerRegistrar {
         for (MultiConsumerProperties.ConsumerConfig config : properties.getConsumers()) {
             DefaultMQPushConsumer consumer = new DefaultMQPushConsumer(config.getGroup(), rpcHook);
             consumer.setNamesrvAddr(mqServer);
-            consumer.setConsumeThreadMax(consumeThreadMin);
-            consumer.setConsumeThreadMin(consumeThreadMax);
+            consumer.setConsumeThreadMax(consumeThreadMax);
+            consumer.setConsumeThreadMin(consumeThreadMin);
             consumer.setConsumeMessageBatchMaxSize(consumeMessageBatchMaxSize);
             consumer.setAccessChannel(accessChannel);
             consumer.subscribe(config.getTopic(), "*");
