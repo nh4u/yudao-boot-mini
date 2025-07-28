@@ -115,7 +115,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         resultVO.setHeader(tableHeader);
 
         // 查询能源信息
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(new HashSet<>(paramVO.getEnergyIds()), paramVO.getEnergyClassify());
+        List<EnergyConfigurationDO> energyList = energyConfigurationService.getPureByEnergyClassify(new HashSet<>(paramVO.getEnergyIds()), paramVO.getEnergyClassify());
         if (CollUtil.isEmpty(energyList)) {
             resultVO.setDataTime(LocalDateTime.now());
             return resultVO;
@@ -157,7 +157,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         List<UsageCostData> usageCostDataList = usageCostService.getList(paramVO, startTime, endTime, standingBookIds);
 
         // 查询上一个周期折扣数据
-        LocalDateTime[] lastRange = LocalDateTimeUtils.getPreviousRange(rangeOrigin, dataTypeEnum);
+        LocalDateTime[] lastRange = LocalDateTimeUtils.getPreviousRangeV2(rangeOrigin, dataTypeEnum);
         List<UsageCostData> lastUsageCostDataList = usageCostService.getList(paramVO, lastRange[0], lastRange[1], standingBookIds);
 
         List<ComparisonItemVO> statisticsInfoList = new ArrayList<>();
@@ -488,7 +488,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
         // 提取所有能源ID
         Set<Long> energyIdSet = usageCostDataList.stream().map(UsageCostData::getEnergyId).collect(Collectors.toSet());
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(energyIdSet, null);
+        List<EnergyConfigurationDO> energyList = energyConfigurationService.getPureByEnergyClassify(energyIdSet, null);
         Map<Long, EnergyConfigurationDO> energyMap = energyList.stream()
                 .collect(Collectors.toMap(EnergyConfigurationDO::getId, Function.identity()));
 
@@ -848,7 +848,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         }
 
         // 4. 查询能源信息及能源ID
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(
+        List<EnergyConfigurationDO> energyList = energyConfigurationService.getPureByEnergyClassify(
                 new HashSet<>(paramVO.getEnergyIds()), paramVO.getEnergyClassify());
         ComparisonChartResultVO result = new ComparisonChartResultVO();
         if (CollUtil.isEmpty(energyList)) {

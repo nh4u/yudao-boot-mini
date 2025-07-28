@@ -110,7 +110,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
 
         // 4.2.能源id处理
         List<EnergyConfigurationDO> energyList = energyConfigurationService
-                .getByEnergyClassify(
+                .getPureByEnergyClassify(
                         CollUtil.isNotEmpty(paramVO.getEnergyIds()) ? new HashSet<>(paramVO.getEnergyIds()) : new HashSet<>(),
                         paramVO.getEnergyClassify());
         List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
@@ -259,7 +259,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
 
         // 获取实际用到的能源实体
         List<EnergyConfigurationDO> energyList = energyConfigurationService
-                .getByEnergyClassify(energyIdSet, null);
+                .getPureByEnergyClassify(energyIdSet, null);
 
         // 能源list转换成map
         Map<Long, EnergyConfigurationDO> energyMap = energyList

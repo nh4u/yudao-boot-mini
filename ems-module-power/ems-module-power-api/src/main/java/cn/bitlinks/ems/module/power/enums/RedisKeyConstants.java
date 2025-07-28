@@ -13,5 +13,8 @@ public interface RedisKeyConstants {
     String STANDING_BOOK_TYPE_TREE = "power:standingbook:type:tree";
     String STANDING_BOOK_MAP = "power:standingbook:map";
 
-
+    /**
+     * 有效时间默认为1小时，修改成10分钟
+     */
+    String STANDING_BOOK_CODE_KEYMAP = "power:standingbook:map#10m";
 }

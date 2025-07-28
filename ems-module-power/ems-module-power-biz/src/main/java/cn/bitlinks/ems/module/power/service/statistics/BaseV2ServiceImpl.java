@@ -114,7 +114,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         resultVO.setHeader(tableHeader);
 
         // 查询能源信息
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(new HashSet<>(paramVO.getEnergyIds()), paramVO.getEnergyClassify());
+        List<EnergyConfigurationDO> energyList = energyConfigurationService.getPureByEnergyClassify(new HashSet<>(paramVO.getEnergyIds()), paramVO.getEnergyClassify());
         if(CollectionUtil.isEmpty(energyList)){
             resultVO.setDataTime(LocalDateTime.now());
             return resultVO;
@@ -341,7 +341,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                                                 Integer benchmark) {
         // 提取所有能源ID
         Set<Long> energyIdSet = usageCostDataList.stream().map(UsageCostData::getEnergyId).collect(Collectors.toSet());
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(energyIdSet, null);
+        List<EnergyConfigurationDO> energyList = energyConfigurationService.getPureByEnergyClassify(energyIdSet, null);
         Map<Long, EnergyConfigurationDO> energyMap = energyList.stream()
                 .collect(Collectors.toMap(EnergyConfigurationDO::getId, Function.identity()));
 
@@ -495,7 +495,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         }
 
         // 4. 查询能源信息及能源ID
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(
+        List<EnergyConfigurationDO> energyList = energyConfigurationService.getPureByEnergyClassify(
                 new HashSet<>(paramVO.getEnergyIds()), paramVO.getEnergyClassify());
         ComparisonChartResultVO result = new ComparisonChartResultVO();
         if(CollectionUtil.isEmpty(energyList)){

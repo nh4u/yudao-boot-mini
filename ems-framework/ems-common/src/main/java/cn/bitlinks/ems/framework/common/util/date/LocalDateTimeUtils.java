@@ -451,6 +451,44 @@ public class LocalDateTimeUtils {
     }
 
     /**
+     * 获取上一周期的时间范围（用于环比）
+     *
+     * @param currentRange 当前时间范围 [start, end]
+     * @param type         时间类型（DAY、MONTH、YEAR 等）
+     * @return 上一周期的时间范围 [lastStart, lastEnd]
+     */
+    public static LocalDateTime[] getPreviousRangeV2(LocalDateTime[] currentRange, DataTypeEnum type) {
+        LocalDateTime start = currentRange[0];
+        LocalDateTime end = currentRange[1];
+
+        LocalDateTime lastStart;
+        LocalDateTime lastEnd;
+
+        switch (type) {
+            case DAY:
+                lastStart = start.minusDays(1);
+                lastEnd = end.minusDays(1);
+                break;
+            case MONTH:
+                lastStart = start.minusMonths(1);
+                lastEnd = end.minusMonths(1);
+                break;
+            case YEAR:
+                lastStart = start.minusYears(1);
+                lastEnd = end.minusYears(1);
+                break;
+            case HOUR:
+                lastStart = start.minusHours(1);
+                lastEnd = end.minusHours(1);
+                break;
+            default:
+                throw new IllegalArgumentException("不支持的时间类型: " + type);
+        }
+
+        return new LocalDateTime[]{lastStart, lastEnd};
+    }
+
+    /**
      * 获取上一年同期的时间范围（用于同比分析）
      *
      * @param currentRange 当前时间范围 [start, end]
