@@ -36,6 +36,8 @@ public class RocketMQConsumerRegistrar {
     private int consumeThreadMax;
     @Value("${rocketmq.consumer.consumeMessageBatchMaxSize}")
     private int consumeMessageBatchMaxSize;
+    @Value("${rocketmq.consumer.pullBatchSize}")
+    private int pullBatchSize;
     private final AccessChannel accessChannel = AccessChannel.LOCAL;
 
     @Resource
@@ -50,6 +52,7 @@ public class RocketMQConsumerRegistrar {
             consumer.setConsumeThreadMax(consumeThreadMax);
             consumer.setConsumeThreadMin(consumeThreadMin);
             consumer.setConsumeMessageBatchMaxSize(consumeMessageBatchMaxSize);
+            consumer.setPullBatchSize(pullBatchSize);
             consumer.setAccessChannel(accessChannel);
             consumer.subscribe(config.getTopic(), "*");
             consumer.registerMessageListener(baseConsumer); // ✅ 使用你的 BaseConsumer
