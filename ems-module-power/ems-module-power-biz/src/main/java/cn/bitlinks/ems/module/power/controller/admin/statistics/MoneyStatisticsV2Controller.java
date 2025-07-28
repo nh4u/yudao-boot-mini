@@ -34,6 +34,7 @@ import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.XLSX;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.getLabelDeep;
 
 /**
  * @author liumingqiang
@@ -46,9 +47,6 @@ public class MoneyStatisticsV2Controller {
 
     @Resource
     private MoneyStructureV2Service moneyStructureV2Service;
-
-    @Resource
-    private StandardCoalV2Service standardCoalV2Service;
 
     @PostMapping("/moneyStructureAnalysisTable")
     @Operation(summary = "价格结构分析（表）V2")
@@ -69,7 +67,7 @@ public class MoneyStatisticsV2Controller {
                                                          HttpServletResponse response) throws IOException {
 
         String childLabels = paramVO.getChildLabels();
-        Integer labelDeep = standardCoalV2Service.getLabelDeep(childLabels);
+        Integer labelDeep = getLabelDeep(childLabels);
         Integer mergeIndex = 0;
         // 文件名字处理
         Integer queryType = paramVO.getQueryType();
