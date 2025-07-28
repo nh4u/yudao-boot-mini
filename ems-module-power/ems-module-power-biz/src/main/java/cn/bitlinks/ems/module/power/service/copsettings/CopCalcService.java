@@ -23,10 +23,9 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.STREAM_LOAD_PREFIX;
+import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.STREAM_LOAD_COP_PREFIX;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.COP_HOUR_AGG_TABLE_NAME;
 
 /**
@@ -82,8 +81,8 @@ public class CopCalcService {
                     .collect(Collectors.groupingBy(CopSettingsDTO::getDataFeature));
             List<MinuteAggregateDataDTO> dbUsageDataList = new ArrayList<>();
             List<MinuteAggregateDataDTO> dbSteadyDataList = new ArrayList<>();
-            for(Map.Entry<Integer, List<CopSettingsDTO>> entry : groupedByDataFeature.entrySet()){
-                if(ParamDataFeatureEnum.Accumulated.getCode().equals(entry.getKey())){
+            for (Map.Entry<Integer, List<CopSettingsDTO>> entry : groupedByDataFeature.entrySet()) {
+                if (ParamDataFeatureEnum.Accumulated.getCode().equals(entry.getKey())) {
                     // 查询小时级别数据，多查前一小时的全量值
                     List<CopSettingsDTO> copSettingsDTOS = entry.getValue();
                     if (CollUtil.isEmpty(copSettingsDTOS)) {
@@ -109,7 +108,7 @@ public class CopCalcService {
                     minuteRangeDataCopParamDTO.setStarTime(startHour);
                     minuteRangeDataCopParamDTO.setEndTime(endHour);
                     dbUsageDataList = minuteAggregateDataApi.getCopRangeData(minuteRangeDataCopParamDTO).getData();
-                }else if(ParamDataFeatureEnum.STEADY.getCode().equals(entry.getKey())){
+                } else if (ParamDataFeatureEnum.STEADY.getCode().equals(entry.getKey())) {
                     // 查询小时数据的末尾值
                     List<CopSettingsDTO> copSettingsDTOS = entry.getValue();
                     if (CollUtil.isEmpty(copSettingsDTOS)) {
@@ -160,7 +159,7 @@ public class CopCalcService {
                     Map<LocalDateTime, MinuteAggregateDataDTO> mergedMap = new LinkedHashMap<>();
                     // 先构建 dbValues 和 newHourValues（你已有代码）
                     // 如果是用量
-                    if(ParamDataFeatureEnum.Accumulated.getCode().equals(dataFeature)){
+                    if (ParamDataFeatureEnum.Accumulated.getCode().equals(dataFeature)) {
                         // 数据库的该小时的该参数值
                         if (CollUtil.isNotEmpty(finalDbUsageDataList)) {
                             List<MinuteAggregateDataDTO> dbValues = finalDbUsageDataList.stream()
@@ -204,7 +203,7 @@ public class CopCalcService {
                         }
                         formulaVariables.put(formulaParam, optionalLatest.get().getFullValue().subtract(optionalOldest.get().getFullValue()));
 
-                    }else if(ParamDataFeatureEnum.STEADY.getCode().equals(dataFeature)){
+                    } else if (ParamDataFeatureEnum.STEADY.getCode().equals(dataFeature)) {
                         // 数据库的该小时的该参数值
                         if (CollUtil.isNotEmpty(finalDbSteadyDataList)) {
                             List<MinuteAggregateDataDTO> dbValues = finalDbSteadyDataList.stream()
@@ -257,14 +256,14 @@ public class CopCalcService {
                 // 3.5.3 执行该小时的cop公式计算出cop值保存。
                 try {
                     Object result = CalculateUtil.copCalculate(formula, formulaVariables);
-                    if(result != null) {
+                    if (result != null) {
                         CopHourAggDataDTO copHourAggDataDTO = new CopHourAggDataDTO();
                         copHourAggDataDTO.setCopType(copFormulaDO.getCopType());
                         copHourAggDataDTO.setCopValue(new BigDecimal(result.toString()));
                         copHourAggDataDTO.setAggregateTime(hourEnd);
                         copHourAggDataBatchToAdd.add(copHourAggDataDTO);
                     }
-                    log.info("COP [{}] 时间范围[{},{})  计算结果: {},参数：{}", copFormulaDO.getCopType(), hourStart, hourEnd, result,JSONUtil.toJsonStr(formulaVariables));
+                    log.info("COP [{}] 时间范围[{},{})  计算结果: {},参数：{}", copFormulaDO.getCopType(), hourStart, hourEnd, result, JSONUtil.toJsonStr(formulaVariables));
                 } catch (Exception e) {
                     log.error("COP [{}] 时间范围[{},{})  计算失败: {}", copFormulaDO.getCopType(), hourStart, hourEnd, e.getMessage(), e);
                 }
@@ -281,10 +280,10 @@ public class CopCalcService {
     }
 
     public void saveCopHourList(List<CopHourAggDataDTO> copHourAggDataDTOS) {
-        log.info("COP 计算逻辑 保存数据明细: {}", JSONUtil.toJsonStr(copHourAggDataDTOS));
+        log.info("COP 计算逻辑 保存数据条目大小: {}", copHourAggDataDTOS.size());
         StreamLoadDTO dto = new StreamLoadDTO();
         dto.setData(copHourAggDataDTOS);
-        dto.setLabel(System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6));
+        dto.setLabel(System.currentTimeMillis() + STREAM_LOAD_COP_PREFIX + RandomUtil.randomNumbers(6));
         dto.setTableName(COP_HOUR_AGG_TABLE_NAME);
         streamLoadApi.streamLoadData(dto);
         log.info("COP 计算逻辑 保存end");

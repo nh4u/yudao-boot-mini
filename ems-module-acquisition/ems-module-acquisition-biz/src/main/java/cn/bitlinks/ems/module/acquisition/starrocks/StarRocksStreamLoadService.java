@@ -70,24 +70,24 @@ public class StarRocksStreamLoadService {
             // 1. 开启事务
             Map<String, String> beginHeaders = buildBaseHeaders(label, tableName, authHeader);
             String beginResult = sendPost(API_BEGIN, beginHeaders, null);
-            log.info("[StarRocks] 开启事务 label={}，结果={}", label, beginResult);
+            log.info("[StarRocks] 开启事务 label={}，table={}, 结果={}", label, tableName, beginResult);
 
             // 2. 加载数据
             beginHeaders.put(HEADER_FORMAT, VALUE_FORMAT_JSON);
             beginHeaders.put(HEADER_STRIP_OUTER_ARRAY, VALUE_STRIP_TRUE);
             String loadResult = sendPut(API_LOAD, beginHeaders, FileUtil.readBytes(tempFile.toFile()));
-            log.info("[StarRocks] 加载数据 label={}，结果={}", label, loadResult);
+            log.info("[StarRocks] 加载数据 label={}，table={}, 结果={}", label, tableName, loadResult);
 
             // 3. 提交事务
             Map<String, String> commitHeaders = buildControlHeaders(label, authHeader);
             String commitResult = sendPost(API_COMMIT, commitHeaders, null);
-            log.info("[StarRocks] 提交事务 label={}，结果={}", label, commitResult);
+            log.info("[StarRocks] 提交事务 label={}，table={}, 结果={}", label, tableName, commitResult);
 
         } catch (Exception e) {
-            log.error("[StarRocks] Stream Load 失败 label={}：{}", label, e.getMessage(), e);
+            log.error("[StarRocks] Stream Load 失败 label={}，table={}, 异常：{}", label, tableName, e.getMessage(), e);
             Map<String, String> rollbackHeaders = buildControlHeaders(label, authHeader);
             String rollbackResult = sendPost(API_ROLLBACK, rollbackHeaders, null);
-            log.warn("[StarRocks] 回滚事务 label={}，结果={}", label, rollbackResult);
+            log.warn("[StarRocks] 回滚事务 label={}，table={}, 结果={}", label, tableName, rollbackResult);
         } finally {
             if (tempFile != null) {
                 Files.deleteIfExists(tempFile);

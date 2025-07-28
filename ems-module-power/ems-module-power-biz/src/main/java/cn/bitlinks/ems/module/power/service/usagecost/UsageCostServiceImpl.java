@@ -58,7 +58,7 @@ public class UsageCostServiceImpl implements UsageCostService {
     @Override
     @TenantIgnore
     public void saveList(List<UsageCostDTO> usageCostDOS) {
-        log.info("saveList: {}", JSONUtil.toJsonStr(usageCostDOS));
+        log.info("saveList size: {}", usageCostDOS.size());
         StreamLoadDTO dto = new StreamLoadDTO();
         dto.setData(usageCostDOS);
         dto.setLabel(LABEL_PREFIX + System.currentTimeMillis() + "_" + RandomUtil.randomNumbers(6));
