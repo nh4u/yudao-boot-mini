@@ -703,4 +703,23 @@ public class LocalDateTimeUtils {
         // 4. 重新格式化为字符串
         return lastYearDateTime.format(formatter);
     }
+
+
+    /**
+     * 格式化字符串
+     */
+    public static <T> String getFormatTime(T time) {
+        if (time instanceof LocalDateTime) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN);
+            return ((LocalDateTime) time).format(formatter);
+        } else if (time instanceof LocalDate) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DatePattern.NORM_DATE_PATTERN);
+            return ((LocalDate) time).format(formatter);
+        } else if (time instanceof LocalTime) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DatePattern.NORM_TIME_PATTERN);
+            return ((LocalTime) time).format(formatter);
+        } else {
+            throw new IllegalArgumentException("Unsupported time type: " + time.getClass());
+        }
+    }
 }
