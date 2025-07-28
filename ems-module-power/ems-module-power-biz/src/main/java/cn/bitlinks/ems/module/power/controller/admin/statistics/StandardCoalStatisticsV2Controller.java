@@ -66,11 +66,11 @@ public class StandardCoalStatisticsV2Controller {
     }
 
 
-    @PostMapping("/export-excel")
+    @PostMapping("/exportStandardCoalAnalysisTable")
     @Operation(summary = "导出折标煤分析表")
     @ApiAccessLog(operateType = EXPORT)
-    public void exportCopExcel(@Valid @RequestBody StatisticsParamV2VO paramVO,
-                               HttpServletResponse response) throws IOException {
+    public void exportStandardCoalAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO,
+                                                HttpServletResponse response) throws IOException {
 
         String childLabels = paramVO.getChildLabels();
         Integer labelDeep = standardCoalV2Service.getLabelDeep(childLabels);
@@ -161,6 +161,87 @@ public class StandardCoalStatisticsV2Controller {
         return success(standardCoalStructureV2Service.standardCoalStructureAnalysisChart(paramVO));
     }
 
+    @PostMapping("/exportStandardCoalStructureAnalysisTable")
+    @Operation(summary = "导出用能结构分析表")
+    @ApiAccessLog(operateType = EXPORT)
+    public void exportStandardCoalStructureAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO,
+                                                         HttpServletResponse response) throws IOException {
+
+        String childLabels = paramVO.getChildLabels();
+        Integer labelDeep = standardCoalV2Service.getLabelDeep(childLabels);
+        Integer mergeIndex = 0;
+        // 文件名字处理
+        Integer queryType = paramVO.getQueryType();
+        String filename = "";
+        switch (queryType) {
+            case 0:
+                filename = STANDARD_COAL_STRUCTURE_ALL + XLSX;
+                mergeIndex = labelDeep;
+                break;
+            case 1:
+                filename = STANDARD_COAL_STRUCTURE_ENERGY + XLSX;
+                // 能源不需要合并
+                mergeIndex = 0;
+                break;
+            case 2:
+                filename = STANDARD_COAL_STRUCTURE_LABEL + XLSX;
+                // 标签没有能源
+                mergeIndex = labelDeep - 1;
+                break;
+            default:
+                filename = DEFAULT + XLSX;
+        }
+
+        List<List<String>> header = standardCoalStructureV2Service.getExcelHeader(paramVO);
+        List<List<Object>> dataList = standardCoalStructureV2Service.getExcelData(paramVO);
+
+
+        // 放在 write前配置response才会生效，放在后面不生效
+        // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
+        response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
+        response.setContentType("application/vnd.ms-excel;charset=UTF-8");
+
+        WriteCellStyle headerStyle = new WriteCellStyle();
+        // 设置水平居中对齐
+        headerStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+        // 设置垂直居中对齐
+        headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        // 设置背景色
+//        headerStyle.setFillBackgroundColor(IndexedColors.ROYAL_BLUE.getIndex());
+        // 设置字体
+//        WriteFont headerFont = new WriteFont();
+//        headerFont.setFontHeightInPoints((short) 10);
+//        headerFont.setColor(IndexedColors.WHITE.getIndex());
+//        headerStyle.setWriteFont(headerFont);
+
+
+        // 创建一个新的 WriteCellStyle 对象
+        WriteCellStyle contentStyle = new WriteCellStyle();
+
+        // 设置水平居中对齐
+        contentStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+
+        // 设置垂直居中对齐
+        contentStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+
+        // 设置边框
+        contentStyle.setBorderLeft(BorderStyle.THIN);
+        contentStyle.setBorderTop(BorderStyle.THIN);
+        contentStyle.setBorderRight(BorderStyle.THIN);
+        contentStyle.setBorderBottom(BorderStyle.THIN);
+
+        EasyExcelFactory.write(response.getOutputStream())
+                .head(header)
+                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(15))
+                .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
+                // 设置表头行高 30，内容行高 20
+                .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))
+                // 自适应表头宽度
+//                .registerWriteHandler(new MatchTitleWidthStyleStrategy())
+                // 由于column索引从0开始 返回来的labelDeep是从1开始，又由于有个能源列，所以合并索引 正好相抵，直接使用labelDeep即可
+                .registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
+                .sheet("数据").doWrite(dataList);
+    }
 
     @PostMapping("/energyFlowAnalysis")
     @Operation(summary = "能流分析V2")
