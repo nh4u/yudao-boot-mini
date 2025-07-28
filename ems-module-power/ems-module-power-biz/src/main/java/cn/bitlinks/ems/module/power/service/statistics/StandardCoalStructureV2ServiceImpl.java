@@ -277,7 +277,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         switch (queryType) {
             case 0:
                 // 综合
-                sheetName = STANDARD_COAL_ALL;
+                sheetName = STANDARD_COAL_STRUCTURE_ALL;
                 list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "标签", "标签"));
                 for (int i = 2; i <= labelDeep; i++) {
                     String subLabel = "标签" + i;
@@ -287,12 +287,12 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                 break;
             case 1:
                 // 按能源
-                sheetName = STANDARD_COAL_ENERGY;
+                sheetName = STANDARD_COAL_STRUCTURE_ENERGY;
                 list.add(Arrays.asList(sheetName, labelName, strTime, "能源", "能源"));
                 break;
             case 2:
                 // 按标签
-                sheetName = STANDARD_COAL_LABEL;
+                sheetName = STANDARD_COAL_STRUCTURE_LABEL;
                 list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "标签", "标签"));
                 for (int i = 2; i <= labelDeep; i++) {
                     String subLabel = "标签" + i;
