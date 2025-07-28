@@ -27,11 +27,13 @@ public interface CommonConstants {
      */
     String ACQUISITION_JOB_REDIS_KEY = "ACQUISITION_JOB_LATEST_VALUE_%s:%s";
     String STREAM_LOAD_PREFIX = "_streamload_";
+    String STREAM_LOAD_COP_PREFIX = "_cop_streamload_";
+    String STREAM_LOAD_BUFFER_PREFIX = "_buffer_streamload_";
     /**
      * 聚合任务锁
      */
-    String AGG_TASK_LOCK_KEY = "agg-task:%s" ;
-    String AGG_TASK_STEADY_LOCK_KEY = "agg-steady-task:%s" ;
+    String AGG_TASK_LOCK_KEY = "agg-task:%s";
+    String AGG_TASK_STEADY_LOCK_KEY = "agg-steady-task:%s";
     String MINUTE_AGGREGATE_DATA_TB_NAME = "minute_aggregate_data";
     String USAGE_COST_TB_NAME = "usage_cost";
     String COP_HOUR_AGGREGATE_DATA_TB_NAME = "cop_hour_aggregate_data";
@@ -39,12 +41,12 @@ public interface CommonConstants {
     /**
      * redis 创建分区的上限分区:dev:tbName
      */
-    String REDIS_KEY_MAX_PARTITION_TIME = "max-partition-time:%s:%s" ;
+    String REDIS_KEY_MAX_PARTITION_TIME = "max-partition-time:%s:%s";
 
     /**
      * redis 手动维护的历史分区列表
      */
-    String REDIS_KEY_HIS_PARTITION_LIST = "his-partition-list:%s:%s" ;
+    String REDIS_KEY_HIS_PARTITION_LIST = "his-partition-list:%s:%s";
     /**
      * 分区关闭动态
      */
@@ -60,11 +62,11 @@ public interface CommonConstants {
     /**
      * 拆分任务队列 redis key
      */
-    String SPLIT_TASK_QUEUE_REDIS_KEY_PREFIX="split_task_queue:";
+    String SPLIT_TASK_QUEUE_REDIS_KEY_PREFIX = "split_task_queue:";
     /**
      * 拆分任务队列 redis key
      */
-    String SPLIT_TASK_QUEUE_REDIS_KEY_PATTERN="split_task_queue:*";
+    String SPLIT_TASK_QUEUE_REDIS_KEY_PATTERN = "split_task_queue:*";
 }
 
 
