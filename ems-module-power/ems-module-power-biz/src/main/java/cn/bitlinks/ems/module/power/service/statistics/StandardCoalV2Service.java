@@ -27,7 +27,14 @@ public interface StandardCoalV2Service {
      */
     StatisticsChartResultV2VO standardCoalAnalysisChart(StatisticsParamV2VO paramVO);
 
-    List<List<String>> getExcelHeader(StatisticsParamV2VO pageReqVO);
+    List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO);
 
-    List<List<Object>> getExcelData(StatisticsParamV2VO pageReqVO);
+    List<List<Object>> getExcelData(StatisticsParamV2VO paramVO);
+
+    /**
+     * 获取 标签显示层级
+     * @param childLabels
+     * @return
+     */
+    Integer getLabelDeep(String childLabels);
 }
