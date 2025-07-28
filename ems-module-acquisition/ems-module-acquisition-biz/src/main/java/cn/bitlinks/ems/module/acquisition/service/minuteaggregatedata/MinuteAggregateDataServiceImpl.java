@@ -8,10 +8,10 @@ import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MultiMinuteAggD
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.acquisition.dal.dataobject.minuteaggregatedata.MinuteAggregateDataDO;
 import cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata.MinuteAggregateDataMapper;
-import cn.bitlinks.ems.module.acquisition.service.partition.PartitionService;
 import cn.bitlinks.ems.module.acquisition.starrocks.StarRocksStreamLoadService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.google.common.util.concurrent.RateLimiter;
@@ -59,10 +59,8 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     private static final int THREAD_POOL_SIZE = 4;
     private static final RateLimiter MQ_RATE_LIMITER = RateLimiter.create(200); // 每秒200条消息
     // MQ异步发送队列
-    private final BlockingQueue<MultiMinuteAggDataDTO> mqQueue = new LinkedBlockingQueue<>(10000);
+    private final BlockingQueue<MultiMinuteAggDataDTO> mqQueue = new LinkedBlockingQueue<>(100000);
 
-    @Resource
-    private PartitionService partitionService;
 
     // 启动MQ推送线程（建议在 @PostConstruct 中调用一次）
     @PostConstruct
@@ -113,11 +111,11 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
 
                     boolean offered = mqQueue.offer(msgDTO, 5, TimeUnit.SECONDS);
                     if (!offered) {
-                        log.warn("MQ消息队列已满，消息被丢弃！");
+                        log.warn("【分钟聚合】MQ消息队列已满，消息被丢弃！data:{}", JSONUtil.toJsonStr(batch));
                     }
 
                 } catch (Exception e) {
-                    log.error("批次处理失败", e);
+                    log.error("【分钟聚合】批次处理失败,data:{}",JSONUtil.toJsonStr(batch), e);
                     throw e;
                 }
                 return null;
@@ -247,21 +245,8 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             }
             List<MinuteAggregateDataDO> minuteAggregateDataDOList = BeanUtils.toBean(minuteAggregateDataDTO,
                     MinuteAggregateDataDO.class);
-            LocalDateTime maxTime = minuteAggregateDataDOList.stream()
-                    .map(MinuteAggregateDataDO::getAggregateTime)
-                    .filter(Objects::nonNull)
-                    .max(Comparator.naturalOrder())
-                    .orElse(null);
-            LocalDateTime minTime = minuteAggregateDataDOList.stream()
-                    .map(MinuteAggregateDataDO::getAggregateTime)
-                    .filter(Objects::nonNull)
-                    .min(Comparator.naturalOrder())
-                    .orElse(null);
-            // 先进行业务点的分区建设
-            // 检查并创建数据表分区
-            partitionService.ensurePartitionsExist(minTime, maxTime);
             // 发送给usageCost进行计算
-            sendMsgToUsageCostBatch(minuteAggregateDataDOList, true);
+            sendMsgToUsageCostBatchNew(minuteAggregateDataDOList, true);
         } catch (Exception e) {
             log.error("insertDataBatch失败：{}", e.getMessage(), e);
             throw exception(STREAM_LOAD_RANGE_FAIL);

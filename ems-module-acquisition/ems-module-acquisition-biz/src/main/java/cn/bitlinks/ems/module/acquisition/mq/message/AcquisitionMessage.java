@@ -2,7 +2,6 @@ package cn.bitlinks.ems.module.acquisition.mq.message;
 
 import cn.bitlinks.ems.framework.common.core.StandingbookAcquisitionDetailDTO;
 import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
-import cn.bitlinks.ems.module.acquisition.api.quartz.dto.ServiceSettingsDTO;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -24,10 +23,7 @@ public class AcquisitionMessage implements Serializable {
      * 数采参数列表
      */
     private List<StandingbookAcquisitionDetailDTO> details;
-    /**
-     * 服务设置
-     */
-    private ServiceSettingsDTO serviceSettingsDTO;
+
     /**
      * 任务执行时间
      */

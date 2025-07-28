@@ -30,6 +30,12 @@ public class RocketMQConsumerRegistrar {
     private String accessKey;
     @Value("${rocketmq.consumer.secret-key}")
     private String secretKey;
+    @Value("${rocketmq.consumer.consumeThreadMin}")
+    private int consumeThreadMin;
+    @Value("${rocketmq.consumer.consumeThreadMax}")
+    private int consumeThreadMax;
+    @Value("${rocketmq.consumer.consumeMessageBatchMaxSize}")
+    private int consumeMessageBatchMaxSize;
     private final AccessChannel accessChannel = AccessChannel.LOCAL;
 
     @Resource
@@ -41,6 +47,9 @@ public class RocketMQConsumerRegistrar {
         for (MultiConsumerProperties.ConsumerConfig config : properties.getConsumers()) {
             DefaultMQPushConsumer consumer = new DefaultMQPushConsumer(config.getGroup(), rpcHook);
             consumer.setNamesrvAddr(mqServer);
+            consumer.setConsumeThreadMax(consumeThreadMax);
+            consumer.setConsumeThreadMin(consumeThreadMin);
+            consumer.setConsumeMessageBatchMaxSize(consumeMessageBatchMaxSize);
             consumer.setAccessChannel(accessChannel);
             consumer.subscribe(config.getTopic(), "*");
             consumer.registerMessageListener(baseConsumer); // ✅ 使用你的 BaseConsumer

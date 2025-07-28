@@ -101,7 +101,11 @@ rocketmq:
     retryNextServer: false
   consumer:
     access-key: rocketAdminMQ
-    secretKey: 25be49067687d405a082dcaa2edaceea
+    secret-key: 25be49067687d405a082dcaa2edaceea
+    consumeThreadMin: 20
+    consumeThreadMax: 64
+    consumeMessageBatchMaxSize: 10
+    pullBatchSize: 32
   multi-consumer:
     consumers:
       - group: "acquisition_consumer_group-${spring.profiles.active}0"
