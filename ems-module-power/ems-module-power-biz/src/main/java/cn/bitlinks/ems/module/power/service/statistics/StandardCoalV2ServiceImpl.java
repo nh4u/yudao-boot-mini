@@ -22,6 +22,9 @@ import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.util.ListUtils;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -88,7 +91,15 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
-            return JSONUtil.toBean(cacheRes, StatisticsResultV2VO.class);
+            // 泛型放缓存避免强转问题
+            // 方式一
+//            StatisticsResultV2VO<StandardCoalInfo>  resultV2VO = JSONUtil.toBean(cacheRes, StatisticsResultV2VO.class);
+//            List<StandardCoalInfo> standardCoalInfos = JSONUtil.toList(resultV2VO.getStatisticsInfoList().toString(), StandardCoalInfo.class);
+//            resultV2VO.setStatisticsInfoList(standardCoalInfos);
+            // 方式二
+            return JSON.parseObject(cacheRes, new TypeReference<StatisticsResultV2VO<StandardCoalInfo>>() {
+            });
+
         }
 
         // 4.如果没有则去数据库查询
