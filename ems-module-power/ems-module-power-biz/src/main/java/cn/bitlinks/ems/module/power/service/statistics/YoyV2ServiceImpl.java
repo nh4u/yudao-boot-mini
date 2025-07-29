@@ -75,7 +75,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
     public static final String NOW = "当期";
     public static final String PREVIOUS = "同期";
     public static final String RATIO = "同比";
-
+    public static final String RATIO_PERCENT = "同比(%)";
     public static final String DEFAULT_GROUP_NAME = "总";
 
     @Override
@@ -1180,15 +1180,15 @@ public class YoyV2ServiceImpl implements YoyV2Service {
 
         String finalSheetName = sheetName;
         xdata.forEach(x -> {
-            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, "当期"));
-            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, "同期"));
-            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, "同比(%)"));
+            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, NOW));
+            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, PREVIOUS));
+            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, RATIO_PERCENT));
         });
 
         // 周期合计
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "当期"));
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "同期"));
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "同比(%)"));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", NOW));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", PREVIOUS));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", RATIO_PERCENT));
         return list;
 
     }
