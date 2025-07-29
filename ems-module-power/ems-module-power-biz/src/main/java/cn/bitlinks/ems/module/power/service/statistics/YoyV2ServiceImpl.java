@@ -17,10 +17,14 @@ import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
+import com.alibaba.excel.util.ListUtils;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -36,9 +40,14 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
+import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.ANNUAL_STATISTICS;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.DEFAULT;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.getConvertData;
 
 /**
  * 用能分析 Service 实现类
@@ -68,7 +77,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
     public static final String NOW = "当期";
     public static final String PREVIOUS = "同期";
     public static final String RATIO = "同比";
-
+    public static final String RATIO_PERCENT = "同比(%)";
     public static final String DEFAULT_GROUP_NAME = "总";
 
     @Override
@@ -106,7 +115,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (StrUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
-            return JSONUtil.toBean(cacheRes, StatisticsResultV2VO.class);
+            return JSON.parseObject(cacheRes, new TypeReference<StatisticsResultV2VO<YoyItemVO>>() {});
         }
 
         // 构建表头
@@ -1082,4 +1091,336 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         return Collections.singletonList(group);
     }
 
+
+    @Override
+    public List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO, Integer flag) {
+
+        // 1.校验时间范围
+        LocalDateTime[] range = validateRange(paramVO.getRange());
+        // 2.时间处理
+        LocalDateTime startTime = range[0];
+        LocalDateTime endTime = range[1];
+
+        // 表头数据
+        List<List<String>> list = ListUtils.newArrayList();
+        // 统计周期
+        String strTime = getFormatTime(startTime) + "~" + getFormatTime(endTime);
+
+        // 统计标签
+        String topLabel = paramVO.getTopLabel();
+        String childLabels = paramVO.getChildLabels();
+        String labelName = getLabelName(topLabel, childLabels);
+        Integer labelDeep = getLabelDeep(childLabels);
+        // 表单名称
+        Integer queryType = paramVO.getQueryType();
+        String sheetName;
+        if (flag == 1) {
+            // 折标煤
+            switch (queryType) {
+                case 0:
+                    // 综合
+                    sheetName = STANDARD_COAL_YOY_ALL;
+                    list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "标签", "标签"));
+                    for (int i = 2; i <= labelDeep; i++) {
+                        String subLabel = "标签" + i;
+                        list.add(Arrays.asList(sheetName, labelName, strTime, subLabel, subLabel));
+                    }
+                    list.add(Arrays.asList(sheetName, labelName, strTime, "能源", "能源"));
+                    break;
+                case 1:
+                    // 按能源
+                    sheetName = STANDARD_COAL_YOY_ENERGY;
+                    list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "能源", "能源"));
+                    break;
+                case 2:
+                    // 按标签
+                    sheetName = STANDARD_COAL_YOY_LABEL;
+                    list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "标签", "标签"));
+                    for (int i = 2; i <= labelDeep; i++) {
+                        String subLabel = "标签" + i;
+                        list.add(Arrays.asList(sheetName, labelName, strTime, subLabel, subLabel));
+                    }
+                    break;
+                default:
+                    sheetName = DEFAULT;
+            }
+        } else {
+            // 折价
+            switch (queryType) {
+                case 0:
+                    // 综合
+                    sheetName = COST_YOY_ALL;
+                    list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "标签", "标签"));
+                    for (int i = 2; i <= labelDeep; i++) {
+                        String subLabel = "标签" + i;
+                        list.add(Arrays.asList(sheetName, labelName, strTime, subLabel, subLabel));
+                    }
+                    list.add(Arrays.asList(sheetName, labelName, strTime, "能源", "能源"));
+                    break;
+                case 1:
+                    // 按能源
+                    sheetName = COST_YOY_ENERGY;
+                    list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "能源", "能源"));
+                    break;
+                case 2:
+                    // 按标签
+                    sheetName = COST_YOY_LABEL;
+                    list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "标签", "标签"));
+                    for (int i = 2; i <= labelDeep; i++) {
+                        String subLabel = "标签" + i;
+                        list.add(Arrays.asList(sheetName, labelName, strTime, subLabel, subLabel));
+                    }
+                    break;
+                default:
+                    sheetName = DEFAULT;
+            }
+        }
+
+        // 月份数据处理
+        DataTypeEnum dataTypeEnum = validateDateType(paramVO.getDateType());
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, dataTypeEnum);
+
+        String finalSheetName = sheetName;
+        xdata.forEach(x -> {
+            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, NOW));
+            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, PREVIOUS));
+            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, RATIO_PERCENT));
+        });
+
+        // 周期合计
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", NOW));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", PREVIOUS));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", RATIO_PERCENT));
+        return list;
+
+    }
+
+    private String getLabelName(String topLabel, String childLabels) {
+
+        // 一级标签
+        Long topLabelId = Long.valueOf(topLabel.substring(topLabel.indexOf("_") + 1));
+
+        // 下级标签
+        List<String> childLabelValues = StrSplitter.split(childLabels, "#", 0, true, true);
+        List<Long> labelIds = childLabelValues.stream()
+                .map(c -> StrSplitter.split(c, ",", 0, true, true))
+                .flatMap(List::stream)
+                .map(Long::valueOf)
+                .distinct()
+                .collect(Collectors.toList());
+
+        labelIds.add(topLabelId);
+
+        // 获取标签数据
+        List<LabelConfigDO> labels = labelConfigService.getByIds(labelIds);
+
+        return labels.stream().map(LabelConfigDO::getLabelName).collect(Collectors.joining("、"));
+    }
+
+    @Override
+    public List<List<Object>> getExcelData(StatisticsParamV2VO paramVO, Integer flag) {
+        // 结果list
+        List<List<Object>> result = ListUtils.newArrayList();
+        StatisticsResultV2VO<YoyItemVO> resultVO;
+        if (flag == 1) {
+            // 折标煤
+            resultVO = foldCoalAnalysisTable(paramVO);
+        } else {
+            // 折价
+            resultVO = discountAnalysisTable(paramVO);
+        }
+        List<String> tableHeader = resultVO.getHeader();
+
+        List<YoyItemVO> yoyItemVOList = resultVO.getStatisticsInfoList();
+        String childLabels = paramVO.getChildLabels();
+        Integer labelDeep = getLabelDeep(childLabels);
+
+        Integer queryType = paramVO.getQueryType();
+
+        // 底部合计map
+        Map<String, BigDecimal> sumNowMap = new HashMap<>();
+        Map<String, BigDecimal> sumPreviousMap = new HashMap<>();
+        Map<String, BigDecimal> sumProportionMap = new HashMap<>();
+
+        for (YoyItemVO s : yoyItemVOList) {
+
+            List<Object> data = ListUtils.newArrayList();
+            String[] labels = {s.getLabel1(), s.getLabel2(), s.getLabel3(), s.getLabel4(), s.getLabel5()};
+            switch (queryType) {
+                case 0:
+                    // 综合
+                    // 处理标签
+                    for (int i = 0; i < labelDeep; i++) {
+                        data.add(labels[i]);
+                    }
+                    // 处理能源
+                    data.add(s.getEnergyName());
+                    break;
+                case 1:
+                    // 按能源
+                    data.add(s.getEnergyName());
+                    break;
+                case 2:
+                    // 按标签
+                    // 处理标签
+                    for (int i = 0; i < labelDeep; i++) {
+                        data.add(labels[i]);
+                    }
+                    break;
+                default:
+            }
+
+            // 处理数据
+            List<YoyDetailVO> standardCoalInfoDataList = s.getStatisticsRatioDataList();
+
+            Map<String, YoyDetailVO> dateMap = standardCoalInfoDataList.stream()
+                    .collect(Collectors.toMap(YoyDetailVO::getDate, Function.identity()));
+
+            tableHeader.forEach(date -> {
+                YoyDetailVO yoyDetailVO = dateMap.get(date);
+                if (yoyDetailVO == null) {
+                    data.add("/");
+                    data.add("/");
+                    data.add("/");
+                } else {
+                    BigDecimal now = yoyDetailVO.getNow();
+                    BigDecimal previous = yoyDetailVO.getPrevious();
+                    BigDecimal proportion = yoyDetailVO.getRatio();
+                    data.add(getConvertData(now));
+                    data.add(getConvertData(previous));
+                    data.add(getConvertData(proportion));
+
+                    // 底部合计处理
+                    sumNowMap.put(date, addBigDecimal(sumNowMap.get(date), now));
+                    sumPreviousMap.put(date, addBigDecimal(sumPreviousMap.get(date), previous));
+                    sumProportionMap.put(date, addBigDecimal(sumProportionMap.get(date), proportion));
+                }
+
+            });
+
+            BigDecimal sumNow = s.getSumNow();
+            BigDecimal sumPrevious = s.getSumPrevious();
+            BigDecimal sumProportion = s.getSumRatio();
+            // 处理周期合计
+            data.add(getConvertData(sumNow));
+            data.add(getConvertData(sumPrevious));
+            data.add(getConvertData(sumProportion));
+
+            // 处理底部合计
+            sumNowMap.put("sumNum", addBigDecimal(sumNowMap.get("sumNum"), sumNow));
+            sumPreviousMap.put("sumNum", addBigDecimal(sumPreviousMap.get("sumNum"), sumPrevious));
+            sumProportionMap.put("sumNum", addBigDecimal(sumProportionMap.get("sumNum"), sumProportion));
+            result.add(data);
+        }
+
+        // 添加底部合计数据
+        List<Object> bottom = ListUtils.newArrayList();
+        // "时间类型 0：日；1：月；2：年；3：时。
+        String pre = "";
+        Integer dateType = paramVO.getDateType();
+        switch (dateType) {
+            case 0:
+                pre = DAILY_STATISTICS;
+                break;
+            case 1:
+                pre = MONTHLY_STATISTICS;
+                break;
+            case 2:
+                pre = ANNUAL_STATISTICS;
+                break;
+            default:
+                break;
+        }
+
+
+        switch (queryType) {
+            case 0:
+                // 综合
+                // 底部标签位
+                for (int i = 0; i < labelDeep; i++) {
+                    bottom.add(pre);
+                }
+                // 底部能源位
+                bottom.add(pre);
+                break;
+            case 1:
+                // 按能源
+                // 底部能源位
+                bottom.add(pre);
+                break;
+            case 2:
+                // 按标签
+                // 底部标签位
+                for (int i = 0; i < labelDeep; i++) {
+                    bottom.add(pre);
+                }
+                break;
+            default:
+        }
+
+        // 底部数据位
+        tableHeader.forEach(date -> {
+            // 当期
+            BigDecimal now = sumNowMap.get(date);
+            bottom.add(getConvertData(now));
+            // 同期
+            BigDecimal previous = sumPreviousMap.get(date);
+            bottom.add(getConvertData(previous));
+            // 同比
+            BigDecimal proportion = sumProportionMap.get(date);
+            bottom.add(getConvertData(proportion));
+        });
+
+        // 底部周期合计
+        // 当期
+        BigDecimal sumNow = sumNowMap.get("sumNum");
+        bottom.add(getConvertData(sumNow));
+        // 同期
+        BigDecimal sumPrevious = sumPreviousMap.get("sumNum");
+        bottom.add(getConvertData(sumPrevious));
+        // 同比
+        BigDecimal proportion = sumProportionMap.get("sumNum");
+        bottom.add(getConvertData(proportion));
+
+        result.add(bottom);
+
+        return result;
+    }
+
+    /**
+     * 校验时间范围
+     *
+     * @param rangeOrigin
+     * @return
+     */
+    private LocalDateTime[] validateRange(LocalDateTime[] rangeOrigin) {
+        // 1.校验时间范围
+        // 1.1.校验结束时间必须大于开始时间
+        LocalDateTime startTime = rangeOrigin[0];
+        LocalDateTime endTime = rangeOrigin[1];
+        if (!startTime.isBefore(endTime)) {
+            throw exception(END_TIME_MUST_AFTER_START_TIME);
+        }
+        // 时间不能相差1年
+        if (!LocalDateTimeUtils.isWithinDays(startTime, endTime, CommonConstants.YEAR)) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        return rangeOrigin;
+    }
+
+    /**
+     * 校验时间类型
+     *
+     * @param dateType
+     */
+    private DataTypeEnum validateDateType(Integer dateType) {
+        DataTypeEnum dataTypeEnum = DataTypeEnum.codeOf(dateType);
+        // 时间类型不存在
+        if (Objects.isNull(dataTypeEnum)) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        return dataTypeEnum;
+    }
 }
