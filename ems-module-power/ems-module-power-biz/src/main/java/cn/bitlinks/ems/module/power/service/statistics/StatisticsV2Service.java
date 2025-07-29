@@ -5,6 +5,8 @@ import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsInf
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
 
+import java.util.List;
+
 /**
  * 用能分析 Service 接口
  *
@@ -20,4 +22,8 @@ public interface StatisticsV2Service {
     StatisticsResultV2VO<StatisticsInfoV2> moneyAnalysisTable(StatisticsParamV2VO paramVO);
 
     StatisticsChartResultV2VO moneyAnalysisChart(StatisticsParamV2VO paramVO);
+
+    List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO);
+
+    List<List<Object>> getExcelData(StatisticsParamV2VO paramVO);
 }

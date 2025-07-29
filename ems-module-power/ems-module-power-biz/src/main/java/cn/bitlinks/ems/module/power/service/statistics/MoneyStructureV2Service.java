@@ -5,6 +5,8 @@ import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsPar
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StructureInfo;
 
+import java.util.List;
+
 /**
  * @Title: ydme-ems
  * @description:
@@ -28,4 +30,7 @@ public interface MoneyStructureV2Service {
      */
     StatisticsChartPieResultVO moneyStructureAnalysisChart(StatisticsParamV2VO paramVO);
 
+    List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO);
+
+    List<List<Object>> getExcelData(StatisticsParamV2VO paramVO);
 }

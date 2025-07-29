@@ -34,6 +34,24 @@ public interface CommonConstants {
 
     Long LABEL_LAYER_LIMIT = 5L;
 
+    /**
+     * 用能统计 标签最大展示深度（层级）
+     */
+    Integer LABEL_MAX_DISPLAY_DEEP = 5;
+
+    /**
+     * 每日合计
+     */
+    String DAILY_STATISTICS = "每日合计";
+
+    /**
+     * 每日合计
+     */
+    String MONTHLY_STATISTICS = "每月合计";
+    /**
+     * 每日合计
+     */
+    String ANNUAL_STATISTICS = "每年合计";
 
     Integer YEAR = 366;
 

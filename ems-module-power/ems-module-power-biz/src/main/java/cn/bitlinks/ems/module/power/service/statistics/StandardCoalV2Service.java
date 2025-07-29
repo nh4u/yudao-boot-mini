@@ -27,7 +27,7 @@ public interface StandardCoalV2Service {
      */
     StatisticsChartResultV2VO standardCoalAnalysisChart(StatisticsParamV2VO paramVO);
 
-    List<List<String>> getExcelHeader(StatisticsParamV2VO pageReqVO);
+    List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO);
 
-    List<List<Object>> getExcelData(StatisticsParamV2VO pageReqVO);
+    List<List<Object>> getExcelData(StatisticsParamV2VO paramVO);
 }
