@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.HeatingSumma
 
 import javax.validation.Valid;
 import java.math.BigDecimal;
+import java.util.List;
 
 public interface HeatingSummaryService {
     /**
@@ -22,4 +23,8 @@ public interface HeatingSummaryService {
      * @return
      */
     BaseReportChartResultVO<BigDecimal> getChart(@Valid BaseTimeDateParamVO paramVO);
+
+    List<List<String>> getExcelHeader(@Valid BaseTimeDateParamVO paramVO);
+
+    List<List<Object>> getExcelData(@Valid BaseTimeDateParamVO paramVO);
 }
