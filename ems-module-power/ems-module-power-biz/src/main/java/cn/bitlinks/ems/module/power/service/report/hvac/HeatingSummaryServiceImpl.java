@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.report.hvac;
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
+import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
+import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.REPORT_HVAC_HEAT;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ReportCacheConstants.HVAC_HEATING_SUMMARY_CHART;
 import static cn.bitlinks.ems.module.power.enums.ReportCacheConstants.HVAC_HEATING_SUMMARY_TABLE;
@@ -48,7 +50,6 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
     @Resource
     private UsageCostService usageCostService;
 
-    private final String heatingSbCode = "RL01";
     private final Integer scale = DEFAULT_SCALE;
 
 
@@ -71,7 +72,11 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         BaseReportResultVO<HeatingSummaryInfo> resultVO = new BaseReportResultVO<>();
         resultVO.setHeader(tableHeader);
         // 查询热力的计量器具
+        List<String> heatingSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_HVAC_HEAT);
+        String heatingSbLabel = heatingSbLabels.get(0);
+        String heatingSbCode = DictFrameworkUtils.getDictDataLabel(REPORT_HVAC_HEAT, heatingSbLabel);
         List<StandingbookDTO> allStandingbookDTOList = standingbookService.getStandingbookDTOList();
+
         StandingbookDTO targetDTO = allStandingbookDTOList.stream()
                 .filter(dto -> heatingSbCode.equals(dto.getCode()))
                 .findFirst()
@@ -155,7 +160,13 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         }
 
         // 查询热力的计量器具
+        List<String> heatingSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_HVAC_HEAT);
+        String heatingSbLabel = heatingSbLabels.get(0);
+        String heatingSbCode = DictFrameworkUtils.getDictDataLabel(REPORT_HVAC_HEAT, heatingSbLabel);
+
         List<StandingbookDTO> allStandingbookDTOList = standingbookService.getStandingbookDTOList();
+
+
         StandingbookDTO targetDTO = allStandingbookDTOList.stream()
                 .filter(dto -> heatingSbCode.equals(dto.getCode()))
                 .findFirst()
@@ -212,11 +223,10 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         Map<Long, List<UsageCostData>> standingBookUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
         List<HeatingSummaryInfo> resultList = new ArrayList<>();
-
-        Map<Long, StandingbookDTO> standingbookDTOMap = standingbookService.getStandingbookDTOMap();
+        List<String> heatingSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_HVAC_HEAT);
         standingBookUsageMap.forEach((standingbookId, usageCostList) -> {
             // 获取热力台账的名称
-            StandingbookDTO dto = standingbookDTOMap.get(standingbookId);
+            String heatingSbLabel = heatingSbLabels.get(0);
             // 聚合数据 转换成 HeatingSummaryInfoData
             List<HeatingSummaryInfoData> dataList = new ArrayList<>(usageCostList.stream().collect(Collectors.groupingBy(
                     UsageCostData::getTime,
@@ -237,7 +247,7 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
 
 
             HeatingSummaryInfo info = new HeatingSummaryInfo();
-            info.setItemName(dto.getName());
+            info.setItemName(heatingSbLabel);
 
             dataList = dataList.stream().peek(i -> {
                 i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
