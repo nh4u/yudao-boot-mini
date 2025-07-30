@@ -143,7 +143,7 @@ public class CopSettingsServiceImpl implements CopSettingsService {
         for (CopSettingsSaveReqVO copSettingsSaveReqVO : copSettingsList) {
             Long standingbookId = copSettingsSaveReqVO.getStandingbookId();
             if (Objects.isNull(standingbookId)) {
-                throw exception(COP_SETTINGS_STANDINGbOOK_NOT_EMPTY);
+                throw exception(COP_SETTINGS_STANDINGBOOK_NOT_EMPTY);
             }
         }
 
