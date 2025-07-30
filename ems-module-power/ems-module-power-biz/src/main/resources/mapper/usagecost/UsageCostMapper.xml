@@ -94,7 +94,21 @@
         </choose>
 
     </select>
+    <select id="getLastTime2" resultType="java.time.LocalDateTime">
 
+        SELECT
+        MAX(aggregate_time) AS lastTime
+        FROM
+        usage_cost
+        WHERE
+        aggregate_time &gt;= #{startDate}
+        AND aggregate_time &lt;= #{endDate}
+        AND standingbook_id IN
+        <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+
+    </select>
 
     <select id="getLastTime" resultType="java.time.LocalDateTime">
         <!-- 参数说明：
@@ -207,6 +221,54 @@
             #{item}
         </foreach>
         group by standingbook_id
+
+    </select>
+    <select id="getUsageByStandingboookIdGroup" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData">
+        SELECT
+                standingbook_id,energy_id,
+        <choose>
+            <!-- 根据 dateType 选择聚合字段 -->
+            <when test="queryParam.dateType == 0">
+                DATE(aggregate_time) AS time
+            </when>
+            <when test="queryParam.dateType == 1">
+                DATE_FORMAT(aggregate_time, '%Y-%m') AS time
+            </when>
+            <when test="queryParam.dateType == 2">
+                YEAR(aggregate_time) AS time
+            </when>
+            <when test="queryParam.dateType == 3">
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H') AS time
+            </when>
+        </choose>
+        ,
+        SUM(current_usage) AS currentTotalUsage,
+        FROM
+        usage_cost
+        WHERE
+        aggregate_time &gt;= #{startDate}
+        AND aggregate_time &lt;= #{endDate}
+        AND standingbook_id IN
+        <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        GROUP BY
+            standingbook_id,energy_id
+        <choose>
+            <!-- 根据 dateType 选择聚合字段 -->
+            <when test="queryParam.dateType == 0">
+                DATE(aggregate_time)
+            </when>
+            <when test="queryParam.dateType == 1">
+                DATE_FORMAT(aggregate_time, '%Y-%m')
+            </when>
+            <when test="queryParam.dateType == 2">
+                YEAR(aggregate_time)
+            </when>
+            <when test="queryParam.dateType == 3">
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H')
+            </when>
+        </choose>
 
     </select>
 </mapper>
