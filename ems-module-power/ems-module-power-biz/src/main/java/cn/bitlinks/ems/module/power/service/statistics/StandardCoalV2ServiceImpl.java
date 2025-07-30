@@ -503,7 +503,9 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         // 2.时间处理
         LocalDateTime startTime = range[0];
         LocalDateTime endTime = range[1];
-
+        // 验证单位
+        Integer unit = paramVO.getUnit();
+        validateUnit(unit);
         // 表头数据
         List<List<String>> list = ListUtils.newArrayList();
         // 统计周期
@@ -552,12 +554,12 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
 
         xdata.forEach(x -> {
             list.add(Arrays.asList(sheetName, labelName, strTime, x, "用量"));
-            list.add(Arrays.asList(sheetName, labelName, strTime, x, "折标煤"));
+            list.add(Arrays.asList(sheetName, labelName, strTime, x, getHeaderDesc(unit, 1, "折标煤")));
         });
 
         // 周期合计
         list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "用量"));
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "折标煤"));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", getHeaderDesc(unit, 1, "折标煤")));
         return list;
 
     }
@@ -586,6 +588,8 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
 
     @Override
     public List<List<Object>> getExcelData(StatisticsParamV2VO paramVO) {
+        // 验证单位
+        Integer unit = paramVO.getUnit();
         // 结果list
         List<List<Object>> result = ListUtils.newArrayList();
         StatisticsResultV2VO<StandardCoalInfo> resultVO = standardCoalAnalysisTable(paramVO);
@@ -643,7 +647,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                     BigDecimal consumption = standardCoalInfoData.getConsumption();
                     BigDecimal standardCoal = standardCoalInfoData.getStandardCoal();
                     data.add(getConvertData(consumption));
-                    data.add(getConvertData(standardCoal));
+                    data.add(getConvertData(unit, 1, standardCoal));
 
                     // 底部合计处理
                     sumStandardCoatMap.put(date, addBigDecimal(sumStandardCoatMap.get(date), standardCoal));
@@ -655,7 +659,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
             BigDecimal sumEnergyStandardCoal = s.getSumEnergyStandardCoal();
             // 处理周期合计
             data.add(getConvertData(sumEnergyConsumption));
-            data.add(getConvertData(sumEnergyStandardCoal));
+            data.add(getConvertData(unit, 1, sumEnergyStandardCoal));
 
             // 处理底部合计
             sumStandardCoatMap.put("sumNum", addBigDecimal(sumStandardCoatMap.get("sumNum"), sumEnergyStandardCoal));
@@ -716,7 +720,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
 
             // 标准煤
             BigDecimal standardCoat = sumStandardCoatMap.get(date);
-            bottom.add(getConvertData(standardCoat));
+            bottom.add(getConvertData(unit, 1, standardCoat));
 
         });
 
@@ -726,7 +730,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
 
         // 标准煤
         BigDecimal standardCoat = sumStandardCoatMap.get("sumNum");
-        bottom.add(getConvertData(standardCoat));
+        bottom.add(getConvertData(unit, 1, standardCoat));
         result.add(bottom);
 
         return result;
@@ -1295,4 +1299,9 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         return dataTypeEnum;
     }
 
+    private void validateUnit(Integer unit) {
+        if (Objects.isNull(unit)) {
+            throw exception(UNIT_NOT_EMPTY);
+        }
+    }
 }
