@@ -261,6 +261,10 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         LocalDateTime startTime = range[0];
         LocalDateTime endTime = range[1];
 
+        // 验证单位
+        Integer unit = paramVO.getUnit();
+        validateUnit(unit);
+
         // 表头数据
         List<List<String>> list = ListUtils.newArrayList();
         // 统计周期
@@ -308,12 +312,12 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, dataTypeEnum);
 
         xdata.forEach(x -> {
-            list.add(Arrays.asList(sheetName, labelName, strTime, x, "折价"));
+            list.add(Arrays.asList(sheetName, labelName, strTime, x, getHeaderDesc(unit, 2, "折价")));
             list.add(Arrays.asList(sheetName, labelName, strTime, x, "占比(%)"));
         });
 
         // 周期合计
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "折价"));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计",getHeaderDesc(unit, 2, "折价")));
         list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "占比(%)"));
         return list;
 
@@ -343,6 +347,10 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
 
     @Override
     public List<List<Object>> getExcelData(StatisticsParamV2VO paramVO) {
+
+        // 验证单位
+        Integer unit = paramVO.getUnit();
+
         // 结果list
         List<List<Object>> result = ListUtils.newArrayList();
         StatisticsResultV2VO<StructureInfo> resultVO = moneyStructureAnalysisTable(paramVO);
@@ -400,7 +408,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
                 } else {
                     BigDecimal cost = structureInfoData.getNum();
                     BigDecimal proportion = structureInfoData.getProportion();
-                    data.add(getConvertData(cost));
+                    data.add(getConvertData(unit, 2, cost));
                     data.add(getConvertData(proportion));
 
                     // 底部合计处理
@@ -413,7 +421,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
             BigDecimal sumCost = s.getSumNum();
             BigDecimal sumProportion = s.getSumProportion();
             // 处理周期合计
-            data.add(getConvertData(sumCost));
+            data.add(getConvertData(unit, 2, sumCost));
             data.add(getConvertData(sumProportion));
 
             // 处理底部合计
@@ -471,7 +479,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         tableHeader.forEach(date -> {
             // 折价
             BigDecimal cost = sumSCostMap.get(date);
-            bottom.add(getConvertData(cost));
+            bottom.add(getConvertData(unit, 2, cost));
             // 占比
             BigDecimal proportion = sumProportionMap.get(date);
             bottom.add(getConvertData(proportion));
@@ -480,7 +488,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         // 底部周期合计
         // 折价
         BigDecimal cost = sumSCostMap.get("sumNum");
-        bottom.add(getConvertData(cost));
+        bottom.add(getConvertData(unit, 2, cost));
         // 占比
         BigDecimal proportion = sumProportionMap.get("sumNum");
         bottom.add(getConvertData(proportion));
@@ -1217,5 +1225,11 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.joining("-"));
+    }
+
+    private void validateUnit(Integer unit) {
+        if (Objects.isNull(unit)) {
+            throw exception(UNIT_NOT_EMPTY);
+        }
     }
 }

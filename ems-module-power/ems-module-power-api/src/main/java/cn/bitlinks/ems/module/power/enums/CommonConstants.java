@@ -82,6 +82,13 @@ public interface CommonConstants {
      */
     Integer RATIO = 3;
 
+
+    String COAT_UNIT1 = "(kgce)";
+    String COAT_UNIT2 = "(tce)";
+
+    String COST_UNIT1 = "(元)";
+    String COST_UNIT2 = "(万元)";
+
     /**
      * 随机成功概率
       */

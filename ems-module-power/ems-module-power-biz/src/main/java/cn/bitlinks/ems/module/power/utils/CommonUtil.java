@@ -10,7 +10,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.LABEL_MAX_DISPLAY_DEEP;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 
 /**
  * @Title: ydme-ems
@@ -141,4 +141,51 @@ public class CommonUtil {
     public static Object getConvertData(BigDecimal num) {
         return !Objects.isNull(num) && num.compareTo(BigDecimal.ZERO) != 0 ? num : "/";
     }
+
+    /**
+     * 根据数据返回对应数据 or /
+     *
+     * @param num 对应list
+     * @return
+     */
+    public static Object getConvertData(Integer unit, Integer flag, BigDecimal num) {
+        return !Objects.isNull(num) && num.compareTo(BigDecimal.ZERO) != 0 ? getNum(unit, flag, num) : "/";
+    }
+
+    public static BigDecimal getNum(Integer unit, Integer flag, BigDecimal num) {
+        if (flag == 1) {
+            if (unit == 1) {
+                return num;
+            } else {
+                // tce
+                return num.divide(BigDecimal.valueOf(1000L), 2, RoundingMode.HALF_UP);
+            }
+        } else {
+            if (unit == 1) {
+                return num;
+            } else {
+                // 万元
+                return num.divide(BigDecimal.valueOf(10000L), 2, RoundingMode.HALF_UP);
+            }
+        }
+
+    }
+
+    public static  String getHeaderDesc(Integer unit, Integer flag, String prefix) {
+        if (flag == 1) {
+            if (unit == 1) {
+                return prefix + COAT_UNIT1;
+            } else {
+                return prefix + COAT_UNIT2;
+            }
+        } else {
+            if (unit == 1) {
+                return prefix + COST_UNIT1;
+            } else {
+                return prefix + COST_UNIT2;
+            }
+        }
+
+    }
+
 }

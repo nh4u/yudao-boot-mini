@@ -922,7 +922,9 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         // 2.时间处理
         LocalDateTime startTime = range[0];
         LocalDateTime endTime = range[1];
-
+        // 验证单位
+        Integer unit = paramVO.getUnit();
+        validateUnit(unit);
         // 表头数据
         List<List<String>> list = ListUtils.newArrayList();
         // 统计周期
@@ -971,12 +973,12 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
         xdata.forEach(x -> {
             list.add(Arrays.asList(sheetName, labelName, strTime, x, "用量"));
-            list.add(Arrays.asList(sheetName, labelName, strTime, x, "用能成本"));
+            list.add(Arrays.asList(sheetName, labelName, strTime, x, getHeaderDesc(unit, 2, "用能成本")));
         });
 
         // 周期合计
         list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "用量"));
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "用能成本"));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", getHeaderDesc(unit, 2, "用能成本")));
         return list;
 
     }
@@ -1005,6 +1007,10 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
     @Override
     public List<List<Object>> getExcelData(StatisticsParamV2VO paramVO) {
+
+        // 验证单位
+        Integer unit = paramVO.getUnit();
+
         // 结果list
         List<List<Object>> result = ListUtils.newArrayList();
         StatisticsResultV2VO<StatisticsInfoV2> resultVO = moneyAnalysisTable(paramVO);
@@ -1062,7 +1068,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                     BigDecimal consumption = statisticInfoDataV2.getConsumption();
                     BigDecimal cost = statisticInfoDataV2.getMoney();
                     data.add(getConvertData(consumption));
-                    data.add(getConvertData(cost));
+                    data.add(getConvertData(unit, 2, cost));
 
                     // 底部合计处理
                     sumCostMap.put(date, addBigDecimal(sumCostMap.get(date), cost));
@@ -1074,7 +1080,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             BigDecimal sumCost = s.getSumEnergyMoney();
             // 处理周期合计
             data.add(getConvertData(sumEnergyConsumption));
-            data.add(getConvertData(sumCost));
+            data.add(getConvertData(unit, 2, sumCost));
 
             // 处理底部合计
             sumCostMap.put("sumNum", addBigDecimal(sumCostMap.get("sumNum"), sumCost));
@@ -1135,7 +1141,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
             // 折价
             BigDecimal cost = sumCostMap.get(date);
-            bottom.add(getConvertData(cost));
+            bottom.add(getConvertData(unit, 2, cost));
 
         });
 
@@ -1145,7 +1151,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
         // 折价
         BigDecimal cost = sumCostMap.get("sumNum");
-        bottom.add(getConvertData(cost));
+        bottom.add(getConvertData(unit, 2, cost));
         result.add(bottom);
 
         return result;
@@ -1188,4 +1194,9 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         return dataTypeEnum;
     }
 
+    private void validateUnit(Integer unit) {
+        if (Objects.isNull(unit)) {
+            throw exception(UNIT_NOT_EMPTY);
+        }
+    }
 }

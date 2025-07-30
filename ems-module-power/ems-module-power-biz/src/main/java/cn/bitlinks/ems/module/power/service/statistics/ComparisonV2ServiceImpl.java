@@ -1112,6 +1112,10 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         LocalDateTime startTime = range[0];
         LocalDateTime endTime = range[1];
 
+        // 验证单位
+        Integer unit = paramVO.getUnit();
+        validateUnit(unit);
+
         // 表头数据
         List<List<String>> list = ListUtils.newArrayList();
         // 统计周期
@@ -1193,15 +1197,15 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
         String finalSheetName = sheetName;
         xdata.forEach(x -> {
-            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, NOW));
-            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, PREVIOUS));
-            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, RATIO_PERCENT));
+            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, getHeaderDesc(unit, flag, NOW)));
+            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, getHeaderDesc(unit, flag, PREVIOUS)));
+            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, getHeaderDesc(unit, flag, RATIO_PERCENT)));
         });
 
         // 周期合计
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", NOW));
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", PREVIOUS));
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", RATIO_PERCENT));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", getHeaderDesc(unit, flag, NOW)));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", getHeaderDesc(unit, flag, PREVIOUS)));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", getHeaderDesc(unit, flag, RATIO_PERCENT)));
         return list;
 
     }
@@ -1230,6 +1234,9 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
     @Override
     public List<List<Object>> getExcelData(StatisticsParamV2VO paramVO, Integer flag) {
+        // 验证单位
+        Integer unit = paramVO.getUnit();
+
         // 结果list
         List<List<Object>> result = ListUtils.newArrayList();
         StatisticsResultV2VO<ComparisonItemVO> resultVO;
@@ -1297,8 +1304,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                     BigDecimal now = comparisonDetailVO.getNow();
                     BigDecimal previous = comparisonDetailVO.getPrevious();
                     BigDecimal proportion = comparisonDetailVO.getRatio();
-                    data.add(getConvertData(now));
-                    data.add(getConvertData(previous));
+                    data.add(getConvertData(unit, flag, now));
+                    data.add(getConvertData(unit, flag, previous));
                     data.add(getConvertData(proportion));
 
                     // 底部合计处理
@@ -1313,8 +1320,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             BigDecimal sumPrevious = s.getSumPrevious();
             BigDecimal sumProportion = s.getSumRatio();
             // 处理周期合计
-            data.add(getConvertData(sumNow));
-            data.add(getConvertData(sumPrevious));
+            data.add(getConvertData(unit, flag, sumNow));
+            data.add(getConvertData(unit, flag, sumPrevious));
             data.add(getConvertData(sumProportion));
 
             // 处理底部合计
@@ -1373,10 +1380,10 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         tableHeader.forEach(date -> {
             // 当期
             BigDecimal now = sumNowMap.get(date);
-            bottom.add(getConvertData(now));
+            bottom.add(getConvertData(unit, flag, now));
             // 同期
             BigDecimal previous = sumPreviousMap.get(date);
-            bottom.add(getConvertData(previous));
+            bottom.add(getConvertData(unit, flag, previous));
             // 同比
             BigDecimal proportion = sumProportionMap.get(date);
             bottom.add(getConvertData(proportion));
@@ -1385,10 +1392,10 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         // 底部周期合计
         // 当期
         BigDecimal sumNow = sumNowMap.get("sumNum");
-        bottom.add(getConvertData(sumNow));
+        bottom.add(getConvertData(unit, flag, sumNow));
         // 同期
         BigDecimal sumPrevious = sumPreviousMap.get("sumNum");
-        bottom.add(getConvertData(sumPrevious));
+        bottom.add(getConvertData(unit, flag, sumPrevious));
         // 同比
         BigDecimal proportion = sumProportionMap.get("sumNum");
         bottom.add(getConvertData(proportion));
@@ -1435,4 +1442,9 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         return dataTypeEnum;
     }
 
+    private void validateUnit(Integer unit) {
+        if (Objects.isNull(unit)) {
+            throw exception(UNIT_NOT_EMPTY);
+        }
+    }
 }
