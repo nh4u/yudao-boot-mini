@@ -144,7 +144,7 @@ public class UsageCostServiceImpl implements UsageCostService {
     }
     @Override
     @TenantIgnore
-    public LocalDateTime getLastTime(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+    public LocalDateTime getLastTimeNoParam(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
         return usageCostMapper.getLastTime2(startDate, endDate, standingBookIds);
     }
 
