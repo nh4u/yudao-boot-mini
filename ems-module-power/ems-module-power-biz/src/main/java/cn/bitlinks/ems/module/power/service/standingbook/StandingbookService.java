@@ -131,6 +131,12 @@ public interface StandingbookService {
      * @return
      */
     List<StandingBookTypeTreeRespVO> treeWithEnergyParam(StandingbookEnergyParamReqVO standingbookEnergyParamReqVO);
+
+    /**
+     * id-name-code
+     * @return
+     */
+    List<StandingbookDTO> getStandingbookDTOList();
     /**
      * id-台账基础属性
      * @return
