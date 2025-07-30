@@ -54,7 +54,7 @@ public interface UsageCostService {
      */
     List<UsageCostData> getUsageByStandingboookIdGroup(BaseTimeDateParamVO paramVO, LocalDateTime startDate, LocalDateTime endDate, List<Long> longs);
 
-    LocalDateTime getLastTime(
+    LocalDateTime getLastTimeNoParam(
             LocalDateTime startDate,
             LocalDateTime endDate,
             List<Long> standingBookIds);
