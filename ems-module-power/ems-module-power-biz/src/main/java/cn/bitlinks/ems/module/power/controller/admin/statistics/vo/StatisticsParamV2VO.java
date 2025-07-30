@@ -54,6 +54,9 @@ public class StatisticsParamV2VO {
     @NotNull(message = "能源类型不能为空")
     private Integer energyClassify;
 
+    @Schema(description = "单位 1：kgce/元；2：tce/万元。")
+    private Integer unit;
+
     @Override
     public String toString() {
         return "StatisticsParamV2VO{" +
