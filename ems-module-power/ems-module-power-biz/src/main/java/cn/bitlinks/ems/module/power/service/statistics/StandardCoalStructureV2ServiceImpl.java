@@ -260,7 +260,9 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         // 2.时间处理
         LocalDateTime startTime = range[0];
         LocalDateTime endTime = range[1];
-
+        // 验证单位
+        Integer unit = paramVO.getUnit();
+        validateUnit(unit);
         // 表头数据
         List<List<String>> list = ListUtils.newArrayList();
         // 统计周期
@@ -308,12 +310,12 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, dataTypeEnum);
 
         xdata.forEach(x -> {
-            list.add(Arrays.asList(sheetName, labelName, strTime, x, "折标煤"));
+            list.add(Arrays.asList(sheetName, labelName, strTime, x, getHeaderDesc(unit, 1, "折标煤")));
             list.add(Arrays.asList(sheetName, labelName, strTime, x, "占比(%)"));
         });
 
         // 周期合计
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "折标煤"));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", getHeaderDesc(unit, 1, "折标煤")));
         list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "占比(%)"));
         return list;
 
@@ -343,6 +345,10 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
 
     @Override
     public List<List<Object>> getExcelData(StatisticsParamV2VO paramVO) {
+
+        // 验证单位
+        Integer unit = paramVO.getUnit();
+
         // 结果list
         List<List<Object>> result = ListUtils.newArrayList();
         StatisticsResultV2VO<StructureInfo> resultVO = standardCoalStructureAnalysisTable(paramVO);
@@ -400,7 +406,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                 } else {
                     BigDecimal standardCoal = structureInfoData.getNum();
                     BigDecimal proportion = structureInfoData.getProportion();
-                    data.add(getConvertData(standardCoal));
+                    data.add(getConvertData(unit, 1, standardCoal));
                     data.add(getConvertData(proportion));
 
                     // 底部合计处理
@@ -413,7 +419,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
             BigDecimal sumStandardCoal = s.getSumNum();
             BigDecimal sumProportion = s.getSumProportion();
             // 处理周期合计
-            data.add(getConvertData(sumStandardCoal));
+            data.add(getConvertData(unit, 1, sumStandardCoal));
             data.add(getConvertData(sumProportion));
 
             // 处理底部合计
@@ -471,7 +477,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         tableHeader.forEach(date -> {
             // 标准煤
             BigDecimal standardCoat = sumStandardCoatMap.get(date);
-            bottom.add(getConvertData(standardCoat));
+            bottom.add(getConvertData(unit, 1, standardCoat));
             // 占比
             BigDecimal proportion = sumProportionMap.get(date);
             bottom.add(getConvertData(proportion));
@@ -480,7 +486,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         // 底部周期合计
         // 标准煤
         BigDecimal standardCoat = sumStandardCoatMap.get("sumNum");
-        bottom.add(getConvertData(standardCoat));
+        bottom.add(getConvertData(unit, 1, standardCoat));
         // 占比
         BigDecimal proportion = sumProportionMap.get("sumNum");
         bottom.add(getConvertData(proportion));
@@ -1224,5 +1230,11 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.joining("-"));
+    }
+
+    private void validateUnit(Integer unit) {
+        if (Objects.isNull(unit)) {
+            throw exception(UNIT_NOT_EMPTY);
+        }
     }
 }
