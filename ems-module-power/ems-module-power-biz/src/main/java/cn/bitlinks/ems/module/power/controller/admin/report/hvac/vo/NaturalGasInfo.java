@@ -9,11 +9,11 @@ import java.util.List;
 
 @Data
 @NoArgsConstructor
-@Schema(description = "管理后台 - 热力汇总结果信息 VO")
-public class HeatingSummaryInfo {
+@Schema(description = "管理后台 - 天然气结果信息 VO")
+public class NaturalGasInfo {
 
     @Schema(description = "数据", example = "数据")
-    private List<HeatingSummaryInfoData> heatingSummaryInfoDataList;
+    private List<NaturalGasInfoData> naturalGasInfoDataList;
 
     @Schema(description = "周期合计", example = "0.00")
     private BigDecimal periodSum;
