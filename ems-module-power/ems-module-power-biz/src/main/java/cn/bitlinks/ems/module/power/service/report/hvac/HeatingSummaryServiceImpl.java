@@ -223,11 +223,13 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
 
         List<List<String>> list = ListUtils.newArrayList();
         // 第一格处理
-        list.add(Arrays.asList("", ""));
+        list.add(Arrays.asList(""));
 
         // 月份处理
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
-        list.add(xdata);
+        xdata.forEach(x -> {
+            list.add(Arrays.asList(x));
+        });
         list.add(Arrays.asList("周期合计"));
         return list;
     }
@@ -246,6 +248,7 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
 
             List<Object> data = ListUtils.newArrayList();
 
+            data.add(s.getItemName());
 
             // 处理数据
             List<HeatingSummaryInfoData> heatingSummaryInfoDataList = s.getHeatingSummaryInfoDataList();
@@ -256,7 +259,6 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
             tableHeader.forEach(date -> {
                 HeatingSummaryInfoData heatingSummaryInfoData = dateMap.get(date);
                 if (heatingSummaryInfoData == null) {
-                    data.add("/");
                     data.add("/");
                 } else {
                     BigDecimal consumption = heatingSummaryInfoData.getConsumption();
