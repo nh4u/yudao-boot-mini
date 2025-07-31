@@ -122,7 +122,7 @@ public class AcquisitionJob implements Job {
                 itemStatusMap = mockData(dataSites);
             } else {
                 // 从redis中获取对应协议客户端的数据，
-                itemStatusMap = OpcDaUtils.readOnly(serviceSettingsDTO.getIpAddress(),
+                itemStatusMap = OpcDaUtils.batchGetValue(serviceSettingsDTO.getIpAddress(),
                         serviceSettingsDTO.getUsername(),
                         serviceSettingsDTO.getPassword(), serviceSettingsDTO.getClsid(), dataSites);
             }
