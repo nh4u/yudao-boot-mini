@@ -77,7 +77,7 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         // 查询热力的计量器具
         List<String> heatingSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_HVAC_HEAT);
         String heatingSbLabel = heatingSbLabels.get(0);
-        String heatingSbCode = DictFrameworkUtils.getDictDataLabel(REPORT_HVAC_HEAT, heatingSbLabel);
+        String heatingSbCode = DictFrameworkUtils.parseDictDataValue(REPORT_HVAC_HEAT, heatingSbLabel);
         List<StandingbookDTO> allStandingbookDTOList = standingbookService.getStandingbookDTOList();
 
         StandingbookDTO targetDTO = allStandingbookDTOList.stream()
@@ -165,7 +165,7 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         // 查询热力的计量器具
         List<String> heatingSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_HVAC_HEAT);
         String heatingSbLabel = heatingSbLabels.get(0);
-        String heatingSbCode = DictFrameworkUtils.getDictDataLabel(REPORT_HVAC_HEAT, heatingSbLabel);
+        String heatingSbCode = DictFrameworkUtils.parseDictDataValue(REPORT_HVAC_HEAT, heatingSbLabel);
 
         List<StandingbookDTO> allStandingbookDTOList = standingbookService.getStandingbookDTOList();
 
