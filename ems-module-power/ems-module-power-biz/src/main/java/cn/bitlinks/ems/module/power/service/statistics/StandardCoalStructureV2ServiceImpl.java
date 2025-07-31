@@ -976,26 +976,6 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         return sumMap;
     }
 
-    /**
-     * 计算占比
-     *
-     * @param now   当前
-     * @param total 总计
-     * @return
-     */
-    private BigDecimal getProportion(BigDecimal now, BigDecimal total) {
-
-        if (now == null || total == null) {
-            return null;
-        }
-        BigDecimal proportion = BigDecimal.ZERO;
-        if (total.compareTo(BigDecimal.ZERO) != 0) {
-            proportion = now.divide(total, 10, RoundingMode.HALF_UP)
-                    .multiply(new BigDecimal(100))
-                    .setScale(2, RoundingMode.HALF_UP);
-        }
-        return proportion;
-    }
 
     /**
      * 根据 label id 数组和索引，安全获取 label 名称
