@@ -1,0 +1,30 @@
+package cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
+import javax.validation.constraints.NotEmpty;
+
+/**
+ * @author liumingqiang
+ */
+@Schema(description = "管理后台 - 供应分析新增/修改 Request VO")
+@Data
+public class SupplyAnalysisSettingsSaveReqVO {
+
+    @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "12042")
+    private Long id;
+
+    @Schema(description = "系统")
+    @NotEmpty(message = "系统不能为空")
+    private String system;
+
+    @Schema(description = "分析项")
+    @NotEmpty(message = "分析项不能为空")
+    private String item;
+
+    @Schema(description = "台账id")
+    private Long standingbookId;
+
+
+}
