@@ -10,6 +10,7 @@ import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.Su
 import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.SupplyAnalysisStructureInfo;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.report.supplyanalysis.SupplyAnalysisSettingsDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import cn.bitlinks.ems.module.power.dal.mysql.report.supplyanalysis.SupplyAnalysisSettingsMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
@@ -24,6 +25,7 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -123,6 +125,7 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
                 .stream()
                 .map(SupplyAnalysisSettingsDO::getStandingbookId)
                 .filter(Objects::nonNull)
+                .distinct()
                 .collect(Collectors.toList());
 
 
@@ -138,8 +141,7 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
                 rangeOrigin[1],
                 standingBookIds);
 
-        Map<Long, List<UsageCostData>> standingBookUsageMap = usageCostDataList
-                .stream()
+        Map<Long, List<UsageCostData>> standingBookUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
 
 
@@ -152,29 +154,63 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
                     info.setId(s.getId());
 
                     List<UsageCostData> usageCostList = standingBookUsageMap.get(s.getStandingbookId());
-                    List<StructureInfoData> structureDataList = usageCostList.stream()
-                            .map(usageCost -> new StructureInfoData(
-                                    //DateUtil.format(usageCost.getTime(), dataType.getFormat()),
-                                    usageCost.getTime(),
-                                    usageCost.getCurrentTotalUsage(),
-                                    null
-                            ))
-                            .collect(Collectors.toList());
+
+                    List<StructureInfoData> structureInfoDataList = new ArrayList<>();
+
+                    if (Objects.isNull(usageCostList)) {
+                        // 如果为空自动填充/
+                        tableHeader.forEach(date -> {
+                            StructureInfoData structureInfoData = new StructureInfoData();
+                            structureInfoData.setNum(BigDecimal.ZERO);
+                            structureInfoData.setProportion(BigDecimal.ZERO);
+                            structureInfoData.setDate(date);
+
+                            structureInfoDataList.add(structureInfoData);
+                        });
+                        info.setStructureInfoDataList(structureInfoDataList);
+                        info.setSumNum(BigDecimal.ZERO);
+                        info.setSumProportion(BigDecimal.ZERO);
+
+                    } else {
+                        // 如何不空 填充对应数据
+                        Map<String, UsageCostData> usageCostMap = usageCostList
+                                .stream()
+                                .collect(Collectors.toMap(UsageCostData::getTime, Function.identity()));
+                        tableHeader.forEach(date -> {
+
+                            UsageCostData usageCostData = usageCostMap.get(date);
+                            if (usageCostData == null) {
+                                StructureInfoData structureInfoData = new StructureInfoData();
+                                structureInfoData.setNum(BigDecimal.ZERO);
+                                structureInfoData.setProportion(BigDecimal.ZERO);
+                                structureInfoData.setDate(date);
+
+                                structureInfoDataList.add(structureInfoData);
+                            } else {
+                                StructureInfoData structureInfoData = new StructureInfoData();
+                                structureInfoData.setNum(usageCostData.getCurrentTotalUsage());
+                                structureInfoData.setProportion(null);
+                                structureInfoData.setDate(date);
+
+                                structureInfoDataList.add(structureInfoData);
+
+                            }
+
+                        });
+                    }
 
                     // 横向折标煤总和
-                    BigDecimal sumNum = structureDataList
+                    BigDecimal sumNum = structureInfoDataList
                             .stream()
                             .map(StructureInfoData::getNum)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                    info.setStructureInfoDataList(structureDataList);
+                    info.setStructureInfoDataList(structureInfoDataList);
 
                     info.setSumNum(sumNum);
                     info.setSumProportion(null);
                     return info;
-
                 })
-                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
 
@@ -183,6 +219,7 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
                 .collect(Collectors.groupingBy(SupplyAnalysisStructureInfo::getSystem));
 
         List<SupplyAnalysisStructureInfo> list = new ArrayList<>();
+
         supplyAnalysisStructureInfoMap.forEach((system, supplyAnalysisStructureInfoList) -> {
             List<SupplyAnalysisStructureInfo> structureResultList = getStructureResultList(supplyAnalysisStructureInfoList);
             list.addAll(structureResultList);

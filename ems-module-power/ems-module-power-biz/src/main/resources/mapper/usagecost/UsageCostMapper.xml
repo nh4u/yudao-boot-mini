@@ -279,7 +279,7 @@
           - endDate (结束日期)
         -->
         SELECT
-        standingbook_id
+        standingbook_id,
         <choose>
             <!-- 根据 dateType 选择聚合字段 -->
             <when test="dateType == 0">
@@ -295,6 +295,7 @@
                 DATE_FORMAT(aggregate_time, '%Y-%m-%d %H') AS time
             </when>
         </choose>
+        ,
         SUM(current_usage)            AS currentTotalUsage
 
         FROM usage_cost
