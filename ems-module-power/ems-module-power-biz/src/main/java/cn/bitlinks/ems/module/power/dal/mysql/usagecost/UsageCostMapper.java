@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.dal.mysql.usagecost;
 
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
 import org.apache.ibatis.annotations.Mapper;
@@ -30,7 +31,10 @@ public interface UsageCostMapper {
                               @Param("startDate") LocalDateTime startDate,
                               @Param("endDate") LocalDateTime endDate,
                               @Param("standingBookIds") List<Long> standingBookIds);
-
+    LocalDateTime getLastTime2(
+                              @Param("startDate") LocalDateTime startDate,
+                              @Param("endDate") LocalDateTime endDate,
+                              @Param("standingBookIds") List<Long> standingBookIds);
     List<UsageCostData> getListOfHome(@Param("startDate") LocalDateTime startDate,
                                       @Param("endDate") LocalDateTime endDate,
                                       @Param("energyIdList") List<Long> energyIdList);
@@ -54,4 +58,8 @@ public interface UsageCostMapper {
     List<UsageCostData> getEnergyStandardCoalByEnergyIds(@Param("startDate") LocalDateTime startDate,
                                                          @Param("endDate") LocalDateTime endDate,
                                                          @Param("energyIds") List<Long> energyIds);
+    List<UsageCostData> getUsageByStandingboookIdGroup(@Param("queryParam") BaseTimeDateParamVO paramVO,
+                                                    @Param("startDate")LocalDateTime startDate,
+                                                  @Param("endDate")LocalDateTime endDate,
+                                                  @Param("standingBookIds")List<Long> standingBookIds);
 }

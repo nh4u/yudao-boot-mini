@@ -373,7 +373,11 @@ public class StandingbookServiceImpl implements StandingbookService {
 
 
     }
-
+    @Override
+    @Cacheable(value = RedisKeyConstants.STANDING_BOOK_LIST, key = "'all'", unless = "#result == null || #result.isEmpty()")
+    public List<StandingbookDTO> getStandingbookDTOList() {
+        return standingbookAttributeMapper.getStandingbookDTO();
+    }
     @Override
     @Cacheable(value = RedisKeyConstants.STANDING_BOOK_MAP, key = "'all'", unless = "#result == null || #result.isEmpty()")
     public Map<Long, StandingbookDTO> getStandingbookDTOMap() {
@@ -581,8 +585,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     @Transactional
-    @CacheEvict(value = RedisKeyConstants.STANDING_BOOK_MAP, allEntries = true)
-
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_MAP, RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
     public Long createStandingbook(Map<String, String> createReqVO) {
         // 插入
         if (!createReqVO.containsKey(ATTR_TYPE_ID)) {
@@ -665,7 +668,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     @Transactional
-    @CacheEvict(value = RedisKeyConstants.STANDING_BOOK_MAP, allEntries = true)
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_MAP, RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
 
     public void updateStandingbook(Map<String, String> updateReqVO) {
         // 校验存在
@@ -705,7 +708,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Transactional
     @Override
-    @CacheEvict(value = RedisKeyConstants.STANDING_BOOK_MAP, allEntries = true)
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_MAP, RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
     public void deleteStandingbookBatch(List<Long> ids) {
         if (CollUtil.isEmpty(ids)) {
             return;
