@@ -242,7 +242,7 @@
             </when>
         </choose>
         ,
-        SUM(current_usage) AS currentTotalUsage,
+        SUM(current_usage) AS currentTotalUsage
         FROM
         usage_cost
         WHERE
@@ -257,16 +257,16 @@
         <choose>
             <!-- 根据 dateType 选择聚合字段 -->
             <when test="queryParam.dateType == 0">
-                DATE(aggregate_time)
+               , DATE(aggregate_time)
             </when>
             <when test="queryParam.dateType == 1">
-                DATE_FORMAT(aggregate_time, '%Y-%m')
+               , DATE_FORMAT(aggregate_time, '%Y-%m')
             </when>
             <when test="queryParam.dateType == 2">
-                YEAR(aggregate_time)
+               , YEAR(aggregate_time)
             </when>
             <when test="queryParam.dateType == 3">
-                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H')
+               , DATE_FORMAT(aggregate_time, '%Y-%m-%d %H')
             </when>
         </choose>
 
