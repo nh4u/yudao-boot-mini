@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.report.hvac;
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
+import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
@@ -13,6 +14,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
+import com.alibaba.excel.util.ListUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import lombok.extern.slf4j.Slf4j;
@@ -25,15 +27,18 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
+import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.REPORT_HVAC_HEAT;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ReportCacheConstants.HVAC_HEATING_SUMMARY_CHART;
 import static cn.bitlinks.ems.module.power.enums.ReportCacheConstants.HVAC_HEATING_SUMMARY_TABLE;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.getConvertData;
 
 @Service
 @Validated
@@ -48,7 +53,6 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
     @Resource
     private UsageCostService usageCostService;
 
-    private final String heatingSbCode = "RL01";
     private final Integer scale = DEFAULT_SCALE;
 
 
@@ -71,7 +75,11 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         BaseReportResultVO<HeatingSummaryInfo> resultVO = new BaseReportResultVO<>();
         resultVO.setHeader(tableHeader);
         // 查询热力的计量器具
+        List<String> heatingSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_HVAC_HEAT);
+        String heatingSbLabel = heatingSbLabels.get(0);
+        String heatingSbCode = DictFrameworkUtils.getDictDataLabel(REPORT_HVAC_HEAT, heatingSbLabel);
         List<StandingbookDTO> allStandingbookDTOList = standingbookService.getStandingbookDTOList();
+
         StandingbookDTO targetDTO = allStandingbookDTOList.stream()
                 .filter(dto -> heatingSbCode.equals(dto.getCode()))
                 .findFirst()
@@ -155,7 +163,13 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         }
 
         // 查询热力的计量器具
+        List<String> heatingSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_HVAC_HEAT);
+        String heatingSbLabel = heatingSbLabels.get(0);
+        String heatingSbCode = DictFrameworkUtils.getDictDataLabel(REPORT_HVAC_HEAT, heatingSbLabel);
+
         List<StandingbookDTO> allStandingbookDTOList = standingbookService.getStandingbookDTOList();
+
+
         StandingbookDTO targetDTO = allStandingbookDTOList.stream()
                 .filter(dto -> heatingSbCode.equals(dto.getCode()))
                 .findFirst()
@@ -202,6 +216,65 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         return resultVO;
     }
 
+    @Override
+    public List<List<String>> getExcelHeader(BaseTimeDateParamVO paramVO) {
+
+        validCondition(paramVO);
+
+        List<List<String>> list = ListUtils.newArrayList();
+        // 第一格处理
+        list.add(Arrays.asList("", ""));
+
+        // 月份处理
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
+        list.add(xdata);
+        list.add(Arrays.asList("周期合计"));
+        return list;
+    }
+
+    @Override
+    public List<List<Object>> getExcelData(BaseTimeDateParamVO paramVO) {
+        // 结果list
+        List<List<Object>> result = ListUtils.newArrayList();
+
+        BaseReportResultVO<HeatingSummaryInfo> resultVO = getTable(paramVO);
+        List<String> tableHeader = resultVO.getHeader();
+
+        List<HeatingSummaryInfo> heatingSummaryInfoList = resultVO.getReportDataList();
+
+        for (HeatingSummaryInfo s : heatingSummaryInfoList) {
+
+            List<Object> data = ListUtils.newArrayList();
+
+
+            // 处理数据
+            List<HeatingSummaryInfoData> heatingSummaryInfoDataList = s.getHeatingSummaryInfoDataList();
+
+            Map<String, HeatingSummaryInfoData> dateMap = heatingSummaryInfoDataList.stream()
+                    .collect(Collectors.toMap(HeatingSummaryInfoData::getDate, Function.identity()));
+
+            tableHeader.forEach(date -> {
+                HeatingSummaryInfoData heatingSummaryInfoData = dateMap.get(date);
+                if (heatingSummaryInfoData == null) {
+                    data.add("/");
+                    data.add("/");
+                } else {
+                    BigDecimal consumption = heatingSummaryInfoData.getConsumption();
+                    data.add(getConvertData(consumption));
+                }
+            });
+
+            BigDecimal periodSum = s.getPeriodSum();
+            // 处理周期合计
+            data.add(getConvertData(periodSum));
+
+            result.add(data);
+        }
+
+        return result;
+    }
+
+
     private LocalDateTime getLastTime(LocalDateTime start, LocalDateTime end, List<Long> standingbookIds) {
         return usageCostService.getLastTimeNoParam(start, end, standingbookIds);
     }
@@ -212,11 +285,10 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         Map<Long, List<UsageCostData>> standingBookUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
         List<HeatingSummaryInfo> resultList = new ArrayList<>();
-
-        Map<Long, StandingbookDTO> standingbookDTOMap = standingbookService.getStandingbookDTOMap();
+        List<String> heatingSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_HVAC_HEAT);
         standingBookUsageMap.forEach((standingbookId, usageCostList) -> {
             // 获取热力台账的名称
-            StandingbookDTO dto = standingbookDTOMap.get(standingbookId);
+            String heatingSbLabel = heatingSbLabels.get(0);
             // 聚合数据 转换成 HeatingSummaryInfoData
             List<HeatingSummaryInfoData> dataList = new ArrayList<>(usageCostList.stream().collect(Collectors.groupingBy(
                     UsageCostData::getTime,
@@ -237,7 +309,7 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
 
 
             HeatingSummaryInfo info = new HeatingSummaryInfo();
-            info.setItemName(dto.getName());
+            info.setItemName(heatingSbLabel);
 
             dataList = dataList.stream().peek(i -> {
                 i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
