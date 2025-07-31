@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.usagecost;
 
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
 import com.baomidou.dynamic.datasource.annotation.DS;
 
 import org.springframework.context.annotation.Lazy;
@@ -134,4 +135,23 @@ public class UsageCostServiceImpl implements UsageCostService {
     public List<UsageCostData> getStandingbookStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
         return usageCostMapper.getStandingbookStandardCoal(startDate, endDate, standingBookIds);
     }
+    /**
+     * 按台账分组
+     *
+     * @param startDate
+     * @param endDate
+     * @param standingBookIds
+     * @return
+     */
+    @Override
+    @TenantIgnore
+    public List<UsageCostData> getUsageByStandingboookIdGroup(BaseTimeDateParamVO paramVO, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getUsageByStandingboookIdGroup(paramVO,startDate, endDate, standingBookIds);
+    }
+    @Override
+    @TenantIgnore
+    public LocalDateTime getLastTimeNoParam(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getLastTime2(startDate, endDate, standingBookIds);
+    }
+
 }
