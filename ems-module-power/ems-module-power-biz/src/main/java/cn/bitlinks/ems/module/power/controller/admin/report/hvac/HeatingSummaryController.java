@@ -49,8 +49,8 @@ public class HeatingSummaryController {
         return success(heatingSummaryService.getChart(paramVO));
     }
 
-    @PostMapping("/export-excel")
-    @Operation(summary = "导出COP Excel")
+    @PostMapping("/export")
+    @Operation(summary = "导出")
     @ApiAccessLog(operateType = EXPORT)
     public void exportCopExcel(@Valid @RequestBody BaseTimeDateParamVO paramVO,
                                HttpServletResponse response) throws IOException {
