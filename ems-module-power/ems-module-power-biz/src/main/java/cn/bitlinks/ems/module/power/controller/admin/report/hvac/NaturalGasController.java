@@ -8,6 +8,7 @@ import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDate
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.NaturalGasInfo;
 import cn.bitlinks.ems.module.power.service.report.hvac.NaturalGasService;
 import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
@@ -65,6 +66,8 @@ public class NaturalGasController {
         response.setContentType("application/vnd.ms-excel;charset=UTF-8");
 
         EasyExcel.write(response.getOutputStream())
+                //自适应宽度
+                .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
                 // 动态头
                 .head(header)
                 .sheet("数据")
