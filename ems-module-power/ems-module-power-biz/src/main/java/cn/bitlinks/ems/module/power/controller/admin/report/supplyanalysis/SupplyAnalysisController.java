@@ -101,7 +101,7 @@ public class SupplyAnalysisController {
 
         Integer mergeIndex = 0;
         // 文件名字处理
-        String filename = "供应分析表.xlsx";
+        String filename = SUPPLY_ANALYSIS + XLSX;
 
         List<List<String>> header = supplyAnalysisSettingsService.getExcelHeader(paramVO);
         List<List<Object>> dataList = supplyAnalysisSettingsService.getExcelData(paramVO);
