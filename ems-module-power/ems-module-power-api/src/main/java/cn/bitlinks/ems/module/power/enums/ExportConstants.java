@@ -87,6 +87,13 @@ public interface ExportConstants {
     String COST_STRUCTURE_ENERGY = "价格结构分析明细报表（按能源）";
     String COST_STRUCTURE_LABEL = "价格结构分析明细报表（按标签）";
 
+    // 个人化报表
+
+    String SUPPLY_ANALYSIS  = "供应分析表";
+    String STATISTICS_FEE  = "电费统计表";
+
+
+
     /**
      * 缺省表名
      */
