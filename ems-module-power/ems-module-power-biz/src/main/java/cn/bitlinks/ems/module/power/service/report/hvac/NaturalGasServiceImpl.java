@@ -18,6 +18,7 @@ import com.alibaba.excel.util.ListUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -54,8 +55,33 @@ public class NaturalGasServiceImpl implements NaturalGasService {
     private UsageCostService usageCostService;
 
     private final Integer scale = DEFAULT_SCALE;
+    @Autowired
+    private HeatingSummaryServiceImpl heatingSummaryServiceImpl;
 
+    private LinkedHashMap<String,String> getItemMapping(){
+        LinkedHashMap<String,String> result =new LinkedHashMap<>();
+        List<String> gasSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_NATURAL_GAS);
+        for(String label: gasSbLabels){
+            String sbCode = DictFrameworkUtils.parseDictDataValue(REPORT_NATURAL_GAS, label);
+            result.put(label,sbCode);
+        }
+        return result;
+    }
 
+    private BaseReportResultVO<NaturalGasInfo> defaultNullData(LinkedHashMap<String,String> itemMapping,List<String> tableHeader){
+        BaseReportResultVO<NaturalGasInfo> resultVO = new BaseReportResultVO<>();
+        resultVO.setHeader(tableHeader);
+        resultVO.setDataTime(LocalDateTime.now());
+        List<NaturalGasInfo> infoList =new ArrayList<>();
+        itemMapping.forEach((itemName,sbCode)->{
+            NaturalGasInfo info = new NaturalGasInfo();
+            info.setItemName(itemName);
+            info.setNaturalGasInfoDataList(Collections.emptyList());
+            infoList.add(info);
+        });
+        resultVO.setReportDataList(infoList);
+        return resultVO;
+    }
     @Override
     public BaseReportResultVO<NaturalGasInfo> getTable(BaseTimeDateParamVO paramVO) {
         // 校验参数
@@ -71,31 +97,33 @@ public class NaturalGasServiceImpl implements NaturalGasService {
         // 表头处理
         List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
 
-        //返回结果
-        BaseReportResultVO<NaturalGasInfo> resultVO = new BaseReportResultVO<>();
-        resultVO.setHeader(tableHeader);
-        // 查询热力的计量器具
-        List<String> gasSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_NATURAL_GAS);
-        String gasSbLabel = gasSbLabels.get(0);
-        String gasSbCode = DictFrameworkUtils.parseDictDataValue(REPORT_NATURAL_GAS, gasSbLabel);
+
+        // 查询字典统计项
+        LinkedHashMap<String,String> itemMapping = getItemMapping();
+
         List<StandingbookDTO> allStandingbookDTOList = standingbookService.getStandingbookDTOList();
 
-        StandingbookDTO targetDTO = allStandingbookDTOList.stream()
-                .filter(dto -> gasSbCode.equals(dto.getCode()))
-                .findFirst()
-                .orElse(null);
-        if (Objects.isNull(targetDTO)) {
-            resultVO.setDataTime(LocalDateTime.now());
-            return resultVO;
+
+        Map<String, Long> sbMapping = allStandingbookDTOList.stream()
+                .filter(dto -> itemMapping.containsValue(dto.getCode()))
+                .collect(Collectors.toMap(
+                        StandingbookDTO::getCode,
+                        StandingbookDTO::getStandingbookId
+                ));
+        // 查询不到台账信息,返回空
+        if (CollUtil.isEmpty(sbMapping)) {
+            return defaultNullData(itemMapping,tableHeader);
         }
 
 
         // 查询 热力计量器具对应的用量使用情况；
-        List<UsageCostData> usageCostDataList = usageCostService.getUsageByStandingboookIdGroup(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], Collections.singletonList(targetDTO.getStandingbookId()));
+        List<UsageCostData> usageCostDataList = usageCostService.getUsageByStandingboookIdGroup(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], new ArrayList<>(sbMapping.values()));
 
-        List<NaturalGasInfo> NaturalGasInfoList = queryDefaultData(usageCostDataList);
+        List<NaturalGasInfo> NaturalGasInfoList = queryDefaultData(usageCostDataList,sbMapping,itemMapping);
 
-
+        //返回结果
+        BaseReportResultVO<NaturalGasInfo> resultVO = new BaseReportResultVO<>();
+        resultVO.setHeader(tableHeader);
         resultVO.setReportDataList(NaturalGasInfoList);
 
         // 无数据的填充0
@@ -123,7 +151,7 @@ public class NaturalGasServiceImpl implements NaturalGasService {
             }
         });
 
-        resultVO.setDataTime(getLastTime(paramVO.getRange()[0], paramVO.getRange()[1], Collections.singletonList(targetDTO.getStandingbookId())));
+        resultVO.setDataTime(getLastTime(paramVO.getRange()[0], paramVO.getRange()[1], new ArrayList<>(sbMapping.values())));
         String jsonStr = JSONUtil.toJsonStr(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
@@ -286,15 +314,26 @@ public class NaturalGasServiceImpl implements NaturalGasService {
     }
 
 
-    private List<NaturalGasInfo> queryDefaultData(List<UsageCostData> usageCostDataList) {
+    private List<NaturalGasInfo> queryDefaultData(List<UsageCostData> usageCostDataList,Map<String, Long> sbMapping,LinkedHashMap<String,String> itemMapping) {
         // 聚合数据按台账id分组
         Map<Long, List<UsageCostData>> standingBookUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
         List<NaturalGasInfo> resultList = new ArrayList<>();
-        List<String> gasSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_NATURAL_GAS);
-        standingBookUsageMap.forEach((standingbookId, usageCostList) -> {
-            // 获取热力台账的名称
-            String gasSbLabel = gasSbLabels.get(0);
+        // 循环统计项
+        itemMapping.forEach((itemName,sbCode)->{
+            NaturalGasInfo info = new NaturalGasInfo();
+            info.setItemName(itemName);
+            if(CollUtil.isEmpty(standingBookUsageMap)){
+                info.setNaturalGasInfoDataList(Collections.emptyList());
+                resultList.add(info);
+                return;
+            }
+            List<UsageCostData> usageCostList = standingBookUsageMap.get(sbMapping.get(sbCode));
+            if(CollUtil.isEmpty(usageCostList)){
+                info.setNaturalGasInfoDataList(Collections.emptyList());
+                resultList.add(info);
+                return;
+            }
             // 聚合数据 转换成 NaturalGasInfoData
             List<NaturalGasInfoData> dataList = new ArrayList<>(usageCostList.stream().collect(Collectors.groupingBy(
                     UsageCostData::getTime,
@@ -313,10 +352,6 @@ public class NaturalGasServiceImpl implements NaturalGasService {
                     .map(NaturalGasInfoData::getConsumption)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-
-            NaturalGasInfo info = new NaturalGasInfo();
-            info.setItemName(gasSbLabel);
-
             dataList = dataList.stream().peek(i -> {
                 i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
             }).collect(Collectors.toList());
@@ -324,6 +359,8 @@ public class NaturalGasServiceImpl implements NaturalGasService {
             info.setPeriodSum(dealBigDecimalScale(totalConsumption, scale));
 
             resultList.add(info);
+
+
         });
 
         return resultList;
