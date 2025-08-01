@@ -53,7 +53,13 @@ public class UsageCostServiceImpl implements UsageCostService {
     @Override
     @TenantIgnore
     public List<UsageCostData> getList(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
-        return usageCostMapper.getDataList(dateType, startDate, endDate, standingBookIds);
+        return usageCostMapper.getTimeDataList(dateType, startDate, endDate, standingBookIds);
+    }
+
+    @Override
+    @TenantIgnore
+    public List<UsageCostData> getList( LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getDataList(startDate, endDate, standingBookIds);
     }
 
     @Override
