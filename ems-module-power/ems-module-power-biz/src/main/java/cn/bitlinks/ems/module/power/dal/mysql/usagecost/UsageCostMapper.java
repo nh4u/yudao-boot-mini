@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.dal.mysql.usagecost;
 
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
@@ -22,6 +23,11 @@ public interface UsageCostMapper {
                                 @Param("endDate") LocalDateTime endDate,
                                 @Param("standingBookIds") List<Long> standingBookIds);
 
+    List<UsageCostData> getList(@Param("queryParam") ConsumptionStatisticsParamVO paramVO,
+                                @Param("startDate") LocalDateTime startDate,
+                                @Param("endDate") LocalDateTime endDate,
+                                @Param("standingBookIds") List<Long> standingBookIds);
+
     List<UsageCostData> getTimeDataList(@Param("dateType") Integer dateType,
                                 @Param("startDate") LocalDateTime startDate,
                                 @Param("endDate") LocalDateTime endDate,
@@ -33,6 +39,12 @@ public interface UsageCostMapper {
                               @Param("startDate") LocalDateTime startDate,
                               @Param("endDate") LocalDateTime endDate,
                               @Param("standingBookIds") List<Long> standingBookIds);
+
+    LocalDateTime getLastTime(@Param("queryParam") ConsumptionStatisticsParamVO paramVO,
+                              @Param("startDate") LocalDateTime startDate,
+                              @Param("endDate") LocalDateTime endDate,
+                              @Param("standingBookIds") List<Long> standingBookIds);
+
     LocalDateTime getLastTime2(
                               @Param("startDate") LocalDateTime startDate,
                               @Param("endDate") LocalDateTime endDate,
