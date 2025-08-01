@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
+import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.REPORT_NATURAL_GAS;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
@@ -223,15 +224,17 @@ public class NaturalGasServiceImpl implements NaturalGasService {
         validCondition(paramVO);
 
         List<List<String>> list = ListUtils.newArrayList();
-        // 第一格处理
-        list.add(Arrays.asList(""));
+        list.add(Arrays.asList("表单名称", "统计周期", ""));
+        String sheetName = "天然气用量";
+        // 统计周期
+        String period = getFormatTime(paramVO.getRange()[0]) + "~" + getFormatTime(paramVO.getRange()[1]);
 
         // 月份处理
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
         xdata.forEach(x -> {
-            list.add(Arrays.asList(x));
+            list.add(Arrays.asList(sheetName,period,x));
         });
-        list.add(Arrays.asList("周期合计"));
+        list.add(Arrays.asList(sheetName,period,"周期合计"));
         return list;
     }
 
