@@ -75,16 +75,16 @@ public class ConsumptionStatisticsController {
         String filename = "";
         switch (queryType) {
             case 0:
-                filename = COST_ALL + XLSX;
+                filename = CONSUMPTION_STATISTICS_ALL + XLSX;
                 mergeIndex = labelDeep;
                 break;
             case 1:
-                filename = COST_ENERGY + XLSX;
+                filename = CONSUMPTION_STATISTICS_ENERGY + XLSX;
                 // 能源不需要合并
                 mergeIndex = 0;
                 break;
             case 2:
-                filename = COST_LABEL + XLSX;
+                filename = CONSUMPTION_STATISTICS_LABEL + XLSX;
                 // 标签没有能源
                 mergeIndex = labelDeep - 1;
                 break;

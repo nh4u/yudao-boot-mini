@@ -818,7 +818,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
         switch (queryType) {
             case 0:
                 // 综合
-                sheetName = COST_ALL;
+                sheetName = CONSUMPTION_STATISTICS_ALL;
                 list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "标签", "标签"));
                 for (int i = 2; i <= labelDeep; i++) {
                     String subLabel = "标签" + i;
@@ -828,12 +828,12 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
                 break;
             case 1:
                 // 按能源
-                sheetName = COST_ENERGY;
+                sheetName = CONSUMPTION_STATISTICS_ENERGY;
                 list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "能源", "能源"));
                 break;
             case 2:
                 // 按标签
-                sheetName = COST_LABEL;
+                sheetName = CONSUMPTION_STATISTICS_LABEL;
                 list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "标签", "标签"));
                 for (int i = 2; i <= labelDeep; i++) {
                     String subLabel = "标签" + i;

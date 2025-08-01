@@ -52,6 +52,7 @@ public class UsageCostServiceImpl implements UsageCostService {
     }
 
     @Override
+    @TenantIgnore
     public List<UsageCostData> getList(ConsumptionStatisticsParamVO paramVO, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
         return usageCostMapper.getList(paramVO, startDate, endDate, standingBookIds);
     }
