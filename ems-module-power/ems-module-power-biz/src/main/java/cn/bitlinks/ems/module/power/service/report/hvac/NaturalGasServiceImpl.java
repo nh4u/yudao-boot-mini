@@ -34,17 +34,16 @@ import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUt
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
-import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.REPORT_HVAC_HEAT;
+import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.REPORT_NATURAL_GAS;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
-import static cn.bitlinks.ems.module.power.enums.ReportCacheConstants.HVAC_HEATING_SUMMARY_CHART;
-import static cn.bitlinks.ems.module.power.enums.ReportCacheConstants.HVAC_HEATING_SUMMARY_TABLE;
+import static cn.bitlinks.ems.module.power.enums.ReportCacheConstants.NATURAL_GAS_CHART;
+import static cn.bitlinks.ems.module.power.enums.ReportCacheConstants.NATURAL_GAS_TABLE;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.getConvertData;
-
 @Service
 @Validated
 @Slf4j
-public class HeatingSummaryServiceImpl implements HeatingSummaryService {
+public class NaturalGasServiceImpl implements NaturalGasService {
     @Resource
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
 
@@ -58,14 +57,14 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
 
 
     @Override
-    public BaseReportResultVO<HeatingSummaryInfo> getTable(BaseTimeDateParamVO paramVO) {
+    public BaseReportResultVO<NaturalGasInfo> getTable(BaseTimeDateParamVO paramVO) {
         // 校验参数
         validCondition(paramVO);
-        String cacheKey = HVAC_HEATING_SUMMARY_TABLE + SecureUtil.md5(paramVO.toString());
+        String cacheKey = NATURAL_GAS_TABLE + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            return JSON.parseObject(cacheRes, new TypeReference<BaseReportResultVO<HeatingSummaryInfo>>() {
+            return JSON.parseObject(cacheRes, new TypeReference<BaseReportResultVO<NaturalGasInfo>>() {
             });
         }
 
@@ -73,21 +72,20 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
 
         //返回结果
-        BaseReportResultVO<HeatingSummaryInfo> resultVO = new BaseReportResultVO<>();
+        BaseReportResultVO<NaturalGasInfo> resultVO = new BaseReportResultVO<>();
         resultVO.setHeader(tableHeader);
         // 查询热力的计量器具
-        List<String> heatingSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_HVAC_HEAT);
-        String heatingSbLabel = heatingSbLabels.get(0);
-        String heatingSbCode = DictFrameworkUtils.parseDictDataValue(REPORT_HVAC_HEAT, heatingSbLabel);
+        List<String> gasSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_NATURAL_GAS);
+        String gasSbLabel = gasSbLabels.get(0);
+        String gasSbCode = DictFrameworkUtils.parseDictDataValue(REPORT_NATURAL_GAS, gasSbLabel);
         List<StandingbookDTO> allStandingbookDTOList = standingbookService.getStandingbookDTOList();
 
         StandingbookDTO targetDTO = allStandingbookDTOList.stream()
-                .filter(dto -> heatingSbCode.equals(dto.getCode()))
+                .filter(dto -> gasSbCode.equals(dto.getCode()))
                 .findFirst()
                 .orElse(null);
         if (Objects.isNull(targetDTO)) {
             resultVO.setDataTime(LocalDateTime.now());
-            resultVO.setReportDataList(Collections.emptyList());
             return resultVO;
         }
 
@@ -95,33 +93,33 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         // 查询 热力计量器具对应的用量使用情况；
         List<UsageCostData> usageCostDataList = usageCostService.getUsageByStandingboookIdGroup(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], Collections.singletonList(targetDTO.getStandingbookId()));
 
-        List<HeatingSummaryInfo> heatingSummaryInfoList = queryDefaultData(usageCostDataList);
+        List<NaturalGasInfo> NaturalGasInfoList = queryDefaultData(usageCostDataList);
 
 
-        resultVO.setReportDataList(heatingSummaryInfoList);
+        resultVO.setReportDataList(NaturalGasInfoList);
 
         // 无数据的填充0
-        heatingSummaryInfoList.forEach(l -> {
+        NaturalGasInfoList.forEach(l -> {
 
-            List<HeatingSummaryInfoData> newList = new ArrayList<>();
-            List<HeatingSummaryInfoData> oldList = l.getHeatingSummaryInfoDataList();
+            List<NaturalGasInfoData> newList = new ArrayList<>();
+            List<NaturalGasInfoData> oldList = l.getNaturalGasInfoDataList();
             if (tableHeader.size() != oldList.size()) {
-                Map<String, List<HeatingSummaryInfoData>> dateMap = oldList.stream()
-                        .collect(Collectors.groupingBy(HeatingSummaryInfoData::getDate));
+                Map<String, List<NaturalGasInfoData>> dateMap = oldList.stream()
+                        .collect(Collectors.groupingBy(NaturalGasInfoData::getDate));
 
                 tableHeader.forEach(date -> {
-                    List<HeatingSummaryInfoData> heatingSummaryInfoDataList = dateMap.get(date);
-                    if (heatingSummaryInfoDataList == null) {
-                        HeatingSummaryInfoData heatingSummaryInfoData = new HeatingSummaryInfoData();
-                        heatingSummaryInfoData.setDate(date);
-                        heatingSummaryInfoData.setConsumption(BigDecimal.ZERO);
-                        newList.add(heatingSummaryInfoData);
+                    List<NaturalGasInfoData> NaturalGasInfoDataList = dateMap.get(date);
+                    if (NaturalGasInfoDataList == null) {
+                        NaturalGasInfoData NaturalGasInfoData = new NaturalGasInfoData();
+                        NaturalGasInfoData.setDate(date);
+                        NaturalGasInfoData.setConsumption(BigDecimal.ZERO);
+                        newList.add(NaturalGasInfoData);
                     } else {
-                        newList.add(heatingSummaryInfoDataList.get(0));
+                        newList.add(NaturalGasInfoDataList.get(0));
                     }
                 });
                 // 设置新数据list
-                l.setHeatingSummaryInfoDataList(newList);
+                l.setNaturalGasInfoDataList(newList);
             }
         });
 
@@ -156,7 +154,7 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         // 校验参数
         validCondition(paramVO);
 
-        String cacheKey = HVAC_HEATING_SUMMARY_CHART + SecureUtil.md5(paramVO.toString());
+        String cacheKey = NATURAL_GAS_CHART + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
@@ -165,15 +163,15 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         }
 
         // 查询热力的计量器具
-        List<String> heatingSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_HVAC_HEAT);
-        String heatingSbLabel = heatingSbLabels.get(0);
-        String heatingSbCode = DictFrameworkUtils.parseDictDataValue(REPORT_HVAC_HEAT, heatingSbLabel);
+        List<String> gasSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_NATURAL_GAS);
+        String gasSbLabel = gasSbLabels.get(0);
+        String gasSbCode = DictFrameworkUtils.parseDictDataValue(REPORT_NATURAL_GAS, gasSbLabel);
 
         List<StandingbookDTO> allStandingbookDTOList = standingbookService.getStandingbookDTOList();
 
 
         StandingbookDTO targetDTO = allStandingbookDTOList.stream()
-                .filter(dto -> heatingSbCode.equals(dto.getCode()))
+                .filter(dto -> gasSbCode.equals(dto.getCode()))
                 .findFirst()
                 .orElse(null);
         BaseReportChartResultVO<BigDecimal> resultVO = new BaseReportChartResultVO<>();
@@ -227,9 +225,10 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
 
         List<List<String>> list = ListUtils.newArrayList();
         list.add(Arrays.asList("表单名称", "统计周期", ""));
-        String sheetName = "热力汇总报表";
+        String sheetName = "天然气用量";
         // 统计周期
         String period = getFormatTime(paramVO.getRange()[0]) + "~" + getFormatTime(paramVO.getRange()[1]);
+
         // 月份处理
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
         xdata.forEach(x -> {
@@ -244,29 +243,29 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         // 结果list
         List<List<Object>> result = ListUtils.newArrayList();
 
-        BaseReportResultVO<HeatingSummaryInfo> resultVO = getTable(paramVO);
+        BaseReportResultVO<NaturalGasInfo> resultVO = getTable(paramVO);
         List<String> tableHeader = resultVO.getHeader();
 
-        List<HeatingSummaryInfo> heatingSummaryInfoList = resultVO.getReportDataList();
+        List<NaturalGasInfo> NaturalGasInfoList = resultVO.getReportDataList();
 
-        for (HeatingSummaryInfo s : heatingSummaryInfoList) {
+        for (NaturalGasInfo s : NaturalGasInfoList) {
 
             List<Object> data = ListUtils.newArrayList();
 
             data.add(s.getItemName());
 
             // 处理数据
-            List<HeatingSummaryInfoData> heatingSummaryInfoDataList = s.getHeatingSummaryInfoDataList();
+            List<NaturalGasInfoData> NaturalGasInfoDataList = s.getNaturalGasInfoDataList();
 
-            Map<String, HeatingSummaryInfoData> dateMap = heatingSummaryInfoDataList.stream()
-                    .collect(Collectors.toMap(HeatingSummaryInfoData::getDate, Function.identity()));
+            Map<String, NaturalGasInfoData> dateMap = NaturalGasInfoDataList.stream()
+                    .collect(Collectors.toMap(NaturalGasInfoData::getDate, Function.identity()));
 
             tableHeader.forEach(date -> {
-                HeatingSummaryInfoData heatingSummaryInfoData = dateMap.get(date);
-                if (heatingSummaryInfoData == null) {
+                NaturalGasInfoData NaturalGasInfoData = dateMap.get(date);
+                if (NaturalGasInfoData == null) {
                     data.add("/");
                 } else {
-                    BigDecimal consumption = heatingSummaryInfoData.getConsumption();
+                    BigDecimal consumption = NaturalGasInfoData.getConsumption();
                     data.add(getConvertData(consumption));
                 }
             });
@@ -287,17 +286,17 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
     }
 
 
-    private List<HeatingSummaryInfo> queryDefaultData(List<UsageCostData> usageCostDataList) {
+    private List<NaturalGasInfo> queryDefaultData(List<UsageCostData> usageCostDataList) {
         // 聚合数据按台账id分组
         Map<Long, List<UsageCostData>> standingBookUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
-        List<HeatingSummaryInfo> resultList = new ArrayList<>();
-        List<String> heatingSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_HVAC_HEAT);
+        List<NaturalGasInfo> resultList = new ArrayList<>();
+        List<String> gasSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_NATURAL_GAS);
         standingBookUsageMap.forEach((standingbookId, usageCostList) -> {
             // 获取热力台账的名称
-            String heatingSbLabel = heatingSbLabels.get(0);
-            // 聚合数据 转换成 HeatingSummaryInfoData
-            List<HeatingSummaryInfoData> dataList = new ArrayList<>(usageCostList.stream().collect(Collectors.groupingBy(
+            String gasSbLabel = gasSbLabels.get(0);
+            // 聚合数据 转换成 NaturalGasInfoData
+            List<NaturalGasInfoData> dataList = new ArrayList<>(usageCostList.stream().collect(Collectors.groupingBy(
                     UsageCostData::getTime,
                     Collectors.collectingAndThen(
                             Collectors.toList(),
@@ -305,23 +304,23 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
                                 BigDecimal totalConsumption = list.stream()
                                         .map(UsageCostData::getCurrentTotalUsage)
                                         .reduce(BigDecimal.ZERO, BigDecimal::add);
-                                return new HeatingSummaryInfoData(list.get(0).getTime(), totalConsumption);
+                                return new NaturalGasInfoData(list.get(0).getTime(), totalConsumption);
                             }
                     )
             )).values());
 
             BigDecimal totalConsumption = dataList.stream()
-                    .map(HeatingSummaryInfoData::getConsumption)
+                    .map(NaturalGasInfoData::getConsumption)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
 
-            HeatingSummaryInfo info = new HeatingSummaryInfo();
-            info.setItemName(heatingSbLabel);
+            NaturalGasInfo info = new NaturalGasInfo();
+            info.setItemName(gasSbLabel);
 
             dataList = dataList.stream().peek(i -> {
                 i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
             }).collect(Collectors.toList());
-            info.setHeatingSummaryInfoDataList(dataList);
+            info.setNaturalGasInfoDataList(dataList);
             info.setPeriodSum(dealBigDecimalScale(totalConsumption, scale));
 
             resultList.add(info);
@@ -330,3 +329,4 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         return resultList;
     }
 }
+
