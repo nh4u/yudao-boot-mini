@@ -659,5 +659,11 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
             return Collections.emptyList();
         }
     }
+
+    @Override
+    public List<EnergyConfigurationDO> getByEnergyGroup(Long energyGroup) {
+        return energyConfigurationMapper.selectList(new LambdaQueryWrapper<EnergyConfigurationDO>()
+                .eq(EnergyConfigurationDO::getGroupId,energyGroup));
+    }
 }
 

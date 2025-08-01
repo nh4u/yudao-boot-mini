@@ -53,6 +53,8 @@ public interface CommonConstants {
      */
     String ANNUAL_STATISTICS = "每年合计";
 
+    String ELECTRICITY = "电力";
+
     Integer YEAR = 366;
 
     Integer DEFAULT_SCALE = 2;

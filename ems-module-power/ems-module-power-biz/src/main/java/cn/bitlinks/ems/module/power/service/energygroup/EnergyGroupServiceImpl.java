@@ -1,8 +1,10 @@
 package cn.bitlinks.ems.module.power.service.energygroup;
 
 import cn.bitlinks.ems.framework.common.exception.ErrorCode;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.text.StrPool;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -130,6 +132,13 @@ public class EnergyGroupServiceImpl implements EnergyGroupService {
     @Override
     public List<EnergyGroupRespVO> getEnergyGroups() {
         return energyGroupMapper.getEnergyGroups(null);
+    }
+
+    @Override
+    public EnergyGroupDO getEnergyGroup(String groupName) {
+      return energyGroupMapper.selectOne(new LambdaQueryWrapperX<EnergyGroupDO>()
+              .eqIfPresent(EnergyGroupDO::getName,groupName)
+              .orderByAsc(EnergyGroupDO::getCreateTime));
     }
 
     private EnergyGroupDO validateEnergyGroupExists(Long id) {

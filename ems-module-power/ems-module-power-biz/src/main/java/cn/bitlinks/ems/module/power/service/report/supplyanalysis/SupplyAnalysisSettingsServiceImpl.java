@@ -34,6 +34,7 @@ import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUt
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.SUPPLY_ANALYSIS;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
 /**
@@ -338,7 +339,7 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
         // 表头数据
         List<List<String>> list = ListUtils.newArrayList();
         // 表单名称
-        String sheetName = "供应分析表";
+        String sheetName = SUPPLY_ANALYSIS;
         // 统计周期
         String strTime = getFormatTime(startTime) + "~" + getFormatTime(endTime);
         // 统计系统

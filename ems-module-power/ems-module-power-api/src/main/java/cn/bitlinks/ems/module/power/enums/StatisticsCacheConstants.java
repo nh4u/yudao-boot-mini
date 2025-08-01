@@ -44,4 +44,10 @@ public class StatisticsCacheConstants {
 
     public static final String COMPARISON_BASE_CHART_COAL = "statistics:base:discount:chart:coal:";
 
+    // 个性化报表 缓存key
+    /**
+     * 电费统计
+     */
+    public static final String USAGE_FEE_TABLE = "report:usage:fee:table:";
+
 }
