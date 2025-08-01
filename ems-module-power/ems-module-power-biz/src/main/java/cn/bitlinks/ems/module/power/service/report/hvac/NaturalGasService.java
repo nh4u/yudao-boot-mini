@@ -19,7 +19,7 @@ public interface NaturalGasService {
      * @param paramVO
      * @return
      */
-    BaseReportChartResultVO<BigDecimal> getChart(@Valid BaseTimeDateParamVO paramVO);
+    BaseReportMultiChartResultVO<NaturalGasChartResVO> getChart(@Valid BaseTimeDateParamVO paramVO);
 
     List<List<String>> getExcelHeader(@Valid BaseTimeDateParamVO paramVO);
 

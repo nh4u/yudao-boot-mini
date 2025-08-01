@@ -327,7 +327,7 @@ public class WarningStrategyServiceImpl implements WarningStrategyService {
         // 遍历每条记录的 deviceScope
         for (WarningStrategyDO strategy : strategies) {
             List<Long> deviceScope = strategy.getDeviceScope();
-            if (CollUtil.isEmpty(deviceScope)) {
+            if (CollUtil.isNotEmpty(deviceScope)) {
                 // 检查 deviceScope 是否包含任意一个传入的 ID
                 for (Long id : idSet) {
                     if (deviceScope.contains(id)) {
