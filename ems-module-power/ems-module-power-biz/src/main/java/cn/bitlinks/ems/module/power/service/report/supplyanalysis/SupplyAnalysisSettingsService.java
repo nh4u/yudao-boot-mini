@@ -4,10 +4,10 @@ import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.Su
 import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.SupplyAnalysisSettingsPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.SupplyAnalysisSettingsSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.SupplyAnalysisPieResultVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.report.supplyanalysis.SupplyAnalysisSettingsDO;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author liumingqiang
@@ -23,5 +23,9 @@ public interface SupplyAnalysisSettingsService {
 
     StatisticsResultV2VO supplyAnalysisTable(SupplyAnalysisReportParamVO paramVO);
 
-    Object supplyAnalysisChart(SupplyAnalysisReportParamVO paramVO);
+    SupplyAnalysisPieResultVO supplyAnalysisChart(SupplyAnalysisReportParamVO paramVO);
+
+    List<List<String>> getExcelHeader(SupplyAnalysisReportParamVO paramVO);
+
+    List<List<Object>> getExcelData(SupplyAnalysisReportParamVO paramVO);
 }

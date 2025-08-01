@@ -9,13 +9,15 @@ import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.Su
 import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.SupplyAnalysisSettingsSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.SupplyAnalysisStructureInfo;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.SupplyAnalysisPieResultVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.report.supplyanalysis.SupplyAnalysisSettingsDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import cn.bitlinks.ems.module.power.dal.mysql.report.supplyanalysis.SupplyAnalysisSettingsMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
+import com.alibaba.excel.util.ListUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -29,10 +31,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
+import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.addBigDecimal;
 
 /**
  * @author liumingqiang
@@ -239,8 +241,185 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
     }
 
     @Override
-    public Object supplyAnalysisChart(SupplyAnalysisReportParamVO paramVO) {
-        return null;
+    public SupplyAnalysisPieResultVO supplyAnalysisChart(SupplyAnalysisReportParamVO paramVO) {
+        // 1.校验时间范围
+        LocalDateTime[] rangeOrigin = validateRange(paramVO.getRange());
+
+        SupplyAnalysisPieResultVO resultVO = new SupplyAnalysisPieResultVO();
+        resultVO.setDataTime(LocalDateTime.now());
+
+        // 4.获取所有standingBookids
+        List<SupplyAnalysisSettingsDO> supplyAnalysisSettingsList = supplyAnalysisSettingsMapper.selectList(paramVO);
+
+        List<Long> standingBookIds = supplyAnalysisSettingsList
+                .stream()
+                .map(SupplyAnalysisSettingsDO::getStandingbookId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // 4.4.台账id为空直接返回结果
+        if (CollUtil.isEmpty(standingBookIds)) {
+            return resultVO;
+        }
+
+        // 5.根据台账ID查询用量
+        List<UsageCostData> usageCostDataList = usageCostService.getList(
+                rangeOrigin[0],
+                rangeOrigin[1],
+                standingBookIds);
+
+        Map<Long, UsageCostData> standingBookUsageMap = usageCostDataList.stream()
+                .collect(Collectors.toMap(UsageCostData::getStandingbookId, Function.identity()));
+
+        Map<String, List<SupplyAnalysisSettingsDO>> supplyAnalysisSettingsMap = supplyAnalysisSettingsList
+                .stream()
+                .collect(Collectors.groupingBy(SupplyAnalysisSettingsDO::getSystem));
+
+        supplyAnalysisSettingsMap.forEach((system, list) -> {
+
+            List<PieItemVO> data = new ArrayList<>();
+
+            list.forEach(l -> {
+                UsageCostData usageCostData = standingBookUsageMap.get(l.getStandingbookId());
+                PieItemVO pieItemVO;
+                if (Objects.isNull(usageCostData)) {
+                    pieItemVO = new PieItemVO(l.getItem(), BigDecimal.ZERO, BigDecimal.ZERO);
+                } else {
+                    pieItemVO = new PieItemVO(l.getItem(), usageCostData.getCurrentTotalUsage(), null);
+                }
+                data.add(pieItemVO);
+            });
+            // 总和
+            BigDecimal sum = data
+                    .stream()
+                    .map(PieItemVO::getValue)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            data.forEach(d -> d.setProportion(getProportion(d.getValue(), sum)));
+
+            PieChartVO pieChartVO = new PieChartVO(system, data, sum);
+            pieChartVO.setName(system);
+            pieChartVO.setData(data);
+
+            switch (system) {
+                case PCW:
+                    resultVO.setPcwPie(pieChartVO);
+                    break;
+                case LTW:
+                    resultVO.setLtwPie(pieChartVO);
+                    break;
+                case MTW:
+                    resultVO.setMtwPie(pieChartVO);
+                    break;
+                case HRW:
+                    resultVO.setHrwPie(pieChartVO);
+                    break;
+                case BHW:
+                    resultVO.setBhwPie(pieChartVO);
+                    break;
+                case MHW:
+                    resultVO.setMhwPie(pieChartVO);
+                    break;
+                default:
+            }
+        });
+
+        return resultVO;
+    }
+
+    @Override
+    public List<List<String>> getExcelHeader(SupplyAnalysisReportParamVO paramVO) {
+
+        // 1.校验时间范围
+        LocalDateTime[] range = validateRange(paramVO.getRange());
+        // 2.时间处理
+        LocalDateTime startTime = range[0];
+        LocalDateTime endTime = range[1];
+        // 表头数据
+        List<List<String>> list = ListUtils.newArrayList();
+        // 表单名称
+        String sheetName = "供应分析表";
+        // 统计周期
+        String strTime = getFormatTime(startTime) + "~" + getFormatTime(endTime);
+        // 统计系统
+        List<String> system = paramVO.getSystem();
+        String systemStr = CollUtil.isNotEmpty(system) ? String.join("、", system) : "全";
+
+        list.add(Arrays.asList("表单名称", "统计系统", "统计周期", "系统", "系统"));
+        list.add(Arrays.asList(sheetName, systemStr, strTime, "分析项", "分析项"));
+
+        // 月份数据处理
+        DataTypeEnum dataTypeEnum = validateDateType(paramVO.getDateType());
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, dataTypeEnum);
+
+        xdata.forEach(x -> {
+            list.add(Arrays.asList(sheetName, systemStr, strTime, x, "用量"));
+            list.add(Arrays.asList(sheetName, systemStr, strTime, x, "占比(%)"));
+        });
+
+        // 周期合计
+        list.add(Arrays.asList(sheetName, systemStr, strTime, "周期合计", "用量"));
+        list.add(Arrays.asList(sheetName, systemStr, strTime, "周期合计", "占比(%)"));
+        return list;
+    }
+
+    @Override
+    public List<List<Object>> getExcelData(SupplyAnalysisReportParamVO paramVO) {
+
+        // 结果list
+        List<List<Object>> result = ListUtils.newArrayList();
+        StatisticsResultV2VO<SupplyAnalysisStructureInfo> resultVO = supplyAnalysisTable(paramVO);
+        List<String> tableHeader = resultVO.getHeader();
+
+        List<SupplyAnalysisStructureInfo> statisticsInfoList = resultVO.getStatisticsInfoList();
+        // 底部合计map
+        Map<String, BigDecimal> sumStandardCoatMap = new HashMap<>();
+        Map<String, BigDecimal> sumProportionMap = new HashMap<>();
+
+        for (SupplyAnalysisStructureInfo s : statisticsInfoList) {
+
+            List<Object> data = ListUtils.newArrayList();
+            data.add(s.getSystem());
+            data.add(s.getItem());
+
+
+            // 处理数据
+            List<StructureInfoData> standardCoalInfoDataList = s.getStructureInfoDataList();
+
+            Map<String, StructureInfoData> dateMap = standardCoalInfoDataList.stream()
+                    .collect(Collectors.toMap(StructureInfoData::getDate, Function.identity()));
+
+            tableHeader.forEach(date -> {
+                StructureInfoData structureInfoData = dateMap.get(date);
+                if (structureInfoData == null) {
+                    data.add("/");
+                    data.add("/");
+                } else {
+                    BigDecimal usage = structureInfoData.getNum();
+                    BigDecimal proportion = structureInfoData.getProportion();
+                    data.add(getConvertData(usage));
+                    data.add(getConvertData(proportion));
+
+                    // 底部合计处理
+                    sumStandardCoatMap.put(date, addBigDecimal(sumStandardCoatMap.get(date), usage));
+                    sumProportionMap.put(date, addBigDecimal(sumProportionMap.get(date), proportion));
+                }
+
+            });
+
+            BigDecimal sumUsage = s.getSumNum();
+            BigDecimal sumProportion = s.getSumProportion();
+            // 处理周期合计
+            data.add(getConvertData(sumUsage));
+            data.add(getConvertData(sumProportion));
+
+            // 处理底部合计
+            sumStandardCoatMap.put("sumNum", addBigDecimal(sumStandardCoatMap.get("sumNum"), sumUsage));
+            sumProportionMap.put("sumNum", addBigDecimal(sumProportionMap.get("sumNum"), sumProportion));
+            result.add(data);
+        }
+
+        return result;
     }
 
     /**
