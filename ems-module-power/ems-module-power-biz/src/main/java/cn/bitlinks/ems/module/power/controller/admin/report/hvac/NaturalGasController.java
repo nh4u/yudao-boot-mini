@@ -2,10 +2,7 @@ package cn.bitlinks.ems.module.power.controller.admin.report.hvac;
 
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
-import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseReportChartResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseReportResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.NaturalGasInfo;
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.*;
 import cn.bitlinks.ems.module.power.service.report.hvac.NaturalGasService;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
@@ -21,7 +18,6 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -46,7 +42,7 @@ public class NaturalGasController {
 
     @PostMapping("/chart")
     @Operation(summary = "图")
-    public CommonResult<BaseReportChartResultVO<BigDecimal>> getChart(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
+    public CommonResult<BaseReportMultiChartResultVO<NaturalGasChartResVO>> getChart(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
         return success(naturalGasService.getChart(paramVO));
     }
 
