@@ -22,11 +22,13 @@ public interface UsageCostMapper {
                                 @Param("endDate") LocalDateTime endDate,
                                 @Param("standingBookIds") List<Long> standingBookIds);
 
-    List<UsageCostData> getDataList(@Param("dateType") Integer dateType,
+    List<UsageCostData> getTimeDataList(@Param("dateType") Integer dateType,
                                 @Param("startDate") LocalDateTime startDate,
                                 @Param("endDate") LocalDateTime endDate,
                                 @Param("standingBookIds") List<Long> standingBookIds);
-
+    List<UsageCostData> getDataList(@Param("startDate") LocalDateTime startDate,
+                                    @Param("endDate") LocalDateTime endDate,
+                                    @Param("standingBookIds") List<Long> standingBookIds);
     LocalDateTime getLastTime(@Param("queryParam") StatisticsParamV2VO paramVO,
                               @Param("startDate") LocalDateTime startDate,
                               @Param("endDate") LocalDateTime endDate,
