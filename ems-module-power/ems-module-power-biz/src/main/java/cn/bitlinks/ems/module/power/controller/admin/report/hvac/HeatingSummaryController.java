@@ -8,6 +8,7 @@ import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDate
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.HeatingSummaryInfo;
 import cn.bitlinks.ems.module.power.service.report.hvac.HeatingSummaryService;
 import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
@@ -61,10 +62,16 @@ public class HeatingSummaryController {
 
         // 放在 write前配置response才会生效，放在后面不生效
         // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
+        response.setContentType("application/vnd.ms-excel");
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.addHeader("Access-Control-Expose-Headers","File-Name");
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
-        response.setContentType("application/vnd.ms-excel;charset=UTF-8");
+        response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
+
 
         EasyExcel.write(response.getOutputStream())
+                //自适应宽度
+                .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
                 // 动态头
                 .head(header)
                 .sheet("数据")
