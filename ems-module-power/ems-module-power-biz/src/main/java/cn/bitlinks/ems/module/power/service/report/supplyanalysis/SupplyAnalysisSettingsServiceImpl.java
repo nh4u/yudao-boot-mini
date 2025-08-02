@@ -76,12 +76,17 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
 
 
         systemMap.forEach((k, v) -> {
-            List<Long> collect = v.stream()
+            List<SupplyAnalysisSettingsSaveReqVO> tempV = v
+                    .stream()
+                    .filter(l -> !Objects.isNull(l.getStandingbookId()))
+                    .collect(Collectors.toList());
+
+            List<Long> collect = tempV.stream()
                     .map(SupplyAnalysisSettingsSaveReqVO::getStandingbookId)
                     .distinct()
                     .collect(Collectors.toList());
 
-            if (collect.size() != v.size()) {
+            if (collect.size() != tempV.size()) {
                 throw exception(SUPPLY_ANALYSIS_STANDINGBOOK_REPEAT);
             }
         });
