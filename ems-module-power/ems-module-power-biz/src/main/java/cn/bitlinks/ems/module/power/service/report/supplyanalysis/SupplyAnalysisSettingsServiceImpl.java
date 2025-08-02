@@ -63,12 +63,12 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
             throw exception(SUPPLY_ANALYSIS_SETTINGS_LIST_NOT_EXISTS);
         }
 
-        for (SupplyAnalysisSettingsSaveReqVO supplyAnalysisSettingsSaveReqVO : supplyAnalysisSettingsList) {
-            Long standingbookId = supplyAnalysisSettingsSaveReqVO.getStandingbookId();
-            if (Objects.isNull(standingbookId)) {
-                throw exception(SUPPLY_ANALYSIS_SETTINGS_STANDINGBOOK_NOT_EMPTY);
-            }
-        }
+//        for (SupplyAnalysisSettingsSaveReqVO supplyAnalysisSettingsSaveReqVO : supplyAnalysisSettingsList) {
+//            Long standingbookId = supplyAnalysisSettingsSaveReqVO.getStandingbookId();
+//            if (Objects.isNull(standingbookId)) {
+//                throw exception(SUPPLY_ANALYSIS_SETTINGS_STANDINGBOOK_NOT_EMPTY);
+//            }
+//        }
 
         // 按system分组 组内台账id不能重复 校验
         Map<String, List<SupplyAnalysisSettingsSaveReqVO>> systemMap = supplyAnalysisSettingsList.stream()
