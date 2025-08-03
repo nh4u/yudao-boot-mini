@@ -1,25 +1,24 @@
 package cn.bitlinks.ems.module.power.service.energygroup;
 
 import cn.bitlinks.ems.framework.common.exception.ErrorCode;
-import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.text.StrPool;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import org.springframework.stereotype.Service;
-
-import javax.annotation.Resource;
-
-import org.springframework.validation.annotation.Validated;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.*;
-
-import cn.bitlinks.ems.module.power.controller.admin.energygroup.vo.*;
-import cn.bitlinks.ems.module.power.dal.dataobject.energygroup.EnergyGroupDO;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.bitlinks.ems.module.power.controller.admin.energygroup.vo.EnergyGroupPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.energygroup.vo.EnergyGroupRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.energygroup.vo.EnergyGroupSaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energygroup.EnergyGroupDO;
 import cn.bitlinks.ems.module.power.dal.mysql.energygroup.EnergyGroupMapper;
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.text.StrPool;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
+
+import javax.annotation.Resource;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
@@ -122,6 +121,10 @@ public class EnergyGroupServiceImpl implements EnergyGroupService {
     @Override
     public EnergyGroupDO getEnergyGroup(Long id) {
         return energyGroupMapper.selectById(id);
+    }
+    @Override
+    public EnergyGroupDO getEnergyGroupByName(String name) {
+        return energyGroupMapper.selectOne(new LambdaQueryWrapperX<EnergyGroupDO>().eq(EnergyGroupDO::getName, name));
     }
 
     @Override
