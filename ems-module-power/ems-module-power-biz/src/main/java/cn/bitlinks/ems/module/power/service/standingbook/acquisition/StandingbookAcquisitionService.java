@@ -59,4 +59,6 @@ public interface StandingbookAcquisitionService {
      * @param ids 台账ids
      */
     List<StandingbookAcquisitionDO> queryListByStandingbookIds(List<Long> ids);
+    void refreshServerDataSiteMapping();
+    void deleteRedisAcqConfigByStandingbookIds(List<Long> standingbookIds);
 }

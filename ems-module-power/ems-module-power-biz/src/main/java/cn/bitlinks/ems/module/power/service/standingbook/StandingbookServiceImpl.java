@@ -31,7 +31,6 @@ import javax.annotation.Resource;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.bitlinks.ems.module.acquisition.api.quartz.QuartzApi;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.AssociationData;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
@@ -118,8 +117,7 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Resource
     @Lazy
     private WarningStrategyService warningStrategyService;
-    @Resource
-    private QuartzApi quartzApi;
+
     @Lazy
     @Resource
     private StandingbookAcquisitionService standingbookAcquisitionService;
@@ -745,9 +743,8 @@ public class StandingbookServiceImpl implements StandingbookService {
 
         // 删除数采关联
         standingbookAcquisitionService.deleteByStandingbookIds(ids);
-        // 删除数采的任务
-        quartzApi.deleteJob(ids);
-
+        // 删除数采配置redis缓存与台账对应的io地址缓存
+        standingbookAcquisitionService.deleteRedisAcqConfigByStandingbookIds(ids);
     }
 
     private void validateStandingbookExists(Long id) {
