@@ -177,7 +177,7 @@ public class NaturalGasServiceImpl implements NaturalGasService {
     }
 
     @Override
-    public BaseReportMultiChartResultVO<NaturalGasChartResVO> getChart(BaseTimeDateParamVO paramVO) {
+    public BaseReportMultiChartResultVO<Map<String,List<BigDecimal>>> getChart(BaseTimeDateParamVO paramVO) {
         // 校验参数
         validCondition(paramVO);
 
@@ -185,10 +185,10 @@ public class NaturalGasServiceImpl implements NaturalGasService {
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            return JSON.parseObject(cacheRes, new TypeReference<BaseReportMultiChartResultVO<NaturalGasChartResVO>>() {
+            return JSON.parseObject(cacheRes, new TypeReference<BaseReportMultiChartResultVO<Map<String,List<BigDecimal>>>>() {
             });
         }
-        BaseReportMultiChartResultVO<NaturalGasChartResVO> resultVO = new BaseReportMultiChartResultVO<>();
+        BaseReportMultiChartResultVO<Map<String,List<BigDecimal>>> resultVO = new BaseReportMultiChartResultVO<>();
         // x轴
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
         resultVO.setXdata(xdata);
@@ -208,14 +208,7 @@ public class NaturalGasServiceImpl implements NaturalGasService {
 
         if (CollUtil.isEmpty(sbMapping)) {
             resultVO.setDataTime(LocalDateTime.now());
-            NaturalGasChartResVO resVO = new NaturalGasChartResVO();
-            resVO.setVocc(Collections.emptyList());
-            resVO.setVocb(Collections.emptyList());
-            resVO.setVoca(Collections.emptyList());
-            resVO.setRqBlr1(Collections.emptyList());
-            resVO.setRqBlr2(Collections.emptyList());
-            resVO.setRqBlr3(Collections.emptyList());
-            resultVO.setYdata(resVO);
+            resultVO.setYdata(Collections.emptyMap());
             return resultVO;
         }
 
@@ -224,14 +217,7 @@ public class NaturalGasServiceImpl implements NaturalGasService {
 
         if (CollUtil.isEmpty(usageCostDataList)) {
             resultVO.setDataTime(LocalDateTime.now());
-            NaturalGasChartResVO resVO = new NaturalGasChartResVO();
-            resVO.setVocc(Collections.emptyList());
-            resVO.setVocb(Collections.emptyList());
-            resVO.setVoca(Collections.emptyList());
-            resVO.setRqBlr1(Collections.emptyList());
-            resVO.setRqBlr2(Collections.emptyList());
-            resVO.setRqBlr3(Collections.emptyList());
-            resultVO.setYdata(resVO);
+            resultVO.setYdata(Collections.emptyMap());
             return resultVO;
         }
         Map<Long, Map<String, BigDecimal>> standingbookIdTimeCostMap = usageCostDataList.stream()
@@ -256,16 +242,33 @@ public class NaturalGasServiceImpl implements NaturalGasService {
             }).collect(Collectors.toList());
             ydataListMap.put(sbCode, sbDataList);
         });
-        NaturalGasChartResVO resVO = new NaturalGasChartResVO();
+        // 初始化汇总列表，长度和 xdata 一样，初始值为 0
+        List<BigDecimal> sumList = new ArrayList<>(xdata.size());
+        for (int i = 0; i < xdata.size(); i++) {
+            sumList.add(BigDecimal.ZERO);
+        }
 
-        resVO.setRqBlr1(ydataListMap.get("RQ-BLR-1"));
-        resVO.setRqBlr2(ydataListMap.get("RQ-BLR-2"));
-        resVO.setRqBlr3(ydataListMap.get("RQ-BLR-3"));
-        resVO.setVoca(ydataListMap.get("RQ-VOCA"));
-        resVO.setVocb(ydataListMap.get("RQ-VOCB"));
-        resVO.setVocc(ydataListMap.get("RQ-VOCC"));
+        // 遍历每个 sbCode 的数据列表，逐项累加
+        for (List<BigDecimal> sbDataList : ydataListMap.values()) {
+            for (int i = 0; i < sbDataList.size(); i++) {
+                sumList.set(i, sumList.get(i).add(sbDataList.get(i)));
+            }
+        }
 
-        resultVO.setYdata(resVO);
+        List<BigDecimal> scaledSumList = sumList.stream()
+                .map(val -> dealBigDecimalScale(val, scale))
+                .collect(Collectors.toList());
+
+        // 放入 map 中
+        ydataListMap.put("汇总", scaledSumList);
+
+        Map<String,List<BigDecimal>> map = new HashMap<>();
+        itemMapping.forEach((k,v)->{
+            map.put(k,ydataListMap.get(v));
+        });
+
+        map.put("汇总",ydataListMap.get("汇总"));
+        resultVO.setYdata(map);
 
         LocalDateTime lastTime = getLastTime(paramVO.getRange()[0], paramVO.getRange()[1], new ArrayList<>(sbMapping.values()));
         resultVO.setDataTime(lastTime);

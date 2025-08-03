@@ -18,9 +18,11 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
@@ -42,7 +44,7 @@ public class NaturalGasController {
 
     @PostMapping("/chart")
     @Operation(summary = "图")
-    public CommonResult<BaseReportMultiChartResultVO<NaturalGasChartResVO>> getChart(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
+    public CommonResult<BaseReportMultiChartResultVO<Map<String,List<BigDecimal>>>> getChart(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
         return success(naturalGasService.getChart(paramVO));
     }
 
