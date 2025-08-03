@@ -73,8 +73,8 @@ public class ElectricityConsumptionController {
         // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
         response.setContentType("application/vnd.ms-excel;charset=UTF-8");
+        response.addHeader("Access-Control-Expose-Headers","File-Name");
         response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
-
         WriteCellStyle headerStyle = new WriteCellStyle();
         // 设置水平居中对齐
         headerStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
