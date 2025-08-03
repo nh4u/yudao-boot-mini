@@ -2,16 +2,16 @@ package cn.bitlinks.ems.module.power.service.standingbook.acquisition;
 
 import cn.bitlinks.ems.framework.common.core.ParameterKey;
 import cn.bitlinks.ems.framework.common.core.StandingbookAcquisitionDetailDTO;
+import cn.bitlinks.ems.framework.common.enums.FrequencyUnitEnum;
 import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.util.calc.AcquisitionFormulaUtils;
 import cn.bitlinks.ems.framework.common.util.calc.FormulaUtil;
+import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
 import cn.bitlinks.ems.framework.common.util.opcda.OpcConnectionTester;
+import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
-import cn.bitlinks.ems.module.acquisition.api.quartz.QuartzApi;
-import cn.bitlinks.ems.module.acquisition.api.quartz.dto.AcquisitionJobDTO;
-import cn.bitlinks.ems.module.acquisition.api.quartz.dto.ServiceSettingsDTO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.servicesettings.ServiceSettingsDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
@@ -21,6 +21,8 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.Standingboo
 import cn.bitlinks.ems.module.power.dal.mysql.servicesettings.ServiceSettingsMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.StandingbookAcquisitionDetailMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.StandingbookAcquisitionMapper;
+import cn.bitlinks.ems.module.power.dto.DeviceCollectCacheDTO;
+import cn.bitlinks.ems.module.power.dto.ServerParamsCacheDTO;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.hutool.core.collection.CollUtil;
@@ -29,6 +31,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -46,6 +49,7 @@ import static cn.bitlinks.ems.module.power.enums.CommonConstants.SERVICE_NAME_FO
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.ACQUISITION_FREQUENCY;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.ACQUISITION_PROTOCOL;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
+import static cn.bitlinks.ems.module.power.enums.RedisKeyConstants.*;
 
 /**
  * 台账-数采设置 Service 实现类
@@ -71,7 +75,9 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
     @Value("${spring.profiles.active}")
     private String env;
     @Resource
-    private QuartzApi quartzApi;
+    private RedisTemplate<String, String> redisTemplate;
+    @Resource
+    private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
 
     @Override
     @Transactional
@@ -97,8 +103,8 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                     StandingbookAcquisitionDetailDO.class);
             detailDOS.forEach(detailDO -> detailDO.setAcquisitionId(standingbookAcquisition.getId()));
             standingbookAcquisitionDetailMapper.insertBatch(detailDOS);
-            // ***需要创建【定时任务】
-            createOrUpdateJob(updateReqVO, detailVOS, serviceSettingsDO);
+            // *** 同步设备的映射关系到redis中 todo
+            createOrUpdateRedisAcqConfig(updateReqVO, detailVOS, serviceSettingsDO);
             // 返回
             return standingbookAcquisition.getId();
         }
@@ -133,8 +139,8 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         if (CollUtil.isNotEmpty(updatedDetails)) {
             standingbookAcquisitionDetailMapper.updateBatch(updatedDetails);
         }
-        // 【更新定时任务】
-        createOrUpdateJob(updateReqVO, detailVOS, serviceSettingsDO);
+        // 更新台账的数采配置 缓存
+        createOrUpdateRedisAcqConfig(updateReqVO, detailVOS, serviceSettingsDO);
 
         // 返回
         return updateReqVO.getId();
@@ -146,19 +152,45 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
      * @param updateReqVO 数采设置详情
      * @param detailVOS   添加了真实公式的部分
      */
-    private void createOrUpdateJob(StandingbookAcquisitionVO updateReqVO,
-                                   List<StandingbookAcquisitionDetailVO> detailVOS,
-                                   ServiceSettingsDO serviceSettingsDO) {
-        // 【更新定时任务]
-        AcquisitionJobDTO acquisitionJobDTO = new AcquisitionJobDTO();
-        acquisitionJobDTO.setStatus(updateReqVO.getStatus());
-        acquisitionJobDTO.setStandingbookId(updateReqVO.getStandingbookId());
-        acquisitionJobDTO.setJobStartTime(updateReqVO.getStartTime());
-        acquisitionJobDTO.setFrequency(updateReqVO.getFrequency());
-        acquisitionJobDTO.setFrequencyUnit(updateReqVO.getFrequencyUnit());
-        acquisitionJobDTO.setDetails(BeanUtils.toBean(detailVOS, StandingbookAcquisitionDetailDTO.class));
-        acquisitionJobDTO.setServiceSettingsDTO(BeanUtils.toBean(serviceSettingsDO, ServiceSettingsDTO.class));
-        quartzApi.createOrUpdateJob(acquisitionJobDTO);
+    private void createOrUpdateRedisAcqConfig(StandingbookAcquisitionVO updateReqVO,
+                                              List<StandingbookAcquisitionDetailVO> detailVOS,
+                                              ServiceSettingsDO serviceSettingsDO) {
+        // 如果status停用的话，则从redis中删除该设备的缓存映射，然后更新全部的设备
+        DeviceCollectCacheDTO deviceCollectCacheDTO = new DeviceCollectCacheDTO();
+        deviceCollectCacheDTO.setStandingbookId(updateReqVO.getStandingbookId());
+        deviceCollectCacheDTO.setJobStartTime(updateReqVO.getStartTime());
+        deviceCollectCacheDTO.setFrequency(getSecondsOfUnit(updateReqVO.getFrequency(), updateReqVO.getFrequencyUnit()));
+
+        if (CollUtil.isEmpty(detailVOS)) {
+            // 删除此设备映射
+            deleteRedisAcqConfigByStandingbookIds(updateReqVO.getStandingbookId());
+            return;
+        }
+        // 获取启用的数采参数
+        List<StandingbookAcquisitionDetailVO> enabledDetails = detailVOS.stream().filter(a -> !a.getStatus()).collect(Collectors.toList());
+        if (CollUtil.isEmpty(enabledDetails)) {
+            // 删除此设备映射
+            deleteRedisAcqConfigByStandingbookIds(updateReqVO.getStandingbookId());
+            return;
+        }
+        deviceCollectCacheDTO.setDetails(BeanUtils.toBean(enabledDetails, StandingbookAcquisitionDetailDTO.class));
+        List<String> dataSites = enabledDetails.stream()
+                .map(StandingbookAcquisitionDetailVO::getDataSite)
+                .collect(Collectors.toList());
+        deviceCollectCacheDTO.setDataSites(dataSites);
+
+        String sbConfigKey = String.format(STANDING_BOOK_ACQ_CONFIG_PREFIX, updateReqVO.getStandingbookId());
+
+        String acqConfig = JsonUtils.toJsonString(deviceCollectCacheDTO);
+        // 3. 存入 Redis（使用 JSON 序列化方式，推荐）
+        redisTemplate.opsForValue().set(sbConfigKey, acqConfig);
+        // 4. 存入 Redis Set（用于快速查询）
+        redisTemplate.opsForSet().add(STANDING_BOOK_ACQ_CONFIG_KEY_SET, sbConfigKey); // 把当前的 redisKey 加进去
+
+        // ✅ 日志记录（可选）
+        log.info("采集配置写入Redis成功，key={}, config={}", sbConfigKey, acqConfig);
+        // 同步刷新
+        refreshServerDataSiteMapping();
     }
 
 
@@ -347,7 +379,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
 
             // 2.2 采集这些参数，
             Map<String, ItemStatus> itemStatusMap;
-            if (env.equals(SPRING_PROFILES_ACTIVE_LOCAL)|| env.equals(SPRING_PROFILES_ACTIVE_DEV)) {
+            if (env.equals(SPRING_PROFILES_ACTIVE_LOCAL) || env.equals(SPRING_PROFILES_ACTIVE_DEV)) {
                 itemStatusMap = mockItemStatus(dataSites);
             } else {
                 itemStatusMap = OpcConnectionTester.testLink(serviceSettingsDO.getIpAddress(),
@@ -392,6 +424,62 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                 .eq(StandingbookAcquisitionDO::getStatus, true)
                 .in(StandingbookAcquisitionDO::getStandingbookId, ids)
         );
+    }
+
+    private void deleteRedisAcqConfigByStandingbookIds(Long standingbookId) {
+        String redisKey = String.format(STANDING_BOOK_ACQ_CONFIG_PREFIX, standingbookId);
+        redisTemplate.delete(redisKey);
+        redisTemplate.opsForSet().remove(STANDING_BOOK_ACQ_CONFIG_KEY_SET, redisKey);
+
+        // 刷新连接配置缓存
+        refreshServerDataSiteMapping();
+    }
+
+    @Override
+    public void deleteRedisAcqConfigByStandingbookIds(List<Long> standingbookIds) {
+        if (CollUtil.isEmpty(standingbookIds)) {
+            return;
+        }
+
+        List<String> keysToDelete = new ArrayList<>(standingbookIds.size());
+        for (Long id : standingbookIds) {
+            String redisKey = String.format(STANDING_BOOK_ACQ_CONFIG_PREFIX, id);
+            keysToDelete.add(redisKey);
+        }
+
+        redisTemplate.delete(keysToDelete);
+        redisTemplate.opsForSet().remove(STANDING_BOOK_ACQ_CONFIG_KEY_SET, keysToDelete.toArray());
+
+        // 刷新连接配置缓存
+        refreshServerDataSiteMapping();
+
+        log.info("批量删除数采设置成功，keys={}", keysToDelete);
+    }
+
+    /**
+     * 刷新redis中服务与io地址的映射、与设备id的映射
+     */
+    @Override
+    public void refreshServerDataSiteMapping() {
+        // 查询服务id与io地址的映射关系
+        List<ServerParamsCacheDTO> serverDataSiteMapping = standingbookAcquisitionMapper.selectServerDataSiteMapping();
+        if (CollUtil.isEmpty(serverDataSiteMapping)) {
+            byteArrayRedisTemplate.delete(STANDING_BOOK_SERVER_IO_CONFIG);
+            byteArrayRedisTemplate.delete(STANDING_BOOK_SERVER_DEVICE_CONFIG);
+        }
+        Map<String, List<String>> serviceIoMap = serverDataSiteMapping.stream()
+                .collect(Collectors.groupingBy(
+                        ServerParamsCacheDTO::getServerKey,
+                        Collectors.mapping(ServerParamsCacheDTO::getDataSite, Collectors.toList())
+                ));
+
+        byteArrayRedisTemplate.opsForValue().set(STANDING_BOOK_SERVER_IO_CONFIG, StrUtils.compressGzip(JsonUtils.toJsonString(serviceIoMap)));
+        Map<String, List<Long>> serviceStandingbookMap = serverDataSiteMapping.stream()
+                .collect(Collectors.groupingBy(
+                        ServerParamsCacheDTO::getServerKey,
+                        Collectors.mapping(ServerParamsCacheDTO::getStandingbookId, Collectors.toList())
+                ));
+        byteArrayRedisTemplate.opsForValue().set(STANDING_BOOK_SERVER_DEVICE_CONFIG, StrUtils.compressGzip(JsonUtils.toJsonString(serviceStandingbookMap)));
     }
 
     /**
@@ -514,5 +602,19 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         return expandedDetail;
     }
 
+    private Long getSecondsOfUnit(long interval, Integer unit) {
+        switch (FrequencyUnitEnum.codeOf(unit)) {
+            case SECONDS:
+                return interval;
+            case MINUTES:
+                return interval * 60;  // 分钟转秒
+            case HOUR:
+                return interval * 60 * 60;  // 小时转秒
+            case DAY:
+                return interval * 60 * 60 * 24;  // 天转秒
+            default:
+                throw new IllegalArgumentException("Unsupported unit: " + unit);
+        }
+    }
 
 }
