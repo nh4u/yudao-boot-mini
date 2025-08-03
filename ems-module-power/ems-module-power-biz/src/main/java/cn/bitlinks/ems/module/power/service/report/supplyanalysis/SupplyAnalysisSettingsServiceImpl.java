@@ -63,12 +63,12 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
             throw exception(SUPPLY_ANALYSIS_SETTINGS_LIST_NOT_EXISTS);
         }
 
-        for (SupplyAnalysisSettingsSaveReqVO supplyAnalysisSettingsSaveReqVO : supplyAnalysisSettingsList) {
-            Long standingbookId = supplyAnalysisSettingsSaveReqVO.getStandingbookId();
-            if (Objects.isNull(standingbookId)) {
-                throw exception(SUPPLY_ANALYSIS_SETTINGS_STANDINGBOOK_NOT_EMPTY);
-            }
-        }
+//        for (SupplyAnalysisSettingsSaveReqVO supplyAnalysisSettingsSaveReqVO : supplyAnalysisSettingsList) {
+//            Long standingbookId = supplyAnalysisSettingsSaveReqVO.getStandingbookId();
+//            if (Objects.isNull(standingbookId)) {
+//                throw exception(SUPPLY_ANALYSIS_SETTINGS_STANDINGBOOK_NOT_EMPTY);
+//            }
+//        }
 
         // 按system分组 组内台账id不能重复 校验
         Map<String, List<SupplyAnalysisSettingsSaveReqVO>> systemMap = supplyAnalysisSettingsList.stream()
@@ -76,12 +76,17 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
 
 
         systemMap.forEach((k, v) -> {
-            List<Long> collect = v.stream()
+            List<SupplyAnalysisSettingsSaveReqVO> tempV = v
+                    .stream()
+                    .filter(l -> !Objects.isNull(l.getStandingbookId()))
+                    .collect(Collectors.toList());
+
+            List<Long> collect = tempV.stream()
                     .map(SupplyAnalysisSettingsSaveReqVO::getStandingbookId)
                     .distinct()
                     .collect(Collectors.toList());
 
-            if (collect.size() != v.size()) {
+            if (collect.size() != tempV.size()) {
                 throw exception(SUPPLY_ANALYSIS_STANDINGBOOK_REPEAT);
             }
         });

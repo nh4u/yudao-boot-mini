@@ -25,7 +25,6 @@ public interface CommonConstants {
     /**
      * 数据采集任务redis 前缀 env:io地址
      */
-    String ACQUISITION_JOB_REDIS_KEY = "ACQUISITION_JOB_LATEST_VALUE_%s:%s";
     String STREAM_LOAD_PREFIX = "_streamload_";
     String STREAM_LOAD_COP_PREFIX = "_cop_streamload_";
     String STREAM_LOAD_BUFFER_PREFIX = "_buffer_streamload_";
@@ -34,6 +33,8 @@ public interface CommonConstants {
      */
     String AGG_TASK_LOCK_KEY = "agg-task:%s";
     String AGG_TASK_STEADY_LOCK_KEY = "agg-steady-task:%s";
+    String COLLECT_AGG_TASK_LOCK_KEY = "collect-agg-task:%s";
+    String COLLECT_AGG_TASK_SCAN_LOCK_KEY = "collect-agg-scan-task:%s";
     String MINUTE_AGGREGATE_DATA_TB_NAME = "minute_aggregate_data";
     String USAGE_COST_TB_NAME = "usage_cost";
     String COP_HOUR_AGGREGATE_DATA_TB_NAME = "cop_hour_aggregate_data";
@@ -67,6 +68,10 @@ public interface CommonConstants {
      * 拆分任务队列 redis key
      */
     String SPLIT_TASK_QUEUE_REDIS_KEY_PATTERN = "split_task_queue:*";
+    /**
+     * redis存储实时数据5分钟 :serverKey
+     */
+    String COLLECTOR_AGG_REALTIME_CACHE_KEY = "collector:agg:realtime:%s:%s";
 }
 
 

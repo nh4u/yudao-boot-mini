@@ -1,18 +1,17 @@
-package cn.bitlinks.ems.module.acquisition.api.quartz.dto;
+package cn.bitlinks.ems.module.power.dto;
 
 import lombok.Data;
 
 import java.io.Serializable;
 
 /**
- * OpcDa 连接
+ * 服务设置
  *
  * @author bitlinks
  */
 @Data
 public class ServiceSettingsDTO implements Serializable {
     private static final long serialVersionUID = 1L; // 推荐指定序列化版本
-
     /**
      * 服务名称
      */
@@ -38,6 +37,5 @@ public class ServiceSettingsDTO implements Serializable {
      * 密码
      */
     private String password;
-
 
 }

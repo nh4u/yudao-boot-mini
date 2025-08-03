@@ -1,19 +1,22 @@
-package cn.bitlinks.ems.module.power.service.statistics;
+package cn.bitlinks.ems.module.power.service.report.electricity;
 
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
-import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.pojo.StatsResult;
 import cn.bitlinks.ems.framework.common.util.calc.CalculateUtil;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energygroup.EnergyGroupDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
+import cn.bitlinks.ems.module.power.service.energygroup.EnergyGroupService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
+import cn.bitlinks.ems.module.power.service.statistics.StatisticsCommonService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -41,27 +44,30 @@ import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUt
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ConsumptionStatisticsCacheConstants.ELECTRICITY_CONSUMPTION_STATISTICS_TABLE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
-import static cn.bitlinks.ems.module.power.enums.ExportConstants.DEFAULT;
-import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.*;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_CHART;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
 /**
- * 用能分析 Service 实现类
+ * 用电量统计 Service 实现类
  *
- * @author hero
+ * @author bmqi
  */
 @Service
 @Validated
 @Slf4j
-public class StatisticsV2ServiceImpl implements StatisticsV2Service {
+public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsService {
 
     @Resource
     private LabelConfigService labelConfigService;
 
     @Resource
     private EnergyConfigurationService energyConfigurationService;
+
+    @Resource
+    private EnergyGroupService energyGroupService;
 
     @Resource
     private StatisticsCommonService statisticsCommonService;
@@ -77,7 +83,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
     private Integer scale = DEFAULT_SCALE;
 
     @Override
-    public StatisticsResultV2VO<StatisticsInfoV2> moneyAnalysisTable(StatisticsParamV2VO paramVO) {
+    public ConsumptionStatisticsResultVO<ConsumptionStatisticsInfo> consumptionStatisticsTable(ConsumptionStatisticsParamVO paramVO) {
 
         // 校验时间范围是否存在
         LocalDateTime[] rangeOrigin = paramVO.getRange();
@@ -97,23 +103,25 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         if (Objects.isNull(dataTypeEnum)) {
             throw exception(DATE_TYPE_NOT_EXISTS);
         }
-        String cacheKey = USAGE_COST_TABLE + SecureUtil.md5(paramVO.toString());
+        String cacheKey = ELECTRICITY_CONSUMPTION_STATISTICS_TABLE + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
-            return JSON.parseObject(cacheRes, new TypeReference<StatisticsResultV2VO<StatisticsInfoV2>>() {});
+            return JSON.parseObject(cacheRes, new TypeReference<ConsumptionStatisticsResultVO<ConsumptionStatisticsInfo>>() {});
         }
 
         // 表头处理
         List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], dataTypeEnum);
 
         //返回结果
-        StatisticsResultV2VO<StatisticsInfoV2> resultVO = new StatisticsResultV2VO<>();
+        ConsumptionStatisticsResultVO<ConsumptionStatisticsInfo> resultVO = new ConsumptionStatisticsResultVO<>();
         resultVO.setHeader(tableHeader);
 
-        //能源列表
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(new HashSet<>(paramVO.getEnergyIds()), paramVO.getEnergyClassify());
+        // 能源列表--只需要查找电力的能源
+        // name为“电力”且deleted为0的能源分组，取其id值
+        EnergyGroupDO energyGroup = energyGroupService.getEnergyGroup("电力");
+        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyGroup(energyGroup.getId());
         if (CollUtil.isEmpty(energyList)) {
             resultVO.setDataTime(LocalDateTime.now());
             return resultVO;
@@ -150,54 +158,31 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             resultVO.setDataTime(LocalDateTime.now());
             return resultVO;
         }
-        //按能源查看就需要找对应的根节点待定 TODO
-/*        if(QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)){
-            //能源与计量器具根节点map
-            Map<Long, Set<Long>> rootNodeStandingbooks = statisticsCommonService.getRootNodeStandingbooks();
-            standingBookIds = energyIds.stream()
-                    .filter(rootNodeStandingbooks::containsKey)
-                    .flatMap(id -> rootNodeStandingbooks.get(id).stream())
-                    .collect(Collectors.toList());
-
-        }*/
-
 
         //能源参数
         //根据台账ID查询用量跟成本
         List<UsageCostData> usageCostDataList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
         LocalDateTime lastTime = usageCostService.getLastTime(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
 
-        List<StatisticsInfoV2> statisticsInfoList = new ArrayList<>();
-        // 1、按能源查看
-        if (QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)) {
-            List<StatisticsInfoV2> statisticsInfoV2s = queryByEnergy(energyList, usageCostDataList);
-            statisticsInfoList.addAll(statisticsInfoV2s);
-
-        } else if (QueryDimensionEnum.LABEL_REVIEW.getCode().equals(queryType)) {
-            // 2、按标签查看
-            List<StatisticsInfoV2> standardCoalInfos = queryByLabel(topLabel, childLabels, standingbookIdsByLabel, usageCostDataList);
-            statisticsInfoList.addAll(standardCoalInfos);
-
-        } else {
-            // 0、综合查看（默认）
-            List<StatisticsInfoV2> statisticsInfoV2s = queryDefault(topLabel, childLabels, standingbookIdsByLabel, usageCostDataList);
-            statisticsInfoList.addAll(statisticsInfoV2s);
-        }
+        List<ConsumptionStatisticsInfo> statisticsInfoList = new ArrayList<>();
+        // 0、综合查看（默认）
+        List<ConsumptionStatisticsInfo> statisticsInfoV2s = queryDefault(topLabel, childLabels, standingbookIdsByLabel, usageCostDataList);
+        statisticsInfoList.addAll(statisticsInfoV2s);
         resultVO.setStatisticsInfoList(statisticsInfoList);
 
         // 无数据的填充0
         statisticsInfoList.forEach(l -> {
 
-            List<StatisticInfoDataV2> newList = new ArrayList<>();
-            List<StatisticInfoDataV2> oldList = l.getStatisticsDateDataList();
+            List<ConsumptionStatisticsInfoData> newList = new ArrayList<>();
+            List<ConsumptionStatisticsInfoData> oldList = l.getStatisticsDateDataList();
             if (tableHeader.size() != oldList.size()) {
-                Map<String, List<StatisticInfoDataV2>> dateMap = oldList.stream()
-                        .collect(Collectors.groupingBy(StatisticInfoDataV2::getDate));
+                Map<String, List<ConsumptionStatisticsInfoData>> dateMap = oldList.stream()
+                        .collect(Collectors.groupingBy(ConsumptionStatisticsInfoData::getDate));
 
                 tableHeader.forEach(date -> {
-                    List<StatisticInfoDataV2> standardCoalInfoDataList = dateMap.get(date);
+                    List<ConsumptionStatisticsInfoData> standardCoalInfoDataList = dateMap.get(date);
                     if (standardCoalInfoDataList == null) {
-                        StatisticInfoDataV2 standardCoalInfoData = new StatisticInfoDataV2();
+                        ConsumptionStatisticsInfoData standardCoalInfoData = new ConsumptionStatisticsInfoData();
                         standardCoalInfoData.setDate(date);
                         standardCoalInfoData.setMoney(BigDecimal.ZERO);
                         standardCoalInfoData.setConsumption(BigDecimal.ZERO);
@@ -221,7 +206,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
     }
 
 
-    public List<StatisticsInfoV2> queryDefault(String topLabel,
+    public List<ConsumptionStatisticsInfo> queryDefault(String topLabel,
                                                String childLabels,
                                                List<StandingbookLabelInfoDO> standingbookIdsByLabel,
                                                List<UsageCostData> usageCostDataList) {
@@ -259,12 +244,12 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         }
     }
 
-    public List<StatisticsInfoV2> queryDefaultTopLabel(Map<Long, List<UsageCostData>> standingBookUsageMap,
+    public List<ConsumptionStatisticsInfo> queryDefaultTopLabel(Map<Long, List<UsageCostData>> standingBookUsageMap,
                                                        Map<Long, LabelConfigDO> labelMap,
                                                        List<StandingbookLabelInfoDO> standingbookIdsByLabel,
                                                        Map<Long, EnergyConfigurationDO> energyMap) {
 
-        List<StatisticsInfoV2> resultList = new ArrayList<>();
+        List<ConsumptionStatisticsInfo> resultList = new ArrayList<>();
 
         List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
 
@@ -285,7 +270,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             EnergyConfigurationDO energyConfigurationDO = energyMap.get(energyId);
             // 由于数采数据是按 台账 日期能源进行分组的 而一个标签关联多个台账，那么标签同一个日期就会有多条不同台账的数据，所以要按日期进行合并
             // 聚合数据 转换成 StandardCoalInfoData
-            List<StatisticInfoDataV2> dataList = new ArrayList<>(usageCostList.stream().collect(Collectors.groupingBy(
+            List<ConsumptionStatisticsInfoData> dataList = new ArrayList<>(usageCostList.stream().collect(Collectors.groupingBy(
                     UsageCostData::getTime,
                     Collectors.collectingAndThen(
                             Collectors.toList(),
@@ -296,19 +281,19 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                                 BigDecimal totalCost = list.stream()
                                         .map(UsageCostData::getTotalCost)
                                         .reduce(BigDecimal.ZERO, BigDecimal::add);
-                                return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, totalCost);
+                                return new ConsumptionStatisticsInfoData(list.get(0).getTime(), totalConsumption, totalCost);
                             }
                     )
             )).values());
 
             BigDecimal totalConsumption = dataList.stream()
-                    .map(StatisticInfoDataV2::getConsumption)
+                    .map(ConsumptionStatisticsInfoData::getConsumption)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             BigDecimal totalCost = dataList.stream()
-                    .map(StatisticInfoDataV2::getMoney)
+                    .map(ConsumptionStatisticsInfoData::getMoney)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            StatisticsInfoV2 info = new StatisticsInfoV2();
+            ConsumptionStatisticsInfo info = new ConsumptionStatisticsInfo();
             info.setEnergyId(energyId);
             info.setEnergyName(energyConfigurationDO.getEnergyName());
 
@@ -338,7 +323,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         return resultList;
     }
 
-    public List<StatisticsInfoV2> queryDefaultSubLabel(Map<Long, List<UsageCostData>> standingBookUsageMap,
+    public List<ConsumptionStatisticsInfo> queryDefaultSubLabel(Map<Long, List<UsageCostData>> standingBookUsageMap,
                                                        Map<Long, LabelConfigDO> labelMap,
                                                        List<StandingbookLabelInfoDO> standingbookIdsByLabel,
                                                        Map<Long, EnergyConfigurationDO> energyMap) {
@@ -353,7 +338,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                         Collectors.groupingBy(StandingbookLabelInfoDO::getValue)
                 ));
 
-        List<StatisticsInfoV2> resultList = new ArrayList<>();
+        List<ConsumptionStatisticsInfo> resultList = new ArrayList<>();
 
         grouped.forEach((topLabelKey, labelInfoGroup) -> {
             Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
@@ -389,7 +374,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                     // 因为数采数据按台账id合并并包含多个时间  但一个标签关联了多个台账 所以还需要按照日期再聚合一下 要重新考虑一下
                     //  usageCostData数据按能源、台账进行分组了，现在的分组方式 会导致用量数据无法累加。
                     // 聚合数据 转换成 StandardCoalInfoData
-                    List<StatisticInfoDataV2> dataList = new ArrayList<>(usageCostList.stream().collect(Collectors.groupingBy(
+                    List<ConsumptionStatisticsInfoData> dataList = new ArrayList<>(usageCostList.stream().collect(Collectors.groupingBy(
                             UsageCostData::getTime,
                             Collectors.collectingAndThen(
                                     Collectors.toList(),
@@ -400,19 +385,19 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                                         BigDecimal totalCost = list.stream()
                                                 .map(UsageCostData::getTotalCost)
                                                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-                                        return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, totalCost);
+                                        return new ConsumptionStatisticsInfoData(list.get(0).getTime(), totalConsumption, totalCost);
                                     }
                             )
                     )).values());
 
                     BigDecimal totalConsumption = dataList.stream()
-                            .map(StatisticInfoDataV2::getConsumption)
+                            .map(ConsumptionStatisticsInfoData::getConsumption)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
                     BigDecimal totalCost = dataList.stream()
-                            .map(StatisticInfoDataV2::getMoney)
+                            .map(ConsumptionStatisticsInfoData::getMoney)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                    StatisticsInfoV2 info = new StatisticsInfoV2();
+                    ConsumptionStatisticsInfo info = new ConsumptionStatisticsInfo();
                     info.setEnergyId(energyId);
                     info.setEnergyName(energyConfigurationDO.getEnergyName());
                     info.setLabel1(topLabel.getLabelName());
@@ -693,7 +678,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
      * @param paramVO
      */
     @Override
-    public StatisticsChartResultV2VO moneyAnalysisChart(StatisticsParamV2VO paramVO) {
+    public ConsumptionStatisticsChartResultVO consumptionStatisticsChart(ConsumptionStatisticsParamVO paramVO) {
         // 校验时间范围是否存在
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         LocalDateTime startTime = rangeOrigin[0];
@@ -716,13 +701,15 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
-            return JSONUtil.toBean(cacheRes, StatisticsChartResultV2VO.class);
+            return JSONUtil.toBean(cacheRes, ConsumptionStatisticsChartResultVO.class);
         }
 
 
-        //能源列表
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(new HashSet<>(paramVO.getEnergyIds()), paramVO.getEnergyClassify());
-        StatisticsChartResultV2VO resultV2VO = new StatisticsChartResultV2VO();
+        // 能源列表--只需要查找电力的能源
+        // name为“电力”且deleted为0的能源分组，取其id值
+        EnergyGroupDO energyGroup = energyGroupService.getEnergyGroup("电力");
+        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyGroup(energyGroup.getId());
+        ConsumptionStatisticsChartResultVO resultV2VO = new ConsumptionStatisticsChartResultVO();
         if (CollUtil.isEmpty(energyList)) {
             resultV2VO.setDataTime(LocalDateTime.now());
             return resultV2VO;
@@ -760,16 +747,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             return resultV2VO;
         }
         Integer queryType = paramVO.getQueryType();
-        //按能源查看就需要找对应的根节点 待定  TODO
-/*        if(QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)){
-            //能源与计量器具根节点map
-            Map<Long, Set<Long>> rootNodeStandingbooks = statisticsCommonService.getRootNodeStandingbooks();
-            standingBookIds = energyIds.stream()
-                    .filter(rootNodeStandingbooks::containsKey)
-                    .flatMap(id -> rootNodeStandingbooks.get(id).stream())
-                    .collect(Collectors.toList());
 
-        }*/
         //能源参数
         //根据台账ID查询用量跟成本
         List<UsageCostData> usageCostDataList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
@@ -782,130 +760,32 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
         resultV2VO.setDataTime(lastTime);
 
-        // 按能源查看
-        if (QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)) {
-            Map<Long, Map<String, BigDecimal>> energyTimeCostMap = usageCostDataList.stream()
-                    .collect(Collectors.groupingBy(
-                            UsageCostData::getEnergyId,
-                            Collectors.toMap(
-                                    UsageCostData::getTime,
-                                    UsageCostData::getTotalCost
-                            )
-                    ));
-            Map<Long, EnergyConfigurationDO> energyMap = energyList.stream().collect(Collectors.toMap(EnergyConfigurationDO::getId, Function.identity()));
-            List<StatisticsChartYInfoV2VO> ydata = energyMap.entrySet().stream()
-                    .filter(entry -> energyTimeCostMap.containsKey(entry.getKey())) // 仅处理有数据的 energy
-                    .map(entry -> {
-                        Long energyId = entry.getKey();
-                        EnergyConfigurationDO energy = entry.getValue();
-                        Map<String, BigDecimal> timeCostMap = energyTimeCostMap.getOrDefault(energyId, Collections.emptyMap());
-
-                        List<StatisticsChartYDataV2VO> dataList = xdata.stream().map(time -> {
-                            time = dealStrTime(time);
-                            StatisticsChartYDataV2VO vo = new StatisticsChartYDataV2VO();
-                            vo.setCost(dealBigDecimalScale(timeCostMap.getOrDefault(time, BigDecimal.ZERO), scale));
-                            return vo;
-                        }).collect(Collectors.toList());
-
-                        StatisticsChartYInfoV2VO yInfo = new StatisticsChartYInfoV2VO();
-                        yInfo.setId(energyId);
-                        yInfo.setName(energy.getEnergyName());
-                        yInfo.setData(dataList);
-                        return yInfo;
-                    })
-                    .collect(Collectors.toList());
-
-            resultV2VO.setYdata(ydata);
-
-        } else if (QueryDimensionEnum.LABEL_REVIEW.getCode().equals(queryType)) {//按标签
-            //涉及到的标签
-            //key是一级标签
-            // 过滤并按标签名分组
-            List<Long> finalStandingBookIds = standingBookIds;
-            Map<String, List<StandingbookLabelInfoDO>> labelGrouped = standingbookIdsByLabel.stream()
-                    .filter(label -> finalStandingBookIds.contains(label.getStandingbookId()))
-                    .collect(Collectors.groupingBy(StandingbookLabelInfoDO::getName));
-
-            // 提取一级标签ID
-            List<Long> topLabelIds = labelGrouped.keySet().stream()
-                    .map(s -> s.substring(s.indexOf("_") + 1))
-                    .map(Long::valueOf)
-                    .collect(Collectors.toList());
-
-            // 获取标签信息
-            List<LabelConfigDO> labelList = labelConfigService.getByIds(topLabelIds);
-            Map<String, LabelConfigDO> labelMap = labelList.stream()
-                    .collect(Collectors.toMap(s -> LABEL_NAME_PREFIX + s.getId(), Function.identity()));
-
-            // 构造 standingbookId -> labelKey 映射
-            Map<Long, String> standingbookIdToLabel = new HashMap<>();
-            labelGrouped.forEach((labelKey, list) ->
-                    list.forEach(item -> standingbookIdToLabel.put(item.getStandingbookId(), labelKey))
-            );
-
-            // 构造 (labelKey, time) -> cost 的二维映射
-            Map<String, Map<String, BigDecimal>> labelTimeCostMap = new HashMap<>();
-            for (UsageCostData data : usageCostDataList) {
-                Long standingbookId = data.getStandingbookId();
-                String time = data.getTime();
-                BigDecimal cost = data.getTotalCost();
-
-                String labelKey = standingbookIdToLabel.get(standingbookId);
-                if (labelKey == null) continue;
-
-                labelTimeCostMap
-                        .computeIfAbsent(labelKey, k -> new HashMap<>())
-                        .merge(time, cost, BigDecimal::add);
+        //综合查看
+        //根据日期计算最大 / 最小 / 平均 / 总和
+        Map<String, StatsResult> statsResultMap = CalculateUtil.calculateGroupStats(usageCostDataList, UsageCostData::getTime, UsageCostData::getTotalCost);
+        List<StatisticsChartYInfoV2VO> ydata = new ArrayList<>();
+        xdata.forEach(s -> {
+            // substring 返回 endIndex-beginIndex哥字符 因为是[ )
+            String subs = dealStrTime(s);
+            StatsResult statsResult = statsResultMap.get(subs);
+            StatisticsChartYInfoV2VO yInfoV2VO = new StatisticsChartYInfoV2VO();
+            StatisticsChartYDataV2VO dataV2VO = new StatisticsChartYDataV2VO();
+            if (Objects.nonNull(statsResult)) {
+                dataV2VO.setAvg(dealBigDecimalScale(statsResult.getAvg(), scale));
+                dataV2VO.setMax(dealBigDecimalScale(statsResult.getMax(), scale));
+                dataV2VO.setMin(dealBigDecimalScale(statsResult.getMin(), scale));
+                dataV2VO.setCost(dealBigDecimalScale(statsResult.getSum(), scale));
+            } else {
+                dataV2VO.setAvg(BigDecimal.ZERO);
+                dataV2VO.setMax(BigDecimal.ZERO);
+                dataV2VO.setMin(BigDecimal.ZERO);
+                dataV2VO.setCost(BigDecimal.ZERO);
             }
+            yInfoV2VO.setData(Collections.singletonList(dataV2VO));
+            ydata.add(yInfoV2VO);
+        });
+        resultV2VO.setYdata(ydata);
 
-            //构建结果
-            List<StatisticsChartYInfoV2VO> infoV2VOS = new ArrayList<>();
-            labelTimeCostMap.forEach((labelKey, timeCostMap) -> {
-                LabelConfigDO labelConfigDO = labelMap.get(labelKey);
-                if (labelConfigDO == null) return;
-
-                List<StatisticsChartYDataV2VO> ydata = xdata.stream().map(x -> {
-                    x = dealStrTime(x);
-                    BigDecimal cost = timeCostMap.getOrDefault(x, BigDecimal.ZERO);
-                    StatisticsChartYDataV2VO vo = new StatisticsChartYDataV2VO();
-                    vo.setCost(cost.compareTo(BigDecimal.ZERO) > 0 ? cost : BigDecimal.ZERO);
-                    return vo;
-                }).collect(Collectors.toList());
-
-                StatisticsChartYInfoV2VO yInfo = new StatisticsChartYInfoV2VO();
-                yInfo.setId(labelConfigDO.getId());
-                yInfo.setName(labelConfigDO.getLabelName());
-                yInfo.setData(ydata);
-                infoV2VOS.add(yInfo);
-            });
-
-            resultV2VO.setYdata(infoV2VOS);
-        } else {//综合查看
-            //根据日期计算最大 / 最小 / 平均 / 总和
-            Map<String, StatsResult> statsResultMap = CalculateUtil.calculateGroupStats(usageCostDataList, UsageCostData::getTime, UsageCostData::getTotalCost);
-            List<StatisticsChartYInfoV2VO> ydata = new ArrayList<>();
-            xdata.forEach(s -> {
-                // substring 返回 endIndex-beginIndex哥字符 因为是[ )
-                String subs = dealStrTime(s);
-                StatsResult statsResult = statsResultMap.get(subs);
-                StatisticsChartYInfoV2VO yInfoV2VO = new StatisticsChartYInfoV2VO();
-                StatisticsChartYDataV2VO dataV2VO = new StatisticsChartYDataV2VO();
-                if (Objects.nonNull(statsResult)) {
-                    dataV2VO.setAvg(dealBigDecimalScale(statsResult.getAvg(), scale));
-                    dataV2VO.setMax(dealBigDecimalScale(statsResult.getMax(), scale));
-                    dataV2VO.setMin(dealBigDecimalScale(statsResult.getMin(), scale));
-                    dataV2VO.setCost(dealBigDecimalScale(statsResult.getSum(), scale));
-                } else {
-                    dataV2VO.setAvg(BigDecimal.ZERO);
-                    dataV2VO.setMax(BigDecimal.ZERO);
-                    dataV2VO.setMin(BigDecimal.ZERO);
-                    dataV2VO.setCost(BigDecimal.ZERO);
-                }
-                yInfoV2VO.setData(Collections.singletonList(dataV2VO));
-                ydata.add(yInfoV2VO);
-            });
-            resultV2VO.setYdata(ydata);
-        }
         String jsonStr = JSONUtil.toJsonStr(resultV2VO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
@@ -914,16 +794,14 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
     }
 
     @Override
-    public List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO) {
+    public List<List<String>> getExcelHeader(ConsumptionStatisticsParamVO paramVO) {
 
         // 1.校验时间范围
         LocalDateTime[] range = validateRange(paramVO.getRange());
         // 2.时间处理
         LocalDateTime startTime = range[0];
         LocalDateTime endTime = range[1];
-        // 验证单位
-        Integer unit = paramVO.getUnit();
-        validateUnit(unit);
+
         // 表头数据
         List<List<String>> list = ListUtils.newArrayList();
         // 统计周期
@@ -940,7 +818,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         switch (queryType) {
             case 0:
                 // 综合
-                sheetName = COST_ALL;
+                sheetName = CONSUMPTION_STATISTICS_ALL;
                 list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "标签", "标签"));
                 for (int i = 2; i <= labelDeep; i++) {
                     String subLabel = "标签" + i;
@@ -950,12 +828,12 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                 break;
             case 1:
                 // 按能源
-                sheetName = COST_ENERGY;
+                sheetName = CONSUMPTION_STATISTICS_ENERGY;
                 list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "能源", "能源"));
                 break;
             case 2:
                 // 按标签
-                sheetName = COST_LABEL;
+                sheetName = CONSUMPTION_STATISTICS_LABEL;
                 list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "标签", "标签"));
                 for (int i = 2; i <= labelDeep; i++) {
                     String subLabel = "标签" + i;
@@ -972,12 +850,12 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
         xdata.forEach(x -> {
             list.add(Arrays.asList(sheetName, labelName, strTime, x, "用量"));
-            list.add(Arrays.asList(sheetName, labelName, strTime, x, getHeaderDesc(unit, 2, "用能成本")));
+            list.add(Arrays.asList(sheetName, labelName, strTime, x, "用能成本"));
         });
 
         // 周期合计
         list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "用量"));
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", getHeaderDesc(unit, 2, "用能成本")));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "用能成本"));
         return list;
 
     }
@@ -1005,17 +883,13 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
     }
 
     @Override
-    public List<List<Object>> getExcelData(StatisticsParamV2VO paramVO) {
-
-        // 验证单位
-        Integer unit = paramVO.getUnit();
-
+    public List<List<Object>> getExcelData(ConsumptionStatisticsParamVO paramVO) {
         // 结果list
         List<List<Object>> result = ListUtils.newArrayList();
-        StatisticsResultV2VO<StatisticsInfoV2> resultVO = moneyAnalysisTable(paramVO);
+        ConsumptionStatisticsResultVO<ConsumptionStatisticsInfo> resultVO = consumptionStatisticsTable(paramVO);
         List<String> tableHeader = resultVO.getHeader();
 
-        List<StatisticsInfoV2> statisticsInfoList = resultVO.getStatisticsInfoList();
+        List<ConsumptionStatisticsInfo> statisticsInfoList = resultVO.getStatisticsInfoList();
         String childLabels = paramVO.getChildLabels();
         Integer labelDeep = getLabelDeep(childLabels);
 
@@ -1024,7 +898,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         // 底部合计map
         Map<String, BigDecimal> sumCostMap = new HashMap<>();
 
-        for (StatisticsInfoV2 s : statisticsInfoList) {
+        for (ConsumptionStatisticsInfo s : statisticsInfoList) {
 
             List<Object> data = ListUtils.newArrayList();
             String[] labels = {s.getLabel1(), s.getLabel2(), s.getLabel3(), s.getLabel4(), s.getLabel5()};
@@ -1053,13 +927,13 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             }
 
             // 处理数据
-            List<StatisticInfoDataV2> statisticInfoDataV2List = s.getStatisticsDateDataList();
+            List<ConsumptionStatisticsInfoData> statisticInfoDataV2List = s.getStatisticsDateDataList();
 
-            Map<String, StatisticInfoDataV2> dateMap = statisticInfoDataV2List.stream()
-                    .collect(Collectors.toMap(StatisticInfoDataV2::getDate, Function.identity()));
+            Map<String, ConsumptionStatisticsInfoData> dateMap = statisticInfoDataV2List.stream()
+                    .collect(Collectors.toMap(ConsumptionStatisticsInfoData::getDate, Function.identity()));
 
             tableHeader.forEach(date -> {
-                StatisticInfoDataV2 statisticInfoDataV2 = dateMap.get(date);
+                ConsumptionStatisticsInfoData statisticInfoDataV2 = dateMap.get(date);
                 if (statisticInfoDataV2 == null) {
                     data.add("/");
                     data.add("/");
@@ -1067,7 +941,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                     BigDecimal consumption = statisticInfoDataV2.getConsumption();
                     BigDecimal cost = statisticInfoDataV2.getMoney();
                     data.add(getConvertData(consumption));
-                    data.add(getConvertData(unit, 2, cost));
+                    data.add(getConvertData(cost));
 
                     // 底部合计处理
                     sumCostMap.put(date, addBigDecimal(sumCostMap.get(date), cost));
@@ -1079,7 +953,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             BigDecimal sumCost = s.getSumEnergyMoney();
             // 处理周期合计
             data.add(getConvertData(sumEnergyConsumption));
-            data.add(getConvertData(unit, 2, sumCost));
+            data.add(getConvertData(sumCost));
 
             // 处理底部合计
             sumCostMap.put("sumNum", addBigDecimal(sumCostMap.get("sumNum"), sumCost));
@@ -1140,7 +1014,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
             // 折价
             BigDecimal cost = sumCostMap.get(date);
-            bottom.add(getConvertData(unit, 2, cost));
+            bottom.add(getConvertData(cost));
 
         });
 
@@ -1150,7 +1024,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
         // 折价
         BigDecimal cost = sumCostMap.get("sumNum");
-        bottom.add(getConvertData(unit, 2, cost));
+        bottom.add(getConvertData(cost));
         result.add(bottom);
 
         return result;
@@ -1193,10 +1067,4 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         return dataTypeEnum;
     }
 
-    private void validateUnit(Integer unit) {
-        if (Objects.isNull(unit)) {
-            throw exception(UNIT_NOT_EMPTY);
-        }
-    }
 }
-

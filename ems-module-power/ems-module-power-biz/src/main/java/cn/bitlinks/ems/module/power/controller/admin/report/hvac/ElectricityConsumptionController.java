@@ -1,13 +1,9 @@
-package cn.bitlinks.ems.module.power.controller.admin.report.electricity;
+package cn.bitlinks.ems.module.power.controller.admin.report.hvac;
 
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsChartResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsInfo;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
-import cn.bitlinks.ems.module.power.service.report.electricity.ConsumptionStatisticsService;
+import cn.bitlinks.ems.module.power.service.report.hvac.ElectricityConsumptionService;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.write.metadata.style.WriteCellStyle;
 import com.alibaba.excel.write.style.HorizontalCellStyleStrategy;
@@ -34,73 +30,51 @@ import java.util.List;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
-import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
-import static cn.bitlinks.ems.module.power.enums.ExportConstants.XLSX;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.getLabelDeep;
 
-
-@Tag(name = "管理后台 - 个性化报表[电]-用电量统计")
+@Tag(name = "管理后台-个性化报表-电量分布")
 @RestController
-@RequestMapping("/power/report/electricity/consumptionStatistics")
+@RequestMapping("/power/report/hvac/eleConsumption")
 @Validated
-public class ConsumptionStatisticsController {
+public class ElectricityConsumptionController {
     @Resource
-    private ConsumptionStatisticsService consumptionStatisticsService;
-
-
-    @PostMapping("/consumptionStatisticsTable")
-    @Operation(summary = "用电量统计（表）")
-    public CommonResult<ConsumptionStatisticsResultVO<ConsumptionStatisticsInfo>> consumptionStatisticsTable(@Valid @RequestBody ConsumptionStatisticsParamVO paramVO) {
-        return success(consumptionStatisticsService.consumptionStatisticsTable(paramVO));
+    private ElectricityConsumptionService electricityConsumptionService;
+    @PostMapping("/table")
+    @Operation(summary = "表")
+    public CommonResult<StatisticsResultV2VO<StructureInfo>> getTable(@Valid @RequestBody StatisticsParamV2VO paramVO) {
+        return success(electricityConsumptionService.getTable(paramVO));
+    }
+    @PostMapping("/chart")
+    @Operation(summary = "图")
+    public CommonResult<StatisticsChartPieResultVO> getChart(@Valid @RequestBody StatisticsParamV2VO paramVO) {
+        return success(electricityConsumptionService.getChart(paramVO));
     }
 
 
-    @PostMapping("/consumptionStatisticsChart")
-    @Operation(summary = "用电量统计（图）")
-    public CommonResult<ConsumptionStatisticsChartResultVO> consumptionStatisticsChart(@Valid @RequestBody ConsumptionStatisticsParamVO paramVO) {
-        return success(consumptionStatisticsService.consumptionStatisticsChart(paramVO));
-    }
 
-    @PostMapping("/exportConsumptionStatisticsTable")
-    @Operation(summary = "导出用电量统计表")
+    @PostMapping("/export")
+    @Operation(summary = "导出用电分布分析表")
     @ApiAccessLog(operateType = EXPORT)
-    public void exportConsumptionStatisticsTable(@Valid @RequestBody ConsumptionStatisticsParamVO paramVO,
-                                         HttpServletResponse response) throws IOException {
+    public void exportMoneyStructureAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO,
+                                                  HttpServletResponse response) throws IOException {
 
         String childLabels = paramVO.getChildLabels();
         Integer labelDeep = getLabelDeep(childLabels);
         Integer mergeIndex = 0;
         // 文件名字处理
-        Integer queryType = paramVO.getQueryType();
-        String filename = "";
-        switch (queryType) {
-            case 0:
-                filename = CONSUMPTION_STATISTICS_ALL + XLSX;
-                mergeIndex = labelDeep;
-                break;
-            case 1:
-                filename = CONSUMPTION_STATISTICS_ENERGY + XLSX;
-                // 能源不需要合并
-                mergeIndex = 0;
-                break;
-            case 2:
-                filename = CONSUMPTION_STATISTICS_LABEL + XLSX;
-                // 标签没有能源
-                mergeIndex = labelDeep - 1;
-                break;
-            default:
-                filename = DEFAULT + XLSX;
-        }
+        String filename = "用电量分布.xlsx";
 
-        List<List<String>> header = consumptionStatisticsService.getExcelHeader(paramVO);
-        List<List<Object>> dataList = consumptionStatisticsService.getExcelData(paramVO);
+
+        List<List<String>> header = electricityConsumptionService.getExcelHeader(paramVO);
+        List<List<Object>> dataList = electricityConsumptionService.getExcelData(paramVO);
 
 
         // 放在 write前配置response才会生效，放在后面不生效
         // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
         response.setContentType("application/vnd.ms-excel;charset=UTF-8");
-
+        response.addHeader("Access-Control-Expose-Headers","File-Name");
+        response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
         WriteCellStyle headerStyle = new WriteCellStyle();
         // 设置水平居中对齐
         headerStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);

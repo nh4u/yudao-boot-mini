@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.usagecost;
 
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
@@ -18,6 +19,11 @@ public interface UsageCostService {
                                 LocalDateTime endDate,
                                 List<Long> standingBookIds);
 
+    List<UsageCostData> getList(ConsumptionStatisticsParamVO paramVO,
+                                LocalDateTime startDate,
+                                LocalDateTime endDate,
+                                List<Long> standingBookIds);
+
     List<UsageCostData> getList(Integer dateType,
                                 LocalDateTime startDate,
                                 LocalDateTime endDate,
@@ -27,6 +33,11 @@ public interface UsageCostService {
                                 List<Long> standingBookIds);
 
     LocalDateTime getLastTime(StatisticsParamV2VO paramVO,
+                              LocalDateTime startDate,
+                              LocalDateTime endDate,
+                              List<Long> standingBookIds);
+
+    LocalDateTime getLastTime(ConsumptionStatisticsParamVO paramVO,
                               LocalDateTime startDate,
                               LocalDateTime endDate,
                               List<Long> standingBookIds);

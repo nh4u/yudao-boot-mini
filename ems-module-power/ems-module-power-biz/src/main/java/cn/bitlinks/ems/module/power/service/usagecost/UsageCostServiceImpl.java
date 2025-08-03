@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.usagecost;
 
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
 import com.baomidou.dynamic.datasource.annotation.DS;
 
@@ -52,6 +53,12 @@ public class UsageCostServiceImpl implements UsageCostService {
 
     @Override
     @TenantIgnore
+    public List<UsageCostData> getList(ConsumptionStatisticsParamVO paramVO, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getList(paramVO, startDate, endDate, standingBookIds);
+    }
+
+    @Override
+    @TenantIgnore
     public List<UsageCostData> getList(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
         return usageCostMapper.getTimeDataList(dateType, startDate, endDate, standingBookIds);
     }
@@ -65,6 +72,12 @@ public class UsageCostServiceImpl implements UsageCostService {
     @Override
     @TenantIgnore
     public LocalDateTime getLastTime(StatisticsParamV2VO paramVO, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getLastTime(paramVO, startDate, endDate, standingBookIds);
+    }
+
+    @Override
+    @TenantIgnore
+    public LocalDateTime getLastTime(ConsumptionStatisticsParamVO paramVO, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
         return usageCostMapper.getLastTime(paramVO, startDate, endDate, standingBookIds);
     }
 
