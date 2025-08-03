@@ -1,10 +1,12 @@
 package cn.bitlinks.ems.module.power.dto;
 
 import cn.bitlinks.ems.framework.common.core.StandingbookAcquisitionDetailDTO;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import javax.validation.constraints.NotNull;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -13,7 +15,8 @@ import java.util.List;
  */
 @Schema(description = "RPC 服务 - 设备数采配置")
 @Data
-public class DeviceCollectCacheDTO {
+public class DeviceCollectCacheDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
     /**
      * 台账id
      */
@@ -24,6 +27,7 @@ public class DeviceCollectCacheDTO {
      * 任务开始时间
      */
     @NotNull(message = "开始时间不能为空")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime jobStartTime;
     /**
      * 采集频率（等同于多少秒）
