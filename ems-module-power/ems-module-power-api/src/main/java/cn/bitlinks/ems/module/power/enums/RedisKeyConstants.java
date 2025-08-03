@@ -19,4 +19,17 @@ public interface RedisKeyConstants {
      * 有效时间默认为1小时，修改成10分钟
      */
     String STANDING_BOOK_CODE_KEYMAP = "power:standingbook:map#10m";
+    /**
+     * 台账id->数采配置
+     */
+    String STANDING_BOOK_ACQ_CONFIG_PREFIX = "power:standingbook:acq_config:%s";
+    String STANDING_BOOK_ACQ_CONFIG_KEY_SET ="power:standingbook:acq_config:keys";
+    /**
+     * 服务->io地址们
+     */
+    String STANDING_BOOK_SERVER_IO_CONFIG = "power:standingbook:server_io_config";
+    /**
+     * 服务->设备们
+     */
+    String STANDING_BOOK_SERVER_DEVICE_CONFIG = "power:standingbook:server_device_config";
 }
