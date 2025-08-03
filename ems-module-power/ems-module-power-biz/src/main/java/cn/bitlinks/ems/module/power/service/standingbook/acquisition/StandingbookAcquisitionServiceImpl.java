@@ -23,6 +23,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.Standingb
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.StandingbookAcquisitionMapper;
 import cn.bitlinks.ems.module.power.dto.DeviceCollectCacheDTO;
 import cn.bitlinks.ems.module.power.dto.ServerParamsCacheDTO;
+import cn.bitlinks.ems.module.power.dto.ServerStandingbookCacheDTO;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.hutool.core.collection.CollUtil;
@@ -465,21 +466,16 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         List<ServerParamsCacheDTO> serverDataSiteMapping = standingbookAcquisitionMapper.selectServerDataSiteMapping();
         if (CollUtil.isEmpty(serverDataSiteMapping)) {
             byteArrayRedisTemplate.delete(STANDING_BOOK_SERVER_IO_CONFIG);
+        }
+
+        byteArrayRedisTemplate.opsForValue().set(STANDING_BOOK_SERVER_IO_CONFIG, StrUtils.compressGzip(JsonUtils.toJsonString(serverDataSiteMapping)));
+
+        List<ServerStandingbookCacheDTO> serverStandingbookMapping = standingbookAcquisitionMapper.selectServerStandingbookMapping();
+        if (CollUtil.isEmpty(serverStandingbookMapping)) {
             byteArrayRedisTemplate.delete(STANDING_BOOK_SERVER_DEVICE_CONFIG);
         }
-        Map<String, List<String>> serviceIoMap = serverDataSiteMapping.stream()
-                .collect(Collectors.groupingBy(
-                        ServerParamsCacheDTO::getServerKey,
-                        Collectors.mapping(ServerParamsCacheDTO::getDataSite, Collectors.toList())
-                ));
 
-        byteArrayRedisTemplate.opsForValue().set(STANDING_BOOK_SERVER_IO_CONFIG, StrUtils.compressGzip(JsonUtils.toJsonString(serviceIoMap)));
-        Map<String, List<Long>> serviceStandingbookMap = serverDataSiteMapping.stream()
-                .collect(Collectors.groupingBy(
-                        ServerParamsCacheDTO::getServerKey,
-                        Collectors.mapping(ServerParamsCacheDTO::getStandingbookId, Collectors.toList())
-                ));
-        byteArrayRedisTemplate.opsForValue().set(STANDING_BOOK_SERVER_DEVICE_CONFIG, StrUtils.compressGzip(JsonUtils.toJsonString(serviceStandingbookMap)));
+        byteArrayRedisTemplate.opsForValue().set(STANDING_BOOK_SERVER_DEVICE_CONFIG, StrUtils.compressGzip(JsonUtils.toJsonString(serverStandingbookMapping)));
     }
 
     /**

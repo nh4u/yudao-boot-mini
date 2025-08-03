@@ -27,9 +27,9 @@ public interface RedisKeyConstants {
     /**
      * 服务->io地址们
      */
-    String STANDING_BOOK_SERVER_IO_CONFIG = "power:standingbook:server_io_config";
+    String STANDING_BOOK_SERVER_IO_CONFIG = "power:server_io_config";
     /**
      * 服务->设备们
      */
-    String STANDING_BOOK_SERVER_DEVICE_CONFIG = "power:standingbook:server_device_config";
+    String STANDING_BOOK_SERVER_DEVICE_CONFIG = "power:server_device_config";
 }

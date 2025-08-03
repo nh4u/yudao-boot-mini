@@ -4,9 +4,8 @@ import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
 import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
 import cn.bitlinks.ems.framework.common.util.opcda.OpcDaUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
+import cn.bitlinks.ems.module.power.dto.ServerParamsCacheDTO;
 import cn.hutool.core.text.CharSequenceUtil;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -22,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.COLLECTOR_AGG_REALTIME_CACHE_KEY;
 import static cn.bitlinks.ems.module.power.enums.RedisKeyConstants.STANDING_BOOK_SERVER_IO_CONFIG;
@@ -54,12 +54,13 @@ public class ServerDataService {
                     // 解析serverKey获取连接信息
                     String[] serverInfo = serverKey.split("\\|");
 
-                    String host = serverInfo[0];
-                    String user = serverInfo[1];
-                    String password = serverInfo[2];
-                    String clsid = serverInfo[3];
+                    //String serverType = serverInfo[0];
+                    String host = serverInfo[1];
+                    String user = serverInfo[2];
+                    String password = serverInfo[3];
+                    String clsid = serverInfo[4];
                     // 执行OPC数据采集
-                    Map<String, ItemStatus> result = OpcDaUtils.batchGetValue(
+                    Map<String, ItemStatus> result = OpcDaUtils.readOnly(
                             host, user, password, clsid, ioAddresses
                     );
 
@@ -78,7 +79,7 @@ public class ServerDataService {
         if (result == null || result.isEmpty()) {
             return;
         }
-        String timestampStr  = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now());
+        String timestampStr = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now());
 
         String redisKey = String.format(COLLECTOR_AGG_REALTIME_CACHE_KEY, serverKey, timestampStr);
 
@@ -120,10 +121,16 @@ public class ServerDataService {
             String cacheRes = StrUtils.decompressGzip(compressed);
             if (CharSequenceUtil.isNotEmpty(cacheRes)) {
                 // 用 Jackson 处理泛型转换
-                ObjectMapper objectMapper = new ObjectMapper();
-                return objectMapper.readValue(cacheRes,
-                        new TypeReference<Map<String, List<String>>>() {
-                        });
+                List<ServerParamsCacheDTO> serverDataSiteList = JsonUtils.parseArray(cacheRes, ServerParamsCacheDTO.class);
+                return serverDataSiteList.stream()
+                        .collect(Collectors.groupingBy(
+                                ServerParamsCacheDTO::getServerKey,
+                                Collectors.mapping(ServerParamsCacheDTO::getDataSite, Collectors.toList())
+                        ));
+//                ObjectMapper objectMapper = new ObjectMapper();
+//                return objectMapper.readValue(cacheRes,
+//                        new TypeReference<M>() {
+//                        });
             }
         } catch (Exception e) {
             log.error("解析缓存的服务器IO映射关系失败", e);
