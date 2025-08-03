@@ -23,7 +23,6 @@ public interface RedisKeyConstants {
      * 台账id->数采配置
      */
     String STANDING_BOOK_ACQ_CONFIG_PREFIX = "power:standingbook:acq_config:%s";
-    String STANDING_BOOK_ACQ_CONFIG_KEY_SET ="power:standingbook:acq_config:keys";
     /**
      * 服务->io地址们
      */

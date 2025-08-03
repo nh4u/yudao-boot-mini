@@ -32,7 +32,11 @@ public interface StandingbookAcquisitionService {
      */
     List<StandingbookAcquisitionRespVO> getStandingbookAcquisitionList(Map<String, String> queryReqVO);
 
-
+    /**
+     * 更新数采缓存     *
+     * @return 数采设置
+     */
+    void initAcqRedisConfig();
     /**
      * 根据台账id获取数采设置
      *

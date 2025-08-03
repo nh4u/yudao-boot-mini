@@ -13,11 +13,16 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONFactory;
+import com.alibaba.fastjson2.JSONReader;
+import com.alibaba.fastjson2.reader.ObjectReader;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -41,7 +46,8 @@ import static cn.bitlinks.ems.module.power.enums.RedisKeyConstants.STANDING_BOOK
 @Component
 public class CollectAggTask {
 
-
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
     @Resource
     private ServerDataService serverDataService;
     @Resource
@@ -70,10 +76,12 @@ public class CollectAggTask {
             if (!lock.tryLock(5000L, TimeUnit.MILLISECONDS)) {
                 log.info("实时数据入库redis Task 已由其他节点执行");
             }
+            long startTime = System.currentTimeMillis();
+            log.info("实时数据入库redis Task 开始执行");
             try {
-                log.info("实时数据入库redis Task 开始执行");
                 serverDataService.processServerData();
-                log.info("实时数据入库redis Task 执行完成");
+                long duration = System.currentTimeMillis() - startTime;
+                log.info("实时数据入库redis Task 执行完成，耗时：{} ms", duration);
             } finally {
                 lock.unlock();
             }
@@ -94,10 +102,12 @@ public class CollectAggTask {
             if (!lock.tryLock(5000L, TimeUnit.MILLISECONDS)) {
                 log.info("实时数据扫描台账Task 已由其他节点执行");
             }
+            long startTime = System.currentTimeMillis();
+            log.info("实时数据扫描台账Task 开始执行");
             try {
-                log.info("实时数据扫描台账Task 开始执行");
                 scanAllDevices();
-                log.info("实时数据扫描台账Task 执行完成");
+                long duration = System.currentTimeMillis() - startTime;
+                log.info("实时数据扫描台账Task 执行完成，耗时：{} ms", duration);
             } finally {
                 lock.unlock();
             }
@@ -106,7 +116,7 @@ public class CollectAggTask {
         }
     }
 
-    private void processSingleDevice(Long deviceId, Map<String, String> entryMap, LocalDateTime jobTime) {
+    private void processSingleDevice(Long deviceId, Map<String, ItemStatus> entryMap, LocalDateTime jobTime) {
         // 查询redis中设备id对应的数采配置
         String sbConfigKey = String.format(STANDING_BOOK_ACQ_CONFIG_PREFIX, deviceId);
         String deviceAcqConfigStr = redisTemplate.opsForValue().get(sbConfigKey);
@@ -131,18 +141,6 @@ public class CollectAggTask {
         // 筛选匹配 dataSites 的数据
         Map<String, ItemStatus> filteredMap = entryMap.entrySet().stream()
                 .filter(entry -> dataSitesSet.contains(entry.getKey()))
-                .map(entry -> {
-                    ItemStatus itemStatus = JSONObject.parseObject(entry.getValue(), ItemStatus.class);
-                    if (itemStatus != null) {
-                        Map<String, ItemStatus> singleEntry = new HashMap<>();
-                        singleEntry.put(entry.getKey(), itemStatus);
-                        return singleEntry;
-                    } else {
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .flatMap(map -> map.entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         // 构造消息对象
         AcquisitionMessage acquisitionMessage = new AcquisitionMessage();
@@ -162,6 +160,14 @@ public class CollectAggTask {
         log.info("数据采集任务[{}] 发送MQ消息: topic={}, payload={}", deviceId, topicName, JSONUtil.toJsonStr(acquisitionMessage));
         log.info("数据采集任务[{}] 完成", deviceId);
     }
+    public static ItemStatus fastParse(String json) {
+        ObjectReader<ItemStatus> reader = JSONFactory
+                .getDefaultObjectReaderProvider()
+                .getObjectReader(ItemStatus.class);
+        try (JSONReader jsonReader = JSONReader.of(json)) {
+            return reader.readObject(jsonReader);  // 这才是正确的用法
+        }
+    }
 
     private void scanAllDevices() {
 
@@ -174,21 +180,38 @@ public class CollectAggTask {
         if (CollUtil.isEmpty(serverDevicesMapping)) {
             return;
         }
+
+
         serverDevicesMapping.forEach((serverKey, deviceIds) -> {
+            if (CollUtil.isEmpty(deviceIds)) return;
             // 查询 服务key在当前时间的采集数据
             String hashKey = String.format(COLLECTOR_AGG_REALTIME_CACHE_KEY, serverKey, timestampStr);
-            Map<Object, Object> entries = redisTemplate.opsForHash().entries(hashKey);
-            Map<String, String> entryMap = entries.entrySet().stream()
-                    .collect(Collectors.toMap(e -> String.valueOf(e.getKey()), e -> String.valueOf(e.getValue())));
-            if (CollUtil.isEmpty(deviceIds)) return;
-            // 遍历设备id,匹配所有的设备id去获取自己的数据，
-            deviceIds.forEach(deviceId -> processSingleDevice(deviceId, entryMap, jobTime));
+
+            Map<String, String> rawEntries = stringRedisTemplate.<String, String>opsForHash().entries(hashKey);
+            if (CollUtil.isEmpty(rawEntries)) {
+                return;
+            }
+            Map<String, ItemStatus> entryMap = new HashMap<>(rawEntries.size());
+            for (Map.Entry<String, String> entry : rawEntries.entrySet()) {
+                ItemStatus status = fastParse(entry.getValue()); // 可用 Fastjson2/ObjectReader 缓存
+                entryMap.put(entry.getKey(), status);
+            }
+
             // 分批并发处理，每批最多200个设备
             int batchSize = 200;
             List<List<Long>> batches = CollUtil.split(deviceIds, batchSize);
 
             forkJoinPool.submit(() -> batches.parallelStream().forEach(batch -> {
-                batch.forEach(deviceId -> processSingleDevice(deviceId, entryMap, jobTime));
+                batch.forEach(deviceId -> {
+                    long start = System.currentTimeMillis();
+                    processSingleDevice(deviceId, entryMap, jobTime);
+                    long cost = System.currentTimeMillis() - start;
+                    if (cost > 500) {
+                        log.warn("处理台账 deviceId={} 耗时较高：{}ms", deviceId, cost);
+                    }
+                });
+
+
             })).join(); // 等待所有子任务完成
         });
 
