@@ -23,9 +23,9 @@ import java.util.stream.Collectors;
 @Component
 public class AcquisitionMessageBufferManager {
 
-    private static final int QUEUE_CAPACITY = 20000;
-    private static final int BATCH_SIZE = 64;
-    private static final int SEND_INTERVAL_SECONDS = 2;
+    private static final int QUEUE_CAPACITY = 50000;
+    private static final int BATCH_SIZE = 2000;
+    private static final int SEND_INTERVAL_SECONDS = 1;
 
     private final BlockingQueue<BufferedMessage> messageQueue = new LinkedBlockingQueue<>(QUEUE_CAPACITY);
 

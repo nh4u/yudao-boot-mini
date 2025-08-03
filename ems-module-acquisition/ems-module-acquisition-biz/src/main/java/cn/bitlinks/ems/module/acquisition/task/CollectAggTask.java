@@ -157,8 +157,7 @@ public class CollectAggTask {
             // 队列满，消息没能入队
             log.error("【AcquisitionMessageSender】消息入队失败，需要额外处理, topic:{}, 消息内容: {}", topicName, JSONUtil.toJsonStr(acquisitionMessage));
         }
-        log.info("数据采集任务[{}] 发送MQ消息: topic={}, payload={}", deviceId, topicName, JSONUtil.toJsonStr(acquisitionMessage));
-        log.info("数据采集任务[{}] 完成", deviceId);
+        //log.info("【AcquisitionMessageSender】消息成功，设备id[{}] ", deviceId);
     }
     public static ItemStatus fastParse(String json) {
         ObjectReader<ItemStatus> reader = JSONFactory
@@ -210,9 +209,7 @@ public class CollectAggTask {
                         log.warn("处理台账 deviceId={} 耗时较高：{}ms", deviceId, cost);
                     }
                 });
-
-
-            })).join(); // 等待所有子任务完成
+            }));
         });
 
     }
