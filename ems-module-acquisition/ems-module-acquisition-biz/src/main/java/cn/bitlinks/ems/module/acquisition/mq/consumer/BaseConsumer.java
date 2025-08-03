@@ -34,14 +34,13 @@ public class BaseConsumer implements MessageListenerConcurrently {
 
     @Override
     public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> msgs, ConsumeConcurrentlyContext context) {
-        log.info("🔥 BaseConsumer 触发消息消费，共收到 {} 条", msgs.size());
         long start = System.currentTimeMillis();
         for (MessageExt msg : msgs) {
 
             String jsonStr = new String(msg.getBody(), StandardCharsets.UTF_8);
 
             List<AcquisitionMessage> acquisitionMessages = JSONUtil.toList(jsonStr, AcquisitionMessage.class);
-            log.info("数据采集任务接收到mq消息：{}", JSONUtil.toJsonStr(acquisitionMessages));
+            log.info("数据采集任务接收到mq消息,共收到 {} 条", acquisitionMessages.size());
             for (AcquisitionMessage acquisitionMessage : acquisitionMessages) {
                 // 你原来的处理逻辑：计算 → 封装 → 调用 StarRocksStreamLoadService
                 try {
@@ -86,7 +85,7 @@ public class BaseConsumer implements MessageListenerConcurrently {
             }
         }
 
-        log.info("🔥 BaseConsumer 完成批次采集处理：{} 条，用时 {} ms", msgs.size(), System.currentTimeMillis() - start);
+        log.info("🔥 BaseConsumer 完成批次采集处理,用时 {} ms",System.currentTimeMillis() - start);
 
         return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
     }
