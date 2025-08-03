@@ -1,18 +1,18 @@
 package cn.bitlinks.ems.module.acquisition.task;
 
 import cn.bitlinks.ems.framework.common.core.StandingbookAcquisitionDetailDTO;
+import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
 import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.module.acquisition.mq.message.AcquisitionMessage;
 import cn.bitlinks.ems.module.acquisition.mq.producer.AcquisitionMessageBufferManager;
 import cn.bitlinks.ems.module.acquisition.service.collectrawdata.ServerDataService;
 import cn.bitlinks.ems.module.power.dto.DeviceCollectCacheDTO;
+import cn.bitlinks.ems.module.power.dto.ServerStandingbookCacheDTO;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSONObject;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -217,10 +217,13 @@ public class CollectAggTask {
             String cacheRes = StrUtils.decompressGzip(compressed);
             if (CharSequenceUtil.isNotEmpty(cacheRes)) {
                 // 用 Jackson 处理泛型转换
-                ObjectMapper objectMapper = new ObjectMapper();
-                return objectMapper.readValue(cacheRes,
-                        new TypeReference<Map<String, List<Long>>>() {
-                        });
+                // 用 Jackson 处理泛型转换
+                List<ServerStandingbookCacheDTO> serverStandingbookList = JsonUtils.parseArray(cacheRes, ServerStandingbookCacheDTO.class);
+                return serverStandingbookList.stream()
+                        .collect(Collectors.groupingBy(
+                                ServerStandingbookCacheDTO::getServerKey,
+                                Collectors.mapping(ServerStandingbookCacheDTO::getStandingbookId, Collectors.toList())
+                        ));
             }
         } catch (Exception e) {
             log.error("解析缓存的服务器设备id映射关系失败", e);
