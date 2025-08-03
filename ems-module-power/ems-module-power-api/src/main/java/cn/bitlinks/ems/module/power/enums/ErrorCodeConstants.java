@@ -169,7 +169,19 @@ public interface ErrorCodeConstants {
 
     // ========== COP参数设置  ==========
     ErrorCode COP_SETTINGS_NOT_EXISTS = new ErrorCode(1_001_102_001, "COP参数设置不存在");
-    ErrorCode STANDINGbOOK_REPEAT = new ErrorCode(1_001_102_002, "COP参数关联台账重复");
+    ErrorCode STANDINGBOOK_REPEAT = new ErrorCode(1_001_102_002, "COP参数关联台账重复");
     ErrorCode COP_SETTINGS_LIST_NOT_EXISTS = new ErrorCode(1_001_102_003, "COP参数list不存在");
-    ErrorCode COP_SETTINGS_STANDINGbOOK_NOT_EMPTY = new ErrorCode(1_001_102_003, "COP公式参数关联的台账不能为空");
+    ErrorCode COP_SETTINGS_STANDINGBOOK_NOT_EMPTY = new ErrorCode(1_001_102_003, "COP公式参数关联的台账不能为空");
+
+    // ========== COP参数设置  ==========
+
+    ErrorCode SUPPLY_ANALYSIS_STANDINGBOOK_REPEAT = new ErrorCode(1_001_102_010, "供应分析关联台账重复");
+    ErrorCode SUPPLY_ANALYSIS_SETTINGS_LIST_NOT_EXISTS = new ErrorCode(1_001_102_011, "供应分析list不存在");
+    ErrorCode SUPPLY_ANALYSIS_SETTINGS_STANDINGBOOK_NOT_EMPTY = new ErrorCode(1_001_102_012, "供应分析关联的台账不能为空");
+
+
+
+    // ========== 用能分析  ==========
+    ErrorCode UNIT_NOT_EMPTY = new ErrorCode(1_001_103_001, "单位不能为空");
+
 }

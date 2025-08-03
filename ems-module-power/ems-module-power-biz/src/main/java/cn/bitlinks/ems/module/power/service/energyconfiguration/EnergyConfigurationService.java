@@ -112,4 +112,6 @@ public interface EnergyConfigurationService {
     List<EnergyConfigurationDO> getPureByEnergyClassify(Set<Long> energyIds, Integer energyClassify);
 
     List<EnergyConfigurationDO> getByEnergyClassify(Integer energyClassify);
+
+    List<EnergyConfigurationDO> getByEnergyGroup(Long energyGroup);
 }

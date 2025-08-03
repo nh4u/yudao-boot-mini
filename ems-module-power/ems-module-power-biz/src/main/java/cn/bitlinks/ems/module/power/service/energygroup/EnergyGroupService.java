@@ -74,4 +74,12 @@ public interface EnergyGroupService {
      * @return
      */
     List<EnergyGroupRespVO>  getEnergyGroups();
+
+    /**
+     * 获得能源分组
+     *
+     * @param groupName 名称
+     * @return 能源分组
+     */
+    EnergyGroupDO getEnergyGroup(String groupName);
 }

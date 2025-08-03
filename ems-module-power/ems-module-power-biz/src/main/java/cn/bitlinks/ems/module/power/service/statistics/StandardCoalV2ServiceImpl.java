@@ -17,10 +17,14 @@ import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.util.ListUtils;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -36,15 +40,16 @@ import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.LABEL_NAME_PREFIX;
+import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_STANDARD_COAL_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_STANDARD_COAL_TABLE;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
 /**
- * @Title: ydme-doublecarbon
+ * @Title: ydme-ems
  * @description:
  * @Author: Mingqiang LIU
  * @Date 2025/05/14 17:10
@@ -86,7 +91,15 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
-            return JSONUtil.toBean(cacheRes, StatisticsResultV2VO.class);
+            // 泛型放缓存避免强转问题
+            // 方式一
+//            StatisticsResultV2VO<StandardCoalInfo>  resultV2VO = JSONUtil.toBean(cacheRes, StatisticsResultV2VO.class);
+//            List<StandardCoalInfo> standardCoalInfos = JSONUtil.toList(resultV2VO.getStatisticsInfoList().toString(), StandardCoalInfo.class);
+//            resultV2VO.setStatisticsInfoList(standardCoalInfos);
+            // 方式二
+            return JSON.parseObject(cacheRes, new TypeReference<StatisticsResultV2VO<StandardCoalInfo>>() {
+            });
+
         }
 
         // 4.如果没有则去数据库查询
@@ -490,41 +503,239 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         // 2.时间处理
         LocalDateTime startTime = range[0];
         LocalDateTime endTime = range[1];
-
+        // 验证单位
+        Integer unit = paramVO.getUnit();
+        validateUnit(unit);
+        // 表头数据
         List<List<String>> list = ListUtils.newArrayList();
-        // 标签处理 能源处理
-        list.add(Arrays.asList("标签1", "标签1"));
-        list.add(Arrays.asList("能源", "能源"));
+        // 统计周期
+        String strTime = getFormatTime(startTime) + "~" + getFormatTime(endTime);
+
+        // 统计标签
+        String topLabel = paramVO.getTopLabel();
+        String childLabels = paramVO.getChildLabels();
+        String labelName = getLabelName(topLabel, childLabels);
+        Integer labelDeep = getLabelDeep(childLabels);
+        // 表单名称
+        Integer queryType = paramVO.getQueryType();
+        String sheetName;
+        switch (queryType) {
+            case 0:
+                // 综合
+                sheetName = STANDARD_COAL_ALL;
+                list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "标签", "标签"));
+                for (int i = 2; i <= labelDeep; i++) {
+                    String subLabel = "标签" + i;
+                    list.add(Arrays.asList(sheetName, labelName, strTime, subLabel, subLabel));
+                }
+                list.add(Arrays.asList(sheetName, labelName, strTime, "能源", "能源"));
+                break;
+            case 1:
+                // 按能源
+                sheetName = STANDARD_COAL_ENERGY;
+                list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "能源", "能源"));
+                break;
+            case 2:
+                // 按标签
+                sheetName = STANDARD_COAL_LABEL;
+                list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "标签", "标签"));
+                for (int i = 2; i <= labelDeep; i++) {
+                    String subLabel = "标签" + i;
+                    list.add(Arrays.asList(sheetName, labelName, strTime, subLabel, subLabel));
+                }
+                break;
+            default:
+                sheetName = DEFAULT;
+        }
+
         // 月份数据处理
         DataTypeEnum dataTypeEnum = validateDateType(paramVO.getDateType());
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, dataTypeEnum);
 
         xdata.forEach(x -> {
-            list.add(Arrays.asList(x, "用量"));
-            list.add(Arrays.asList(x, "折标煤"));
+            list.add(Arrays.asList(sheetName, labelName, strTime, x, "用量"));
+            list.add(Arrays.asList(sheetName, labelName, strTime, x, getHeaderDesc(unit, 1, "折标煤")));
         });
 
         // 周期合计
-        list.add(Arrays.asList("周期合计", "用量"));
-        list.add(Arrays.asList("周期合计", "折标煤"));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "用量"));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", getHeaderDesc(unit, 1, "折标煤")));
         return list;
 
     }
 
+    private String getLabelName(String topLabel, String childLabels) {
+
+        // 一级标签
+        Long topLabelId = Long.valueOf(topLabel.substring(topLabel.indexOf("_") + 1));
+
+        // 下级标签
+        List<String> childLabelValues = StrSplitter.split(childLabels, "#", 0, true, true);
+        List<Long> labelIds = childLabelValues.stream()
+                .map(c -> StrSplitter.split(c, ",", 0, true, true))
+                .flatMap(List::stream)
+                .map(Long::valueOf)
+                .distinct()
+                .collect(Collectors.toList());
+
+        labelIds.add(topLabelId);
+
+        // 获取标签数据
+        List<LabelConfigDO> labels = labelConfigService.getByIds(labelIds);
+
+        return labels.stream().map(LabelConfigDO::getLabelName).collect(Collectors.joining("、"));
+    }
+
     @Override
-    public List<List<Object>> getExcelData(StatisticsParamV2VO pageReqVO) {
+    public List<List<Object>> getExcelData(StatisticsParamV2VO paramVO) {
+        // 验证单位
+        Integer unit = paramVO.getUnit();
         // 结果list
         List<List<Object>> result = ListUtils.newArrayList();
-        List<Object> data = ListUtils.newArrayList();
-        data.add("每月合计");
-        data.add("每月合计");
-        data.add("/");
-        data.add(32232.33);
-        data.add("/");
-        data.add(32232.33);
-        result.add(data);
+        StatisticsResultV2VO<StandardCoalInfo> resultVO = standardCoalAnalysisTable(paramVO);
+        List<String> tableHeader = resultVO.getHeader();
+
+        List<StandardCoalInfo> statisticsInfoList = resultVO.getStatisticsInfoList();
+        String childLabels = paramVO.getChildLabels();
+        Integer labelDeep = getLabelDeep(childLabels);
+
+        Integer queryType = paramVO.getQueryType();
+
+        // 底部合计map
+        Map<String, BigDecimal> sumStandardCoatMap = new HashMap<>();
+
+        for (StandardCoalInfo s : statisticsInfoList) {
+
+            List<Object> data = ListUtils.newArrayList();
+            String[] labels = {s.getLabel1(), s.getLabel2(), s.getLabel3(), s.getLabel4(), s.getLabel5()};
+            switch (queryType) {
+                case 0:
+                    // 综合
+                    // 处理标签
+                    for (int i = 0; i < labelDeep; i++) {
+                        data.add(labels[i]);
+                    }
+                    // 处理能源
+                    data.add(s.getEnergyName());
+                    break;
+                case 1:
+                    // 按能源
+                    data.add(s.getEnergyName());
+                    break;
+                case 2:
+                    // 按标签
+                    // 处理标签
+                    for (int i = 0; i < labelDeep; i++) {
+                        data.add(labels[i]);
+                    }
+                    break;
+                default:
+            }
+
+            // 处理数据
+            List<StandardCoalInfoData> standardCoalInfoDataList = s.getStandardCoalInfoDataList();
+
+            Map<String, StandardCoalInfoData> dateMap = standardCoalInfoDataList.stream()
+                    .collect(Collectors.toMap(StandardCoalInfoData::getDate, Function.identity()));
+
+            tableHeader.forEach(date -> {
+                StandardCoalInfoData standardCoalInfoData = dateMap.get(date);
+                if (standardCoalInfoData == null) {
+                    data.add("/");
+                    data.add("/");
+                } else {
+                    BigDecimal consumption = standardCoalInfoData.getConsumption();
+                    BigDecimal standardCoal = standardCoalInfoData.getStandardCoal();
+                    data.add(getConvertData(consumption));
+                    data.add(getConvertData(unit, 1, standardCoal));
+
+                    // 底部合计处理
+                    sumStandardCoatMap.put(date, addBigDecimal(sumStandardCoatMap.get(date), standardCoal));
+                }
+
+            });
+
+            BigDecimal sumEnergyConsumption = s.getSumEnergyConsumption();
+            BigDecimal sumEnergyStandardCoal = s.getSumEnergyStandardCoal();
+            // 处理周期合计
+            data.add(getConvertData(sumEnergyConsumption));
+            data.add(getConvertData(unit, 1, sumEnergyStandardCoal));
+
+            // 处理底部合计
+            sumStandardCoatMap.put("sumNum", addBigDecimal(sumStandardCoatMap.get("sumNum"), sumEnergyStandardCoal));
+
+            result.add(data);
+        }
+
+        // 添加底部合计数据
+        List<Object> bottom = ListUtils.newArrayList();
+        // "时间类型 0：日；1：月；2：年；3：时。
+        String pre = "";
+        Integer dateType = paramVO.getDateType();
+        switch (dateType) {
+            case 0:
+                pre = DAILY_STATISTICS;
+                break;
+            case 1:
+                pre = MONTHLY_STATISTICS;
+                break;
+            case 2:
+                pre = ANNUAL_STATISTICS;
+                break;
+            default:
+                break;
+        }
+
+
+        switch (queryType) {
+            case 0:
+                // 综合
+                // 底部标签位
+                for (int i = 0; i < labelDeep; i++) {
+                    bottom.add(pre);
+                }
+                // 底部能源位
+                bottom.add(pre);
+                break;
+            case 1:
+                // 按能源
+                // 底部能源位
+                bottom.add(pre);
+                break;
+            case 2:
+                // 按标签
+                // 底部标签位
+                for (int i = 0; i < labelDeep; i++) {
+                    bottom.add(pre);
+                }
+                break;
+            default:
+        }
+
+        // 底部数据位
+        tableHeader.forEach(date -> {
+
+            // 用量
+            bottom.add("/");
+
+            // 标准煤
+            BigDecimal standardCoat = sumStandardCoatMap.get(date);
+            bottom.add(getConvertData(unit, 1, standardCoat));
+
+        });
+
+        // 底部周期合计
+        // 用量
+        bottom.add("/");
+
+        // 标准煤
+        BigDecimal standardCoat = sumStandardCoatMap.get("sumNum");
+        bottom.add(getConvertData(unit, 1, standardCoat));
+        result.add(bottom);
+
         return result;
     }
+
 
     public List<StandardCoalInfo> queryDefault(String topLabel,
                                                String childLabels,
@@ -1088,4 +1299,9 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         return dataTypeEnum;
     }
 
+    private void validateUnit(Integer unit) {
+        if (Objects.isNull(unit)) {
+            throw exception(UNIT_NOT_EMPTY);
+        }
+    }
 }

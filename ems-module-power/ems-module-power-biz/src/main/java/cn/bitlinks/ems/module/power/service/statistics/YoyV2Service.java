@@ -4,6 +4,8 @@ import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.ComparisonCha
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
 
+import java.util.List;
+
 /**
  * 用能分析 同比分析 Service 接口
  *
@@ -38,4 +40,8 @@ public interface YoyV2Service {
      * @return
      */
     ComparisonChartResultVO foldCoalAnalysisChart(StatisticsParamV2VO paramVO);
+
+    List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO, Integer flag);
+
+    List<List<Object>> getExcelData(StatisticsParamV2VO paramVO, Integer flag);
 }

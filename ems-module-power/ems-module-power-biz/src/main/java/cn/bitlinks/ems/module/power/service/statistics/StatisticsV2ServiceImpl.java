@@ -17,9 +17,13 @@ import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
+import com.alibaba.excel.util.ListUtils;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -35,12 +39,14 @@ import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.LABEL_NAME_PREFIX;
+import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.DEFAULT;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_TABLE;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
 /**
  * 用能分析 Service 实现类
@@ -97,7 +103,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
-            return JSONUtil.toBean(cacheRes, StatisticsResultV2VO.class);
+            return JSON.parseObject(cacheRes, new TypeReference<StatisticsResultV2VO<StatisticsInfoV2>>() {});
         }
 
         // 表头处理
@@ -908,4 +914,289 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
 
     }
 
+    @Override
+    public List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO) {
+
+        // 1.校验时间范围
+        LocalDateTime[] range = validateRange(paramVO.getRange());
+        // 2.时间处理
+        LocalDateTime startTime = range[0];
+        LocalDateTime endTime = range[1];
+        // 验证单位
+        Integer unit = paramVO.getUnit();
+        validateUnit(unit);
+        // 表头数据
+        List<List<String>> list = ListUtils.newArrayList();
+        // 统计周期
+        String strTime = getFormatTime(startTime) + "~" + getFormatTime(endTime);
+
+        // 统计标签
+        String topLabel = paramVO.getTopLabel();
+        String childLabels = paramVO.getChildLabels();
+        String labelName = getLabelName(topLabel, childLabels);
+        Integer labelDeep = getLabelDeep(childLabels);
+        // 表单名称
+        Integer queryType = paramVO.getQueryType();
+        String sheetName;
+        switch (queryType) {
+            case 0:
+                // 综合
+                sheetName = COST_ALL;
+                list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "标签", "标签"));
+                for (int i = 2; i <= labelDeep; i++) {
+                    String subLabel = "标签" + i;
+                    list.add(Arrays.asList(sheetName, labelName, strTime, subLabel, subLabel));
+                }
+                list.add(Arrays.asList(sheetName, labelName, strTime, "能源", "能源"));
+                break;
+            case 1:
+                // 按能源
+                sheetName = COST_ENERGY;
+                list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "能源", "能源"));
+                break;
+            case 2:
+                // 按标签
+                sheetName = COST_LABEL;
+                list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "标签", "标签"));
+                for (int i = 2; i <= labelDeep; i++) {
+                    String subLabel = "标签" + i;
+                    list.add(Arrays.asList(sheetName, labelName, strTime, subLabel, subLabel));
+                }
+                break;
+            default:
+                sheetName = DEFAULT;
+        }
+
+        // 月份数据处理
+        DataTypeEnum dataTypeEnum = validateDateType(paramVO.getDateType());
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, dataTypeEnum);
+
+        xdata.forEach(x -> {
+            list.add(Arrays.asList(sheetName, labelName, strTime, x, "用量"));
+            list.add(Arrays.asList(sheetName, labelName, strTime, x, getHeaderDesc(unit, 2, "用能成本")));
+        });
+
+        // 周期合计
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "用量"));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", getHeaderDesc(unit, 2, "用能成本")));
+        return list;
+
+    }
+
+    private String getLabelName(String topLabel, String childLabels) {
+
+        // 一级标签
+        Long topLabelId = Long.valueOf(topLabel.substring(topLabel.indexOf("_") + 1));
+
+        // 下级标签
+        List<String> childLabelValues = StrSplitter.split(childLabels, "#", 0, true, true);
+        List<Long> labelIds = childLabelValues.stream()
+                .map(c -> StrSplitter.split(c, ",", 0, true, true))
+                .flatMap(List::stream)
+                .map(Long::valueOf)
+                .distinct()
+                .collect(Collectors.toList());
+
+        labelIds.add(topLabelId);
+
+        // 获取标签数据
+        List<LabelConfigDO> labels = labelConfigService.getByIds(labelIds);
+
+        return labels.stream().map(LabelConfigDO::getLabelName).collect(Collectors.joining("、"));
+    }
+
+    @Override
+    public List<List<Object>> getExcelData(StatisticsParamV2VO paramVO) {
+
+        // 验证单位
+        Integer unit = paramVO.getUnit();
+
+        // 结果list
+        List<List<Object>> result = ListUtils.newArrayList();
+        StatisticsResultV2VO<StatisticsInfoV2> resultVO = moneyAnalysisTable(paramVO);
+        List<String> tableHeader = resultVO.getHeader();
+
+        List<StatisticsInfoV2> statisticsInfoList = resultVO.getStatisticsInfoList();
+        String childLabels = paramVO.getChildLabels();
+        Integer labelDeep = getLabelDeep(childLabels);
+
+        Integer queryType = paramVO.getQueryType();
+
+        // 底部合计map
+        Map<String, BigDecimal> sumCostMap = new HashMap<>();
+
+        for (StatisticsInfoV2 s : statisticsInfoList) {
+
+            List<Object> data = ListUtils.newArrayList();
+            String[] labels = {s.getLabel1(), s.getLabel2(), s.getLabel3(), s.getLabel4(), s.getLabel5()};
+            switch (queryType) {
+                case 0:
+                    // 综合
+                    // 处理标签
+                    for (int i = 0; i < labelDeep; i++) {
+                        data.add(labels[i]);
+                    }
+                    // 处理能源
+                    data.add(s.getEnergyName());
+                    break;
+                case 1:
+                    // 按能源
+                    data.add(s.getEnergyName());
+                    break;
+                case 2:
+                    // 按标签
+                    // 处理标签
+                    for (int i = 0; i < labelDeep; i++) {
+                        data.add(labels[i]);
+                    }
+                    break;
+                default:
+            }
+
+            // 处理数据
+            List<StatisticInfoDataV2> statisticInfoDataV2List = s.getStatisticsDateDataList();
+
+            Map<String, StatisticInfoDataV2> dateMap = statisticInfoDataV2List.stream()
+                    .collect(Collectors.toMap(StatisticInfoDataV2::getDate, Function.identity()));
+
+            tableHeader.forEach(date -> {
+                StatisticInfoDataV2 statisticInfoDataV2 = dateMap.get(date);
+                if (statisticInfoDataV2 == null) {
+                    data.add("/");
+                    data.add("/");
+                } else {
+                    BigDecimal consumption = statisticInfoDataV2.getConsumption();
+                    BigDecimal cost = statisticInfoDataV2.getMoney();
+                    data.add(getConvertData(consumption));
+                    data.add(getConvertData(unit, 2, cost));
+
+                    // 底部合计处理
+                    sumCostMap.put(date, addBigDecimal(sumCostMap.get(date), cost));
+                }
+
+            });
+
+            BigDecimal sumEnergyConsumption = s.getSumEnergyConsumption();
+            BigDecimal sumCost = s.getSumEnergyMoney();
+            // 处理周期合计
+            data.add(getConvertData(sumEnergyConsumption));
+            data.add(getConvertData(unit, 2, sumCost));
+
+            // 处理底部合计
+            sumCostMap.put("sumNum", addBigDecimal(sumCostMap.get("sumNum"), sumCost));
+
+            result.add(data);
+        }
+
+        // 添加底部合计数据
+        List<Object> bottom = ListUtils.newArrayList();
+        // "时间类型 0：日；1：月；2：年；3：时。
+        String pre = "";
+        Integer dateType = paramVO.getDateType();
+        switch (dateType) {
+            case 0:
+                pre = DAILY_STATISTICS;
+                break;
+            case 1:
+                pre = MONTHLY_STATISTICS;
+                break;
+            case 2:
+                pre = ANNUAL_STATISTICS;
+                break;
+            default:
+                break;
+        }
+
+
+        switch (queryType) {
+            case 0:
+                // 综合
+                // 底部标签位
+                for (int i = 0; i < labelDeep; i++) {
+                    bottom.add(pre);
+                }
+                // 底部能源位
+                bottom.add(pre);
+                break;
+            case 1:
+                // 按能源
+                // 底部能源位
+                bottom.add(pre);
+                break;
+            case 2:
+                // 按标签
+                // 底部标签位
+                for (int i = 0; i < labelDeep; i++) {
+                    bottom.add(pre);
+                }
+                break;
+            default:
+        }
+
+        // 底部数据位
+        tableHeader.forEach(date -> {
+
+            // 用量
+            bottom.add("/");
+
+            // 折价
+            BigDecimal cost = sumCostMap.get(date);
+            bottom.add(getConvertData(unit, 2, cost));
+
+        });
+
+        // 底部周期合计
+        // 用量
+        bottom.add("/");
+
+        // 折价
+        BigDecimal cost = sumCostMap.get("sumNum");
+        bottom.add(getConvertData(unit, 2, cost));
+        result.add(bottom);
+
+        return result;
+    }
+
+    /**
+     * 校验时间范围
+     *
+     * @param rangeOrigin
+     * @return
+     */
+    private LocalDateTime[] validateRange(LocalDateTime[] rangeOrigin) {
+        // 1.校验时间范围
+        // 1.1.校验结束时间必须大于开始时间
+        LocalDateTime startTime = rangeOrigin[0];
+        LocalDateTime endTime = rangeOrigin[1];
+        if (!startTime.isBefore(endTime)) {
+            throw exception(END_TIME_MUST_AFTER_START_TIME);
+        }
+        // 时间不能相差1年
+        if (!LocalDateTimeUtils.isWithinDays(startTime, endTime, CommonConstants.YEAR)) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        return rangeOrigin;
+    }
+
+    /**
+     * 校验时间类型
+     *
+     * @param dateType
+     */
+    private DataTypeEnum validateDateType(Integer dateType) {
+        DataTypeEnum dataTypeEnum = DataTypeEnum.codeOf(dateType);
+        // 时间类型不存在
+        if (Objects.isNull(dataTypeEnum)) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        return dataTypeEnum;
+    }
+
+    private void validateUnit(Integer unit) {
+        if (Objects.isNull(unit)) {
+            throw exception(UNIT_NOT_EMPTY);
+        }
+    }
 }
