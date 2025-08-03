@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -31,8 +30,6 @@ import java.util.List;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
-import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
-import static cn.bitlinks.ems.module.power.enums.ExportConstants.XLSX;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.getLabelDeep;
 
 @Tag(name = "管理后台-个性化报表-电量分布")
@@ -65,26 +62,8 @@ public class ElectricityConsumptionController {
         Integer labelDeep = getLabelDeep(childLabels);
         Integer mergeIndex = 0;
         // 文件名字处理
-        Integer queryType = paramVO.getQueryType();
-        String filename = "";
-        switch (queryType) {
-            case 0:
-                filename = COST_STRUCTURE_ALL + XLSX;
-                mergeIndex = labelDeep;
-                break;
-            case 1:
-                filename = COST_STRUCTURE_ENERGY + XLSX;
-                // 能源不需要合并
-                mergeIndex = 0;
-                break;
-            case 2:
-                filename = COST_STRUCTURE_LABEL + XLSX;
-                // 标签没有能源
-                mergeIndex = labelDeep - 1;
-                break;
-            default:
-                filename = DEFAULT + XLSX;
-        }
+        String filename = "用电量分布.xlsx";
+
 
         List<List<String>> header = electricityConsumptionService.getExcelHeader(paramVO);
         List<List<Object>> dataList = electricityConsumptionService.getExcelData(paramVO);
@@ -94,6 +73,7 @@ public class ElectricityConsumptionController {
         // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
         response.setContentType("application/vnd.ms-excel;charset=UTF-8");
+        response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
 
         WriteCellStyle headerStyle = new WriteCellStyle();
         // 设置水平居中对齐
