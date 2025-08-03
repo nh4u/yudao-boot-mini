@@ -16,8 +16,10 @@ import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -41,7 +43,8 @@ import static cn.bitlinks.ems.module.power.enums.RedisKeyConstants.STANDING_BOOK
 @Component
 public class CollectAggTask {
 
-
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
     @Resource
     private ServerDataService serverDataService;
     @Resource
@@ -106,7 +109,7 @@ public class CollectAggTask {
         }
     }
 
-    private void processSingleDevice(Long deviceId, Map<String, String> entryMap, LocalDateTime jobTime) {
+    private void processSingleDevice(Long deviceId, Map<String, ItemStatus> entryMap, LocalDateTime jobTime) {
         // 查询redis中设备id对应的数采配置
         String sbConfigKey = String.format(STANDING_BOOK_ACQ_CONFIG_PREFIX, deviceId);
         String deviceAcqConfigStr = redisTemplate.opsForValue().get(sbConfigKey);
@@ -131,18 +134,6 @@ public class CollectAggTask {
         // 筛选匹配 dataSites 的数据
         Map<String, ItemStatus> filteredMap = entryMap.entrySet().stream()
                 .filter(entry -> dataSitesSet.contains(entry.getKey()))
-                .map(entry -> {
-                    ItemStatus itemStatus = JSONObject.parseObject(entry.getValue(), ItemStatus.class);
-                    if (itemStatus != null) {
-                        Map<String, ItemStatus> singleEntry = new HashMap<>();
-                        singleEntry.put(entry.getKey(), itemStatus);
-                        return singleEntry;
-                    } else {
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .flatMap(map -> map.entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         // 构造消息对象
         AcquisitionMessage acquisitionMessage = new AcquisitionMessage();
@@ -175,14 +166,20 @@ public class CollectAggTask {
             return;
         }
         serverDevicesMapping.forEach((serverKey, deviceIds) -> {
+            if (CollUtil.isEmpty(deviceIds)) return;
             // 查询 服务key在当前时间的采集数据
             String hashKey = String.format(COLLECTOR_AGG_REALTIME_CACHE_KEY, serverKey, timestampStr);
-            Map<Object, Object> entries = redisTemplate.opsForHash().entries(hashKey);
-            Map<String, String> entryMap = entries.entrySet().stream()
-                    .collect(Collectors.toMap(e -> String.valueOf(e.getKey()), e -> String.valueOf(e.getValue())));
-            if (CollUtil.isEmpty(deviceIds)) return;
-            // 遍历设备id,匹配所有的设备id去获取自己的数据，
-            deviceIds.forEach(deviceId -> processSingleDevice(deviceId, entryMap, jobTime));
+
+            Map<String, String> rawEntries = stringRedisTemplate.<String, String>opsForHash().entries(hashKey);
+            if (CollUtil.isEmpty(rawEntries)) {
+                return;
+            }
+            Map<String, ItemStatus> entryMap = rawEntries.entrySet().stream()
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            e -> JSONObject.parseObject(e.getValue(), ItemStatus.class)
+                    ));
+
             // 分批并发处理，每批最多200个设备
             int batchSize = 200;
             List<List<Long>> batches = CollUtil.split(deviceIds, batchSize);

@@ -94,8 +94,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             StandingbookAcquisitionDO standingbookAcquisition = BeanUtils.toBean(updateReqVO, StandingbookAcquisitionDO.class);
             standingbookAcquisitionMapper.insert(standingbookAcquisition);
             // 1.2 添加数采设置详情
-//            List<StandingbookAcquisitionDetailVO> detailVOS =
-//                    updateReqVO.getDetails();
+
             if (CollUtil.isEmpty(detailVOS)) {
                 // 返回
                 return standingbookAcquisition.getId();
@@ -168,7 +167,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             return;
         }
         // 获取启用的数采参数
-        List<StandingbookAcquisitionDetailVO> enabledDetails = detailVOS.stream().filter(a -> !a.getStatus()).collect(Collectors.toList());
+        List<StandingbookAcquisitionDetailVO> enabledDetails = detailVOS.stream().filter(a -> a.getStatus()).collect(Collectors.toList());
         if (CollUtil.isEmpty(enabledDetails)) {
             // 删除此设备映射
             deleteRedisAcqConfigByStandingbookIds(updateReqVO.getStandingbookId());
@@ -185,8 +184,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         String acqConfig = JsonUtils.toJsonString(deviceCollectCacheDTO);
         // 3. 存入 Redis（使用 JSON 序列化方式，推荐）
         redisTemplate.opsForValue().set(sbConfigKey, acqConfig);
-        // 4. 存入 Redis Set（用于快速查询）
-        redisTemplate.opsForSet().add(STANDING_BOOK_ACQ_CONFIG_KEY_SET, sbConfigKey); // 把当前的 redisKey 加进去
+
 
         // ✅ 日志记录（可选）
         log.info("采集配置写入Redis成功，key={}, config={}", sbConfigKey, acqConfig);
@@ -430,7 +428,6 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
     private void deleteRedisAcqConfigByStandingbookIds(Long standingbookId) {
         String redisKey = String.format(STANDING_BOOK_ACQ_CONFIG_PREFIX, standingbookId);
         redisTemplate.delete(redisKey);
-        redisTemplate.opsForSet().remove(STANDING_BOOK_ACQ_CONFIG_KEY_SET, redisKey);
 
         // 刷新连接配置缓存
         refreshServerDataSiteMapping();
@@ -449,8 +446,6 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         }
 
         redisTemplate.delete(keysToDelete);
-        redisTemplate.opsForSet().remove(STANDING_BOOK_ACQ_CONFIG_KEY_SET, keysToDelete.toArray());
-
         // 刷新连接配置缓存
         refreshServerDataSiteMapping();
 
