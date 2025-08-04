@@ -92,6 +92,8 @@ public interface ExportConstants {
     String SUPPLY_ANALYSIS  = "供应分析表";
     String STATISTICS_FEE  = "电费统计表";
 
+    String WATER_STATISTICS = "水科报表";
+
     // 用电量统计
 
     String CONSUMPTION_STATISTICS_ALL = "用电量统计明细报表（整体）";
