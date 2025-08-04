@@ -49,5 +49,11 @@ public class StatisticsCacheConstants {
      * 电费统计
      */
     public static final String USAGE_FEE_TABLE = "report:usage:fee:table:";
+    public static final String USAGE_FEE_CHART = "report:usage:fee:chart:";
 
+    /**
+     * 水科
+     */
+    public static final String WATER_TABLE = "report:usage:water:table:";
+    public static final String WATER_CHART = "report:usage:water:chart:";
 }
