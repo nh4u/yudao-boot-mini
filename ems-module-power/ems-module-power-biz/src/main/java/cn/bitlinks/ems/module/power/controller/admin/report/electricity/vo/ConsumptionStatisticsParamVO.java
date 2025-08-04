@@ -39,7 +39,6 @@ public class ConsumptionStatisticsParamVO {
     private List<Long> energyIds;
 
     @Schema(description = "查看类型 0：综合查看；1：按能源查看；2：按标签查看。 默认0")
-    @NotNull(message = "查看类型不能为空")
     private Integer queryType;
 
     //
@@ -48,7 +47,6 @@ public class ConsumptionStatisticsParamVO {
     private Integer dateType;
 
     @Schema(description = "能源类型 1：外购能源；2：园区能源。")
-    @NotNull(message = "能源类型不能为空")
     private Integer energyClassify;
 
     @Override

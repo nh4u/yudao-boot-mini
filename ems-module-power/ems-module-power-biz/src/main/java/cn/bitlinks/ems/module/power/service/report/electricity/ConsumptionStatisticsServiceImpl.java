@@ -1,8 +1,7 @@
 package cn.bitlinks.ems.module.power.service.report.electricity;
 
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
-import cn.bitlinks.ems.framework.common.pojo.StatsResult;
-import cn.bitlinks.ems.framework.common.util.calc.CalculateUtil;
+import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.*;
@@ -41,13 +40,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ConsumptionStatisticsCacheConstants.ELECTRICITY_CONSUMPTION_STATISTICS_CHART;
 import static cn.bitlinks.ems.module.power.enums.ConsumptionStatisticsCacheConstants.ELECTRICITY_CONSUMPTION_STATISTICS_TABLE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
-import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_CHART;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
 /**
@@ -84,7 +82,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
     @Override
     public ConsumptionStatisticsResultVO<ConsumptionStatisticsInfo> consumptionStatisticsTable(ConsumptionStatisticsParamVO paramVO) {
-
+        paramVO.setQueryType(QueryDimensionEnum.OVERALL_REVIEW.getCode());
         // 校验时间范围是否存在
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         LocalDateTime startTime = rangeOrigin[0];
@@ -97,7 +95,6 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
             throw exception(DATE_RANGE_EXCEED_LIMIT);
         }
 
-        Integer queryType = paramVO.getQueryType();
         DataTypeEnum dataTypeEnum = DataTypeEnum.codeOf(paramVO.getDateType());
         //时间类型不存在
         if (Objects.isNull(dataTypeEnum)) {
@@ -678,7 +675,8 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
      * @param paramVO
      */
     @Override
-    public ConsumptionStatisticsChartResultVO consumptionStatisticsChart(ConsumptionStatisticsParamVO paramVO) {
+    public ConsumptionStatisticsChartResultVO<ConsumptionStatisticsInfo> consumptionStatisticsChart(ConsumptionStatisticsParamVO paramVO) {
+        paramVO.setQueryType(QueryDimensionEnum.OVERALL_REVIEW.getCode());
         // 校验时间范围是否存在
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         LocalDateTime startTime = rangeOrigin[0];
@@ -696,100 +694,104 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
         if (Objects.isNull(dataTypeEnum)) {
             throw exception(DATE_TYPE_NOT_EXISTS);
         }
-        String cacheKey = USAGE_COST_CHART + SecureUtil.md5(paramVO.toString());
+        String cacheKey = ELECTRICITY_CONSUMPTION_STATISTICS_CHART + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
-            return JSONUtil.toBean(cacheRes, ConsumptionStatisticsChartResultVO.class);
+            return JSON.parseObject(cacheRes, new TypeReference<ConsumptionStatisticsChartResultVO<ConsumptionStatisticsInfo>>() {});
         }
 
+        // x轴处理
+        List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], dataTypeEnum);
+        ConsumptionStatisticsChartResultVO<ConsumptionStatisticsInfo> resultVO = new ConsumptionStatisticsChartResultVO<>();
+        resultVO.setXdata(tableHeader);
 
         // 能源列表--只需要查找电力的能源
         // name为“电力”且deleted为0的能源分组，取其id值
         EnergyGroupDO energyGroup = energyGroupService.getEnergyGroup("电力");
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyGroup(energyGroup.getId());
-        ConsumptionStatisticsChartResultVO resultV2VO = new ConsumptionStatisticsChartResultVO();
         if (CollUtil.isEmpty(energyList)) {
-            resultV2VO.setDataTime(LocalDateTime.now());
-            return resultV2VO;
+            resultVO.setDataTime(LocalDateTime.now());
+            return resultVO;
         }
         //能源ID energyIds
         List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
 
+        List<Long> standingBookIds = new ArrayList<>();
 
         //根据能源查询台账
         List<StandingbookDO> standingbookIdsByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIds);
 
         //根据标签查询
         List<Long> standingBookIdList = standingbookIdsByEnergy.stream().map(StandingbookDO::getId).collect(Collectors.toList());
-        List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByLabel(paramVO.getTopLabel(), paramVO.getChildLabels(), standingBookIdList);
 
-        List<Long> standingBookIds = new ArrayList<>();
+        String topLabel = paramVO.getTopLabel();
+        String childLabels = paramVO.getChildLabels();
+        List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByLabel(topLabel, childLabels);
+
         if (CollUtil.isNotEmpty(standingbookIdsByLabel)) {
             List<Long> sids = standingbookIdsByLabel.stream().map(StandingbookLabelInfoDO::getStandingbookId).collect(Collectors.toList());
             List<StandingbookDO> collect = standingbookIdsByEnergy.stream().filter(s -> sids.contains(s.getId())).collect(Collectors.toList());
             //能源管理计量器具，标签可能关联重点设备，当不存在交集时，则无需查询
             if (ArrayUtil.isEmpty(collect)) {
-                resultV2VO.setDataTime(LocalDateTime.now());
-                return resultV2VO;
+                resultVO.setDataTime(LocalDateTime.now());
+                return resultVO;
             }
             List<Long> collect1 = collect.stream().map(StandingbookDO::getId).collect(Collectors.toList());
             standingBookIds.addAll(collect1);
         } else {
-            List<Long> collect = standingbookIdsByEnergy.stream().map(StandingbookDO::getId).collect(Collectors.toList());
-            standingBookIds.addAll(collect);
+            standingBookIds.addAll(standingBookIdList);
         }
-
-
         if (CollUtil.isEmpty(standingBookIds)) {
-            resultV2VO.setDataTime(LocalDateTime.now());
-            return resultV2VO;
+            resultVO.setDataTime(LocalDateTime.now());
+            return resultVO;
         }
-        Integer queryType = paramVO.getQueryType();
 
         //能源参数
         //根据台账ID查询用量跟成本
         List<UsageCostData> usageCostDataList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
         LocalDateTime lastTime = usageCostService.getLastTime(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
 
+        List<ConsumptionStatisticsInfo> statisticsInfoList = new ArrayList<>();
+        // 0、综合查看（默认）
+        List<ConsumptionStatisticsInfo> statisticsInfoV2s = queryDefault(topLabel, childLabels, standingbookIdsByLabel, usageCostDataList);
+        statisticsInfoList.addAll(statisticsInfoV2s);
+        resultVO.setYdata(statisticsInfoList);
 
-        // x轴
-        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], dataTypeEnum);
-        resultV2VO.setXdata(xdata);
+        // 无数据的填充0
+        statisticsInfoList.forEach(l -> {
 
-        resultV2VO.setDataTime(lastTime);
+            List<ConsumptionStatisticsInfoData> newList = new ArrayList<>();
+            List<ConsumptionStatisticsInfoData> oldList = l.getStatisticsDateDataList();
+            if (tableHeader.size() != oldList.size()) {
+                Map<String, List<ConsumptionStatisticsInfoData>> dateMap = oldList.stream()
+                        .collect(Collectors.groupingBy(ConsumptionStatisticsInfoData::getDate));
 
-        //综合查看
-        //根据日期计算最大 / 最小 / 平均 / 总和
-        Map<String, StatsResult> statsResultMap = CalculateUtil.calculateGroupStats(usageCostDataList, UsageCostData::getTime, UsageCostData::getTotalCost);
-        List<StatisticsChartYInfoV2VO> ydata = new ArrayList<>();
-        xdata.forEach(s -> {
-            // substring 返回 endIndex-beginIndex哥字符 因为是[ )
-            String subs = dealStrTime(s);
-            StatsResult statsResult = statsResultMap.get(subs);
-            StatisticsChartYInfoV2VO yInfoV2VO = new StatisticsChartYInfoV2VO();
-            StatisticsChartYDataV2VO dataV2VO = new StatisticsChartYDataV2VO();
-            if (Objects.nonNull(statsResult)) {
-                dataV2VO.setAvg(dealBigDecimalScale(statsResult.getAvg(), scale));
-                dataV2VO.setMax(dealBigDecimalScale(statsResult.getMax(), scale));
-                dataV2VO.setMin(dealBigDecimalScale(statsResult.getMin(), scale));
-                dataV2VO.setCost(dealBigDecimalScale(statsResult.getSum(), scale));
-            } else {
-                dataV2VO.setAvg(BigDecimal.ZERO);
-                dataV2VO.setMax(BigDecimal.ZERO);
-                dataV2VO.setMin(BigDecimal.ZERO);
-                dataV2VO.setCost(BigDecimal.ZERO);
+                tableHeader.forEach(date -> {
+                    List<ConsumptionStatisticsInfoData> standardCoalInfoDataList = dateMap.get(date);
+                    if (standardCoalInfoDataList == null) {
+                        ConsumptionStatisticsInfoData standardCoalInfoData = new ConsumptionStatisticsInfoData();
+                        standardCoalInfoData.setDate(date);
+                        standardCoalInfoData.setMoney(BigDecimal.ZERO);
+                        standardCoalInfoData.setConsumption(BigDecimal.ZERO);
+                        newList.add(standardCoalInfoData);
+                    } else {
+                        newList.add(standardCoalInfoDataList.get(0));
+                    }
+                });
+
+                // 设置新数据list
+                l.setStatisticsDateDataList(newList);
             }
-            yInfoV2VO.setData(Collections.singletonList(dataV2VO));
-            ydata.add(yInfoV2VO);
-        });
-        resultV2VO.setYdata(ydata);
 
-        String jsonStr = JSONUtil.toJsonStr(resultV2VO);
+        });
+
+        resultVO.setDataTime(lastTime);
+        String jsonStr = JSONUtil.toJsonStr(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
-        return resultV2VO;
+        return resultVO;
 
     }
 
