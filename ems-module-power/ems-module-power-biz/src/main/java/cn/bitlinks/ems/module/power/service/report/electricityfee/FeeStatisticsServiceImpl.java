@@ -292,24 +292,6 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
         return resultVO;
     }
 
-    private String getName(String label1, String label2, String label3, String label4, String label5) {
-        if (CharSequenceUtil.isNotEmpty(label5) && !"/".equals(label5)) {
-            return label5;
-        }
-        if (CharSequenceUtil.isNotEmpty(label4) && !"/".equals(label4)) {
-            return label4;
-        }
-        if (CharSequenceUtil.isNotEmpty(label3) && !"/".equals(label3)) {
-            return label3;
-        }
-        if (CharSequenceUtil.isNotEmpty(label2) && !"/".equals(label2)) {
-            return label2;
-        }
-        if (CharSequenceUtil.isNotEmpty(label1) && !"/".equals(label1)) {
-            return label1;
-        }
-        return null;
-    }
 
     private List<StatisticsInfoV2> queryByLabel(String topLabel,
                                                 String childLabels,
