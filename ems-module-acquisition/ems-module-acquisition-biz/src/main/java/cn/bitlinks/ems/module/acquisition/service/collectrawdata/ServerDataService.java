@@ -41,6 +41,7 @@ public class ServerDataService {
     private RedisTemplate<String, String> redisTemplate;
 
     public void processServerData() {
+        String timestampStr = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now());
         Map<String, List<String>> serverIoMapping = getServerIoMapping();
         if (serverIoMapping == null || serverIoMapping.isEmpty()) {
             return;
@@ -65,7 +66,7 @@ public class ServerDataService {
                     );
 
                     // 处理采集结果（存储到Redis）
-                    saveResultToRedis(serverKey, result);
+                    saveResultToRedis(serverKey, result, timestampStr);
 
                 } catch (Exception e) {
                     // 单个任务异常不影响其他任务
@@ -75,12 +76,10 @@ public class ServerDataService {
         });
     }
 
-    public void saveResultToRedis(String serverKey, Map<String, ItemStatus> result) {
+    public void saveResultToRedis(String serverKey, Map<String, ItemStatus> result,String timestampStr) {
         if (result == null || result.isEmpty()) {
             return;
         }
-        String timestampStr = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now());
-
         String redisKey = String.format(COLLECTOR_AGG_REALTIME_CACHE_KEY, serverKey, timestampStr);
 
         // 使用 pipeline 批量写入 Hash
