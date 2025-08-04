@@ -22,7 +22,7 @@ public interface ConsumptionStatisticsService {
      */
     ConsumptionStatisticsResultVO<ConsumptionStatisticsInfo> consumptionStatisticsTable(ConsumptionStatisticsParamVO paramVO);
 
-    ConsumptionStatisticsChartResultVO consumptionStatisticsChart(ConsumptionStatisticsParamVO paramVO);
+    ConsumptionStatisticsChartResultVO<ConsumptionStatisticsInfo> consumptionStatisticsChart(ConsumptionStatisticsParamVO paramVO);
 
     List<List<String>> getExcelHeader(ConsumptionStatisticsParamVO paramVO);
 
