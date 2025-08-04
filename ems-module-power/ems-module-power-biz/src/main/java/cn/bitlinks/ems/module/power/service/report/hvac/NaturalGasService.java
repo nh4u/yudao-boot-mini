@@ -5,6 +5,7 @@ import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.*;
 import javax.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 public interface NaturalGasService {
     /**
@@ -19,7 +20,7 @@ public interface NaturalGasService {
      * @param paramVO
      * @return
      */
-    BaseReportMultiChartResultVO<NaturalGasChartResVO> getChart(@Valid BaseTimeDateParamVO paramVO);
+    BaseReportMultiChartResultVO<Map<String,List<BigDecimal>>> getChart(@Valid BaseTimeDateParamVO paramVO);
 
     List<List<String>> getExcelHeader(@Valid BaseTimeDateParamVO paramVO);
 

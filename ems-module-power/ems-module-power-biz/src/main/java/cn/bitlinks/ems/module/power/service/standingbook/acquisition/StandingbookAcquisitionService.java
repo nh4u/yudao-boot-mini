@@ -32,7 +32,11 @@ public interface StandingbookAcquisitionService {
      */
     List<StandingbookAcquisitionRespVO> getStandingbookAcquisitionList(Map<String, String> queryReqVO);
 
-
+    /**
+     * 更新数采缓存     *
+     * @return 数采设置
+     */
+    void initAcqRedisConfig();
     /**
      * 根据台账id获取数采设置
      *
@@ -59,4 +63,6 @@ public interface StandingbookAcquisitionService {
      * @param ids 台账ids
      */
     List<StandingbookAcquisitionDO> queryListByStandingbookIds(List<Long> ids);
+    void refreshServerDataSiteMapping();
+    void deleteRedisAcqConfigByStandingbookIds(List<Long> standingbookIds);
 }

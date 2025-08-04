@@ -21,10 +21,10 @@ public class StreamLoadBufferWorker {
 
     @Resource
     private StarRocksStreamLoadService starRocksStreamLoadService;
-    private static final int QUEUE_CAPACITY = 20000;
+    private static final int QUEUE_CAPACITY = 50000;
 
     private static final String TABLE_NAME = "collect_raw_data";
-    private static final int BATCH_SIZE = 100;
+    private static final int BATCH_SIZE = 2000;
     private static final long FLUSH_INTERVAL_MS = 5000;
 
     private final BlockingQueue<CollectRawDataDO> queue = new LinkedBlockingQueue<>(QUEUE_CAPACITY);

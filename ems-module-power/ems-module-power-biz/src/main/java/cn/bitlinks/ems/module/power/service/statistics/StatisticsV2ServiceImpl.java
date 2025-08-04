@@ -44,8 +44,7 @@ import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.DEFAULT;
-import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_CHART;
-import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_TABLE;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.*;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
 /**
@@ -1200,3 +1199,4 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         }
     }
 }
+

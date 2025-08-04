@@ -9,4 +9,35 @@
         文档可见：https://www.bitlinks.cn/MyBatis/x-plugins/
      -->
 
+
+    <select id="selectServerDataSiteMapping"
+            resultType="cn.bitlinks.ems.module.power.dto.ServerParamsCacheDTO">
+        SELECT
+            distinct
+            CONCAT_WS('|', ss.protocol,ss.ip_address, ss.username, ss.`password`, ss.clsid) AS server_key,
+            acqd.data_site
+        FROM power_standingbook_acquisition acq
+                 JOIN power_standingbook_acquisition_detail acqd
+                      ON acq.id = acqd.acquisition_id
+                 JOIN power_service_settings ss
+                      ON acq.service_settings_id = ss.id
+        WHERE acq.status = 1 and acq.deleted= 0
+          AND acqd.status = 1 and acqd.deleted=0
+          and acqd.data_site is not null;
+    </select>
+    <select id="selectServerStandingbookMapping"
+            resultType="cn.bitlinks.ems.module.power.dto.ServerStandingbookCacheDTO">
+        SELECT
+            distinct
+            CONCAT_WS('|', ss.protocol,ss.ip_address, ss.username, ss.`password`, ss.clsid) AS server_key,
+            acq.standingbook_id
+        FROM power_standingbook_acquisition acq
+                 JOIN power_standingbook_acquisition_detail acqd
+                      ON acq.id = acqd.acquisition_id
+                 JOIN power_service_settings ss
+                      ON acq.service_settings_id = ss.id
+        WHERE acq.status = 1 and acq.deleted= 0
+          AND acqd.status = 1 and acqd.deleted=0
+          and acqd.data_site is not null;
+    </select>
 </mapper>

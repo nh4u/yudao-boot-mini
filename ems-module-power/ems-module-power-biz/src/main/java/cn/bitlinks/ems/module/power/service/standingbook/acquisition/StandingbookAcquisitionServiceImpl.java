@@ -2,16 +2,16 @@ package cn.bitlinks.ems.module.power.service.standingbook.acquisition;
 
 import cn.bitlinks.ems.framework.common.core.ParameterKey;
 import cn.bitlinks.ems.framework.common.core.StandingbookAcquisitionDetailDTO;
+import cn.bitlinks.ems.framework.common.enums.FrequencyUnitEnum;
 import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.util.calc.AcquisitionFormulaUtils;
 import cn.bitlinks.ems.framework.common.util.calc.FormulaUtil;
+import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
 import cn.bitlinks.ems.framework.common.util.opcda.OpcConnectionTester;
+import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
-import cn.bitlinks.ems.module.acquisition.api.quartz.QuartzApi;
-import cn.bitlinks.ems.module.acquisition.api.quartz.dto.AcquisitionJobDTO;
-import cn.bitlinks.ems.module.acquisition.api.quartz.dto.ServiceSettingsDTO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.acquisition.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.servicesettings.ServiceSettingsDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
@@ -21,6 +21,9 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.Standingboo
 import cn.bitlinks.ems.module.power.dal.mysql.servicesettings.ServiceSettingsMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.StandingbookAcquisitionDetailMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.StandingbookAcquisitionMapper;
+import cn.bitlinks.ems.module.power.dto.DeviceCollectCacheDTO;
+import cn.bitlinks.ems.module.power.dto.ServerParamsCacheDTO;
+import cn.bitlinks.ems.module.power.dto.ServerStandingbookCacheDTO;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.hutool.core.collection.CollUtil;
@@ -29,10 +32,12 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -46,6 +51,7 @@ import static cn.bitlinks.ems.module.power.enums.CommonConstants.SERVICE_NAME_FO
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.ACQUISITION_FREQUENCY;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.ACQUISITION_PROTOCOL;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
+import static cn.bitlinks.ems.module.power.enums.RedisKeyConstants.*;
 
 /**
  * 台账-数采设置 Service 实现类
@@ -71,8 +77,13 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
     @Value("${spring.profiles.active}")
     private String env;
     @Resource
-    private QuartzApi quartzApi;
-
+    private RedisTemplate<String, String> redisTemplate;
+    @Resource
+    private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
+    @PostConstruct
+    public void init() {
+        initAcqRedisConfig(); // 项目启动后自动执行
+    }
     @Override
     @Transactional
     public Long createOrUpdateStandingbookAcquisition(StandingbookAcquisitionVO updateReqVO) {
@@ -87,8 +98,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             StandingbookAcquisitionDO standingbookAcquisition = BeanUtils.toBean(updateReqVO, StandingbookAcquisitionDO.class);
             standingbookAcquisitionMapper.insert(standingbookAcquisition);
             // 1.2 添加数采设置详情
-//            List<StandingbookAcquisitionDetailVO> detailVOS =
-//                    updateReqVO.getDetails();
+
             if (CollUtil.isEmpty(detailVOS)) {
                 // 返回
                 return standingbookAcquisition.getId();
@@ -97,8 +107,8 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                     StandingbookAcquisitionDetailDO.class);
             detailDOS.forEach(detailDO -> detailDO.setAcquisitionId(standingbookAcquisition.getId()));
             standingbookAcquisitionDetailMapper.insertBatch(detailDOS);
-            // ***需要创建【定时任务】
-            createOrUpdateJob(updateReqVO, detailVOS, serviceSettingsDO);
+            // *** 同步设备的映射关系到redis中
+            createOrUpdateRedisAcqConfig(updateReqVO, detailVOS);
             // 返回
             return standingbookAcquisition.getId();
         }
@@ -133,8 +143,8 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         if (CollUtil.isNotEmpty(updatedDetails)) {
             standingbookAcquisitionDetailMapper.updateBatch(updatedDetails);
         }
-        // 【更新定时任务】
-        createOrUpdateJob(updateReqVO, detailVOS, serviceSettingsDO);
+        // 更新台账的数采配置 缓存
+        createOrUpdateRedisAcqConfig(updateReqVO, detailVOS);
 
         // 返回
         return updateReqVO.getId();
@@ -146,22 +156,138 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
      * @param updateReqVO 数采设置详情
      * @param detailVOS   添加了真实公式的部分
      */
-    private void createOrUpdateJob(StandingbookAcquisitionVO updateReqVO,
-                                   List<StandingbookAcquisitionDetailVO> detailVOS,
-                                   ServiceSettingsDO serviceSettingsDO) {
-        // 【更新定时任务]
-        AcquisitionJobDTO acquisitionJobDTO = new AcquisitionJobDTO();
-        acquisitionJobDTO.setStatus(updateReqVO.getStatus());
-        acquisitionJobDTO.setStandingbookId(updateReqVO.getStandingbookId());
-        acquisitionJobDTO.setJobStartTime(updateReqVO.getStartTime());
-        acquisitionJobDTO.setFrequency(updateReqVO.getFrequency());
-        acquisitionJobDTO.setFrequencyUnit(updateReqVO.getFrequencyUnit());
-        acquisitionJobDTO.setDetails(BeanUtils.toBean(detailVOS, StandingbookAcquisitionDetailDTO.class));
-        acquisitionJobDTO.setServiceSettingsDTO(BeanUtils.toBean(serviceSettingsDO, ServiceSettingsDTO.class));
-        quartzApi.createOrUpdateJob(acquisitionJobDTO);
+    private void createOrUpdateRedisAcqConfig(StandingbookAcquisitionVO updateReqVO,
+                                              List<StandingbookAcquisitionDetailVO> detailVOS) {
+        // 如果status停用的话，则从redis中删除该设备的缓存映射，然后更新全部的设备
+        DeviceCollectCacheDTO deviceCollectCacheDTO = new DeviceCollectCacheDTO();
+        deviceCollectCacheDTO.setStandingbookId(updateReqVO.getStandingbookId());
+        deviceCollectCacheDTO.setJobStartTime(updateReqVO.getStartTime());
+        deviceCollectCacheDTO.setFrequency(getSecondsOfUnit(updateReqVO.getFrequency(), updateReqVO.getFrequencyUnit()));
+
+        if (CollUtil.isEmpty(detailVOS)) {
+            // 删除此设备映射
+            deleteRedisAcqConfigByStandingbookIds(updateReqVO.getStandingbookId());
+            return;
+        }
+        // 获取启用的数采参数
+        List<StandingbookAcquisitionDetailVO> enabledDetails = detailVOS.stream().filter(a -> a.getStatus()).collect(Collectors.toList());
+        if (CollUtil.isEmpty(enabledDetails)) {
+            // 删除此设备映射
+            deleteRedisAcqConfigByStandingbookIds(updateReqVO.getStandingbookId());
+            return;
+        }
+        deviceCollectCacheDTO.setDetails(BeanUtils.toBean(enabledDetails, StandingbookAcquisitionDetailDTO.class));
+        List<String> dataSites = enabledDetails.stream()
+                .map(StandingbookAcquisitionDetailVO::getDataSite)
+                .collect(Collectors.toList());
+        deviceCollectCacheDTO.setDataSites(dataSites);
+
+        String sbConfigKey = String.format(STANDING_BOOK_ACQ_CONFIG_PREFIX, updateReqVO.getStandingbookId());
+
+        String acqConfig = JsonUtils.toJsonString(deviceCollectCacheDTO);
+        // 3. 存入 Redis（使用 JSON 序列化方式，推荐）
+        redisTemplate.opsForValue().set(sbConfigKey, acqConfig);
+
+
+        // ✅ 日志记录（可选）
+        log.info("采集配置写入Redis成功，key={}, config={}", sbConfigKey, acqConfig);
+        // 同步刷新
+        refreshServerDataSiteMapping();
+    }
+    @Override
+    public void initAcqRedisConfig(){
+        Map<Long,StandingbookAcquisitionVO> acquisitionMap = getAllAcquisitions();
+        if(CollUtil.isEmpty(acquisitionMap)){
+            refreshServerDataSiteMapping();
+            return;
+        }
+        acquisitionMap.forEach((sbId,acquisitionVO)->{
+            DeviceCollectCacheDTO deviceCollectCacheDTO = new DeviceCollectCacheDTO();
+            deviceCollectCacheDTO.setStandingbookId(sbId);
+            deviceCollectCacheDTO.setJobStartTime(acquisitionVO.getStartTime());
+            deviceCollectCacheDTO.setFrequency(getSecondsOfUnit(acquisitionVO.getFrequency(), acquisitionVO.getFrequencyUnit()));
+            deviceCollectCacheDTO.setDetails(BeanUtils.toBean(acquisitionVO.getDetails(), StandingbookAcquisitionDetailDTO.class));
+            List<String> dataSites = acquisitionVO.getDetails().stream()
+                    .map(StandingbookAcquisitionDetailVO::getDataSite)
+                    .collect(Collectors.toList());
+            deviceCollectCacheDTO.setDataSites(dataSites);
+
+            String sbConfigKey = String.format(STANDING_BOOK_ACQ_CONFIG_PREFIX, acquisitionVO.getStandingbookId());
+
+            String acqConfig = JsonUtils.toJsonString(deviceCollectCacheDTO);
+            redisTemplate.opsForValue().set(sbConfigKey, acqConfig);
+        });
+
+        refreshServerDataSiteMapping();
     }
 
+    private Map<Long,StandingbookAcquisitionVO> getAllAcquisitions(){
 
+
+            // 1. 查询所有台账的采集设置
+            List<StandingbookAcquisitionDO> acquisitionDOList =
+                    standingbookAcquisitionMapper.selectList(StandingbookAcquisitionDO::getStatus,true);
+            if(CollUtil.isEmpty(acquisitionDOList)){
+                return null;
+            }
+            Map<Long, StandingbookAcquisitionDO> acquisitionMap = acquisitionDOList.stream()
+                    .collect(Collectors.toMap(StandingbookAcquisitionDO::getStandingbookId, Function.identity()));
+            List<Long> standingbookIds = new ArrayList<>(acquisitionMap.keySet());
+            // 2. 查询所有台账的采集属性（已启用）
+            Map<Long, List<StandingbookTmplDaqAttrDO>> tmplAttrMap = standingbookTmplDaqAttrService.getDaqAttrsBySbIds(standingbookIds);
+            if(CollUtil.isEmpty(tmplAttrMap)){
+                return null;
+            }
+
+            // 3. 查询所有数采参数详情（按 AcquisitionId 分组）
+
+            List<StandingbookAcquisitionDetailDO> allDetailDOs =
+                    standingbookAcquisitionDetailMapper.selectList(StandingbookAcquisitionDetailDO::getStatus,true);
+            Map<Long, List<StandingbookAcquisitionDetailDO>> detailMap =
+                    allDetailDOs.stream().collect(Collectors.groupingBy(StandingbookAcquisitionDetailDO::getAcquisitionId));
+
+            // 4. 拼接每个台账的 VO
+        Map<Long,StandingbookAcquisitionVO> result = new HashMap<>();
+
+            for (Long standingbookId : standingbookIds) {
+                StandingbookAcquisitionDO acquisitionDO = acquisitionMap.get(standingbookId);
+                if (acquisitionDO == null) {
+                    continue; // 没有采集设置，跳过
+                }
+
+                StandingbookAcquisitionVO vo = BeanUtils.toBean(acquisitionDO, StandingbookAcquisitionVO.class);
+
+                List<StandingbookTmplDaqAttrDO> tmplAttrList = tmplAttrMap.getOrDefault(standingbookId, Collections.emptyList());
+                List<StandingbookAcquisitionDetailDO> detailDOs = detailMap.getOrDefault(acquisitionDO.getId(), Collections.emptyList());
+
+                List<StandingbookAcquisitionDetailVO> detailVOs = new ArrayList<>();
+
+                for (StandingbookTmplDaqAttrDO tmplAttr : tmplAttrList) {
+                    StandingbookAcquisitionDetailVO detailVO = new StandingbookAcquisitionDetailVO();
+
+                    // 查找已有的采集参数
+                    Optional<StandingbookAcquisitionDetailDO> matched = detailDOs.stream()
+                            .filter(detail -> detail.getCode().equals(tmplAttr.getCode())
+                                    && detail.getEnergyFlag().equals(tmplAttr.getEnergyFlag()))
+                            .findFirst();
+
+                    if (matched.isPresent()) {
+                        detailVO = BeanUtils.toBean(matched.get(), StandingbookAcquisitionDetailVO.class);
+                    }
+
+                    // 补全其他属性
+                    StandingbookAcquisitionDetailAttrDTO attrDTO = BeanUtils.toBean(tmplAttr, StandingbookAcquisitionDetailAttrDTO.class);
+                    BeanUtils.copyProperties(attrDTO, detailVO);
+
+                    detailVOs.add(detailVO);
+                }
+
+                vo.setDetails(detailVOs);
+                result.put(standingbookId,vo);
+            }
+
+            return result;
+    }
     @Override
     public List<StandingbookAcquisitionRespVO> getStandingbookAcquisitionList(Map<String, String> queryReqVO) {
         List<StandingbookDO> standingbookDOS = standingbookService.getStandingbookList(queryReqVO);
@@ -231,27 +357,9 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS =
                 standingbookTmplDaqAttrService.getDaqAttrsByStandingbookId(standingbookId);
 
-        // 2.1 无数采设置情况下，组装数采参数结构数据给前端
+        // 2.1 无数采设置情况下
         if (Objects.isNull(standingbookAcquisitionDO)) {
-            StandingbookAcquisitionVO standingbookAcquisitionVO = new StandingbookAcquisitionVO();
-            standingbookAcquisitionVO.setStandingbookId(standingbookId);
-            // 2.1.1 数采参数为空，
-            if (CollUtil.isEmpty(standingbookTmplDaqAttrDOS)) {
-                return standingbookAcquisitionVO;
-            }
-            // 2.1.2 数采参数不为空，填充台账对应的数采参数
-            List<StandingbookAcquisitionDetailVO> detailVOS = new ArrayList<>();
-            standingbookTmplDaqAttrDOS.forEach(standingbookTmplDaqAttrDO -> {
-                StandingbookAcquisitionDetailAttrDTO standingbookAcquisitionDetailAttrDTO =
-                        BeanUtils.toBean(standingbookTmplDaqAttrDO,
-                                StandingbookAcquisitionDetailAttrDTO.class);
-                StandingbookAcquisitionDetailVO standingbookAcquisitionDetailVO =
-                        BeanUtils.toBean(standingbookAcquisitionDetailAttrDTO,
-                                StandingbookAcquisitionDetailVO.class);
-                detailVOS.add(standingbookAcquisitionDetailVO);
-            });
-            standingbookAcquisitionVO.setDetails(detailVOS);
-            return standingbookAcquisitionVO;
+            return  null;
         }
         // 2.2 有数采设置情况下，组装数采参数结构给前端
         StandingbookAcquisitionVO standingbookAcquisitionVO = BeanUtils.toBean(standingbookAcquisitionDO,
@@ -347,7 +455,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
 
             // 2.2 采集这些参数，
             Map<String, ItemStatus> itemStatusMap;
-            if (env.equals(SPRING_PROFILES_ACTIVE_LOCAL)|| env.equals(SPRING_PROFILES_ACTIVE_DEV)) {
+            if (env.equals(SPRING_PROFILES_ACTIVE_LOCAL) || env.equals(SPRING_PROFILES_ACTIVE_DEV)) {
                 itemStatusMap = mockItemStatus(dataSites);
             } else {
                 itemStatusMap = OpcConnectionTester.testLink(serviceSettingsDO.getIpAddress(),
@@ -392,6 +500,54 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                 .eq(StandingbookAcquisitionDO::getStatus, true)
                 .in(StandingbookAcquisitionDO::getStandingbookId, ids)
         );
+    }
+
+    private void deleteRedisAcqConfigByStandingbookIds(Long standingbookId) {
+        String redisKey = String.format(STANDING_BOOK_ACQ_CONFIG_PREFIX, standingbookId);
+        redisTemplate.delete(redisKey);
+
+        // 刷新连接配置缓存
+        refreshServerDataSiteMapping();
+    }
+
+    @Override
+    public void deleteRedisAcqConfigByStandingbookIds(List<Long> standingbookIds) {
+        if (CollUtil.isEmpty(standingbookIds)) {
+            return;
+        }
+
+        List<String> keysToDelete = new ArrayList<>(standingbookIds.size());
+        for (Long id : standingbookIds) {
+            String redisKey = String.format(STANDING_BOOK_ACQ_CONFIG_PREFIX, id);
+            keysToDelete.add(redisKey);
+        }
+
+        redisTemplate.delete(keysToDelete);
+        // 刷新连接配置缓存
+        refreshServerDataSiteMapping();
+
+        log.info("批量删除数采设置成功，keys={}", keysToDelete);
+    }
+
+    /**
+     * 刷新redis中服务与io地址的映射、与设备id的映射
+     */
+    @Override
+    public void refreshServerDataSiteMapping() {
+        // 查询服务id与io地址的映射关系
+        List<ServerParamsCacheDTO> serverDataSiteMapping = standingbookAcquisitionMapper.selectServerDataSiteMapping();
+        if (CollUtil.isEmpty(serverDataSiteMapping)) {
+            byteArrayRedisTemplate.delete(STANDING_BOOK_SERVER_IO_CONFIG);
+        }
+
+        byteArrayRedisTemplate.opsForValue().set(STANDING_BOOK_SERVER_IO_CONFIG, StrUtils.compressGzip(JsonUtils.toJsonString(serverDataSiteMapping)));
+
+        List<ServerStandingbookCacheDTO> serverStandingbookMapping = standingbookAcquisitionMapper.selectServerStandingbookMapping();
+        if (CollUtil.isEmpty(serverStandingbookMapping)) {
+            byteArrayRedisTemplate.delete(STANDING_BOOK_SERVER_DEVICE_CONFIG);
+        }
+
+        byteArrayRedisTemplate.opsForValue().set(STANDING_BOOK_SERVER_DEVICE_CONFIG, StrUtils.compressGzip(JsonUtils.toJsonString(serverStandingbookMapping)));
     }
 
     /**
@@ -514,5 +670,19 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         return expandedDetail;
     }
 
+    private Long getSecondsOfUnit(long interval, Integer unit) {
+        switch (FrequencyUnitEnum.codeOf(unit)) {
+            case SECONDS:
+                return interval;
+            case MINUTES:
+                return interval * 60;  // 分钟转秒
+            case HOUR:
+                return interval * 60 * 60;  // 小时转秒
+            case DAY:
+                return interval * 60 * 60 * 24;  // 天转秒
+            default:
+                throw new IllegalArgumentException("Unsupported unit: " + unit);
+        }
+    }
 
 }
