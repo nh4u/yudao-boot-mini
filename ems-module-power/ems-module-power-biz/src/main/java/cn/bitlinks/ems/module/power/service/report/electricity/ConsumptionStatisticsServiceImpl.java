@@ -675,124 +675,102 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
      * @param paramVO
      */
     @Override
-    public ConsumptionStatisticsChartResultVO<ConsumptionStatisticsInfo> consumptionStatisticsChart(ConsumptionStatisticsParamVO paramVO) {
+    public ConsumptionStatisticsChartResultVO<ConsumptionStatisticsChartYInfo> consumptionStatisticsChart(ConsumptionStatisticsParamVO paramVO) {
         paramVO.setQueryType(QueryDimensionEnum.OVERALL_REVIEW.getCode());
-        // 校验时间范围是否存在
-        LocalDateTime[] rangeOrigin = paramVO.getRange();
-        LocalDateTime startTime = rangeOrigin[0];
-        LocalDateTime endTime = rangeOrigin[1];
-        if (!startTime.isBefore(endTime)) {
-            throw exception(END_TIME_MUST_AFTER_START_TIME);
-        }
-        //时间不能相差1年
-        if (!LocalDateTimeUtils.isWithinDays(startTime, endTime, CommonConstants.YEAR)) {
-            throw exception(DATE_RANGE_EXCEED_LIMIT);
-        }
 
-        DataTypeEnum dataTypeEnum = DataTypeEnum.codeOf(paramVO.getDateType());
-        //时间类型不存在
-        if (Objects.isNull(dataTypeEnum)) {
-            throw exception(DATE_TYPE_NOT_EXISTS);
-        }
+        // 查询对应缓存是否已经存在，如果存在这直接返回（如果查最新的，最新的在实时更新，所以缓存的是不对的）
         String cacheKey = ELECTRICITY_CONSUMPTION_STATISTICS_CHART + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
-            return JSON.parseObject(cacheRes, new TypeReference<ConsumptionStatisticsChartResultVO<ConsumptionStatisticsInfo>>() {});
+            // 泛型放缓存避免强转问题
+            return JSON.parseObject(cacheRes, new TypeReference<ConsumptionStatisticsChartResultVO<ConsumptionStatisticsChartYInfo>>() {
+            });
         }
 
-        // x轴处理
-        List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], dataTypeEnum);
-        ConsumptionStatisticsChartResultVO<ConsumptionStatisticsInfo> resultVO = new ConsumptionStatisticsChartResultVO<>();
-        resultVO.setXdata(tableHeader);
+        // 4.如果没有则去数据库查询
+        ConsumptionStatisticsChartResultVO<ConsumptionStatisticsChartYInfo> resultVO = new ConsumptionStatisticsChartResultVO<>();
+        resultVO.setDataTime(LocalDateTime.now());
 
-        // 能源列表--只需要查找电力的能源
-        // name为“电力”且deleted为0的能源分组，取其id值
-        EnergyGroupDO energyGroup = energyGroupService.getEnergyGroup("电力");
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyGroup(energyGroup.getId());
-        if (CollUtil.isEmpty(energyList)) {
-            resultVO.setDataTime(LocalDateTime.now());
-            return resultVO;
+
+        ConsumptionStatisticsResultVO<ConsumptionStatisticsInfo> resultTable = consumptionStatisticsTable(paramVO);
+
+        // x轴
+        List<String> xdata = resultTable.getHeader();
+        resultVO.setXdata(xdata);
+
+        List<ConsumptionStatisticsInfo> statisticsInfoList = resultTable.getStatisticsInfoList();
+
+        // 底部合计map
+        Map<String, BigDecimal> sumConsumptionMap = new HashMap<>();
+        List<ConsumptionStatisticsChartYInfo> yInfoList = new ArrayList<>();
+        for (ConsumptionStatisticsInfo s : statisticsInfoList) {
+
+            ConsumptionStatisticsChartYInfo yInfo = new ConsumptionStatisticsChartYInfo();
+            yInfo.setName(getName(s.getLabel1(), s.getLabel2(), s.getLabel3(), s.getLabel4(), s.getLabel5()));
+
+            // 处理数据
+            List<ConsumptionStatisticsInfoData> statisticInfoDataV2List = s.getStatisticsDateDataList();
+            Map<String, ConsumptionStatisticsInfoData> dateMap = statisticInfoDataV2List.stream()
+                    .collect(Collectors.toMap(ConsumptionStatisticsInfoData::getDate, Function.identity()));
+
+            List<BigDecimal> data = ListUtils.newArrayList();
+            xdata.forEach(date -> {
+                ConsumptionStatisticsInfoData statisticInfoDataV2 = dateMap.get(date);
+                if (statisticInfoDataV2 == null) {
+                    data.add(BigDecimal.ZERO);
+                } else {
+                    BigDecimal consumption = statisticInfoDataV2.getConsumption();
+                    data.add(!Objects.isNull(consumption) ? consumption : BigDecimal.ZERO);
+                    // 底部合计处理
+                    sumConsumptionMap.put(date, addBigDecimal(sumConsumptionMap.get(date), consumption));
+                }
+            });
+            yInfo.setData(data);
+
+            // 处理底部合计
+            BigDecimal sumCost = s.getSumEnergyConsumption();
+            sumConsumptionMap.put("sumNum", addBigDecimal(sumConsumptionMap.get("sumNum"), sumCost));
+
+            yInfoList.add(yInfo);
         }
-        //能源ID energyIds
-        List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
 
-        List<Long> standingBookIds = new ArrayList<>();
-
-        //根据能源查询台账
-        List<StandingbookDO> standingbookIdsByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIds);
-
-        //根据标签查询
-        List<Long> standingBookIdList = standingbookIdsByEnergy.stream().map(StandingbookDO::getId).collect(Collectors.toList());
-
-        String topLabel = paramVO.getTopLabel();
-        String childLabels = paramVO.getChildLabels();
-        List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByLabel(topLabel, childLabels);
-
-        if (CollUtil.isNotEmpty(standingbookIdsByLabel)) {
-            List<Long> sids = standingbookIdsByLabel.stream().map(StandingbookLabelInfoDO::getStandingbookId).collect(Collectors.toList());
-            List<StandingbookDO> collect = standingbookIdsByEnergy.stream().filter(s -> sids.contains(s.getId())).collect(Collectors.toList());
-            //能源管理计量器具，标签可能关联重点设备，当不存在交集时，则无需查询
-            if (ArrayUtil.isEmpty(collect)) {
-                resultVO.setDataTime(LocalDateTime.now());
-                return resultVO;
-            }
-            List<Long> collect1 = collect.stream().map(StandingbookDO::getId).collect(Collectors.toList());
-            standingBookIds.addAll(collect1);
-        } else {
-            standingBookIds.addAll(standingBookIdList);
-        }
-        if (CollUtil.isEmpty(standingBookIds)) {
-            resultVO.setDataTime(LocalDateTime.now());
-            return resultVO;
-        }
-
-        //能源参数
-        //根据台账ID查询用量跟成本
-        List<UsageCostData> usageCostDataList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
-        LocalDateTime lastTime = usageCostService.getLastTime(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
-
-        List<ConsumptionStatisticsInfo> statisticsInfoList = new ArrayList<>();
-        // 0、综合查看（默认）
-        List<ConsumptionStatisticsInfo> statisticsInfoV2s = queryDefault(topLabel, childLabels, standingbookIdsByLabel, usageCostDataList);
-        statisticsInfoList.addAll(statisticsInfoV2s);
-        resultVO.setYdata(statisticsInfoList);
-
-        // 无数据的填充0
-        statisticsInfoList.forEach(l -> {
-
-            List<ConsumptionStatisticsInfoData> newList = new ArrayList<>();
-            List<ConsumptionStatisticsInfoData> oldList = l.getStatisticsDateDataList();
-            if (tableHeader.size() != oldList.size()) {
-                Map<String, List<ConsumptionStatisticsInfoData>> dateMap = oldList.stream()
-                        .collect(Collectors.groupingBy(ConsumptionStatisticsInfoData::getDate));
-
-                tableHeader.forEach(date -> {
-                    List<ConsumptionStatisticsInfoData> standardCoalInfoDataList = dateMap.get(date);
-                    if (standardCoalInfoDataList == null) {
-                        ConsumptionStatisticsInfoData standardCoalInfoData = new ConsumptionStatisticsInfoData();
-                        standardCoalInfoData.setDate(date);
-                        standardCoalInfoData.setMoney(BigDecimal.ZERO);
-                        standardCoalInfoData.setConsumption(BigDecimal.ZERO);
-                        newList.add(standardCoalInfoData);
-                    } else {
-                        newList.add(standardCoalInfoDataList.get(0));
-                    }
-                });
-
-                // 设置新数据list
-                l.setStatisticsDateDataList(newList);
-            }
-
+        // 汇总数据
+        List<BigDecimal> summary = ListUtils.newArrayList();
+        ConsumptionStatisticsChartYInfo yInfo = new ConsumptionStatisticsChartYInfo();
+        yInfo.setName("汇总");
+        xdata.forEach(date -> {
+            // 折价
+            BigDecimal consumption = sumConsumptionMap.get(date);
+            summary.add(!Objects.isNull(consumption) ? consumption : BigDecimal.ZERO);
         });
+        yInfo.setData(summary);
 
-        resultVO.setDataTime(lastTime);
-        String jsonStr = JSONUtil.toJsonStr(resultVO);
-        byte[] bytes = StrUtils.compressGzip(jsonStr);
-        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+        yInfoList.add(yInfo);
+        resultVO.setYdata(yInfoList);
+
         return resultVO;
 
+    }
+
+    private String getName(String label1, String label2, String label3, String label4, String label5) {
+        if (CharSequenceUtil.isNotEmpty(label5) && !"/".equals(label5)) {
+            return label5;
+        }
+        if (CharSequenceUtil.isNotEmpty(label4) && !"/".equals(label4)) {
+            return label4;
+        }
+        if (CharSequenceUtil.isNotEmpty(label3) && !"/".equals(label3)) {
+            return label3;
+        }
+        if (CharSequenceUtil.isNotEmpty(label2) && !"/".equals(label2)) {
+            return label2;
+        }
+        if (CharSequenceUtil.isNotEmpty(label1) && !"/".equals(label1)) {
+            return label1;
+        }
+        return null;
     }
 
     @Override

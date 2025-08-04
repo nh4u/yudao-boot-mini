@@ -1,10 +1,6 @@
 package cn.bitlinks.ems.module.power.service.report.electricity;
 
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsChartResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsInfo;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.*;
 
 import java.util.List;
 
@@ -22,7 +18,7 @@ public interface ConsumptionStatisticsService {
      */
     ConsumptionStatisticsResultVO<ConsumptionStatisticsInfo> consumptionStatisticsTable(ConsumptionStatisticsParamVO paramVO);
 
-    ConsumptionStatisticsChartResultVO<ConsumptionStatisticsInfo> consumptionStatisticsChart(ConsumptionStatisticsParamVO paramVO);
+    ConsumptionStatisticsChartResultVO<ConsumptionStatisticsChartYInfo> consumptionStatisticsChart(ConsumptionStatisticsParamVO paramVO);
 
     List<List<String>> getExcelHeader(ConsumptionStatisticsParamVO paramVO);
 
