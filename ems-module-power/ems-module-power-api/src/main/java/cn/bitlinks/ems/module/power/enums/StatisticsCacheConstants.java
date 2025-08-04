@@ -13,6 +13,8 @@ public class StatisticsCacheConstants {
     public static final String COMPARISON_DISCOUNT_CHART_COAL = "statistics:comparison:discount:chart:coal:";
     public static final String USAGE_COST_TABLE = "statistics:usage:cost:table:";
     public static final String USAGE_COST_CHART = "statistics:usage:cost:chart:";
+    public static final String USAGE_COST_ELE_TABLE = "statistics:usage:cost:ele:table:";
+    public static final String USAGE_COST_ELE_CHART = "statistics:usage:cost:ele:chart:";
 
     public static final String USAGE_STANDARD_COAL_TABLE = "statistics:usage:standardCoal:table:";
     public static final String USAGE_STANDARD_COAL_CHART = "statistics:usage:standardCoal:chart:";
@@ -43,5 +45,11 @@ public class StatisticsCacheConstants {
     public static final String COMPARISON_BASE_CHART_COST = "statistics:base:discount:chart:cost:";
 
     public static final String COMPARISON_BASE_CHART_COAL = "statistics:base:discount:chart:coal:";
+
+    // 个性化报表 缓存key
+    /**
+     * 电费统计
+     */
+    public static final String USAGE_FEE_TABLE = "report:usage:fee:table:";
 
 }

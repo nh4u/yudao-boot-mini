@@ -37,7 +37,10 @@ spring:
 
 server:
   port: 48099 # 服务端口
-
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    min-response-size: 1024  # 默认超过1KB就压缩
 logging:
   file:
     name: ${user.home}/logs/${spring.application.name}.log # 日志文件名，全路径

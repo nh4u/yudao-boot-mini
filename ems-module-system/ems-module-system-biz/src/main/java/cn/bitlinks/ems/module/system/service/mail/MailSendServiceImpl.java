@@ -5,6 +5,7 @@ import cn.bitlinks.ems.framework.common.enums.UserTypeEnum;
 import cn.bitlinks.ems.module.system.dal.dataobject.mail.MailAccountDO;
 import cn.bitlinks.ems.module.system.dal.dataobject.mail.MailTemplateDO;
 import cn.bitlinks.ems.module.system.dal.dataobject.user.AdminUserDO;
+import cn.bitlinks.ems.module.system.framework.mail.HtmlFormatter;
 import cn.bitlinks.ems.module.system.mq.message.mail.MailSendMessage;
 import cn.bitlinks.ems.module.system.mq.producer.mail.MailProducer;
 import cn.bitlinks.ems.module.system.service.member.MemberService;
@@ -12,6 +13,7 @@ import cn.bitlinks.ems.module.system.service.user.AdminUserService;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailAccount;
 import cn.hutool.extra.mail.MailUtil;
+import cn.hutool.http.HtmlUtil;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,8 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.system.enums.ErrorCodeConstants.*;
@@ -102,14 +106,14 @@ public class MailSendServiceImpl implements MailSendService {
         MailTemplateDO mailTemplateDO = new MailTemplateDO();
         mailTemplateDO.setId(templateId);
         mailTemplateDO.setCode(templateCode);
-        mailTemplateDO.setNickname(templateName);
+        mailTemplateDO.setNickname(account.getUsername());
         mailTemplateDO.setTitle(title);
         mailTemplateDO.setContent(content);
         Long sendLogId = mailLogService.createMailLogCustom(userId, userType, mail,
                 account, mailTemplateDO, true);
         // 发送 MQ 消息，异步执行发送短信
         mailProducer.sendMailSendMessage(sendLogId, mail, account.getId(),
-                templateName, title, content);
+                account.getUsername(), title, content);
         return sendLogId;
     }
 
@@ -148,7 +152,7 @@ public class MailSendServiceImpl implements MailSendService {
         // 2. 发送邮件
         try {
             String messageId = MailUtil.send(mailAccount, message.getMail(),
-                    message.getTitle(), message.getContent(), true);
+                    message.getTitle(), HtmlFormatter.formatHtml(message.getContent()), true);
             // 3. 更新结果（成功）
             mailLogService.updateMailSendResult(message.getLogId(), messageId, null);
         } catch (Exception e) {

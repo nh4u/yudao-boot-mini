@@ -2,6 +2,8 @@ package cn.bitlinks.ems.module.power.service.statistics;
 
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 
+import java.util.List;
+
 /**
  * 用能分析 环比分析 Service 接口
  *
@@ -36,4 +38,8 @@ public interface ComparisonV2Service {
      * @return
      */
     ComparisonChartResultVO foldCoalAnalysisChart(StatisticsParamV2VO paramVO);
+
+    List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO, Integer flag);
+
+    List<List<Object>> getExcelData(StatisticsParamV2VO paramVO, Integer flag);
 }

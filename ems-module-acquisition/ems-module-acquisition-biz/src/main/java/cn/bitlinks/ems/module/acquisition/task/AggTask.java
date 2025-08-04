@@ -53,6 +53,8 @@ public class AggTask {
     @Resource
     private RedissonClient redissonClient;
 
+    private static final long DELAY_MINUTE = 20L;
+
     @Scheduled(cron = "0 0/1 * * * ? ") // 每分钟的 0 秒执行一次
 //    @Scheduled(cron = "0/10 * * * * ? ") // 每分钟的 0 秒执行一次
     public void execute() {
@@ -60,7 +62,7 @@ public class AggTask {
 
         RLock lock = redissonClient.getLock(LOCK_KEY);
         try {
-            if (!lock.tryLock(5000L, TimeUnit.MICROSECONDS)) {
+            if (!lock.tryLock(5000L, TimeUnit.MILLISECONDS)) {
                 log.info("聚合任务[用量]Task 已由其他节点执行");
             }
             try {
@@ -85,7 +87,7 @@ public class AggTask {
 
         RLock lock = redissonClient.getLock(LOCK_KEY);
         try {
-            if (!lock.tryLock(5000L, TimeUnit.MICROSECONDS)) {
+            if (!lock.tryLock(5000L, TimeUnit.MILLISECONDS)) {
                 log.info("聚合任务[稳态值]Task 已由其他节点执行");
             }
             try {
@@ -112,7 +114,7 @@ public class AggTask {
 //        2、COP报表稳态值取值规则如下：
 //        取1小时内聚合的末尾值作为该1小时的值。
 //        例如：如上时间顺序的聚合值。COP报表中，13时的值是15。
-        LocalDateTime currentMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(10L);
+        LocalDateTime currentMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(DELAY_MINUTE);
 
         //        LocalDateTime currentMinute = LocalDateTime.of(2025, 6, 9, 19, 20, 0);
         // List<MinuteAggregateDataDO> list = new ArrayList<>();
@@ -139,11 +141,11 @@ public class AggTask {
 
     /**
      * 聚合用量值
-     * 当前分钟（-10min）的聚合时间的数据计算与插入
+     * 当前分钟（-20min）的聚合时间的数据计算与插入
      */
     private void insertMinuteData() throws IOException {
 
-        LocalDateTime currentMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(10L);
+        LocalDateTime currentMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).minusMinutes(DELAY_MINUTE);
 //        LocalDateTime currentMinute = LocalDateTime.of(2025, 6, 24, 21, 35, 0);
 //
 //        2025-06-09 19:47:12

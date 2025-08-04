@@ -1,12 +1,39 @@
 package cn.bitlinks.ems.module.power.service.standingbook;
 
+import cn.bitlinks.ems.framework.common.util.collection.CollectionUtils;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
+import cn.bitlinks.ems.module.power.enums.RedisKeyConstants;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.annotation.Resource;
+
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.bitlinks.ems.module.acquisition.api.quartz.QuartzApi;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.AssociationData;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementdevice.MeasurementDeviceDO;
@@ -37,21 +64,22 @@ import cn.bitlinks.ems.module.power.service.warningstrategy.WarningStrategyServi
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.StringPool;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
-
-import javax.annotation.Resource;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_CREATE_TIME;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_ENERGY;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_EQUIPMENT_ID;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_EQUIPMENT_NAME;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_LABEL_INFO;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_LABEL_INFO_PREFIX;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_MEASURING_INSTRUMENT_ID;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_MEASURING_INSTRUMENT_MAME;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_SB_TYPE_ID;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_STAGE;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_TABLE_TYPE;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_TYPE_ID;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_VALUE_TYPE;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.SB_TYPE_ATTR_TOP_TYPE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_NOT_EXISTS;
 
 /**
@@ -89,22 +117,18 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Resource
     @Lazy
     private WarningStrategyService warningStrategyService;
-    @Resource
-    private QuartzApi quartzApi;
+
     @Lazy
     @Resource
     private StandingbookAcquisitionService standingbookAcquisitionService;
 
     @Resource
-    @Lazy
     private EnergyConfigurationMapper energyConfigurationMapper;
 
     @Resource
     @Lazy
     private EnergyParametersService energyParametersService;
-    @Resource
-    @Lazy
-    private StandingbookService standingbookService;
+
 
     @Override
     public Long count(Long typeId) {
@@ -346,11 +370,80 @@ public class StandingbookServiceImpl implements StandingbookService {
         return buildTreeWithDevices(standingbookTypeDOTree, sbNodes);
 
 
+    }
+    @Override
+    @Cacheable(value = RedisKeyConstants.STANDING_BOOK_LIST, key = "'all'", unless = "#result == null || #result.isEmpty()")
+    public List<StandingbookDTO> getStandingbookDTOList() {
+        return standingbookAttributeMapper.getStandingbookDTO();
+    }
+    @Override
+    @Cacheable(value = RedisKeyConstants.STANDING_BOOK_MAP, key = "'all'", unless = "#result == null || #result.isEmpty()")
+    public Map<Long, StandingbookDTO> getStandingbookDTOMap() {
+        List<StandingbookDTO> list =  standingbookAttributeMapper.getStandingbookDTO();
+        return list.stream().collect(Collectors.toMap(StandingbookDTO::getStandingbookId, Function.identity()));
+    }
 
+    @Cacheable(value = RedisKeyConstants.STANDING_BOOK_CODE_KEYMAP, key = "'codeKeyAll'", unless = "#result == null || #result.isEmpty()")
+    public Map<String, StandingBookHeaderDTO> getStandingBookCodeKeyMap() {
+        List<StandingbookDTO> list = standingbookAttributeMapper.getStandingbookDTO();
+        List<StandingBookHeaderDTO> standingBookHeaderDTOList = BeanUtils.toBean(list, StandingBookHeaderDTO.class);
+        return CollectionUtils.convertMap(standingBookHeaderDTOList, StandingBookHeaderDTO::getCode, Function.identity());
     }
 
     /**
+     * 根据excel表头来获取对应的台账信息
+     *
+     * @param headList 表头s
+     * @return
+     */
+    @Override
+    public List<StandingBookHeaderDTO> getStandingBookHeadersByHeaders(List<String> headList) {
+        if (CollUtil.isEmpty(headList)) {
+            return null;
+        }
+
+        // 去重
+        List<String> collect = headList.stream().distinct().collect(Collectors.toList());
+
+        // 获取已有台账数据
+        Map<String, StandingBookHeaderDTO> standingBookHeaderMap = getStandingBookCodeKeyMap();
+
+        List<StandingBookHeaderDTO> standingBookHeaderDTOList = new ArrayList<>();
+
+        for (String header : collect) {
+            String s = header.split(" ")[0];
+
+            for (String value : standingBookHeaderMap.keySet()) {
+                // 编码完全匹配0 编码前部匹配1 编码后部匹配2
+                if (s.equals(value) || value.startsWith(s) || value.endsWith(s)) {
+                    StandingBookHeaderDTO standingBookHeader = standingBookHeaderMap.get(value);
+                    standingBookHeader.setHeader(header);
+                    standingBookHeaderDTOList.add(standingBookHeader);
+                    break;
+                }
+
+                // 如果code包含了-D- 才会做去-操作
+                if (s.contains("-D-")) {
+
+                    String s1 = s.replaceAll("-(?![\\s\\S]*-)", "");
+
+                    // 与清洗后的s 编码完全匹配5 编码前部匹配6 编码后部匹配7
+                    if (s1.equals(value) || value.startsWith(s1) || value.endsWith(s1)) {
+                        StandingBookHeaderDTO standingBookHeader = standingBookHeaderMap.get(value);
+                        standingBookHeader.setHeader(header);
+                        standingBookHeaderDTOList.add(standingBookHeader);
+                        break;
+                    }
+                }
+            }
+        }
+        return standingBookHeaderDTOList;
+    }
+
+
+    /**
      * 分类list和台账节点list
+     *
      * @param categoryList
      * @param sbLeafNodes
      * @return
@@ -405,6 +498,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     /**
      * 剪枝辅助方法：只保留包含叶子的节点
+     *
      * @param node
      * @return
      */
@@ -489,6 +583,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_MAP, RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
     public Long createStandingbook(Map<String, String> createReqVO) {
         // 插入
         if (!createReqVO.containsKey(ATTR_TYPE_ID)) {
@@ -571,6 +666,8 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_MAP, RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
+
     public void updateStandingbook(Map<String, String> updateReqVO) {
         // 校验存在
         validateStandingbookExists(Long.valueOf(updateReqVO.get("id")));
@@ -609,6 +706,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Transactional
     @Override
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_MAP, RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
     public void deleteStandingbookBatch(List<Long> ids) {
         if (CollUtil.isEmpty(ids)) {
             return;
@@ -648,9 +746,8 @@ public class StandingbookServiceImpl implements StandingbookService {
 
         // 删除数采关联
         standingbookAcquisitionService.deleteByStandingbookIds(ids);
-        // 删除数采的任务
-        quartzApi.deleteJob(ids);
-
+        // 删除数采配置redis缓存与台账对应的io地址缓存
+        standingbookAcquisitionService.deleteRedisAcqConfigByStandingbookIds(ids);
     }
 
     private void validateStandingbookExists(Long id) {
@@ -675,6 +772,61 @@ public class StandingbookServiceImpl implements StandingbookService {
                 standingbookLabelInfoMapper.selectList(StandingbookLabelInfoDO::getStandingbookId, id);
         standingbookDO.setLabelInfo(standingbookLabelInfoDOList);
         return standingbookDO;
+    }
+
+    @Override
+    public List<StandingbookDO> getByIds(List<Long> ids) {
+
+        //台账信息
+        List<StandingbookDO> standingbookDOS =
+                standingbookMapper.selectList(StandingbookDO::getId, ids);
+        if(CollUtil.isEmpty(standingbookDOS)){
+            return Collections.emptyList();
+        }
+
+        //台账属性
+        LambdaQueryWrapper<StandingbookAttributeDO> attributeQueryWrapper = new LambdaQueryWrapper<>();
+        attributeQueryWrapper
+                .select(StandingbookAttributeDO::getStandingbookId,StandingbookAttributeDO::getId,
+                        StandingbookAttributeDO::getName,StandingbookAttributeDO::getValue,
+                        StandingbookAttributeDO::getTypeId,StandingbookAttributeDO::getCode)
+                .in(StandingbookAttributeDO::getStandingbookId, ids);
+        List<StandingbookAttributeDO> standingbookAttributeDOS =
+                standingbookAttributeMapper.selectList(attributeQueryWrapper);
+        Map<Long, List<StandingbookAttributeDO>> attributeMap =new HashMap<>();
+        if(CollUtil.isNotEmpty(standingbookAttributeDOS)){
+             attributeMap = standingbookAttributeDOS.stream().collect(Collectors.groupingBy(StandingbookAttributeDO::getStandingbookId));
+        }
+
+        //台账标签信息
+        LambdaQueryWrapper<StandingbookLabelInfoDO> labelQueryWrapper = new LambdaQueryWrapper<>();
+        labelQueryWrapper
+                .select(StandingbookLabelInfoDO::getStandingbookId,StandingbookLabelInfoDO::getId,
+                        StandingbookLabelInfoDO::getName,StandingbookLabelInfoDO::getValue)
+                .in(StandingbookLabelInfoDO::getStandingbookId, ids);
+        List<StandingbookLabelInfoDO> standingbookLabelInfoDOList =
+                standingbookLabelInfoMapper.selectList(labelQueryWrapper);
+        Map<Long, List<StandingbookLabelInfoDO>> labelInfoMap =new HashMap<>();
+        if(CollUtil.isNotEmpty(standingbookAttributeDOS)){
+            labelInfoMap = standingbookLabelInfoDOList.stream().collect(Collectors.groupingBy(StandingbookLabelInfoDO::getStandingbookId));
+        }
+        Map<Long, List<StandingbookAttributeDO>> finalAttributeMap = attributeMap;
+        Map<Long, List<StandingbookLabelInfoDO>> finalLabelInfoMap = labelInfoMap;
+
+
+        standingbookDOS.forEach(standingbookDO -> {
+            Long standingbookId = standingbookDO.getId();
+            if(finalAttributeMap.containsKey(standingbookId)){
+                standingbookDO.addChildAll(finalAttributeMap.get(standingbookId));
+            }
+
+            if(finalLabelInfoMap.containsKey(standingbookId)){
+                standingbookDO.setLabelInfo(finalLabelInfoMap.get(standingbookId));
+            }
+        });
+
+
+        return standingbookDOS;
     }
 
 
@@ -775,8 +927,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             return new ArrayList<>();
         }
         // 组装每个台账节点结构，可与上合起来优化，暂不敢动
-        List<StandingbookDO> result = new ArrayList<>();
-        sbIds.forEach(sbId -> result.add(getStandingbook(sbId)));
+        List<StandingbookDO> result = getByIds(sbIds);
 
         return result;
     }
@@ -957,23 +1108,23 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Override
     public List<StandingbookEnergyTypeVO> getAllEnergyAndType() {
         LambdaQueryWrapper<StandingbookDO> standingbookWrapper = new LambdaQueryWrapper<>();
-        standingbookWrapper.select(StandingbookDO::getId,StandingbookDO::getTypeId);
+        standingbookWrapper.select(StandingbookDO::getId, StandingbookDO::getTypeId);
         List<StandingbookDO> standingbookDOS = standingbookMapper.selectList(standingbookWrapper);
 
         Set<Long> typeIds = standingbookDOS.stream().map(StandingbookDO::getTypeId).collect(Collectors.toSet());
 
         LambdaQueryWrapper<StandingbookTmplDaqAttrDO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.select(StandingbookTmplDaqAttrDO::getTypeId,StandingbookTmplDaqAttrDO::getEnergyId);
+        wrapper.select(StandingbookTmplDaqAttrDO::getTypeId, StandingbookTmplDaqAttrDO::getEnergyId);
         wrapper.in(StandingbookTmplDaqAttrDO::getTypeId, typeIds);
         wrapper.eq(StandingbookTmplDaqAttrDO::getEnergyFlag, true);
-        wrapper.groupBy(StandingbookTmplDaqAttrDO::getTypeId,StandingbookTmplDaqAttrDO::getEnergyId);
+        wrapper.groupBy(StandingbookTmplDaqAttrDO::getTypeId, StandingbookTmplDaqAttrDO::getEnergyId);
         List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS = standingbookTmplDaqAttrMapper.selectList(wrapper);
         Map<Long, StandingbookTmplDaqAttrDO> typeTmplMap = standingbookTmplDaqAttrDOS.stream().collect(Collectors.toMap(StandingbookTmplDaqAttrDO::getTypeId, Function.identity()));
 
         List<StandingbookEnergyTypeVO> result = new ArrayList<>();
-        standingbookDOS.forEach(standingbookDO ->{
+        standingbookDOS.forEach(standingbookDO -> {
 
-            if(Objects.nonNull(typeTmplMap.get(standingbookDO.getTypeId()))){
+            if (Objects.nonNull(typeTmplMap.get(standingbookDO.getTypeId()))) {
                 StandingbookEnergyTypeVO vo = new StandingbookEnergyTypeVO();
                 vo.setStandingbookId(standingbookDO.getId());
                 vo.setTypeId(standingbookDO.getTypeId());

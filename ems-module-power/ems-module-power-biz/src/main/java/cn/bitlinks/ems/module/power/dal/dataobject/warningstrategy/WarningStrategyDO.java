@@ -6,6 +6,7 @@ import cn.bitlinks.ems.framework.mybatis.core.type.LongListTypeHandler;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -107,4 +108,8 @@ public class WarningStrategyDO extends BaseDO {
      */
     private Integer intervalUnit;
 
+    /**
+     * 上次触发实时数据的最新异常时间，用于判断如果一致则不进行触发，
+     */
+    private LocalDateTime lastExpTime;
 }

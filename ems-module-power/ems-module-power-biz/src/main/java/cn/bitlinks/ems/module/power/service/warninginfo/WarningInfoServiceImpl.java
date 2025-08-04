@@ -6,7 +6,7 @@ import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoS
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatusUpdReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
 import cn.bitlinks.ems.module.power.dal.mysql.warninginfo.WarningInfoMapper;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -72,7 +72,8 @@ public class WarningInfoServiceImpl implements WarningInfoService {
         // 与产品协定修改逻辑：1.不同用户的告警消息，按照告警时间和告警规则一起更新处理状态，2. 过去时间的相同策略的告警信息如果未处理不需要更新处理状态。
         WarningInfoDO warningInfo = warningInfoMapper.selectById(updateReqVO.getId());
 
-        warningInfoMapper.update(new LambdaQueryWrapper<WarningInfoDO>()
+        warningInfoMapper.update(new LambdaUpdateWrapper<WarningInfoDO>()
+                .set(WarningInfoDO::getStatus, updateReqVO.getStatus())
                 .eq(WarningInfoDO::getWarningTime, warningInfo.getWarningTime())
                 .eq(WarningInfoDO::getStrategyId, warningInfo.getStrategyId()));
 

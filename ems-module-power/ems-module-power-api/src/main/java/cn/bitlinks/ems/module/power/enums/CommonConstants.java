@@ -34,6 +34,26 @@ public interface CommonConstants {
 
     Long LABEL_LAYER_LIMIT = 5L;
 
+    /**
+     * 用能统计 标签最大展示深度（层级）
+     */
+    Integer LABEL_MAX_DISPLAY_DEEP = 5;
+
+    /**
+     * 每日合计
+     */
+    String DAILY_STATISTICS = "每日合计";
+
+    /**
+     * 每日合计
+     */
+    String MONTHLY_STATISTICS = "每月合计";
+    /**
+     * 每日合计
+     */
+    String ANNUAL_STATISTICS = "每年合计";
+
+    String ELECTRICITY = "电力";
 
     Integer YEAR = 366;
 
@@ -64,9 +84,23 @@ public interface CommonConstants {
      */
     Integer RATIO = 3;
 
+
+    String COAT_UNIT1 = "(kgce)";
+    String COAT_UNIT2 = "(tce)";
+
+    String COST_UNIT1 = "(元)";
+    String COST_UNIT2 = "(万元)";
+
+    String PCW = "PCW";
+    String LTW = "低温水";
+    String MTW = "中温水";
+    String HRW = "热回收水/温水";
+    String BHW = "锅炉热水";
+    String MHW = "市政热水";
+
     /**
      * 随机成功概率
-      */
+     */
     double SUCCESS_PROBABILITY = 0.8;
     /**
      * 服务名称（IP地址：端口号）协议
@@ -87,12 +121,20 @@ public interface CommonConstants {
     /**
      * 告警策略任务，锁
      */
-    String STRATEGY_TASK_LOCK_KEY = "strategy-task:%s" ;
+    String STRATEGY_TASK_LOCK_KEY = "strategy-task:%s";
     /**
      * cop聚合任务，锁
      */
-    String COP_HOUR_AGG_TASK_LOCK_KEY = "cop-hour-agg-task:%s" ;
+    String COP_HOUR_AGG_TASK_LOCK_KEY = "cop-hour-agg-task:%s";
+    /**
+     * cop重算任务，锁
+     */
+    String COP_HOUR_AGG_RECALC_TASK_LOCK_KEY = "cop-hour-agg-recalc-task:%s";
 
-    String COP_HOUR_AGG_TABLE_NAME="cop_hour_aggregate_data";
+    String COP_HOUR_AGG_TABLE_NAME = "cop_hour_aggregate_data";
+    /**
+     * 拆分任务队列 redis key
+     */
+    String SPLIT_TASK_QUEUE_REDIS_KEY_PREFIX = "split_task_queue:";
 
 }

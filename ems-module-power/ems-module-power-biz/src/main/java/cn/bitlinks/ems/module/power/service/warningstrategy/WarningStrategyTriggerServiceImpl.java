@@ -2,10 +2,10 @@ package cn.bitlinks.ems.module.power.service.warningstrategy;
 
 import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
-import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.CollectRawDataApi;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.CollectRawDataDTO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
@@ -16,6 +16,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrate
 import cn.bitlinks.ems.module.power.dal.dataobject.warningtemplate.WarningTemplateDO;
 import cn.bitlinks.ems.module.power.dal.mysql.warninginfo.WarningInfoMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyConditionMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningtemplate.WarningTemplateMapper;
 import cn.bitlinks.ems.module.power.enums.DictTypeConstants;
 import cn.bitlinks.ems.module.power.enums.warninginfo.WarningStrategyConnectorEnum;
@@ -30,7 +31,9 @@ import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -40,9 +43,10 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.SB_MONITOR_DETAIL;
 import static cn.bitlinks.ems.module.power.enums.warninginfo.WarningStrategyConnectorEnum.evaluateCondition;
 import static cn.bitlinks.ems.module.power.enums.warninginfo.WarningTemplateKeyWordEnum.*;
 import static cn.hutool.core.date.DatePattern.NORM_DATETIME_FORMATTER;
@@ -61,6 +65,8 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
     private WarningStrategyConditionMapper warningStrategyConditionMapper;
     @Resource
     private WarningInfoMapper warningInfoMapper;
+    @Resource
+    private WarningStrategyMapper warningStrategyMapper;
     @Resource
     private WarningTemplateMapper warningTemplateMapper;
     @Resource
@@ -83,12 +89,21 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
     @Resource
     private CollectRawDataApi collectRawDataApi;
 
+    private final static String customConnector = "->";
 
     @Override
     @Transactional
     public void triggerWarning(List<WarningStrategyDO> warningStrategyDOS, LocalDateTime triggerTime) {
+        // 查询范围里包含的所有台账分类ids + 缓存
+        List<StandingbookTypeDO> typeTreeList = standingbookTypeService.getStandingbookTypeNode();
+        // 设备分类 id-name 映射
+        Map<Long, String> tyepIdNameMap = standingbookTypeService.getStandingbookTypeIdNameMap();
+        // 获取所有台账的id-DTO 映射
+        Map<Long, StandingbookDTO> standingbookDTOMap = standingbookService.getStandingbookDTOMap();
         for (WarningStrategyDO warningStrategyDO : warningStrategyDOS) {
             try {
+                // 触发告警的最新异常时间
+                AtomicReference<LocalDateTime> maxTime = new AtomicReference<>(null);
                 Long strategyId = warningStrategyDO.getId();
                 // 如果该策略的状态是关闭
                 if (CommonStatusEnum.DISABLE.getStatus().equals(warningStrategyDO.getStatus())) {
@@ -96,18 +111,30 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                 }
                 // 获取该策略对应的设备和设备分类下的所有设备
                 List<Long> deviceScopeIds = warningStrategyDO.getDeviceScope();
+                if (CollUtil.isEmpty(deviceScopeIds)) {
+                    deviceScopeIds = new ArrayList<>();
+                }
+                // 3. 查询策略中需要满足的所有条件
+                List<WarningStrategyConditionDO> conditionVOS =
+                        warningStrategyConditionMapper.selectList(WarningStrategyConditionDO::getStrategyId, strategyId);
+                if (CollUtil.isEmpty(conditionVOS)) {
+                    continue;
+                }
+                // 关联设备的需要条件中存在的所有设备
+                if(CollUtil.isNotEmpty(deviceScopeIds)){
+                    deviceScopeIds.addAll(findConditionSbIds(conditionVOS));
+                }
 
-                // 1.1 查询台账分类范围下的所有设备id todo 循环递归问题, 待优化
+                // 1.1 查询台账分类范围下的所有设备id
                 List<Long> typeIds = warningStrategyDO.getDeviceTypeScope();
                 // 1.1.1 获取台账分类下所有的台账ids
                 Map<Long, List<Long>> typeIdToAllStandingbookIdsMap = new HashMap<>();
-                if (CollUtil.isNotEmpty(warningStrategyDO.getDeviceTypeScope())) {
+                if (CollUtil.isNotEmpty(typeIds)) {
                     Map<Long, List<Long>> cascadeTypeIdMap = new HashMap<>();
-                    // 查询范围里包含的所有台账分类ids
-                    List<StandingbookTypeDO> typeList = standingbookTypeService.getStandingbookTypeNode();
+
                     List<Long> typeIdSet = new ArrayList<>();
                     for (Long typeId : typeIds) {
-                        List<Long> subtreeIds = standingbookTypeService.getSubtreeIds(typeList, typeId);
+                        List<Long> subtreeIds = standingbookTypeService.getSubtreeIds(typeTreeList, typeId);
                         typeIdSet.addAll(subtreeIds);
                         cascadeTypeIdMap.put(typeId, subtreeIds);
                     }
@@ -160,24 +187,13 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                                         (existing, replacement) -> existing // Merge function: keep existing if duplicate
                                 )
                         ));
-                // 2.1 查询 台账id->台账基础属性
-                Map<Long, List<StandingbookAttributeDO>> attrsMap = standingbookAttributeService.getAttributesBySbIds(deviceScopeIds);
+                // 2.1 查询 台账id->台账数采属性
                 Map<Long, List<StandingbookTmplDaqAttrDO>> daqAttrsMap =
                         standingbookTmplDaqAttrService.getDaqAttrsBySbIds(deviceScopeIds);
-                // 2.2 查询 台账id-> 台账
-                List<StandingbookDO> standingbookDOList = standingbookService.getByStandingbookIds(deviceScopeIds);
-                Map<Long, StandingbookDO> standingbookDOMap = standingbookDOList.stream()
-                        .collect(Collectors.toMap(StandingbookDO::getId, item -> item));
+
                 // 2.2 查询 台账分类id-> 台账分类
-                List<StandingbookTypeDO> standingbookTypeList = standingbookTypeService.getStandingbookTypeList(new StandingbookTypeListReqVO());
-                Map<Long, StandingbookTypeDO> standingbookTypeDOMap = standingbookTypeList.stream()
-                        .collect(Collectors.toMap(StandingbookTypeDO::getId, item -> item));
-                // 3. 查询策略中需要满足的所有条件
-                List<WarningStrategyConditionDO> conditionVOS =
-                        warningStrategyConditionMapper.selectList(WarningStrategyConditionDO::getStrategyId, strategyId);
-                if (CollUtil.isEmpty(conditionVOS)) {
-                    continue;
-                }
+
+
 
                 // 4.!!!!根据实时数据判断条件是否全都被满足
                 Map<WarningStrategyConditionDO, List<CollectRawDataDTO>> matchCollectRawDataMap =
@@ -226,21 +242,21 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                         if (deviceFlag) {
                             conditionParamsMap.put(WARNING_DEVICE_TYPE.getKeyWord(), StringPool.EMPTY);
                         } else {
-                            StandingbookTypeDO standingbookTypeDO =
-                                    standingbookTypeDOMap.get(Long.valueOf(conditionSbOrTypeId));
-                            conditionParamsMap.put(WARNING_DEVICE_TYPE.getKeyWord(), standingbookTypeDO.getName());
+                            conditionParamsMap.put(WARNING_DEVICE_TYPE.getKeyWord(), tyepIdNameMap.get(Long.valueOf(conditionSbOrTypeId)));
                         }
 
-                        List<StandingbookAttributeDO> standingbookAttributeDOS = attrsMap.get(collectRawDataDTO.getStandingbookId());
-                        Optional<StandingbookAttributeDO> measureNameOptional = standingbookAttributeDOS.stream()
-                                .filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode()))
-                                .findFirst();
-                        Optional<StandingbookAttributeDO> measureIdOptional = standingbookAttributeDOS.stream()
-                                .filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode()))
-                                .findFirst();
-                        String sbName = measureNameOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY);
-                        String sbCode = measureIdOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY);
-                        conditionParamsMap.put(WARNING_DEVICE_NAME.getKeyWord(), sbName);
+
+                        StandingbookDTO standingbookDTO = standingbookDTOMap.get(collectRawDataDTO.getStandingbookId());
+                        String sbName = Objects.isNull(standingbookDTO) ? StringPool.EMPTY : standingbookDTO.getCode();
+                        String sbCode = Objects.isNull(standingbookDTO) ? StringPool.EMPTY : standingbookDTO.getCode();
+
+                        if (deviceFlag) {
+                            // 如果是设备选的需要展示全链路
+                            conditionParamsMap.put(WARNING_DEVICE_NAME.getKeyWord(), allLinkName(conditionVO.getParamId(), standingbookDTOMap, paramName));
+                        } else {
+                            conditionParamsMap.put(WARNING_DEVICE_NAME.getKeyWord(), sbName);
+                        }
+                        // 条件的设备名称不对，需要连续起来，其中可能有分类有台账
                         conditionParamsMap.put(WARNING_DEVICE_CODE.getKeyWord(), sbCode);
                         conditionParamsMap.put(WARNING_STRATEGY_NAME.getKeyWord(), warningStrategyDO.getName());
                         conditionParamsMap.put(WARNING_DETAIL_LINK.getKeyWord(), String.format(SB_MONITOR_DETAIL,
@@ -248,8 +264,19 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                         conditionParamsMapList.add(conditionParamsMap);
                         String deviceRel = String.format("%s(%s)", sbName, sbCode);
                         deviceRelList.add(deviceRel);
+                        // 处理最大时间
+                        LocalDateTime curTime = collectRawDataDTO.getCollectTime();
+                        // 更新最大时间
+                        maxTime.updateAndGet(prev -> (prev == null || curTime.isAfter(prev)) ? curTime : prev);
+
                     });
                 });
+
+                //------------------------------ 该策略的最新异常时间不满足的话直接return ------------------------
+                if (warningStrategyDO.getLastExpTime() != null && !maxTime.get().isAfter(warningStrategyDO.getLastExpTime())) {
+                    log.info("该策略 id {},已触发过相同时间告警内容", strategyId);
+                    continue;
+                }
 
 
                 //------------------------------（还差收件人、标题、内容未填充）------------------------
@@ -273,11 +300,61 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                 if (mailTemplateDO != null) {
                     sendSiteMsg(mailUserIds, mailTemplateDO, conditionParamsMapList, null);
                 }
+                // 更新告警规则的最新异常时间
+                warningStrategyMapper.update(new LambdaUpdateWrapper<WarningStrategyDO>().set(WarningStrategyDO::getLastExpTime, triggerTime).eq(WarningStrategyDO::getId, strategyId));
             } catch (Exception e) {
                 log.error("该策略 id {} ,告警触发异常", warningStrategyDO.getId(), e);
             }
         }
 
+    }
+
+    private List<Long> findConditionSbIds(List<WarningStrategyConditionDO> conditionVOS) {
+        if(CollUtil.isEmpty(conditionVOS)) {
+            return Collections.emptyList();
+        }
+        List<Long> sbIds = new ArrayList<>();
+        for(WarningStrategyConditionDO warningStrategyConditionDO:conditionVOS){
+            List<String> paramIds = warningStrategyConditionDO.getParamId();
+            String sbId = paramIds.get(paramIds.size() - 2);
+            sbIds.add(Long.parseLong(sbId));
+        }
+        return sbIds;
+    }
+
+    /**
+     * 拼接台账名称 + 参数名
+     *
+     * @param paramId            参数ID列表，前n-1是台账ID，最后一个是原始参数（不处理）
+     * @param standingbookDTOMap 台账ID到DTO的映射
+     * @param paramName          要拼接的参数名称
+     * @return 拼接字符串，如："冷水流量计 > 热水流量计 > 瞬时流量"
+     */
+    private String allLinkName(List<String> paramId, Map<Long, StandingbookDTO> standingbookDTOMap, String paramName) {
+        if (CollUtil.isEmpty(paramId)) {
+            return StringPool.EMPTY;
+        }
+
+        List<String> nameParts = new ArrayList<>();
+        int lastIndex = paramId.size() - 1;
+
+        for (int i = 0; i < lastIndex; i++) {
+            String rawId = paramId.get(i);
+            try {
+                Long id = Long.valueOf(rawId);
+                StandingbookDTO dto = standingbookDTOMap.get(id);
+                if (dto != null && StringUtils.isNotBlank(dto.getName())) {
+                    nameParts.add(dto.getName());
+                }
+            } catch (NumberFormatException e) {
+                log.error("台账ID格式错误: {}", rawId, e);
+            }
+        }
+
+        // 拼上参数名（最后一位）
+        nameParts.add(paramName);
+
+        return String.join(customConnector, nameParts);
     }
 
     /**
@@ -346,7 +423,7 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
      */
     private CollectRawDataDTO filterMatchCollectRawDataDTOByStandingbookId(WarningStrategyConditionDO conditionVO,
                                                                            Long standingbookId, Map<Long, Map<String,
-            CollectRawDataDTO>> collectRawDataMap) {
+                    CollectRawDataDTO>> collectRawDataMap) {
         List<String> paramIds = conditionVO.getParamId();
         // 获取参数编码
         String conditionCodeAndEnergyFlag = paramIds.get(paramIds.size() - 1);

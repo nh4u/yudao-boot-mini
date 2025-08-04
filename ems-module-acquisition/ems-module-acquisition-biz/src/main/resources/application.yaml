@@ -49,6 +49,10 @@ spring:
           scheduler:
             instanceName: clusteredScheduler
             instanceId: AUTO
+          threadPool:
+            class: org.quartz.simpl.SimpleThreadPool
+            threadCount: 20          # 线程池大小
+            threadPriority: 5
           dataSource:
             dataSource:
               driver: com.mysql.cj.jdbc.Driver
@@ -135,6 +139,7 @@ ems:
     enable: true
     ignore-urls:
       - /rpc-api/acquisition/streamLoad/insertBatch
-      - /rpc-api/acquisition/minuteAggregateData/getRangeDataRequestParam
+      - /rpc-api/acquisition/minuteAggregateData/getCopRangeData
+      - /rpc-api/acquisition/minuteAggregateData/getCopRangeDataSteady
 
 debug: false

@@ -23,4 +23,12 @@ public interface DictTypeConstants {
      * 系统类型 低温冷机 LTC,低温系统 LTS,中温冷机 MTC,中温系统 MTS
      */
     String SYSTEM_TYPE = "cop_type";
+    /**
+     * 暖通报表-热力汇总统计项
+     */
+    String REPORT_HVAC_HEAT = "report_hvac_heat";
+    /**
+     * 暖通报表-天然气统计项
+     */
+    String REPORT_NATURAL_GAS = "report_natural_gas";
 }

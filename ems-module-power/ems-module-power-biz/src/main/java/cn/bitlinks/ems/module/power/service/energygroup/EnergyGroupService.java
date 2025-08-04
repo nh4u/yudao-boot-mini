@@ -60,6 +60,7 @@ public interface EnergyGroupService {
      * @return 能源分组
      */
     EnergyGroupDO getEnergyGroup(Long id);
+    EnergyGroupDO getEnergyGroupByName(String name);
 
     /**
      * 获得能源分组分页
@@ -74,4 +75,12 @@ public interface EnergyGroupService {
      * @return
      */
     List<EnergyGroupRespVO>  getEnergyGroups();
+
+    /**
+     * 获得能源分组
+     *
+     * @param groupName 名称
+     * @return 能源分组
+     */
+    EnergyGroupDO getEnergyGroup(String groupName);
 }

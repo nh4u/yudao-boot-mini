@@ -603,6 +603,13 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         return list;
     }
 
+    /**
+     * 获取有单位的能源list
+     *
+     * @param energyIds
+     * @param energyClassify
+     * @return
+     */
     @Override
     public List<EnergyConfigurationDO> getByEnergyClassify(Set<Long> energyIds, Integer energyClassify) {
         if(CollectionUtil.isEmpty(energyIds) && Objects.isNull(energyClassify)){
@@ -621,6 +628,27 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         return energyConfigurationMapper.selectJoinList(EnergyConfigurationDO.class, wrapper);
     }
 
+    /**
+     * 获取无单位的能源list
+     *
+     * @param energyIds
+     * @param energyClassify
+     * @return
+     */
+    @Override
+    public List<EnergyConfigurationDO> getPureByEnergyClassify(Set<Long> energyIds, Integer energyClassify) {
+        if(CollectionUtil.isEmpty(energyIds) && Objects.isNull(energyClassify)){
+            return Collections.emptyList();
+        }
+        LambdaQueryWrapper<EnergyConfigurationDO> wrapper = new LambdaQueryWrapper<>();
+        if(CollectionUtil.isNotEmpty(energyIds)){
+            wrapper.in(EnergyConfigurationDO::getId, energyIds);
+            return energyConfigurationMapper.selectList(wrapper);
+        }
+        wrapper.eq(EnergyConfigurationDO::getEnergyClassify, energyClassify);
+        return energyConfigurationMapper.selectList(wrapper);
+    }
+
     @Override
     public List<EnergyConfigurationDO> getByEnergyClassify(Integer energyClassify) {
         if (!Objects.isNull(energyClassify)){
@@ -630,6 +658,12 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         else {
             return Collections.emptyList();
         }
+    }
+
+    @Override
+    public List<EnergyConfigurationDO> getByEnergyGroup(Long energyGroup) {
+        return energyConfigurationMapper.selectList(new LambdaQueryWrapper<EnergyConfigurationDO>()
+                .eq(EnergyConfigurationDO::getGroupId,energyGroup));
     }
 }
 

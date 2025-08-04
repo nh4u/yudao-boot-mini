@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.infra.controller.admin.file;
 
 import cn.bitlinks.ems.module.infra.controller.app.file.vo.AppFileUploadReqVO;
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.text.StrPool;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.URLUtil;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
@@ -13,17 +14,22 @@ import cn.bitlinks.ems.module.infra.service.file.FileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
 import javax.annotation.Resource;
 import javax.annotation.security.PermitAll;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Base64;
 
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 import static cn.bitlinks.ems.module.infra.framework.file.core.utils.FileTypeUtils.writeAttachment;
@@ -38,6 +44,9 @@ public class FileController {
     @Resource
     private FileService fileService;
 
+    @Value("${ems.kkFileView.url}")
+    private String kkFileViewUrl = "";
+
     @PostMapping("/upload")
     @Operation(summary = "上传文件", description = "模式一：后端上传文件")
     public CommonResult<String> uploadFile(FileUploadReqVO uploadReqVO) throws Exception {
@@ -48,10 +57,15 @@ public class FileController {
 
     @PostMapping("/emsUploadFile")
     @Operation(summary = "上传文件new")
-    public CommonResult<FileDO> emsUploadFile(AppFileUploadReqVO uploadReqVO) throws Exception {
+    public CommonResult<FileRespVO> emsUploadFile(AppFileUploadReqVO uploadReqVO) throws Exception {
         MultipartFile file = uploadReqVO.getFile();
         String path = uploadReqVO.getPath();
-        return success(fileService.emsCreateFile(file.getOriginalFilename(), path, IoUtil.readBytes(file.getInputStream())));
+        FileDO fileDO = fileService.emsCreateFile(file.getOriginalFilename(), path, IoUtil.readBytes(file.getInputStream()));
+        FileRespVO fileRespVO = BeanUtils.toBean(fileDO, FileRespVO.class);
+        String fileDownloadUrl = fileDO.getUrl();
+        String previewUrl = kkFileViewUrl + Base64.getEncoder().encodeToString(fileDownloadUrl.getBytes());
+        fileRespVO.setPreviewUrl(previewUrl);
+        return success(fileRespVO);
     }
 
     @GetMapping("/presigned-url")

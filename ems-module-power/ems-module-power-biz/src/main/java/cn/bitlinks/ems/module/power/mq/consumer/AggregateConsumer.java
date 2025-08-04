@@ -2,17 +2,22 @@ package cn.bitlinks.ems.module.power.mq.consumer;
 
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MultiMinuteAggDataDTO;
-import cn.bitlinks.ems.module.power.service.copsettings.CopCalcService;
+import cn.bitlinks.ems.module.power.service.cophouraggdata.RedisCopQueueService;
 import cn.bitlinks.ems.module.power.service.usagecost.CalcUsageCostService;
 import cn.hutool.core.collection.CollectionUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wangl
@@ -29,11 +34,14 @@ public class AggregateConsumer implements RocketMQListener<MultiMinuteAggDataDTO
     @Resource
     private CalcUsageCostService calcUsageCostService;
     @Resource
-    private CopCalcService copCalcService;
+    private RedisCopQueueService redisCopQueueService;
+
+    private final int delaySeconds = 3;
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
 
     @Override
     public void onMessage(MultiMinuteAggDataDTO messages) {
-        List<MinuteAggregateDataDTO> minuteAggMsg= messages.getMinuteAggregateDataDTOList();
+        List<MinuteAggregateDataDTO> minuteAggMsg = messages.getMinuteAggregateDataDTOList();
         if (CollectionUtil.isEmpty(messages.getMinuteAggregateDataDTOList())) {
             log.info("AggregateConsumer get no message");
             return;
@@ -41,20 +49,38 @@ public class AggregateConsumer implements RocketMQListener<MultiMinuteAggDataDTO
         calcUsageCostService.process(minuteAggMsg);
         // cop 重算逻辑，每一批次必定是全小时级别数据，不会出现跨小时的情况，
         // 1. 获取最小小时 和 最大小时
-        if(messages.getCopFlag()) {
+        // COP 重算处理（改为只入 Redis 队列）
+        if (Boolean.TRUE.equals(messages.getCopFlag())) {
             LocalDateTime minHour = minuteAggMsg.stream()
                     .map(dto -> dto.getAggregateTime().withMinute(0).withSecond(0).withNano(0))
                     .min(LocalDateTime::compareTo).orElse(null);
+
             LocalDateTime maxHour = minuteAggMsg.stream()
                     .map(dto -> dto.getAggregateTime().withMinute(0).withSecond(0).withNano(0))
                     .max(LocalDateTime::compareTo).orElse(null);
+
             if (minHour == null || maxHour == null) {
                 log.warn("cop计算逻辑 接收到空时间区间，跳过处理");
                 return;
             }
-            // 计算、重算cop逻辑
-            copCalcService.calculateCop(minHour, maxHour.plusHours(1L), minuteAggMsg);
+            List<LocalDateTime> hourList = new ArrayList<>();
+            for (LocalDateTime hour = minHour; !hour.isAfter(maxHour); hour = hour.plusHours(1)) {
+                hourList.add(hour);
+            }
+            scheduleHoursToRedisSequentially(hourList);
         }
         log.info("AggregateConsumer end");
+    }
+
+
+    // 控制并发写入的统一方法，内部做排队调度
+    public void scheduleHoursToRedisSequentially(List<LocalDateTime> hours) {
+        for (LocalDateTime hour : hours) {
+            final LocalDateTime h = hour;
+            scheduler.schedule(() -> {
+                redisCopQueueService.pushHourForCopRecalc(h);
+                log.info("COP 重算队列： 顺序延迟写入小时[{}]到Redis", h);
+            }, delaySeconds, TimeUnit.SECONDS);
+        }
     }
 }

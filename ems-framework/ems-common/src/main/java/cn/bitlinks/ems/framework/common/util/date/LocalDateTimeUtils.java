@@ -33,7 +33,7 @@ public class LocalDateTimeUtils {
 
     /**
      * 解析时间
-     *
+     * <p>
      * 相比 {@link LocalDateTimeUtil#parse(CharSequence)} 方法来说，会尽量去解析，直到成功
      *
      * @param time 时间
@@ -55,9 +55,10 @@ public class LocalDateTimeUtils {
         return LocalDateTime.now().minus(duration);
     }
 
-    public static boolean before(LocalDateTime start, LocalDateTime end){
+    public static boolean before(LocalDateTime start, LocalDateTime end) {
         return start.isBefore(end);
     }
+
     public static boolean beforeNow(LocalDateTime date) {
         return date.isBefore(LocalDateTime.now());
     }
@@ -87,8 +88,8 @@ public class LocalDateTimeUtils {
      * 判指定断时间，是否在该时间范围内
      *
      * @param startTime 开始时间
-     * @param endTime 结束时间
-     * @param time 指定时间
+     * @param endTime   结束时间
+     * @param time      指定时间
      * @return 是否
      */
     public static boolean isBetween(LocalDateTime startTime, LocalDateTime endTime, String time) {
@@ -165,6 +166,29 @@ public class LocalDateTimeUtils {
     public static LocalDateTime endOfMonth(LocalDateTime date) {
         return date.with(TemporalAdjusters.lastDayOfMonth()).with(LocalTime.MAX);
     }
+
+    /**
+     * 获取指定日期所在的年份的开始时间
+     * 例如：2023-01-01 00:00:00,000
+     *
+     * @param date 日期
+     * @return 年份的开始时间
+     */
+    public static LocalDateTime beginOfYear(LocalDateTime date) {
+        return date.with(TemporalAdjusters.firstDayOfYear()).with(LocalTime.MIN);
+    }
+
+    /**
+     * 获取指定日期所在的年份的最后时间
+     * 例如：2023-12-31 23:59:59,999
+     *
+     * @param date 日期
+     * @return 年份的结束时间
+     */
+    public static LocalDateTime endOfYear(LocalDateTime date) {
+        return date.with(TemporalAdjusters.lastDayOfYear()).with(LocalTime.MAX);
+    }
+
 
     /**
      * 获得指定日期所在季度
@@ -317,8 +341,8 @@ public class LocalDateTimeUtils {
     /**
      * 判断两个时间之间相差的天数是否不超过指定天数
      *
-     * @param start 起始时间
-     * @param end 结束时间
+     * @param start   起始时间
+     * @param end     结束时间
      * @param maxDays 最大允许天数
      * @return true：不超过 maxDays；false：超过了
      */
@@ -333,7 +357,7 @@ public class LocalDateTimeUtils {
 
 
     /**
-     * 生成时间范围列表
+     * 生成时间范围列表 开始时间必须小于结束时间
      *
      * @param startDateTime 开始时间
      * @param endDateTime   结束时间
@@ -345,24 +369,32 @@ public class LocalDateTimeUtils {
         // 1. 找到枚举
         switch (dataTypeEnum) {
             case DAY:
+                // 当天开始
+                current = LocalDateTime.of(current.toLocalDate(), LocalTime.MIN);
                 while (!current.isAfter(endDateTime)) {
                     result.add(LocalDateTimeUtil.format(current, DatePattern.NORM_DATE_PATTERN));
                     current = current.plusDays(1);
                 }
                 break;
             case MONTH:
+                // 当月开始
+                current = beginOfMonth(current);
                 while (!current.isAfter(endDateTime)) {
                     result.add(LocalDateTimeUtil.format(current, DatePattern.NORM_MONTH_PATTERN));
                     current = current.plusMonths(1);
                 }
                 break;
             case YEAR:
+                // 当年开始
+                current = beginOfYear(current);
                 while (!current.isAfter(endDateTime)) {
                     result.add(LocalDateTimeUtil.format(current, DatePattern.NORM_YEAR_PATTERN));
                     current = current.plusYears(1);
                 }
                 break;
             case HOUR:
+                // 当时开始
+                current = LocalDateTime.of(current.toLocalDate(), LocalTime.of(current.getHour(), 0, 0));
                 while (!current.isAfter(endDateTime)) {
                     result.add(LocalDateTimeUtil.format(current, "yyyy-MM-dd HH:00:00"));
                     current = current.plusHours(1);
@@ -380,7 +412,7 @@ public class LocalDateTimeUtils {
      * 获取上一周期的时间范围（用于环比）
      *
      * @param currentRange 当前时间范围 [start, end]
-     * @param type 时间类型（DAY、MONTH、YEAR 等）
+     * @param type         时间类型（DAY、MONTH、YEAR 等）
      * @return 上一周期的时间范围 [lastStart, lastEnd]
      */
     public static LocalDateTime[] getPreviousRange(LocalDateTime[] currentRange, DataTypeEnum type) {
@@ -410,6 +442,44 @@ public class LocalDateTimeUtils {
                 long hours = ChronoUnit.HOURS.between(start, end);
                 lastStart = start.minusHours(hours + 1);
                 lastEnd = end.minusHours(hours + 1);
+                break;
+            default:
+                throw new IllegalArgumentException("不支持的时间类型: " + type);
+        }
+
+        return new LocalDateTime[]{lastStart, lastEnd};
+    }
+
+    /**
+     * 获取上一周期的时间范围（用于环比）
+     *
+     * @param currentRange 当前时间范围 [start, end]
+     * @param type         时间类型（DAY、MONTH、YEAR 等）
+     * @return 上一周期的时间范围 [lastStart, lastEnd]
+     */
+    public static LocalDateTime[] getPreviousRangeV2(LocalDateTime[] currentRange, DataTypeEnum type) {
+        LocalDateTime start = currentRange[0];
+        LocalDateTime end = currentRange[1];
+
+        LocalDateTime lastStart;
+        LocalDateTime lastEnd;
+
+        switch (type) {
+            case DAY:
+                lastStart = start.minusDays(1);
+                lastEnd = end.minusDays(1);
+                break;
+            case MONTH:
+                lastStart = start.minusMonths(1);
+                lastEnd = end.minusMonths(1);
+                break;
+            case YEAR:
+                lastStart = start.minusYears(1);
+                lastEnd = end.minusYears(1);
+                break;
+            case HOUR:
+                lastStart = start.minusHours(1);
+                lastEnd = end.minusHours(1);
                 break;
             default:
                 throw new IllegalArgumentException("不支持的时间类型: " + type);
@@ -450,6 +520,7 @@ public class LocalDateTimeUtils {
 
         return new LocalDateTime[]{lastStart, lastEnd};
     }
+
     /**
      * 根据当前时间字符串和类型推算上一个周期的时间字符串（格式与原格式一致）
      */
@@ -485,6 +556,7 @@ public class LocalDateTimeUtils {
                 throw new IllegalArgumentException("不支持的时间类型：" + type);
         }
     }
+
     /**
      * 根据当前时间字符串和类型推算“去年同期”的时间字符串（格式与原格式一致）
      */
@@ -521,13 +593,14 @@ public class LocalDateTimeUtils {
                 throw new IllegalArgumentException("不支持的时间类型：" + type);
         }
     }
+
     /**
      * 根据当前时间字符串、时间类型和基准年份，推算定基比的时间字符串（格式与原格式一致）
      *
-     * @param current    当前时间字符串（如 "2025-05-19"）
-     * @param type       时间类型（YEAR、MONTH、DAY、HOUR）
-     * @param benchmark  基准年份（如 2022）
-     * @return           基准年对应的时间字符串（格式与 current 一致）
+     * @param current   当前时间字符串（如 "2025-05-19"）
+     * @param type      时间类型（YEAR、MONTH、DAY、HOUR）
+     * @param benchmark 基准年份（如 2022）
+     * @return 基准年对应的时间字符串（格式与 current 一致）
      */
     public static String getBenchmarkTime(String current, DataTypeEnum type, int benchmark) {
         switch (type) {
@@ -601,4 +674,52 @@ public class LocalDateTimeUtils {
         return new LocalDateTime[]{baseStart, baseEnd};
     }
 
+
+    /**
+     * 格式时间对应  2025-06-12 17 和 2025-06-12 17:00:00 对应处理
+     *
+     * @param strTime
+     * @return
+     */
+    public static String dealStrTime(String strTime) {
+        return strTime.length() > 13 ? strTime.substring(0, 13) : strTime;
+    }
+
+    /**
+     * 根据时间字符串 来返回去年同期时间字符串 边界情况测试（闰年也OK）
+     *
+     * @param dateStr 时间字符串
+     * @param format  时间格式
+     * @return
+     */
+    public static String getSamePeriodLastYear(String dateStr, String format) {
+        // 1. 定义日期时间格式（与输入字符串一致）
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
+        // 2. 解析字符串为 LocalDateTime
+        LocalDateTime dateTime = LocalDateTime.parse(dateStr, formatter);
+        // 3. 减去 1 年
+        LocalDateTime lastYearDateTime = dateTime.minusYears(1);
+
+        // 4. 重新格式化为字符串
+        return lastYearDateTime.format(formatter);
+    }
+
+
+    /**
+     * 格式化字符串
+     */
+    public static <T> String getFormatTime(T time) {
+        if (time instanceof LocalDateTime) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN);
+            return ((LocalDateTime) time).format(formatter);
+        } else if (time instanceof LocalDate) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DatePattern.NORM_DATE_PATTERN);
+            return ((LocalDate) time).format(formatter);
+        } else if (time instanceof LocalTime) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DatePattern.NORM_TIME_PATTERN);
+            return ((LocalTime) time).format(formatter);
+        } else {
+            throw new IllegalArgumentException("Unsupported time type: " + time.getClass());
+        }
+    }
 }

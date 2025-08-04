@@ -103,5 +103,15 @@ public interface EnergyConfigurationService {
      */
     List<EnergyConfigurationDO> getByEnergyClassify(Set<Long> energyIds, Integer energyClassify);
 
+    /**
+     * 获取无单位的能源list
+     * @param energyIds
+     * @param energyClassify
+     * @return
+     */
+    List<EnergyConfigurationDO> getPureByEnergyClassify(Set<Long> energyIds, Integer energyClassify);
+
     List<EnergyConfigurationDO> getByEnergyClassify(Integer energyClassify);
+
+    List<EnergyConfigurationDO> getByEnergyGroup(Long energyGroup);
 }

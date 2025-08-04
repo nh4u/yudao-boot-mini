@@ -143,7 +143,7 @@ public class CopSettingsServiceImpl implements CopSettingsService {
         for (CopSettingsSaveReqVO copSettingsSaveReqVO : copSettingsList) {
             Long standingbookId = copSettingsSaveReqVO.getStandingbookId();
             if (Objects.isNull(standingbookId)) {
-                throw exception(COP_SETTINGS_STANDINGbOOK_NOT_EMPTY);
+                throw exception(COP_SETTINGS_STANDINGBOOK_NOT_EMPTY);
             }
         }
 
@@ -152,16 +152,16 @@ public class CopSettingsServiceImpl implements CopSettingsService {
                 .collect(Collectors.groupingBy(CopSettingsSaveReqVO::getCopType));
 
         // TODO: 2025/6/23 目前台账太少 需要先关闭重复校验，等联调完再放开
-//        copTypeMap.forEach((k, v) -> {
-//            List<Long> collect = v.stream()
-//                    .map(CopSettingsSaveReqVO::getStandingbookId)
-//                    .distinct()
-//                    .collect(Collectors.toList());
-//
-//            if (collect.size() != v.size()) {
-//                throw exception(STANDINGbOOK_REPEAT);
-//            }
-//        });
+        copTypeMap.forEach((k, v) -> {
+            List<Long> collect = v.stream()
+                    .map(CopSettingsSaveReqVO::getStandingbookId)
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            if (collect.size() != v.size()) {
+                throw exception(STANDINGBOOK_REPEAT);
+            }
+        });
 
         // 统一保存
         List<CopSettingsDO> list = BeanUtils.toBean(copSettingsList, CopSettingsDO.class);

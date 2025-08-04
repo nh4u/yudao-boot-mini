@@ -185,14 +185,16 @@ public class WarningTemplateServiceImpl implements WarningTemplateService {
                 return templateStr;
             }
             // 是否只有唯一的字符串
-            boolean isUnique = WarningTemplateKeyWordEnum.areAnyKeywordsOutsideUniqueRange(keyWord);
-            if (isUnique) {
+            boolean allUnique = WarningTemplateKeyWordEnum.areAnyKeywordsOutsideUniqueRange(keyWord);
+            if (allUnique) {
                 sb.append(StrUtil.format(templateStr, conditionParamsMapList.get(0)));
                 return sb.toString();
             }
             // 如果没有表格，按照整体内容处理
             if (!templateStr.contains("<table>")) {
-                conditionParamsMapList.forEach(paramMap -> sb.append(StrUtil.format(templateStr, paramMap)));
+                conditionParamsMapList.forEach(paramMap -> {
+                    sb.append(StrUtil.format(templateStr, paramMap));sb.append("\n");
+                });
                 return sb.toString();
             }
             // --------------   非人能及（分割线）  ------------------------------
@@ -216,7 +218,7 @@ public class WarningTemplateServiceImpl implements WarningTemplateService {
                 String part21 = part2.substring(0, tbodyIndex + "<tbody>".length());
                 sb.append(part21);
                 String part22 = part2.substring(firstTrIndex, firstTrCloseIndex + "</tr>".length());
-                conditionParamsMapList.forEach(paramMap -> sb.append(String.format(part22, paramMap)));
+                conditionParamsMapList.forEach(paramMap -> sb.append(StrUtil.format(part22, paramMap)));
                 sb.append(part2.substring(firstTrCloseIndex + "</tr>".length()));
                 // sb.append(part23);
             }

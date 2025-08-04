@@ -87,5 +87,9 @@ public interface StandingbookTypeService {
      */
     Boolean checkRelStandingbook(Long id);
 
-
+    /**
+     * id-name
+     * @return
+     */
+    Map<Long, String> getStandingbookTypeIdNameMap();
 }

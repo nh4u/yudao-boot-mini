@@ -27,7 +27,7 @@ import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_M
 @EqualsAndHashCode(callSuper = false)
 public class StatisticsParamV2VO {
 
-    @Schema(description = "统计周期,最长不超1年", example = "[1734451200000, 1735315200000]")
+    @Schema(description = "统计周期,最长不超1年", example = "[\"2025-06-23 10:17:00\", \"2025-06-29 10:17:00\" ]")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     @Size(min = 2, max = 2, message = "统计周期不能为空")
     private LocalDateTime[] range;
@@ -53,6 +53,9 @@ public class StatisticsParamV2VO {
     @Schema(description = "能源类型 1：外购能源；2：园区能源。")
     @NotNull(message = "能源类型不能为空")
     private Integer energyClassify;
+
+    @Schema(description = "单位 1：kgce/元；2：tce/万元。")
+    private Integer unit;
 
     @Override
     public String toString() {

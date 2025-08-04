@@ -2,8 +2,8 @@ package cn.bitlinks.ems.module.power.service.additionalrecording;
 
 import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
 import cn.bitlinks.ems.framework.common.enums.FullIncrementEnum;
-import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
+import cn.bitlinks.ems.framework.common.util.calc.AggSplitUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
@@ -12,25 +12,24 @@ import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRang
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelListResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.HeaderCodeMappingVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingBookHeaderDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
-import cn.bitlinks.ems.module.power.dal.mysql.standingbook.reportcod.HeaderCodeMappingMapper;
+import cn.bitlinks.ems.module.power.service.standingbook.StandingbookServiceImpl;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
 import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -46,37 +45,26 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM_LOAD_RANGE_FAIL;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
-import static cn.hutool.core.date.DatePattern.NORM_DATETIME_MINUTE_FORMATTER;
 
 @Slf4j
 @Service
 @Validated
 public class ExcelMeterDataProcessor {
 
-    @Resource
-    private HeaderCodeMappingMapper headerCodeMappingMapper;
 
     @Resource
     private MinuteAggregateDataApi minuteAggregateDataApi;
 
     @Resource
     private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
+    @Resource
+    private AdditionalRecordingService additionalRecordingService;
+    @Resource
+    private SplitTaskDispatcher splitTaskDispatcher;
+    @Autowired
+    private StandingbookServiceImpl standingbookService;
 
-    public static void main(String[] args) {
-        try (FileInputStream fis = new FileInputStream(new File("D:/工作文件/燕东/51051.xls"))) {
-            ExcelMeterDataProcessorV0 processor = new ExcelMeterDataProcessorV0();
-            AcqDataExcelListResultVO result = processor.process(fis, "A4", "A6", "B3", "C3");
-
-//            result.sort(Comparator.comparing(MinuteAggregateDataDTO::getAggregateTime));
-//            result.stream()
-//                    //.filter(s -> s.getStandingbookId().equals("5105F1-a 水泵 正向有功电能"))
-//                    .forEach(System.out::println);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     public AcqDataExcelListResultVO process(InputStream file, String timeStartCell, String timeEndCell,
                                             String meterStartCell, String meterEndCell) throws IOException {
@@ -217,6 +205,8 @@ public class ExcelMeterDataProcessor {
     }
 
     /**
+     * 计算分钟级别数据
+     *
      * @param meterValuesMap
      * @param times
      * @return
@@ -227,26 +217,23 @@ public class ExcelMeterDataProcessor {
         AcqDataExcelListResultVO resultVO = new AcqDataExcelListResultVO();
         List<AcqDataExcelResultVO> failMsgList = new ArrayList<>();
         AtomicInteger acqFailCount = new AtomicInteger();
-        List<Future<List<AcqDataExcelResultVO>>> futures = new ArrayList<>();
-        //获取表头与台账关系
-        Map<String, HeaderCodeMappingVO> standingbookInfo = getStandingbookInfo(meterNames);
-        if(CollUtil.isEmpty(standingbookInfo)){
+        List<Future<Pair<List<MinuteAggregateDataDTO>, List<MinuteAggDataSplitDTO>>>> futures = new ArrayList<>();
+
+        Map<String, StandingBookHeaderDTO> standingbookInfo = getStandingbookInfo(meterNames);
+        if (CollUtil.isEmpty(standingbookInfo)) {
             log.warn("暂无报表与台账关联信息，不进行计算");
             throw exception(IMPORT_NO_MAPPING);
         }
-        // 如果没有的话
-        // 获取每个采集点 在时间段前后的聚合数据
-        //获取表头与台账关系
+
         LocalDateTime startTime = times.get(0);
         LocalDateTime endTime = times.get(times.size() - 1);
-        List<Long> sbIds = Optional.ofNullable(standingbookInfo)
-                .orElse(Collections.emptyMap())
-                .values().stream()
+        List<Long> sbIds = standingbookInfo.values().stream()
                 .filter(Objects::nonNull)
-                .map(HeaderCodeMappingVO::getStandingbookId)
+                .map(StandingBookHeaderDTO::getStandingbookId)
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
+
         MinuteRangeDataParamDTO paramDTO = new MinuteRangeDataParamDTO();
         paramDTO.setStarTime(startTime);
         paramDTO.setEndTime(endTime);
@@ -256,135 +243,107 @@ public class ExcelMeterDataProcessor {
         for (Map.Entry<String, List<BigDecimal>> entry : meterValuesMap.entrySet()) {
             String meter = entry.getKey();
             List<BigDecimal> values = entry.getValue();
+
             if (MapUtil.isEmpty(standingbookInfo) || !standingbookInfo.containsKey(meter) || Objects.isNull(standingbookInfo.get(meter).getStandingbookId())) {
                 failMsgList.add(AcqDataExcelResultVO.builder().acqCode(meter).mistake(IMPORT_ACQ_MISTAKE.getMsg()).mistakeDetail(IMPORT_ACQ_MISTAKE_DETAIL.getMsg()).build());
                 log.info("暂无报表与台账关联信息，不进行计算, 表头：{}", meter);
                 acqFailCount.addAndGet(values.size());
                 continue;
             }
-            HeaderCodeMappingVO headerCodeMappingVO = standingbookInfo.get(meter);
-            StandingbookTmplDaqAttrDO daqAttrDO =
-                    standingbookTmplDaqAttrService.getUsageAttrBySbId(headerCodeMappingVO.getStandingbookId());
+
+            StandingBookHeaderDTO standingBookHeaderDTO = standingbookInfo.get(meter);
+            StandingbookTmplDaqAttrDO daqAttrDO = standingbookTmplDaqAttrService.getUsageAttrBySbId(standingBookHeaderDTO.getStandingbookId());
             if (Objects.isNull(daqAttrDO)) {
                 failMsgList.add(AcqDataExcelResultVO.builder().acqCode(meter).mistake(ADDITIONAL_RECORDING_ENERGY_NOT_EXISTS.getMsg()).mistakeDetail(ADDITIONAL_RECORDING_ENERGY_NOT_EXISTS.getMsg()).build());
                 log.info("无对应能源用量，不可进行补录, 表头：{}", meter);
                 acqFailCount.addAndGet(values.size());
                 continue;
             }
-            MinuteAggregateDataDTO originalDTO = new MinuteAggregateDataDTO();
-            originalDTO.setStandingbookId(headerCodeMappingVO.getStandingbookId());
-            originalDTO.setEnergyFlag(daqAttrDO.getEnergyFlag());
-            originalDTO.setParamCode(daqAttrDO.getCode());
-            originalDTO.setUsage(daqAttrDO.getUsage());
-            originalDTO.setDataType(daqAttrDO.getDataType());
-            originalDTO.setFullIncrement(FullIncrementEnum.FULL.getCode());
-            originalDTO.setDataFeature(daqAttrDO.getDataType());
+
+            MinuteAggregateDataDTO baseDTO = new MinuteAggregateDataDTO();
+            baseDTO.setStandingbookId(standingBookHeaderDTO.getStandingbookId());
+            baseDTO.setEnergyFlag(daqAttrDO.getEnergyFlag());
+            baseDTO.setParamCode(daqAttrDO.getCode());
+            baseDTO.setUsage(daqAttrDO.getUsage());
+            baseDTO.setDataType(daqAttrDO.getDataType());
+            baseDTO.setFullIncrement(FullIncrementEnum.FULL.getCode());
+            baseDTO.setDataFeature(daqAttrDO.getDataType());
+            baseDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
 
             futures.add(executor.submit(() -> {
-                MinuteAggDataSplitDTO minuteAggDataSplitDTO = standingboookUsageRangeTimePreNextAggDataMap.get(headerCodeMappingVO.getStandingbookId());
-                List<AcqDataExcelResultVO> subResult = new ArrayList<>();
-                for (int i = 0; i <= times.size() - 1; i++) {
-                    LocalDateTime cur = times.get(i);
-                    try {
-                        MinuteAggregateDataDTO startDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-                        startDataDTO.setAggregateTime(cur);
-                        startDataDTO.setFullValue(values.get(i));
-                        //startDataDTO.setIncrementalValue(BigDecimal.ZERO);
-                        startDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
-                        // 如果是第一个采集点的话，特殊处理，需要更改当前时间对应的增量
-                        if (i == times.size() - 1) {
-                            // 如果是最后一个采集点的话，需要更改最后一个采集点的下一条原有数据的增量
-                            if (minuteAggDataSplitDTO != null && minuteAggDataSplitDTO.getEndDataDO() != null) {
-                                MinuteAggregateDataDTO lastDTO = minuteAggDataSplitDTO.getEndDataDO();
-                                // 重新设置影响的下一条的增量值
-                                //lastDTO.setIncrementalValue(lastDTO.getFullValue().subtract(values.get(i)));
-                                startDataDTO.setIncrementalValue(calcEndMinuteIncrementValue(times.get(i - 1), cur, values.get(i-1), values.get(i)));
-                                MinuteAggDataSplitDTO rangDTO = new MinuteAggDataSplitDTO();
-                                rangDTO.setStartDataDO(startDataDTO);
-                                rangDTO.setEndDataDO(lastDTO);
-                                CommonResult<String> result = minuteAggregateDataApi.insertRangeDataError(rangDTO);
-                                if (result.isError()) {
-                                    subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(cur.format(NORM_DATETIME_MINUTE_FORMATTER))
-                                            .mistake(result.getMsg()).mistakeDetail(result.getMsg()).build());
-                                    acqFailCount.addAndGet(1);
-                                    log.error("采集点【{}】,采集时间【{}】,采集数值【{}】1数据解析失败，数据异常{}", meter, cur, values.get(i), result.getMsg());
-                                }
-                            }
-                            // 无最后一条的下一条则不处理，
-                        } else {
-                            if (i == 0) {
-                                if (minuteAggDataSplitDTO != null && minuteAggDataSplitDTO.getStartDataDO() != null) {
-                                    MinuteAggregateDataDTO preDTO = minuteAggDataSplitDTO.getStartDataDO();
-                                    // 计算第一条数据的增量
-                                    MinuteAggDataSplitDTO rangDTO = new MinuteAggDataSplitDTO();
-                                    rangDTO.setStartDataDO(preDTO);
-                                    rangDTO.setEndDataDO(startDataDTO);
-                                    CommonResult<String> result = minuteAggregateDataApi.insertRangeDataError(rangDTO);
-                                    handleApiResult(result, subResult, acqFailCount, meter, cur.format(NORM_DATETIME_MINUTE_FORMATTER), values.get(i));
-                                    startDataDTO.setIncrementalValue(calcEndMinuteIncrementValue(preDTO.getAggregateTime(), cur, preDTO.getFullValue(), values.get(i)));
-                                } else {
-                                    // 无上一条数据，则插入单条
-                                    CommonResult<String> result = minuteAggregateDataApi.insertSingleDataError(startDataDTO);
-                                    handleApiResult(result, subResult, acqFailCount, meter, cur.format(NORM_DATETIME_MINUTE_FORMATTER), values.get(i));
-                                    startDataDTO.setIncrementalValue(BigDecimal.ZERO);
-                                }
-                            } else {
-                                startDataDTO.setIncrementalValue(calcEndMinuteIncrementValue(times.get(i - 1), cur, values.get(i - 1), values.get(i)));
-                            }
-                            MinuteAggDataSplitDTO rangDTO = new MinuteAggDataSplitDTO();
-                            rangDTO.setStartDataDO(startDataDTO);
-                            MinuteAggregateDataDTO endDataDTO = BeanUtils.toBean(originalDTO, MinuteAggregateDataDTO.class);
-                            endDataDTO.setAggregateTime(times.get(i + 1));
-                            endDataDTO.setFullValue(values.get(i + 1));
-                            //需要计算
-                            endDataDTO.setIncrementalValue(null);
-                            endDataDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
-                            rangDTO.setEndDataDO(endDataDTO);
-                            CommonResult<String> result = minuteAggregateDataApi.insertRangeDataError(rangDTO);
-                            handleApiResult(result, subResult, acqFailCount, meter, cur.format(NORM_DATETIME_MINUTE_FORMATTER), values.get(i));
+                MinuteAggDataSplitDTO minuteAggDataSplitDTO = standingboookUsageRangeTimePreNextAggDataMap.get(standingBookHeaderDTO.getStandingbookId());
+                List<MinuteAggregateDataDTO> toAddAcqDataList = new ArrayList<>();
+                List<MinuteAggDataSplitDTO> toAddNotAcqSplitDataList = new ArrayList<>();
 
-                        }
+                for (int i = 0; i < times.size(); i++) {
+                    LocalDateTime curTime = times.get(i);
+                    MinuteAggregateDataDTO curDTO = BeanUtils.toBean(baseDTO, MinuteAggregateDataDTO.class);
+                    curDTO.setAggregateTime(curTime);
+                    curDTO.setFullValue(values.get(i));
 
-                    } catch (ServiceException e) {
-                        if (e.getCode().equals(STREAM_LOAD_RANGE_FAIL.getCode())) {
-                            subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(cur.format(NORM_DATETIME_MINUTE_FORMATTER))
-                                    .mistake(IMPORT_DATA_STREAM_LOAD_ERROR.getMsg()).mistakeDetail(IMPORT_DATA_STREAM_LOAD_ERROR.getMsg()).build());
+                    if (i == 0) {
+                        if (minuteAggDataSplitDTO != null && minuteAggDataSplitDTO.getStartDataDO() != null) {
+                            MinuteAggregateDataDTO preDTO = minuteAggDataSplitDTO.getStartDataDO();
+                            curDTO.setIncrementalValue(AggSplitUtils.calculatePerMinuteIncrement(preDTO.getAggregateTime(), curDTO.getAggregateTime(), preDTO.getFullValue(), curDTO.getFullValue()));
+                            toAddAcqDataList.add(curDTO);
+                            toAddNotAcqSplitDataList.add(new MinuteAggDataSplitDTO(preDTO, curDTO));
                         } else {
-                            subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(cur.format(NORM_DATETIME_MINUTE_FORMATTER))
-                                    .mistake(e.getMessage()).mistakeDetail(e.getMessage()).build());
+                            curDTO.setIncrementalValue(BigDecimal.ZERO);
+                            toAddAcqDataList.add(curDTO);
                         }
-                        acqFailCount.addAndGet(1);
-                        log.error("采集点【{}】,采集时间【{}】,采集数值【{}】3数据解析失败，数据异常{}", meter, cur, values.get(i), e.getMessage(), e);
-                    } catch (Exception e) {
-                        acqFailCount.addAndGet(1);
-                        subResult.add(AcqDataExcelResultVO.builder().acqCode(meter).acqTime(cur.format(NORM_DATETIME_MINUTE_FORMATTER))
-                                .mistake(IMPORT_ACQ_MISTAKE.getMsg()).mistakeDetail(IMPORT_ACQ_MISTAKE.getMsg()).build());
-                        log.error("采集点【{}】,采集时间【{}】,采集数值【{}】4数据解析失败，数据异常{}", meter, cur, values.get(i), e.getMessage(), e);
+                    } else if (i == times.size() - 1) {
+                        MinuteAggregateDataDTO preDTO = toAddAcqDataList.get(i - 1);
+                        curDTO.setIncrementalValue(AggSplitUtils.calculatePerMinuteIncrement(times.get(i - 1), curTime, values.get(i - 1), values.get(i)));
+                        toAddAcqDataList.add(curDTO);
+                        toAddNotAcqSplitDataList.add(new MinuteAggDataSplitDTO(preDTO, curDTO));
+
+                        if (minuteAggDataSplitDTO != null && minuteAggDataSplitDTO.getEndDataDO() != null) {
+                            MinuteAggregateDataDTO lastDTO = minuteAggDataSplitDTO.getEndDataDO();
+                            lastDTO.setIncrementalValue(AggSplitUtils.calculatePerMinuteIncrement(curDTO.getAggregateTime(), lastDTO.getAggregateTime(), curDTO.getFullValue(), lastDTO.getFullValue()));
+                            toAddAcqDataList.add(lastDTO);
+                            toAddNotAcqSplitDataList.add(new MinuteAggDataSplitDTO(curDTO, lastDTO));
+                        }
+                    } else {
+                        MinuteAggregateDataDTO preDTO = toAddAcqDataList.get(i - 1);
+                        curDTO.setIncrementalValue(AggSplitUtils.calculatePerMinuteIncrement(times.get(i - 1), curTime, values.get(i - 1), values.get(i)));
+                        toAddAcqDataList.add(curDTO);
+                        toAddNotAcqSplitDataList.add(new MinuteAggDataSplitDTO(preDTO, curDTO));
                     }
                 }
-                return subResult;
+
+                return Pair.of(toAddAcqDataList, toAddNotAcqSplitDataList);
             }));
         }
 
-        for (Future<List<AcqDataExcelResultVO>> future : futures) {
+        List<MinuteAggregateDataDTO> toAddAllAcqList = new ArrayList<>();
+        List<MinuteAggDataSplitDTO> toAddAllNotAcqSplitList = new ArrayList<>();
+
+        for (Future<Pair<List<MinuteAggregateDataDTO>, List<MinuteAggDataSplitDTO>>> future : futures) {
             try {
-                failMsgList.addAll(future.get());
+                Pair<List<MinuteAggregateDataDTO>, List<MinuteAggDataSplitDTO>> pair = future.get();
+                toAddAllAcqList.addAll(pair.getFirst());
+                toAddAllNotAcqSplitList.addAll(pair.getSecond());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.error("线程中断异常", e);
             } catch (ExecutionException e) {
-                Throwable cause = e.getCause(); // 🟢 获取线程中抛出的真实异常
+                Throwable cause = e.getCause();
                 if (cause instanceof FeignException) {
                     FeignException fe = (FeignException) cause;
                     String body = fe.contentUTF8();
                     log.error("远程调用失败：{}", body, fe);
-                    // 如果你有失败列表，也可以补上一个失败记录
                 } else {
                     log.error("线程中执行任务时发生未知异常", cause);
                 }
             }
         }
+
         executor.shutdown();
+
+        minuteAggregateDataApi.insertDataBatch(toAddAllAcqList);
+        additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
+        splitTaskDispatcher.dispatchSplitTaskBatch(toAddAllNotAcqSplitList);
+
         resultVO.setFailList(failMsgList);
         resultVO.setFailAcqTotal(acqFailCount.get());
         return resultVO;
@@ -415,25 +374,6 @@ public class ExcelMeterDataProcessor {
         return null;
     }
 
-    /**
-     * 计算最后一分钟的增量
-     *
-     * @param start
-     * @param end
-     * @param startFull
-     * @param endFull
-     * @return
-     */
-    private BigDecimal calcEndMinuteIncrementValue(LocalDateTime start, LocalDateTime end, BigDecimal startFull, BigDecimal endFull) {
-        long minutes = Duration.between(start, end).toMinutes();
-        if (minutes <= 0) {
-            return BigDecimal.ZERO;
-        }
-
-        // 平均每分钟的增量
-        BigDecimal totalIncrement = endFull.subtract(startFull);
-        return totalIncrement.divide(BigDecimal.valueOf(minutes), 10, RoundingMode.HALF_UP);
-    }
 
     private void handleApiResult(CommonResult<?> result, List<AcqDataExcelResultVO> subResult, AtomicInteger acqFailCount, String meter, String time, BigDecimal value) {
         if (result.isError()) {
@@ -469,24 +409,12 @@ public class ExcelMeterDataProcessor {
         return BigDecimal.ZERO;
     }
 
-    private Map<String, HeaderCodeMappingVO> getStandingbookInfo(List<String> headList) {
-        List<HeaderCodeMappingVO> headerCodeMappingVOS = headerCodeMappingMapper.selectByHeaderCode(headList);
-        if (CollUtil.isEmpty(headerCodeMappingVOS)) {
+    private Map<String, StandingBookHeaderDTO> getStandingbookInfo(List<String> headList) {
+        List<StandingBookHeaderDTO> standingBookHeaderDTOS = standingbookService.getStandingBookHeadersByHeaders(headList);
+        if (CollUtil.isEmpty(standingBookHeaderDTOS)) {
             return null;
         }
-        return headerCodeMappingVOS.stream().collect(Collectors.toMap(HeaderCodeMappingVO::getHeader, Function.identity()));
-    }
-
-    private MinuteAggregateDataDTO buildMinuteAggregateDataDO(LocalDateTime aggregateTime, BigDecimal fullValue, BigDecimal incrementalValue, Long standingbookId) {
-        MinuteAggregateDataDTO dto = new MinuteAggregateDataDTO();
-        dto.setAggregateTime(aggregateTime);
-        dto.setFullValue(fullValue);
-        dto.setIncrementalValue(incrementalValue);
-        dto.setParamCode("");
-        dto.setStandingbookId(standingbookId);
-        dto.setEnergyFlag(true);
-
-        return dto;
+        return standingBookHeaderDTOS.stream().collect(Collectors.toMap(StandingBookHeaderDTO::getHeader, Function.identity()));
     }
 }
 
