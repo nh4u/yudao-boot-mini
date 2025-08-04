@@ -246,7 +246,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             List<MinuteAggregateDataDO> minuteAggregateDataDOList = BeanUtils.toBean(minuteAggregateDataDTO,
                     MinuteAggregateDataDO.class);
             // 发送给usageCost进行计算
-            sendMsgToUsageCostBatchNew(minuteAggregateDataDOList, true);
+            sendMsgToUsageCostBatch(minuteAggregateDataDOList, true);
         } catch (Exception e) {
             log.error("insertDataBatch失败：{}", e.getMessage(), e);
             throw exception(STREAM_LOAD_RANGE_FAIL);
