@@ -357,9 +357,27 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS =
                 standingbookTmplDaqAttrService.getDaqAttrsByStandingbookId(standingbookId);
 
-        // 2.1 无数采设置情况下
+        // 2.1 无数采设置情况下，组装数采参数结构数据给前端
         if (Objects.isNull(standingbookAcquisitionDO)) {
-            return  null;
+            StandingbookAcquisitionVO standingbookAcquisitionVO = new StandingbookAcquisitionVO();
+            standingbookAcquisitionVO.setStandingbookId(standingbookId);
+            // 2.1.1 数采参数为空，
+            if (CollUtil.isEmpty(standingbookTmplDaqAttrDOS)) {
+                return standingbookAcquisitionVO;
+            }
+            // 2.1.2 数采参数不为空，填充台账对应的数采参数
+            List<StandingbookAcquisitionDetailVO> detailVOS = new ArrayList<>();
+            standingbookTmplDaqAttrDOS.forEach(standingbookTmplDaqAttrDO -> {
+                StandingbookAcquisitionDetailAttrDTO standingbookAcquisitionDetailAttrDTO =
+                        BeanUtils.toBean(standingbookTmplDaqAttrDO,
+                                StandingbookAcquisitionDetailAttrDTO.class);
+                StandingbookAcquisitionDetailVO standingbookAcquisitionDetailVO =
+                        BeanUtils.toBean(standingbookAcquisitionDetailAttrDTO,
+                                StandingbookAcquisitionDetailVO.class);
+                detailVOS.add(standingbookAcquisitionDetailVO);
+            });
+            standingbookAcquisitionVO.setDetails(detailVOS);
+            return standingbookAcquisitionVO;
         }
         // 2.2 有数采设置情况下，组装数采参数结构给前端
         StandingbookAcquisitionVO standingbookAcquisitionVO = BeanUtils.toBean(standingbookAcquisitionDO,
