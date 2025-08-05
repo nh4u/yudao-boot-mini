@@ -73,8 +73,7 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
         // 按system分组 组内台账id不能重复 校验
         Map<String, List<SupplyAnalysisSettingsSaveReqVO>> systemMap = supplyAnalysisSettingsList.stream()
                 .collect(Collectors.groupingBy(SupplyAnalysisSettingsSaveReqVO::getSystem));
-
-
+        // 1.核对传入的值
         systemMap.forEach((k, v) -> {
             List<SupplyAnalysisSettingsSaveReqVO> tempV = v
                     .stream()
@@ -88,6 +87,19 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
 
             if (collect.size() != tempV.size()) {
                 throw exception(SUPPLY_ANALYSIS_STANDINGBOOK_REPEAT);
+            }
+        });
+
+        // 2.核对数据库里的值
+        supplyAnalysisSettingsList.forEach(l -> {
+            if (!Objects.isNull(l.getStandingbookId())) {
+                Long count = supplyAnalysisSettingsMapper.selectCount(new LambdaQueryWrapperX<SupplyAnalysisSettingsDO>()
+                        .eq(SupplyAnalysisSettingsDO::getStandingbookId, l.getStandingbookId())
+                        .eq(SupplyAnalysisSettingsDO::getSystem, l.getSystem())
+                        .ne(SupplyAnalysisSettingsDO::getId, l.getId()));
+                if (count.compareTo(1L) >= 0) {
+                    throw exception(SUPPLY_ANALYSIS_STANDINGBOOK_REPEAT);
+                }
             }
         });
 
