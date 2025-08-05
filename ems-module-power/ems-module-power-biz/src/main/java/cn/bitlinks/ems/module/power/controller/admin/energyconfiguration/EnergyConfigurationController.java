@@ -27,6 +27,7 @@ import java.util.Map;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.GROUP_WATER;
 
 @Tag(name = "管理后台 - 能源配置")
 @RestController
@@ -139,6 +140,20 @@ public class EnergyConfigurationController {
     public CommonResult<Boolean> submitFormula(@Valid @RequestBody EnergyConfigurationSaveReqVO updateReqVO) {
         energyConfigurationService.submitFormula(updateReqVO);
         return success(true);
+    }
+
+    @GetMapping("/getWaterEnergy")
+    @Operation(summary = "获得水分组能源")
+    //@PreAuthorize("@ss.hasPermission('power:energy-configuration:query')")
+    public CommonResult<List<EnergyConfigurationDO>> getWaterEnergy() {
+        return success(energyConfigurationService.getByEnergyGroup(GROUP_WATER));
+    }
+
+    @GetMapping("/getByEnergyGroup")
+    @Operation(summary = "根据能源分组获得能源")
+    //@PreAuthorize("@ss.hasPermission('power:energy-configuration:query')")
+    public CommonResult<List<EnergyConfigurationDO>> getByEnergyGroup( @RequestParam(required = true) String energyGroupName) {
+        return success(energyConfigurationService.getByEnergyGroup(energyGroupName));
     }
 
 }
