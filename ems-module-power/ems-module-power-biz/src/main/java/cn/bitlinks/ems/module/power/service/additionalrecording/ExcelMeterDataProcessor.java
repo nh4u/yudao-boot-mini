@@ -84,6 +84,9 @@ public class ExcelMeterDataProcessor {
             List<String> meterNames = parseMeterNames(sheet, meterStart, meterEnd, meterHorizontal);
             List<LocalDateTime> times = parseTimeSeries(sheet, timeStart, timeEnd, timeVertical);
             Map<String, List<BigDecimal>> meterValuesMap = extractMeterValues(sheet, meterNames, timeStart, times, meterStart, timeVertical, meterHorizontal);
+            if(CollUtil.isEmpty(times)){
+                throw exception(IMPORT_NO_TIMES);
+            }
 
             return calculateMinuteDataParallel(meterValuesMap, times, meterNames);
         }
