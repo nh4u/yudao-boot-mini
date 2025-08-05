@@ -1,5 +1,12 @@
 package cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo;
 
+/**
+ * @author wangl
+ * @date 2025年05月15日 10:57
+ */
+
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsChartYInfoV2VO;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -9,19 +16,21 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * @author bmqi
- * @date 2025年07月30日 18:27
+ * @author wangl
+ * @date 2025年05月14日 15:06
  */
-@Schema(description = "管理后台 - 用电量统计结果图 VO")
+@Schema(description = "管理后台 - 用能统计结果图 VO")
 @Data
 @EqualsAndHashCode(callSuper = false)
 @ToString(callSuper = true)
-public class ConsumptionStatisticsChartResultVO<T> {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class FeeChartResultVO<T> {
 
     /**
-     * 统计信息
+     * 表头
      */
     private List<T> ydata;
+
 
     /**
      * 表头
