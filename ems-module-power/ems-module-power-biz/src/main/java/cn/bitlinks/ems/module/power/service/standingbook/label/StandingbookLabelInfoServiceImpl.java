@@ -47,4 +47,9 @@ public class StandingbookLabelInfoServiceImpl implements StandingbookLabelInfoSe
     public List<StandingbookLabelInfoDO> getByStandingBookId(Long standingBookId) {
         return standingbookLabelInfoMapper.selectList(StandingbookLabelInfoDO::getStandingbookId, standingBookId);
     }
+
+    @Override
+    public List<StandingbookLabelInfoDO> getByValuesSelected(List<String> values) {
+        return standingbookLabelInfoMapper.getByValuesSelected(values);
+    }
 }
