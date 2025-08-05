@@ -26,10 +26,13 @@ import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
+import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getSamePeriodLastYear;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.SYSTEM_TYPE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_TYPE_NOT_EXISTS;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.END_TIME_MUST_AFTER_START_TIME;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.COP;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.STATISTICS_FEE;
 
 /**
  * @author liumingqiang
@@ -247,8 +250,15 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
         List<String> copTypes = dealSystemType(copyTypeList);
 
         List<List<String>> list = ListUtils.newArrayList();
+
+        // 表单名称
+        String sheetName = COP;
+        // 系统
+        String systemStr = copTypes.stream().map(map::get).collect(Collectors.joining("、"));
+        // 统计周期
+        String strTime = getFormatTime(startTime) + "~" + getFormatTime(endTime);
         // 第一格处理
-        list.add(Arrays.asList("", ""));
+        list.add(Arrays.asList("表单名称", "系统", "统计周期", "时间/系统", "时间/系统"));
 
         // 月份处理
         DataTypeEnum dataTypeEnum = validateDateType(1);
@@ -256,7 +266,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
 
         xdata.forEach(x -> {
             copTypes.forEach(c -> {
-                list.add(Arrays.asList(x, map.get(c)));
+                list.add(Arrays.asList(sheetName, systemStr, strTime, x, map.get(c)));
             });
         });
 
