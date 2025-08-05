@@ -89,9 +89,9 @@ public interface ExportConstants {
 
     // 个人化报表
 
+    String COP = "COP报表";
     String SUPPLY_ANALYSIS  = "供应分析表";
     String STATISTICS_FEE  = "电费统计表";
-
     String WATER_STATISTICS = "水科报表";
 
     // 用电量统计
