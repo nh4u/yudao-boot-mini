@@ -221,8 +221,14 @@ public class ExcelMeterDataProcessor {
 
         Map<String, StandingBookHeaderDTO> standingbookInfo = getStandingbookInfo(meterNames);
         if (CollUtil.isEmpty(standingbookInfo)) {
-            log.warn("暂无报表与台账关联信息，不进行计算");
-            throw exception(IMPORT_NO_MAPPING);
+            meterNames.forEach(meter->{
+                failMsgList.add(AcqDataExcelResultVO.builder().acqCode(meter).mistake(IMPORT_ACQ_MISTAKE.getMsg()).mistakeDetail(IMPORT_ACQ_MISTAKE_DETAIL.getMsg()).build());
+
+            });
+            resultVO.setFailList(failMsgList);
+            resultVO.setFailAcqTotal(meterNames.size());
+            return  resultVO;
+
         }
 
         LocalDateTime startTime = times.get(0);
@@ -246,7 +252,6 @@ public class ExcelMeterDataProcessor {
 
             if (MapUtil.isEmpty(standingbookInfo) || !standingbookInfo.containsKey(meter) || Objects.isNull(standingbookInfo.get(meter).getStandingbookId())) {
                 failMsgList.add(AcqDataExcelResultVO.builder().acqCode(meter).mistake(IMPORT_ACQ_MISTAKE.getMsg()).mistakeDetail(IMPORT_ACQ_MISTAKE_DETAIL.getMsg()).build());
-                log.info("暂无报表与台账关联信息，不进行计算, 表头：{}", meter);
                 acqFailCount.addAndGet(values.size());
                 continue;
             }
