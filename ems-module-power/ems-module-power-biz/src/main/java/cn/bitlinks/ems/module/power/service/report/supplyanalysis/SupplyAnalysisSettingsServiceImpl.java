@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -261,7 +262,13 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
     @Override
     public SupplyAnalysisPieResultVO supplyAnalysisChart(SupplyAnalysisReportParamVO paramVO) {
         // 1.校验时间范围
-        LocalDateTime[] rangeOrigin = validateRange(paramVO.getRange());
+        LocalDateTime[] range = paramVO.getRange();
+        LocalDateTime[] rangeOrigin;
+        if (Objects.isNull(range) || range.length < 2) {
+            rangeOrigin = validateRange(paramVO.getTimeRange());
+        } else {
+            rangeOrigin = validateRange(range);
+        }
 
         SupplyAnalysisPieResultVO resultVO = new SupplyAnalysisPieResultVO();
         resultVO.setDataTime(LocalDateTime.now());
