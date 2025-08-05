@@ -118,15 +118,15 @@ public class NaturalGasServiceImpl implements NaturalGasService {
         // 查询 热力计量器具对应的用量使用情况；
         List<UsageCostData> usageCostDataList = usageCostService.getUsageByStandingboookIdGroup(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], new ArrayList<>(sbMapping.values()));
 
-        List<NaturalGasInfo> NaturalGasInfoList = queryDefaultData(usageCostDataList, sbMapping, itemMapping);
+        List<NaturalGasInfo> naturalGasInfoList = queryDefaultData(usageCostDataList, sbMapping, itemMapping);
 
         //返回结果
         BaseReportResultVO<NaturalGasInfo> resultVO = new BaseReportResultVO<>();
         resultVO.setHeader(tableHeader);
-        resultVO.setReportDataList(NaturalGasInfoList);
+        resultVO.setReportDataList(naturalGasInfoList);
 
         // 无数据的填充0
-        NaturalGasInfoList.forEach(l -> {
+        naturalGasInfoList.forEach(l -> {
 
             List<NaturalGasInfoData> newList = new ArrayList<>();
             List<NaturalGasInfoData> oldList = l.getNaturalGasInfoDataList();
@@ -262,12 +262,12 @@ public class NaturalGasServiceImpl implements NaturalGasService {
         // 放入 map 中
         ydataListMap.put("汇总", scaledSumList);
 
-        Map<String,List<BigDecimal>> map = new HashMap<>();
+        LinkedHashMap<String,List<BigDecimal>> map = new LinkedHashMap<>();
+        map.put("汇总",ydataListMap.get("汇总"));
         itemMapping.forEach((k,v)->{
             map.put(k,ydataListMap.get(v));
         });
 
-        map.put("汇总",ydataListMap.get("汇总"));
         resultVO.setYdata(map);
 
         LocalDateTime lastTime = getLastTime(paramVO.getRange()[0], paramVO.getRange()[1], new ArrayList<>(sbMapping.values()));
