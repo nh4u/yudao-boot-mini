@@ -41,7 +41,7 @@ public class SplitTaskExecutor {
 
     @PostConstruct
     public void start() {
-        //executor.scheduleWithFixedDelay(this::consumeAll, 5, 5, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(this::consumeAll, 0,1, TimeUnit.SECONDS);
     }
 
     /**
