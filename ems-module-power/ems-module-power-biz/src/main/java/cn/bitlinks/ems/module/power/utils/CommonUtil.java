@@ -128,6 +128,9 @@ public class CommonUtil {
         if (Objects.isNull(first)) {
             return second;
         } else {
+            if (Objects.isNull(second)) {
+                return first;
+            }
             return first.add(second);
         }
 

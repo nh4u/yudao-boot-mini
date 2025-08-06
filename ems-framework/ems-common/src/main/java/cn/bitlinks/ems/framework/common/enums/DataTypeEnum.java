@@ -6,6 +6,7 @@ import java.util.Arrays;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+
 /**
  * 查询条件时间类型
  * @author wangl
@@ -22,7 +23,10 @@ public enum DataTypeEnum {
     HOUR(3, "时","yyyy-MM-dd HH"),
 
     ;
-
+    // 假设的静态变量（需要返回的目标值）
+    public static final String DAILY_STATISTICS = "每日合计";
+    public static final String MONTHLY_STATISTICS = "每月合计";
+    public static final String YEARLY_STATISTICS = "每年合计";
     private Integer code;
 
     private String detail;
@@ -31,5 +35,17 @@ public enum DataTypeEnum {
 
     public static DataTypeEnum codeOf(Integer code){
         return Arrays.stream(values()).filter(e -> e.getCode().equals(code)).findAny().orElse(null);
+    }
+    public static String getBottomSumCell(DataTypeEnum dataTypeEnum){
+        switch (dataTypeEnum) {
+            case DAY:
+                return DAILY_STATISTICS;
+            case MONTH:
+                return MONTHLY_STATISTICS;
+            case YEAR:
+                return YEARLY_STATISTICS;
+            default:
+                return "";
+        }
     }
 }
