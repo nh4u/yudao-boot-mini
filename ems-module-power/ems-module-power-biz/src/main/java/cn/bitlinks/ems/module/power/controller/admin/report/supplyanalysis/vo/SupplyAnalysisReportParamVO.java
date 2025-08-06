@@ -29,6 +29,11 @@ public class SupplyAnalysisReportParamVO {
     @Size(min = 2, max = 2, message = "统计周期不能为空")
     private LocalDateTime[] range;
 
+    @Schema(description = "供应图统计周期,最长不超1年", example = "[\"2025-06-23 00:00:00\", \"2025-06-29 00:00:00\" ]")
+    @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
+    @Size(min = 2, max = 2, message = "统计周期不能为空")
+    private LocalDateTime[] timeRange;
+
     @Schema(description = "系统")
     private List<String> system;
 

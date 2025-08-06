@@ -113,5 +113,7 @@ public interface EnergyConfigurationService {
 
     List<EnergyConfigurationDO> getByEnergyClassify(Integer energyClassify);
 
-    List<EnergyConfigurationDO> getByEnergyGroup(Long energyGroup);
+    List<EnergyConfigurationDO> getByEnergyGroup(Long energyGroupId);
+
+    List<EnergyConfigurationDO> getByEnergyGroup(String energyGroupName);
 }

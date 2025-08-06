@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.security.core.util.SecurityFrameworkUtils.getLoginUserNickname;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.GROUP_ELECTRICITY;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
 /**
@@ -109,9 +110,10 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
 
     /**
      * 能源参数的参数名不允许重复
+     *
      * @param energyParams
      */
-    private void validParamNameNoRepeat(List<EnergyParametersSaveReqVO> energyParams){
+    private void validParamNameNoRepeat(List<EnergyParametersSaveReqVO> energyParams) {
         if (CollUtil.isEmpty(energyParams)) {
             return;
         }
@@ -137,7 +139,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         // 2. 子表编码查重（新增逻辑）
         checkEnergyParameterCodeDuplicate(updateReqVO.getEnergyParameters());
 
-        if(!old.getEnergyClassify().equals(updateReqVO.getEnergyClassify())){
+        if (!old.getEnergyClassify().equals(updateReqVO.getEnergyClassify())) {
             // 如何group发生改变 则判断是否关联数据 如果管理则报错
             boolean isTemplateAssociated = standingbookTmplDaqAttrService.isAssociationWithEnergyId(energyId);
             if (isTemplateAssociated) {
@@ -255,7 +257,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
             }
 
             // 删除list有数据 则抛出异常
-            if (!toDelete.isEmpty()){
+            if (!toDelete.isEmpty()) {
                 // 使用新的异常码
                 throw exception(ENERGY_CONFIGURATION_TEMPLATE_ASSOCIATED);
             }
@@ -270,13 +272,13 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
                 // 循环做比较
                 for (EnergyParametersSaveReqVO param : toUpdate) {
 
-                    if (!param.equals(oldParamsMap.get(param.getId()))){
+                    if (!param.equals(oldParamsMap.get(param.getId()))) {
                         throw exception(ENERGY_CONFIGURATION_TEMPLATE_ASSOCIATED);
                     }
                 }
             }
 
-        }else {
+        } else {
             // 无关联模板时
             // 7. 执行删除、更新、新增
             if (!toDelete.isEmpty()) {
@@ -612,19 +614,19 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
      */
     @Override
     public List<EnergyConfigurationDO> getByEnergyClassify(Set<Long> energyIds, Integer energyClassify) {
-        if(CollectionUtil.isEmpty(energyIds) && Objects.isNull(energyClassify)){
+        if (CollectionUtil.isEmpty(energyIds) && Objects.isNull(energyClassify)) {
             return Collections.emptyList();
         }
         MPJLambdaWrapperX<EnergyConfigurationDO> wrapper = new MPJLambdaWrapperX<>();
-        if(CollectionUtil.isNotEmpty(energyIds)){
+        if (CollectionUtil.isNotEmpty(energyIds)) {
             wrapper.in(EnergyConfigurationDO::getId, energyIds);
-        }else {
+        } else {
             wrapper.eq(EnergyConfigurationDO::getEnergyClassify, energyClassify);
         }
-        wrapper.select("t.id","t.group_id","t.CODE","t.energy_classify","t.energy_icon","t.factor","t.create_time","t.update_time","t.creator","t.updater","t.deleted");
+        wrapper.select("t.id", "t.group_id", "t.CODE", "t.energy_classify", "t.energy_icon", "t.factor", "t.create_time", "t.update_time", "t.creator", "t.updater", "t.deleted");
         wrapper.select("IF(t1.unit is not null,CONCAT( t.energy_name, '(', t1.unit, ')' ),t.energy_name) AS energy_name ");
         wrapper.leftJoin(EnergyParametersDO.class, EnergyParametersDO::getEnergyId, EnergyConfigurationDO::getId);
-        wrapper.eq(EnergyParametersDO::getUsage,1);
+        wrapper.eq(EnergyParametersDO::getUsage, 1);
         return energyConfigurationMapper.selectJoinList(EnergyConfigurationDO.class, wrapper);
     }
 
@@ -637,11 +639,11 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
      */
     @Override
     public List<EnergyConfigurationDO> getPureByEnergyClassify(Set<Long> energyIds, Integer energyClassify) {
-        if(CollectionUtil.isEmpty(energyIds) && Objects.isNull(energyClassify)){
+        if (CollectionUtil.isEmpty(energyIds) && Objects.isNull(energyClassify)) {
             return Collections.emptyList();
         }
         LambdaQueryWrapper<EnergyConfigurationDO> wrapper = new LambdaQueryWrapper<>();
-        if(CollectionUtil.isNotEmpty(energyIds)){
+        if (CollectionUtil.isNotEmpty(energyIds)) {
             wrapper.in(EnergyConfigurationDO::getId, energyIds);
             return energyConfigurationMapper.selectList(wrapper);
         }
@@ -651,19 +653,29 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
 
     @Override
     public List<EnergyConfigurationDO> getByEnergyClassify(Integer energyClassify) {
-        if (!Objects.isNull(energyClassify)){
+        if (!Objects.isNull(energyClassify)) {
             return energyConfigurationMapper.selectList(new LambdaQueryWrapper<EnergyConfigurationDO>()
                     .eq(EnergyConfigurationDO::getEnergyClassify, energyClassify));
-        }
-        else {
+        } else {
             return Collections.emptyList();
         }
     }
 
     @Override
-    public List<EnergyConfigurationDO> getByEnergyGroup(Long energyGroup) {
+    public List<EnergyConfigurationDO> getByEnergyGroup(Long energyGroupId) {
         return energyConfigurationMapper.selectList(new LambdaQueryWrapper<EnergyConfigurationDO>()
-                .eq(EnergyConfigurationDO::getGroupId,energyGroup));
+                .eq(EnergyConfigurationDO::getGroupId, energyGroupId));
+    }
+
+    @Override
+    public List<EnergyConfigurationDO> getByEnergyGroup(String energyGroupName) {
+
+        EnergyGroupDO energyGroup = energyGroupService.getEnergyGroup(energyGroupName);
+        if (Objects.isNull(energyGroup)) {
+            throw exception(ENERGY_GROUP_NOT_EXISTS);
+        }
+        return energyConfigurationMapper.selectList(new LambdaQueryWrapper<EnergyConfigurationDO>()
+                .eq(EnergyConfigurationDO::getGroupId, energyGroup.getId()));
     }
 }
 
