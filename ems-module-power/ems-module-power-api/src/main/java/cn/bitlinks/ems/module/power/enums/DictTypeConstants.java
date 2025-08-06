@@ -31,4 +31,8 @@ public interface DictTypeConstants {
      * 暖通报表-天然气统计项
      */
     String REPORT_NATURAL_GAS = "report_natural_gas";
+    /**
+     * 暖通报表-暖通电量统计标签
+     */
+    String REPORT_HVAC_ELECTRICITY = "report_hvac_electricity";
 }
