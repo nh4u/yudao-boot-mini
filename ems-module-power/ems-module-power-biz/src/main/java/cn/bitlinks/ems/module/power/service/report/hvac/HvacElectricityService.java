@@ -1,7 +1,9 @@
 package cn.bitlinks.ems.module.power.service.report.hvac;
 
-import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.*;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseReportMultiChartResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseReportResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.HvacElectricityInfo;
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.HvacElectricityParamVO;
 
 import javax.validation.Valid;
 import java.math.BigDecimal;
@@ -11,19 +13,21 @@ import java.util.Map;
 public interface HvacElectricityService {
     /**
      * 表
+     *
      * @param paramVO
      * @return
      */
-    BaseReportResultVO<HvacElectricityInfo> getTable(@Valid BaseTimeDateParamVO paramVO);
+    BaseReportResultVO<HvacElectricityInfo> getTable(@Valid HvacElectricityParamVO paramVO);
 
-//    /**
-//     * 图
-//     * @param paramVO
-//     * @return
-//     */
-//    BaseReportMultiChartResultVO<Map<String, List<BigDecimal>>> getChart(@Valid BaseTimeDateParamVO paramVO);
+    /**
+     * 图
+     *
+     * @param paramVO
+     * @return
+     */
+    BaseReportMultiChartResultVO<Map<String, List<BigDecimal>>> getChart(@Valid HvacElectricityParamVO paramVO);
 
-    List<List<String>> getExcelHeader(@Valid BaseTimeDateParamVO paramVO);
-
-    List<List<Object>> getExcelData(@Valid BaseTimeDateParamVO paramVO);
+//    List<List<String>> getExcelHeader(@Valid BaseTimeDateParamVO paramVO);
+//
+//    List<List<Object>> getExcelData(@Valid BaseTimeDateParamVO paramVO);
 }

@@ -14,8 +14,10 @@ public class HvacElectricityInfo {
     @Schema(description = "数据", example = "数据")
     private List<HvacElectricityInfoData> hvacElectricityInfoDataList;
 
-    @Schema(description = "数据项", example = "热力")
+    @Schema(description = "标签名", example = "热力")
     private String itemName;
+    @Schema(description = "标签编码", example = "热力")
+    private String itemCode;
 
     @Schema(description = "周期合计-当期", example = "4.44")
     private BigDecimal periodNow;
