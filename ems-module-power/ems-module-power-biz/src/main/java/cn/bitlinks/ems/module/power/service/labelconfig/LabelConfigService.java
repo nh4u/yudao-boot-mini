@@ -66,11 +66,15 @@ public interface LabelConfigService {
 
     /**
      * 获取所有的配置标签
+     *
      * @return 配置标签
      */
     List<LabelConfigDO> getAllLabelConfig();
 
 
     List<LabelConfigDO> getByIds(List<Long> ids);
+
     List<LabelConfigDO> getByParentId(List<Long> ids);
+
+    List<LabelConfigDO> getByCodes(List<String> codes);
 }
