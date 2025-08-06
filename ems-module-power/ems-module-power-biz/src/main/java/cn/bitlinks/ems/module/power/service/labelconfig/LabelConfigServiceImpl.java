@@ -264,7 +264,7 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     @Override
     public List<LabelConfigDO> getAllLabelConfig() {
         LambdaQueryWrapperX<LabelConfigDO> wrapper = new LambdaQueryWrapperX<>();
-        wrapper.select(LabelConfigDO::getId, LabelConfigDO::getParentId, LabelConfigDO::getLabelName);
+        wrapper.select(LabelConfigDO::getId, LabelConfigDO::getParentId, LabelConfigDO::getLabelName,LabelConfigDO::getCode);
         return labelConfigMapper.selectList(wrapper);
     }
 

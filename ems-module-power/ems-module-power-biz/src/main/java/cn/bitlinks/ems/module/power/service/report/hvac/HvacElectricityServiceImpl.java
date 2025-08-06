@@ -71,7 +71,7 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
     private StatisticsCommonService statisticsCommonService;
 
     private final String DEFAULT_ENERGY_GROUP = "电力";
-
+    private final String periodSumKey = "periodSum";
     /**
      * 报表统计标签，存放到字典中。
      *
@@ -444,17 +444,7 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
 
     }
 
-    /**
-     * 同比率计算（避免除零）
-     */
-    private BigDecimal calculateYearOnYearRatio(BigDecimal now, BigDecimal previous) {
-        if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0 || now == null) {
-            return BigDecimal.ZERO;
-        }
-        return now.subtract(previous)
-                .divide(previous, 4, RoundingMode.HALF_UP)
-                .multiply(BigDecimal.valueOf(100));
-    }
+
 
 
     @Override
@@ -492,11 +482,22 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
             if (CollUtil.isEmpty(dateList)) {
                 return;
             }
-            List<BigDecimal> nowList = xdata.stream().map(time ->
-                    timeMap.get(time).getNow()
+            List<BigDecimal> nowList = xdata.stream().map(time ->{
+                    HvacElectricityInfoData infoData = timeMap.get(time);
+                    if(Objects.isNull(infoData)){
+                        return BigDecimal.ZERO;
+                    }
+                    return infoData.getNow();
+                }
+
             ).collect(Collectors.toList());
-            List<BigDecimal> preList = xdata.stream().map(time ->
-                    timeMap.get(time).getPrevious()
+            List<BigDecimal> preList = xdata.stream().map(time ->{
+                        HvacElectricityInfoData infoData = timeMap.get(time);
+                        if(Objects.isNull(infoData)){
+                            return BigDecimal.ZERO;
+                        }
+                        return infoData.getPrevious();
+                    }
             ).collect(Collectors.toList());
 
             ydataNowListMap.put(info.getItemName(), nowList);
@@ -534,6 +535,8 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
         // 放入 map 中
         ydataListMap.put("汇总", scaledSumNowList);
         ydataListMap.put("汇总_同期", scaledSumPreList);
+        ydataListMap.putAll(ydataNowListMap);
+        ydataListMap.putAll(ydataPreListMap);
 
         resultVO.setYdata(ydataListMap);
         String jsonStr = JSONUtil.toJsonStr(resultVO);
@@ -575,7 +578,9 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
         List<String> tableHeader = resultVO.getHeader();
 
         List<HvacElectricityInfo> hvacElectricityInfoList = resultVO.getReportDataList();
-
+        // 底部合计map
+        Map<String, BigDecimal> bottomNowSumMap = new HashMap<>();
+        Map<String, BigDecimal> bottomPreSumMap = new HashMap<>();
         for (HvacElectricityInfo s : hvacElectricityInfoList) {
 
             List<Object> data = ListUtils.newArrayList();
@@ -598,6 +603,9 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
                     data.add(getConvertData(hvacElectricityInfoData.getNow()));
                     data.add(getConvertData(hvacElectricityInfoData.getPrevious()));
                     data.add(getConvertData(hvacElectricityInfoData.getRatio()));
+                    // 底部合计
+                    bottomNowSumMap.put(date, addBigDecimal(bottomNowSumMap.get(date), hvacElectricityInfoData.getNow()));
+                    bottomPreSumMap.put(date, addBigDecimal(bottomPreSumMap.get(date), hvacElectricityInfoData.getPrevious()));
                 }
             });
 
@@ -605,10 +613,26 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
             data.add(getConvertData(s.getPeriodNow()));
             data.add(getConvertData(s.getPeriodPrevious()));
             data.add(getConvertData(s.getPeriodRatio()));
-
+            // 处理底部周期合计
+            bottomNowSumMap.put(periodSumKey, addBigDecimal(bottomNowSumMap.get(periodSumKey), s.getPeriodNow()));
+            bottomPreSumMap.put(periodSumKey, addBigDecimal(bottomPreSumMap.get(periodSumKey), s.getPeriodPrevious()));
             result.add(data);
         }
-
+        // 添加底部合计数据
+        List<Object> bottom = ListUtils.newArrayList();
+        // 每日合计、每月合计，每年合计
+        bottom.add(DataTypeEnum.getBottomSumCell(DataTypeEnum.codeOf(paramVO.getDateType())));
+        // 底部数据位
+        tableHeader.forEach(date -> {
+            bottom.add(getConvertData(bottomNowSumMap.get(date)));
+            bottom.add(getConvertData(bottomPreSumMap.get(date)));
+            bottom.add(getConvertData(calculateYearOnYearRatio(bottomNowSumMap.get(date),bottomPreSumMap.get(date))));
+        });
+        // 底部周期合计
+        bottom.add(getConvertData(bottomNowSumMap.get(periodSumKey)));
+        bottom.add(getConvertData(bottomPreSumMap.get(periodSumKey)));
+        bottom.add(getConvertData(calculateYearOnYearRatio(bottomNowSumMap.get(periodSumKey),bottomPreSumMap.get(periodSumKey))));
+        result.add(bottom);
         return result;
     }
 

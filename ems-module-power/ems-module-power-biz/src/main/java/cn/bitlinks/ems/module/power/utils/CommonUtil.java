@@ -82,7 +82,17 @@ public class CommonUtil {
 
         return headerList;
     }
-
+    /**
+     * 同比率计算（避免除零）
+     */
+    public static BigDecimal calculateYearOnYearRatio(BigDecimal now, BigDecimal previous) {
+        if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0 || now == null) {
+            return BigDecimal.ZERO;
+        }
+        return now.subtract(previous)
+                .divide(previous, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100));
+    }
 
     public static BigDecimal dealBigDecimalScale(BigDecimal num, Integer scale) {
         if (num != null) {
@@ -145,6 +155,7 @@ public class CommonUtil {
     public static Object getConvertData(BigDecimal num) {
         return !Objects.isNull(num) && num.compareTo(BigDecimal.ZERO) != 0 ? num : "/";
     }
+
 
     /**
      * 根据数据返回对应数据 or /

@@ -30,7 +30,7 @@ import java.util.Map;
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 
-@Tag(name = "管理后台 - 个性化报表[暖通科报表]-热力汇总报表")
+@Tag(name = "管理后台 - 个性化报表[暖通科报表]-暖通电量报表")
 @RestController
 @RequestMapping("/power/report/hvac/hvacElectricity")
 @Validated
