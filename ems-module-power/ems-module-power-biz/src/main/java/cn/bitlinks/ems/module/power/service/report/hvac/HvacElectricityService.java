@@ -27,7 +27,7 @@ public interface HvacElectricityService {
      */
     BaseReportMultiChartResultVO<Map<String, List<BigDecimal>>> getChart(@Valid HvacElectricityParamVO paramVO);
 
-//    List<List<String>> getExcelHeader(@Valid BaseTimeDateParamVO paramVO);
-//
-//    List<List<Object>> getExcelData(@Valid BaseTimeDateParamVO paramVO);
+    List<List<String>> getExcelHeader(@Valid HvacElectricityParamVO paramVO);
+
+    List<List<Object>> getExcelData(@Valid HvacElectricityParamVO paramVO);
 }

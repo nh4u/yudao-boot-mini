@@ -23,6 +23,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
+import com.alibaba.excel.util.ListUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import lombok.extern.slf4j.Slf4j;
@@ -40,12 +41,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.REPORT_HVAC_ELECTRICITY;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ReportCacheConstants.HVAC_ELECTRICITY_CHART;
 import static cn.bitlinks.ems.module.power.enums.ReportCacheConstants.HVAC_ELECTRICITY_TABLE;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
 @Service
 @Validated
@@ -539,68 +541,76 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return resultVO;
     }
-//
-//    @Override
-//    public List<List<String>> getExcelHeader(BaseTimeDateParamVO paramVO) {
-//
-//        validCondition(paramVO);
-//
-//        List<List<String>> list = ListUtils.newArrayList();
-//        list.add(Arrays.asList("表单名称", "统计周期", ""));
-//        String sheetName = "天然气用量";
-//        // 统计周期
-//        String period = getFormatTime(paramVO.getRange()[0]) + "~" + getFormatTime(paramVO.getRange()[1]);
-//
-//        // 月份处理
-//        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
-//        xdata.forEach(x -> {
-//            list.add(Arrays.asList(sheetName, period, x));
-//        });
-//        list.add(Arrays.asList(sheetName, period, "周期合计"));
-//        return list;
-//    }
-//
-//    @Override
-//    public List<List<Object>> getExcelData(BaseTimeDateParamVO paramVO) {
-//        // 结果list
-//        List<List<Object>> result = ListUtils.newArrayList();
-//
-//        BaseReportResultVO<NaturalGasInfo> resultVO = getTable(paramVO);
-//        List<String> tableHeader = resultVO.getHeader();
-//
-//        List<NaturalGasInfo> NaturalGasInfoList = resultVO.getReportDataList();
-//
-//        for (NaturalGasInfo s : NaturalGasInfoList) {
-//
-//            List<Object> data = ListUtils.newArrayList();
-//
-//            data.add(s.getItemName());
-//
-//            // 处理数据
-//            List<NaturalGasInfoData> NaturalGasInfoDataList = s.getNaturalGasInfoDataList();
-//
-//            Map<String, NaturalGasInfoData> dateMap = NaturalGasInfoDataList.stream()
-//                    .collect(Collectors.toMap(NaturalGasInfoData::getDate, Function.identity()));
-//
-//            tableHeader.forEach(date -> {
-//                NaturalGasInfoData NaturalGasInfoData = dateMap.get(date);
-//                if (NaturalGasInfoData == null) {
-//                    data.add("/");
-//                } else {
-//                    BigDecimal consumption = NaturalGasInfoData.getConsumption();
-//                    data.add(getConvertData(consumption));
-//                }
-//            });
-//
-//            BigDecimal periodSum = s.getPeriodSum();
-//            // 处理周期合计
-//            data.add(getConvertData(periodSum));
-//
-//            result.add(data);
-//        }
-//
-//        return result;
-//    }
+
+    @Override
+    public List<List<String>> getExcelHeader(HvacElectricityParamVO paramVO) {
+
+        validCondition(paramVO);
+
+        List<List<String>> list = ListUtils.newArrayList();
+        list.add(Arrays.asList("表单名称", "统计周期", "标签","标签"));
+        String sheetName = "暖通电量";
+        // 统计周期
+        String period = getFormatTime(paramVO.getRange()[0]) + "~" + getFormatTime(paramVO.getRange()[1]);
+
+        // 月份处理
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
+        xdata.forEach(x -> {
+            list.add(Arrays.asList(sheetName, period, x,"当期"));
+            list.add(Arrays.asList(sheetName,  period,x, "同期"));
+            list.add(Arrays.asList(sheetName,  period,x, "同比（%）"));
+        });
+        list.add(Arrays.asList(sheetName, period, "周期合计","当期"));
+        list.add(Arrays.asList(sheetName, period, "周期合计","同期"));
+        list.add(Arrays.asList(sheetName, period, "周期合计","同比（%）"));
+        return list;
+    }
+
+    @Override
+    public List<List<Object>> getExcelData(HvacElectricityParamVO paramVO) {
+        // 结果list
+        List<List<Object>> result = ListUtils.newArrayList();
+
+        BaseReportResultVO<HvacElectricityInfo> resultVO = getTable(paramVO);
+        List<String> tableHeader = resultVO.getHeader();
+
+        List<HvacElectricityInfo> hvacElectricityInfoList = resultVO.getReportDataList();
+
+        for (HvacElectricityInfo s : hvacElectricityInfoList) {
+
+            List<Object> data = ListUtils.newArrayList();
+
+            data.add(s.getItemName());
+
+            // 处理数据
+            List<HvacElectricityInfoData> hvacElectricityInfoDataList = s.getHvacElectricityInfoDataList();
+
+            Map<String, HvacElectricityInfoData> dateMap = hvacElectricityInfoDataList.stream()
+                    .collect(Collectors.toMap(HvacElectricityInfoData::getDate, Function.identity()));
+
+            tableHeader.forEach(date -> {
+                HvacElectricityInfoData hvacElectricityInfoData = dateMap.get(date);
+                if (hvacElectricityInfoData == null) {
+                    data.add("/");
+                    data.add("/");
+                    data.add("/");
+                } else {
+                    data.add(getConvertData(hvacElectricityInfoData.getNow()));
+                    data.add(getConvertData(hvacElectricityInfoData.getPrevious()));
+                    data.add(getConvertData(hvacElectricityInfoData.getRatio()));
+                }
+            });
+
+            // 处理周期合计
+            data.add(getConvertData(s.getPeriodNow()));
+            data.add(getConvertData(s.getPeriodPrevious()));
+            data.add(getConvertData(s.getPeriodRatio()));
+
+            result.add(data);
+        }
+
+        return result;
+    }
 
 
 }
