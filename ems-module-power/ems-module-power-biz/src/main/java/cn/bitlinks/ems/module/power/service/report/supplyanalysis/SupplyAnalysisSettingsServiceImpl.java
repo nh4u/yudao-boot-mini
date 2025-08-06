@@ -136,6 +136,12 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
         StatisticsResultV2VO<SupplyAnalysisStructureInfo> resultVO = new StatisticsResultV2VO<>();
         resultVO.setDataTime(LocalDateTime.now());
 
+        // 校验系统 没值就返空
+        List<String> system1 = paramVO.getSystem();
+        if (CollUtil.isEmpty(system1)){
+            return resultVO;
+        }
+
         // 3.表头处理
         List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], dataTypeEnum);
         resultVO.setHeader(tableHeader);
@@ -148,7 +154,6 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
-
 
         // 4.4.台账id为空直接返回结果
         if (CollUtil.isEmpty(standingBookIds)) {
