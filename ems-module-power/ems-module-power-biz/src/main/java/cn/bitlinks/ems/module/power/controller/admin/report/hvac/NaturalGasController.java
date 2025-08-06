@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,7 +45,7 @@ public class NaturalGasController {
 
     @PostMapping("/chart")
     @Operation(summary = "图")
-    public CommonResult<BaseReportMultiChartResultVO<Map<String,List<BigDecimal>>>> getChart(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
+    public CommonResult<BaseReportMultiChartResultVO<LinkedHashMap<String,List<BigDecimal>>>> getChart(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
         return success(naturalGasService.getChart(paramVO));
     }
 

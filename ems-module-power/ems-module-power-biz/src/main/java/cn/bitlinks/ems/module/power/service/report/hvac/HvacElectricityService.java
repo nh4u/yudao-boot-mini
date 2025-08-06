@@ -7,8 +7,8 @@ import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.HvacElectric
 
 import javax.validation.Valid;
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 public interface HvacElectricityService {
     /**
@@ -25,7 +25,7 @@ public interface HvacElectricityService {
      * @param paramVO
      * @return
      */
-    BaseReportMultiChartResultVO<Map<String, List<BigDecimal>>> getChart(@Valid HvacElectricityParamVO paramVO);
+    BaseReportMultiChartResultVO<LinkedHashMap<String, List<BigDecimal>>> getChart(@Valid HvacElectricityParamVO paramVO);
 
     List<List<String>> getExcelHeader(@Valid HvacElectricityParamVO paramVO);
 

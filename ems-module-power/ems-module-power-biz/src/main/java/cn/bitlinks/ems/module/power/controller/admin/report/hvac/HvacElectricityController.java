@@ -24,8 +24,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
@@ -46,7 +46,7 @@ public class HvacElectricityController {
 
     @PostMapping("/chart")
     @Operation(summary = "图")
-    public CommonResult<BaseReportMultiChartResultVO<Map<String, List<BigDecimal>>>> getChart(@Valid @RequestBody HvacElectricityParamVO paramVO) {
+    public CommonResult<BaseReportMultiChartResultVO<LinkedHashMap<String, List<BigDecimal>>>> getChart(@Valid @RequestBody HvacElectricityParamVO paramVO) {
         return success(hvacElectricityService.getChart(paramVO));
     }
 
@@ -64,7 +64,7 @@ public class HvacElectricityController {
         // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
         response.setContentType("application/vnd.ms-excel");
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.addHeader("Access-Control-Expose-Headers","File-Name");
+        response.addHeader("Access-Control-Expose-Headers", "File-Name");
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
         response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
 
