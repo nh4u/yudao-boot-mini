@@ -90,12 +90,15 @@ public class ExcelMeterDataProcessor {
             }
             boolean timeError;
             if (timeVertical && meterHorizontal) {
-                timeError = timeStart[0] + times.size()+1 != timeEnd[0];
+                timeError = timeStart[0] + times.size()-1 != timeEnd[0];
             } else {
-                timeError = timeStart[1] + times.size()+1 != timeEnd[1];
+                timeError = timeStart[1] + times.size()-1 != timeEnd[1];
             }
             if(timeError){
                 throw exception(IMPORT_TIMES_ERROR);
+            }
+            if(CollUtil.isEmpty(meterValuesMap)){
+                throw exception(IMPORT_NO_METER);
             }
             return calculateMinuteDataParallel(meterValuesMap, times, meterNames);
         }
@@ -359,6 +362,7 @@ public class ExcelMeterDataProcessor {
         minuteAggregateDataApi.insertDataBatch(toAddAllAcqList);
         additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
         splitTaskDispatcher.dispatchSplitTaskBatch(toAddAllNotAcqSplitList);
+
 
         resultVO.setFailList(failMsgList);
         resultVO.setFailAcqTotal(acqFailCount.get());
