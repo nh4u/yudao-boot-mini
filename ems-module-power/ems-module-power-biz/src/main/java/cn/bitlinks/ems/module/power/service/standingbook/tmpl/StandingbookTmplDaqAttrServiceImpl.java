@@ -464,6 +464,7 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
         }
         return standingbookTmplDaqAttrDOS.get(0).getEnergyId();
     }
+
     @Override
     public Map<Long, List<StandingbookTmplDaqAttrDO>> getEnergyDaqAttrsBySbIds(List<Long> sbIds) {
 
@@ -494,6 +495,7 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
 
 
     }
+
     @Override
     public Map<Long, List<StandingbookTmplDaqAttrDO>> getDaqAttrsBySbIds(List<Long> sbIds) {
 
@@ -557,5 +559,8 @@ public class StandingbookTmplDaqAttrServiceImpl implements StandingbookTmplDaqAt
         return standingbookTmplDaqAttrMapper.selectList(wrapper);
     }
 
-
+    @Override
+    public String getParamCode(Long standingBookId, String paramName) {
+        return standingbookTmplDaqAttrMapper.getParamCode(standingBookId, paramName);
+    }
 }

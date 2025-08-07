@@ -40,6 +40,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
@@ -256,7 +257,8 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
 
             List<BigDecimal> data = ListUtils.newArrayList();
             xdata.forEach(date -> {
-                StatisticInfoDataV2 statisticInfoDataV2 = dateMap.get(date);
+                String time = dealStrTime(date);
+                StatisticInfoDataV2 statisticInfoDataV2 = dateMap.get(time);
                 if (statisticInfoDataV2 == null) {
                     data.add(BigDecimal.ZERO);
                 } else {
@@ -350,9 +352,9 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
                         )
                 )).values());
         //按标签统计时候 用量不用合计
-//        BigDecimal totalConsumption = dataList.stream()
-//                .map(StatisticInfoDataV2::getConsumption)
-//                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalConsumption = dataList.stream()
+                .map(StatisticInfoDataV2::getConsumption)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal totalCost = dataList.stream()
                 .map(StatisticInfoDataV2::getMoney)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -373,11 +375,11 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
 
         dataList = dataList.stream().peek(i -> {
             i.setMoney(dealBigDecimalScale(i.getMoney(), scale));
-            i.setConsumption(dealBigDecimalScale(BigDecimal.ZERO, scale));
+            i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
         }).collect(Collectors.toList());
 
         info.setStatisticsDateDataList(dataList);
-        info.setSumEnergyConsumption(dealBigDecimalScale(BigDecimal.ZERO, scale));
+        info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
         info.setSumEnergyMoney(dealBigDecimalScale(totalCost, scale));
 
         resultList.add(info);
@@ -446,9 +448,9 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
                         )).values());
 
                 //按标签统计时候 用量不用合计
-//                BigDecimal totalConsumption = dataList.stream()
-//                        .map(StatisticInfoDataV2::getConsumption)
-//                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal totalConsumption = dataList.stream()
+                        .map(StatisticInfoDataV2::getConsumption)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
                 BigDecimal totalCost = dataList.stream()
                         .map(StatisticInfoDataV2::getMoney)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -462,11 +464,11 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
 
                 dataList = dataList.stream().peek(i -> {
                     i.setMoney(dealBigDecimalScale(i.getMoney(), scale));
-                    i.setConsumption(dealBigDecimalScale(BigDecimal.ZERO, scale));
+                    i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
                 }).collect(Collectors.toList());
 
                 info.setStatisticsDateDataList(dataList);
-                info.setSumEnergyConsumption(dealBigDecimalScale(BigDecimal.ZERO, scale));
+                info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
                 info.setSumEnergyMoney(dealBigDecimalScale(totalCost, scale));
 
                 resultList.add(info);
