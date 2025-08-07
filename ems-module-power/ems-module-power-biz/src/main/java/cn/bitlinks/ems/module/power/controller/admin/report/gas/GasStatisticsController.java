@@ -3,8 +3,7 @@ package cn.bitlinks.ems.module.power.controller.admin.report.gas;
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.gas.vo.PowerTankSettingsRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.gas.vo.SettingsParamVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.gas.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.FullCellMergeStrategy;
 import cn.bitlinks.ems.module.power.service.report.gas.GasStatisticsService;
 import com.alibaba.excel.EasyExcelFactory;
@@ -54,6 +53,18 @@ public class GasStatisticsController {
         return success(gasStatisticsService.savePowerTankSettings(paramVO));
     }
 
+    @PostMapping("/getEnergyStatisticsItems")
+    @Operation(summary = "获得能源统计项列表")
+    public CommonResult<List<EnergyStatisticsItemInfoRespVO>> getEnergyStatisticsItems() {
+        return success(gasStatisticsService.getEnergyStatisticsItems());
+    }
+
+
+    @PostMapping("/gasStatisticsTable")
+    @Operation(summary = "气化科报表")
+    public CommonResult<GasStatisticsResultVO<GasStatisticsInfo>> gasStatisticsTable(@Valid @RequestBody GasStatisticsParamVO paramVO) {
+        return success(gasStatisticsService.gasStatisticsTable(paramVO));
+    }
 
     @PostMapping("/exportGasStatisticsTable")
     @Operation(summary = "导出气化科报表")
