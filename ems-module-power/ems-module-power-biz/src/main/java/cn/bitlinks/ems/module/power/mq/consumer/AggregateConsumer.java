@@ -50,25 +50,25 @@ public class AggregateConsumer implements RocketMQListener<MultiMinuteAggDataDTO
         // cop 重算逻辑，每一批次必定是全小时级别数据，不会出现跨小时的情况，
         // 1. 获取最小小时 和 最大小时
         // COP 重算处理（改为只入 Redis 队列）
-        if (Boolean.TRUE.equals(messages.getCopFlag())) {
-            LocalDateTime minHour = minuteAggMsg.stream()
-                    .map(dto -> dto.getAggregateTime().withMinute(0).withSecond(0).withNano(0))
-                    .min(LocalDateTime::compareTo).orElse(null);
-
-            LocalDateTime maxHour = minuteAggMsg.stream()
-                    .map(dto -> dto.getAggregateTime().withMinute(0).withSecond(0).withNano(0))
-                    .max(LocalDateTime::compareTo).orElse(null);
-
-            if (minHour == null || maxHour == null) {
-                log.warn("cop计算逻辑 接收到空时间区间，跳过处理");
-                return;
-            }
-            List<LocalDateTime> hourList = new ArrayList<>();
-            for (LocalDateTime hour = minHour; !hour.isAfter(maxHour); hour = hour.plusHours(1)) {
-                hourList.add(hour);
-            }
-            scheduleHoursToRedisSequentially(hourList);
-        }
+//        if (Boolean.TRUE.equals(messages.getCopFlag())) {
+//            LocalDateTime minHour = minuteAggMsg.stream()
+//                    .map(dto -> dto.getAggregateTime().withMinute(0).withSecond(0).withNano(0))
+//                    .min(LocalDateTime::compareTo).orElse(null);
+//
+//            LocalDateTime maxHour = minuteAggMsg.stream()
+//                    .map(dto -> dto.getAggregateTime().withMinute(0).withSecond(0).withNano(0))
+//                    .max(LocalDateTime::compareTo).orElse(null);
+//
+//            if (minHour == null || maxHour == null) {
+//                log.warn("cop计算逻辑 接收到空时间区间，跳过处理");
+//                return;
+//            }
+//            List<LocalDateTime> hourList = new ArrayList<>();
+//            for (LocalDateTime hour = minHour; !hour.isAfter(maxHour); hour = hour.plusHours(1)) {
+//                hourList.add(hour);
+//            }
+//            scheduleHoursToRedisSequentially(hourList);
+//        }
         log.info("AggregateConsumer end");
     }
 
