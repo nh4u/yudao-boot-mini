@@ -47,7 +47,23 @@
         ) AS r
     </select>
 
-
+    <select id="getByValuesSelected" resultType="cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO">
+        SELECT *
+        FROM power_standingbook_label_info
+        WHERE
+        deleted = 0
+        AND (
+        `value` IN (
+        <foreach collection="valueList" item="item" separator=",">
+            #{item}
+        </foreach>
+        )
+        OR
+        <foreach collection="valueList" item="item" separator="OR">
+            `value` LIKE CONCAT('%,', #{item})
+        </foreach>
+        )
+    </select>
     <select id="getByValues" resultType="cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO">
         select * from `power_standingbook_label_info` where
         deleted =0

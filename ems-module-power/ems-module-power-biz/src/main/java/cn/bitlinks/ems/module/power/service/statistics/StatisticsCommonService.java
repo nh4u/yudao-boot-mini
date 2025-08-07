@@ -126,7 +126,14 @@ public class StatisticsCommonService {
         }
         return labelInfoDOList;
     }
-
+    /**
+     * 根据指定的子级标签筛选台账ID
+     *
+     * @return
+     */
+    public List<StandingbookLabelInfoDO> getStandingbookIdsByDefaultLabel(List<String> childLabels) {
+        return standingbookLabelInfoService.getByValuesSelected(childLabels);
+    }
     /**
      * 根据筛选条件筛选台账ID
      *

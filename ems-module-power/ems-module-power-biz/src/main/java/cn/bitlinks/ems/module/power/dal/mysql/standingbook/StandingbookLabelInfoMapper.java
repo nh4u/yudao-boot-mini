@@ -39,4 +39,6 @@ public interface StandingbookLabelInfoMapper extends BaseMapperX<StandingbookLab
     Integer getCountByLabelIds(@Param("labelIds") List<String> labelIds);
 
     Integer getCountByLabelId(@Param("labelId") String labelId);
+
+    List<StandingbookLabelInfoDO> getByValuesSelected(@Param("valueList") List<String> values);
 }
