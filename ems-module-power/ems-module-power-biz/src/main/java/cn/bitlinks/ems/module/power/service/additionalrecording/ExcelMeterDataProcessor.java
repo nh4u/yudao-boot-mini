@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
 import cn.bitlinks.ems.framework.common.enums.FullIncrementEnum;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.calc.AggSplitUtils;
+import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
@@ -11,7 +12,6 @@ import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregat
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelListResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.HeaderCodeMappingVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingBookHeaderDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookServiceImpl;
@@ -69,6 +69,7 @@ public class ExcelMeterDataProcessor {
     public AcqDataExcelListResultVO process(InputStream file, String timeStartCell, String timeEndCell,
                                             String meterStartCell, String meterEndCell) throws IOException {
 
+        // 单元格处理
         int[] timeStart = parseCell(timeStartCell);
         int[] timeEnd = parseCell(timeEndCell);
         int[] meterStart = parseCell(meterStartCell);
@@ -84,10 +85,18 @@ public class ExcelMeterDataProcessor {
             List<String> meterNames = parseMeterNames(sheet, meterStart, meterEnd, meterHorizontal);
             List<LocalDateTime> times = parseTimeSeries(sheet, timeStart, timeEnd, timeVertical);
             Map<String, List<BigDecimal>> meterValuesMap = extractMeterValues(sheet, meterNames, timeStart, times, meterStart, timeVertical, meterHorizontal);
-            if(CollUtil.isEmpty(times)){
+            if (CollUtil.isEmpty(times)) {
                 throw exception(IMPORT_NO_TIMES);
             }
-
+            boolean timeError;
+            if (timeVertical && meterHorizontal) {
+                timeError = timeStart[0] + times.size()+1 != timeEnd[0];
+            } else {
+                timeError = timeStart[1] + times.size()+1 != timeEnd[1];
+            }
+            if(timeError){
+                throw exception(IMPORT_TIMES_ERROR);
+            }
             return calculateMinuteDataParallel(meterValuesMap, times, meterNames);
         }
     }
@@ -224,14 +233,12 @@ public class ExcelMeterDataProcessor {
 
         Map<String, StandingBookHeaderDTO> standingbookInfo = getStandingbookInfo(meterNames);
         if (CollUtil.isEmpty(standingbookInfo)) {
-            meterNames.forEach(meter->{
+            meterNames.forEach(meter -> {
                 failMsgList.add(AcqDataExcelResultVO.builder().acqCode(meter).mistake(IMPORT_ACQ_MISTAKE.getMsg()).mistakeDetail(IMPORT_ACQ_MISTAKE_DETAIL.getMsg()).build());
-
             });
             resultVO.setFailList(failMsgList);
             resultVO.setFailAcqTotal(meterNames.size());
-            return  resultVO;
-
+            return resultVO;
         }
 
         LocalDateTime startTime = times.get(0);
@@ -252,6 +259,7 @@ public class ExcelMeterDataProcessor {
         for (Map.Entry<String, List<BigDecimal>> entry : meterValuesMap.entrySet()) {
             String meter = entry.getKey();
             List<BigDecimal> values = entry.getValue();
+
 
             if (MapUtil.isEmpty(standingbookInfo) || !standingbookInfo.containsKey(meter) || Objects.isNull(standingbookInfo.get(meter).getStandingbookId())) {
                 failMsgList.add(AcqDataExcelResultVO.builder().acqCode(meter).mistake(IMPORT_ACQ_MISTAKE.getMsg()).mistakeDetail(IMPORT_ACQ_MISTAKE_DETAIL.getMsg()).build());
