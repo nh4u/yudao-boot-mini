@@ -5,7 +5,6 @@ import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energygroup.EnergyGroupDO;
@@ -320,7 +319,7 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
 
         //能源列表
         EnergyGroupDO energyGroupDO = energyGroupService.getEnergyGroupByName("电力");
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.getAllEnergyConfiguration(new EnergyConfigurationSaveReqVO().setGroupId(energyGroupDO.getId()));
+        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyGroup(energyGroupDO.getId());
         if (CollUtil.isEmpty(energyList)) {
             resultVO.setDataTime(LocalDateTime.now());
             return resultVO;
