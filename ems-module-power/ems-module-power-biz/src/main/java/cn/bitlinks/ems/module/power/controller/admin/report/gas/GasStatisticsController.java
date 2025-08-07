@@ -1,13 +1,11 @@
-package cn.bitlinks.ems.module.power.controller.admin.report.electricity;
+package cn.bitlinks.ems.module.power.controller.admin.report.gas;
 
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
-import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsChartResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsInfo;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsResultVO;
-import cn.bitlinks.ems.module.power.service.report.electricity.ConsumptionStatisticsService;
+import cn.bitlinks.ems.module.power.controller.admin.report.gas.vo.*;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.FullCellMergeStrategy;
+import cn.bitlinks.ems.module.power.service.report.gas.GasStatisticsService;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.write.metadata.style.WriteCellStyle;
 import com.alibaba.excel.write.style.HorizontalCellStyleStrategy;
@@ -19,10 +17,7 @@ import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
@@ -35,38 +30,48 @@ import java.util.List;
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
-import static cn.bitlinks.ems.module.power.enums.ExportConstants.XLSX;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.getLabelDeep;
 
 
-@Tag(name = "管理后台 - 个性化报表[电]-用电量统计")
+@Tag(name = "管理后台 - 个性化报表[气]-气化科报表")
 @RestController
-@RequestMapping("/power/report/electricity/consumptionStatistics")
+@RequestMapping("/power/report/gas/gasStatistics")
 @Validated
-public class ConsumptionStatisticsController {
+public class GasStatisticsController {
     @Resource
-    private ConsumptionStatisticsService consumptionStatisticsService;
+    private GasStatisticsService gasStatisticsService;
 
+    @PostMapping("/getPowerTankSettings")
+    @Operation(summary = "获得储罐液位设置列表")
+    public CommonResult<List<PowerTankSettingsRespVO>> getPowerTankSettings() {
+        return success(gasStatisticsService.getPowerTankSettings());
+    }
 
-    @PostMapping("/consumptionStatisticsTable")
-    @Operation(summary = "用电量统计（表）")
-    public CommonResult<ConsumptionStatisticsResultVO<ConsumptionStatisticsInfo>> consumptionStatisticsTable(@Valid @RequestBody ConsumptionStatisticsParamVO paramVO) {
-        return success(consumptionStatisticsService.consumptionStatisticsTable(paramVO));
+    @PostMapping("/savePowerTankSettings")
+    @Operation(summary = "保存储罐液位设置")
+    public CommonResult<Boolean> savePowerTankSettings(@Valid @RequestBody SettingsParamVO paramVO) {
+        return success(gasStatisticsService.savePowerTankSettings(paramVO));
+    }
+
+    @PostMapping("/getEnergyStatisticsItems")
+    @Operation(summary = "获得能源统计项列表")
+    public CommonResult<List<EnergyStatisticsItemInfoRespVO>> getEnergyStatisticsItems() {
+        return success(gasStatisticsService.getEnergyStatisticsItems());
     }
 
 
-    @PostMapping("/consumptionStatisticsChart")
-    @Operation(summary = "用电量统计（图）")
-    public CommonResult<ConsumptionStatisticsChartResultVO> consumptionStatisticsChart(@Valid @RequestBody ConsumptionStatisticsParamVO paramVO) {
-        return success(consumptionStatisticsService.consumptionStatisticsChart(paramVO));
+    @PostMapping("/gasStatisticsTable")
+    @Operation(summary = "气化科报表")
+    public CommonResult<GasStatisticsResultVO<GasStatisticsInfo>> gasStatisticsTable(@Valid @RequestBody GasStatisticsParamVO paramVO) {
+        return success(gasStatisticsService.gasStatisticsTable(paramVO));
     }
 
-    @PostMapping("/exportConsumptionStatisticsTable")
-    @Operation(summary = "导出用电量统计表")
+    @PostMapping("/exportGasStatisticsTable")
+    @Operation(summary = "导出气化科报表")
     @ApiAccessLog(operateType = EXPORT)
-    public void exportConsumptionStatisticsTable(@Valid @RequestBody ConsumptionStatisticsParamVO paramVO,
+    public void exportGasStatisticsTable(@Valid @RequestBody ConsumptionStatisticsParamVO paramVO,
                                          HttpServletResponse response) throws IOException {
-        paramVO.setQueryType(QueryDimensionEnum.OVERALL_REVIEW.getCode());
+
         String childLabels = paramVO.getChildLabels();
         Integer labelDeep = getLabelDeep(childLabels);
         Integer mergeIndex = 0;
@@ -92,8 +97,8 @@ public class ConsumptionStatisticsController {
                 filename = DEFAULT + XLSX;
         }
 
-        List<List<String>> header = consumptionStatisticsService.getExcelHeader(paramVO);
-        List<List<Object>> dataList = consumptionStatisticsService.getExcelData(paramVO);
+        List<List<String>> header = gasStatisticsService.getExcelHeader(paramVO);
+        List<List<Object>> dataList = gasStatisticsService.getExcelData(paramVO);
 
 
         // 放在 write前配置response才会生效，放在后面不生效
@@ -139,7 +144,7 @@ public class ConsumptionStatisticsController {
                 // 自适应表头宽度
 //                .registerWriteHandler(new MatchTitleWidthStyleStrategy())
                 // 由于column索引从0开始 返回来的labelDeep是从1开始，又由于有个能源列，所以合并索引 正好相抵，直接使用labelDeep即可
-                //.registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
+                .registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
                 .sheet("数据").doWrite(dataList);
     }
 }

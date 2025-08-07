@@ -20,5 +20,67 @@
 
     </resultMap>
 
+    <!-- 根据台账ID、参数编码和时间范围查询数据 -->
+    <select id="selectByStandingbookIdsAndParamCodes" resultMap="BaseResultMap">
+        SELECT *
+        FROM minute_aggregate_data
+        WHERE standingbook_id IN
+        <foreach collection="standingbookIds" item="standingbookId" open="(" separator="," close=")">
+            #{standingbookId}
+        </foreach>
+        AND param_code IN
+        <foreach collection="paramCodes" item="paramCode" open="(" separator="," close=")">
+            #{paramCode}
+        </foreach>
+        AND aggregate_time BETWEEN #{startTime} AND #{endTime}
+        AND energy_flag=1
+        ORDER BY standingbook_id, param_code, aggregate_time
+    </select>
+
+    <!-- 根据台账ID、参数编码和日期区间查询当天最后一分钟的数据 -->
+    <select id="selectLastMinuteDataByDate" resultMap="BaseResultMap">
+        SELECT m1.*
+        FROM minute_aggregate_data m1
+        INNER JOIN (
+        SELECT standingbook_id, param_code, MAX(aggregate_time) as max_time
+        FROM minute_aggregate_data
+        WHERE standingbook_id IN
+        <foreach collection="standingbookIds" item="standingbookId" open="(" separator="," close=")">
+            #{standingbookId}
+        </foreach>
+        AND param_code IN
+        <foreach collection="paramCodes" item="paramCode" open="(" separator="," close=")">
+            #{paramCode}
+        </foreach>
+        AND aggregate_time &gt;= #{startTime} AND aggregate_time &lt; #{endTime}
+        AND energy_flag=1
+        GROUP BY standingbook_id, param_code
+        ) m2 ON m1.standingbook_id = m2.standingbook_id
+        AND m1.param_code = m2.param_code
+        AND m1.aggregate_time = m2.max_time
+    </select>
+
+    <!-- 根据台账ID、参数编码和日期区间查询当天所有增量数据之和 -->
+    <select id="selectIncrementalSumByDate" resultMap="BaseResultMap">
+        SELECT
+        standingbook_id,
+        param_code,
+        #{startTime} as aggregate_time,
+        SUM(incremental_value) as incremental_value,
+        SUM(full_value) as full_value
+        FROM minute_aggregate_data
+        WHERE standingbook_id IN
+        <foreach collection="standingbookIds" item="standingbookId" open="(" separator="," close=")">
+            #{standingbookId}
+        </foreach>
+        AND param_code IN
+        <foreach collection="paramCodes" item="paramCode" open="(" separator="," close=")">
+            #{paramCode}
+        </foreach>
+        AND aggregate_time &gt;= #{startTime} AND aggregate_time &lt; #{endTime}
+        AND energy_flag=1
+        GROUP BY standingbook_id, param_code
+    </select>
+
 </mapper>
 
