@@ -91,8 +91,10 @@ public interface ExportConstants {
 
     String COP = "COP报表";
     String SUPPLY_ANALYSIS  = "供应分析表";
+    String SUPPLY_WATER_TMP = "供水温度报表";
     String STATISTICS_FEE  = "电费统计表";
     String WATER_STATISTICS = "水科报表";
+
 
     // 用电量统计
 
@@ -100,7 +102,8 @@ public interface ExportConstants {
     String CONSUMPTION_STATISTICS_ENERGY = "用电量统计明细报表（按能源）";
     String CONSUMPTION_STATISTICS_LABEL = "用电量统计明细报表（按标签）";
 
-
+   //电量分布
+    String CONSUMPTION_DISTRIBUTION = "电量分布报表";
 
     /**
      * 缺省表名

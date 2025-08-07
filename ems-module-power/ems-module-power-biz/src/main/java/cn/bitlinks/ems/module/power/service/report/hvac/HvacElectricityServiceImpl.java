@@ -33,7 +33,6 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -72,6 +71,7 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
 
     private final String DEFAULT_ENERGY_GROUP = "电力";
     private final String periodSumKey = "periodSum";
+
     /**
      * 报表统计标签，存放到字典中。
      *
@@ -445,10 +445,8 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
     }
 
 
-
-
     @Override
-    public BaseReportMultiChartResultVO<Map<String, List<BigDecimal>>> getChart(HvacElectricityParamVO paramVO) {
+    public BaseReportMultiChartResultVO<LinkedHashMap<String, List<BigDecimal>>> getChart(HvacElectricityParamVO paramVO) {
         /// 校验参数
         validCondition(paramVO);
 
@@ -456,11 +454,11 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            return JSON.parseObject(cacheRes, new TypeReference<BaseReportMultiChartResultVO<Map<String, List<BigDecimal>>>>() {
+            return JSON.parseObject(cacheRes, new TypeReference<BaseReportMultiChartResultVO<LinkedHashMap<String, List<BigDecimal>>>>() {
             });
         }
         BaseReportResultVO<HvacElectricityInfo> tableResult = getTable(paramVO);
-        BaseReportMultiChartResultVO<Map<String, List<BigDecimal>>> resultVO = new BaseReportMultiChartResultVO<>();
+        BaseReportMultiChartResultVO<LinkedHashMap<String, List<BigDecimal>>> resultVO = new BaseReportMultiChartResultVO<>();
         // x轴
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
         resultVO.setXdata(xdata);
@@ -482,18 +480,18 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
             if (CollUtil.isEmpty(dateList)) {
                 return;
             }
-            List<BigDecimal> nowList = xdata.stream().map(time ->{
-                    HvacElectricityInfoData infoData = timeMap.get(time);
-                    if(Objects.isNull(infoData)){
-                        return BigDecimal.ZERO;
+            List<BigDecimal> nowList = xdata.stream().map(time -> {
+                        HvacElectricityInfoData infoData = timeMap.get(time);
+                        if (Objects.isNull(infoData)) {
+                            return BigDecimal.ZERO;
+                        }
+                        return infoData.getNow();
                     }
-                    return infoData.getNow();
-                }
 
             ).collect(Collectors.toList());
-            List<BigDecimal> preList = xdata.stream().map(time ->{
+            List<BigDecimal> preList = xdata.stream().map(time -> {
                         HvacElectricityInfoData infoData = timeMap.get(time);
-                        if(Objects.isNull(infoData)){
+                        if (Objects.isNull(infoData)) {
                             return BigDecimal.ZERO;
                         }
                         return infoData.getPrevious();
@@ -551,7 +549,7 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
         validCondition(paramVO);
 
         List<List<String>> list = ListUtils.newArrayList();
-        list.add(Arrays.asList("表单名称", "统计周期", "标签","标签"));
+        list.add(Arrays.asList("表单名称", "统计周期", "标签", "标签"));
         String sheetName = "暖通电量";
         // 统计周期
         String period = getFormatTime(paramVO.getRange()[0]) + "~" + getFormatTime(paramVO.getRange()[1]);
@@ -559,13 +557,13 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
         // 月份处理
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
         xdata.forEach(x -> {
-            list.add(Arrays.asList(sheetName, period, x,"当期"));
-            list.add(Arrays.asList(sheetName,  period,x, "同期"));
-            list.add(Arrays.asList(sheetName,  period,x, "同比（%）"));
+            list.add(Arrays.asList(sheetName, period, x, "当期"));
+            list.add(Arrays.asList(sheetName, period, x, "同期"));
+            list.add(Arrays.asList(sheetName, period, x, "同比（%）"));
         });
-        list.add(Arrays.asList(sheetName, period, "周期合计","当期"));
-        list.add(Arrays.asList(sheetName, period, "周期合计","同期"));
-        list.add(Arrays.asList(sheetName, period, "周期合计","同比（%）"));
+        list.add(Arrays.asList(sheetName, period, "周期合计", "当期"));
+        list.add(Arrays.asList(sheetName, period, "周期合计", "同期"));
+        list.add(Arrays.asList(sheetName, period, "周期合计", "同比（%）"));
         return list;
     }
 
@@ -626,12 +624,12 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
         tableHeader.forEach(date -> {
             bottom.add(getConvertData(bottomNowSumMap.get(date)));
             bottom.add(getConvertData(bottomPreSumMap.get(date)));
-            bottom.add(getConvertData(calculateYearOnYearRatio(bottomNowSumMap.get(date),bottomPreSumMap.get(date))));
+            bottom.add(getConvertData(calculateYearOnYearRatio(bottomNowSumMap.get(date), bottomPreSumMap.get(date))));
         });
         // 底部周期合计
         bottom.add(getConvertData(bottomNowSumMap.get(periodSumKey)));
         bottom.add(getConvertData(bottomPreSumMap.get(periodSumKey)));
-        bottom.add(getConvertData(calculateYearOnYearRatio(bottomNowSumMap.get(periodSumKey),bottomPreSumMap.get(periodSumKey))));
+        bottom.add(getConvertData(calculateYearOnYearRatio(bottomNowSumMap.get(periodSumKey), bottomPreSumMap.get(periodSumKey))));
         result.add(bottom);
         return result;
     }

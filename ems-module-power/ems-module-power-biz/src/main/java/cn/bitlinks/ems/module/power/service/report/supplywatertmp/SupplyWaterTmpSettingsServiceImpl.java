@@ -1,22 +1,23 @@
-package cn.bitlinks.ems.module.power.service.report.supplyanalysis;
+package cn.bitlinks.ems.module.power.service.report.supplywatertmp;
 
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.SupplyAnalysisReportParamVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.SupplyAnalysisSettingsPageReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.SupplyAnalysisSettingsSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.SupplyAnalysisStructureInfo;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
+import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.SupplyWaterTmpReportParamVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.SupplyWaterTmpSettingsPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.SupplyWaterTmpSettingsSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StructureInfoData;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.SupplyAnalysisPieResultVO;
-import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.report.supplyanalysis.SupplyAnalysisSettingsDO;
-import cn.bitlinks.ems.module.power.dal.mysql.report.supplyanalysis.SupplyAnalysisSettingsMapper;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
+import cn.bitlinks.ems.module.power.dal.dataobject.report.supplywatertmp.SupplyWaterTmpSettingsDO;
+import cn.bitlinks.ems.module.power.dal.mysql.report.supplywatertmp.SupplyWaterTmpSettingsMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
+import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.collection.CollectionUtil;
 import com.alibaba.excel.util.ListUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -24,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
-import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.SUPPLY_ANALYSIS;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
@@ -44,10 +44,13 @@ import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 @Slf4j
 @Service
 @Validated
-public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettingsService {
+public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettingsService {
 
     @Resource
-    private SupplyAnalysisSettingsMapper supplyAnalysisSettingsMapper;
+    private SupplyWaterTmpSettingsMapper supplyWaterTmpSettingsMapper;
+
+    @Resource
+    private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
 
     @Resource
     private UsageCostService usageCostService;
@@ -56,75 +59,38 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
 
     @Override
-    public void updateBatch(List<SupplyAnalysisSettingsSaveReqVO> supplyAnalysisSettingsList) {
-
-
+    public void updateBatch(List<SupplyWaterTmpSettingsSaveReqVO> supplyAnalysisSettingsList) {
         // 校验
-        if (CollectionUtil.isEmpty(supplyAnalysisSettingsList)) {
+        if (CollUtil.isEmpty(supplyAnalysisSettingsList)) {
             throw exception(SUPPLY_ANALYSIS_SETTINGS_LIST_NOT_EXISTS);
         }
 
-//        for (SupplyAnalysisSettingsSaveReqVO supplyAnalysisSettingsSaveReqVO : supplyAnalysisSettingsList) {
-//            Long standingbookId = supplyAnalysisSettingsSaveReqVO.getStandingbookId();
-//            if (Objects.isNull(standingbookId)) {
-//                throw exception(SUPPLY_ANALYSIS_SETTINGS_STANDINGBOOK_NOT_EMPTY);
-//            }
-//        }
-
-        // 按system分组 组内台账id不能重复 校验
-        Map<String, List<SupplyAnalysisSettingsSaveReqVO>> systemMap = supplyAnalysisSettingsList.stream()
-                .collect(Collectors.groupingBy(SupplyAnalysisSettingsSaveReqVO::getSystem));
-        // 1.核对传入的值
-        systemMap.forEach((k, v) -> {
-            List<SupplyAnalysisSettingsSaveReqVO> tempV = v
-                    .stream()
-                    .filter(l -> !Objects.isNull(l.getStandingbookId()))
-                    .collect(Collectors.toList());
-
-            List<Long> collect = tempV.stream()
-                    .map(SupplyAnalysisSettingsSaveReqVO::getStandingbookId)
-                    .distinct()
-                    .collect(Collectors.toList());
-
-            if (collect.size() != tempV.size()) {
-                throw exception(SUPPLY_ANALYSIS_STANDINGBOOK_REPEAT);
-            }
-        });
-
-        // 2.核对数据库里的值
-        supplyAnalysisSettingsList.forEach(l -> {
-            if (!Objects.isNull(l.getStandingbookId())) {
-                Long count = supplyAnalysisSettingsMapper.selectCount(new LambdaQueryWrapperX<SupplyAnalysisSettingsDO>()
-                        .eq(SupplyAnalysisSettingsDO::getStandingbookId, l.getStandingbookId())
-                        .eq(SupplyAnalysisSettingsDO::getSystem, l.getSystem())
-                        .ne(SupplyAnalysisSettingsDO::getId, l.getId()));
-                if (count.compareTo(1L) >= 0) {
-                    throw exception(SUPPLY_ANALYSIS_STANDINGBOOK_REPEAT);
-                }
-            }
-        });
-
         // 统一保存
-        List<SupplyAnalysisSettingsDO> list = BeanUtils.toBean(supplyAnalysisSettingsList, SupplyAnalysisSettingsDO.class);
-        supplyAnalysisSettingsMapper.updateBatch(list);
-
+        List<SupplyWaterTmpSettingsDO> list = BeanUtils.toBean(supplyAnalysisSettingsList, SupplyWaterTmpSettingsDO.class);
+        list.forEach(l -> {
+            Long standingBookId = l.getStandingbookId();
+            if (!Objects.isNull(standingBookId)) {
+                String paramCode = standingbookTmplDaqAttrService.getParamCode(standingBookId, l.getEnergyParamName());
+                l.setEnergyParamCode(paramCode);
+            }
+        });
+        supplyWaterTmpSettingsMapper.updateBatch(list);
     }
 
     @Override
-    public List<SupplyAnalysisSettingsDO> getSupplyAnalysisSettingsList(SupplyAnalysisSettingsPageReqVO pageReqVO) {
-        return supplyAnalysisSettingsMapper.selectList((new LambdaQueryWrapperX<SupplyAnalysisSettingsDO>()
-                .eqIfPresent(SupplyAnalysisSettingsDO::getSystem, pageReqVO.getSystem())
-                .eqIfPresent(SupplyAnalysisSettingsDO::getItem, pageReqVO.getItem())
-                .orderByAsc(SupplyAnalysisSettingsDO::getId)));
+    public List<SupplyWaterTmpSettingsDO> getSupplyWaterTmpSettingsList(SupplyWaterTmpSettingsPageReqVO pageReqVO) {
+        return supplyWaterTmpSettingsMapper.selectList((new LambdaQueryWrapperX<SupplyWaterTmpSettingsDO>()
+                .eqIfPresent(SupplyWaterTmpSettingsDO::getSystem, pageReqVO.getSystem())
+                .orderByAsc(SupplyWaterTmpSettingsDO::getId)));
     }
 
     @Override
     public List<String> getSystem() {
-        return supplyAnalysisSettingsMapper.getSystem();
+        return supplyWaterTmpSettingsMapper.getSystem();
     }
 
     @Override
-    public StatisticsResultV2VO<SupplyAnalysisStructureInfo> supplyAnalysisTable(SupplyAnalysisReportParamVO paramVO) {
+    public StatisticsResultV2VO<SupplyAnalysisStructureInfo> supplyAnalysisTable(SupplyWaterTmpReportParamVO paramVO) {
 
         // 1.校验时间范围
         LocalDateTime[] rangeOrigin = validateRange(paramVO.getRange());
@@ -138,7 +104,7 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
 
         // 校验系统 没值就返空
         List<String> system1 = paramVO.getSystem();
-        if (CollUtil.isEmpty(system1)){
+        if (CollUtil.isEmpty(system1)) {
             return resultVO;
         }
 
@@ -147,10 +113,10 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
         resultVO.setHeader(tableHeader);
 
         // 4.获取所有standingBookids
-        List<SupplyAnalysisSettingsDO> supplyAnalysisSettingsList = supplyAnalysisSettingsMapper.selectList(paramVO);
+        List<SupplyWaterTmpSettingsDO> supplyAnalysisSettingsList = supplyWaterTmpSettingsMapper.selectList(paramVO);
         List<Long> standingBookIds = supplyAnalysisSettingsList
                 .stream()
-                .map(SupplyAnalysisSettingsDO::getStandingbookId)
+                .map(SupplyWaterTmpSettingsDO::getStandingbookId)
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
@@ -176,7 +142,6 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
                 .map(s -> {
                     SupplyAnalysisStructureInfo info = new SupplyAnalysisStructureInfo();
                     info.setSystem(s.getSystem());
-                    info.setItem(s.getItem());
                     info.setId(s.getId());
 
                     List<UsageCostData> usageCostList = standingBookUsageMap.get(s.getStandingbookId());
@@ -265,100 +230,12 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
     }
 
     @Override
-    public SupplyAnalysisPieResultVO supplyAnalysisChart(SupplyAnalysisReportParamVO paramVO) {
-        // 1.校验时间范围
-        LocalDateTime[] range = paramVO.getRange();
-        LocalDateTime[] rangeOrigin;
-        if (Objects.isNull(range) || range.length < 2) {
-            rangeOrigin = validateRange(paramVO.getTimeRange());
-        } else {
-            rangeOrigin = validateRange(range);
-        }
-
-        SupplyAnalysisPieResultVO resultVO = new SupplyAnalysisPieResultVO();
-        resultVO.setDataTime(LocalDateTime.now());
-
-        // 4.获取所有standingBookids
-        List<SupplyAnalysisSettingsDO> supplyAnalysisSettingsList = supplyAnalysisSettingsMapper.selectList(paramVO);
-
-        List<Long> standingBookIds = supplyAnalysisSettingsList
-                .stream()
-                .map(SupplyAnalysisSettingsDO::getStandingbookId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .collect(Collectors.toList());
-
-        // 4.4.台账id为空直接返回结果
-        if (CollUtil.isEmpty(standingBookIds)) {
-            return resultVO;
-        }
-
-        // 5.根据台账ID查询用量
-        List<UsageCostData> usageCostDataList = usageCostService.getList(
-                rangeOrigin[0],
-                rangeOrigin[1],
-                standingBookIds);
-
-        Map<Long, UsageCostData> standingBookUsageMap = usageCostDataList.stream()
-                .collect(Collectors.toMap(UsageCostData::getStandingbookId, Function.identity()));
-
-        Map<String, List<SupplyAnalysisSettingsDO>> supplyAnalysisSettingsMap = supplyAnalysisSettingsList
-                .stream()
-                .collect(Collectors.groupingBy(SupplyAnalysisSettingsDO::getSystem));
-
-        supplyAnalysisSettingsMap.forEach((system, list) -> {
-
-            List<PieItemVO> data = new ArrayList<>();
-
-            list.forEach(l -> {
-                UsageCostData usageCostData = standingBookUsageMap.get(l.getStandingbookId());
-                PieItemVO pieItemVO;
-                if (Objects.isNull(usageCostData)) {
-                    pieItemVO = new PieItemVO(l.getItem(), BigDecimal.ZERO, BigDecimal.ZERO);
-                } else {
-                    pieItemVO = new PieItemVO(l.getItem(), usageCostData.getCurrentTotalUsage(), null);
-                }
-                data.add(pieItemVO);
-            });
-            // 总和
-            BigDecimal sum = data
-                    .stream()
-                    .map(PieItemVO::getValue)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            data.forEach(d -> d.setProportion(getProportion(d.getValue(), sum)));
-
-            PieChartVO pieChartVO = new PieChartVO(system, data, sum);
-            pieChartVO.setName(system);
-            pieChartVO.setData(data);
-
-            switch (system) {
-                case PCW:
-                    resultVO.setPcwPie(pieChartVO);
-                    break;
-                case LTW:
-                    resultVO.setLtwPie(pieChartVO);
-                    break;
-                case MTW:
-                    resultVO.setMtwPie(pieChartVO);
-                    break;
-                case HRW:
-                    resultVO.setHrwPie(pieChartVO);
-                    break;
-                case BHW:
-                    resultVO.setBhwPie(pieChartVO);
-                    break;
-                case MHW:
-                    resultVO.setMhwPie(pieChartVO);
-                    break;
-                default:
-            }
-        });
-
-        return resultVO;
+    public SupplyAnalysisPieResultVO supplyAnalysisChart(SupplyWaterTmpReportParamVO paramVO) {
+        return null;
     }
 
     @Override
-    public List<List<String>> getExcelHeader(SupplyAnalysisReportParamVO paramVO) {
+    public List<List<String>> getExcelHeader(SupplyWaterTmpReportParamVO paramVO) {
 
         // 1.校验时间范围
         LocalDateTime[] range = validateRange(paramVO.getRange());
@@ -394,7 +271,7 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
     }
 
     @Override
-    public List<List<Object>> getExcelData(SupplyAnalysisReportParamVO paramVO) {
+    public List<List<Object>> getExcelData(SupplyWaterTmpReportParamVO paramVO) {
 
         // 结果list
         List<List<Object>> result = ListUtils.newArrayList();

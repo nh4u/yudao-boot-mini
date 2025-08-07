@@ -62,6 +62,7 @@ public class NaturalGasServiceImpl implements NaturalGasService {
     private final String periodNameCell = "统计周期";
     private final String periodSumCell = "周期合计";
     private final String periodSumKey = "periodSum";
+
     private LinkedHashMap<String, String> getItemMapping() {
         LinkedHashMap<String, String> result = new LinkedHashMap<>();
         List<String> gasSbLabels = DictFrameworkUtils.getDictDataLabelList(REPORT_NATURAL_GAS);
@@ -183,7 +184,7 @@ public class NaturalGasServiceImpl implements NaturalGasService {
     }
 
     @Override
-    public BaseReportMultiChartResultVO<Map<String, List<BigDecimal>>> getChart(BaseTimeDateParamVO paramVO) {
+    public BaseReportMultiChartResultVO<LinkedHashMap<String, List<BigDecimal>>> getChart(BaseTimeDateParamVO paramVO) {
         // 校验参数
         validCondition(paramVO);
 
@@ -191,10 +192,10 @@ public class NaturalGasServiceImpl implements NaturalGasService {
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            return JSON.parseObject(cacheRes, new TypeReference<BaseReportMultiChartResultVO<Map<String, List<BigDecimal>>>>() {
+            return JSON.parseObject(cacheRes, new TypeReference<BaseReportMultiChartResultVO<LinkedHashMap<String, List<BigDecimal>>>>() {
             });
         }
-        BaseReportMultiChartResultVO<Map<String, List<BigDecimal>>> resultVO = new BaseReportMultiChartResultVO<>();
+        BaseReportMultiChartResultVO<LinkedHashMap<String, List<BigDecimal>>> resultVO = new BaseReportMultiChartResultVO<>();
         // x轴
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
         resultVO.setXdata(xdata);
@@ -214,7 +215,7 @@ public class NaturalGasServiceImpl implements NaturalGasService {
 
         if (CollUtil.isEmpty(sbMapping)) {
             resultVO.setDataTime(LocalDateTime.now());
-            resultVO.setYdata(Collections.emptyMap());
+            resultVO.setYdata(new LinkedHashMap<>());
             return resultVO;
         }
 
@@ -223,7 +224,7 @@ public class NaturalGasServiceImpl implements NaturalGasService {
 
         if (CollUtil.isEmpty(usageCostDataList)) {
             resultVO.setDataTime(LocalDateTime.now());
-            resultVO.setYdata(Collections.emptyMap());
+            resultVO.setYdata(new LinkedHashMap<>());
             return resultVO;
         }
         Map<Long, Map<String, BigDecimal>> standingbookIdTimeCostMap = usageCostDataList.stream()
