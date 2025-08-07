@@ -345,7 +345,9 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
         String childLabels = paramVO.getChildLabels();
         List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService
                 .getStandingbookIdsByLabel(topLabel, childLabels, standingBookIdList);
-
+        standingbookIdsByLabel = new ArrayList<>(
+                new HashSet<>(standingbookIdsByLabel)
+        );
         // 4.3.3.能源台账ids和标签台账ids是否有交集。如果有就取交集，如果没有则取能源台账ids
         if (CollUtil.isNotEmpty(standingbookIdsByLabel)) {
             List<Long> sids = standingbookIdsByLabel
