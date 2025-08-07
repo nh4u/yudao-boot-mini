@@ -46,8 +46,21 @@ public interface StandingbookTmplDaqAttrMapper extends BaseMapperX<StandingbookT
 
     /**
      * 查询分类能源关联关系
+     *
      * @param typeIds
      * @return
      */
     List<StandingbookTmplDaqAttrDO> selectEnergyMapping(@Param("typeIds") List<Long> typeIds);
+
+    /**
+     * 根据属性名字和台账获取属性code
+     *
+     * @param standingBookId
+     * @param paramName
+     * @return
+     */
+    @Select("SELECT `code` FROM power_standingbook_tmpl_daq_attr  " +
+            "WHERE type_id = (select type_id from power_standingbook where id = #{standingBookId} and deleted = 0) " +
+            "and parameter =  #{paramName} and energy_flag = 1 AND deleted = 0 order by create_time desc limit 1")
+    String getParamCode(@Param("standingBookId") Long standingBookId, @Param("paramName") String paramName);
 }

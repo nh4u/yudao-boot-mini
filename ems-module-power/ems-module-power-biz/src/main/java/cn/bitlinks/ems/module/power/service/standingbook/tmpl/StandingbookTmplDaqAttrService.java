@@ -129,4 +129,11 @@ public interface StandingbookTmplDaqAttrService {
 
     List<StandingbookTmplDaqAttrDO> getByTypeIds(List<Long> typeIds);
 
+    /**
+     * 根据台账id和能源参数名称获取能源参数code
+     * @param standingBookId
+     * @param paramName
+     * @return
+     */
+    String getParamCode(Long standingBookId, String paramName);
 }
