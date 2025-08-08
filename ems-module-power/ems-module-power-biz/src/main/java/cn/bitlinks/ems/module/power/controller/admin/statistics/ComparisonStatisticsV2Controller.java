@@ -47,19 +47,19 @@ public class ComparisonStatisticsV2Controller {
 
 
     @PostMapping("/discountAnalysisTable")
-    @Operation(summary = "折价环比分析（表）")
+    @Operation(summary = "用能成本环比分析（表）")
     public CommonResult<StatisticsResultV2VO> discountAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO) {
         return success(comparisonV2Service.discountAnalysisTable(paramVO));
     }
 
     @PostMapping("/discountAnalysisChart")
-    @Operation(summary = "折价环比分析（图）")
+    @Operation(summary = "用能成本环比分析（图）")
     public CommonResult<ComparisonChartResultVO> discountAnalysisChart(@Valid @RequestBody StatisticsParamV2VO paramVO) {
         return success(comparisonV2Service.discountAnalysisChart(paramVO));
 
     }
     @PostMapping("/exportDiscountAnalysisTable")
-    @Operation(summary = "导出折价环比分析表")
+    @Operation(summary = "导出用能成本环比分析表")
     @ApiAccessLog(operateType = EXPORT)
     public void exportDiscountAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO,
                                             HttpServletResponse response) throws IOException {

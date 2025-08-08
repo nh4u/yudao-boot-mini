@@ -49,20 +49,20 @@ public class StatisticsV2Controller {
 
 
     @PostMapping("/moneyAnalysisTable")
-    @Operation(summary = "折价分析（表）")
+    @Operation(summary = "用能成本分析（表）")
     public CommonResult<StatisticsResultV2VO<StatisticsInfoV2>> moneyAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO) {
         return success(statisticsV2Service.moneyAnalysisTable(paramVO));
     }
 
 
     @PostMapping("/moneyAnalysisChart")
-    @Operation(summary = "折价分析（图）")
+    @Operation(summary = "用能成本分析（图）")
     public CommonResult<StatisticsChartResultV2VO> moneyAnalysisChart(@Valid @RequestBody StatisticsParamV2VO paramVO) {
         return success(statisticsV2Service.moneyAnalysisChart(paramVO));
     }
 
     @PostMapping("/exportMoneyAnalysisTable")
-    @Operation(summary = "导出折价分析表")
+    @Operation(summary = "导出用能成本分析表")
     @ApiAccessLog(operateType = EXPORT)
     public void exportMoneyAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO,
                                                 HttpServletResponse response) throws IOException {
