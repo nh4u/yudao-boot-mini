@@ -60,18 +60,15 @@ public interface CommonConstants {
      * 分区开启动态
      */
     String ENABLE_DYNAMIC_PARTITION_SQL = "ALTER TABLE %s SET (\"dynamic_partition.enable\" = \"true\")";
-    /**
-     * 拆分任务队列 redis key
-     */
-    String SPLIT_TASK_QUEUE_REDIS_KEY_PREFIX = "split_task_queue:";
-    /**
-     * 拆分任务队列 redis key
-     */
-    String SPLIT_TASK_QUEUE_REDIS_KEY_PATTERN = "split_task_queue:*";
+
     /**
      * redis存储实时数据5分钟 :serverKey
      */
     String COLLECTOR_AGG_REALTIME_CACHE_KEY = "collector:agg:realtime:%s:%s";
+    /**
+     * 拆分分钟聚合数据 任务锁
+     */
+    String SPLIT_MINUTE_AGG_LOCK_KEY = "split-minute-agg-task:%s";
 }
 
 
