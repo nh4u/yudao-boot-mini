@@ -1138,7 +1138,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             // 用量
             bottom.add("/");
 
-            // 折价
+            // 用能成本
             BigDecimal cost = sumCostMap.get(date);
             bottom.add(getConvertData(unit, 2, cost));
 
@@ -1148,7 +1148,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         // 用量
         bottom.add("/");
 
-        // 折价
+        // 用能成本
         BigDecimal cost = sumCostMap.get("sumNum");
         bottom.add(getConvertData(unit, 2, cost));
         result.add(bottom);

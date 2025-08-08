@@ -133,7 +133,7 @@ public class MoneyStatisticsV2Controller {
 
         EasyExcelFactory.write(response.getOutputStream())
                 .head(header)
-                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(15))
+                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
                 .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
                 // 设置表头行高 30，内容行高 20
                 .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))

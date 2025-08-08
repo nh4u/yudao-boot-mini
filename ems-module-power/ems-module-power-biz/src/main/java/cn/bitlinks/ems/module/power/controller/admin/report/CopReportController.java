@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.controller.admin.report;
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopChartResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopTableResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.ReportParamVO;
 import cn.bitlinks.ems.module.power.service.cophouraggdata.CopHourAggDataService;
 import com.alibaba.excel.EasyExcel;
@@ -56,7 +57,7 @@ public class CopReportController {
 
     @PostMapping("/copTable")
     @Operation(summary = "COP表")
-    public CommonResult<List<Map<String, Object>>> copTable(@Valid @RequestBody ReportParamVO paramVO) {
+    public CommonResult<CopTableResultVO> copTable(@Valid @RequestBody ReportParamVO paramVO) {
         return success(copHourAggDataService.copTable(paramVO));
     }
 
