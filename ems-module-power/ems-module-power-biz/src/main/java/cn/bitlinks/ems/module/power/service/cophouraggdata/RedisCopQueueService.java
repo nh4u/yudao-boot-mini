@@ -24,6 +24,6 @@ public class RedisCopQueueService {
     public void pushHourForCopRecalc(LocalDateTime hourTime) {
         ZonedDateTime zoned = LocalDateTime.now().atZone(ZoneId.systemDefault());
         double score = zoned.toEpochSecond();
-        redisTemplate.opsForZSet().addIfAbsent(COP_RECALCULATE_HOUR_QUEUE, hourTime.toString(), score);
+        redisTemplate.opsForZSet().add(COP_RECALCULATE_HOUR_QUEUE, hourTime.toString(), score);
     }
 }
