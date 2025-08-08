@@ -137,5 +137,9 @@ public interface CommonConstants {
      * 拆分任务队列 redis key
      */
     String SPLIT_TASK_QUEUE_REDIS_KEY_PREFIX = "split_task_queue:";
+    /**
+     * COP 重算队列
+     */
+    String COP_RECALCULATE_HOUR_QUEUE = "cop:recalc:hour:queue";
 
 }
