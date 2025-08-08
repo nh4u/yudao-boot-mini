@@ -180,7 +180,8 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
                         .collect(Collectors.groupingBy(StatisticInfoDataV2::getDate));
 
                 tableHeader.forEach(date -> {
-                    List<StatisticInfoDataV2> standardCoalInfoDataList = dateMap.get(date);
+                    String time = dealStrTime(date);
+                    List<StatisticInfoDataV2> standardCoalInfoDataList = dateMap.get(time);
                     if (standardCoalInfoDataList == null) {
                         StatisticInfoDataV2 standardCoalInfoData = new StatisticInfoDataV2();
                         standardCoalInfoData.setDate(date);

@@ -1,6 +1,5 @@
 package cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo;
 
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticInfoDataV2;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsInfoBase;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -23,7 +22,4 @@ public class ConsumptionStatisticsInfo extends StatisticsInfoBase {
 
         @Schema(description = "合计用量", example = "0.00")
         private BigDecimal sumEnergyConsumption;
-
-        @Schema(description = "合计成本", example = "0.00")
-        private BigDecimal sumEnergyMoney;
 }

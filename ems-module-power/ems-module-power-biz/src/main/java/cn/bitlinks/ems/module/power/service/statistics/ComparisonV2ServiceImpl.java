@@ -1160,7 +1160,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                     sheetName = DEFAULT;
             }
         } else {
-            // 折价
+            // 用能成本
             switch (queryType) {
                 case 0:
                     // 综合
@@ -1244,7 +1244,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             // 折标煤
             resultVO = discountAnalysisTable(paramVO);
         } else {
-            // 折价
+            // 用能成本
             resultVO = discountAnalysisTable(paramVO);
         }
         List<String> tableHeader = resultVO.getHeader();
