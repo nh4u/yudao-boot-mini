@@ -16,6 +16,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -80,7 +81,7 @@ public class SplitTaskDispatcher {
 
         while (!start.isAfter(end)) {
             LocalDateTime segStart = start;
-            LocalDateTime segEnd = segStart.toLocalDate().atTime(23, 59);
+            LocalDateTime segEnd = segStart.with(TemporalAdjusters.lastDayOfMonth()).toLocalDate().atTime(23, 59);
             if (segEnd.isAfter(end)) segEnd = end;
 
             MinuteAggregateDataDTO toAddStartDTO = BeanUtil.copyProperties(startDataDO, MinuteAggregateDataDTO.class);
