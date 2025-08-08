@@ -69,7 +69,11 @@ public class SplitMinuteAggTask {
 
             log.info("分钟聚合拆分任务 开始执行");
             long startTime = System.currentTimeMillis(); // 记录开始时间
-
+            Boolean hasKey = redisTemplate.hasKey(SPLIT_TASK_QUEUE_REDIS_KEY);
+            if (Boolean.FALSE.equals(hasKey)) {
+                log.info("分钟聚合拆分任务 ZSET键不存在：{}", SPLIT_TASK_QUEUE_REDIS_KEY);
+                return;
+            }
             // 循环处理任务，直到超时或队列为空
             while (true) {
                 // 检查是否超过最大执行时间
@@ -78,6 +82,7 @@ public class SplitMinuteAggTask {
                     log.info("分钟聚合拆分任务 单次调度已达最大执行时间（{}ms），剩余任务下次处理", MAX_EXECUTE_MILLIS);
                     break;
                 }
+
 
                 // 获取下一个任务
                 ZSetOperations.TypedTuple<String> element = redisTemplate.opsForZSet().popMin(SPLIT_TASK_QUEUE_REDIS_KEY);
