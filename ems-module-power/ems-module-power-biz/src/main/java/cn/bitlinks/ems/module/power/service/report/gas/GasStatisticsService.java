@@ -1,6 +1,5 @@
 package cn.bitlinks.ems.module.power.service.report.gas;
 
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.report.gas.vo.*;
 
 import java.util.List;
@@ -20,7 +19,7 @@ public interface GasStatisticsService {
 
     GasStatisticsResultVO<GasStatisticsInfo> gasStatisticsTable(GasStatisticsParamVO paramVO);
 
-    List<List<String>> getExcelHeader(ConsumptionStatisticsParamVO paramVO);
+    List<List<String>> getExcelHeader(GasStatisticsParamVO paramVO);
 
-    List<List<Object>> getExcelData(ConsumptionStatisticsParamVO paramVO);
+    List<List<Object>> getExcelData(GasStatisticsParamVO paramVO);
 }
