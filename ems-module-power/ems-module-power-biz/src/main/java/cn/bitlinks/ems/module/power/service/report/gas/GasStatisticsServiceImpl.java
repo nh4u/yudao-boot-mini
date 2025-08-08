@@ -389,15 +389,15 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
      */
     private BigDecimal calculateHValue(Long standingbookId, String paramCode, LocalDateTime date,
                                        Map<Long, PowerTankSettingsDO> tankSettingsMap) {
+        // 获取储罐设置
+        PowerTankSettingsDO tankSettings = tankSettingsMap.get(standingbookId);
         // 获取Δp值（最后一分钟的full_value）
-        BigDecimal deltaP = getLastMinuteFullValue(standingbookId, paramCode, date);
+        BigDecimal deltaP = getLastMinuteFullValue(tankSettings.getPressureDiffId(), paramCode, date);
 
         if (deltaP.compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO;
         }
 
-        // 获取储罐设置
-        PowerTankSettingsDO tankSettings = tankSettingsMap.get(standingbookId);
         if (tankSettings == null || tankSettings.getDensity() == null || tankSettings.getGravityAcceleration() == null) {
             log.warn("储罐设置数据不完整，standingbookId: {}", standingbookId);
             return BigDecimal.ZERO;
