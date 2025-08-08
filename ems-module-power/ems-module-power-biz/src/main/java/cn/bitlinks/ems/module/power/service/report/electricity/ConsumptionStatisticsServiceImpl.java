@@ -261,62 +261,54 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
             labelUsageCostDataList.addAll(usageList);
         });
 
-        Map<Long, List<UsageCostData>> energyUsageCostMap = labelUsageCostDataList
-                .stream()
-                .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
+        // 由于数采数据是按 台账 日期能源进行分组的 而一个标签关联多个台账，那么标签同一个日期就会有多条不同台账的数据，所以要按日期进行合并
+        // 聚合数据 转换成 ConsumptionStatisticsInfoData
+        List<ConsumptionStatisticsInfoData> dataList = new ArrayList<>(labelUsageCostDataList.stream().collect(Collectors.groupingBy(
+                UsageCostData::getTime,
+                Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        list -> {
+                            BigDecimal totalConsumption = list.stream()
+                                    .map(UsageCostData::getCurrentTotalUsage)
+                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                            BigDecimal totalCost = list.stream()
+                                    .map(UsageCostData::getTotalCost)
+                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                            return new ConsumptionStatisticsInfoData(list.get(0).getTime(), totalConsumption, totalCost);
+                        }
+                )
+        )).values());
 
-        energyUsageCostMap.forEach((energyId, usageCostList) -> {
-            EnergyConfigurationDO energyConfigurationDO = energyMap.get(energyId);
-            // 由于数采数据是按 台账 日期能源进行分组的 而一个标签关联多个台账，那么标签同一个日期就会有多条不同台账的数据，所以要按日期进行合并
-            // 聚合数据 转换成 StandardCoalInfoData
-            List<ConsumptionStatisticsInfoData> dataList = new ArrayList<>(usageCostList.stream().collect(Collectors.groupingBy(
-                    UsageCostData::getTime,
-                    Collectors.collectingAndThen(
-                            Collectors.toList(),
-                            list -> {
-                                BigDecimal totalConsumption = list.stream()
-                                        .map(UsageCostData::getCurrentTotalUsage)
-                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-                                BigDecimal totalCost = list.stream()
-                                        .map(UsageCostData::getTotalCost)
-                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-                                return new ConsumptionStatisticsInfoData(list.get(0).getTime(), totalConsumption, totalCost);
-                            }
-                    )
-            )).values());
+        BigDecimal totalConsumption = dataList.stream()
+                .map(ConsumptionStatisticsInfoData::getConsumption)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalCost = dataList.stream()
+                .map(ConsumptionStatisticsInfoData::getMoney)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            BigDecimal totalConsumption = dataList.stream()
-                    .map(ConsumptionStatisticsInfoData::getConsumption)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            BigDecimal totalCost = dataList.stream()
-                    .map(ConsumptionStatisticsInfoData::getMoney)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        ConsumptionStatisticsInfo info = new ConsumptionStatisticsInfo();
 
-            ConsumptionStatisticsInfo info = new ConsumptionStatisticsInfo();
-            info.setEnergyId(energyId);
-            info.setEnergyName(energyConfigurationDO.getEnergyName());
+        // 获取标签信息 - 使用第一个标签信息，因为只选择了一个顶级标签
+        StandingbookLabelInfoDO standingbookLabelInfoDO = standingbookIdsByLabel.get(0);
+        String topLabelKey = standingbookLabelInfoDO.getName();
+        Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
+        LabelConfigDO topLabel = labelMap.get(topLabelId);
 
-            StandingbookLabelInfoDO standingbookLabelInfoDO = standingbookIdsByLabel.get(0);
-            String topLabelKey = standingbookLabelInfoDO.getName();
-            Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
-            LabelConfigDO topLabel = labelMap.get(topLabelId);
+        info.setLabel1(topLabel.getLabelName());
+        info.setLabel2("/");
+        info.setLabel3("/");
+        info.setLabel4("/");
+        info.setLabel5("/");
 
-            info.setLabel1(topLabel.getLabelName());
-            info.setLabel2("/");
-            info.setLabel3("/");
-            info.setLabel4("/");
-            info.setLabel5("/");
+        dataList = dataList.stream().peek(i -> {
+            i.setMoney(dealBigDecimalScale(i.getMoney(), scale));
+            i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
+        }).collect(Collectors.toList());
 
-            dataList = dataList.stream().peek(i -> {
-                i.setMoney(dealBigDecimalScale(i.getMoney(), scale));
-                i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
-            }).collect(Collectors.toList());
+        info.setStatisticsDateDataList(dataList);
+        info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
 
-            info.setStatisticsDateDataList(dataList);
-            info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
-
-            resultList.add(info);
-        });
+        resultList.add(info);
 
         return resultList;
     }
@@ -408,6 +400,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
                         i.setMoney(dealBigDecimalScale(i.getMoney(), scale));
                         i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
                     }).collect(Collectors.toList());
+
 
                     info.setStatisticsDateDataList(dataList);
                     info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
