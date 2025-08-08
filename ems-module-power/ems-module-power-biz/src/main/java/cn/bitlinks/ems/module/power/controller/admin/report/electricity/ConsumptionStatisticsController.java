@@ -65,32 +65,13 @@ public class ConsumptionStatisticsController {
     @Operation(summary = "导出用电量统计表")
     @ApiAccessLog(operateType = EXPORT)
     public void exportConsumptionStatisticsTable(@Valid @RequestBody ConsumptionStatisticsParamVO paramVO,
-                                         HttpServletResponse response) throws IOException {
+                                                 HttpServletResponse response) throws IOException {
         paramVO.setQueryType(QueryDimensionEnum.OVERALL_REVIEW.getCode());
         String childLabels = paramVO.getChildLabels();
         Integer labelDeep = getLabelDeep(childLabels);
         Integer mergeIndex = 0;
         // 文件名字处理
-        Integer queryType = paramVO.getQueryType();
-        String filename = "";
-        switch (queryType) {
-            case 0:
-                filename = CONSUMPTION_STATISTICS_ALL + XLSX;
-                mergeIndex = labelDeep;
-                break;
-            case 1:
-                filename = CONSUMPTION_STATISTICS_ENERGY + XLSX;
-                // 能源不需要合并
-                mergeIndex = 0;
-                break;
-            case 2:
-                filename = CONSUMPTION_STATISTICS_LABEL + XLSX;
-                // 标签没有能源
-                mergeIndex = labelDeep - 1;
-                break;
-            default:
-                filename = DEFAULT + XLSX;
-        }
+        String filename = "用电量统计表" + XLSX;
 
         List<List<String>> header = consumptionStatisticsService.getExcelHeader(paramVO);
         List<List<Object>> dataList = consumptionStatisticsService.getExcelData(paramVO);
