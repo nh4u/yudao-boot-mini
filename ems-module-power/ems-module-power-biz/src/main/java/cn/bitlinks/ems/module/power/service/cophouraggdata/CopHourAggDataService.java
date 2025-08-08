@@ -1,10 +1,10 @@
 package cn.bitlinks.ems.module.power.service.cophouraggdata;
 
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopChartResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopTableResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.ReportParamVO;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author liumingqiang
@@ -12,7 +12,7 @@ import java.util.Map;
 public interface CopHourAggDataService {
 
 
-    List<Map<String,Object>> copTable(ReportParamVO paramVO);
+    CopTableResultVO copTable(ReportParamVO paramVO);
 
     List<List<Object>> getExcelData(ReportParamVO paramVO);
 

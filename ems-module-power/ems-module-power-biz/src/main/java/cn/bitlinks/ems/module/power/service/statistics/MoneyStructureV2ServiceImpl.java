@@ -312,12 +312,12 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, dataTypeEnum);
 
         xdata.forEach(x -> {
-            list.add(Arrays.asList(sheetName, labelName, strTime, x, getHeaderDesc(unit, 2, "折价")));
+            list.add(Arrays.asList(sheetName, labelName, strTime, x, getHeaderDesc(unit, 2, "用能成本")));
             list.add(Arrays.asList(sheetName, labelName, strTime, x, "占比(%)"));
         });
 
         // 周期合计
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计",getHeaderDesc(unit, 2, "折价")));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计",getHeaderDesc(unit, 2, "用能成本")));
         list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "占比(%)"));
         return list;
 
@@ -477,7 +477,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
 
         // 底部数据位
         tableHeader.forEach(date -> {
-            // 折价
+            // 用能成本
             BigDecimal cost = sumSCostMap.get(date);
             bottom.add(getConvertData(unit, 2, cost));
             // 占比
@@ -486,7 +486,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         });
 
         // 底部周期合计
-        // 折价
+        // 用能成本
         BigDecimal cost = sumSCostMap.get("sumNum");
         bottom.add(getConvertData(unit, 2, cost));
         // 占比

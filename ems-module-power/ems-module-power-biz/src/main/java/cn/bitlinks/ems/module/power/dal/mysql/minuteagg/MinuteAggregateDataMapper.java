@@ -62,5 +62,19 @@ public interface MinuteAggregateDataMapper {
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime);
 
+    /**
+     * 根据台账和能源参数code获取温度聚合数据
+     *
+     * @param standingbookIds
+     * @param paramCodes
+     * @param starTime
+     * @param endTime
+     * @return
+     */
+    @TenantIgnore
+    List<MinuteAggregateDataDO> getTmpRangeDataSteady(@Param("standingbookIds") List<Long> standingbookIds,
+                                                      @Param("paramCodes") List<String> paramCodes,
+                                                      @Param("starTime") LocalDateTime starTime,
+                                                      @Param("endTime") LocalDateTime endTime);
 }
 

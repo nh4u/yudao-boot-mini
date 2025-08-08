@@ -135,18 +135,25 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
 
     String getLabelLowName(StructureInfo vo) {
         String labelLowName = "";
-        String underline = "_";
-        if (!vo.getLabel2().equals("/")) {
-            labelLowName = vo.getLabel2();
-        }
-        if (!vo.getLabel3().equals("/")) {
-            labelLowName += underline + vo.getLabel3();
+        if (!vo.getLabel5().equals("/")) {
+            labelLowName = vo.getLabel5();
+            return labelLowName;
         }
         if (!vo.getLabel4().equals("/")) {
-            labelLowName += underline + vo.getLabel4();
+            labelLowName =  vo.getLabel4();
+            return labelLowName;
         }
-        if (!vo.getLabel5().equals("/")) {
-            labelLowName += underline + vo.getLabel5();
+        if (!vo.getLabel3().equals("/")) {
+            labelLowName =  vo.getLabel3();
+            return labelLowName;
+        }
+        if (!vo.getLabel2().equals("/")) {
+            labelLowName = vo.getLabel2();
+            return labelLowName;
+        }
+        if (!vo.getLabel1().equals("/")) {
+            labelLowName = vo.getLabel1();
+            return labelLowName;
         }
         return labelLowName;
     }
@@ -343,10 +350,10 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
         String topLabel = paramVO.getTopLabel();
         String childLabels = paramVO.getChildLabels();
         List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService
-                .getStandingbookIdsByLabel(topLabel, childLabels, standingBookIdList);
-        standingbookIdsByLabel = new ArrayList<>(
-                new HashSet<>(standingbookIdsByLabel)
-        );
+                .getStandingbookIdsByLabel(topLabel, childLabels);
+//        standingbookIdsByLabel = new ArrayList<>(
+//                new HashSet<>(standingbookIdsByLabel)
+//        );
         // 4.3.3.能源台账ids和标签台账ids是否有交集。如果有就取交集，如果没有则取能源台账ids
         if (CollUtil.isNotEmpty(standingbookIdsByLabel)) {
             List<Long> sids = standingbookIdsByLabel
@@ -382,13 +389,11 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
                 paramVO.getRange()[1],
                 standingBookIds);
 
-        List<StructureInfo> statisticsInfoList = new ArrayList<>();
 
-        if (QueryDimensionEnum.LABEL_REVIEW.getCode().equals(paramVO.getQueryType())) {
-            // 2、按标签查看
+
             // 2、按标签查看
             List<StructureInfo> standardCoalInfos = queryByLabel(topLabel, childLabels, standingbookIdsByLabel, usageCostDataList);
-            statisticsInfoList.addAll(standardCoalInfos);
+        List<StructureInfo> statisticsInfoList = new ArrayList<>(standardCoalInfos);
             // 无数据的填充0
             statisticsInfoList.forEach(l -> {
 
@@ -415,11 +420,7 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
                 }
 
             });
-        } else {
-//         0、综合查看（默认）
-            List<StructureInfo> structureInfos = queryDefault(topLabel, childLabels, standingbookIdsByLabel, usageCostDataList);
-            statisticsInfoList.addAll(structureInfos);
-        }
+
 
         resultVO.setStatisticsInfoList(statisticsInfoList);
 
@@ -430,7 +431,10 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
                 paramVO.getRange()[1],
                 standingBookIds);
         resultVO.setDataTime(lastTime);
-
+        // 结果保存在缓存中
+        String jsonStr = JSONUtil.toJsonStr(resultVO);
+        byte[] bytes = StrUtils.compressGzip(jsonStr);
+    //    byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return resultVO;
     }
 
@@ -464,30 +468,30 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
         // 标签查询条件处理
         // 根据能源ID分组
         // 使用 Collectors.groupingBy 根据 name 和 value 分组
-        List<String> childLabelList = Arrays.asList(childLabels.split("#"));
-        List<String> finalChildLabelList = removeContainedStrings(childLabelList);
+//        List<String> childLabelList = Arrays.asList(childLabels.split("#"));
+//        List<String> finalChildLabelList = removeContainedStrings(childLabelList);
         // 标签查询条件处理
         //根据能源ID分组
         // 使用 Collectors.groupingBy 根据 name 和 value 分组
         // 此处不应该过滤，因为如果指定5个标签 因为有一个标签 和能源没有交集，则改标签在取用量数据时候，是取不到的， 而且该标签还需要展示对应数据
         // 所以不需要过滤 ：即选中五个标签 那么就要展示五个标签，如果过滤的话 那么 标签就有可能过滤掉然后不展示
-//        Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
-//                .collect(Collectors.groupingBy(
-//                        // 第一个分组条件：按 name
-//                        StandingbookLabelInfoDO::getName,
-//                        // 第二个分组条件：按 value
-//                        Collectors.groupingBy(StandingbookLabelInfoDO::getValue)
-//                ));
         Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
                 .collect(Collectors.groupingBy(
+                        // 第一个分组条件：按 name
                         StandingbookLabelInfoDO::getName,
-                        Collectors.groupingBy(
-                                item -> {
-                                    String value = containItem(item.getValue(), finalChildLabelList);
-                                    return value == null ? "OTHER" : value;
-                                }
-                        )
+                        // 第二个分组条件：按 value
+                        Collectors.groupingBy(StandingbookLabelInfoDO::getValue)
                 ));
+//        Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
+//                .collect(Collectors.groupingBy(
+//                        StandingbookLabelInfoDO::getName,
+//                        Collectors.groupingBy(
+//                                item -> {
+//                                    String value = containItem(item.getValue(), finalChildLabelList);
+//                                    return value == null ? "OTHER" : value;
+//                                }
+//                        )
+//                ));
 
         List<StructureInfo> resultList = new ArrayList<>();
 
@@ -502,10 +506,12 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
             labelInfoGroup.forEach((valueKey, labelInfoList) -> {
                 String[] labelIds = valueKey.split(",");
                 String label2Name = getLabelName(labelMap, labelIds, 0);
-                String label3Name = labelIds.length > 1 && containItem(finalChildLabelList, labelIds[1]) ? getLabelName(labelMap, labelIds, 1) : "/";
-                String label4Name = labelIds.length > 2 && containItem(finalChildLabelList, labelIds[2]) ? getLabelName(labelMap, labelIds, 2) : "/";
-                String label5Name = labelIds.length > 3 && containItem(finalChildLabelList, labelIds[3]) ? getLabelName(labelMap, labelIds, 3) : "/";
-
+//                String label3Name = labelIds.length > 1 && containItem(finalChildLabelList, labelIds[1]) ? getLabelName(labelMap, labelIds, 1) : "/";
+//                String label4Name = labelIds.length > 2 && containItem(finalChildLabelList, labelIds[2]) ? getLabelName(labelMap, labelIds, 2) : "/";
+//                String label5Name = labelIds.length > 3 && containItem(finalChildLabelList, labelIds[3]) ? getLabelName(labelMap, labelIds, 3) : "/";
+                String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : "/";
+                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : "/";
+                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : "/";
                 List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
                 // 获取标签关联的台账id，并取到对应的数据
                 labelInfoList.forEach(labelInfo -> {
@@ -807,30 +813,30 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
         // 标签查询条件处理
         // 根据能源ID分组
         // 使用 Collectors.groupingBy 根据 name 和 value 分组
-        List<String> childLabelList = Arrays.asList(childLabels.split("#"));
-        List<String> finalChildLabelList = removeContainedStrings(childLabelList);
+//        List<String> childLabelList = Arrays.asList(childLabels.split("#"));
+//        List<String> finalChildLabelList = removeContainedStrings(childLabelList);
         // 标签查询条件处理
         //根据能源ID分组
         // 使用 Collectors.groupingBy 根据 name 和 value 分组
         // 此处不应该过滤，因为如果指定5个标签 因为有一个标签 和能源没有交集，则改标签在取用量数据时候，是取不到的， 而且该标签还需要展示对应数据
         // 所以不需要过滤 ：即选中五个标签 那么就要展示五个标签，如果过滤的话 那么 标签就有可能过滤掉然后不展示
-//        Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
-//                .collect(Collectors.groupingBy(
-//                        // 第一个分组条件：按 name
-//                        StandingbookLabelInfoDO::getName,
-//                        // 第二个分组条件：按 value
-//                        Collectors.groupingBy(StandingbookLabelInfoDO::getValue)
-//                ));
         Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
                 .collect(Collectors.groupingBy(
+                        // 第一个分组条件：按 name
                         StandingbookLabelInfoDO::getName,
-                        Collectors.groupingBy(
-                                item -> {
-                                    String value = containItem(item.getValue(), finalChildLabelList);
-                                    return value == null ? "OTHER" : value;
-                                }
-                        )
+                        // 第二个分组条件：按 value
+                        Collectors.groupingBy(StandingbookLabelInfoDO::getValue)
                 ));
+//        Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
+//                .collect(Collectors.groupingBy(
+//                        StandingbookLabelInfoDO::getName,
+//                        Collectors.groupingBy(
+//                                item -> {
+//                                    String value = containItem(item.getValue(), finalChildLabelList);
+//                                    return value == null ? "OTHER" : value;
+//                                }
+//                        )
+//                ));
 
 
         List<StructureInfo> resultList = new ArrayList<>();
@@ -843,15 +849,19 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
             if (topLabel == null) {
                 return; // 如果一级标签不存在，跳过
             }
-            //除去未选择的标签
-            labelInfoGroup.remove("OTHER");
+//            //除去未选择的标签
+//            labelInfoGroup.remove("OTHER");
             // 获取下级标签名字
             labelInfoGroup.forEach((valueKey, labelInfoList) -> {
                 String[] labelIds = valueKey.split(",");
                 String label2Name = getLabelName(labelMap, labelIds, 0);
-                String label3Name = labelIds.length > 1 && containItem(finalChildLabelList, labelIds[1]) ? getLabelName(labelMap, labelIds, 1) : "/";
-                String label4Name = labelIds.length > 2 && containItem(finalChildLabelList, labelIds[2]) ? getLabelName(labelMap, labelIds, 2) : "/";
-                String label5Name = labelIds.length > 3 && containItem(finalChildLabelList, labelIds[3]) ? getLabelName(labelMap, labelIds, 3) : "/";
+//                String label3Name = labelIds.length > 1 && containItem(finalChildLabelList, labelIds[1]) ? getLabelName(labelMap, labelIds, 1) : "/";
+//                String label4Name = labelIds.length > 2 && containItem(finalChildLabelList, labelIds[2]) ? getLabelName(labelMap, labelIds, 2) : "/";
+//                String label5Name = labelIds.length > 3 && containItem(finalChildLabelList, labelIds[3]) ? getLabelName(labelMap, labelIds, 3) : "/";
+
+                String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : "/";
+                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : "/";
+                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : "/";
 
                 List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
                 // 获取标签关联的台账id，并取到对应的数据
