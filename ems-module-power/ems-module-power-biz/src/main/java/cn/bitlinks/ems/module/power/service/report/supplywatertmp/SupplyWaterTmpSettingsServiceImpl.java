@@ -126,6 +126,10 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
             return resultVO;
         }
 
+
+        // TODO: 2025/8/7 获取对应的数据
+
+
         // 5.根据台账ID查询用量
         List<UsageCostData> usageCostDataList = usageCostService.getList(
                 dateType,
@@ -204,27 +208,9 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                 })
                 .collect(Collectors.toList());
 
-
-        Map<String, List<SupplyAnalysisStructureInfo>> supplyAnalysisStructureInfoMap = collect
-                .stream()
-                .collect(Collectors.groupingBy(SupplyAnalysisStructureInfo::getSystem));
-
-        List<SupplyAnalysisStructureInfo> list = new ArrayList<>();
-
-        supplyAnalysisStructureInfoMap.forEach((system, supplyAnalysisStructureInfoList) -> {
-            List<SupplyAnalysisStructureInfo> structureResultList = getStructureResultList(supplyAnalysisStructureInfoList);
-            list.addAll(structureResultList);
-        });
-
-        // 排序
-        List<SupplyAnalysisStructureInfo> statisticsInfoList = list
-                .stream()
-                .sorted(Comparator.comparing(SupplyAnalysisStructureInfo::getId))
-                .collect(Collectors.toList());
-
         resultVO.setDataTime(LocalDateTime.now());
         resultVO.setHeader(tableHeader);
-        resultVO.setStatisticsInfoList(statisticsInfoList);
+        resultVO.setStatisticsInfoList(collect);
 
         return resultVO;
     }
@@ -327,63 +313,6 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         }
 
         return result;
-    }
-
-    /**
-     * 处理占比问题
-     *
-     * @param list 对应list
-     * @return
-     */
-    private List<SupplyAnalysisStructureInfo> getStructureResultList(List<SupplyAnalysisStructureInfo> list) {
-
-        // 获取纵向总和map
-        Map<String, BigDecimal> sumMap = getSumMap(list);
-        // 获取合计
-        for (SupplyAnalysisStructureInfo structureInfo : list) {
-
-            List<StructureInfoData> statisticsStructureDataList = structureInfo.getStructureInfoDataList();
-            statisticsStructureDataList.forEach(s -> {
-                BigDecimal proportion = getProportion(s.getNum(), sumMap.get(s.getDate()));
-                s.setProportion(dealBigDecimalScale(proportion, DEFAULT_SCALE));
-            });
-
-            BigDecimal proportion = getProportion(structureInfo.getSumNum(), sumMap.get("sumNum"));
-            structureInfo.setSumProportion(dealBigDecimalScale(proportion, DEFAULT_SCALE));
-
-            // 保留有效数字
-            structureInfo.setSumNum(dealBigDecimalScale(structureInfo.getSumNum(), DEFAULT_SCALE));
-
-            statisticsStructureDataList = statisticsStructureDataList.stream().peek(s -> {
-                s.setProportion(dealBigDecimalScale(s.getProportion(), DEFAULT_SCALE));
-                s.setNum(dealBigDecimalScale(s.getNum(), DEFAULT_SCALE));
-            }).collect(Collectors.toList());
-
-            structureInfo.setStructureInfoDataList(statisticsStructureDataList);
-        }
-
-        return list;
-    }
-
-    /**
-     * 按时间为key 得到map  纵向综合map
-     *
-     * @param list 对应list
-     * @return
-     */
-    private Map<String, BigDecimal> getSumMap(List<SupplyAnalysisStructureInfo> list) {
-
-        Map<String, BigDecimal> sumMap = new HashMap<>();
-
-        list.forEach(l -> {
-            List<StructureInfoData> structureInfoDataList = l.getStructureInfoDataList();
-            structureInfoDataList.forEach(s -> {
-                sumMap.put(s.getDate(), addBigDecimal(sumMap.get(s.getDate()), s.getNum()));
-            });
-            sumMap.put("sumNum", addBigDecimal(sumMap.get("sumNum"), l.getSumNum()));
-        });
-
-        return sumMap;
     }
 
     /**

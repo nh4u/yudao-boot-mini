@@ -20,7 +20,8 @@
                cop_value      as copValue
         FROM cop_hour_aggregate_data
         <where>
-            aggregate_time BETWEEN #{startDate} AND #{endDate}
+            aggregate_time &gt;= #{startDate}
+              AND aggregate_time &lt;= #{endDate}
             <if test="systemType != null and systemType.size() != 0">
                 AND cop_type IN
                 <foreach collection="systemType" item="item" open="(" separator="," close=")">
@@ -29,7 +30,20 @@
             </if>
         </where>
     </select>
-
+    <select id="getLastTime" resultType="java.time.LocalDateTime">
+        SELECT MAX(aggregate_time) AS lastTime
+        FROM cop_hour_aggregate_data
+        <where>
+            aggregate_time &gt;= #{startDate}
+              AND aggregate_time &lt;= #{endDate}
+            <if test="systemType != null and systemType.size() != 0">
+                AND cop_type IN
+                <foreach collection="systemType" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+    </select>
     <select id="getCopDayAggDataList"
             resultType="cn.bitlinks.ems.module.power.controller.admin.report.vo.CopHourAggData">
         SELECT cop_type             AS copType,
@@ -37,7 +51,8 @@
                sum(cop_value)       as copValue
         FROM cop_hour_aggregate_data
         <where>
-            aggregate_time BETWEEN #{startDate} AND #{endDate}
+            aggregate_time &gt;= #{startDate}
+              AND aggregate_time &lt;= #{endDate}
             <if test="systemType != null and systemType.size() != 0">
                 AND cop_type IN
                 <foreach collection="systemType" item="item" open="(" separator="," close=")">

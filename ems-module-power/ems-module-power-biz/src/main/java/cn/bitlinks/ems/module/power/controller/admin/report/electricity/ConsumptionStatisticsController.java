@@ -1,12 +1,12 @@
 package cn.bitlinks.ems.module.power.controller.admin.report.electricity;
 
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
+import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsChartResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsInfo;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.service.report.electricity.ConsumptionStatisticsService;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.write.metadata.style.WriteCellStyle;
@@ -66,7 +66,7 @@ public class ConsumptionStatisticsController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportConsumptionStatisticsTable(@Valid @RequestBody ConsumptionStatisticsParamVO paramVO,
                                          HttpServletResponse response) throws IOException {
-
+        paramVO.setQueryType(QueryDimensionEnum.OVERALL_REVIEW.getCode());
         String childLabels = paramVO.getChildLabels();
         Integer labelDeep = getLabelDeep(childLabels);
         Integer mergeIndex = 0;
@@ -139,7 +139,7 @@ public class ConsumptionStatisticsController {
                 // 自适应表头宽度
 //                .registerWriteHandler(new MatchTitleWidthStyleStrategy())
                 // 由于column索引从0开始 返回来的labelDeep是从1开始，又由于有个能源列，所以合并索引 正好相抵，直接使用labelDeep即可
-                .registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
+                //.registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
                 .sheet("数据").doWrite(dataList);
     }
 }

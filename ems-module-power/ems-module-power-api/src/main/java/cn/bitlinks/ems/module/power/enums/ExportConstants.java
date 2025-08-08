@@ -16,9 +16,9 @@ public interface ExportConstants {
 
     // 用能成本
 
-    String COST_ALL = "折价分析明细报表（整体）";
-    String COST_ENERGY = "折价分析明细报表（按能源）";
-    String COST_LABEL = "折价分析明细报表（按标签）";
+    String COST_ALL = "用能成本分析明细报表（整体）";
+    String COST_ENERGY = "用能成本分析明细报表（按能源）";
+    String COST_LABEL = "用能成本分析明细报表（按标签）";
 
     // 同比-折标煤
 
@@ -102,7 +102,8 @@ public interface ExportConstants {
     String CONSUMPTION_STATISTICS_ENERGY = "用电量统计明细报表（按能源）";
     String CONSUMPTION_STATISTICS_LABEL = "用电量统计明细报表（按标签）";
 
-
+   //电量分布
+    String CONSUMPTION_DISTRIBUTION = "电量分布报表";
 
     /**
      * 缺省表名

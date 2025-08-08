@@ -1,10 +1,11 @@
-package cn.bitlinks.ems.module.power.controller.admin.statistics;
+package cn.bitlinks.ems.module.power.controller.admin.report.gas;
 
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
-import cn.bitlinks.ems.module.power.service.statistics.MoneyStructureV2Service;
-import cn.bitlinks.ems.module.power.service.statistics.StandardCoalV2Service;
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.gas.vo.*;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.FullCellMergeStrategy;
+import cn.bitlinks.ems.module.power.service.report.gas.GasStatisticsService;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.write.metadata.style.WriteCellStyle;
 import com.alibaba.excel.write.style.HorizontalCellStyleStrategy;
@@ -16,15 +17,11 @@ import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -33,38 +30,47 @@ import java.util.List;
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
-import static cn.bitlinks.ems.module.power.enums.ExportConstants.XLSX;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.getLabelDeep;
 
-/**
- * @author liumingqiang
- */
-@Tag(name = "管理后台 - 用能分析")
+
+@Tag(name = "管理后台 - 个性化报表[气]-气化科报表")
 @RestController
-@RequestMapping("/power/statistics/money/v2")
+@RequestMapping("/power/report/gas/gasStatistics")
 @Validated
-public class MoneyStatisticsV2Controller {
-
+public class GasStatisticsController {
     @Resource
-    private MoneyStructureV2Service moneyStructureV2Service;
+    private GasStatisticsService gasStatisticsService;
 
-    @PostMapping("/moneyStructureAnalysisTable")
-    @Operation(summary = "价格结构分析（表）V2")
-    public CommonResult<StatisticsResultV2VO<StructureInfo>> moneyStructureAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO) {
-        return success(moneyStructureV2Service.moneyStructureAnalysisTable(paramVO));
+    @PostMapping("/getPowerTankSettings")
+    @Operation(summary = "获得储罐液位设置列表")
+    public CommonResult<List<PowerTankSettingsRespVO>> getPowerTankSettings() {
+        return success(gasStatisticsService.getPowerTankSettings());
     }
 
-    @PostMapping("/moneyStructureAnalysisChart")
-    @Operation(summary = "价格结构分析（图）V2")
-    public CommonResult<StatisticsChartPieResultVO> moneyStructureAnalysisChart(@Valid @RequestBody StatisticsParamV2VO paramVO) {
-        return success(moneyStructureV2Service.moneyStructureAnalysisChart(paramVO));
+    @PostMapping("/savePowerTankSettings")
+    @Operation(summary = "保存储罐液位设置")
+    public CommonResult<Boolean> savePowerTankSettings(@Valid @RequestBody SettingsParamVO paramVO) {
+        return success(gasStatisticsService.savePowerTankSettings(paramVO));
     }
 
-    @PostMapping("/exportMoneyStructureAnalysisTable")
-    @Operation(summary = "导出价格结构分析表")
+    @PostMapping("/getEnergyStatisticsItems")
+    @Operation(summary = "获得能源统计项列表")
+    public CommonResult<List<EnergyStatisticsItemInfoRespVO>> getEnergyStatisticsItems() {
+        return success(gasStatisticsService.getEnergyStatisticsItems());
+    }
+
+
+    @PostMapping("/gasStatisticsTable")
+    @Operation(summary = "气化科报表")
+    public CommonResult<GasStatisticsResultVO<GasStatisticsInfo>> gasStatisticsTable(@Valid @RequestBody GasStatisticsParamVO paramVO) {
+        return success(gasStatisticsService.gasStatisticsTable(paramVO));
+    }
+
+    @PostMapping("/exportGasStatisticsTable")
+    @Operation(summary = "导出气化科报表")
     @ApiAccessLog(operateType = EXPORT)
-    public void exportMoneyStructureAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO,
-                                                         HttpServletResponse response) throws IOException {
+    public void exportGasStatisticsTable(@Valid @RequestBody ConsumptionStatisticsParamVO paramVO,
+                                         HttpServletResponse response) throws IOException {
 
         String childLabels = paramVO.getChildLabels();
         Integer labelDeep = getLabelDeep(childLabels);
@@ -74,16 +80,16 @@ public class MoneyStatisticsV2Controller {
         String filename = "";
         switch (queryType) {
             case 0:
-                filename = COST_STRUCTURE_ALL + XLSX;
+                filename = CONSUMPTION_STATISTICS_ALL + XLSX;
                 mergeIndex = labelDeep;
                 break;
             case 1:
-                filename = COST_STRUCTURE_ENERGY + XLSX;
+                filename = CONSUMPTION_STATISTICS_ENERGY + XLSX;
                 // 能源不需要合并
                 mergeIndex = 0;
                 break;
             case 2:
-                filename = COST_STRUCTURE_LABEL + XLSX;
+                filename = CONSUMPTION_STATISTICS_LABEL + XLSX;
                 // 标签没有能源
                 mergeIndex = labelDeep - 1;
                 break;
@@ -91,15 +97,13 @@ public class MoneyStatisticsV2Controller {
                 filename = DEFAULT + XLSX;
         }
 
-        List<List<String>> header = moneyStructureV2Service.getExcelHeader(paramVO);
-        List<List<Object>> dataList = moneyStructureV2Service.getExcelData(paramVO);
+        List<List<String>> header = gasStatisticsService.getExcelHeader(paramVO);
+        List<List<Object>> dataList = gasStatisticsService.getExcelData(paramVO);
 
 
         // 放在 write前配置response才会生效，放在后面不生效
         // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
-        response.addHeader("Access-Control-Expose-Headers","File-Name");
-        response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
         response.setContentType("application/vnd.ms-excel;charset=UTF-8");
 
         WriteCellStyle headerStyle = new WriteCellStyle();
@@ -133,7 +137,7 @@ public class MoneyStatisticsV2Controller {
 
         EasyExcelFactory.write(response.getOutputStream())
                 .head(header)
-                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
+                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(15))
                 .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
                 // 设置表头行高 30，内容行高 20
                 .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))
@@ -143,5 +147,4 @@ public class MoneyStatisticsV2Controller {
                 .registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
                 .sheet("数据").doWrite(dataList);
     }
-
 }

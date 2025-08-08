@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.dal.mysql.copsettings;
 import cn.bitlinks.ems.framework.mybatis.core.mapper.BaseMapperX;
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopHourAggData;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.dal.dataobject.copsettings.CopHourAggDataDO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -39,5 +40,10 @@ public interface CopHourAggDataMapper extends BaseMapperX<CopHourAggDataDO> {
     List<CopHourAggData> getCopDayAggDataList(@Param("startDate") LocalDateTime startDate,
                                               @Param("endDate") LocalDateTime endDate,
                                               @Param("systemType") List<String> systemType);
+
+    @TenantIgnore
+    LocalDateTime getLastTime(@Param("startDate") LocalDateTime startDate,
+                              @Param("endDate") LocalDateTime endDate,
+                              @Param("systemType") List<String> systemType);
 
 }

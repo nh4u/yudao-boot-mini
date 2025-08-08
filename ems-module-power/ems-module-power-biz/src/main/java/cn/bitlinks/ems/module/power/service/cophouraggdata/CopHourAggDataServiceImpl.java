@@ -3,10 +3,7 @@ package cn.bitlinks.ems.module.power.service.cophouraggdata;
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
-import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopChartResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopChartYData;
-import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopHourAggData;
-import cn.bitlinks.ems.module.power.controller.admin.report.vo.ReportParamVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.vo.*;
 import cn.bitlinks.ems.module.power.dal.mysql.copsettings.CopHourAggDataMapper;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DatePattern;
@@ -47,7 +44,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
     private CopHourAggDataMapper copHourAggDataMapper;
 
     @Override
-    public List<Map<String, Object>> copTable(ReportParamVO paramVO) {
+    public CopTableResultVO copTable(ReportParamVO paramVO) {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND);
 
@@ -60,6 +57,8 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
         List<String> copyTypeList = paramVO.getCopType();
 
         // 结果list
+        CopTableResultVO resultVO = new CopTableResultVO();
+        resultVO.setDataTime(LocalDateTime.now());
         List<Map<String, Object>> result = new ArrayList<>();
 
         // 3.字段拼接
@@ -138,8 +137,14 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
 
         }
 
+        LocalDateTime lastTime = copHourAggDataMapper.getLastTime(
+                range[0],
+                range[1],
+                copyTypeList);
 
-        return result;
+        resultVO.setCopMapList(result);
+        resultVO.setDataTime(lastTime);
+        return resultVO;
     }
 
     @Override

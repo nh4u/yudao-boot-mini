@@ -30,7 +30,6 @@ import java.util.List;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.getLabelDeep;
 
 @Tag(name = "管理后台-个性化报表-电量分布")
 @RestController
@@ -58,8 +57,6 @@ public class ElectricityConsumptionController {
     public void exportMoneyStructureAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO,
                                                   HttpServletResponse response) throws IOException {
 
-        String childLabels = paramVO.getChildLabels();
-        Integer labelDeep = getLabelDeep(childLabels);
         Integer mergeIndex = 0;
         // 文件名字处理
         String filename = "用电量分布.xlsx";
@@ -80,14 +77,6 @@ public class ElectricityConsumptionController {
         headerStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
         // 设置垂直居中对齐
         headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-        // 设置背景色
-//        headerStyle.setFillBackgroundColor(IndexedColors.ROYAL_BLUE.getIndex());
-        // 设置字体
-//        WriteFont headerFont = new WriteFont();
-//        headerFont.setFontHeightInPoints((short) 10);
-//        headerFont.setColor(IndexedColors.WHITE.getIndex());
-//        headerStyle.setWriteFont(headerFont);
-
 
         // 创建一个新的 WriteCellStyle 对象
         WriteCellStyle contentStyle = new WriteCellStyle();
