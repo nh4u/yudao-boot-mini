@@ -36,7 +36,7 @@ public class GasStatisticsController {
     @Resource
     private GasStatisticsService gasStatisticsService;
 
-    @PostMapping("/getPowerTankSettings")
+    @GetMapping("/getPowerTankSettings")
     @Operation(summary = "获得储罐液位设置列表")
     public CommonResult<List<PowerTankSettingsRespVO>> getPowerTankSettings() {
         return success(gasStatisticsService.getPowerTankSettings());
@@ -48,7 +48,7 @@ public class GasStatisticsController {
         return success(gasStatisticsService.savePowerTankSettings(paramVO));
     }
 
-    @PostMapping("/getEnergyStatisticsItems")
+    @GetMapping("/getEnergyStatisticsItems")
     @Operation(summary = "获得能源统计项列表")
     public CommonResult<List<EnergyStatisticsItemInfoRespVO>> getEnergyStatisticsItems() {
         return success(gasStatisticsService.getEnergyStatisticsItems());
