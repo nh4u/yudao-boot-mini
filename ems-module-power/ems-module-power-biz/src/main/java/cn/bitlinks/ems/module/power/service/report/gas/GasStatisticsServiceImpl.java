@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Arrays;
 
 import static cn.bitlinks.ems.framework.common.enums.DataTypeEnum.DAY;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -212,13 +213,90 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
     }
 
     @Override
-    public List<List<String>> getExcelHeader(ConsumptionStatisticsParamVO paramVO) {
-        return null;
+    public List<List<String>> getExcelHeader(GasStatisticsParamVO paramVO) {
+        // 校验时间范围是否存在
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+        LocalDateTime startTime = rangeOrigin[0];
+        LocalDateTime endTime = rangeOrigin[1];
+        if (!startTime.isBefore(endTime)) {
+            throw exception(END_TIME_MUST_AFTER_START_TIME);
+        }
+        // 时间不能相差1年
+        if (!LocalDateTimeUtils.isWithinDays(startTime, endTime, CommonConstants.YEAR)) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        // 生成Excel表头数据
+        // List<List<String>>即 列<行>，如果需要合并单元格，写重复的值即可
+        List<List<String>> headerList = new ArrayList<>();
+
+        // 获取时间范围列表作为表头
+        List<String> timeRangeList = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, DAY);
+
+        String statisticsPeriod = startTime.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")) +
+                "~" + endTime.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+        // 正确的多级表头构造：外层每个 List<String> 表示一列的多级标题
+        // 第1列：表单名称 / 气化科报表 / 能源统计项
+        headerList.add(Arrays.asList("表单名称", "统计周期", "能源统计项"));
+        // 第2列：统计周期 / <周期值> / 计量器具编号
+        headerList.add(Arrays.asList("气化科报表", statisticsPeriod, "计量器具编号"));
+        // 后续每一列为一个日期：气化科报表 / <周期值> / <日期>
+        for (String date : timeRangeList) {
+            headerList.add(Arrays.asList("气化科报表", statisticsPeriod, date));
+        }
+
+        return headerList;
     }
 
     @Override
-    public List<List<Object>> getExcelData(ConsumptionStatisticsParamVO paramVO) {
-        return null;
+    public List<List<Object>> getExcelData(GasStatisticsParamVO paramVO) {
+        // 获取气化科报表数据
+        GasStatisticsResultVO<GasStatisticsInfo> resultVO = gasStatisticsTable(paramVO);
+        List<GasStatisticsInfo> statisticsInfoList = resultVO.getStatisticsInfoList();
+        List<String> tableHeader = resultVO.getHeader();
+
+        // 存储Excel数据行
+        List<List<Object>> excelDataList = new ArrayList<>();
+
+        // 遍历每个计量器具的统计数据
+        for (GasStatisticsInfo gasStatisticsInfo : statisticsInfoList) {
+            // 获取计量器具基本信息
+            String measurementName = gasStatisticsInfo.getMeasurementName(); // 计量器具名称
+            String measurementCode = gasStatisticsInfo.getMeasurementCode(); // 计量器具编码
+            List<GasStatisticsInfoData> statisticsDateDataList = gasStatisticsInfo.getStatisticsDateDataList();
+
+            // 将日期数据转换为Map，便于快速查找
+            Map<String, GasStatisticsInfoData> dateDataMap = statisticsDateDataList.stream()
+                    .collect(Collectors.toMap(GasStatisticsInfoData::getDate, data -> data, (existing, replacement) -> existing));
+
+            // 创建一行数据
+            List<Object> dataRow = new ArrayList<>();
+
+            // 第一列：能源统计项（计量器具名称）
+            dataRow.add(measurementName != null ? measurementName : "");
+
+            // 第二列：计量器具编号
+            dataRow.add(measurementCode != null ? measurementCode : "");
+
+            // 后续列：每个时间点的数值
+            for (String date : tableHeader) {
+                GasStatisticsInfoData dateData = dateDataMap.get(date);
+                if (dateData != null && dateData.getValue() != null) {
+                    // 保留指定的小数位数
+                    BigDecimal value = dateData.getValue().setScale(scale, BigDecimal.ROUND_HALF_UP);
+                    dataRow.add(value);
+                } else {
+                    // 如果没有数据，填充0
+                    dataRow.add(BigDecimal.ZERO.setScale(scale, BigDecimal.ROUND_HALF_UP));
+                }
+            }
+
+            // 将数据行添加到Excel数据列表中
+            excelDataList.add(dataRow);
+        }
+
+        return excelDataList;
     }
 
     /**
