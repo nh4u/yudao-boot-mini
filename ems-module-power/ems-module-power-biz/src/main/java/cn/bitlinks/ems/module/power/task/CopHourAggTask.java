@@ -4,23 +4,21 @@ package cn.bitlinks.ems.module.power.task;
 import cn.bitlinks.ems.framework.tenant.core.job.TenantJob;
 import cn.bitlinks.ems.module.power.service.cophouraggdata.RedisCopQueueService;
 import cn.bitlinks.ems.module.power.service.copsettings.CopCalcService;
-import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.COP_HOUR_AGG_RECALC_TASK_LOCK_KEY;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.COP_HOUR_AGG_TASK_LOCK_KEY;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 
 /**
  * cop小时计算值的聚合计算任务
@@ -40,6 +38,8 @@ public class CopHourAggTask {
     private RedisTemplate<String, String> redisTemplate;
     @Resource
     private RedisCopQueueService redisCopQueueService;
+    // 单次调度最大执行时间（2秒，小于3秒的调度间隔）
+    private static final long MAX_EXECUTE_MILLIS = 2000;
 
     @Scheduled(cron = "0 20 * * * ?") // 每小时的20分钟时执行一次
     @TenantJob
@@ -74,41 +74,50 @@ public class CopHourAggTask {
     @Scheduled(fixedDelay = 3000)
     @TenantJob
     public void scheduleCopRecalc() {
-        String LOCK_KEY = String.format(COP_HOUR_AGG_RECALC_TASK_LOCK_KEY, env);
-        RLock lock = redissonClient.getLock(LOCK_KEY);
-        LocalDateTime hourTime = null;
+        String lockKey = String.format(COP_HOUR_AGG_RECALC_TASK_LOCK_KEY, env);
+        RLock lock = redissonClient.getLock(lockKey);
 
         try {
             if (!lock.tryLock(5000L, TimeUnit.MILLISECONDS)) {
-                log.info("COP HOUR 重算任务Task 已由其他节点执行，跳过本次执行");
+                log.info("COP重算任务已由其他节点执行，跳过本次");
                 return;
             }
 
-            log.info("COP HOUR 重算任务Task 开始执行");
+            log.info("COP重算任务开始执行");
+            long startTime = System.currentTimeMillis(); // 记录开始时间
 
-            String queueKey = "cop:recalc:hour:queue";
-            Set<String> timeSet = redisTemplate.opsForZSet().range(queueKey, 0, 0);
-            if (CollUtil.isEmpty(timeSet)) {
-                log.info("队列为空，无需重算");
-                return;
+            // 循环处理任务，直到超时或队列为空
+            while (true) {
+                // 检查是否超过最大执行时间
+                long elapsed = System.currentTimeMillis() - startTime;
+                if (elapsed >= MAX_EXECUTE_MILLIS) {
+                    log.info("COP重算任务 单次调度已达最大执行时间（{}ms），剩余任务下次处理", MAX_EXECUTE_MILLIS);
+                    break;
+                }
+
+                // 获取下一个任务
+                ZSetOperations.TypedTuple<String> element = redisTemplate.opsForZSet().popMin(COP_RECALCULATE_HOUR_QUEUE);
+                if (element == null || element.getValue() == null) {
+                    log.info("COP重算任务 队列为空，本次处理结束");
+                    break;
+                }
+
+                // 处理任务
+                String hourStr = element.getValue();
+                LocalDateTime hourTime = null;
+                try {
+                    hourTime = LocalDateTime.parse(hourStr);
+                    copCalcService.calculateCop(hourTime.minusHours(1), hourTime, null);
+                } catch (Exception e) {
+                    log.error("COP重算任务 单小时{} 处理失败：", hourStr, e);
+                    if (hourTime != null) {
+                        redisCopQueueService.pushHourForCopRecalc(hourTime);
+                    }
+                }
             }
-
-            String hourStr = timeSet.iterator().next();
-            redisTemplate.opsForZSet().remove(queueKey, hourStr); // 移除，避免重复处理
-
-            hourTime = LocalDateTime.parse(hourStr);
-
-            // 这里的时间区间是【hourTime - 1小时, hourTime】
-            copCalcService.calculateCop(hourTime.minusHours(1), hourTime, null);
-
-            log.info("COP HOUR 重算任务Task 执行完成");
 
         } catch (Exception e) {
-            log.error("COP HOUR 重算任务Task 执行失败", e);
-            if (hourTime != null) {
-                // 失败时重新放入队列，保证重试
-                redisCopQueueService.pushHourForCopRecalc(hourTime);
-            }
+            log.error("COP重算任务 发生异常", e);
         } finally {
             if (lock.isHeldByCurrentThread()) {
                 lock.unlock();

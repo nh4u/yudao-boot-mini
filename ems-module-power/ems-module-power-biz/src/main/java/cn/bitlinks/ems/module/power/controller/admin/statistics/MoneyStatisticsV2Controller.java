@@ -98,6 +98,8 @@ public class MoneyStatisticsV2Controller {
         // 放在 write前配置response才会生效，放在后面不生效
         // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
+        response.addHeader("Access-Control-Expose-Headers","File-Name");
+        response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
         response.setContentType("application/vnd.ms-excel;charset=UTF-8");
 
         WriteCellStyle headerStyle = new WriteCellStyle();
@@ -131,7 +133,7 @@ public class MoneyStatisticsV2Controller {
 
         EasyExcelFactory.write(response.getOutputStream())
                 .head(header)
-                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(15))
+                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
                 .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
                 // 设置表头行高 30，内容行高 20
                 .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))

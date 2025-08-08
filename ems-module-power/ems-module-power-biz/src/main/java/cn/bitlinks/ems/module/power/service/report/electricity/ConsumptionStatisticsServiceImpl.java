@@ -1,8 +1,7 @@
 package cn.bitlinks.ems.module.power.service.report.electricity;
 
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
-import cn.bitlinks.ems.framework.common.pojo.StatsResult;
-import cn.bitlinks.ems.framework.common.util.calc.CalculateUtil;
+import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.*;
@@ -41,13 +40,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ConsumptionStatisticsCacheConstants.ELECTRICITY_CONSUMPTION_STATISTICS_CHART;
 import static cn.bitlinks.ems.module.power.enums.ConsumptionStatisticsCacheConstants.ELECTRICITY_CONSUMPTION_STATISTICS_TABLE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
-import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_CHART;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
 /**
@@ -84,7 +82,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
     @Override
     public ConsumptionStatisticsResultVO<ConsumptionStatisticsInfo> consumptionStatisticsTable(ConsumptionStatisticsParamVO paramVO) {
-
+        paramVO.setQueryType(QueryDimensionEnum.OVERALL_REVIEW.getCode());
         // 校验时间范围是否存在
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         LocalDateTime startTime = rangeOrigin[0];
@@ -97,7 +95,6 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
             throw exception(DATE_RANGE_EXCEED_LIMIT);
         }
 
-        Integer queryType = paramVO.getQueryType();
         DataTypeEnum dataTypeEnum = DataTypeEnum.codeOf(paramVO.getDateType());
         //时间类型不存在
         if (Objects.isNull(dataTypeEnum)) {
@@ -315,7 +312,6 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
             info.setStatisticsDateDataList(dataList);
             info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
-            info.setSumEnergyMoney(dealBigDecimalScale(totalCost, scale));
 
             resultList.add(info);
         });
@@ -413,7 +409,6 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
                     info.setStatisticsDateDataList(dataList);
                     info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
-                    info.setSumEnergyMoney(dealBigDecimalScale(totalCost, scale));
 
                     resultList.add(info);
                 });
@@ -678,119 +673,102 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
      * @param paramVO
      */
     @Override
-    public ConsumptionStatisticsChartResultVO consumptionStatisticsChart(ConsumptionStatisticsParamVO paramVO) {
-        // 校验时间范围是否存在
-        LocalDateTime[] rangeOrigin = paramVO.getRange();
-        LocalDateTime startTime = rangeOrigin[0];
-        LocalDateTime endTime = rangeOrigin[1];
-        if (!startTime.isBefore(endTime)) {
-            throw exception(END_TIME_MUST_AFTER_START_TIME);
-        }
-        //时间不能相差1年
-        if (!LocalDateTimeUtils.isWithinDays(startTime, endTime, CommonConstants.YEAR)) {
-            throw exception(DATE_RANGE_EXCEED_LIMIT);
-        }
+    public ConsumptionStatisticsChartResultVO<ConsumptionStatisticsChartYInfo> consumptionStatisticsChart(ConsumptionStatisticsParamVO paramVO) {
+        paramVO.setQueryType(QueryDimensionEnum.OVERALL_REVIEW.getCode());
 
-        DataTypeEnum dataTypeEnum = DataTypeEnum.codeOf(paramVO.getDateType());
-        //时间类型不存在
-        if (Objects.isNull(dataTypeEnum)) {
-            throw exception(DATE_TYPE_NOT_EXISTS);
-        }
-        String cacheKey = USAGE_COST_CHART + SecureUtil.md5(paramVO.toString());
+        // 查询对应缓存是否已经存在，如果存在这直接返回（如果查最新的，最新的在实时更新，所以缓存的是不对的）
+        String cacheKey = ELECTRICITY_CONSUMPTION_STATISTICS_CHART + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
-            return JSONUtil.toBean(cacheRes, ConsumptionStatisticsChartResultVO.class);
+            // 泛型放缓存避免强转问题
+            return JSON.parseObject(cacheRes, new TypeReference<ConsumptionStatisticsChartResultVO<ConsumptionStatisticsChartYInfo>>() {
+            });
         }
 
-
-        // 能源列表--只需要查找电力的能源
-        // name为“电力”且deleted为0的能源分组，取其id值
-        EnergyGroupDO energyGroup = energyGroupService.getEnergyGroup("电力");
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyGroup(energyGroup.getId());
-        ConsumptionStatisticsChartResultVO resultV2VO = new ConsumptionStatisticsChartResultVO();
-        if (CollUtil.isEmpty(energyList)) {
-            resultV2VO.setDataTime(LocalDateTime.now());
-            return resultV2VO;
-        }
-        //能源ID energyIds
-        List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
+        // 4.如果没有则去数据库查询
+        ConsumptionStatisticsChartResultVO<ConsumptionStatisticsChartYInfo> resultVO = new ConsumptionStatisticsChartResultVO<>();
+        resultVO.setDataTime(LocalDateTime.now());
 
 
-        //根据能源查询台账
-        List<StandingbookDO> standingbookIdsByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIds);
-
-        //根据标签查询
-        List<Long> standingBookIdList = standingbookIdsByEnergy.stream().map(StandingbookDO::getId).collect(Collectors.toList());
-        List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByLabel(paramVO.getTopLabel(), paramVO.getChildLabels(), standingBookIdList);
-
-        List<Long> standingBookIds = new ArrayList<>();
-        if (CollUtil.isNotEmpty(standingbookIdsByLabel)) {
-            List<Long> sids = standingbookIdsByLabel.stream().map(StandingbookLabelInfoDO::getStandingbookId).collect(Collectors.toList());
-            List<StandingbookDO> collect = standingbookIdsByEnergy.stream().filter(s -> sids.contains(s.getId())).collect(Collectors.toList());
-            //能源管理计量器具，标签可能关联重点设备，当不存在交集时，则无需查询
-            if (ArrayUtil.isEmpty(collect)) {
-                resultV2VO.setDataTime(LocalDateTime.now());
-                return resultV2VO;
-            }
-            List<Long> collect1 = collect.stream().map(StandingbookDO::getId).collect(Collectors.toList());
-            standingBookIds.addAll(collect1);
-        } else {
-            List<Long> collect = standingbookIdsByEnergy.stream().map(StandingbookDO::getId).collect(Collectors.toList());
-            standingBookIds.addAll(collect);
-        }
-
-
-        if (CollUtil.isEmpty(standingBookIds)) {
-            resultV2VO.setDataTime(LocalDateTime.now());
-            return resultV2VO;
-        }
-        Integer queryType = paramVO.getQueryType();
-
-        //能源参数
-        //根据台账ID查询用量跟成本
-        List<UsageCostData> usageCostDataList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
-        LocalDateTime lastTime = usageCostService.getLastTime(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], standingBookIds);
-
+        ConsumptionStatisticsResultVO<ConsumptionStatisticsInfo> resultTable = consumptionStatisticsTable(paramVO);
 
         // x轴
-        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], dataTypeEnum);
-        resultV2VO.setXdata(xdata);
+        List<String> xdata = resultTable.getHeader();
+        resultVO.setXdata(xdata);
 
-        resultV2VO.setDataTime(lastTime);
+        List<ConsumptionStatisticsInfo> statisticsInfoList = resultTable.getStatisticsInfoList();
 
-        //综合查看
-        //根据日期计算最大 / 最小 / 平均 / 总和
-        Map<String, StatsResult> statsResultMap = CalculateUtil.calculateGroupStats(usageCostDataList, UsageCostData::getTime, UsageCostData::getTotalCost);
-        List<StatisticsChartYInfoV2VO> ydata = new ArrayList<>();
-        xdata.forEach(s -> {
-            // substring 返回 endIndex-beginIndex哥字符 因为是[ )
-            String subs = dealStrTime(s);
-            StatsResult statsResult = statsResultMap.get(subs);
-            StatisticsChartYInfoV2VO yInfoV2VO = new StatisticsChartYInfoV2VO();
-            StatisticsChartYDataV2VO dataV2VO = new StatisticsChartYDataV2VO();
-            if (Objects.nonNull(statsResult)) {
-                dataV2VO.setAvg(dealBigDecimalScale(statsResult.getAvg(), scale));
-                dataV2VO.setMax(dealBigDecimalScale(statsResult.getMax(), scale));
-                dataV2VO.setMin(dealBigDecimalScale(statsResult.getMin(), scale));
-                dataV2VO.setCost(dealBigDecimalScale(statsResult.getSum(), scale));
-            } else {
-                dataV2VO.setAvg(BigDecimal.ZERO);
-                dataV2VO.setMax(BigDecimal.ZERO);
-                dataV2VO.setMin(BigDecimal.ZERO);
-                dataV2VO.setCost(BigDecimal.ZERO);
-            }
-            yInfoV2VO.setData(Collections.singletonList(dataV2VO));
-            ydata.add(yInfoV2VO);
+        // 底部合计map
+        Map<String, BigDecimal> sumConsumptionMap = new HashMap<>();
+        List<ConsumptionStatisticsChartYInfo> yInfoList = new ArrayList<>();
+        for (ConsumptionStatisticsInfo s : statisticsInfoList) {
+
+            ConsumptionStatisticsChartYInfo yInfo = new ConsumptionStatisticsChartYInfo();
+            yInfo.setName(getName(s.getLabel1(), s.getLabel2(), s.getLabel3(), s.getLabel4(), s.getLabel5()));
+
+            // 处理数据
+            List<ConsumptionStatisticsInfoData> statisticInfoDataV2List = s.getStatisticsDateDataList();
+            Map<String, ConsumptionStatisticsInfoData> dateMap = statisticInfoDataV2List.stream()
+                    .collect(Collectors.toMap(ConsumptionStatisticsInfoData::getDate, Function.identity()));
+
+            List<BigDecimal> data = ListUtils.newArrayList();
+            xdata.forEach(date -> {
+                ConsumptionStatisticsInfoData statisticInfoDataV2 = dateMap.get(date);
+                if (statisticInfoDataV2 == null) {
+                    data.add(BigDecimal.ZERO);
+                } else {
+                    BigDecimal consumption = statisticInfoDataV2.getConsumption();
+                    data.add(!Objects.isNull(consumption) ? consumption : BigDecimal.ZERO);
+                    // 底部合计处理
+                    sumConsumptionMap.put(date, addBigDecimal(sumConsumptionMap.get(date), consumption));
+                }
+            });
+            yInfo.setData(data);
+
+            // 处理底部合计
+            BigDecimal sumCost = s.getSumEnergyConsumption();
+            sumConsumptionMap.put("sumNum", addBigDecimal(sumConsumptionMap.get("sumNum"), sumCost));
+
+            yInfoList.add(yInfo);
+        }
+
+        // 汇总数据
+        List<BigDecimal> summary = ListUtils.newArrayList();
+        ConsumptionStatisticsChartYInfo yInfo = new ConsumptionStatisticsChartYInfo();
+        yInfo.setName("汇总");
+        xdata.forEach(date -> {
+            // 折价
+            BigDecimal consumption = sumConsumptionMap.get(date);
+            summary.add(!Objects.isNull(consumption) ? consumption : BigDecimal.ZERO);
         });
-        resultV2VO.setYdata(ydata);
+        yInfo.setData(summary);
 
-        String jsonStr = JSONUtil.toJsonStr(resultV2VO);
-        byte[] bytes = StrUtils.compressGzip(jsonStr);
-        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
-        return resultV2VO;
+        yInfoList.add(yInfo);
+        resultVO.setYdata(yInfoList);
 
+        return resultVO;
+
+    }
+
+    private String getName(String label1, String label2, String label3, String label4, String label5) {
+        if (CharSequenceUtil.isNotEmpty(label5) && !"/".equals(label5)) {
+            return label5;
+        }
+        if (CharSequenceUtil.isNotEmpty(label4) && !"/".equals(label4)) {
+            return label4;
+        }
+        if (CharSequenceUtil.isNotEmpty(label3) && !"/".equals(label3)) {
+            return label3;
+        }
+        if (CharSequenceUtil.isNotEmpty(label2) && !"/".equals(label2)) {
+            return label2;
+        }
+        if (CharSequenceUtil.isNotEmpty(label1) && !"/".equals(label1)) {
+            return label1;
+        }
+        return null;
     }
 
     @Override
@@ -824,7 +802,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
                     String subLabel = "标签" + i;
                     list.add(Arrays.asList(sheetName, labelName, strTime, subLabel, subLabel));
                 }
-                list.add(Arrays.asList(sheetName, labelName, strTime, "能源", "能源"));
+                //list.add(Arrays.asList(sheetName, labelName, strTime, "能源", "能源"));
                 break;
             case 1:
                 // 按能源
@@ -850,12 +828,10 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
         xdata.forEach(x -> {
             list.add(Arrays.asList(sheetName, labelName, strTime, x, "用量"));
-            list.add(Arrays.asList(sheetName, labelName, strTime, x, "用能成本"));
         });
 
         // 周期合计
         list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "用量"));
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "用能成本"));
         return list;
 
     }
@@ -896,7 +872,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
         Integer queryType = paramVO.getQueryType();
 
         // 底部合计map
-        Map<String, BigDecimal> sumCostMap = new HashMap<>();
+        Map<String, BigDecimal> sumConsumptionMap = new HashMap<>();
 
         for (ConsumptionStatisticsInfo s : statisticsInfoList) {
 
@@ -910,7 +886,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
                         data.add(labels[i]);
                     }
                     // 处理能源
-                    data.add(s.getEnergyName());
+                    //data.add(s.getEnergyName());
                     break;
                 case 1:
                     // 按能源
@@ -935,28 +911,24 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
             tableHeader.forEach(date -> {
                 ConsumptionStatisticsInfoData statisticInfoDataV2 = dateMap.get(date);
                 if (statisticInfoDataV2 == null) {
-                    data.add("/");
+                    //data.add("/");
                     data.add("/");
                 } else {
                     BigDecimal consumption = statisticInfoDataV2.getConsumption();
-                    BigDecimal cost = statisticInfoDataV2.getMoney();
                     data.add(getConvertData(consumption));
-                    data.add(getConvertData(cost));
 
                     // 底部合计处理
-                    sumCostMap.put(date, addBigDecimal(sumCostMap.get(date), cost));
+                    sumConsumptionMap.put(date, addBigDecimal(sumConsumptionMap.get(date), consumption));
                 }
 
             });
 
             BigDecimal sumEnergyConsumption = s.getSumEnergyConsumption();
-            BigDecimal sumCost = s.getSumEnergyMoney();
             // 处理周期合计
             data.add(getConvertData(sumEnergyConsumption));
-            data.add(getConvertData(sumCost));
 
             // 处理底部合计
-            sumCostMap.put("sumNum", addBigDecimal(sumCostMap.get("sumNum"), sumCost));
+            sumConsumptionMap.put("sumNum", addBigDecimal(sumConsumptionMap.get("sumNum"), sumEnergyConsumption));
 
             result.add(data);
         }
@@ -989,7 +961,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
                     bottom.add(pre);
                 }
                 // 底部能源位
-                bottom.add(pre);
+                //bottom.add(pre);
                 break;
             case 1:
                 // 按能源
@@ -1010,21 +982,15 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
         tableHeader.forEach(date -> {
 
             // 用量
-            bottom.add("/");
-
-            // 折价
-            BigDecimal cost = sumCostMap.get(date);
-            bottom.add(getConvertData(cost));
+            BigDecimal consumption = sumConsumptionMap.get(date);
+            bottom.add(getConvertData(consumption));
 
         });
 
         // 底部周期合计
         // 用量
-        bottom.add("/");
-
-        // 折价
-        BigDecimal cost = sumCostMap.get("sumNum");
-        bottom.add(getConvertData(cost));
+        BigDecimal consumption = sumConsumptionMap.get("sumNum");
+        bottom.add(getConvertData(consumption));
         result.add(bottom);
 
         return result;

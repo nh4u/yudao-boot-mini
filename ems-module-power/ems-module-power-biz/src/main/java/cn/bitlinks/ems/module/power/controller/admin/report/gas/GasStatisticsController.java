@@ -1,0 +1,150 @@
+package cn.bitlinks.ems.module.power.controller.admin.report.gas;
+
+import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
+import cn.bitlinks.ems.framework.common.pojo.CommonResult;
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.gas.vo.*;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.FullCellMergeStrategy;
+import cn.bitlinks.ems.module.power.service.report.gas.GasStatisticsService;
+import com.alibaba.excel.EasyExcelFactory;
+import com.alibaba.excel.write.metadata.style.WriteCellStyle;
+import com.alibaba.excel.write.style.HorizontalCellStyleStrategy;
+import com.alibaba.excel.write.style.column.SimpleColumnWidthStyleStrategy;
+import com.alibaba.excel.write.style.row.SimpleRowHeightStyleStrategy;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
+import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.getLabelDeep;
+
+
+@Tag(name = "管理后台 - 个性化报表[气]-气化科报表")
+@RestController
+@RequestMapping("/power/report/gas/gasStatistics")
+@Validated
+public class GasStatisticsController {
+    @Resource
+    private GasStatisticsService gasStatisticsService;
+
+    @PostMapping("/getPowerTankSettings")
+    @Operation(summary = "获得储罐液位设置列表")
+    public CommonResult<List<PowerTankSettingsRespVO>> getPowerTankSettings() {
+        return success(gasStatisticsService.getPowerTankSettings());
+    }
+
+    @PostMapping("/savePowerTankSettings")
+    @Operation(summary = "保存储罐液位设置")
+    public CommonResult<Boolean> savePowerTankSettings(@Valid @RequestBody SettingsParamVO paramVO) {
+        return success(gasStatisticsService.savePowerTankSettings(paramVO));
+    }
+
+    @PostMapping("/getEnergyStatisticsItems")
+    @Operation(summary = "获得能源统计项列表")
+    public CommonResult<List<EnergyStatisticsItemInfoRespVO>> getEnergyStatisticsItems() {
+        return success(gasStatisticsService.getEnergyStatisticsItems());
+    }
+
+
+    @PostMapping("/gasStatisticsTable")
+    @Operation(summary = "气化科报表")
+    public CommonResult<GasStatisticsResultVO<GasStatisticsInfo>> gasStatisticsTable(@Valid @RequestBody GasStatisticsParamVO paramVO) {
+        return success(gasStatisticsService.gasStatisticsTable(paramVO));
+    }
+
+    @PostMapping("/exportGasStatisticsTable")
+    @Operation(summary = "导出气化科报表")
+    @ApiAccessLog(operateType = EXPORT)
+    public void exportGasStatisticsTable(@Valid @RequestBody ConsumptionStatisticsParamVO paramVO,
+                                         HttpServletResponse response) throws IOException {
+
+        String childLabels = paramVO.getChildLabels();
+        Integer labelDeep = getLabelDeep(childLabels);
+        Integer mergeIndex = 0;
+        // 文件名字处理
+        Integer queryType = paramVO.getQueryType();
+        String filename = "";
+        switch (queryType) {
+            case 0:
+                filename = CONSUMPTION_STATISTICS_ALL + XLSX;
+                mergeIndex = labelDeep;
+                break;
+            case 1:
+                filename = CONSUMPTION_STATISTICS_ENERGY + XLSX;
+                // 能源不需要合并
+                mergeIndex = 0;
+                break;
+            case 2:
+                filename = CONSUMPTION_STATISTICS_LABEL + XLSX;
+                // 标签没有能源
+                mergeIndex = labelDeep - 1;
+                break;
+            default:
+                filename = DEFAULT + XLSX;
+        }
+
+        List<List<String>> header = gasStatisticsService.getExcelHeader(paramVO);
+        List<List<Object>> dataList = gasStatisticsService.getExcelData(paramVO);
+
+
+        // 放在 write前配置response才会生效，放在后面不生效
+        // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
+        response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
+        response.setContentType("application/vnd.ms-excel;charset=UTF-8");
+
+        WriteCellStyle headerStyle = new WriteCellStyle();
+        // 设置水平居中对齐
+        headerStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+        // 设置垂直居中对齐
+        headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        // 设置背景色
+//        headerStyle.setFillBackgroundColor(IndexedColors.ROYAL_BLUE.getIndex());
+        // 设置字体
+//        WriteFont headerFont = new WriteFont();
+//        headerFont.setFontHeightInPoints((short) 10);
+//        headerFont.setColor(IndexedColors.WHITE.getIndex());
+//        headerStyle.setWriteFont(headerFont);
+
+
+        // 创建一个新的 WriteCellStyle 对象
+        WriteCellStyle contentStyle = new WriteCellStyle();
+
+        // 设置水平居中对齐
+        contentStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+
+        // 设置垂直居中对齐
+        contentStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+
+        // 设置边框
+        contentStyle.setBorderLeft(BorderStyle.THIN);
+        contentStyle.setBorderTop(BorderStyle.THIN);
+        contentStyle.setBorderRight(BorderStyle.THIN);
+        contentStyle.setBorderBottom(BorderStyle.THIN);
+
+        EasyExcelFactory.write(response.getOutputStream())
+                .head(header)
+                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(15))
+                .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
+                // 设置表头行高 30，内容行高 20
+                .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))
+                // 自适应表头宽度
+//                .registerWriteHandler(new MatchTitleWidthStyleStrategy())
+                // 由于column索引从0开始 返回来的labelDeep是从1开始，又由于有个能源列，所以合并索引 正好相抵，直接使用labelDeep即可
+                .registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
+                .sheet("数据").doWrite(dataList);
+    }
+}

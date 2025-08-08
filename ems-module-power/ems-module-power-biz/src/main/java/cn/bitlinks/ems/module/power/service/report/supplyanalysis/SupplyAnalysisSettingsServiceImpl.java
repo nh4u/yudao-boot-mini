@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -73,8 +74,7 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
         // 按system分组 组内台账id不能重复 校验
         Map<String, List<SupplyAnalysisSettingsSaveReqVO>> systemMap = supplyAnalysisSettingsList.stream()
                 .collect(Collectors.groupingBy(SupplyAnalysisSettingsSaveReqVO::getSystem));
-
-
+        // 1.核对传入的值
         systemMap.forEach((k, v) -> {
             List<SupplyAnalysisSettingsSaveReqVO> tempV = v
                     .stream()
@@ -88,6 +88,19 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
 
             if (collect.size() != tempV.size()) {
                 throw exception(SUPPLY_ANALYSIS_STANDINGBOOK_REPEAT);
+            }
+        });
+
+        // 2.核对数据库里的值
+        supplyAnalysisSettingsList.forEach(l -> {
+            if (!Objects.isNull(l.getStandingbookId())) {
+                Long count = supplyAnalysisSettingsMapper.selectCount(new LambdaQueryWrapperX<SupplyAnalysisSettingsDO>()
+                        .eq(SupplyAnalysisSettingsDO::getStandingbookId, l.getStandingbookId())
+                        .eq(SupplyAnalysisSettingsDO::getSystem, l.getSystem())
+                        .ne(SupplyAnalysisSettingsDO::getId, l.getId()));
+                if (count.compareTo(1L) >= 0) {
+                    throw exception(SUPPLY_ANALYSIS_STANDINGBOOK_REPEAT);
+                }
             }
         });
 
@@ -123,6 +136,12 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
         StatisticsResultV2VO<SupplyAnalysisStructureInfo> resultVO = new StatisticsResultV2VO<>();
         resultVO.setDataTime(LocalDateTime.now());
 
+        // 校验系统 没值就返空
+        List<String> system1 = paramVO.getSystem();
+        if (CollUtil.isEmpty(system1)){
+            return resultVO;
+        }
+
         // 3.表头处理
         List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], dataTypeEnum);
         resultVO.setHeader(tableHeader);
@@ -135,7 +154,6 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
-
 
         // 4.4.台账id为空直接返回结果
         if (CollUtil.isEmpty(standingBookIds)) {
@@ -249,7 +267,13 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
     @Override
     public SupplyAnalysisPieResultVO supplyAnalysisChart(SupplyAnalysisReportParamVO paramVO) {
         // 1.校验时间范围
-        LocalDateTime[] rangeOrigin = validateRange(paramVO.getRange());
+        LocalDateTime[] range = paramVO.getRange();
+        LocalDateTime[] rangeOrigin;
+        if (Objects.isNull(range) || range.length < 2) {
+            rangeOrigin = validateRange(paramVO.getTimeRange());
+        } else {
+            rangeOrigin = validateRange(range);
+        }
 
         SupplyAnalysisPieResultVO resultVO = new SupplyAnalysisPieResultVO();
         resultVO.setDataTime(LocalDateTime.now());

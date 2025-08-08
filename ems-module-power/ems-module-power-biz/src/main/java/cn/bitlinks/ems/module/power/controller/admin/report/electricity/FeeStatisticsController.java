@@ -2,6 +2,8 @@ package cn.bitlinks.ems.module.power.controller.admin.report.electricity;
 
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.FeeChartResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.FeeChartYInfo;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.service.report.electricityfee.FeeStatisticsService;
 import com.alibaba.excel.EasyExcelFactory;
@@ -24,6 +26,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -55,7 +58,7 @@ public class FeeStatisticsController {
 
     @PostMapping("/feeStatisticsChart")
     @Operation(summary = "电费统计图")
-    public CommonResult<StatisticsChartResultV2VO> feeStatisticsChart(@Valid @RequestBody StatisticsParamV2VO paramVO) {
+    public CommonResult<FeeChartResultVO<FeeChartYInfo>> feeStatisticsChart(@Valid @RequestBody StatisticsParamV2VO paramVO) {
         return success(feeStatisticsService.feeStatisticsChart(paramVO));
     }
 
@@ -77,6 +80,8 @@ public class FeeStatisticsController {
         // 放在 write前配置response才会生效，放在后面不生效
         // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
+        response.addHeader("Access-Control-Expose-Headers", "File-Name");
+        response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
         response.setContentType("application/vnd.ms-excel;charset=UTF-8");
 
         WriteCellStyle headerStyle = new WriteCellStyle();
@@ -97,17 +102,22 @@ public class FeeStatisticsController {
         contentStyle.setBorderRight(BorderStyle.THIN);
         contentStyle.setBorderBottom(BorderStyle.THIN);
 
-        EasyExcelFactory.write(response.getOutputStream())
-                .head(header)
-                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(15))
-                .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
-                // 设置表头行高 30，内容行高 20
-                .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))
-                // 自适应表头宽度
+        // 3. 使用 EasyExcel 写入到 response.getOutputStream()
+        try (OutputStream outputStream = response.getOutputStream()) {
+            EasyExcelFactory.write(outputStream)
+                    .head(header)
+                    .registerWriteHandler(new SimpleColumnWidthStyleStrategy(15))
+                    .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
+                    // 设置表头行高 30，内容行高 20
+                    .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))
+                    // 自适应表头宽度
 //                .registerWriteHandler(new MatchTitleWidthStyleStrategy())
-                // 由于column索引从0开始 返回来的labelDeep是从1开始，又由于有个能源列，所以合并索引 正好相抵，直接使用labelDeep即可
-                .registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
-                .sheet("数据").doWrite(dataList);
+                    // 由于column索引从0开始 返回来的labelDeep是从1开始，又由于有个能源列，所以合并索引 正好相抵，直接使用labelDeep即可
+                    .registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
+                    .sheet("数据").doWrite(dataList);
+        } catch (Exception e) {
+            e.printStackTrace(); // 或者没打印
+        }// try-with-resources 会自动关闭 outputStream
     }
 
 

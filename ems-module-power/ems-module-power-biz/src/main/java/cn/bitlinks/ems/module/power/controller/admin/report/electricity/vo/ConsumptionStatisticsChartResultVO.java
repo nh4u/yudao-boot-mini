@@ -1,7 +1,5 @@
 package cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo;
 
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsChartYInfoV2VO;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -18,14 +16,12 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @ToString(callSuper = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public class ConsumptionStatisticsChartResultVO {
+public class ConsumptionStatisticsChartResultVO<T> {
 
     /**
-     * 表头
+     * 统计信息
      */
-    private List<StatisticsChartYInfoV2VO> ydata;
-
+    private List<T> ydata;
 
     /**
      * 表头

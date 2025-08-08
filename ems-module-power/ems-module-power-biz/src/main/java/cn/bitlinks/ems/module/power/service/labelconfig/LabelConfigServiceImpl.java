@@ -6,7 +6,6 @@ import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.mysql.coalfactorhistory.CoalFactorHistoryMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.labelconfig.LabelConfigMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookLabelInfoMapper;
@@ -265,7 +264,7 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     @Override
     public List<LabelConfigDO> getAllLabelConfig() {
         LambdaQueryWrapperX<LabelConfigDO> wrapper = new LambdaQueryWrapperX<>();
-        wrapper.select(LabelConfigDO::getId, LabelConfigDO::getParentId, LabelConfigDO::getLabelName);
+        wrapper.select(LabelConfigDO::getId, LabelConfigDO::getParentId, LabelConfigDO::getLabelName,LabelConfigDO::getCode);
         return labelConfigMapper.selectList(wrapper);
     }
 
@@ -280,6 +279,13 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     public List<LabelConfigDO> getByParentId(List<Long> ids) {
         LambdaQueryWrapperX<LabelConfigDO> wrapper = new LambdaQueryWrapperX<>();
         wrapper.in(LabelConfigDO::getParentId, ids);
+        return labelConfigMapper.selectList(wrapper);
+    }
+
+    @Override
+    public List<LabelConfigDO> getByCodes(List<String> codes) {
+        LambdaQueryWrapperX<LabelConfigDO> wrapper = new LambdaQueryWrapperX<>();
+        wrapper.in(LabelConfigDO::getCode, codes);
         return labelConfigMapper.selectList(wrapper);
     }
 
@@ -369,7 +375,7 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         List<Long> allLabelIds = getAllRelatedLabelIds(labelId);
         List<String> childIds = allLabelIds.stream()
                 .filter(id -> !id.equals(labelId))
-                .map(id->id.toString())
+                .map(id -> id.toString())
                 .collect(Collectors.toList());
 
         // 2. 分层校验

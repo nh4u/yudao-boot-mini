@@ -3,12 +3,21 @@ package cn.bitlinks.ems.module.power.controller.admin.report;
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopChartResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopTableResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.ReportParamVO;
 import cn.bitlinks.ems.module.power.service.cophouraggdata.CopHourAggDataService;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.util.ListUtils;
+import com.alibaba.excel.write.metadata.style.WriteCellStyle;
+import com.alibaba.excel.write.style.HorizontalCellStyleStrategy;
+import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
+import com.alibaba.excel.write.style.column.SimpleColumnWidthStyleStrategy;
+import com.alibaba.excel.write.style.row.SimpleRowHeightStyleStrategy;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +34,8 @@ import java.util.Map;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.COP;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.XLSX;
 
 /**
  * @Title: ydme-ems
@@ -46,7 +57,7 @@ public class CopReportController {
 
     @PostMapping("/copTable")
     @Operation(summary = "COP表")
-    public CommonResult<List<Map<String, Object>>> copTable(@Valid @RequestBody ReportParamVO paramVO) {
+    public CommonResult<CopTableResultVO> copTable(@Valid @RequestBody ReportParamVO paramVO) {
         return success(copHourAggDataService.copTable(paramVO));
     }
 
@@ -56,7 +67,7 @@ public class CopReportController {
         return success(copHourAggDataService.copChart(paramVO));
     }
 
-//    @GetMapping("/export-excel")
+    //    @GetMapping("/export-excel")
     @Operation(summary = "导出COP Excel")
     @ApiAccessLog(operateType = EXPORT)
     public void exportLabelConfigExcel(ReportParamVO pageReqVO,
@@ -111,18 +122,46 @@ public class CopReportController {
     public void exportCopExcel(@Valid @RequestBody ReportParamVO pageReqVO,
                                HttpServletResponse response) throws IOException {
 
-        String filename = "COP报表.xlsx";
+        String filename = COP + XLSX;
         List<List<String>> header = copHourAggDataService.getExcelHeader(pageReqVO);
         List<List<Object>> dataList = copHourAggDataService.getExcelData(pageReqVO);
 
         // 放在 write前配置response才会生效，放在后面不生效
         // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
+        response.addHeader("Access-Control-Expose-Headers", "File-Name");
+        response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
         response.setContentType("application/vnd.ms-excel;charset=UTF-8");
+
+        WriteCellStyle headerStyle = new WriteCellStyle();
+        // 设置水平居中对齐
+        headerStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+        // 设置垂直居中对齐
+        headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        // 创建一个新的 WriteCellStyle 对象
+        WriteCellStyle contentStyle = new WriteCellStyle();
+        // 设置水平居中对齐
+        contentStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+        // 设置垂直居中对齐
+        contentStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+
+        // 设置边框
+        contentStyle.setBorderLeft(BorderStyle.THIN);
+        contentStyle.setBorderTop(BorderStyle.THIN);
+        contentStyle.setBorderRight(BorderStyle.THIN);
+        contentStyle.setBorderBottom(BorderStyle.THIN);
+
 
         EasyExcel.write(response.getOutputStream())
                 // 动态头
                 .head(header)
+                // 自适应  找出数据中最大宽度作为基础宽度（官方不推荐）
+//                .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
+                // 固定列宽
+                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(15))
+                .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
+                // 设置表头行高 30，内容行高 20
+                .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))
                 .sheet("数据")
                 // 表格数据
                 .doWrite(dataList);

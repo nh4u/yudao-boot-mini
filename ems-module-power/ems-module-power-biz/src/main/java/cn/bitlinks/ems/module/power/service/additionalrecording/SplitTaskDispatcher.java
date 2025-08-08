@@ -8,25 +8,27 @@ import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregate
 import cn.hutool.core.bean.BeanUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.SPLIT_TASK_QUEUE_REDIS_KEY_PREFIX;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.SPLIT_TASK_QUEUE_REDIS_KEY;
 
 @Slf4j
 @Component
 public class SplitTaskDispatcher {
-
     @Resource
     private RedisTemplate<String, String> redisTemplate;
+
 
     @Resource(name = "splitTaskExecutor")
     private Executor splitExecutor;
@@ -37,8 +39,9 @@ public class SplitTaskDispatcher {
     public void dispatchSplitTask(MinuteAggDataSplitDTO input) {
         List<MinuteAggDataSplitDTO> dailyTasks = splitIntoDailyTasks(input);
         for (MinuteAggDataSplitDTO task : dailyTasks) {
-            String key = getQueueKey(task.getStartDataDO().getAggregateTime());
-            redisTemplate.opsForList().leftPush(key, JsonUtils.toJsonString(task));
+            ZonedDateTime zoned = LocalDateTime.now().atZone(ZoneId.systemDefault());
+            double score = zoned.toEpochSecond();
+            redisTemplate.opsForZSet().add(SPLIT_TASK_QUEUE_REDIS_KEY, JsonUtils.toJsonString(task), score);
         }
     }
 
@@ -78,7 +81,7 @@ public class SplitTaskDispatcher {
 
         while (!start.isAfter(end)) {
             LocalDateTime segStart = start;
-            LocalDateTime segEnd = segStart.toLocalDate().atTime(23, 59);
+            LocalDateTime segEnd = segStart.with(TemporalAdjusters.lastDayOfMonth()).toLocalDate().atTime(23, 59);
             if (segEnd.isAfter(end)) segEnd = end;
 
             MinuteAggregateDataDTO toAddStartDTO = BeanUtil.copyProperties(startDataDO, MinuteAggregateDataDTO.class);
@@ -106,7 +109,5 @@ public class SplitTaskDispatcher {
         return result;
     }
 
-    private String getQueueKey(LocalDateTime dateTime) {
-        return SPLIT_TASK_QUEUE_REDIS_KEY_PREFIX + dateTime.toLocalDate();
-    }
+
 }

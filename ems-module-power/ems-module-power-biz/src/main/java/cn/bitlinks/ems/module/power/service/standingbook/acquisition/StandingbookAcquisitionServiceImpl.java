@@ -90,8 +90,6 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         // 0.对公式进行解析检查，生成到io级别的实际公式, 处理填充具体的公式，
         List<StandingbookAcquisitionDetailVO> detailVOS = expandFormulas(updateReqVO.getDetails());
 
-        // 查询服务设置
-        ServiceSettingsDO serviceSettingsDO = serviceSettingsMapper.selectById(updateReqVO.getServiceSettingsId());
         // 1.没有id的，进行新增操作
         if (Objects.isNull(updateReqVO.getId())) {
             // 1.1 添加数采设置
@@ -361,6 +359,8 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         if (Objects.isNull(standingbookAcquisitionDO)) {
             StandingbookAcquisitionVO standingbookAcquisitionVO = new StandingbookAcquisitionVO();
             standingbookAcquisitionVO.setStandingbookId(standingbookId);
+            // 第一次默认为不开启数采任务
+            standingbookAcquisitionVO.setStatus(false);
             // 2.1.1 数采参数为空，
             if (CollUtil.isEmpty(standingbookTmplDaqAttrDOS)) {
                 return standingbookAcquisitionVO;
@@ -374,6 +374,8 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                 StandingbookAcquisitionDetailVO standingbookAcquisitionDetailVO =
                         BeanUtils.toBean(standingbookAcquisitionDetailAttrDTO,
                                 StandingbookAcquisitionDetailVO.class);
+                // 第一次默认为不开启数采任务
+                standingbookAcquisitionDetailVO.setStatus(false);
                 detailVOS.add(standingbookAcquisitionDetailVO);
             });
             standingbookAcquisitionVO.setDetails(detailVOS);
@@ -487,7 +489,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
 
             String resultValue = AcquisitionFormulaUtils.calcSingleParamValue(currentDetailDTO, paramDTOMap,
                     itemStatusMap);
-            if (Objects.isNull(resultValue)) {
+            if (StringUtils.isEmpty(resultValue)) {
                 throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
             }
             return resultValue;

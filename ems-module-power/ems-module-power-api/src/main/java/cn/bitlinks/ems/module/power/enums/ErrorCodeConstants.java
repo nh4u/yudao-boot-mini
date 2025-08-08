@@ -81,7 +81,9 @@ public interface ErrorCodeConstants {
     ErrorCode IMPORT_ACQ_MISTAKE_DETAIL = new ErrorCode(1_001_301_225,"采集点不存在或未匹配，请检查采集点与系统采集点编号是否完全一致");
     ErrorCode IMPORT_EXCEL_ERROR = new ErrorCode(1_001_301_226,"Excel解析失败");
     ErrorCode IMPORT_DATA_STREAM_LOAD_ERROR = new ErrorCode(1_001_301_227,"数据插入失败");
-    ErrorCode IMPORT_NO_MAPPING = new ErrorCode(1_001_301_228,"无报表与台账关联信息");
+    ErrorCode IMPORT_NO_TIMES = new ErrorCode(1_001_301_228,"时间选择有误，读取不到有效时间");
+    ErrorCode IMPORT_TIMES_ERROR = new ErrorCode(1_001_301_229,"时间选择有误，存在非时间数据");
+    ErrorCode IMPORT_NO_METER = new ErrorCode(1_001_301_230,"采集点选择有误，读取不到有效数据");
     // ========== 台账类型 ==========
     ErrorCode STANDINGBOOK_TYPE_NOT_EXISTS = new ErrorCode(1_001_202_000, "台账类型不存在");
     ErrorCode STANDINGBOOK_TYPE_EXITS_CHILDREN = new ErrorCode(1_001_202_001, "存在存在子台账类型，无法删除");

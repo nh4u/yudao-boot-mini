@@ -17,6 +17,7 @@ import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.util.ListUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
+import jodd.util.StringPool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -38,8 +39,7 @@ import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.REPORT_NATURA
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ReportCacheConstants.NATURAL_GAS_CHART;
 import static cn.bitlinks.ems.module.power.enums.ReportCacheConstants.NATURAL_GAS_TABLE;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.getConvertData;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
 @Service
 @Validated
@@ -55,6 +55,13 @@ public class NaturalGasServiceImpl implements NaturalGasService {
     private UsageCostService usageCostService;
 
     private final Integer scale = DEFAULT_SCALE;
+
+    private final String sumItemName = "汇总";
+    private final String sheetNameCell = "天然气用量";
+    private final String workbookNameCell = "表单名称";
+    private final String periodNameCell = "统计周期";
+    private final String periodSumCell = "周期合计";
+    private final String periodSumKey = "periodSum";
 
     private LinkedHashMap<String, String> getItemMapping() {
         LinkedHashMap<String, String> result = new LinkedHashMap<>();
@@ -118,15 +125,15 @@ public class NaturalGasServiceImpl implements NaturalGasService {
         // 查询 热力计量器具对应的用量使用情况；
         List<UsageCostData> usageCostDataList = usageCostService.getUsageByStandingboookIdGroup(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], new ArrayList<>(sbMapping.values()));
 
-        List<NaturalGasInfo> NaturalGasInfoList = queryDefaultData(usageCostDataList, sbMapping, itemMapping);
+        List<NaturalGasInfo> naturalGasInfoList = queryDefaultData(usageCostDataList, sbMapping, itemMapping);
 
         //返回结果
         BaseReportResultVO<NaturalGasInfo> resultVO = new BaseReportResultVO<>();
         resultVO.setHeader(tableHeader);
-        resultVO.setReportDataList(NaturalGasInfoList);
+        resultVO.setReportDataList(naturalGasInfoList);
 
         // 无数据的填充0
-        NaturalGasInfoList.forEach(l -> {
+        naturalGasInfoList.forEach(l -> {
 
             List<NaturalGasInfoData> newList = new ArrayList<>();
             List<NaturalGasInfoData> oldList = l.getNaturalGasInfoDataList();
@@ -177,7 +184,7 @@ public class NaturalGasServiceImpl implements NaturalGasService {
     }
 
     @Override
-    public BaseReportMultiChartResultVO<Map<String,List<BigDecimal>>> getChart(BaseTimeDateParamVO paramVO) {
+    public BaseReportMultiChartResultVO<LinkedHashMap<String, List<BigDecimal>>> getChart(BaseTimeDateParamVO paramVO) {
         // 校验参数
         validCondition(paramVO);
 
@@ -185,10 +192,10 @@ public class NaturalGasServiceImpl implements NaturalGasService {
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            return JSON.parseObject(cacheRes, new TypeReference<BaseReportMultiChartResultVO<Map<String,List<BigDecimal>>>>() {
+            return JSON.parseObject(cacheRes, new TypeReference<BaseReportMultiChartResultVO<LinkedHashMap<String, List<BigDecimal>>>>() {
             });
         }
-        BaseReportMultiChartResultVO<Map<String,List<BigDecimal>>> resultVO = new BaseReportMultiChartResultVO<>();
+        BaseReportMultiChartResultVO<LinkedHashMap<String, List<BigDecimal>>> resultVO = new BaseReportMultiChartResultVO<>();
         // x轴
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
         resultVO.setXdata(xdata);
@@ -208,7 +215,7 @@ public class NaturalGasServiceImpl implements NaturalGasService {
 
         if (CollUtil.isEmpty(sbMapping)) {
             resultVO.setDataTime(LocalDateTime.now());
-            resultVO.setYdata(Collections.emptyMap());
+            resultVO.setYdata(new LinkedHashMap<>());
             return resultVO;
         }
 
@@ -217,7 +224,7 @@ public class NaturalGasServiceImpl implements NaturalGasService {
 
         if (CollUtil.isEmpty(usageCostDataList)) {
             resultVO.setDataTime(LocalDateTime.now());
-            resultVO.setYdata(Collections.emptyMap());
+            resultVO.setYdata(new LinkedHashMap<>());
             return resultVO;
         }
         Map<Long, Map<String, BigDecimal>> standingbookIdTimeCostMap = usageCostDataList.stream()
@@ -260,14 +267,14 @@ public class NaturalGasServiceImpl implements NaturalGasService {
                 .collect(Collectors.toList());
 
         // 放入 map 中
-        ydataListMap.put("汇总", scaledSumList);
+        ydataListMap.put(sumItemName, scaledSumList);
 
-        Map<String,List<BigDecimal>> map = new HashMap<>();
-        itemMapping.forEach((k,v)->{
-            map.put(k,ydataListMap.get(v));
+        LinkedHashMap<String, List<BigDecimal>> map = new LinkedHashMap<>();
+        map.put(sumItemName, ydataListMap.get(sumItemName));
+        itemMapping.forEach((k, v) -> {
+            map.put(k, ydataListMap.get(v));
         });
 
-        map.put("汇总",ydataListMap.get("汇总"));
         resultVO.setYdata(map);
 
         LocalDateTime lastTime = getLastTime(paramVO.getRange()[0], paramVO.getRange()[1], new ArrayList<>(sbMapping.values()));
@@ -284,17 +291,18 @@ public class NaturalGasServiceImpl implements NaturalGasService {
         validCondition(paramVO);
 
         List<List<String>> list = ListUtils.newArrayList();
-        list.add(Arrays.asList("表单名称", "统计周期", ""));
-        String sheetName = "天然气用量";
+        list.add(Arrays.asList(workbookNameCell, periodNameCell, StringPool.EMPTY));
+        String sheetName = sheetNameCell;
         // 统计周期
-        String period = getFormatTime(paramVO.getRange()[0]) + "~" + getFormatTime(paramVO.getRange()[1]);
+        String period = getFormatTime(paramVO.getRange()[0]) + StringPool.TILDA + getFormatTime(paramVO.getRange()[1]);
 
         // 月份处理
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
         xdata.forEach(x -> {
             list.add(Arrays.asList(sheetName, period, x));
         });
-        list.add(Arrays.asList(sheetName, period, "周期合计"));
+        list.add(Arrays.asList(sheetName, period, periodSumCell));
+
         return list;
     }
 
@@ -307,7 +315,8 @@ public class NaturalGasServiceImpl implements NaturalGasService {
         List<String> tableHeader = resultVO.getHeader();
 
         List<NaturalGasInfo> NaturalGasInfoList = resultVO.getReportDataList();
-
+        // 底部合计map
+        Map<String, BigDecimal> bottomSumMap = new HashMap<>();
         for (NaturalGasInfo s : NaturalGasInfoList) {
 
             List<Object> data = ListUtils.newArrayList();
@@ -327,16 +336,29 @@ public class NaturalGasServiceImpl implements NaturalGasService {
                 } else {
                     BigDecimal consumption = NaturalGasInfoData.getConsumption();
                     data.add(getConvertData(consumption));
+                    // 底部合计
+                    bottomSumMap.put(date, addBigDecimal(bottomSumMap.get(date), consumption));
                 }
             });
 
             BigDecimal periodSum = s.getPeriodSum();
             // 处理周期合计
             data.add(getConvertData(periodSum));
-
+            // 处理底部周期合计
+            bottomSumMap.put(periodSumKey, addBigDecimal(bottomSumMap.get(periodSumKey), periodSum));
             result.add(data);
         }
-
+        // 添加底部合计数据
+        List<Object> bottom = ListUtils.newArrayList();
+        // 每日合计、每月合计，每年合计
+        bottom.add(DataTypeEnum.getBottomSumCell(DataTypeEnum.codeOf(paramVO.getDateType())));
+        // 底部数据位
+        tableHeader.forEach(date -> {
+            bottom.add(getConvertData(bottomSumMap.get(date)));
+        });
+        // 底部周期合计
+        bottom.add(getConvertData(bottomSumMap.get(periodSumKey)));
+        result.add(bottom);
         return result;
     }
 

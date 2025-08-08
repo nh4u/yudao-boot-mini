@@ -53,7 +53,8 @@ public interface CommonConstants {
      */
     String ANNUAL_STATISTICS = "每年合计";
 
-    String ELECTRICITY = "电力";
+    String GROUP_ELECTRICITY = "电力";
+    String GROUP_WATER = "水";
 
     Integer YEAR = 366;
 
@@ -135,6 +136,10 @@ public interface CommonConstants {
     /**
      * 拆分任务队列 redis key
      */
-    String SPLIT_TASK_QUEUE_REDIS_KEY_PREFIX = "split_task_queue:";
+    String SPLIT_TASK_QUEUE_REDIS_KEY= "split_task_queue";
+    /**
+     * COP 重算队列
+     */
+    String COP_RECALCULATE_HOUR_QUEUE = "cop:recalc:hour:queue";
 
 }

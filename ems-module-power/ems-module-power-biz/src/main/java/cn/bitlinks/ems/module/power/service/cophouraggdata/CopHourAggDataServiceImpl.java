@@ -3,10 +3,7 @@ package cn.bitlinks.ems.module.power.service.cophouraggdata;
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
-import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopChartResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopChartYData;
-import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopHourAggData;
-import cn.bitlinks.ems.module.power.controller.admin.report.vo.ReportParamVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.vo.*;
 import cn.bitlinks.ems.module.power.dal.mysql.copsettings.CopHourAggDataMapper;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DatePattern;
@@ -26,10 +23,13 @@ import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
+import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getSamePeriodLastYear;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.SYSTEM_TYPE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_TYPE_NOT_EXISTS;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.END_TIME_MUST_AFTER_START_TIME;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.COP;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.STATISTICS_FEE;
 
 /**
  * @author liumingqiang
@@ -44,7 +44,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
     private CopHourAggDataMapper copHourAggDataMapper;
 
     @Override
-    public List<Map<String, Object>> copTable(ReportParamVO paramVO) {
+    public CopTableResultVO copTable(ReportParamVO paramVO) {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND);
 
@@ -57,6 +57,8 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
         List<String> copyTypeList = paramVO.getCopType();
 
         // 结果list
+        CopTableResultVO resultVO = new CopTableResultVO();
+        resultVO.setDataTime(LocalDateTime.now());
         List<Map<String, Object>> result = new ArrayList<>();
 
         // 3.字段拼接
@@ -135,8 +137,14 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
 
         }
 
+        LocalDateTime lastTime = copHourAggDataMapper.getLastTime(
+                range[0],
+                range[1],
+                copyTypeList);
 
-        return result;
+        resultVO.setCopMapList(result);
+        resultVO.setDataTime(lastTime);
+        return resultVO;
     }
 
     @Override
@@ -247,8 +255,15 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
         List<String> copTypes = dealSystemType(copyTypeList);
 
         List<List<String>> list = ListUtils.newArrayList();
+
+        // 表单名称
+        String sheetName = COP;
+        // 系统
+        String systemStr = copTypes.stream().map(map::get).collect(Collectors.joining("、"));
+        // 统计周期
+        String strTime = getFormatTime(startTime) + "~" + getFormatTime(endTime);
         // 第一格处理
-        list.add(Arrays.asList("", ""));
+        list.add(Arrays.asList("表单名称", "系统", "统计周期", "时间/系统", "时间/系统"));
 
         // 月份处理
         DataTypeEnum dataTypeEnum = validateDateType(1);
@@ -256,7 +271,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
 
         xdata.forEach(x -> {
             copTypes.forEach(c -> {
-                list.add(Arrays.asList(x, map.get(c)));
+                list.add(Arrays.asList(sheetName, systemStr, strTime, x, map.get(c)));
             });
         });
 

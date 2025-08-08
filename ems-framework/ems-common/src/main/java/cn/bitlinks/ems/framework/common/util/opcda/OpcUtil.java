@@ -134,6 +134,10 @@ public class OpcUtil {
                 }
                 return value.substring(0, value.length() - 1);
             }
+            //float 类型的数组
+            else if (type == JIVariant.VT_EMPTY || type == JIVariant.VT_NULL) {
+                return null;
+            }
             //其他类型
             else {
                 Object value = variant.getObject();

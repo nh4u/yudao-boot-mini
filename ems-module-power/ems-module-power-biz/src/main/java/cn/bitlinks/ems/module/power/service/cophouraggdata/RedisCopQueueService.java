@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.COP_RECALCULATE_HOUR_QUEUE;
+
 @DS("starrocks")
 @Slf4j
 @Service
@@ -20,9 +22,8 @@ public class RedisCopQueueService {
     private RedisTemplate<String, String> redisTemplate;
 
     public void pushHourForCopRecalc(LocalDateTime hourTime) {
-        String queueKey = "cop:recalc:hour:queue";
-        ZonedDateTime zoned = hourTime.atZone(ZoneId.systemDefault());
+        ZonedDateTime zoned = LocalDateTime.now().atZone(ZoneId.systemDefault());
         double score = zoned.toEpochSecond();
-        redisTemplate.opsForZSet().add(queueKey, hourTime.toString(), score);
+        redisTemplate.opsForZSet().addIfAbsent(COP_RECALCULATE_HOUR_QUEUE, hourTime.toString(), score);
     }
 }

@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.utils;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.text.StrSplitter;
 
 import java.math.BigDecimal;
@@ -81,7 +82,17 @@ public class CommonUtil {
 
         return headerList;
     }
-
+    /**
+     * 同比率计算（避免除零）
+     */
+    public static BigDecimal calculateYearOnYearRatio(BigDecimal now, BigDecimal previous) {
+        if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0 || now == null) {
+            return BigDecimal.ZERO;
+        }
+        return now.subtract(previous)
+                .divide(previous, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100));
+    }
 
     public static BigDecimal dealBigDecimalScale(BigDecimal num, Integer scale) {
         if (num != null) {
@@ -127,6 +138,9 @@ public class CommonUtil {
         if (Objects.isNull(first)) {
             return second;
         } else {
+            if (Objects.isNull(second)) {
+                return first;
+            }
             return first.add(second);
         }
 
@@ -141,6 +155,7 @@ public class CommonUtil {
     public static Object getConvertData(BigDecimal num) {
         return !Objects.isNull(num) && num.compareTo(BigDecimal.ZERO) != 0 ? num : "/";
     }
+
 
     /**
      * 根据数据返回对应数据 or /
@@ -208,5 +223,33 @@ public class CommonUtil {
                     .setScale(2, RoundingMode.HALF_UP);
         }
         return proportion;
+    }
+
+    /**
+     * 获得标签名称
+     * @param label1
+     * @param label2
+     * @param label3
+     * @param label4
+     * @param label5
+     * @return
+     */
+    public static  String getName(String label1, String label2, String label3, String label4, String label5) {
+        if (CharSequenceUtil.isNotEmpty(label5) && !"/".equals(label5)) {
+            return label5;
+        }
+        if (CharSequenceUtil.isNotEmpty(label4) && !"/".equals(label4)) {
+            return label4;
+        }
+        if (CharSequenceUtil.isNotEmpty(label3) && !"/".equals(label3)) {
+            return label3;
+        }
+        if (CharSequenceUtil.isNotEmpty(label2) && !"/".equals(label2)) {
+            return label2;
+        }
+        if (CharSequenceUtil.isNotEmpty(label1) && !"/".equals(label1)) {
+            return label1;
+        }
+        return null;
     }
 }
