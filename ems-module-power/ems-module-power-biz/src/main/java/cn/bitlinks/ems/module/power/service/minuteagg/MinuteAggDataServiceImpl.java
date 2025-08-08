@@ -13,11 +13,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 
+/**
+ * @author liumingqiang
+ */
 @DS("starrocks")
 @Slf4j
 @Service
 @Validated
-public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataService {
+public class MinuteAggDataServiceImpl implements MinuteAggDataService {
 
     @Resource
     private MinuteAggregateDataMapper minuteAggregateDataMapper;

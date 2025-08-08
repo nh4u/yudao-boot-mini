@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * @author liumingqiang
  */
-public interface MinuteAggregateDataService {
+public interface MinuteAggDataService {
     List<MinuteAggregateDataDO> getTmpRangeDataSteady(List<Long> standingbookIds,
                                                       List<String> paramCodes,
                                                       LocalDateTime starTime,
