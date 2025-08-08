@@ -312,7 +312,6 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
             info.setStatisticsDateDataList(dataList);
             info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
-            info.setSumEnergyMoney(dealBigDecimalScale(totalCost, scale));
 
             resultList.add(info);
         });
@@ -410,7 +409,6 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
                     info.setStatisticsDateDataList(dataList);
                     info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
-                    info.setSumEnergyMoney(dealBigDecimalScale(totalCost, scale));
 
                     resultList.add(info);
                 });
@@ -804,7 +802,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
                     String subLabel = "标签" + i;
                     list.add(Arrays.asList(sheetName, labelName, strTime, subLabel, subLabel));
                 }
-                list.add(Arrays.asList(sheetName, labelName, strTime, "能源", "能源"));
+                //list.add(Arrays.asList(sheetName, labelName, strTime, "能源", "能源"));
                 break;
             case 1:
                 // 按能源
@@ -830,12 +828,10 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
         xdata.forEach(x -> {
             list.add(Arrays.asList(sheetName, labelName, strTime, x, "用量"));
-            list.add(Arrays.asList(sheetName, labelName, strTime, x, "用能成本"));
         });
 
         // 周期合计
         list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "用量"));
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "用能成本"));
         return list;
 
     }
@@ -876,7 +872,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
         Integer queryType = paramVO.getQueryType();
 
         // 底部合计map
-        Map<String, BigDecimal> sumCostMap = new HashMap<>();
+        Map<String, BigDecimal> sumConsumptionMap = new HashMap<>();
 
         for (ConsumptionStatisticsInfo s : statisticsInfoList) {
 
@@ -890,7 +886,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
                         data.add(labels[i]);
                     }
                     // 处理能源
-                    data.add(s.getEnergyName());
+                    //data.add(s.getEnergyName());
                     break;
                 case 1:
                     // 按能源
@@ -915,28 +911,24 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
             tableHeader.forEach(date -> {
                 ConsumptionStatisticsInfoData statisticInfoDataV2 = dateMap.get(date);
                 if (statisticInfoDataV2 == null) {
-                    data.add("/");
+                    //data.add("/");
                     data.add("/");
                 } else {
                     BigDecimal consumption = statisticInfoDataV2.getConsumption();
-                    BigDecimal cost = statisticInfoDataV2.getMoney();
                     data.add(getConvertData(consumption));
-                    data.add(getConvertData(cost));
 
                     // 底部合计处理
-                    sumCostMap.put(date, addBigDecimal(sumCostMap.get(date), cost));
+                    sumConsumptionMap.put(date, addBigDecimal(sumConsumptionMap.get(date), consumption));
                 }
 
             });
 
             BigDecimal sumEnergyConsumption = s.getSumEnergyConsumption();
-            BigDecimal sumCost = s.getSumEnergyMoney();
             // 处理周期合计
             data.add(getConvertData(sumEnergyConsumption));
-            data.add(getConvertData(sumCost));
 
             // 处理底部合计
-            sumCostMap.put("sumNum", addBigDecimal(sumCostMap.get("sumNum"), sumCost));
+            sumConsumptionMap.put("sumNum", addBigDecimal(sumConsumptionMap.get("sumNum"), sumEnergyConsumption));
 
             result.add(data);
         }
@@ -969,7 +961,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
                     bottom.add(pre);
                 }
                 // 底部能源位
-                bottom.add(pre);
+                //bottom.add(pre);
                 break;
             case 1:
                 // 按能源
@@ -990,21 +982,15 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
         tableHeader.forEach(date -> {
 
             // 用量
-            bottom.add("/");
-
-            // 折价
-            BigDecimal cost = sumCostMap.get(date);
-            bottom.add(getConvertData(cost));
+            BigDecimal consumption = sumConsumptionMap.get(date);
+            bottom.add(getConvertData(consumption));
 
         });
 
         // 底部周期合计
         // 用量
-        bottom.add("/");
-
-        // 折价
-        BigDecimal cost = sumCostMap.get("sumNum");
-        bottom.add(getConvertData(cost));
+        BigDecimal consumption = sumConsumptionMap.get("sumNum");
+        bottom.add(getConvertData(consumption));
         result.add(bottom);
 
         return result;

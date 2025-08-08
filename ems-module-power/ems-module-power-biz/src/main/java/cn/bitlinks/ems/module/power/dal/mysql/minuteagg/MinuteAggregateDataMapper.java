@@ -15,6 +15,54 @@ import java.util.List;
 public interface MinuteAggregateDataMapper {
 
     /**
+     * 根据台账ID、参数编码和时间范围查询数据
+     *
+     * @param standingbookIds 台账ID列表
+     * @param paramCodes      参数编码列表
+     * @param startTime       开始时间
+     * @param endTime         结束时间
+     * @return 分钟聚合数据列表
+     */
+    @TenantIgnore
+    List<MinuteAggregateDataDO> selectByStandingbookIdsAndParamCodes(
+            @Param("standingbookIds") List<Long> standingbookIds,
+            @Param("paramCodes") List<String> paramCodes,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 根据台账ID、参数编码和日期区间查询当天最后一分钟的数据
+     *
+     * @param standingbookIds 台账ID列表
+     * @param paramCodes      参数编码列表
+     * @param startTime       开始时间
+     * @param endTime         结束时间
+     * @return 分钟聚合数据列表
+     */
+    @TenantIgnore
+    List<MinuteAggregateDataDO> selectLastMinuteDataByDate(
+            @Param("standingbookIds") List<Long> standingbookIds,
+            @Param("paramCodes") List<String> paramCodes,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 根据台账ID、参数编码和日期区间查询当天所有增量数据之和
+     *
+     * @param standingbookIds 台账ID列表
+     * @param paramCodes      参数编码列表
+     * @param startTime       开始时间
+     * @param endTime         结束时间
+     * @return 分钟聚合数据列表（已聚合）
+     */
+    @TenantIgnore
+    List<MinuteAggregateDataDO> selectIncrementalSumByDate(
+            @Param("standingbookIds") List<Long> standingbookIds,
+            @Param("paramCodes") List<String> paramCodes,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime);
+
+    /**
      * 根据台账和能源参数code获取温度聚合数据
      *
      * @param standingbookIds
