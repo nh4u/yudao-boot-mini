@@ -131,6 +131,9 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
 
         // 查询字典统计标签
         LinkedHashMap<String, String> itemMapping = getItemMapping(paramVO.getLabelCodes());
+        if(CollUtil.isEmpty(itemMapping)){
+            return defaultNullData(itemMapping, tableHeader);
+        }
 
         List<LabelConfigDO> itemsLabel = labelConfigService.getByCodes(new ArrayList<>(itemMapping.keySet()));
 
