@@ -70,7 +70,6 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
     private BaseReportResultVO<HeatingSummaryInfo> defaultNullData(LinkedHashMap<String,String> itemMapping,List<String> tableHeader){
         BaseReportResultVO<HeatingSummaryInfo> resultVO = new BaseReportResultVO<>();
         resultVO.setHeader(tableHeader);
-        resultVO.setDataTime(LocalDateTime.now());
         List<HeatingSummaryInfo> infoList =new ArrayList<>();
         itemMapping.forEach((itemName,sbCode)->{
             HeatingSummaryInfo info = new HeatingSummaryInfo();
@@ -204,7 +203,6 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
         resultVO.setXdata(xdata);
         if (Objects.isNull(targetDTO)) {
-            resultVO.setDataTime(LocalDateTime.now());
             resultVO.setYdata(Collections.emptyList());
             return resultVO;
         }
@@ -213,7 +211,6 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         List<UsageCostData> usageCostDataList = usageCostService.getUsageByStandingboookIdGroup(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], Collections.singletonList(targetDTO.getStandingbookId()));
 
         if (CollUtil.isEmpty(usageCostDataList)) {
-            resultVO.setDataTime(LocalDateTime.now());
             resultVO.setYdata(Collections.emptyList());
             return resultVO;
         }
