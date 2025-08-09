@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.Consu
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsInfo;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.FullCellMergeStrategy;
 import cn.bitlinks.ems.module.power.service.report.electricity.ConsumptionStatisticsService;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.write.metadata.style.WriteCellStyle;
@@ -69,7 +70,7 @@ public class ConsumptionStatisticsController {
         paramVO.setQueryType(QueryDimensionEnum.OVERALL_REVIEW.getCode());
         String childLabels = paramVO.getChildLabels();
         Integer labelDeep = getLabelDeep(childLabels);
-        Integer mergeIndex = 0;
+        Integer mergeIndex = labelDeep - 1;
         // 文件名字处理
         String filename = "用电量统计表" + XLSX;
 
@@ -122,7 +123,7 @@ public class ConsumptionStatisticsController {
                 // 自适应表头宽度
 //                .registerWriteHandler(new MatchTitleWidthStyleStrategy())
                 // 由于column索引从0开始 返回来的labelDeep是从1开始，又由于有个能源列，所以合并索引 正好相抵，直接使用labelDeep即可
-                //.registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
+                .registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
                 .sheet("数据").doWrite(dataList);
     }
 }
