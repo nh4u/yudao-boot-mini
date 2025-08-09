@@ -214,7 +214,6 @@ public class NaturalGasServiceImpl implements NaturalGasService {
 
 
         if (CollUtil.isEmpty(sbMapping)) {
-            resultVO.setDataTime(LocalDateTime.now());
             resultVO.setYdata(new LinkedHashMap<>());
             return resultVO;
         }
@@ -223,7 +222,6 @@ public class NaturalGasServiceImpl implements NaturalGasService {
         List<UsageCostData> usageCostDataList = usageCostService.getUsageByStandingboookIdGroup(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], new ArrayList<>(sbMapping.values()));
 
         if (CollUtil.isEmpty(usageCostDataList)) {
-            resultVO.setDataTime(LocalDateTime.now());
             resultVO.setYdata(new LinkedHashMap<>());
             return resultVO;
         }
