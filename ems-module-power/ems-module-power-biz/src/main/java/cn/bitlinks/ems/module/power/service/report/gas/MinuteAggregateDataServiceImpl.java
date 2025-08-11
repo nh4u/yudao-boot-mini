@@ -38,4 +38,14 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     public List<MinuteAggregateDataDO> selectIncrementalSumByDate(List<Long> standingbookIds, List<String> paramCodes, LocalDateTime startTime, LocalDateTime endTime) {
         return minuteAggregateDataMapper.selectIncrementalSumByDate(standingbookIds, paramCodes, startTime, endTime);
     }
+
+    @Override
+    public List<MinuteAggregateDataDO> selectLastMinuteDataByDateBatch(List<Long> standingbookIds, List<String> paramCodes, LocalDateTime startTime, LocalDateTime endTime) {
+        return minuteAggregateDataMapper.selectLastMinuteDataByDateBatch(standingbookIds, paramCodes, startTime, endTime);
+    }
+
+    @Override
+    public List<MinuteAggregateDataDO> selectIncrementalSumByDateBatch(List<Long> standingbookIds, List<String> paramCodes, LocalDateTime startTime, LocalDateTime endTime) {
+        return minuteAggregateDataMapper.selectIncrementalSumByDateBatch(standingbookIds, paramCodes, startTime, endTime);
+    }
 }
