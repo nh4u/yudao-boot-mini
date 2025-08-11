@@ -9,6 +9,7 @@ import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSp
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinutePrevExistNextDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataFiveMinuteApi;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingExistAcqDataRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingManualSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingPageReqVO;
@@ -51,16 +52,10 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     @Resource
     @Lazy
     private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
-//    @Resource
-//    private ExcelMeterDataProcessor excelMeterDataProcessor;
-    //    @Resource
-//    private VoucherService voucherService;
-//    @Resource
-//    private EnergyConfigurationMapper energyConfigurationMapper;
-//    @Resource
-//    private EnergyParametersMapper energyParametersMapper;
     @Resource
     private MinuteAggregateDataApi minuteAggregateDataApi;
+    @Resource
+    private MinuteAggregateDataFiveMinuteApi minuteAggregateDataFiveMinuteApi;
     @Resource
     private SplitTaskDispatcher splitTaskDispatcher;
 
@@ -180,7 +175,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
      * @param req
      */
     private void insertAndRecord(List<MinuteAggregateDataDTO> list, AdditionalRecordingManualSaveReqVO req) {
-        minuteAggregateDataApi.insertDataBatch(list);
+        minuteAggregateDataFiveMinuteApi.insertDataBatch(list);
         saveAdditionalRecording(req);
     }
 

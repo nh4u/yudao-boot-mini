@@ -4,11 +4,11 @@ import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
 import cn.bitlinks.ems.framework.common.enums.FullIncrementEnum;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.calc.AggSplitUtils;
-import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataFiveMinuteApi;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelListResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelResultVO;
@@ -64,7 +64,8 @@ public class ExcelMeterDataProcessor {
     private SplitTaskDispatcher splitTaskDispatcher;
     @Autowired
     private StandingbookServiceImpl standingbookService;
-
+    @Resource
+    private MinuteAggregateDataFiveMinuteApi minuteAggregateDataFiveMinuteApi;
 
     public AcqDataExcelListResultVO process(InputStream file, String timeStartCell, String timeEndCell,
                                             String meterStartCell, String meterEndCell) throws IOException {
@@ -359,7 +360,7 @@ public class ExcelMeterDataProcessor {
 
         executor.shutdown();
 
-        minuteAggregateDataApi.insertDataBatch(toAddAllAcqList);
+        minuteAggregateDataFiveMinuteApi.insertDataBatch(toAddAllAcqList);
         additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
         splitTaskDispatcher.dispatchSplitTaskBatch(toAddAllNotAcqSplitList);
 
