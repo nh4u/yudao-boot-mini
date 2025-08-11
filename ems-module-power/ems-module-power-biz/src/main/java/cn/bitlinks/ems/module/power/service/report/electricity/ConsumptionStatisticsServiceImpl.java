@@ -83,7 +83,6 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
     @Override
     public ConsumptionStatisticsResultVO<ConsumptionStatisticsInfo> consumptionStatisticsTable(ConsumptionStatisticsParamVO paramVO) {
-        paramVO.setQueryType(QueryDimensionEnum.OVERALL_REVIEW.getCode());
         // 校验时间范围是否存在
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         LocalDateTime startTime = rangeOrigin[0];
@@ -354,59 +353,49 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
                     labelUsageCostDataList.addAll(usageList);
                 });
 
-                Map<Long, List<UsageCostData>> energyUsageCostMap = labelUsageCostDataList
-                        .stream()
-                        .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
+                // 按日期聚合（不再按能源拆分）
+                List<ConsumptionStatisticsInfoData> dataList = new ArrayList<>(labelUsageCostDataList.stream()
+                        .collect(Collectors.groupingBy(
+                                UsageCostData::getTime,
+                                Collectors.collectingAndThen(
+                                        Collectors.toList(),
+                                        list -> {
+                                            BigDecimal totalConsumption = list.stream()
+                                                    .map(UsageCostData::getCurrentTotalUsage)
+                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            BigDecimal totalCost = list.stream()
+                                                    .map(UsageCostData::getTotalCost)
+                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            return new ConsumptionStatisticsInfoData(list.get(0).getTime(), totalConsumption, totalCost);
+                                        }
+                                )
+                        )).values());
 
-                energyUsageCostMap.forEach((energyId, usageCostList) -> {
-                    EnergyConfigurationDO energyConfigurationDO = energyMap.get(energyId);
+                BigDecimal totalConsumption = dataList.stream()
+                        .map(ConsumptionStatisticsInfoData::getConsumption)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal totalCost = dataList.stream()
+                        .map(ConsumptionStatisticsInfoData::getMoney)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                    // 因为数采数据按台账id合并并包含多个时间  但一个标签关联了多个台账 所以还需要按照日期再聚合一下 要重新考虑一下
-                    //  usageCostData数据按能源、台账进行分组了，现在的分组方式 会导致用量数据无法累加。
-                    // 聚合数据 转换成 StandardCoalInfoData
-                    List<ConsumptionStatisticsInfoData> dataList = new ArrayList<>(usageCostList.stream().collect(Collectors.groupingBy(
-                            UsageCostData::getTime,
-                            Collectors.collectingAndThen(
-                                    Collectors.toList(),
-                                    list -> {
-                                        BigDecimal totalConsumption = list.stream()
-                                                .map(UsageCostData::getCurrentTotalUsage)
-                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
-                                        BigDecimal totalCost = list.stream()
-                                                .map(UsageCostData::getTotalCost)
-                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
-                                        return new ConsumptionStatisticsInfoData(list.get(0).getTime(), totalConsumption, totalCost);
-                                    }
-                            )
-                    )).values());
+                ConsumptionStatisticsInfo info = new ConsumptionStatisticsInfo();
+                info.setLabel1(topLabel.getLabelName());
+                info.setLabel2(label2Name);
+                info.setLabel3(label3Name);
+                info.setLabel4(label4Name);
+                info.setLabel5(label5Name);
 
-                    BigDecimal totalConsumption = dataList.stream()
-                            .map(ConsumptionStatisticsInfoData::getConsumption)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-                    BigDecimal totalCost = dataList.stream()
-                            .map(ConsumptionStatisticsInfoData::getMoney)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                dataList = dataList.stream().peek(i -> {
+                    i.setMoney(dealBigDecimalScale(i.getMoney(), scale));
+                    i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
+                }).collect(Collectors.toList());
 
-                    ConsumptionStatisticsInfo info = new ConsumptionStatisticsInfo();
-                    info.setEnergyId(energyId);
-                    info.setEnergyName(energyConfigurationDO.getEnergyName());
-                    info.setLabel1(topLabel.getLabelName());
-                    info.setLabel2(label2Name);
-                    info.setLabel3(label3Name);
-                    info.setLabel4(label4Name);
-                    info.setLabel5(label5Name);
-
-                    dataList = dataList.stream().peek(i -> {
-                        i.setMoney(dealBigDecimalScale(i.getMoney(), scale));
-                        i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
-                    }).collect(Collectors.toList());
-
-
-                    info.setStatisticsDateDataList(dataList);
-                    info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
-
-                    resultList.add(info);
-                });
+                info.setStatisticsDateDataList(dataList);
+                info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
+                // 为保持一致性，成本合计也计算保留（虽然该表只展示用量）
+                // 如果前端不使用，可忽略该字段
+                
+                resultList.add(info);
             });
         });
 
