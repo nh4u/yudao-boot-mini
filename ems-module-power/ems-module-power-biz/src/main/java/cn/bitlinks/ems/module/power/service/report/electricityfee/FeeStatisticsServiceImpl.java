@@ -555,6 +555,7 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
 
         // 底部合计map
         Map<String, BigDecimal> sumCostMap = new HashMap<>();
+        Map<String, BigDecimal> sumConsumptionMap = new HashMap<>();
 
         for (StatisticsInfoV2 s : statisticsInfoList) {
 
@@ -585,6 +586,7 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
 
                     // 底部合计处理
                     sumCostMap.put(date, addBigDecimal(sumCostMap.get(date), cost));
+                    sumConsumptionMap.put(date, addBigDecimal(sumConsumptionMap.get(date), consumption));
                 }
             });
 
@@ -596,7 +598,7 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
 
             // 处理底部合计
             sumCostMap.put("sumNum", addBigDecimal(sumCostMap.get("sumNum"), sumCost));
-
+            sumConsumptionMap.put("sumNum", addBigDecimal(sumConsumptionMap.get("sumNum"), sumEnergyConsumption));
             result.add(data);
         }
 
@@ -628,7 +630,8 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
         tableHeader.forEach(date -> {
 
             // 用量
-            bottom.add("/");
+            BigDecimal consumption = sumConsumptionMap.get(date);
+            bottom.add(getConvertData(consumption));
 
             // 折价
             BigDecimal cost = sumCostMap.get(date);
@@ -638,8 +641,8 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
 
         // 底部周期合计
         // 用量
-        bottom.add("/");
-
+        BigDecimal consumption = sumConsumptionMap.get("sumNum");
+        bottom.add(getConvertData(consumption));
         // 折价
         BigDecimal cost = sumCostMap.get("sumNum");
         bottom.add(getConvertData(cost));

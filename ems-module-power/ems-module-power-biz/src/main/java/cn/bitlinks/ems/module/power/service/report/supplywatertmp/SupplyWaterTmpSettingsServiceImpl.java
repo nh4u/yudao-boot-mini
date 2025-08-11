@@ -8,16 +8,21 @@ import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.Su
 import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.SupplyWaterTmpReportParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.SupplyWaterTmpSettingsPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.SupplyWaterTmpSettingsSaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StructureInfoData;
+import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.SupplyWaterTmpTableResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopHourAggData;
+import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopTableResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.SupplyAnalysisPieResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
+import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.report.supplywatertmp.SupplyWaterTmpSettingsDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import cn.bitlinks.ems.module.power.dal.mysql.report.supplywatertmp.SupplyWaterTmpSettingsMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
+import cn.bitlinks.ems.module.power.service.minuteagg.MinuteAggDataService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import com.alibaba.excel.util.ListUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -27,16 +32,17 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.SUPPLY_ANALYSIS;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.addBigDecimal;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.getConvertData;
 
 /**
  * @author liumingqiang
@@ -53,7 +59,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
     private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
 
     @Resource
-    private UsageCostService usageCostService;
+    private MinuteAggDataService minuteAggDataService;
 
     @Resource
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
@@ -90,16 +96,26 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
     }
 
     @Override
-    public StatisticsResultV2VO<SupplyAnalysisStructureInfo> supplyAnalysisTable(SupplyWaterTmpReportParamVO paramVO) {
+    public SupplyWaterTmpTableResultVO supplyWaterTmpTable(SupplyWaterTmpReportParamVO paramVO) {
 
         // 1.校验时间范围
-        LocalDateTime[] rangeOrigin = validateRange(paramVO.getRange());
+        LocalDateTime[] range = validateRange(paramVO.getRange());
+        // 2.时间处理
+        LocalDateTime startTime = LocalDateTimeUtils.beginOfMonth(range[0]);
+        LocalDateTime endTime = LocalDateTimeUtils.endOfMonth(range[1]);
 
         // 2.校验时间类型
         Integer dateType = paramVO.getDateType();
         DataTypeEnum dataTypeEnum = validateDateType(dateType);
 
-        StatisticsResultV2VO<SupplyAnalysisStructureInfo> resultVO = new StatisticsResultV2VO<>();
+        // 3.如果是天 则 班组标记必须要有
+        Integer teamFlag = paramVO.getTeamFlag();
+        if (dataTypeEnum.equals(DataTypeEnum.DAY)) {
+            validateTeamFlag(teamFlag);
+        }
+
+
+        SupplyWaterTmpTableResultVO resultVO = new SupplyWaterTmpTableResultVO();
         resultVO.setDataTime(LocalDateTime.now());
 
         // 校验系统 没值就返空
@@ -108,12 +124,12 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
             return resultVO;
         }
 
-        // 3.表头处理
-        List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], dataTypeEnum);
-        resultVO.setHeader(tableHeader);
-
         // 4.获取所有standingBookids
         List<SupplyWaterTmpSettingsDO> supplyAnalysisSettingsList = supplyWaterTmpSettingsMapper.selectList(paramVO);
+        // 4.4.设置为空直接返回结果
+        if (CollUtil.isEmpty(supplyAnalysisSettingsList)) {
+            return resultVO;
+        }
         List<Long> standingBookIds = supplyAnalysisSettingsList
                 .stream()
                 .map(SupplyWaterTmpSettingsDO::getStandingbookId)
@@ -126,97 +142,199 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
             return resultVO;
         }
 
-
-        // TODO: 2025/8/7 获取对应的数据
-
-
-        // 5.根据台账ID查询用量
-        List<UsageCostData> usageCostDataList = usageCostService.getList(
-                dateType,
-                rangeOrigin[0],
-                rangeOrigin[1],
-                standingBookIds);
-
-        Map<Long, List<UsageCostData>> standingBookUsageMap = usageCostDataList.stream()
-                .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
-
-
-        List<SupplyAnalysisStructureInfo> collect = supplyAnalysisSettingsList
+        List<String> paramCodes = supplyAnalysisSettingsList
                 .stream()
-                .map(s -> {
-                    SupplyAnalysisStructureInfo info = new SupplyAnalysisStructureInfo();
-                    info.setSystem(s.getSystem());
-                    info.setId(s.getId());
-
-                    List<UsageCostData> usageCostList = standingBookUsageMap.get(s.getStandingbookId());
-
-                    List<StructureInfoData> structureInfoDataList = new ArrayList<>();
-
-                    if (Objects.isNull(usageCostList)) {
-                        // 如果为空自动填充/
-                        tableHeader.forEach(date -> {
-                            StructureInfoData structureInfoData = new StructureInfoData();
-                            structureInfoData.setNum(BigDecimal.ZERO);
-                            structureInfoData.setProportion(BigDecimal.ZERO);
-                            structureInfoData.setDate(date);
-
-                            structureInfoDataList.add(structureInfoData);
-                        });
-                        info.setStructureInfoDataList(structureInfoDataList);
-                        info.setSumNum(BigDecimal.ZERO);
-                        info.setSumProportion(BigDecimal.ZERO);
-
-                    } else {
-                        // 如何不空 填充对应数据
-                        Map<String, UsageCostData> usageCostMap = usageCostList
-                                .stream()
-                                .collect(Collectors.toMap(UsageCostData::getTime, Function.identity()));
-                        tableHeader.forEach(date -> {
-
-                            UsageCostData usageCostData = usageCostMap.get(date);
-                            if (usageCostData == null) {
-                                StructureInfoData structureInfoData = new StructureInfoData();
-                                structureInfoData.setNum(BigDecimal.ZERO);
-                                structureInfoData.setProportion(BigDecimal.ZERO);
-                                structureInfoData.setDate(date);
-
-                                structureInfoDataList.add(structureInfoData);
-                            } else {
-                                StructureInfoData structureInfoData = new StructureInfoData();
-                                structureInfoData.setNum(usageCostData.getCurrentTotalUsage());
-                                structureInfoData.setProportion(null);
-                                structureInfoData.setDate(date);
-
-                                structureInfoDataList.add(structureInfoData);
-
-                            }
-
-                        });
-                    }
-
-                    // 横向折标煤总和
-                    BigDecimal sumNum = structureInfoDataList
-                            .stream()
-                            .map(StructureInfoData::getNum)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                    info.setStructureInfoDataList(structureInfoDataList);
-
-                    info.setSumNum(sumNum);
-                    info.setSumProportion(null);
-                    return info;
-                })
+                .map(SupplyWaterTmpSettingsDO::getEnergyParamCode)
+                .filter(Objects::nonNull)
+                .distinct()
                 .collect(Collectors.toList());
 
-        resultVO.setDataTime(LocalDateTime.now());
-        resultVO.setHeader(tableHeader);
-        resultVO.setStatisticsInfoList(collect);
+        List<String> codes = supplyAnalysisSettingsList
+                .stream()
+                .map(SupplyWaterTmpSettingsDO::getCode)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+
+        Map<String, Long> standingBookCodeMap = new HashMap<>();
+        supplyAnalysisSettingsList.forEach(s -> standingBookCodeMap.put(s.getCode(), s.getStandingbookId()));
+
+        // 5.根据台账ID和参数code查用小时用量数据
+        List<MinuteAggregateDataDO> minuteAggDataList = minuteAggDataService.getTmpRangeDataSteady(
+                standingBookIds,
+                paramCodes,
+                startTime,
+                endTime);
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        // 天
+        if (dataTypeEnum.equals(DataTypeEnum.DAY)) {
+            result = dealDayData(
+                    minuteAggDataList,
+                    startTime,
+                    endTime,
+                    standingBookCodeMap,
+                    codes,
+                    teamFlag);
+
+        } else if (dataTypeEnum.equals(DataTypeEnum.HOUR)) {
+            // 小时数据
+            result = dealHourData(
+                    minuteAggDataList,
+                    startTime,
+                    endTime,
+                    standingBookCodeMap,
+                    codes);
+        } else {
+
+        }
+
+
+        LocalDateTime lastTime = minuteAggDataService.getLastTime(
+                standingBookIds,
+                paramCodes,
+                range[0],
+                range[1]);
+
+        resultVO.setDataTime(lastTime);
+        resultVO.setList(result);
 
         return resultVO;
     }
 
+    /**
+     * 处理小时数据
+     *
+     * @param minuteAggDataList
+     * @param startTime
+     * @param endTime
+     * @param standingBookCodeMap
+     * @param codes
+     * @return
+     */
+    private List<Map<String, Object>> dealDayData(List<MinuteAggregateDataDO> minuteAggDataList,
+                                                  LocalDateTime startTime,
+                                                  LocalDateTime endTime,
+                                                  Map<String, Long> standingBookCodeMap,
+                                                  List<String> codes, Integer teamFlag) {
+
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        //  1.处理小时数据为天数据
+        hourToDay(minuteAggDataList);
+
+        return result;
+
+    }
+
+    /**
+     * 小时数据转成天数据
+     *
+     * @param minuteAggDataList
+     */
+    private void hourToDay(List<MinuteAggregateDataDO> minuteAggDataList) {
+
+
+//        Map<Long, Map<String, List<MinuteAggregateDataDO>>> collect = minuteAggDataList.stream()
+//                .collect(Collectors.groupingBy(
+//
+//                        // 第一个分组条件：按 台账
+//                        MinuteAggregateDataDO::getStandingbookId,
+//                        // 第二个分组条件：按参数code
+//                        Collectors.groupingBy(MinuteAggregateDataDO::getParamCode),
+//                        Collectors.collectingAndThen(
+//                                Collectors.toList(),
+//                                list -> {
+//                                    list.stream().map(m -> m.getAggregateTime().truncatedTo(ChronoUnit.DAYS))
+//
+//
+//                                }
+//                        )
+//                )).values();
+
+
+    }
+
+
+    /**
+     * 处理小时数据
+     *
+     * @param minuteAggDataList
+     * @param startTime
+     * @param endTime
+     * @param standingBookCodeMap
+     * @param codes
+     * @return
+     */
+    private List<Map<String, Object>> dealHourData(List<MinuteAggregateDataDO> minuteAggDataList,
+                                                   LocalDateTime startTime,
+                                                   LocalDateTime endTime,
+                                                   Map<String, Long> standingBookCodeMap,
+                                                   List<String> codes) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        // 按时间分map
+        Map<LocalDateTime, List<MinuteAggregateDataDO>> minuteAggDataMap = minuteAggDataList.stream()
+                .collect(Collectors.groupingBy(MinuteAggregateDataDO::getAggregateTime));
+
+
+        // 月份最多31天  小时数据
+        for (int i = 1; i <= 31; i++) {
+            for (int j = 0; j <= 23; j++) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("date", i + "日" + j + ":00:00");
+
+                // 月份处理
+                LocalDateTime tempStartTime = startTime;
+                while (tempStartTime.isBefore(endTime) || tempStartTime.equals(endTime)) {
+
+                    // 拼接时间
+                    int monthValue = tempStartTime.getMonthValue();
+                    int year = tempStartTime.getYear();
+                    try {
+                        LocalDateTime currentTime = LocalDateTime.of(year, monthValue, i, j, 0, 0);
+                        List<MinuteAggregateDataDO> minuteAggDatas = minuteAggDataMap.get(currentTime);
+
+                        if (CollUtil.isNotEmpty(minuteAggDatas)) {
+                            // 不等的情况
+                            Map<Long, MinuteAggregateDataDO> minuteAggregateDataMap = minuteAggDatas.stream()
+                                    .collect(Collectors.toMap(MinuteAggregateDataDO::getStandingbookId, Function.identity()));
+
+                            codes.forEach(c -> {
+                                String key = c + "_" + year + "-" + monthValue;
+                                Long standingBookId = standingBookCodeMap.get(c);
+                                MinuteAggregateDataDO minuteAggregateData = minuteAggregateDataMap.get(standingBookId);
+                                if (Objects.isNull(minuteAggregateData)) {
+                                    map.put(key, BigDecimal.ZERO);
+                                } else {
+                                    map.put(key, minuteAggregateData.getFullValue());
+                                }
+                            });
+
+                        } else {
+                            codes.forEach(c -> {
+                                String key = c + "_" + year + "-" + monthValue;
+                                map.put(key, BigDecimal.ZERO);
+                            });
+                        }
+                    } catch (Exception e) {
+                        log.error(e.getMessage());
+                    }
+
+                    tempStartTime = tempStartTime.plusMonths(1);
+                }
+
+                result.add(map);
+            }
+
+
+        }
+
+        return result;
+    }
+
     @Override
-    public SupplyAnalysisPieResultVO supplyAnalysisChart(SupplyWaterTmpReportParamVO paramVO) {
+    public SupplyAnalysisPieResultVO supplyWaterTmpChart(SupplyWaterTmpReportParamVO paramVO) {
         return null;
     }
 
@@ -261,56 +379,13 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
 
         // 结果list
         List<List<Object>> result = ListUtils.newArrayList();
-        StatisticsResultV2VO<SupplyAnalysisStructureInfo> resultVO = supplyAnalysisTable(paramVO);
-        List<String> tableHeader = resultVO.getHeader();
+        SupplyWaterTmpTableResultVO resultVO = supplyWaterTmpTable(paramVO);
 
-        List<SupplyAnalysisStructureInfo> statisticsInfoList = resultVO.getStatisticsInfoList();
+
+        List<SupplyAnalysisStructureInfo> statisticsInfoList = resultVO.getList();
         // 底部合计map
         Map<String, BigDecimal> sumStandardCoatMap = new HashMap<>();
         Map<String, BigDecimal> sumProportionMap = new HashMap<>();
-
-        for (SupplyAnalysisStructureInfo s : statisticsInfoList) {
-
-            List<Object> data = ListUtils.newArrayList();
-            data.add(s.getSystem());
-            data.add(s.getItem());
-
-
-            // 处理数据
-            List<StructureInfoData> standardCoalInfoDataList = s.getStructureInfoDataList();
-
-            Map<String, StructureInfoData> dateMap = standardCoalInfoDataList.stream()
-                    .collect(Collectors.toMap(StructureInfoData::getDate, Function.identity()));
-
-            tableHeader.forEach(date -> {
-                StructureInfoData structureInfoData = dateMap.get(date);
-                if (structureInfoData == null) {
-                    data.add("/");
-                    data.add("/");
-                } else {
-                    BigDecimal usage = structureInfoData.getNum();
-                    BigDecimal proportion = structureInfoData.getProportion();
-                    data.add(getConvertData(usage));
-                    data.add(getConvertData(proportion));
-
-                    // 底部合计处理
-                    sumStandardCoatMap.put(date, addBigDecimal(sumStandardCoatMap.get(date), usage));
-                    sumProportionMap.put(date, addBigDecimal(sumProportionMap.get(date), proportion));
-                }
-
-            });
-
-            BigDecimal sumUsage = s.getSumNum();
-            BigDecimal sumProportion = s.getSumProportion();
-            // 处理周期合计
-            data.add(getConvertData(sumUsage));
-            data.add(getConvertData(sumProportion));
-
-            // 处理底部合计
-            sumStandardCoatMap.put("sumNum", addBigDecimal(sumStandardCoatMap.get("sumNum"), sumUsage));
-            sumProportionMap.put("sumNum", addBigDecimal(sumProportionMap.get("sumNum"), sumProportion));
-            result.add(data);
-        }
 
         return result;
     }
@@ -350,5 +425,21 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         }
 
         return dataTypeEnum;
+    }
+
+    /**
+     * 校验班组
+     *
+     * @param teamFlag
+     */
+    private void validateTeamFlag(Integer teamFlag) {
+        // 时间类型不存在
+        if (Objects.isNull(teamFlag)) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+
+        if (teamFlag != 0 && teamFlag != 1) {
+            throw exception(DATE_TYPE_NOT_MATCH);
+        }
     }
 }

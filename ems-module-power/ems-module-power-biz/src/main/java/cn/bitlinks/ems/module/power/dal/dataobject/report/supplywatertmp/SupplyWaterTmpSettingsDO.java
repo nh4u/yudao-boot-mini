@@ -28,6 +28,10 @@ public class SupplyWaterTmpSettingsDO extends BaseDO {
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
+     * 标识
+     */
+    private String code;
+    /**
      * 系统
      */
     private String system;

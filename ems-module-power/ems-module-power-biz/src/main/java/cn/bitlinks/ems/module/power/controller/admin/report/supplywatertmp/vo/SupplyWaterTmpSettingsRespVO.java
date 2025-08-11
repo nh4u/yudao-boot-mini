@@ -17,6 +17,9 @@ public class SupplyWaterTmpSettingsRespVO {
     @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "12042")
     private Long id;
 
+    @Schema(description = "标识")
+    private String code;
+
     @Schema(description = "系统")
     @NotEmpty(message = "系统不能为空")
     private String system;

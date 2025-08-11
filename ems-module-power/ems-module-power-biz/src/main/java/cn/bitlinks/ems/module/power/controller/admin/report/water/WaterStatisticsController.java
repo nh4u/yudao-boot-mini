@@ -69,7 +69,6 @@ public class WaterStatisticsController {
 
         String childLabels = paramVO.getChildLabels();
         Integer labelDeep = getLabelDeep(childLabels);
-        Integer mergeIndex = labelDeep - 1;
         // 文件名字处理
         String filename = WATER_STATISTICS + XLSX;
 
@@ -110,7 +109,7 @@ public class WaterStatisticsController {
                 // 自适应表头宽度
 //                .registerWriteHandler(new MatchTitleWidthStyleStrategy())
                 // 由于column索引从0开始 返回来的labelDeep是从1开始，又由于有个能源列，所以合并索引 正好相抵，直接使用labelDeep即可
-                .registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
+                .registerWriteHandler(new FullCellMergeStrategy(0, null, 0, labelDeep))
                 .sheet("数据").doWrite(dataList);
     }
 
