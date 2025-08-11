@@ -76,5 +76,10 @@ public interface MinuteAggregateDataMapper {
                                                       @Param("paramCodes") List<String> paramCodes,
                                                       @Param("starTime") LocalDateTime starTime,
                                                       @Param("endTime") LocalDateTime endTime);
+    @TenantIgnore
+    LocalDateTime getLastTime(@Param("standingbookIds") List<Long> standingbookIds,
+                              @Param("paramCodes") List<String> paramCodes,
+                              @Param("starTime") LocalDateTime starTime,
+                              @Param("endTime") LocalDateTime endTime);
 }
 

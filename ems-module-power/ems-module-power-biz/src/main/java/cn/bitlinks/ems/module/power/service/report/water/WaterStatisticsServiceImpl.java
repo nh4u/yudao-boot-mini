@@ -45,6 +45,7 @@ import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getF
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.STATISTICS_FEE;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.WATER_STATISTICS;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.*;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
@@ -453,35 +454,37 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
         // 底部合计map
         Map<String, BigDecimal> sumConsumptionMap = new HashMap<>();
         List<FeeChartYInfo> yInfoList = new ArrayList<>();
-        for (StatisticsInfoV2 s : statisticsInfoList) {
+        if (CollUtil.isNotEmpty(statisticsInfoList)){
+            for (StatisticsInfoV2 s : statisticsInfoList) {
 
-            FeeChartYInfo yInfo = new FeeChartYInfo();
-            yInfo.setName(getName(s.getLabel1(), s.getLabel2(), s.getLabel3(), s.getLabel4(), s.getLabel5()));
+                FeeChartYInfo yInfo = new FeeChartYInfo();
+                yInfo.setName(getName(s.getLabel1(), s.getLabel2(), s.getLabel3(), s.getLabel4(), s.getLabel5()));
 
-            // 处理数据
-            List<StatisticInfoDataV2> statisticInfoDataV2List = s.getStatisticsDateDataList();
-            Map<String, StatisticInfoDataV2> dateMap = statisticInfoDataV2List.stream()
-                    .collect(Collectors.toMap(StatisticInfoDataV2::getDate, Function.identity()));
+                // 处理数据
+                List<StatisticInfoDataV2> statisticInfoDataV2List = s.getStatisticsDateDataList();
+                Map<String, StatisticInfoDataV2> dateMap = statisticInfoDataV2List.stream()
+                        .collect(Collectors.toMap(StatisticInfoDataV2::getDate, Function.identity()));
 
-            List<BigDecimal> data = ListUtils.newArrayList();
-            xdata.forEach(date -> {
-                StatisticInfoDataV2 statisticInfoDataV2 = dateMap.get(date);
-                if (statisticInfoDataV2 == null) {
-                    data.add(BigDecimal.ZERO);
-                } else {
-                    BigDecimal consumption = statisticInfoDataV2.getConsumption();
-                    data.add(!Objects.isNull(consumption) ? consumption : BigDecimal.ZERO);
-                    // 底部合计处理
-                    sumConsumptionMap.put(date, addBigDecimal(sumConsumptionMap.get(date), consumption));
-                }
-            });
-            yInfo.setData(data);
+                List<BigDecimal> data = ListUtils.newArrayList();
+                xdata.forEach(date -> {
+                    StatisticInfoDataV2 statisticInfoDataV2 = dateMap.get(date);
+                    if (statisticInfoDataV2 == null) {
+                        data.add(BigDecimal.ZERO);
+                    } else {
+                        BigDecimal consumption = statisticInfoDataV2.getConsumption();
+                        data.add(!Objects.isNull(consumption) ? consumption : BigDecimal.ZERO);
+                        // 底部合计处理
+                        sumConsumptionMap.put(date, addBigDecimal(sumConsumptionMap.get(date), consumption));
+                    }
+                });
+                yInfo.setData(data);
 
-            // 处理底部合计
-            BigDecimal sumConsumption = s.getSumEnergyConsumption();
-            sumConsumptionMap.put("sumNum", addBigDecimal(sumConsumptionMap.get("sumNum"), sumConsumption));
+                // 处理底部合计
+                BigDecimal sumConsumption = s.getSumEnergyConsumption();
+                sumConsumptionMap.put("sumNum", addBigDecimal(sumConsumptionMap.get("sumNum"), sumConsumption));
 
-            yInfoList.add(yInfo);
+                yInfoList.add(yInfo);
+            }
         }
 
         // 汇总数据
@@ -522,7 +525,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
         Integer labelDeep = getLabelDeep(childLabels);
         // 表单名称
         // 综合
-        String sheetName = STATISTICS_FEE;
+        String sheetName = WATER_STATISTICS;
         list.add(Arrays.asList("表单名称", "统计标签", "统计周期", "标签"));
         for (int i = 2; i <= labelDeep; i++) {
             String subLabel = "标签" + i;
@@ -579,44 +582,46 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
         // 底部合计map
         Map<String, BigDecimal> sumConsumptionMap = new HashMap<>();
 
-        for (StatisticsInfoV2 s : statisticsInfoList) {
+        if (CollUtil.isNotEmpty(statisticsInfoList)){
+            for (StatisticsInfoV2 s : statisticsInfoList) {
 
-            List<Object> data = ListUtils.newArrayList();
-            String[] labels = {s.getLabel1(), s.getLabel2(), s.getLabel3(), s.getLabel4(), s.getLabel5()};
+                List<Object> data = ListUtils.newArrayList();
+                String[] labels = {s.getLabel1(), s.getLabel2(), s.getLabel3(), s.getLabel4(), s.getLabel5()};
 
-            // 综合
-            for (int i = 0; i < labelDeep; i++) {
-                data.add(labels[i]);
-            }
-            // 处理能源
-            data.add(s.getEnergyName());
-            // 处理数据
-            List<StatisticInfoDataV2> statisticInfoDataV2List = s.getStatisticsDateDataList();
-
-            Map<String, StatisticInfoDataV2> dateMap = statisticInfoDataV2List.stream()
-                    .collect(Collectors.toMap(StatisticInfoDataV2::getDate, Function.identity()));
-
-            tableHeader.forEach(date -> {
-                StatisticInfoDataV2 statisticInfoDataV2 = dateMap.get(date);
-                if (statisticInfoDataV2 == null) {
-                    data.add("/");
-                } else {
-                    BigDecimal consumption = statisticInfoDataV2.getConsumption();
-                    data.add(getConvertData(consumption));
-
-                    // 底部合计处理
-                    sumConsumptionMap.put(date, addBigDecimal(sumConsumptionMap.get(date), consumption));
+                // 综合
+                for (int i = 0; i < labelDeep; i++) {
+                    data.add(labels[i]);
                 }
-            });
+                // 处理能源
+                data.add(s.getEnergyName());
+                // 处理数据
+                List<StatisticInfoDataV2> statisticInfoDataV2List = s.getStatisticsDateDataList();
 
-            BigDecimal sumEnergyConsumption = s.getSumEnergyConsumption();
-            // 处理周期合计
-            data.add(getConvertData(sumEnergyConsumption));
+                Map<String, StatisticInfoDataV2> dateMap = statisticInfoDataV2List.stream()
+                        .collect(Collectors.toMap(StatisticInfoDataV2::getDate, Function.identity()));
 
-            // 处理底部合计
-            sumConsumptionMap.put("sumNum", addBigDecimal(sumConsumptionMap.get("sumNum"), sumEnergyConsumption));
+                tableHeader.forEach(date -> {
+                    StatisticInfoDataV2 statisticInfoDataV2 = dateMap.get(date);
+                    if (statisticInfoDataV2 == null) {
+                        data.add("/");
+                    } else {
+                        BigDecimal consumption = statisticInfoDataV2.getConsumption();
+                        data.add(getConvertData(consumption));
 
-            result.add(data);
+                        // 底部合计处理
+                        sumConsumptionMap.put(date, addBigDecimal(sumConsumptionMap.get(date), consumption));
+                    }
+                });
+
+                BigDecimal sumEnergyConsumption = s.getSumEnergyConsumption();
+                // 处理周期合计
+                data.add(getConvertData(sumEnergyConsumption));
+
+                // 处理底部合计
+                sumConsumptionMap.put("sumNum", addBigDecimal(sumConsumptionMap.get("sumNum"), sumEnergyConsumption));
+
+                result.add(data);
+            }
         }
 
         // 添加底部合计数据
