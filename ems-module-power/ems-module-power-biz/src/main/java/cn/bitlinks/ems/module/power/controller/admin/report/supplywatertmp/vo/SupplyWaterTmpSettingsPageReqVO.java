@@ -19,6 +19,9 @@ public class SupplyWaterTmpSettingsPageReqVO extends PageParam {
     @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "12042")
     private Long id;
 
+    @Schema(description = "标识")
+    private String code;
+
     @Schema(description = "系统")
     private String system;
 

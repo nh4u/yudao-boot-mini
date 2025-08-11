@@ -15,4 +15,8 @@ public interface MinuteAggDataService {
                                                       LocalDateTime starTime,
                                                       LocalDateTime endTime);
 
+    LocalDateTime getLastTime(List<Long> standingbookIds,
+                              List<String> paramCodes,
+                              LocalDateTime starTime,
+                              LocalDateTime endTime);
 }
