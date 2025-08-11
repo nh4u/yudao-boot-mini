@@ -30,15 +30,6 @@ public interface MinuteAggregateDataApi {
 
     String PREFIX = ApiConstants.PREFIX + "/minuteAggregateData";
 
-    /**
-     * 直接插入数据(业务点数据)
-     *
-     * @param minuteAggregateDataDTO
-     */
-    @PostMapping(PREFIX + "/insertDataBatch")
-    @Operation(summary = "直接插入数据")
-    CommonResult<String> insertDataBatch(@RequestBody List<MinuteAggregateDataDTO> minuteAggregateDataDTO);
-
 
     @PostMapping(PREFIX + "/getPreAndNextData")
     @Operation(summary = "获取时间段首尾两端附近的数据")
