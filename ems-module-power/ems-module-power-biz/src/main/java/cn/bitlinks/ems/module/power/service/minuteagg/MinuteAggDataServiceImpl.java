@@ -31,4 +31,9 @@ public class MinuteAggDataServiceImpl implements MinuteAggDataService {
         return minuteAggregateDataMapper.getTmpRangeDataSteady(standingbookIds, paramCodes, starTime, endTime);
     }
 
+    @Override
+    public LocalDateTime getLastTime(List<Long> standingbookIds, List<String> paramCodes, LocalDateTime starTime, LocalDateTime endTime) {
+        return minuteAggregateDataMapper.getLastTime(standingbookIds, paramCodes, starTime, endTime);
+    }
+
 }
