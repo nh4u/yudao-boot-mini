@@ -440,6 +440,28 @@ public class StandingbookServiceImpl implements StandingbookService {
         return standingBookHeaderDTOList;
     }
 
+    @Override
+    public List<StandingBookTypeTreeRespVO> treeDeviceWithParam(StandingbookParamReqVO standingbookParamReqVO) {
+
+            // 查询 指定 模糊名称的重点设备
+            List<StandingBookTypeTreeRespVO> sbNodes = standingbookAttributeService.selectDeviceNodeByCodeAndName(null,standingbookParamReqVO.getActualSbName(),null);
+
+            if(CollUtil.isEmpty(sbNodes)){
+                return Collections.emptyList();
+            }
+            List<Long> sbIds = sbNodes.stream().map(StandingBookTypeTreeRespVO::getRawId).collect(Collectors.toList());
+
+            // 再进行 模糊搜索
+            List<StandingBookTypeTreeRespVO> filterNodes = standingbookAttributeService.getStandingbookByCodeAndName(standingbookParamReqVO.getSbCode(), standingbookParamReqVO.getSbName(), sbIds);
+            if (CollUtil.isEmpty(filterNodes)) {
+                return Collections.emptyList();
+            }
+
+            // 台账分类属性结构
+            List<StandingbookTypeDO> standingbookTypeDOTree = standingbookTypeService.getStandingbookTypeByTopType(CommonConstants.KEY_EQUIPMENT_ID.intValue());
+            return buildTreeWithDevices(standingbookTypeDOTree, filterNodes);
+    }
+
 
     /**
      * 分类list和台账节点list

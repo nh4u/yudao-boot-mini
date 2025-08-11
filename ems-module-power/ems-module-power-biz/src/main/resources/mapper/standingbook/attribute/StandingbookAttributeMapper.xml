@@ -91,6 +91,45 @@
             ) r
 
     </select>
+    <select id="selectDeviceNodeByCodeAndName"
+            resultType="cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingBookTypeTreeRespVO">
+
+        select
+        CONCAT(r.standingbook_id,'#','true') as nodeId,
+        CONCAT(r.type_id,'#','false') as parentNodeId,
+        r.standingbook_id as rawId,
+        CONCAT( r.sbName,'(', sbCode, ')' ) as nodeName,
+        true as `show`
+
+        from(
+        SELECT
+        standingbook_id,
+        type_id,
+        MAX( CASE WHEN CODE = 'measuringInstrumentName' THEN `value` ELSE NULL END ) AS sbName,
+        MAX( CASE WHEN CODE = 'measuringInstrumentId' THEN `value` ELSE NULL END ) AS sbCode
+        FROM
+        power_standingbook_attribute
+        WHERE
+        deleted = 0
+        AND standingbook_id in
+        <foreach collection="sbIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        GROUP BY
+        standingbook_id,
+        type_id
+        HAVING
+        standingbook_id IS NOT NULL
+        AND sbName IS NOT NULL AND sbCode IS NOT NULL
+        <if test="sbName != null and sbName != ''">
+            AND sbName LIKE CONCAT( '%', #{sbName}, '%' )
+        </if>
+        <if test="sbCode != null and sbCode != ''">
+            AND sbCode LIKE CONCAT( '%', #{sbCode}, '%' )
+        </if>
+        ) r
+
+    </select>
     <select id="getStandingbookDTO"
             resultType="cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO">
         SELECT
