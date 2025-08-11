@@ -100,11 +100,11 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
     private BaseReportResultVO<HvacElectricityInfo> defaultNullData(LinkedHashMap<String, String> itemMapping, List<String> tableHeader) {
         BaseReportResultVO<HvacElectricityInfo> resultVO = new BaseReportResultVO<>();
         resultVO.setHeader(tableHeader);
-        resultVO.setDataTime(LocalDateTime.now());
         List<HvacElectricityInfo> infoList = new ArrayList<>();
-        itemMapping.forEach((itemName, sbCode) -> {
+        itemMapping.forEach((labelCode, labelName) -> {
             HvacElectricityInfo info = new HvacElectricityInfo();
-            info.setItemName(itemName);
+            info.setItemName(labelName);
+            info.setItemCode(labelCode);
             info.setHvacElectricityInfoDataList(Collections.emptyList());
             infoList.add(info);
         });
@@ -131,6 +131,9 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
 
         // 查询字典统计标签
         LinkedHashMap<String, String> itemMapping = getItemMapping(paramVO.getLabelCodes());
+        if(CollUtil.isEmpty(itemMapping)){
+            return defaultNullData(itemMapping, tableHeader);
+        }
 
         List<LabelConfigDO> itemsLabel = labelConfigService.getByCodes(new ArrayList<>(itemMapping.keySet()));
 
