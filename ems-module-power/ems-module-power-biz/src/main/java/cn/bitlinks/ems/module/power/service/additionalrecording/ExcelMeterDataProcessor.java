@@ -304,7 +304,8 @@ public class ExcelMeterDataProcessor {
                     if (i == 0) {
                         if (minuteAggDataSplitDTO != null && minuteAggDataSplitDTO.getStartDataDO() != null) {
                             MinuteAggregateDataDTO preDTO = minuteAggDataSplitDTO.getStartDataDO();
-                            curDTO.setIncrementalValue(AggSplitUtils.calculatePerMinuteIncrement(preDTO.getAggregateTime(), curDTO.getAggregateTime(), preDTO.getFullValue(), curDTO.getFullValue()));
+                            BigDecimal incr = AggSplitUtils.calculatePerMinuteIncrement(preDTO.getAggregateTime(), curDTO.getAggregateTime(), preDTO.getFullValue(), curDTO.getFullValue());
+                            curDTO.setIncrementalValue(incr.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : incr);
                             toAddAcqDataList.add(curDTO);
                             toAddNotAcqSplitDataList.add(new MinuteAggDataSplitDTO(preDTO, curDTO));
                         } else {
@@ -313,19 +314,22 @@ public class ExcelMeterDataProcessor {
                         }
                     } else if (i == times.size() - 1) {
                         MinuteAggregateDataDTO preDTO = toAddAcqDataList.get(i - 1);
-                        curDTO.setIncrementalValue(AggSplitUtils.calculatePerMinuteIncrement(times.get(i - 1), curTime, values.get(i - 1), values.get(i)));
+                        BigDecimal incr = AggSplitUtils.calculatePerMinuteIncrement(times.get(i - 1), curTime, values.get(i - 1), values.get(i));
+                        curDTO.setIncrementalValue(incr.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : incr);
                         toAddAcqDataList.add(curDTO);
                         toAddNotAcqSplitDataList.add(new MinuteAggDataSplitDTO(preDTO, curDTO));
 
                         if (minuteAggDataSplitDTO != null && minuteAggDataSplitDTO.getEndDataDO() != null) {
                             MinuteAggregateDataDTO lastDTO = minuteAggDataSplitDTO.getEndDataDO();
-                            lastDTO.setIncrementalValue(AggSplitUtils.calculatePerMinuteIncrement(curDTO.getAggregateTime(), lastDTO.getAggregateTime(), curDTO.getFullValue(), lastDTO.getFullValue()));
+                            BigDecimal incr2 = AggSplitUtils.calculatePerMinuteIncrement(curDTO.getAggregateTime(), lastDTO.getAggregateTime(), curDTO.getFullValue(), lastDTO.getFullValue());
+                            lastDTO.setIncrementalValue(incr2.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : incr);
                             toAddAcqDataList.add(lastDTO);
                             toAddNotAcqSplitDataList.add(new MinuteAggDataSplitDTO(curDTO, lastDTO));
                         }
                     } else {
                         MinuteAggregateDataDTO preDTO = toAddAcqDataList.get(i - 1);
-                        curDTO.setIncrementalValue(AggSplitUtils.calculatePerMinuteIncrement(times.get(i - 1), curTime, values.get(i - 1), values.get(i)));
+                        BigDecimal incr = AggSplitUtils.calculatePerMinuteIncrement(times.get(i - 1), curTime, values.get(i - 1), values.get(i));
+                        curDTO.setIncrementalValue(incr.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : incr);
                         toAddAcqDataList.add(curDTO);
                         toAddNotAcqSplitDataList.add(new MinuteAggDataSplitDTO(preDTO, curDTO));
                     }
