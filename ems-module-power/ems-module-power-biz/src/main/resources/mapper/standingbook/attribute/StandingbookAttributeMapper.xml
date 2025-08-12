@@ -134,6 +134,7 @@
             resultType="cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO">
         SELECT
             attr.standingbook_id,
+            attr.type_id,
             MAX(CASE WHEN attr.code = 'measuringInstrumentId' THEN attr.value END) AS code,
             MAX(CASE WHEN attr.code = 'measuringInstrumentName' THEN attr.value END) AS name
         FROM
@@ -142,12 +143,14 @@
             attr.code IN ('measuringInstrumentId', 'measuringInstrumentName')
           and attr.standingbook_id is not null and attr.deleted=0
         GROUP BY
-            attr.standingbook_id
+            attr.standingbook_id,
+            attr.type_id
 
         UNION ALL
 
         SELECT
             attr.standingbook_id,
+            attr.type_id,
             MAX(CASE WHEN attr.code = 'equipmentId' THEN attr.value END) AS code,
             MAX(CASE WHEN attr.code = 'equipmentName' THEN attr.value END) AS name
         FROM
@@ -156,7 +159,8 @@
             attr.code IN ('equipmentId', 'equipmentName')
           and attr.standingbook_id is not null and attr.deleted=0
         GROUP BY
-            attr.standingbook_id;
+            attr.standingbook_id,
+            attr.type_id
 
     </select>
 
