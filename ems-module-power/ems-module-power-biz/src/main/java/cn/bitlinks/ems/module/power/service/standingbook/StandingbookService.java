@@ -144,4 +144,10 @@ public interface StandingbookService {
     Map<Long, StandingbookDTO> getStandingbookDTOMap();
 
     List<StandingBookHeaderDTO> getStandingBookHeadersByHeaders(List<String> headList);
+    /**
+     * 根据能源参数查询重点设备
+     * @param standingbookParamReqVO
+     * @return
+     */
+    List<StandingBookTypeTreeRespVO> treeDeviceWithParam(StandingbookParamReqVO standingbookParamReqVO);
 }

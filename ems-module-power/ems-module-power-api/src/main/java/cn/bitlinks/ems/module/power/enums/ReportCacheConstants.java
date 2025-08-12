@@ -11,4 +11,6 @@ public class ReportCacheConstants {
     public static final String NATURAL_GAS_CHART = "report:hvac:natural_gas:chart:";
     public static final String HVAC_ELECTRICITY_TABLE = "report:hvac:electricity:table:";
     public static final String HVAC_ELECTRICITY_CHART = "report:hvac:electricity:chart:";
+    public static final String TRANSFORMER_UTILIZATION_TABLE = "report:electricity:transformer_utilization:table:";
+    public static final String TRANSFORMER_UTILIZATION_CHART = "report:electricity:transformer_utilization:table:";
 }

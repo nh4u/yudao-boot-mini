@@ -13,6 +13,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.Standingboo
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.templ.StandingbookTmplDaqAttrMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.enums.ApiConstants;
+import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.RedisKeyConstants;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
@@ -400,6 +401,11 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
             result.put(type.getId(), type.getName());
         }
         return result;
+    }
+
+    @Override
+    public List<StandingbookTypeDO> getStandingbookTypeByTopType(Integer topType) {
+        return standingbookTypeMapper.selectList(StandingbookTypeDO::getTopType, topType);
     }
 
 

@@ -32,6 +32,11 @@ public class MinuteAggDataServiceImpl implements MinuteAggDataService {
     }
 
     @Override
+    public List<MinuteAggregateDataDO> getMaxDataGpByDateType(List<Long> standingbookIds, List<String> paramCodes, Integer dateType, LocalDateTime starTime, LocalDateTime endTime) {
+        return minuteAggregateDataMapper.getMaxDataGpByDateType(standingbookIds, paramCodes, dateType, starTime, endTime);
+    }
+
+    @Override
     public LocalDateTime getLastTime(List<Long> standingbookIds, List<String> paramCodes, LocalDateTime starTime, LocalDateTime endTime) {
         return minuteAggregateDataMapper.getLastTime(standingbookIds, paramCodes, starTime, endTime);
     }

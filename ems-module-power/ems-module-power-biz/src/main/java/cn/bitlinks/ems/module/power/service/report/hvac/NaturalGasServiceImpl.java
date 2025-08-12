@@ -146,7 +146,6 @@ public class NaturalGasServiceImpl implements NaturalGasService {
                     if (NaturalGasInfoDataList == null) {
                         NaturalGasInfoData NaturalGasInfoData = new NaturalGasInfoData();
                         NaturalGasInfoData.setDate(date);
-                        NaturalGasInfoData.setConsumption(BigDecimal.ZERO);
                         newList.add(NaturalGasInfoData);
                     } else {
                         newList.add(NaturalGasInfoDataList.get(0));
