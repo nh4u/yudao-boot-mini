@@ -376,7 +376,7 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
 
             // 获取去年同期
             labelUsageListNow.forEach(u -> {
-                String previousTime = LocalDateTimeUtils.getYearOnYearTime(u.getTime(), dataTypeEnum);
+                String previousTime = LocalDateTimeUtils.getYearOnYearTimeV2(u.getTime(), dataTypeEnum);
                 String key = u.getStandingbookId() + "_" + previousTime;
                 UsageCostData previous = lastMap.get(key);
                 if (Objects.isNull(previous)) {
