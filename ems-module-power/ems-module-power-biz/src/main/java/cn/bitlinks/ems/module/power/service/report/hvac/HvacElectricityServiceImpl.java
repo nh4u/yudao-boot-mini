@@ -372,9 +372,9 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
             // 获取本期
             labelInfoList.forEach(labelInfo -> {
                 List<UsageCostData> usageList = currentMap.get(labelInfo.getStandingbookId());
-                if (usageList == null || usageList.isEmpty()) {
-                    return; // 计量器具没有数据，跳过
-                }
+//                if (usageList == null || usageList.isEmpty()) {
+//                    return; // 计量器具没有数据，跳过
+//                }
                 labelUsageListNow.addAll(usageList);
             });
 
