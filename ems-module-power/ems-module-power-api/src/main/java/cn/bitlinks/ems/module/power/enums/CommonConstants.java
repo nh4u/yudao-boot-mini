@@ -84,8 +84,14 @@ public interface CommonConstants {
      * 利用率
      */
     Integer RATIO = 3;
-
-
+    /**
+     * 点位1
+     */
+    Integer POINT_ONE = 1;
+    /**
+     * 点位2
+     */
+    Integer POINT_TWO = 2;
     String COAT_UNIT1 = "(kgce)";
     String COAT_UNIT2 = "(tce)";
 

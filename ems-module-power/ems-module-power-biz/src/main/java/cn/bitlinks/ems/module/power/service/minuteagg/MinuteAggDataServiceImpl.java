@@ -1,7 +1,7 @@
 package cn.bitlinks.ems.module.power.service.minuteagg;
 
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
-import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.SupplyWaterTmpMinuteAggData;
 import cn.bitlinks.ems.module.power.dal.mysql.minuteagg.MinuteAggregateDataMapper;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +27,7 @@ public class MinuteAggDataServiceImpl implements MinuteAggDataService {
 
     @Override
     @TenantIgnore
-    public List<MinuteAggregateDataDO> getTmpRangeDataSteady(List<Long> standingbookIds, List<String> paramCodes, LocalDateTime starTime, LocalDateTime endTime) {
+    public List<SupplyWaterTmpMinuteAggData> getTmpRangeDataSteady(List<Long> standingbookIds, List<String> paramCodes, LocalDateTime starTime, LocalDateTime endTime) {
         return minuteAggregateDataMapper.getTmpRangeDataSteady(standingbookIds, paramCodes, starTime, endTime);
     }
 
