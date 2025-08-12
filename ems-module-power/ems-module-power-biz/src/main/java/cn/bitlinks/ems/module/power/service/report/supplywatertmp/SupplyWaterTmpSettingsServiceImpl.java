@@ -301,6 +301,10 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     }
                 } catch (Exception e) {
                     log.error(e.getMessage());
+                    codes.forEach(c -> {
+                        String key = c + "_" + year + "-" + monthValue;
+                        map.put(key, BigDecimal.ZERO);
+                    });
                 }
 
                 tempStartTime = tempStartTime.plusMonths(1);
@@ -387,6 +391,12 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     }
                 } catch (Exception e) {
                     log.error(e.getMessage());
+                    codes.forEach(c -> {
+                        String key1 = POINT_ONE + "_" + c + "_" + year + "-" + monthValue;
+                        String key2 = POINT_TWO + "_" + c + "_" + year + "-" + monthValue;
+                        map1.put(key1, BigDecimal.ZERO);
+                        map2.put(key2, BigDecimal.ZERO);
+                    });
                 }
 
                 tempStartTime = tempStartTime.plusMonths(1);
@@ -584,6 +594,115 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
 
     @Override
     public SupplyAnalysisPieResultVO supplyWaterTmpChart(SupplyWaterTmpReportParamVO paramVO) {
+
+        // 1.校验时间范围
+        LocalDateTime[] range = validateRange(paramVO.getRange());
+        // 2.时间处理
+        LocalDateTime startTime = LocalDateTimeUtils.beginOfMonth(range[0]);
+        LocalDateTime endTime = LocalDateTimeUtils.endOfMonth(range[1]);
+
+        // 2.校验时间类型
+        Integer dateType = paramVO.getDateType();
+        DataTypeEnum dataTypeEnum = validateDateType(dateType);
+
+        // 3.如果是天 则 班组标记必须要有
+        Integer teamFlag = paramVO.getTeamFlag();
+        if (dataTypeEnum.equals(DataTypeEnum.DAY)) {
+            validateTeamFlag(teamFlag);
+        }
+
+
+        SupplyWaterTmpTableResultVO resultVO = new SupplyWaterTmpTableResultVO();
+        resultVO.setDataTime(LocalDateTime.now());
+
+        // 校验系统 没值就返空
+        List<String> system1 = paramVO.getSystem();
+        if (CollUtil.isEmpty(system1)) {
+            return null;
+        }
+
+        // 4.获取所有standingBookids
+        List<SupplyWaterTmpSettingsDO> supplyAnalysisSettingsList = supplyWaterTmpSettingsMapper.selectList(paramVO);
+        // 4.4.设置为空直接返回结果
+        if (CollUtil.isEmpty(supplyAnalysisSettingsList)) {
+            return null;
+        }
+        List<Long> standingBookIds = supplyAnalysisSettingsList
+                .stream()
+                .map(SupplyWaterTmpSettingsDO::getStandingbookId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // 4.4.台账id为空直接返回结果
+        if (CollUtil.isEmpty(standingBookIds)) {
+            return null;
+        }
+
+        List<String> paramCodes = supplyAnalysisSettingsList
+                .stream()
+                .map(SupplyWaterTmpSettingsDO::getEnergyParamCode)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        List<String> codes = supplyAnalysisSettingsList
+                .stream()
+                .map(SupplyWaterTmpSettingsDO::getCode)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+
+        Map<String, Long> standingBookCodeMap = new HashMap<>();
+        supplyAnalysisSettingsList.forEach(s -> standingBookCodeMap.put(s.getCode(), s.getStandingbookId()));
+
+        // 5.根据台账ID和参数code查用小时用量数据
+        List<SupplyWaterTmpMinuteAggData> minuteAggDataList = minuteAggDataService.getTmpRangeDataSteady(
+                standingBookIds,
+                paramCodes,
+                startTime,
+                endTime);
+
+        if (CollUtil.isEmpty(minuteAggDataList)) {
+            return null;
+        }
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        // 天
+        if (dataTypeEnum.equals(DataTypeEnum.DAY)) {
+            result = dealDayData(
+                    minuteAggDataList,
+                    startTime,
+                    endTime,
+                    standingBookCodeMap,
+                    codes,
+                    teamFlag);
+
+        } else if (dataTypeEnum.equals(DataTypeEnum.HOUR)) {
+            // 小时数据
+            result = dealHourData(
+                    minuteAggDataList,
+                    startTime,
+                    endTime,
+                    standingBookCodeMap,
+                    codes);
+        } else {
+
+        }
+
+
+        LocalDateTime lastTime = minuteAggDataService.getLastTime(
+                standingBookIds,
+                paramCodes,
+                range[0],
+                range[1]);
+
+        resultVO.setDataTime(lastTime);
+        resultVO.setList(result);
+
+
+
         return null;
     }
 
