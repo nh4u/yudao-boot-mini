@@ -81,7 +81,63 @@
         AND energy_flag=1
         GROUP BY standingbook_id, param_code
     </select>
+    <!--    获取时间维度下，最大值-->
+    <select id="getMaxDataGpByDateType" resultType="cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO">
+        SELECT
+        standingbook_id,param_code
+        <choose>
+            <!-- 根据 dateType 选择聚合字段 -->
+            <when test="queryParam.dateType == 0">
+                ,DATE(aggregate_time) AS time
+            </when>
+            <when test="queryParam.dateType == 1">
+                ,DATE_FORMAT(aggregate_time, '%Y-%m') AS time
+            </when>
+            <when test="queryParam.dateType == 2">
+                ,YEAR(aggregate_time) AS time
+            </when>
+            <when test="queryParam.dateType == 3">
+                ,DATE_FORMAT(aggregate_time, '%Y-%m-%d %H') AS time
+            </when>
+        </choose>
+        ,
+        MAX(full_value) AS full_value
+        FROM minute_aggregate_data
+        WHERE aggregate_time >= #{starTime}
+        AND aggregate_time &lt; #{endTime}
+        AND data_feature = 2
+        AND energy_flag = 1
+        <if test="standingBookIds != null and standingBookIds.size() != 0">
+            AND standingbook_id IN
+            <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="paramCodes != null and paramCodes.size() != 0">
+            AND param_code IN
+            <foreach collection="paramCodes" item="paramCode" open="(" separator="," close=")">
+                #{paramCode}
+            </foreach>
+        </if>
+        GROUP BY
+                standingbook_id,param_code
+        <choose>
+            <!-- 根据 dateType 选择聚合字段 -->
+            <when test="dateType == 0">
+                ,DATE(aggregate_time)
+            </when>
+            <when test="dateType == 1">
+                ,DATE_FORMAT(aggregate_time, '%Y-%m')
+            </when>
+            <when test="dateType == 2">
+                ,YEAR(aggregate_time)
+            </when>
+            <when test="dateType == 3">
+                ,DATE_FORMAT(aggregate_time, '%Y-%m-%d %H')
+            </when>
+        </choose>
 
+    </select>
     <select id="getTmpRangeDataSteady"
             resultType="cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO">
         WITH ranked_data AS (
