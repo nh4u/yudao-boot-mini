@@ -82,12 +82,37 @@
         GROUP BY standingbook_id, param_code
     </select>
 
-    <!-- 批量查询最后一分钟数据 - 性能优化版本 -->
+    <!-- 批量查询逐日的最后一分钟数据 - 修正为按天取最后一条 -->
     <select id="selectLastMinuteDataByDateBatch" resultMap="BaseResultMap">
-        SELECT m1.*
-        FROM minute_aggregate_data m1
-        INNER JOIN (
-            SELECT standingbook_id, param_code, MAX(aggregate_time) as max_time
+        SELECT standingbook_id,
+               param_code,
+               DATE(aggregate_time) AS aggregate_time,
+               full_value,
+               incremental_value,
+               data_site,
+               energy_flag,
+               full_increment,
+               data_feature,
+               data_type,
+               usage,
+               acq_flag
+        FROM (
+            SELECT standingbook_id,
+                   param_code,
+                   aggregate_time,
+                   full_value,
+                   incremental_value,
+                   data_site,
+                   energy_flag,
+                   full_increment,
+                   data_feature,
+                   data_type,
+                   usage,
+                   acq_flag,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY standingbook_id, param_code, DATE(aggregate_time)
+                       ORDER BY aggregate_time DESC
+                   ) AS rn
             FROM minute_aggregate_data
             WHERE standingbook_id IN
             <foreach collection="standingbookIds" item="standingbookId" open="(" separator="," close=")">
@@ -99,10 +124,9 @@
             </foreach>
             AND aggregate_time &gt;= #{startTime} AND aggregate_time &lt; #{endTime}
             AND energy_flag=1
-            GROUP BY standingbook_id, param_code
-        ) m2 ON m1.standingbook_id = m2.standingbook_id
-        AND m1.param_code = m2.param_code
-        AND m1.aggregate_time = m2.max_time
+        ) t
+        WHERE rn = 1
+        ORDER BY standingbook_id, param_code, aggregate_time
     </select>
 
     <!-- 批量查询增量数据之和 - 性能优化版本 -->
