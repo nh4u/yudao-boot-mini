@@ -200,7 +200,29 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
                 DataTypeEnum.codeOf(paramVO.getDateType()),
                 itemMapping
         ));
+        // 无数据的填充0
+        hvacElectricityInfos.forEach(l -> {
 
+            List<HvacElectricityInfoData> newList = new ArrayList<>();
+            List<HvacElectricityInfoData> oldList = l.getHvacElectricityInfoDataList();
+            if (tableHeader.size() != oldList.size()) {
+                Map<String, List<HvacElectricityInfoData>> dateMap = oldList.stream()
+                        .collect(Collectors.groupingBy(HvacElectricityInfoData::getDate));
+
+                tableHeader.forEach(date -> {
+                    List<HvacElectricityInfoData> hvacElectricityInfoDataList = dateMap.get(date);
+                    if (hvacElectricityInfoDataList == null) {
+                        HvacElectricityInfoData hvacElectricityInfoData = new HvacElectricityInfoData();
+                        hvacElectricityInfoData.setDate(date);
+                        newList.add(hvacElectricityInfoData);
+                    } else {
+                        newList.add(hvacElectricityInfoDataList.get(0));
+                    }
+                });
+                // 设置新数据list
+                l.setHvacElectricityInfoDataList(newList);
+            }
+        });
         BaseReportResultVO<HvacElectricityInfo> resultVO = new BaseReportResultVO<>();
         resultVO.setHeader(tableHeader);
         // 设置最终返回值
