@@ -60,6 +60,12 @@ public class DateUtils {
         // UTC时间(世界协调时间,UTC + 00:00)转北京(北京,UTC + 8:00)时间
         return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
     }
+    public static boolean isCrossYear(LocalDateTime start, LocalDateTime end) {
+        if (start == null || end == null) {
+            throw new IllegalArgumentException("时间不能为空");
+        }
+        return start.getYear() != end.getYear();
+    }
 
     public static Date addTime(Duration duration) {
         return new Date(System.currentTimeMillis() + duration.toMillis());

@@ -112,5 +112,12 @@ public class StandingbookController {
         return success(standingbookService.treeWithEnergyParam(standingbookEnergyParamReqVO));
     }
 
+    @PostMapping("/treeDeviceWithParam")
+    @Operation(summary = "根据能源参数名称查询所有的重点设备，分类->台账名称（编号）")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")
+    public CommonResult<List<StandingBookTypeTreeRespVO>> treeDeviceWithParam(@RequestBody StandingbookParamReqVO standingbookParamReqVO) {
+        return success(standingbookService.treeDeviceWithParam(standingbookParamReqVO));
+    }
+
 
 }

@@ -113,5 +113,8 @@ public interface MinuteAggregateDataMapper {
                               @Param("paramCodes") List<String> paramCodes,
                               @Param("starTime") LocalDateTime starTime,
                               @Param("endTime") LocalDateTime endTime);
+    @TenantIgnore
+    List<MinuteAggregateDataDO> getMaxDataGpByDateType(@Param("standingbookIds")List<Long> standingbookIds,@Param("paramCodes") List<String> paramCodes,@Param("dateType") Integer dateType,
+                                                       @Param("starTime")LocalDateTime starTime,@Param("endTime") LocalDateTime endTime);
 }
 
