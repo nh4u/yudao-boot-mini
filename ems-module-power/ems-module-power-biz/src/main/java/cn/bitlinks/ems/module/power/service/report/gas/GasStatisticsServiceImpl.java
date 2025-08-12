@@ -11,6 +11,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.report.gas.VPowerMeasurementA
 import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO;
 import cn.bitlinks.ems.module.power.dal.mysql.report.gas.PowerTankSettingsMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.report.gas.VPowerMeasurementAttributesMapper;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -112,22 +113,20 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         GasStatisticsResultVO<GasStatisticsInfo> resultVO = new GasStatisticsResultVO<>();
         resultVO.setHeader(tableHeader);
 
-        // 获取视图数据
-        List<VPowerMeasurementAttributesDO> vPowerMeasurementAttributesDOS = vPowerMeasurementMapper.selectList();
-
-        // 处理ID列表：如果没传就用视图所有ID
+        // 优化：仅按传入的统计项拉取视图数据，避免全表扫描
         List<Long> idList = paramVO.getEnergyStatisticsItemIds();
+        List<VPowerMeasurementAttributesDO> filteredAttributes;
         if (CollUtil.isEmpty(idList)) {
-            idList = vPowerMeasurementAttributesDOS.stream()
+            filteredAttributes = vPowerMeasurementMapper.selectList();
+            idList = filteredAttributes.stream()
                     .map(VPowerMeasurementAttributesDO::getStandingbookId)
                     .collect(Collectors.toList());
+        } else {
+            filteredAttributes = vPowerMeasurementMapper.selectList(
+                    new LambdaQueryWrapperX<VPowerMeasurementAttributesDO>()
+                            .in(VPowerMeasurementAttributesDO::getStandingbookId, idList)
+            );
         }
-        final List<Long> finalIdList = idList;
-
-        // 过滤视图数据
-        List<VPowerMeasurementAttributesDO> filteredAttributes = vPowerMeasurementAttributesDOS.stream()
-                .filter(attr -> finalIdList.contains(attr.getStandingbookId()))
-                .collect(Collectors.toList());
 
         // 提取台账ID和参数编码（即使filteredAttributes为空也要处理）
         List<Long> standingbookIds = filteredAttributes.stream()
@@ -194,7 +193,8 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         // 缓存结果
         String jsonStr = JSONUtil.toJsonStr(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
-        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+        // 延长缓存时间，提升重复查询的复用率
+        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 10, TimeUnit.MINUTES);
 
         return resultVO;
     }
