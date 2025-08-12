@@ -136,8 +136,76 @@
                 ,DATE_FORMAT(aggregate_time, '%Y-%m-%d %H')
             </when>
         </choose>
-
     </select>
+    <!-- 批量查询逐日的最后一分钟数据 - 修正为按天取最后一条 -->
+    <select id="selectLastMinuteDataByDateBatch" resultMap="BaseResultMap">
+        SELECT standingbook_id,
+               param_code,
+               DATE(aggregate_time) AS aggregate_time,
+               full_value,
+               incremental_value,
+               data_site,
+               energy_flag,
+               full_increment,
+               data_feature,
+               data_type,
+               usage,
+               acq_flag
+        FROM (
+            SELECT standingbook_id,
+                   param_code,
+                   aggregate_time,
+                   full_value,
+                   incremental_value,
+                   data_site,
+                   energy_flag,
+                   full_increment,
+                   data_feature,
+                   data_type,
+                   usage,
+                   acq_flag,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY standingbook_id, param_code, DATE(aggregate_time)
+                       ORDER BY aggregate_time DESC
+                   ) AS rn
+            FROM minute_aggregate_data
+            WHERE standingbook_id IN
+            <foreach collection="standingbookIds" item="standingbookId" open="(" separator="," close=")">
+                #{standingbookId}
+            </foreach>
+            AND param_code IN
+            <foreach collection="paramCodes" item="paramCode" open="(" separator="," close=")">
+                #{paramCode}
+            </foreach>
+            AND aggregate_time &gt;= #{startTime} AND aggregate_time &lt; #{endTime}
+            AND energy_flag=1
+        ) t
+        WHERE rn = 1
+        ORDER BY standingbook_id, param_code, aggregate_time
+    </select>
+
+    <!-- 批量查询增量数据之和 - 性能优化版本 -->
+    <select id="selectIncrementalSumByDateBatch" resultMap="BaseResultMap">
+        SELECT
+        standingbook_id,
+        param_code,
+        DATE(aggregate_time) as aggregate_time,
+        SUM(incremental_value) as incremental_value,
+        SUM(full_value) as full_value
+        FROM minute_aggregate_data
+        WHERE standingbook_id IN
+        <foreach collection="standingbookIds" item="standingbookId" open="(" separator="," close=")">
+            #{standingbookId}
+        </foreach>
+        AND param_code IN
+        <foreach collection="paramCodes" item="paramCode" open="(" separator="," close=")">
+            #{paramCode}
+        </foreach>
+        AND aggregate_time &gt;= #{startTime} AND aggregate_time &lt; #{endTime}
+        AND energy_flag=1
+        GROUP BY standingbook_id, param_code, DATE(aggregate_time)
+    </select>
+
     <select id="getTmpRangeDataSteady"
             resultType="cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO">
         WITH ranked_data AS (

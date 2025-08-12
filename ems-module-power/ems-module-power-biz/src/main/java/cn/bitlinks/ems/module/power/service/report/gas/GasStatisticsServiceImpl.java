@@ -11,6 +11,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.report.gas.VPowerMeasurementA
 import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO;
 import cn.bitlinks.ems.module.power.dal.mysql.report.gas.PowerTankSettingsMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.report.gas.VPowerMeasurementAttributesMapper;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -38,6 +39,7 @@ import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_RANGE_E
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.END_TIME_MUST_AFTER_START_TIME;
 import static cn.bitlinks.ems.module.power.enums.GasStatisticsCacheConstants.GAS_STATISTICS_TABLE;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
+import cn.hutool.json.JSONUtil;
 
 /**
  * 气化科报表 Service 实现类
@@ -111,22 +113,20 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         GasStatisticsResultVO<GasStatisticsInfo> resultVO = new GasStatisticsResultVO<>();
         resultVO.setHeader(tableHeader);
 
-        // 获取视图数据
-        List<VPowerMeasurementAttributesDO> vPowerMeasurementAttributesDOS = vPowerMeasurementMapper.selectList();
-
-        // 处理ID列表：如果没传就用视图所有ID
+        // 优化：仅按传入的统计项拉取视图数据，避免全表扫描
         List<Long> idList = paramVO.getEnergyStatisticsItemIds();
+        List<VPowerMeasurementAttributesDO> filteredAttributes;
         if (CollUtil.isEmpty(idList)) {
-            idList = vPowerMeasurementAttributesDOS.stream()
+            filteredAttributes = vPowerMeasurementMapper.selectList();
+            idList = filteredAttributes.stream()
                     .map(VPowerMeasurementAttributesDO::getStandingbookId)
                     .collect(Collectors.toList());
+        } else {
+            filteredAttributes = vPowerMeasurementMapper.selectList(
+                    new LambdaQueryWrapperX<VPowerMeasurementAttributesDO>()
+                            .in(VPowerMeasurementAttributesDO::getStandingbookId, idList)
+            );
         }
-        final List<Long> finalIdList = idList;
-
-        // 过滤视图数据
-        List<VPowerMeasurementAttributesDO> filteredAttributes = vPowerMeasurementAttributesDOS.stream()
-                .filter(attr -> finalIdList.contains(attr.getStandingbookId()))
-                .collect(Collectors.toList());
 
         // 提取台账ID和参数编码（即使filteredAttributes为空也要处理）
         List<Long> standingbookIds = filteredAttributes.stream()
@@ -155,6 +155,10 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                         java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                 .collect(Collectors.toList());
 
+        // 性能优化：批量查询所有数据
+        Map<String, MinuteAggregateDataDO> dataCache = batchQueryData(
+                standingbookIds, paramCodes, startTime, endTime);
+
         // 处理每个计量器具的数据
         List<GasStatisticsInfo> statisticsInfoList = new ArrayList<>();
 
@@ -171,7 +175,8 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                     GasStatisticsInfoData data = new GasStatisticsInfoData();
                     data.setDate(date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")));
 
-                    BigDecimal value = calculateValueByType(attribute, date, standingbookIds, paramCodes, tankSettingsMap);
+                    // 使用缓存的数据进行计算
+                    BigDecimal value = calculateValueByTypeOptimized(attribute, date, dataCache, tankSettingsMap);
                     data.setValue(value);
 
                     statisticsDateDataList.add(data);
@@ -182,34 +187,164 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
             }
         }
 
-        // 填充无数据的日期为0
-        statisticsInfoList.forEach(info -> {
-            List<GasStatisticsInfoData> oldList = info.getStatisticsDateDataList();
-            Map<String, GasStatisticsInfoData> dateMap = oldList.stream()
-                    .collect(Collectors.toMap(GasStatisticsInfoData::getDate, d -> d, (a, b) -> a));
-
-            List<GasStatisticsInfoData> newList = new ArrayList<>();
-            for (String date : tableHeader) {
-                GasStatisticsInfoData data = dateMap.get(date);
-                if (data == null) {
-                    data = new GasStatisticsInfoData();
-                    data.setDate(date);
-                    data.setValue(BigDecimal.ZERO);
-                }
-                newList.add(data);
-            }
-            info.setStatisticsDateDataList(newList);
-        });
-
         resultVO.setStatisticsInfoList(statisticsInfoList);
         resultVO.setDataTime(LocalDateTime.now());
 
         // 缓存结果
-        String jsonStr = JSON.toJSONString(resultVO);
+        String jsonStr = JSONUtil.toJsonStr(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
-        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 5, TimeUnit.MINUTES);
+        // 延长缓存时间，提升重复查询的复用率
+        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 10, TimeUnit.MINUTES);
 
         return resultVO;
+    }
+
+    /**
+     * 批量查询数据并构建缓存
+     */
+    private Map<String, MinuteAggregateDataDO> batchQueryData(
+            List<Long> standingbookIds,
+            List<String> paramCodes,
+            LocalDateTime startTime,
+            LocalDateTime endTime) {
+
+        if (CollUtil.isEmpty(standingbookIds) || CollUtil.isEmpty(paramCodes)) {
+            return new HashMap<>();
+        }
+
+        // 一次性查询所有最后一分钟数据
+        List<MinuteAggregateDataDO> lastMinuteData = minuteAggregateDataService
+                .selectLastMinuteDataByDateBatch(standingbookIds, paramCodes, startTime, endTime);
+
+        // 一次性查询所有增量数据
+        List<MinuteAggregateDataDO> incrementalData = minuteAggregateDataService
+                .selectIncrementalSumByDateBatch(standingbookIds, paramCodes, startTime, endTime);
+
+        // 构建缓存Map，key为 "standingbookId:paramCode:date"
+        Map<String, MinuteAggregateDataDO> dataCache = new HashMap<>();
+
+        // 处理最后一分钟数据
+        for (MinuteAggregateDataDO data : lastMinuteData) {
+            String key = String.format("%d:%s:%s", 
+                data.getStandingbookId(), 
+                data.getParamCode(), 
+                data.getAggregateTime().toLocalDate());
+            dataCache.put(key, data);
+        }
+
+        // 处理增量数据
+        for (MinuteAggregateDataDO data : incrementalData) {
+            String key = String.format("%d:%s:%s:incremental", 
+                data.getStandingbookId(), 
+                data.getParamCode(), 
+                data.getAggregateTime().toLocalDate());
+            dataCache.put(key, data);
+        }
+
+        return dataCache;
+    }
+
+    /**
+     * 优化后的计算方法，使用缓存数据
+     */
+    private BigDecimal calculateValueByTypeOptimized(VPowerMeasurementAttributesDO attribute,
+                                                   LocalDateTime date,
+                                                   Map<String, MinuteAggregateDataDO> dataCache,
+                                                   Map<Long, PowerTankSettingsDO> tankSettingsMap) {
+
+        Integer calculateType = attribute.getCalculateType();
+        Long standingbookId = attribute.getStandingbookId();
+        String paramCode = attribute.getParamCode();
+
+        // 如果calculateType为null，返回0
+        if (calculateType == null) {
+            return BigDecimal.ZERO;
+        }
+
+        try {
+            switch (calculateType) {
+                case 0:
+                    // 取得今天有数据的最后一分钟的数值full_value
+                    return getLastMinuteFullValueOptimized(standingbookId, paramCode, date, dataCache);
+
+                case 1:
+                    // 取得今天所有increment_value值之和
+                    return getIncrementalSumOptimized(standingbookId, paramCode, date, dataCache);
+
+                case 2:
+                    // 取得今天有数据的最后一分钟的数值full_value，带入到公式H=Δp/(ρg)求出的H值
+                    return calculateHValueOptimized(standingbookId, paramCode, date, dataCache, tankSettingsMap);
+
+                default:
+                    return BigDecimal.ZERO;
+            }
+        } catch (Exception e) {
+            log.error("计算值失败，standingbookId: {}, paramCode: {}, date: {}, calculateType: {}",
+                    standingbookId, paramCode, date, calculateType, e);
+            return BigDecimal.ZERO;
+        }
+    }
+
+    /**
+     * 优化后的获取最后一分钟full_value方法
+     */
+    private BigDecimal getLastMinuteFullValueOptimized(Long standingbookId, String paramCode, LocalDateTime date, Map<String, MinuteAggregateDataDO> dataCache) {
+        String key = String.format("%d:%s:%s", standingbookId, paramCode, date.toLocalDate());
+        MinuteAggregateDataDO data = dataCache.get(key);
+        if (data != null && data.getFullValue() != null) {
+            return data.getFullValue();
+        }
+        return BigDecimal.ZERO;
+    }
+
+    /**
+     * 优化后的获取增量值之和方法
+     */
+    private BigDecimal getIncrementalSumOptimized(Long standingbookId, String paramCode, LocalDateTime date, Map<String, MinuteAggregateDataDO> dataCache) {
+        String key = String.format("%d:%s:%s:incremental", standingbookId, paramCode, date.toLocalDate());
+        MinuteAggregateDataDO data = dataCache.get(key);
+        if (data != null && data.getIncrementalValue() != null) {
+            return data.getIncrementalValue();
+        }
+        return BigDecimal.ZERO;
+    }
+
+    /**
+     * 优化后的计算H值方法
+     */
+    private BigDecimal calculateHValueOptimized(Long standingbookId, String paramCode, LocalDateTime date,
+                                              Map<String, MinuteAggregateDataDO> dataCache,
+                                              Map<Long, PowerTankSettingsDO> tankSettingsMap) {
+        // 获取储罐设置
+        PowerTankSettingsDO tankSettings = tankSettingsMap.get(standingbookId);
+        if (tankSettings == null || tankSettings.getPressureDiffId() == null) {
+            log.warn("储罐设置数据不完整，standingbookId: {}", standingbookId);
+            return BigDecimal.ZERO;
+        }
+
+        // 获取Δp值（最后一分钟的full_value）
+        BigDecimal deltaP = getLastMinuteFullValueOptimized(tankSettings.getPressureDiffId(), paramCode, date, dataCache);
+
+        if (deltaP.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+
+        if (tankSettings.getDensity() == null || tankSettings.getGravityAcceleration() == null) {
+            log.warn("储罐设置数据不完整，standingbookId: {}", standingbookId);
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal density = tankSettings.getDensity();
+        BigDecimal gravity = tankSettings.getGravityAcceleration();
+
+        // 计算H = Δp/(ρg)
+        if (density.compareTo(BigDecimal.ZERO) == 0 || gravity.compareTo(BigDecimal.ZERO) == 0) {
+            log.warn("密度或重力加速度为0，无法计算H值，standingbookId: {}", standingbookId);
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal denominator = density.multiply(gravity);
+        return deltaP.divide(denominator, scale, BigDecimal.ROUND_HALF_UP);
     }
 
     @Override
