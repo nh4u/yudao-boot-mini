@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.report.hvac;
 
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
+import cn.bitlinks.ems.framework.common.util.date.DateUtils;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
@@ -192,13 +193,15 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
         Map<Long, LabelConfigDO> labelMap = labelConfigService.getAllLabelConfig().stream()
                 .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
 
+        boolean isCrossYear = DateUtils.isCrossYear(paramVO.getRange()[0],paramVO.getRange()[1]);
         List<HvacElectricityInfo> hvacElectricityInfos = new ArrayList<>(queryByDefaultLabel(
                 standingbookIdsByLabel,
                 usageCostDataList,
                 lastYearUsageCostDataList,
                 labelMap,
                 DataTypeEnum.codeOf(paramVO.getDateType()),
-                itemMapping
+                itemMapping,
+                isCrossYear
         ));
         // 无数据的填充0
         hvacElectricityInfos.forEach(l -> {
@@ -328,7 +331,8 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
                                                           List<UsageCostData> lastUsageCostDataList,
                                                           Map<Long, LabelConfigDO> labelMap,
                                                           DataTypeEnum dataTypeEnum,
-                                                          LinkedHashMap<String, String> itemMapping
+                                                          LinkedHashMap<String, String> itemMapping,
+                                                          boolean isCrossYear
     ) {
         //以value 分组 台账id
         Map<String, List<StandingbookLabelInfoDO>> grouped = standingbookIdsByLabel.stream()
@@ -444,8 +448,11 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
             info.setHvacElectricityInfoDataList(dataList);
 
             info.setPeriodNow(dealBigDecimalScale(sumNow, DEFAULT_SCALE));
-            info.setPeriodPrevious(dealBigDecimalScale(sumPrevious, DEFAULT_SCALE));
-            info.setPeriodRatio(dealBigDecimalScale(sumRatio, DEFAULT_SCALE));
+            // 当统计周期跨年时，周期合计列中同期、同比值无需进行计算，展示为“/”
+            if(!isCrossYear){
+                info.setPeriodPrevious(dealBigDecimalScale(sumPrevious, DEFAULT_SCALE));
+                info.setPeriodRatio(dealBigDecimalScale(sumRatio, DEFAULT_SCALE));
+            }
 
             resultList.add(info);
         });
