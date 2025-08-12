@@ -3,15 +3,20 @@ package cn.bitlinks.ems.module.power.controller.admin.report.electricity;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.TransformerUtilizationSettingsOptionsVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.TransformerUtilizationSettingsVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseReportResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.TransformerUtilizationInfo;
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.TransformerUtilizationParamVO;
 import cn.bitlinks.ems.module.power.service.report.electricity.TransformerUtilizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import javax.validation.Valid;
 import java.util.List;
 
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
@@ -42,6 +47,18 @@ public class TransformerUtilizationController {
     public CommonResult<List<TransformerUtilizationSettingsOptionsVO>> transformerOptions() {
         return success(transformerUtilizationService.transformerOptions());
     }
+
+    @PostMapping("/table")
+    @Operation(summary = "表")
+    public CommonResult<BaseReportResultVO<TransformerUtilizationInfo>> getTable(@Valid @RequestBody TransformerUtilizationParamVO paramVO) {
+        return success(transformerUtilizationService.getTable(paramVO));
+    }
+
+//    @PostMapping("/chart")
+//    @Operation(summary = "图")
+//    public CommonResult<BaseReportMultiChartResultVO<LinkedHashMap<String, List<BigDecimal>>>> getChart(@Valid @RequestBody HvacElectricityParamVO paramVO) {
+//        return success(transformerUtilizationService.getChart());
+//    }
 
 //    @PostMapping("/chart")
 //    @Operation(summary = "图")

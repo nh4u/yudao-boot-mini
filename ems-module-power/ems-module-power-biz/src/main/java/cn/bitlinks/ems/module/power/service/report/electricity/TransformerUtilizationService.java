@@ -2,6 +2,9 @@ package cn.bitlinks.ems.module.power.service.report.electricity;
 
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.TransformerUtilizationSettingsOptionsVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.TransformerUtilizationSettingsVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseReportResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.TransformerUtilizationInfo;
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.TransformerUtilizationParamVO;
 
 import java.util.List;
 
@@ -30,4 +33,7 @@ public interface TransformerUtilizationService {
      * @return list
      */
     List<TransformerUtilizationSettingsOptionsVO> transformerOptions();
+
+
+    BaseReportResultVO<TransformerUtilizationInfo> getTable(TransformerUtilizationParamVO paramVO);
 }

@@ -3,6 +3,9 @@ package cn.bitlinks.ems.module.power.service.report.electricity;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.TransformerUtilizationSettingsOptionsVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.TransformerUtilizationSettingsVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseReportResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.TransformerUtilizationInfo;
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.TransformerUtilizationParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.report.electricity.TransformerUtilizationSettingsDO;
 import cn.bitlinks.ems.module.power.dal.mysql.report.electricity.TransformerUtilizationSettingsMapper;
@@ -100,5 +103,10 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
         }
 
         return result;
+    }
+
+    @Override
+    public BaseReportResultVO<TransformerUtilizationInfo> getTable(TransformerUtilizationParamVO paramVO) {
+        return null;
     }
 }
