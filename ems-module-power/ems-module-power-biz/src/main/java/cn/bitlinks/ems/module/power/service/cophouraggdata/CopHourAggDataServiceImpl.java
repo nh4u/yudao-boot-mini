@@ -29,7 +29,6 @@ import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.SYSTEM_TYPE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_TYPE_NOT_EXISTS;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.END_TIME_MUST_AFTER_START_TIME;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.COP;
-import static cn.bitlinks.ems.module.power.enums.ExportConstants.STATISTICS_FEE;
 
 /**
  * @author liumingqiang
