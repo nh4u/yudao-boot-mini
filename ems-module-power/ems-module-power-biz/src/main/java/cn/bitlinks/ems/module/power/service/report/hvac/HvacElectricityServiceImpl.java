@@ -357,12 +357,12 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
                 TimeAndNumData current = nowMap.get(time);
                 BigDecimal now = Optional.ofNullable(current)
                         .map(TimeAndNumData::getNum)
-                        .orElse(BigDecimal.ZERO);
+                        .orElse(null);
                 String previousTime = LocalDateTimeUtils.getYearOnYearTime(time, dataTypeEnum);
                 TimeAndNumData previous = previousMap.get(previousTime);
                 BigDecimal last = Optional.ofNullable(previous)
                         .map(TimeAndNumData::getNum)
-                        .orElse(BigDecimal.ZERO);
+                        .orElse(null);
                 BigDecimal ratio = calculateYearOnYearRatio(now, last);
                 dataList.add(new HvacElectricityInfoData(time, now, last, ratio));
             }
