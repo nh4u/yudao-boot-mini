@@ -96,7 +96,22 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
         List<TransformerUtilizationSettingsDO> insertList = grouped.get(false);
 
         if (CollUtil.isNotEmpty(updateList)) {
+            List<TransformerUtilizationSettingsDO> allList = transformerUtilizationSettingsMapper.selectList();
             transformerUtilizationSettingsMapper.updateBatch(updateList);
+            Set<Long> updateIds = updateList.stream()
+                    .map(TransformerUtilizationSettingsDO::getId)
+                    .collect(Collectors.toSet());
+
+            // 找出 allList 中 id 不在 updateIds 的记录
+            List<Long> idsToDelete = allList.stream()
+                    .map(TransformerUtilizationSettingsDO::getId)
+                    .filter(id -> !updateIds.contains(id))
+                    .collect(Collectors.toList());
+
+            // 批量删除
+            if (CollUtil.isNotEmpty(idsToDelete)) {
+                transformerUtilizationSettingsMapper.deleteByIds(idsToDelete);
+            }
         }
 
         if (CollUtil.isNotEmpty(insertList)) {
@@ -138,11 +153,6 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
         List<TransformerUtilizationSettingsOptionsVO> result = new ArrayList<>();
 
         for (TransformerUtilizationSettingsDO settingsDO : transformerUtilizationSettingsDOList) {
-            Long targetKeyFromMap = standingbookDTOMap.keySet().iterator().next(); // 拿一个 Map 里的 key 测试
-            Long keyFromDO = 1937074460814827521L;
-            System.out.println("DO key: " + keyFromDO + " long值=" + keyFromDO.longValue() + " hash=" + keyFromDO.hashCode());
-            System.out.println("Map key: " + targetKeyFromMap + " long值=" + targetKeyFromMap.longValue() + " hash=" + targetKeyFromMap.hashCode());
-            System.out.println("equals? " + keyFromDO.equals(targetKeyFromMap));
             StandingbookDTO dto = standingbookDTOMap.get(settingsDO.getTransformerId());
             if (Objects.isNull(dto)) {
                 continue;
