@@ -387,8 +387,7 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
                 info.setPeriodActualLoad(dealBigDecimalScale(maxPeriodLoad.get(), scale));
                 // 计算利用率
                 BigDecimal result = maxPeriodLoad.get().multiply(new BigDecimal(level)).multiply(new BigDecimal(NumberUtil.sqrt(3L)))
-                        .multiply(new BigDecimal(100000))
-                        .divide(ratedCapacity, 2, RoundingMode.HALF_UP);
+                        .divide(ratedCapacity.multiply(new BigDecimal(10)), 2, RoundingMode.HALF_UP);
                 info.setPeriodUtilization(dealBigDecimalScale(result, scale));
             }
 
