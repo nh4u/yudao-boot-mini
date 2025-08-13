@@ -136,7 +136,6 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
                     if (heatingSummaryInfoDataList == null) {
                         HeatingSummaryInfoData heatingSummaryInfoData = new HeatingSummaryInfoData();
                         heatingSummaryInfoData.setDate(date);
-                        heatingSummaryInfoData.setConsumption(BigDecimal.ZERO);
                         newList.add(heatingSummaryInfoData);
                     } else {
                         newList.add(heatingSummaryInfoDataList.get(0));
