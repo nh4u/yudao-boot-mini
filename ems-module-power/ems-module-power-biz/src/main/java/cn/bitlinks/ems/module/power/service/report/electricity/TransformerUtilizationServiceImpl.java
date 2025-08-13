@@ -275,7 +275,7 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
         BaseReportResultVO<TransformerUtilizationInfo> resultVO = new BaseReportResultVO<>();
         resultVO.setHeader(tableHeader);
         // 设置最终返回值
-        resultVO.setReportDataList(transformerUtilizationInfos);
+
         LocalDateTime lastTime = minuteAggDataService.getLastTime(
                 standingbookIds,
                 paramCodes,
@@ -284,6 +284,30 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
         );
         resultVO.setDataTime(lastTime);
 
+        // 无数据的填充0
+        transformerUtilizationInfos.forEach(l -> {
+
+            List<TransformerUtilizationInfoData> newList = new ArrayList<>();
+            List<TransformerUtilizationInfoData> oldList = l.getTransformerUtilizationInfoData();
+            if (tableHeader.size() != oldList.size()) {
+                Map<String, List<TransformerUtilizationInfoData>> dateMap = oldList.stream()
+                        .collect(Collectors.groupingBy(TransformerUtilizationInfoData::getDate));
+
+                tableHeader.forEach(date -> {
+                    List<TransformerUtilizationInfoData> transformerUtilizationInfoDataList = dateMap.get(date);
+                    if (transformerUtilizationInfoDataList == null) {
+                        TransformerUtilizationInfoData transformerUtilizationInfoData = new TransformerUtilizationInfoData();
+                        transformerUtilizationInfoData.setDate(date);
+                        newList.add(transformerUtilizationInfoData);
+                    } else {
+                        newList.add(transformerUtilizationInfoDataList.get(0));
+                    }
+                });
+                // 设置新数据list
+                l.setTransformerUtilizationInfoData(newList);
+            }
+        });
+        resultVO.setReportDataList(transformerUtilizationInfos);
         // 结果保存在缓存中
         String jsonStr = JSONUtil.toJsonStr(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
@@ -342,8 +366,7 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
                                         .max(Comparator.naturalOrder());
                                 // 计算利用率
                                 BigDecimal result = max.get().multiply(new BigDecimal(level)).multiply(new BigDecimal(NumberUtil.sqrt(3L)))
-                                        .multiply(new BigDecimal(100000))
-                                        .divide(ratedCapacity, 2, RoundingMode.HALF_UP);
+                                        .divide(ratedCapacity.multiply(new BigDecimal(10)), 2, RoundingMode.HALF_UP);
                                 return new TransformerUtilizationInfoData(list.get(0).getTime(), max.get(), result);
                             }
                     )
