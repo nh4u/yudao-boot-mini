@@ -64,6 +64,12 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
     // 后续可能根据三目运算符来取动态的有效数字位scale
     private Integer scale = DEFAULT_SCALE;
 
+	/**
+	 * 日期字符串格式：yyyy-MM-dd
+	 */
+	private static final java.time.format.DateTimeFormatter DAY_FORMATTER =
+			java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
 
     @Override
     public List<PowerTankSettingsRespVO> getPowerTankSettings() {
@@ -174,14 +180,16 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                         (v1, v2) -> v1 // 遇到重复key保留第一条
                 ));
 
-        // 生成日期列表
-        List<LocalDateTime> dateList = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, DAY).stream()
-                .map(dateStr -> LocalDateTime.parse(dateStr + " 00:00:00",
-                        java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
-                .collect(Collectors.toList());
+
+		// 生成日期列表（仅到日）。此处只构建 LocalDateTime 的零点时间，便于后续组装 key
+		List<LocalDateTime> dateList = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, DAY).stream()
+				.map(dateStr -> LocalDateTime.parse(dateStr + " 00:00:00",
+						java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+				.collect(Collectors.toList());
 
         // 性能优化：批量查询所有数据
-        Map<String, MinuteAggregateDataDO> dataCache = batchQueryData(
+		// 一次性批量查询并构建数据缓存，避免逐条按天/设备/参数访问数据库
+		Map<String, MinuteAggregateDataDO> dataCache = batchQueryData(
                 standingbookIds, paramCodes, startTime, endTime);
 
         // 处理每个计量器具的数据
@@ -197,8 +205,8 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                 List<GasStatisticsInfoData> statisticsDateDataList = new ArrayList<>();
 
                 for (LocalDateTime date : dateList) {
-                    GasStatisticsInfoData data = new GasStatisticsInfoData();
-                    data.setDate(date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+					GasStatisticsInfoData data = new GasStatisticsInfoData();
+					data.setDate(date.format(DAY_FORMATTER));
 
                     // 使用缓存的数据进行计算
                     BigDecimal value = calculateValueByTypeOptimized(info, date, dataCache, tankSettingsMap);
