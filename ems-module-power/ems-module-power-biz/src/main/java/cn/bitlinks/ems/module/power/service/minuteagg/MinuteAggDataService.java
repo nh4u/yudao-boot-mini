@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.minuteagg;
 
 
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.MinuteAggDataDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO;
 
 import java.time.LocalDateTime;
@@ -24,11 +25,11 @@ public interface MinuteAggDataService {
      * @param endTime
      * @return
      */
-    List<MinuteAggregateDataDO> getMaxDataGpByDateType(List<Long> standingbookIds,
-                                                      List<String> paramCodes,
-                                                      Integer dateType,
-                                                      LocalDateTime starTime,
-                                                      LocalDateTime endTime);
+    List<MinuteAggDataDTO> getMaxDataGpByDateType(List<Long> standingbookIds,
+                                                  List<String> paramCodes,
+                                                  Integer dateType,
+                                                  LocalDateTime starTime,
+                                                  LocalDateTime endTime);
 
     LocalDateTime getLastTime(List<Long> standingbookIds,
                               List<String> paramCodes,

@@ -4,12 +4,12 @@ import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.MinuteAggDataDTO;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.TransformerUtilizationSettingsDTO;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.TransformerUtilizationSettingsOptionsVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.TransformerUtilizationSettingsVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
-import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.report.electricity.TransformerUtilizationSettingsDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
@@ -20,7 +20,6 @@ import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -263,7 +262,7 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
                 .map(TransformerUtilizationSettingsDTO::getLoadCurrentParamCode)
                 .collect(Collectors.toList());
         // 查询统计周期内最大值
-        List<MinuteAggregateDataDO> minuteAggDataList = minuteAggDataService.getMaxDataGpByDateType(
+        List<MinuteAggDataDTO> minuteAggDataList = minuteAggDataService.getMaxDataGpByDateType(
                 standingbookIds,
                 paramCodes,
                 paramVO.getDateType(),
@@ -276,7 +275,7 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
         BaseReportResultVO<TransformerUtilizationInfo> resultVO = new BaseReportResultVO<>();
         resultVO.setHeader(tableHeader);
         // 设置最终返回值
-        resultVO.setReportDataList(transformerUtilizationInfos);
+
         LocalDateTime lastTime = minuteAggDataService.getLastTime(
                 standingbookIds,
                 paramCodes,
@@ -285,6 +284,30 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
         );
         resultVO.setDataTime(lastTime);
 
+        // 无数据的填充0
+        transformerUtilizationInfos.forEach(l -> {
+
+            List<TransformerUtilizationInfoData> newList = new ArrayList<>();
+            List<TransformerUtilizationInfoData> oldList = l.getTransformerUtilizationInfoData();
+            if (tableHeader.size() != oldList.size()) {
+                Map<String, List<TransformerUtilizationInfoData>> dateMap = oldList.stream()
+                        .collect(Collectors.groupingBy(TransformerUtilizationInfoData::getDate));
+
+                tableHeader.forEach(date -> {
+                    List<TransformerUtilizationInfoData> transformerUtilizationInfoDataList = dateMap.get(date);
+                    if (transformerUtilizationInfoDataList == null) {
+                        TransformerUtilizationInfoData transformerUtilizationInfoData = new TransformerUtilizationInfoData();
+                        transformerUtilizationInfoData.setDate(date);
+                        newList.add(transformerUtilizationInfoData);
+                    } else {
+                        newList.add(transformerUtilizationInfoDataList.get(0));
+                    }
+                });
+                // 设置新数据list
+                l.setTransformerUtilizationInfoData(newList);
+            }
+        });
+        resultVO.setReportDataList(transformerUtilizationInfos);
         // 结果保存在缓存中
         String jsonStr = JSONUtil.toJsonStr(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
@@ -296,10 +319,10 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
      * 按标签维度统计：以 standingbookId 和标签结构为基础构建同比对比数据
      */
     private List<TransformerUtilizationInfo> queryByDefault(List<TransformerUtilizationSettingsDTO> settingsDTOList,
-                                                            List<MinuteAggregateDataDO> minuteAggDataList,
+                                                            List<MinuteAggDataDTO> minuteAggDataList,
                                                             DataTypeEnum dataTypeEnum
     ) {
-        Map<String, List<MinuteAggregateDataDO>> gpSbParamMap =
+        Map<String, List<MinuteAggDataDTO>> gpSbParamMap =
                 minuteAggDataList.stream()
                         .collect(Collectors.groupingBy(
                                 d -> d.getStandingbookId() + "_" + d.getParamCode(),
@@ -317,7 +340,7 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
                 resultList.add(info);
                 continue;
             }
-            List<MinuteAggregateDataDO> minuteAggregateDataDOS = gpSbParamMap.get(settingsDTO.getLoadCurrentId() + "_" + settingsDTO.getLoadCurrentParamCode());
+            List<MinuteAggDataDTO> minuteAggregateDataDOS = gpSbParamMap.get(settingsDTO.getLoadCurrentId() + "_" + settingsDTO.getLoadCurrentParamCode());
             if (CollUtil.isEmpty(minuteAggregateDataDOS)) {
                 info.setTransformerUtilizationInfoData(Collections.emptyList());
                 resultList.add(info);
@@ -334,19 +357,17 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
             }
             // 聚合数据 转换成 NaturalGasInfoData
             List<TransformerUtilizationInfoData> dataList = new ArrayList<>(minuteAggregateDataDOS.stream().collect(Collectors.groupingBy(
-                    MinuteAggregateDataDO::getAggregateTime,
+                    MinuteAggDataDTO::getTime,
                     Collectors.collectingAndThen(
                             Collectors.toList(),
                             list -> {
                                 Optional<BigDecimal> max = list.stream()
-                                        .map(MinuteAggregateDataDO::getFullValue)
+                                        .map(MinuteAggDataDTO::getFullValue)
                                         .max(Comparator.naturalOrder());
-                                String time = LocalDateTimeUtil.format(list.get(0).getAggregateTime(), "yyyy-MM-dd HH:00:00");
                                 // 计算利用率
                                 BigDecimal result = max.get().multiply(new BigDecimal(level)).multiply(new BigDecimal(NumberUtil.sqrt(3L)))
-                                        .multiply(new BigDecimal(100000))
-                                        .divide(ratedCapacity, 2, RoundingMode.HALF_UP);
-                                return new TransformerUtilizationInfoData(time, max.get(), result);
+                                        .divide(ratedCapacity.multiply(new BigDecimal(10)), 2, RoundingMode.HALF_UP);
+                                return new TransformerUtilizationInfoData(list.get(0).getTime(), max.get(), result);
                             }
                     )
             )).values());
