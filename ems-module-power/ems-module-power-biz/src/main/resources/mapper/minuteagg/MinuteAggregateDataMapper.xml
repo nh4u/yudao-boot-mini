@@ -82,7 +82,8 @@
         GROUP BY standingbook_id, param_code
     </select>
     <!--    获取时间维度下，最大值-->
-    <select id="getMaxDataGpByDateType" resultType="cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO">
+    <select id="getMaxDataGpByDateType"
+            resultType="cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO">
         SELECT
         standingbook_id,param_code
         <choose>
@@ -120,7 +121,7 @@
             </foreach>
         </if>
         GROUP BY
-                standingbook_id,param_code
+        standingbook_id,param_code
         <choose>
             <!-- 根据 dateType 选择聚合字段 -->
             <when test="dateType == 0">
@@ -140,45 +141,45 @@
     <!-- 批量查询逐日的最后一分钟数据 - 修正为按天取最后一条 -->
     <select id="selectLastMinuteDataByDateBatch" resultMap="BaseResultMap">
         SELECT standingbook_id,
-               param_code,
-               DATE(aggregate_time) AS aggregate_time,
-               full_value,
-               incremental_value,
-               data_site,
-               energy_flag,
-               full_increment,
-               data_feature,
-               data_type,
-               usage,
-               acq_flag
+        param_code,
+        DATE(aggregate_time) AS aggregate_time,
+        full_value,
+        incremental_value,
+        data_site,
+        energy_flag,
+        full_increment,
+        data_feature,
+        data_type,
+        usage,
+        acq_flag
         FROM (
-            SELECT standingbook_id,
-                   param_code,
-                   aggregate_time,
-                   full_value,
-                   incremental_value,
-                   data_site,
-                   energy_flag,
-                   full_increment,
-                   data_feature,
-                   data_type,
-                   usage,
-                   acq_flag,
-                   ROW_NUMBER() OVER (
-                       PARTITION BY standingbook_id, param_code, DATE(aggregate_time)
-                       ORDER BY aggregate_time DESC
-                   ) AS rn
-            FROM minute_aggregate_data
-            WHERE standingbook_id IN
-            <foreach collection="standingbookIds" item="standingbookId" open="(" separator="," close=")">
-                #{standingbookId}
-            </foreach>
-            AND param_code IN
-            <foreach collection="paramCodes" item="paramCode" open="(" separator="," close=")">
-                #{paramCode}
-            </foreach>
-            AND aggregate_time &gt;= #{startTime} AND aggregate_time &lt; #{endTime}
-            AND energy_flag=1
+        SELECT standingbook_id,
+        param_code,
+        aggregate_time,
+        full_value,
+        incremental_value,
+        data_site,
+        energy_flag,
+        full_increment,
+        data_feature,
+        data_type,
+        usage,
+        acq_flag,
+        ROW_NUMBER() OVER (
+        PARTITION BY standingbook_id, param_code, DATE(aggregate_time)
+        ORDER BY aggregate_time DESC
+        ) AS rn
+        FROM minute_aggregate_data
+        WHERE standingbook_id IN
+        <foreach collection="standingbookIds" item="standingbookId" open="(" separator="," close=")">
+            #{standingbookId}
+        </foreach>
+        AND param_code IN
+        <foreach collection="paramCodes" item="paramCode" open="(" separator="," close=")">
+            #{paramCode}
+        </foreach>
+        AND aggregate_time &gt;= #{startTime} AND aggregate_time &lt; #{endTime}
+        AND energy_flag=1
         ) t
         WHERE rn = 1
         ORDER BY standingbook_id, param_code, aggregate_time

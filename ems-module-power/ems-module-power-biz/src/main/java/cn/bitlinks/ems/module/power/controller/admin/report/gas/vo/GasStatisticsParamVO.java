@@ -30,7 +30,7 @@ public class GasStatisticsParamVO {
     private LocalDateTime[] range;
 
 
-    @Schema(description = "能源统计项id列表", example = "")
-    private List<Long> energyStatisticsItemIds;
+    @Schema(description = "计量器具编码列表", example = "[\"LCDA-FAB1\", \"HCDA-FAB1\"]")
+    private List<String> energyStatisticsItemCodes;
 
 }
