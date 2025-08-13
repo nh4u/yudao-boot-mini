@@ -24,6 +24,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
+import com.alibaba.excel.util.ListUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -43,10 +44,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ReportCacheConstants.TRANSFORMER_UTILIZATION_TABLE;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.getConvertData;
 
 @Service
 @Validated
@@ -270,7 +273,7 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
                 paramVO.getRange()[1]);
 
 
-        List<TransformerUtilizationInfo> transformerUtilizationInfos = queryByDefault(transformerUtilizationSettingsDTOList, minuteAggDataList, DataTypeEnum.codeOf(paramVO.getDateType()));
+        List<TransformerUtilizationInfo> transformerUtilizationInfos = queryByDefault(transformerUtilizationSettingsDTOList, minuteAggDataList);
 
         BaseReportResultVO<TransformerUtilizationInfo> resultVO = new BaseReportResultVO<>();
         resultVO.setHeader(tableHeader);
@@ -315,12 +318,81 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
         return resultVO;
     }
 
+    @Override
+    public List<List<String>> getExcelHeader(TransformerUtilizationParamVO paramVO) {
+        validCondition(paramVO);
+
+        List<List<String>> list = ListUtils.newArrayList();
+        list.add(Arrays.asList("表单名称", "统计周期", "分类", "分类"));
+        list.add(Arrays.asList("表单名称", "统计周期", "下级分类", "下级分类"));
+        list.add(Arrays.asList("表单名称", "统计周期", "变压器", "变压器"));
+        String sheetName = "变压器利用率";
+        // 统计周期
+        String period = getFormatTime(paramVO.getRange()[0]) + "~" + getFormatTime(paramVO.getRange()[1]);
+
+        // 月份处理
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
+        xdata.forEach(x -> {
+            list.add(Arrays.asList(sheetName, period, x, "实际负载（A）"));
+            list.add(Arrays.asList(sheetName, period, x, "利用率（%）"));
+        });
+        list.add(Arrays.asList(sheetName, period, "周期合计", "实际负载（A）"));
+        list.add(Arrays.asList(sheetName, period, "周期合计", "利用率（%）"));
+        return list;
+    }
+
+    @Override
+    public List<List<Object>> getExcelData(TransformerUtilizationParamVO paramVO) {
+        // 结果list
+        List<List<Object>> result = ListUtils.newArrayList();
+
+        BaseReportResultVO<TransformerUtilizationInfo> resultVO = getTable(paramVO);
+        List<String> tableHeader = resultVO.getHeader();
+
+        List<TransformerUtilizationInfo> transformerUtilizationInfoList = resultVO.getReportDataList();
+
+        for (TransformerUtilizationInfo s : transformerUtilizationInfoList) {
+
+            List<Object> data = ListUtils.newArrayList();
+            data.add(s.getType());
+            if (s.getChildType() == null) {
+                data.add("/");
+            } else {
+                data.add(s.getChildType());
+            }
+            data.add(s.getTransformerName());
+            // 处理数据
+            List<TransformerUtilizationInfoData> transformerUtilizationInfoDataList = s.getTransformerUtilizationInfoData();
+
+            Map<String, TransformerUtilizationInfoData> dateMap = transformerUtilizationInfoDataList.stream()
+                    .collect(Collectors.toMap(TransformerUtilizationInfoData::getDate, Function.identity()));
+
+            tableHeader.forEach(date -> {
+                TransformerUtilizationInfoData transformerUtilizationInfoData = dateMap.get(date);
+                if (transformerUtilizationInfoData == null) {
+                    data.add("/");
+                    data.add("/");
+                } else {
+                    data.add(getConvertData(transformerUtilizationInfoData.getActualLoad()));
+                    data.add(getConvertData(transformerUtilizationInfoData.getUtilization()));
+                }
+            });
+
+            // 处理周期合计
+            data.add(getConvertData(s.getPeriodActualLoad()));
+            data.add(getConvertData(s.getPeriodUtilization()));
+
+            result.add(data);
+        }
+
+        return result;
+    }
+
     /**
      * 按标签维度统计：以 standingbookId 和标签结构为基础构建同比对比数据
      */
     private List<TransformerUtilizationInfo> queryByDefault(List<TransformerUtilizationSettingsDTO> settingsDTOList,
-                                                            List<MinuteAggDataDTO> minuteAggDataList,
-                                                            DataTypeEnum dataTypeEnum
+                                                            List<MinuteAggDataDTO> minuteAggDataList
     ) {
         Map<String, List<MinuteAggDataDTO>> gpSbParamMap =
                 minuteAggDataList.stream()
@@ -387,8 +459,7 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
                 info.setPeriodActualLoad(dealBigDecimalScale(maxPeriodLoad.get(), scale));
                 // 计算利用率
                 BigDecimal result = maxPeriodLoad.get().multiply(new BigDecimal(level)).multiply(new BigDecimal(NumberUtil.sqrt(3L)))
-                        .multiply(new BigDecimal(100000))
-                        .divide(ratedCapacity, 2, RoundingMode.HALF_UP);
+                        .divide(ratedCapacity.multiply(new BigDecimal(10)), 2, RoundingMode.HALF_UP);
                 info.setPeriodUtilization(dealBigDecimalScale(result, scale));
             }
 
