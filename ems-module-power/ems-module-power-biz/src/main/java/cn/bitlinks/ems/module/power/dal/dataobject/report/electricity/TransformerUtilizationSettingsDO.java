@@ -42,9 +42,6 @@ public class TransformerUtilizationSettingsDO extends BaseDO {
      * '额定容量
      */
     private BigDecimal ratedCapacity;
-    /**
-     * 顺序
-     */
-    private Integer sort;
+
 
 }

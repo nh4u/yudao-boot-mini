@@ -40,6 +40,7 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -76,7 +77,14 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
         if (CollUtil.isEmpty(settings)) {
             return;
         }
-
+        // 提取id到Set
+        Set<Long> transformerIdSet = new HashSet<>();
+        boolean hasDuplicate = settings.stream()
+                .map(TransformerUtilizationSettingsVO::getTransformerId)
+                .anyMatch(item -> !transformerIdSet.add(item));
+        if (hasDuplicate) {
+            throw exception(DUPLICATE_TRANSFORMER_ID);
+        }
         List<TransformerUtilizationSettingsDO> list = BeanUtils.toBean(settings, TransformerUtilizationSettingsDO.class);
         Map<Boolean, List<TransformerUtilizationSettingsDO>> grouped = list.stream()
                 .collect(Collectors.groupingBy(
@@ -100,8 +108,7 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
     public List<TransformerUtilizationSettingsVO> getSettings() {
 
         List<TransformerUtilizationSettingsDO> transformerUtilizationSettingsDOList = transformerUtilizationSettingsMapper
-                .selectList(new LambdaQueryWrapper<TransformerUtilizationSettingsDO>()
-                        .orderByAsc(TransformerUtilizationSettingsDO::getSort));
+                .selectList();
         if (CollUtil.isEmpty(transformerUtilizationSettingsDOList)) {
             return Collections.emptyList();
         }
@@ -114,14 +121,16 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
 
         // 已按 sort 排序
         List<TransformerUtilizationSettingsDO> transformerUtilizationSettingsDOList =
-                transformerUtilizationSettingsMapper.selectList(new LambdaQueryWrapper<TransformerUtilizationSettingsDO>()
-                        .orderByAsc(TransformerUtilizationSettingsDO::getSort));
+                transformerUtilizationSettingsMapper.selectList();
         if (CollUtil.isEmpty(transformerUtilizationSettingsDOList)) {
             return Collections.emptyList();
         }
         // （key -> StandingbookDTO）
-        Map<Long, StandingbookDTO> standingbookDTOMap = standingbookService.getStandingbookDTOMap();
-
+        List<StandingbookDTO> list = standingbookService.getStandingbookDTOList();
+        if (CollUtil.isEmpty(list)) {
+            return Collections.emptyList();
+        }
+        Map<Long, StandingbookDTO> standingbookDTOMap = list.stream().collect(Collectors.toMap(StandingbookDTO::getStandingbookId, Function.identity()));
         if (standingbookDTOMap == null || standingbookDTOMap.isEmpty()) {
             return Collections.emptyList();
         }
@@ -129,8 +138,12 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
         List<TransformerUtilizationSettingsOptionsVO> result = new ArrayList<>();
 
         for (TransformerUtilizationSettingsDO settingsDO : transformerUtilizationSettingsDOList) {
-
-            StandingbookDTO dto = standingbookDTOMap.get(settingsDO.getId());
+            Long targetKeyFromMap = standingbookDTOMap.keySet().iterator().next(); // 拿一个 Map 里的 key 测试
+            Long keyFromDO = 1937074460814827521L;
+            System.out.println("DO key: " + keyFromDO + " long值=" + keyFromDO.longValue() + " hash=" + keyFromDO.hashCode());
+            System.out.println("Map key: " + targetKeyFromMap + " long值=" + targetKeyFromMap.longValue() + " hash=" + targetKeyFromMap.hashCode());
+            System.out.println("equals? " + keyFromDO.equals(targetKeyFromMap));
+            StandingbookDTO dto = standingbookDTOMap.get(settingsDO.getTransformerId());
             if (Objects.isNull(dto)) {
                 continue;
             }
@@ -155,7 +168,7 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
         try {
             List<TransformerUtilizationSettingsDO> transformerUtilizationSettingsDOList = transformerUtilizationSettingsMapper
                     .selectList(new LambdaQueryWrapper<TransformerUtilizationSettingsDO>()
-                            .orderByAsc(TransformerUtilizationSettingsDO::getSort));
+                            .orderByAsc(TransformerUtilizationSettingsDO::getCreateTime));
             if (CollUtil.isEmpty(transformerUtilizationSettingsDOList)) {
                 return Collections.emptyList();
             }
@@ -168,7 +181,11 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
             // 3.查询依赖关系、分类与参数编码
             Map<Long, List<StandingbookTmplDaqAttrDO>> energyDaqAttrsBySbIdsMap = standingbookTmplDaqAttrService.getEnergyDaqAttrsBySbIds(standingbookIds);
 
-            Map<Long, StandingbookDTO> standingbookDTOMap = standingbookService.getStandingbookDTOMap();
+            List<StandingbookDTO> list = standingbookService.getStandingbookDTOList();
+            if (CollUtil.isEmpty(list)) {
+                return Collections.emptyList();
+            }
+            Map<Long, StandingbookDTO> standingbookDTOMap = list.stream().collect(Collectors.toMap(StandingbookDTO::getStandingbookId, Function.identity()));
             Map<Long, StandingbookTypeDO> typeMap = standingbookTypeService.getStandingbookTypeIdMap(null);
 
             for (TransformerUtilizationSettingsDTO settingsDTO : transformerUtilizationSettingsDTOS) {
