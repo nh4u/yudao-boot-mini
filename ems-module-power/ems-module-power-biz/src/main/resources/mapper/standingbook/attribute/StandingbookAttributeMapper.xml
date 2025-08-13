@@ -111,10 +111,12 @@
         power_standingbook_attribute
         WHERE
         deleted = 0
-        AND standingbook_id in
-        <foreach collection="sbIds" item="item" open="(" separator="," close=")">
-            #{item}
-        </foreach>
+        <if test="sbIds != null and sbIds.size() != 0">
+            AND standingbook_id in
+            <foreach collection="sbIds" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
         GROUP BY
         standingbook_id,
         type_id
