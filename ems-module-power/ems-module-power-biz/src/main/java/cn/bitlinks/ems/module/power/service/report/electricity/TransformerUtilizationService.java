@@ -6,6 +6,7 @@ import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseReportRe
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.TransformerUtilizationInfo;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.TransformerUtilizationParamVO;
 
+import javax.validation.Valid;
 import java.util.List;
 
 /**
@@ -36,4 +37,8 @@ public interface TransformerUtilizationService {
 
 
     BaseReportResultVO<TransformerUtilizationInfo> getTable(TransformerUtilizationParamVO paramVO);
+
+    List<List<String>> getExcelHeader(@Valid TransformerUtilizationParamVO paramVO);
+
+    List<List<Object>> getExcelData(@Valid TransformerUtilizationParamVO paramVO);
 }
