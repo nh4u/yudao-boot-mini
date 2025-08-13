@@ -84,14 +84,35 @@ public class PowerGasMeasurementServiceImpl implements PowerGasMeasurementServic
                         .eq(StandingbookAttributeDO::getDeleted, false)
         );
 
-        // 构建台账ID到属性信息的映射
+        // 构建台账ID到属性信息的映射，同时构建 code -> standingbookId / name 的快速查询索引
         Map<Long, Map<String, String>> standingbookAttrMap = new HashMap<>();
+        Map<String, Long> codeToStandingbookId = new HashMap<>();
+        Map<String, String> codeToAttrName = new HashMap<>();
         for (StandingbookAttributeDO attr : standingbookAttributes) {
             Long standingbookId = attr.getStandingbookId();
             String name = attr.getName();
             String value = attr.getValue();
-
-            standingbookAttrMap.computeIfAbsent(standingbookId, k -> new HashMap<>()).put(name, value);
+            if (standingbookId == null) {
+                continue;
+            }
+            Map<String, String> nameToValue = standingbookAttrMap.computeIfAbsent(standingbookId, k -> new HashMap<>());
+            nameToValue.put(name, value);
+            // 在收集完成一对名称/编号后，建立 code -> standingbookId / name 的索引
+            if (Objects.equals(name, "计量器具编号") && value != null) {
+                codeToStandingbookId.put(value, standingbookId);
+            } else if (Objects.equals(name, "计量器具名称") && value != null) {
+                // 暂存名称，最终以编号匹配为准
+                codeToAttrName.put("__TMP_NAME__" + standingbookId, value);
+            }
+        }
+        // 将暂存的名称与编号按 standingbookId 结合，得到 code -> attrName
+        for (Map.Entry<String, Long> e : codeToStandingbookId.entrySet()) {
+            String code = e.getKey();
+            Long sbId = e.getValue();
+            String attrName = codeToAttrName.get("__TMP_NAME__" + sbId);
+            if (attrName != null) {
+                codeToAttrName.put(code, attrName);
+            }
         }
 
         // 批量查询能源参数信息
@@ -121,6 +142,43 @@ public class PowerGasMeasurementServiceImpl implements PowerGasMeasurementServic
         Map<String, EnergyParametersDO> energyParamMap = energyParametersList.stream()
                 .collect(Collectors.toMap(EnergyParametersDO::getParameter, param -> param));
 
+        // 批量查询 Standingbook，构建 standingbookId -> typeId 的映射，再得到 code -> typeId
+        Set<Long> standingbookIds = new HashSet<>(codeToStandingbookId.values());
+        Map<Long, StandingbookDO> standingbookById = standingbookIds.isEmpty() ? Collections.emptyMap() :
+                standingbookMapper.selectList(
+                        new LambdaQueryWrapperX<StandingbookDO>().in(StandingbookDO::getId, standingbookIds)
+                ).stream().collect(Collectors.toMap(StandingbookDO::getId, sb -> sb));
+
+        Map<String, Long> codeToTypeId = new HashMap<>();
+        for (Map.Entry<String, Long> e : codeToStandingbookId.entrySet()) {
+            StandingbookDO sb = standingbookById.get(e.getValue());
+            if (sb != null && sb.getTypeId() != null) {
+                codeToTypeId.put(e.getKey(), sb.getTypeId());
+            }
+        }
+
+        // 预取模板 data_feature：按 typeId 批量查询，构建 typeId -> dataFeature
+        Set<Long> typeIds = codeToTypeId.values().stream().filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, Integer> typeIdToDataFeature;
+        if (typeIds.isEmpty()) {
+            typeIdToDataFeature = Collections.emptyMap();
+        } else {
+            List<StandingbookTmplDaqAttrDO> tmplList = standingbookTmplDaqAttrMapper.selectList(
+                    new cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX<StandingbookTmplDaqAttrDO>()
+                            .in(StandingbookTmplDaqAttrDO::getTypeId, typeIds)
+                            .eq(StandingbookTmplDaqAttrDO::getDeleted, false)
+            );
+            typeIdToDataFeature = tmplList.stream()
+                    .filter(t -> t.getTypeId() != null && t.getDataFeature() != null)
+                    .collect(Collectors.toMap(StandingbookTmplDaqAttrDO::getTypeId, StandingbookTmplDaqAttrDO::getDataFeature, (a, b) -> a));
+        }
+
+        // 预取储罐设置编码集合：判断是否液压
+        Set<String> tankCodes = powerTankSettingsMapper.selectList().stream()
+                .map(PowerTankSettingsDO::getCode)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
         // 构建结果
         List<GasMeasurementInfo> result = new ArrayList<>();
         log.info("开始处理{}条计量器具配置", measurements.size());
@@ -141,27 +199,16 @@ public class PowerGasMeasurementServiceImpl implements PowerGasMeasurementServic
                 measurementName = measurement.getMeasurementCode(); // 如果名称为空，使用编码
             }
 
-            // 遍历所有台账属性，找到匹配的计量器具编号
-            for (Map.Entry<Long, Map<String, String>> entry : standingbookAttrMap.entrySet()) {
-                Long sbId = entry.getKey();
-                Map<String, String> attrs = entry.getValue();
-                String attrCode = attrs.get("计量器具编号");
-
-                if (measurement.getMeasurementCode().equals(attrCode)) {
-                    standingbookId = sbId;
-                    // 如果有台账，优先使用台账中的名称
-                    String attrName = attrs.get("计量器具名称");
-                    if (attrName != null && !attrName.trim().isEmpty()) {
-                        measurementName = attrName;
-                    }
-
-                    // 获取台账类型ID
-                    StandingbookDO standingbook = standingbookMapper.selectById(sbId);
-                    if (standingbook != null) {
-                        typeId = standingbook.getTypeId();
-                    }
-                    break;
+            // 使用预构建索引，O(1) 获取 standingbookId / attrName / typeId
+            String code = measurement.getMeasurementCode();
+            Long mappedSbId = codeToStandingbookId.get(code);
+            if (mappedSbId != null) {
+                standingbookId = mappedSbId;
+                String attrName = codeToAttrName.get(code);
+                if (attrName != null && !attrName.trim().isEmpty()) {
+                    measurementName = attrName;
                 }
+                typeId = codeToTypeId.get(code);
             }
 
             info.setStandingbookId(standingbookId);
@@ -181,8 +228,19 @@ public class PowerGasMeasurementServiceImpl implements PowerGasMeasurementServic
                 log.debug("未找到能源参数中文名 {} 对应的参数编码", measurement.getEnergyParam());
             }
 
-            // 动态计算计算类型
-            Integer calculateType = calculateTypeByViewLogic(info);
+            // 动态计算计算类型（使用预取的 data_feature 与储罐设置编码，避免 N+1 查询）
+            Integer calculateType = null;
+            if (typeId != null) {
+                Integer dataFeature = typeIdToDataFeature.get(typeId);
+                if (dataFeature != null) {
+                    if (dataFeature == 1) {
+                        calculateType = 1; // 累计值
+                    } else if (dataFeature == 2) {
+                        // 稳态/液压：若存在对应储罐设置编码，则为液压，否则稳态
+                        calculateType = tankCodes.contains(code) ? 2 : 0;
+                    }
+                }
+            }
             info.setCalculateType(calculateType);
 
             // 如果计算类型为null，设置为3，无需计算，数值统一设置为0
