@@ -37,7 +37,7 @@ public class TransformerUtilizationController {
 
     @PostMapping("/updSettings")
     @Operation(summary = "设置-更新")
-    public CommonResult<Boolean> updSettings(List<TransformerUtilizationSettingsVO> settingsVOS) {
+    public CommonResult<Boolean> updSettings(@RequestBody List<TransformerUtilizationSettingsVO> settingsVOS) {
         transformerUtilizationService.updSettings(settingsVOS);
         return success(true);
     }
