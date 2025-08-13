@@ -68,7 +68,14 @@ public class ProductionConsumptionSettingsServiceImpl implements ProductionConsu
 
         // 统一保存
         List<ProductionConsumptionSettingsDO> list = BeanUtils.toBean(productionConsumptionList, ProductionConsumptionSettingsDO.class);
-        productionConsumptionSettingsMapper.updateBatch(list);
+        list.forEach(l -> {
+            if (Objects.isNull(l.getId())) {
+                productionConsumptionSettingsMapper.insert(l);
+            } else {
+                productionConsumptionSettingsMapper.updateById(l);
+            }
+        });
+
     }
 
     @Override
@@ -116,7 +123,7 @@ public class ProductionConsumptionSettingsServiceImpl implements ProductionConsu
         List<ProductionConsumptionSettingsDO> productionConsumptionList = productionConsumptionSettingsMapper.selectList(paramVO);
         // 4.4.设置为空直接返回结果
         if (CollUtil.isEmpty(productionConsumptionList)) {
-            return resultVO;
+            return defaultNullData(productionConsumptionList, tableHeader);
         }
         List<Long> standingBookIds = productionConsumptionList
                 .stream()
@@ -127,7 +134,7 @@ public class ProductionConsumptionSettingsServiceImpl implements ProductionConsu
 
         // 4.4.台账id为空直接返回结果
         if (CollUtil.isEmpty(standingBookIds)) {
-            return resultVO;
+            return defaultNullData(productionConsumptionList, tableHeader);
         }
         // 4.如果没有则去数据库查询
         List<UsageCostData> usageCostDataList = usageCostService.getList(
@@ -309,6 +316,23 @@ public class ProductionConsumptionSettingsServiceImpl implements ProductionConsu
         result.add(bottom);
         return result;
     }
+
+
+    private StatisticsResultV2VO<ProductionConsumptionStatisticsInfo> defaultNullData(List<ProductionConsumptionSettingsDO> list, List<String> tableHeader) {
+        StatisticsResultV2VO<ProductionConsumptionStatisticsInfo> resultVO = new StatisticsResultV2VO<>();
+        resultVO.setHeader(tableHeader);
+        resultVO.setDataTime(LocalDateTime.now());
+        List<ProductionConsumptionStatisticsInfo> infoList = new ArrayList<>();
+        list.forEach(l -> {
+            ProductionConsumptionStatisticsInfo info = new ProductionConsumptionStatisticsInfo();
+            info.setName(l.getName());
+            info.setStatisticsDateDataList(Collections.emptyList());
+            infoList.add(info);
+        });
+        resultVO.setStatisticsInfoList(infoList);
+        return resultVO;
+    }
+
 
     /**
      * 校验时间范围
