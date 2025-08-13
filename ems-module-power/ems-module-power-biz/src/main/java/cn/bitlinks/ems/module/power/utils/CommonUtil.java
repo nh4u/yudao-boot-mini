@@ -88,7 +88,7 @@ public class CommonUtil {
      */
     public static BigDecimal calculateYearOnYearRatio(BigDecimal now, BigDecimal previous) {
         if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0 || now == null) {
-            return BigDecimal.ZERO;
+            return null;
         }
         return now.subtract(previous)
                 .divide(previous, 4, RoundingMode.HALF_UP)

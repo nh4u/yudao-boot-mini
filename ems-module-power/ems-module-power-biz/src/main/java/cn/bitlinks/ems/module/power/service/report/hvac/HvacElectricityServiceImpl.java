@@ -287,13 +287,7 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
         Map<Long, List<UsageCostData>> currentMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
 
-        // 同期数据以 standingbookId + time 为key 构建map
-//        Map<String, UsageCostData> lastMap = lastUsageCostDataList.stream()
-//                .collect(Collectors.toMap(
-//                        d -> d.getStandingbookId() + "_" + d.getTime(),
-//                        Function.identity(),
-//                        (a, b) -> a
-//                ));
+
         Map<Long, List<UsageCostData>> lastMap = lastUsageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
 
@@ -328,16 +322,6 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
                 }
             });
 
-//            // 获取去年同期
-//            labelUsageListNow.forEach(u -> {
-//                String previousTime = LocalDateTimeUtils.getYearOnYearTime(u.getTime(), dataTypeEnum);
-//                String key = u.getStandingbookId() + "_" + previousTime;
-//                UsageCostData previous = lastMap.get(key);
-//                if (Objects.nonNull(previous)) {
-//                    labelUsageListPrevious.add(previous);
-//                }
-//            });
-
             // 1.处理当前
             Map<String, TimeAndNumData> nowMap = labelUsageListNow.stream()
                     .collect(Collectors.groupingBy(
@@ -371,10 +355,14 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
             List<HvacElectricityInfoData> dataList = new ArrayList<>();
             for (String time : tableHeader) {
                 TimeAndNumData current = nowMap.get(time);
+                BigDecimal now = Optional.ofNullable(current)
+                        .map(TimeAndNumData::getNum)
+                        .orElse(null);
                 String previousTime = LocalDateTimeUtils.getYearOnYearTime(time, dataTypeEnum);
                 TimeAndNumData previous = previousMap.get(previousTime);
-                BigDecimal now = Optional.ofNullable(current.getNum()).orElse(BigDecimal.ZERO);
-                BigDecimal last = previous != null ? Optional.ofNullable(previous.getNum()).orElse(BigDecimal.ZERO) : BigDecimal.ZERO;
+                BigDecimal last = Optional.ofNullable(previous)
+                        .map(TimeAndNumData::getNum)
+                        .orElse(null);
                 BigDecimal ratio = calculateYearOnYearRatio(now, last);
                 dataList.add(new HvacElectricityInfoData(time, now, last, ratio));
             }
