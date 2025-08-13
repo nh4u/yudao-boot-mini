@@ -454,7 +454,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             List<Long> sbIds = sbNodes.stream().map(StandingBookTypeTreeRespVO::getRawId).collect(Collectors.toList());
 
             // 再进行 模糊搜索
-            List<StandingBookTypeTreeRespVO> filterNodes = standingbookAttributeService.getStandingbookByCodeAndName(standingbookParamReqVO.getSbCode(), standingbookParamReqVO.getSbName(), sbIds);
+            List<StandingBookTypeTreeRespVO> filterNodes = standingbookAttributeService.selectDeviceNodeByCodeAndName(standingbookParamReqVO.getSbCode(), standingbookParamReqVO.getSbName(), sbIds);
             if (CollUtil.isEmpty(filterNodes)) {
                 return Collections.emptyList();
             }
