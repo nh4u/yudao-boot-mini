@@ -372,9 +372,6 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
             // 获取本期
             labelInfoList.forEach(labelInfo -> {
                 List<UsageCostData> usageList = currentMap.get(labelInfo.getStandingbookId());
-                if (usageList == null || usageList.isEmpty()) {
-                    return; // 计量器具没有数据，跳过
-                }
                 labelUsageListNow.addAll(usageList);
             });
 
@@ -383,9 +380,6 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
                 String previousTime = LocalDateTimeUtils.getYearOnYearTimeV2(u.getTime(), dataTypeEnum);
                 String key = u.getStandingbookId() + "_" + previousTime;
                 UsageCostData previous = lastMap.get(key);
-                if (Objects.isNull(previous)) {
-                    return; // 计量器具没有数据，跳过
-                }
                 labelUsageListPrevious.add(previous);
             });
 
