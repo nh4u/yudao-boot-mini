@@ -3,15 +3,11 @@ package cn.bitlinks.ems.module.power.service.report.gas;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.report.gas.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.report.gas.vo.GasStatisticsInfoData;
 import cn.bitlinks.ems.module.power.dal.dataobject.report.gas.PowerTankSettingsDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.report.gas.VPowerMeasurementAttributesDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO;
 import cn.bitlinks.ems.module.power.dal.mysql.report.gas.PowerTankSettingsMapper;
-import cn.bitlinks.ems.module.power.dal.mysql.report.gas.VPowerMeasurementAttributesMapper;
-import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -39,6 +35,7 @@ import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_RANGE_E
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.END_TIME_MUST_AFTER_START_TIME;
 import static cn.bitlinks.ems.module.power.enums.GasStatisticsCacheConstants.GAS_STATISTICS_TABLE;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
+
 import cn.hutool.json.JSONUtil;
 
 /**
@@ -56,7 +53,7 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
     private PowerTankSettingsMapper powerTankSettingsMapper;
 
     @Resource
-    private VPowerMeasurementAttributesMapper vPowerMeasurementMapper;
+    private PowerGasMeasurementService powerGasMeasurementService;
 
     @Resource
     private MinuteAggregateDataService minuteAggregateDataService;
@@ -81,7 +78,16 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
 
     @Override
     public List<EnergyStatisticsItemInfoRespVO> getEnergyStatisticsItems() {
-        return BeanUtils.toBean(vPowerMeasurementMapper.selectList(), EnergyStatisticsItemInfoRespVO.class);
+        // 改为从固定43条数据获取
+        List<GasMeasurementInfo> gasMeasurementInfos = powerGasMeasurementService.getGasMeasurementInfos();
+        return gasMeasurementInfos.stream()
+                .map(info -> {
+                    EnergyStatisticsItemInfoRespVO vo = new EnergyStatisticsItemInfoRespVO();
+                    vo.setMeasurementCode(info.getMeasurementCode());
+                    vo.setMeasurementName(info.getMeasurementName());
+                    return vo;
+                })
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -97,6 +103,7 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         if (!LocalDateTimeUtils.isWithinDays(startTime, endTime, CommonConstants.YEAR)) {
             throw exception(DATE_RANGE_EXCEED_LIMIT);
         }
+        // 生成缓存key，包含计量器具编码信息
         String cacheKey = GAS_STATISTICS_TABLE + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
@@ -113,38 +120,56 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         GasStatisticsResultVO<GasStatisticsInfo> resultVO = new GasStatisticsResultVO<>();
         resultVO.setHeader(tableHeader);
 
-        // 优化：仅按传入的统计项拉取视图数据，避免全表扫描
-        List<Long> idList = paramVO.getEnergyStatisticsItemIds();
-        List<VPowerMeasurementAttributesDO> filteredAttributes;
-        if (CollUtil.isEmpty(idList)) {
-            filteredAttributes = vPowerMeasurementMapper.selectList();
-            idList = filteredAttributes.stream()
-                    .map(VPowerMeasurementAttributesDO::getStandingbookId)
-                    .collect(Collectors.toList());
-        } else {
-            filteredAttributes = vPowerMeasurementMapper.selectList(
-                    new LambdaQueryWrapperX<VPowerMeasurementAttributesDO>()
-                            .in(VPowerMeasurementAttributesDO::getStandingbookId, idList)
-            );
+        // 获取所有计量器具信息
+        List<GasMeasurementInfo> gasMeasurementInfos = powerGasMeasurementService.getGasMeasurementInfos();
+        log.info("获取到{}条计量器具信息", gasMeasurementInfos.size());
+
+        if (CollUtil.isEmpty(gasMeasurementInfos)) {
+            log.warn("未找到有效的计量器具配置");
+            resultVO.setStatisticsInfoList(new ArrayList<>());
+            resultVO.setDataTime(LocalDateTime.now());
+            return resultVO;
         }
 
-        // 提取台账ID和参数编码（即使filteredAttributes为空也要处理）
-        List<Long> standingbookIds = filteredAttributes.stream()
-                .map(VPowerMeasurementAttributesDO::getStandingbookId)
+        // 处理计量器具编码列表：如果没传就用所有数据
+        List<String> measurementCodes = paramVO.getEnergyStatisticsItemCodes();
+        List<GasMeasurementInfo> filteredInfos;
+        if (CollUtil.isEmpty(measurementCodes)) {
+            // 如果没有传入编码列表，返回所有数据
+            filteredInfos = gasMeasurementInfos;
+        } else {
+            // 如果传入了编码列表，过滤出对应的数据
+            filteredInfos = gasMeasurementInfos.stream()
+                    .filter(info -> measurementCodes.contains(info.getMeasurementCode()))
+                    .collect(Collectors.toList());
+        }
+
+        log.info("过滤后返回{}条数据", filteredInfos.size());
+
+        // 提取台账ID和参数编码
+        List<Long> standingbookIds = filteredInfos.stream()
+                .map(GasMeasurementInfo::getStandingbookId)
+                .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
 
-        List<String> paramCodes = filteredAttributes.stream()
-                .map(VPowerMeasurementAttributesDO::getParamCode)
+        List<String> paramCodes = filteredInfos.stream()
+                .map(GasMeasurementInfo::getParamCode)
+                .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
+
+        // 如果没有有效的台账ID或参数编码，仍然要处理数据，只是数据值会为0
+        if (CollUtil.isEmpty(standingbookIds) || CollUtil.isEmpty(paramCodes)) {
+            log.warn("未找到有效的台账ID或参数编码，将返回{}条记录但数据值为0", filteredInfos.size());
+        }
 
         // 获取储罐设置数据
         List<PowerTankSettingsDO> powerTankSettings = powerTankSettingsMapper.selectList();
-        Map<Long, PowerTankSettingsDO> tankSettingsMap = powerTankSettings.stream()
-                .filter(e -> e.getStandingbookId() != null)
+        Map<String, PowerTankSettingsDO> tankSettingsMap = powerTankSettings.stream()
+                .filter(e -> e.getCode() != null)
                 .collect(Collectors.toMap(
-                        PowerTankSettingsDO::getStandingbookId,
+                        PowerTankSettingsDO::getCode,
                         settings -> settings,
                         (v1, v2) -> v1 // 遇到重复key保留第一条
                 ));
@@ -163,11 +188,11 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         List<GasStatisticsInfo> statisticsInfoList = new ArrayList<>();
 
         // 确保即使没有数据也要返回完整的结构
-        if (CollUtil.isNotEmpty(filteredAttributes)) {
-            for (VPowerMeasurementAttributesDO attribute : filteredAttributes) {
+        if (CollUtil.isNotEmpty(filteredInfos)) {
+            for (GasMeasurementInfo info : filteredInfos) {
                 GasStatisticsInfo gasStatisticsInfo = new GasStatisticsInfo();
-                gasStatisticsInfo.setMeasurementName(attribute.getMeasurementName());
-                gasStatisticsInfo.setMeasurementCode(attribute.getMeasurementCode());
+                gasStatisticsInfo.setMeasurementName(info.getMeasurementName());
+                gasStatisticsInfo.setMeasurementCode(info.getMeasurementCode());
 
                 List<GasStatisticsInfoData> statisticsDateDataList = new ArrayList<>();
 
@@ -176,7 +201,7 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                     data.setDate(date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")));
 
                     // 使用缓存的数据进行计算
-                    BigDecimal value = calculateValueByTypeOptimized(attribute, date, dataCache, tankSettingsMap);
+                    BigDecimal value = calculateValueByTypeOptimized(info, date, dataCache, tankSettingsMap);
                     data.setValue(value);
 
                     statisticsDateDataList.add(data);
@@ -225,19 +250,19 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
 
         // 处理最后一分钟数据
         for (MinuteAggregateDataDO data : lastMinuteData) {
-            String key = String.format("%d:%s:%s", 
-                data.getStandingbookId(), 
-                data.getParamCode(), 
-                data.getAggregateTime().toLocalDate());
+            String key = String.format("%d:%s:%s",
+                    data.getStandingbookId(),
+                    data.getParamCode(),
+                    data.getAggregateTime().toLocalDate());
             dataCache.put(key, data);
         }
 
         // 处理增量数据
         for (MinuteAggregateDataDO data : incrementalData) {
-            String key = String.format("%d:%s:%s:incremental", 
-                data.getStandingbookId(), 
-                data.getParamCode(), 
-                data.getAggregateTime().toLocalDate());
+            String key = String.format("%d:%s:%s:incremental",
+                    data.getStandingbookId(),
+                    data.getParamCode(),
+                    data.getAggregateTime().toLocalDate());
             dataCache.put(key, data);
         }
 
@@ -247,14 +272,19 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
     /**
      * 优化后的计算方法，使用缓存数据
      */
-    private BigDecimal calculateValueByTypeOptimized(VPowerMeasurementAttributesDO attribute,
-                                                   LocalDateTime date,
-                                                   Map<String, MinuteAggregateDataDO> dataCache,
-                                                   Map<Long, PowerTankSettingsDO> tankSettingsMap) {
+        private BigDecimal calculateValueByTypeOptimized(GasMeasurementInfo info,
+                                                      LocalDateTime date,
+                                                      Map<String, MinuteAggregateDataDO> dataCache,
+                                                      Map<String, PowerTankSettingsDO> tankSettingsMap) {
 
-        Integer calculateType = attribute.getCalculateType();
-        Long standingbookId = attribute.getStandingbookId();
-        String paramCode = attribute.getParamCode();
+        Integer calculateType = info.getCalculateType();
+        Long standingbookId = info.getStandingbookId();
+        String paramCode = info.getParamCode();
+
+        // 如果 standingbookId 为 null 或 paramCode 为 null，返回0
+        if (standingbookId == null || paramCode == null) {
+            return BigDecimal.ZERO;
+        }
 
         // 如果calculateType为null，返回0
         if (calculateType == null) {
@@ -273,7 +303,7 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
 
                 case 2:
                     // 取得今天有数据的最后一分钟的数值full_value，带入到公式H=Δp/(ρg)求出的H值
-                    return calculateHValueOptimized(standingbookId, paramCode, date, dataCache, tankSettingsMap);
+                    return calculateHValueOptimized(standingbookId, paramCode, info.getMeasurementCode(), date, dataCache, tankSettingsMap);
 
                 default:
                     return BigDecimal.ZERO;
@@ -289,6 +319,9 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
      * 优化后的获取最后一分钟full_value方法
      */
     private BigDecimal getLastMinuteFullValueOptimized(Long standingbookId, String paramCode, LocalDateTime date, Map<String, MinuteAggregateDataDO> dataCache) {
+        if (standingbookId == null || paramCode == null) {
+            return BigDecimal.ZERO;
+        }
         String key = String.format("%d:%s:%s", standingbookId, paramCode, date.toLocalDate());
         MinuteAggregateDataDO data = dataCache.get(key);
         if (data != null && data.getFullValue() != null) {
@@ -301,6 +334,9 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
      * 优化后的获取增量值之和方法
      */
     private BigDecimal getIncrementalSumOptimized(Long standingbookId, String paramCode, LocalDateTime date, Map<String, MinuteAggregateDataDO> dataCache) {
+        if (standingbookId == null || paramCode == null) {
+            return BigDecimal.ZERO;
+        }
         String key = String.format("%d:%s:%s:incremental", standingbookId, paramCode, date.toLocalDate());
         MinuteAggregateDataDO data = dataCache.get(key);
         if (data != null && data.getIncrementalValue() != null) {
@@ -312,13 +348,18 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
     /**
      * 优化后的计算H值方法
      */
-    private BigDecimal calculateHValueOptimized(Long standingbookId, String paramCode, LocalDateTime date,
-                                              Map<String, MinuteAggregateDataDO> dataCache,
-                                              Map<Long, PowerTankSettingsDO> tankSettingsMap) {
-        // 获取储罐设置
-        PowerTankSettingsDO tankSettings = tankSettingsMap.get(standingbookId);
+        private BigDecimal calculateHValueOptimized(Long standingbookId, String paramCode, String measurementCode, LocalDateTime date,
+                                                 Map<String, MinuteAggregateDataDO> dataCache,
+                                                 Map<String, PowerTankSettingsDO> tankSettingsMap) {
+        if (standingbookId == null || paramCode == null || measurementCode == null) {
+            return BigDecimal.ZERO;
+        }
+
+        // 获取储罐设置 - 通过计量器具编码查找
+        PowerTankSettingsDO tankSettings = tankSettingsMap.get(measurementCode);
+        
         if (tankSettings == null || tankSettings.getPressureDiffId() == null) {
-            log.warn("储罐设置数据不完整，standingbookId: {}", standingbookId);
+            log.warn("储罐设置数据不完整，measurementCode: {}", measurementCode);
             return BigDecimal.ZERO;
         }
 
@@ -437,22 +478,22 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
     /**
      * 根据计算类型计算值
      *
-     * @param attribute       计量器具属性
+     * @param info            计量器具信息
      * @param date            日期
      * @param standingbookIds 台账ID列表
      * @param paramCodes      参数编码列表
      * @param tankSettingsMap 储罐设置映射
      * @return 计算后的值
      */
-    private BigDecimal calculateValueByType(VPowerMeasurementAttributesDO attribute,
+    private BigDecimal calculateValueByType(GasMeasurementInfo info,
                                             LocalDateTime date,
                                             List<Long> standingbookIds,
                                             List<String> paramCodes,
-                                            Map<Long, PowerTankSettingsDO> tankSettingsMap) {
+                                            Map<String, PowerTankSettingsDO> tankSettingsMap) {
 
-        Integer calculateType = attribute.getCalculateType();
-        Long standingbookId = attribute.getStandingbookId();
-        String paramCode = attribute.getParamCode();
+        Integer calculateType = info.getCalculateType();
+        Long standingbookId = info.getStandingbookId();
+        String paramCode = info.getParamCode();
 
         // 如果calculateType为null，返回0
         if (calculateType == null) {
@@ -471,7 +512,7 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
 
                 case 2:
                     // 取得今天有数据的最后一分钟的数值full_value，带入到公式H=Δp/(ρg)求出的H值
-                    return calculateHValue(standingbookId, paramCode, date, tankSettingsMap);
+                    return calculateHValue(standingbookId, paramCode, info.getMeasurementCode(), date, tankSettingsMap);
 
                 default:
                     return BigDecimal.ZERO;
@@ -522,19 +563,20 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
     /**
      * 计算H值：H=Δp/(ρg)
      */
-    private BigDecimal calculateHValue(Long standingbookId, String paramCode, LocalDateTime date,
-                                       Map<Long, PowerTankSettingsDO> tankSettingsMap) {
+    private BigDecimal calculateHValue(Long standingbookId, String paramCode, String measurementCode, LocalDateTime date,
+                                       Map<String, PowerTankSettingsDO> tankSettingsMap) {
         // 获取储罐设置
-        PowerTankSettingsDO tankSettings = tankSettingsMap.get(standingbookId);
+        PowerTankSettingsDO tankSettings = tankSettingsMap.get(measurementCode);
+        
+        if (tankSettings == null || tankSettings.getDensity() == null || tankSettings.getGravityAcceleration() == null) {
+            log.warn("储罐设置数据不完整，measurementCode: {}", measurementCode);
+            return BigDecimal.ZERO;
+        }
+        
         // 获取Δp值（最后一分钟的full_value）
         BigDecimal deltaP = getLastMinuteFullValue(tankSettings.getPressureDiffId(), paramCode, date);
 
         if (deltaP.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
-        }
-
-        if (tankSettings == null || tankSettings.getDensity() == null || tankSettings.getGravityAcceleration() == null) {
-            log.warn("储罐设置数据不完整，standingbookId: {}", standingbookId);
             return BigDecimal.ZERO;
         }
 

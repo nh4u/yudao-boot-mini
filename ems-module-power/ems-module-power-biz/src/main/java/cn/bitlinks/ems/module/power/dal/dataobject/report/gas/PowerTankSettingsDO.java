@@ -56,4 +56,9 @@ public class PowerTankSettingsDO extends BaseDO {
      */
     private Long sortNo;
 
+    /**
+     * 计量器具编码
+     */
+    private String code;
+
 }

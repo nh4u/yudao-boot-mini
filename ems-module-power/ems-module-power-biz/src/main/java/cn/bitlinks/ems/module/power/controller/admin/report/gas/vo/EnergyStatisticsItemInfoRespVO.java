@@ -12,8 +12,8 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = false)
 public class EnergyStatisticsItemInfoRespVO {
 
-    @Schema(description = "台账id", example = "[]")
-    private Long standingbookId;
+    @Schema(description = "计量器具code", example = "[]")
+    private String measurementCode;
 
     @Schema(description = "计量器具名称", example = "123")
     private String measurementName;
