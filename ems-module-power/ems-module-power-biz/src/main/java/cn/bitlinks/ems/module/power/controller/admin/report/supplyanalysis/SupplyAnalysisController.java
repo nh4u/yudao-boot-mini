@@ -5,9 +5,7 @@ import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.FullCellMergeStrategy;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.SupplyAnalysisPieResultVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.report.supplyanalysis.SupplyAnalysisSettingsDO;
 import cn.bitlinks.ems.module.power.service.report.supplyanalysis.SupplyAnalysisSettingsService;
 import com.alibaba.excel.EasyExcelFactory;
@@ -33,9 +31,8 @@ import java.util.List;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
-import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.SUPPLY_ANALYSIS;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.XLSX;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.getLabelDeep;
 
 /**
  * @Title: ydme-ems

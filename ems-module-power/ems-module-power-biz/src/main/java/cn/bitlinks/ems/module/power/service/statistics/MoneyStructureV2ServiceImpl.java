@@ -215,15 +215,21 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
             return JSONUtil.toBean(cacheRes, StatisticsChartPieResultVO.class);
         }
 
+        // 构建饼图结果
+        StatisticsChartPieResultVO resultVO = new StatisticsChartPieResultVO();
+
         paramVO.setQueryType(0);
         // 复用表方法的核心逻辑
         StatisticsResultV2VO<StructureInfo> tableResult = dealMoneyStructureAnalysisTable(paramVO);
+        resultVO.setDataTime(tableResult.getDataTime());
 
         // 获取原始数据列表
         List<StructureInfo> dataList = tableResult.getStatisticsInfoList();
 
-        // 构建饼图结果
-        StatisticsChartPieResultVO resultVO = new StatisticsChartPieResultVO();
+        if (CollUtil.isEmpty(dataList)){
+            // 返回查询结果。
+            return resultVO;
+        }
 
         QueryDimensionEnum queryDimensionEnum = QueryDimensionEnum.codeOf(queryType);
         switch (queryDimensionEnum) {
@@ -240,8 +246,6 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
             default:
                 throw new IllegalArgumentException("查看类型不存在");
         }
-
-        resultVO.setDataTime(tableResult.getDataTime());
 
         // 结果保存在缓存中
         String jsonStr = JSONUtil.toJsonStr(resultVO);

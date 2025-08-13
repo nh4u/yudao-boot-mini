@@ -82,6 +82,7 @@ public class CommonUtil {
 
         return headerList;
     }
+
     /**
      * 同比率计算（避免除零）
      */
@@ -186,7 +187,7 @@ public class CommonUtil {
 
     }
 
-    public static  String getHeaderDesc(Integer unit, Integer flag, String prefix) {
+    public static String getHeaderDesc(Integer unit, Integer flag, String prefix) {
         if (flag == 1) {
             if (unit == 1) {
                 return prefix + COAT_UNIT1;
@@ -227,6 +228,7 @@ public class CommonUtil {
 
     /**
      * 获得标签名称
+     *
      * @param label1
      * @param label2
      * @param label3
@@ -234,7 +236,7 @@ public class CommonUtil {
      * @param label5
      * @return
      */
-    public static  String getName(String label1, String label2, String label3, String label4, String label5) {
+    public static String getName(String label1, String label2, String label3, String label4, String label5) {
         if (CharSequenceUtil.isNotEmpty(label5) && !"/".equals(label5)) {
             return label5;
         }
@@ -251,5 +253,29 @@ public class CommonUtil {
             return label1;
         }
         return null;
+    }
+
+    /**
+     * BigDecimal除法，包含有效位
+     *
+     * @param num1
+     * @param num2
+     * @param scale
+     * @return
+     */
+    public static BigDecimal divideWithScale(BigDecimal num1, BigDecimal num2, Integer scale) {
+        BigDecimal result = BigDecimal.ZERO;
+
+        if (Objects.isNull(scale)) {
+            return result;
+        }
+
+        if (num1 == null || num2 == null || num2.compareTo(BigDecimal.ZERO) == 0) {
+            return result;
+        }
+
+        result = num1.divide(num2, scale, RoundingMode.HALF_UP);
+
+        return result;
     }
 }

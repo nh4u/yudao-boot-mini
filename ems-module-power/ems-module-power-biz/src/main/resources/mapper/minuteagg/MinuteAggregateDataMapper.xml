@@ -82,34 +82,35 @@
         GROUP BY standingbook_id, param_code
     </select>
     <!--    获取时间维度下，最大值-->
-    <select id="getMaxDataGpByDateType" resultType="cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO">
+    <select id="getMaxDataGpByDateType" resultType="cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.MinuteAggDataDTO">
         SELECT
-        standingbook_id,param_code
+        standingbook_id as standingbookId,
+        param_code as paramCode
         <choose>
             <!-- 根据 dateType 选择聚合字段 -->
-            <when test="queryParam.dateType == 0">
+            <when test="dateType == 0">
                 ,DATE(aggregate_time) AS time
             </when>
-            <when test="queryParam.dateType == 1">
+            <when test="dateType == 1">
                 ,DATE_FORMAT(aggregate_time, '%Y-%m') AS time
             </when>
-            <when test="queryParam.dateType == 2">
+            <when test="dateType == 2">
                 ,YEAR(aggregate_time) AS time
             </when>
-            <when test="queryParam.dateType == 3">
+            <when test="dateType == 3">
                 ,DATE_FORMAT(aggregate_time, '%Y-%m-%d %H') AS time
             </when>
         </choose>
         ,
-        MAX(full_value) AS full_value
+        MAX(full_value) AS fullValue
         FROM minute_aggregate_data
         WHERE aggregate_time >= #{starTime}
         AND aggregate_time &lt; #{endTime}
         AND data_feature = 2
         AND energy_flag = 1
-        <if test="standingBookIds != null and standingBookIds.size() != 0">
+        <if test="standingbookIds != null and standingbookIds.size() != 0">
             AND standingbook_id IN
-            <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
+            <foreach collection="standingbookIds" item="item" open="(" separator="," close=")">
                 #{item}
             </foreach>
         </if>
@@ -207,7 +208,7 @@
     </select>
 
     <select id="getTmpRangeDataSteady"
-            resultType="cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO">
+            resultType="cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.SupplyWaterTmpMinuteAggData">
         WITH ranked_data AS (
         SELECT *,
         ROW_NUMBER() OVER (

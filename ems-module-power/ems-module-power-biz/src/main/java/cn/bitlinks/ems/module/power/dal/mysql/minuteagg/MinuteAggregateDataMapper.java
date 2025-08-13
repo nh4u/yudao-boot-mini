@@ -1,7 +1,9 @@
 package cn.bitlinks.ems.module.power.dal.mysql.minuteagg;
 
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.MinuteAggDataDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.SupplyWaterTmpMinuteAggData;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -72,10 +74,10 @@ public interface MinuteAggregateDataMapper {
      * @return
      */
     @TenantIgnore
-    List<MinuteAggregateDataDO> getTmpRangeDataSteady(@Param("standingbookIds") List<Long> standingbookIds,
-                                                      @Param("paramCodes") List<String> paramCodes,
-                                                      @Param("starTime") LocalDateTime starTime,
-                                                      @Param("endTime") LocalDateTime endTime);
+    List<SupplyWaterTmpMinuteAggData> getTmpRangeDataSteady(@Param("standingbookIds") List<Long> standingbookIds,
+                                                            @Param("paramCodes") List<String> paramCodes,
+                                                            @Param("starTime") LocalDateTime starTime,
+                                                            @Param("endTime") LocalDateTime endTime);
 
     /**
      * 批量查询最后一分钟数据 - 性能优化版本
@@ -114,7 +116,7 @@ public interface MinuteAggregateDataMapper {
                               @Param("starTime") LocalDateTime starTime,
                               @Param("endTime") LocalDateTime endTime);
     @TenantIgnore
-    List<MinuteAggregateDataDO> getMaxDataGpByDateType(@Param("standingbookIds")List<Long> standingbookIds,@Param("paramCodes") List<String> paramCodes,@Param("dateType") Integer dateType,
-                                                       @Param("starTime")LocalDateTime starTime,@Param("endTime") LocalDateTime endTime);
+    List<MinuteAggDataDTO> getMaxDataGpByDateType(@Param("standingbookIds")List<Long> standingbookIds, @Param("paramCodes") List<String> paramCodes, @Param("dateType") Integer dateType,
+                                                  @Param("starTime")LocalDateTime starTime, @Param("endTime") LocalDateTime endTime);
 }
 

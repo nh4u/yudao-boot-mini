@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 /**
  * '变压器利用率设置'
  */
@@ -35,14 +37,11 @@ public class TransformerUtilizationSettingsDO extends BaseDO {
     /**
      * '电压等级'
      */
-    private Integer voltageLevel;
+    private String voltageLevel;
     /**
      * '额定容量
      */
-    private String ratedCapacity;
-    /**
-     * 顺序
-     */
-    private Integer sort;
+    private BigDecimal ratedCapacity;
+
 
 }
