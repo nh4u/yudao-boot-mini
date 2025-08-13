@@ -238,7 +238,7 @@
                 YEAR(aggregate_time) AS time
             </when>
             <when test="queryParam.dateType == 3">
-                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H') AS time
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00') AS time
             </when>
         </choose>
         ,
@@ -266,7 +266,7 @@
                , YEAR(aggregate_time)
             </when>
             <when test="queryParam.dateType == 3">
-               , DATE_FORMAT(aggregate_time, '%Y-%m-%d %H')
+               , DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00')
             </when>
         </choose>
 
