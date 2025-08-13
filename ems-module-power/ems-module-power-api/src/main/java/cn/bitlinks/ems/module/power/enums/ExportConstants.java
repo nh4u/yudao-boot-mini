@@ -94,7 +94,7 @@ public interface ExportConstants {
     String SUPPLY_WATER_TMP = "供水温度报表";
     String STATISTICS_FEE  = "电费统计表";
     String WATER_STATISTICS = "水科报表";
-
+    String PRODUCTION_CONSUMPTION_STATISTICS = "生产源耗统计表";
 
     // 用电量统计
 

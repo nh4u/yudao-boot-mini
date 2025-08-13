@@ -105,8 +105,8 @@
         SELECT
         standingbook_id,
         type_id,
-        MAX( CASE WHEN CODE = 'measuringInstrumentName' THEN `value` ELSE NULL END ) AS sbName,
-        MAX( CASE WHEN CODE = 'measuringInstrumentId' THEN `value` ELSE NULL END ) AS sbCode
+        MAX( CASE WHEN CODE = 'equipmentName' THEN `value` ELSE NULL END ) AS sbName,
+        MAX( CASE WHEN CODE = 'equipmentId' THEN `value` ELSE NULL END ) AS sbCode
         FROM
         power_standingbook_attribute
         WHERE

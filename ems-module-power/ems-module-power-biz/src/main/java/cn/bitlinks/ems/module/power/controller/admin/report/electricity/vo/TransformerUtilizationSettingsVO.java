@@ -3,6 +3,8 @@ package cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 /**
  * 变压器设置
  */
@@ -27,13 +29,11 @@ public class TransformerUtilizationSettingsVO {
      * '电压等级'
      */
     @Schema(description = "电压等级", example = "12042")
-    private Integer voltageLevel;
+    private String voltageLevel;
     /**
      * '额定容量
      */
     @Schema(description = "额定容量", example = "12042")
-    private String ratedCapacity;
+    private BigDecimal ratedCapacity;
 
-    @Schema(description = "顺序", requiredMode = Schema.RequiredMode.REQUIRED, example = "12042")
-    private Integer sort;
 }
