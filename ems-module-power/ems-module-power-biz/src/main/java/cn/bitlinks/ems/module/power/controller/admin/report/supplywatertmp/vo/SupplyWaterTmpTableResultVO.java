@@ -7,6 +7,7 @@ import lombok.ToString;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -16,12 +17,12 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @ToString(callSuper = true)
-public class SupplyWaterTmpTableResultVO<T> {
+public class SupplyWaterTmpTableResultVO {
 
     /**
      * 统计信息
      */
-    private List<T> list;
+    private List<Map<String, Object>> list;
 
     /**
      * 数据最后更新时间

@@ -32,6 +32,10 @@ public interface UsageCostService {
                                 LocalDateTime endDate,
                                 List<Long> standingBookIds);
 
+    LocalDateTime getLastTime(Integer dateType,
+                              LocalDateTime startDate,
+                              LocalDateTime endDate,
+                              List<Long> standingBookIds);
     LocalDateTime getLastTime(StatisticsParamV2VO paramVO,
                               LocalDateTime startDate,
                               LocalDateTime endDate,
