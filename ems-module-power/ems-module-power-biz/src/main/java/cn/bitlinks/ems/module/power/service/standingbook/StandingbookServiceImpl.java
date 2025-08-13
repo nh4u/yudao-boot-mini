@@ -379,9 +379,8 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
     @Override
-    @Cacheable(value = RedisKeyConstants.STANDING_BOOK_MAP, key = "'all'", unless = "#result == null || #result.isEmpty()")
     public Map<Long, StandingbookDTO> getStandingbookDTOMap() {
-        List<StandingbookDTO> list = standingbookAttributeMapper.getStandingbookDTO();
+        List<StandingbookDTO> list = getStandingbookDTOList();
         return list.stream().collect(Collectors.toMap(StandingbookDTO::getStandingbookId, Function.identity()));
     }
 
@@ -440,6 +439,28 @@ public class StandingbookServiceImpl implements StandingbookService {
             }
         }
         return standingBookHeaderDTOList;
+    }
+
+    @Override
+    public List<StandingBookTypeTreeRespVO> treeDeviceWithParam(StandingbookParamReqVO standingbookParamReqVO) {
+
+            // 查询 指定 模糊名称的重点设备
+            List<StandingBookTypeTreeRespVO> sbNodes = standingbookAttributeService.selectDeviceNodeByCodeAndName(null,standingbookParamReqVO.getActualSbName(),null);
+
+            if(CollUtil.isEmpty(sbNodes)){
+                return Collections.emptyList();
+            }
+            List<Long> sbIds = sbNodes.stream().map(StandingBookTypeTreeRespVO::getRawId).collect(Collectors.toList());
+
+            // 再进行 模糊搜索
+            List<StandingBookTypeTreeRespVO> filterNodes = standingbookAttributeService.selectDeviceNodeByCodeAndName(standingbookParamReqVO.getSbCode(), standingbookParamReqVO.getSbName(), sbIds);
+            if (CollUtil.isEmpty(filterNodes)) {
+                return Collections.emptyList();
+            }
+
+            // 台账分类属性结构
+            List<StandingbookTypeDO> standingbookTypeDOTree = standingbookTypeService.getStandingbookTypeByTopType(CommonConstants.KEY_EQUIPMENT_ID.intValue());
+            return buildTreeWithDevices(standingbookTypeDOTree, filterNodes);
     }
 
 
@@ -585,7 +606,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_MAP, RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
     public Long createStandingbook(Map<String, String> createReqVO) {
         // 插入
         if (!createReqVO.containsKey(ATTR_TYPE_ID)) {
@@ -668,7 +689,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_MAP, RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
 
     public void updateStandingbook(Map<String, String> updateReqVO) {
         // 校验存在
@@ -708,7 +729,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Transactional
     @Override
-    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_MAP, RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
     public void deleteStandingbookBatch(List<Long> ids) {
         if (CollUtil.isEmpty(ids)) {
             return;

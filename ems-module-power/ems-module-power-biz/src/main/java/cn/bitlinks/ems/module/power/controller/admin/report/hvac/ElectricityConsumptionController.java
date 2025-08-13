@@ -30,6 +30,7 @@ import java.util.List;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.getLabelDeep;
 
 @Tag(name = "管理后台-个性化报表-电量分布")
 @RestController
@@ -57,7 +58,9 @@ public class ElectricityConsumptionController {
     public void exportMoneyStructureAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO,
                                                   HttpServletResponse response) throws IOException {
 
-        Integer mergeIndex = 0;
+        String childLabels = paramVO.getChildLabels();
+        Integer labelDeep = getLabelDeep(childLabels);
+        Integer mergeIndex = labelDeep - 1;
         // 文件名字处理
         String filename = "用电量分布.xlsx";
 
@@ -95,7 +98,7 @@ public class ElectricityConsumptionController {
 
         EasyExcelFactory.write(response.getOutputStream())
                 .head(header)
-                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(15))
+                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
                 .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
                 // 设置表头行高 30，内容行高 20
                 .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))

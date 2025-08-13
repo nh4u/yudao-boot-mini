@@ -186,5 +186,7 @@ public interface ErrorCodeConstants {
 
     // ========== 用能分析  ==========
     ErrorCode UNIT_NOT_EMPTY = new ErrorCode(1_001_103_001, "单位不能为空");
+    //======== 个性报表
+    ErrorCode DUPLICATE_TRANSFORMER_ID = new ErrorCode(1_001_301_001, "变压器不可重复");
 
 }

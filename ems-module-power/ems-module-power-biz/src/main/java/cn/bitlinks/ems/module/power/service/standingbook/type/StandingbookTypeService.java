@@ -92,4 +92,5 @@ public interface StandingbookTypeService {
      * @return
      */
     Map<Long, String> getStandingbookTypeIdNameMap();
+    List<StandingbookTypeDO> getStandingbookTypeByTopType(Integer topType);
 }

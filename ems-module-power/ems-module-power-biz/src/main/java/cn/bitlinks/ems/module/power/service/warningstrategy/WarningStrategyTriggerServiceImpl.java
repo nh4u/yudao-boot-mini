@@ -44,6 +44,7 @@ import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.SB_MONITOR_DETAIL;
@@ -99,7 +100,11 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
         // 设备分类 id-name 映射
         Map<Long, String> tyepIdNameMap = standingbookTypeService.getStandingbookTypeIdNameMap();
         // 获取所有台账的id-DTO 映射
-        Map<Long, StandingbookDTO> standingbookDTOMap = standingbookService.getStandingbookDTOMap();
+        List<StandingbookDTO> list = standingbookService.getStandingbookDTOList();
+        if(CollUtil.isEmpty(list)){
+            return;
+        }
+        Map<Long, StandingbookDTO> standingbookDTOMap = list.stream().collect(Collectors.toMap(StandingbookDTO::getStandingbookId, Function.identity()));
         for (WarningStrategyDO warningStrategyDO : warningStrategyDOS) {
             try {
                 // 触发告警的最新异常时间

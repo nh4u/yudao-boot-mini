@@ -24,7 +24,7 @@ import static cn.bitlinks.ems.module.acquisition.enums.ErrorCodeConstants.STREAM
 @Slf4j
 @RestController // 提供 RESTful API 接口，给 Feign 调用
 @Validated
-public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi {
+public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi,MinuteAggregateDataFiveMinuteApi {
     @Resource
     private MinuteAggregateDataService minuteAggregateDataService;
 

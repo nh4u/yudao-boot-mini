@@ -130,7 +130,7 @@ public class NaturalGasServiceImpl implements NaturalGasService {
         //返回结果
         BaseReportResultVO<NaturalGasInfo> resultVO = new BaseReportResultVO<>();
         resultVO.setHeader(tableHeader);
-        resultVO.setReportDataList(naturalGasInfoList);
+
 
         // 无数据的填充0
         naturalGasInfoList.forEach(l -> {
@@ -146,7 +146,6 @@ public class NaturalGasServiceImpl implements NaturalGasService {
                     if (NaturalGasInfoDataList == null) {
                         NaturalGasInfoData NaturalGasInfoData = new NaturalGasInfoData();
                         NaturalGasInfoData.setDate(date);
-                        NaturalGasInfoData.setConsumption(BigDecimal.ZERO);
                         newList.add(NaturalGasInfoData);
                     } else {
                         newList.add(NaturalGasInfoDataList.get(0));
@@ -156,7 +155,7 @@ public class NaturalGasServiceImpl implements NaturalGasService {
                 l.setNaturalGasInfoDataList(newList);
             }
         });
-
+        resultVO.setReportDataList(naturalGasInfoList);
         resultVO.setDataTime(getLastTime(paramVO.getRange()[0], paramVO.getRange()[1], new ArrayList<>(sbMapping.values())));
         String jsonStr = JSONUtil.toJsonStr(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);

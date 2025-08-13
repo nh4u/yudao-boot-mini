@@ -120,7 +120,7 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         //返回结果
         BaseReportResultVO<HeatingSummaryInfo> resultVO = new BaseReportResultVO<>();
         resultVO.setHeader(tableHeader);
-        resultVO.setReportDataList(heatingSummaryInfoList);
+
 
         // 无数据的填充0
         heatingSummaryInfoList.forEach(l -> {
@@ -136,7 +136,6 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
                     if (heatingSummaryInfoDataList == null) {
                         HeatingSummaryInfoData heatingSummaryInfoData = new HeatingSummaryInfoData();
                         heatingSummaryInfoData.setDate(date);
-                        heatingSummaryInfoData.setConsumption(BigDecimal.ZERO);
                         newList.add(heatingSummaryInfoData);
                     } else {
                         newList.add(heatingSummaryInfoDataList.get(0));
@@ -146,7 +145,7 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
                 l.setHeatingSummaryInfoDataList(newList);
             }
         });
-
+        resultVO.setReportDataList(heatingSummaryInfoList);
         resultVO.setDataTime(getLastTime(paramVO.getRange()[0], paramVO.getRange()[1], new ArrayList<>(sbMapping.values())));
         String jsonStr = JSONUtil.toJsonStr(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);

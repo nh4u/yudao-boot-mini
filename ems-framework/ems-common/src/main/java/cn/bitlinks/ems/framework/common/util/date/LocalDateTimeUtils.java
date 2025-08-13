@@ -593,6 +593,33 @@ public class LocalDateTimeUtils {
                 throw new IllegalArgumentException("不支持的时间类型：" + type);
         }
     }
+    /**
+     * 根据当前时间字符串和类型推算“去年同期”的时间字符串（格式与原格式一致）
+     */
+    public static String getYearOnYearTimeV2(String current, DataTypeEnum type) {
+        switch (type) {
+
+            case YEAR:
+                return String.valueOf(Integer.parseInt(current) - 1);
+
+            case MONTH:
+                // 格式：yyyy-MM
+                YearMonth ym = YearMonth.parse(current, DateTimeFormatter.ofPattern("yyyy-MM"));
+                return ym.minusYears(1).format(DateTimeFormatter.ofPattern("yyyy-MM"));
+
+            case DAY:
+                // 格式：yyyy-MM-dd
+                LocalDate date = LocalDate.parse(current, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                return date.minusYears(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+            case HOUR:
+                DateTimeFormatter shortFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH");
+                LocalDateTime dt = LocalDateTime.parse(current, shortFormatter);
+                return dt.minusYears(1).format(shortFormatter);
+            default:
+                throw new IllegalArgumentException("不支持的时间类型：" + type);
+        }
+    }
 
     /**
      * 根据当前时间字符串、时间类型和基准年份，推算定基比的时间字符串（格式与原格式一致）
