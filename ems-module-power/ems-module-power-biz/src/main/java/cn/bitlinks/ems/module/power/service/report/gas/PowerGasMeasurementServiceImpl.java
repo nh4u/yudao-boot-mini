@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.report.gas;
 
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.report.gas.vo.GasMeasurementInfo;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.report.gas.PowerGasMeasurementDO;
@@ -71,27 +72,14 @@ public class PowerGasMeasurementServiceImpl implements PowerGasMeasurementServic
         List<PowerGasMeasurementDO> measurements = getAllValidMeasurements();
         log.info("从数据库获取到{}条计量器具配置", measurements.size());
 
-        // 打印前几条记录的编码，用于调试
-        if (!measurements.isEmpty()) {
-            log.info("前5条记录的编码: {}", measurements.stream()
-                    .limit(5)
-                    .map(PowerGasMeasurementDO::getMeasurementCode)
-                    .collect(Collectors.toList()));
-        }
-
         if (measurements.isEmpty()) {
             log.warn("未找到有效的计量器具配置");
             return new ArrayList<>();
         }
 
-        // 提取所有计量器具编码
-        List<String> measurementCodes = measurements.stream()
-                .map(PowerGasMeasurementDO::getMeasurementCode)
-                .collect(Collectors.toList());
-
         // 批量查询台账属性信息（计量器具编号和名称）
         List<StandingbookAttributeDO> standingbookAttributes = standingbookAttributeMapper.selectList(
-                new cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX<StandingbookAttributeDO>()
+                new LambdaQueryWrapperX<StandingbookAttributeDO>()
                         .in(StandingbookAttributeDO::getName, Arrays.asList("计量器具名称", "计量器具编号"))
                         .eq(StandingbookAttributeDO::getDeleted, false)
         );
@@ -114,9 +102,12 @@ public class PowerGasMeasurementServiceImpl implements PowerGasMeasurementServic
 
         log.info("需要查询的能源参数: {}", energyParams);
 
+        // 可能存在重复的能源参数名称，故加能源分组作为限制条件
         List<Long> energyIdS = energyConfigurationMapper
                 .selectList(new LambdaQueryWrapper<EnergyConfigurationDO>().in(EnergyConfigurationDO::getEnergyName, Arrays.asList("气化-正累积", "气化-压力", "气化-压差")))
-                .stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
+                .stream()
+                .map(EnergyConfigurationDO::getId)
+                .collect(Collectors.toList());
 
         List<EnergyParametersDO> energyParametersList = energyParametersMapper.selectList(
                 new LambdaQueryWrapper<EnergyParametersDO>()
@@ -194,9 +185,9 @@ public class PowerGasMeasurementServiceImpl implements PowerGasMeasurementServic
             Integer calculateType = calculateTypeByViewLogic(info);
             info.setCalculateType(calculateType);
 
-            // 如果计算类型为null，设置为默认值0（稳态值）
+            // 如果计算类型为null，设置为3，无需计算，数值统一设置为0
             if (calculateType == null) {
-                info.setCalculateType(0);
+                info.setCalculateType(3);
             }
 
             result.add(info);
@@ -211,8 +202,7 @@ public class PowerGasMeasurementServiceImpl implements PowerGasMeasurementServic
     }
 
     /**
-     * 根据视图逻辑动态计算计算类型
-     * 参考视图 v_power_measurement_attributes 的逻辑
+     * 动态计算计算类型
      */
     private Integer calculateTypeByViewLogic(GasMeasurementInfo info) {
         if (info.getStandingbookId() == null || info.getTypeId() == null) {
