@@ -87,16 +87,16 @@
         standingbook_id,param_code
         <choose>
             <!-- 根据 dateType 选择聚合字段 -->
-            <when test="queryParam.dateType == 0">
+            <when test="dateType == 0">
                 ,DATE(aggregate_time) AS time
             </when>
-            <when test="queryParam.dateType == 1">
+            <when test="dateType == 1">
                 ,DATE_FORMAT(aggregate_time, '%Y-%m') AS time
             </when>
-            <when test="queryParam.dateType == 2">
+            <when test="dateType == 2">
                 ,YEAR(aggregate_time) AS time
             </when>
-            <when test="queryParam.dateType == 3">
+            <when test="dateType == 3">
                 ,DATE_FORMAT(aggregate_time, '%Y-%m-%d %H') AS time
             </when>
         </choose>
@@ -107,9 +107,9 @@
         AND aggregate_time &lt; #{endTime}
         AND data_feature = 2
         AND energy_flag = 1
-        <if test="standingBookIds != null and standingBookIds.size() != 0">
+        <if test="standingbookIds != null and standingbookIds.size() != 0">
             AND standingbook_id IN
-            <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
+            <foreach collection="standingbookIds" item="item" open="(" separator="," close=")">
                 #{item}
             </foreach>
         </if>

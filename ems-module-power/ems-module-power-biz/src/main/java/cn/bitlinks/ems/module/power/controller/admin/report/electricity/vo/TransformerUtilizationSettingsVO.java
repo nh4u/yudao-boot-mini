@@ -36,6 +36,4 @@ public class TransformerUtilizationSettingsVO {
     @Schema(description = "额定容量", example = "12042")
     private BigDecimal ratedCapacity;
 
-    @Schema(description = "顺序", requiredMode = Schema.RequiredMode.REQUIRED, example = "12042")
-    private Integer sort;
 }
