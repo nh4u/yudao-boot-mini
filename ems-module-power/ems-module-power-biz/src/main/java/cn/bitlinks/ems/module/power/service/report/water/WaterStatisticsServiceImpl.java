@@ -225,6 +225,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
         // 返回查询结果。
         return resultVO;
     }
+
     public List<StatisticsInfoV2> queryDefault(String topLabel,
                                                String childLabels,
                                                List<StandingbookLabelInfoDO> standingbookIdsByLabel,
@@ -427,7 +428,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
     }
 
     @Override
-    public  FeeChartResultVO<FeeChartYInfo>  waterStatisticsChart(StatisticsParamV2VO paramVO) {
+    public FeeChartResultVO<FeeChartYInfo> waterStatisticsChart(StatisticsParamV2VO paramVO) {
 
         // 3.查询对应缓存是否已经存在，如果存在这直接返回（如果查最新的，最新的在实时更新，所以缓存的是不对的）
         String cacheKey = WATER_CHART + SecureUtil.md5(paramVO.toString());
@@ -454,7 +455,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
         // 底部合计map
         Map<String, BigDecimal> sumConsumptionMap = new HashMap<>();
         List<FeeChartYInfo> yInfoList = new ArrayList<>();
-        if (CollUtil.isNotEmpty(statisticsInfoList)){
+        if (CollUtil.isNotEmpty(statisticsInfoList)) {
             for (StatisticsInfoV2 s : statisticsInfoList) {
 
                 FeeChartYInfo yInfo = new FeeChartYInfo();
@@ -467,7 +468,8 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
 
                 List<BigDecimal> data = ListUtils.newArrayList();
                 xdata.forEach(date -> {
-                    StatisticInfoDataV2 statisticInfoDataV2 = dateMap.get(date);
+                    String time = dealStrTime(date);
+                    StatisticInfoDataV2 statisticInfoDataV2 = dateMap.get(time);
                     if (statisticInfoDataV2 == null) {
                         data.add(BigDecimal.ZERO);
                     } else {
@@ -503,7 +505,6 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
 
         return resultVO;
     }
-
 
 
     @Override
@@ -582,7 +583,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
         // 底部合计map
         Map<String, BigDecimal> sumConsumptionMap = new HashMap<>();
 
-        if (CollUtil.isNotEmpty(statisticsInfoList)){
+        if (CollUtil.isNotEmpty(statisticsInfoList)) {
             for (StatisticsInfoV2 s : statisticsInfoList) {
 
                 List<Object> data = ListUtils.newArrayList();

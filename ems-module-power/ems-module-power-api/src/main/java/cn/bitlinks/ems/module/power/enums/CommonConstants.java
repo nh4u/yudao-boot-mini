@@ -84,8 +84,14 @@ public interface CommonConstants {
      * 利用率
      */
     Integer RATIO = 3;
-
-
+    /**
+     * 点位1
+     */
+    Integer POINT_ONE = 1;
+    /**
+     * 点位2
+     */
+    Integer POINT_TWO = 2;
     String COAT_UNIT1 = "(kgce)";
     String COAT_UNIT2 = "(tce)";
 
@@ -98,7 +104,36 @@ public interface CommonConstants {
     String HRW = "热回收水/温水";
     String BHW = "锅炉热水";
     String MHW = "市政热水";
+    /**
+     * 低温水供水温度
+     */
+    String LTWT = "LTWT";
+    /**
+     * 中温水供水温度
+     */
+    String MTWT = "MTWT";
+    /**
+     * 热回收水供水温度
+     */
+    String HRWT = "HRWT";
+    /**
+     * 热水供水温度（锅炉出水）
+     */
+    String BHWT = "BHWT";
+    /**
+     * 热水供水温度（市政出水）
+     */
+    String MHWT = "MHWT";
+    /**
+     * PCW供水压力温度（供水压力）
+     */
+    String PCWP = "PCWP";
+    /**
+     * PCW供水压力温度（供水温度）
+     */
+    String PCWT = "PCWT";
 
+    String DAY = "日";
     /**
      * 随机成功概率
      */
@@ -136,7 +171,7 @@ public interface CommonConstants {
     /**
      * 拆分任务队列 redis key
      */
-    String SPLIT_TASK_QUEUE_REDIS_KEY= "split_task_queue";
+    String SPLIT_TASK_QUEUE_REDIS_KEY = "split_task_queue";
     /**
      * COP 重算队列
      */
