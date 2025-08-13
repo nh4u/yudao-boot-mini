@@ -33,7 +33,7 @@ public interface SupplyWaterTmpSettingsMapper extends BaseMapperX<SupplyWaterTmp
     List<String> getSystem();
 
     /**
-     * 根据copType获取所有cop参数数据
+     * 根据系统获取所有供水温度参数数据
      *
      * @param reqVO
      * @return
@@ -42,5 +42,29 @@ public interface SupplyWaterTmpSettingsMapper extends BaseMapperX<SupplyWaterTmp
         return selectList(new LambdaQueryWrapperX<SupplyWaterTmpSettingsDO>()
                 .inIfPresent(SupplyWaterTmpSettingsDO::getSystem, reqVO.getSystem())
                 .orderByAsc(SupplyWaterTmpSettingsDO::getCreateTime));
+    }
+
+    /**
+     * 根据系统获取对应供水温度参数数据
+     *
+     * @param system
+     * @return
+     */
+    default SupplyWaterTmpSettingsDO selectOne(String system) {
+        return selectOne(new LambdaQueryWrapperX<SupplyWaterTmpSettingsDO>()
+                .eq(SupplyWaterTmpSettingsDO::getSystem, system)
+                .orderByAsc(SupplyWaterTmpSettingsDO::getCreateTime).last("limit 1"), false);
+    }
+
+    /**
+     * 根据code获取对应供水温度参数数据
+     *
+     * @param code
+     * @return
+     */
+    default SupplyWaterTmpSettingsDO selectOneByCode(String code) {
+        return selectOne(new LambdaQueryWrapperX<SupplyWaterTmpSettingsDO>()
+                .eq(SupplyWaterTmpSettingsDO::getCode, code)
+                .orderByAsc(SupplyWaterTmpSettingsDO::getCreateTime).last("limit 1"), false);
     }
 }

@@ -4,12 +4,7 @@ import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.SupplyAnalysisStructureInfo;
-import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.SupplyWaterTmpReportParamVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.SupplyWaterTmpSettingsPageReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.SupplyWaterTmpSettingsSaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.SupplyWaterTmpTableResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.SupplyAnalysisPieResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.SupplyWaterTmpMinuteAggData;
 import cn.bitlinks.ems.module.power.dal.dataobject.report.supplywatertmp.SupplyWaterTmpSettingsDO;
 import cn.bitlinks.ems.module.power.dal.mysql.report.supplywatertmp.SupplyWaterTmpSettingsMapper;
@@ -17,6 +12,7 @@ import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.service.minuteagg.MinuteAggDataService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.StrPool;
 import com.alibaba.excel.util.ListUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -34,10 +30,10 @@ import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.POINT_ONE;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.POINT_TWO;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.SUPPLY_ANALYSIS;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.SUPPLY_WATER_TMP;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.divideWithScale;
 
 /**
@@ -61,14 +57,14 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
 
     @Override
-    public void updateBatch(List<SupplyWaterTmpSettingsSaveReqVO> supplyAnalysisSettingsList) {
+    public void updateBatch(List<SupplyWaterTmpSettingsSaveReqVO> supplyWaterTmpSettingsList) {
         // 校验
-        if (CollUtil.isEmpty(supplyAnalysisSettingsList)) {
+        if (CollUtil.isEmpty(supplyWaterTmpSettingsList)) {
             throw exception(SUPPLY_ANALYSIS_SETTINGS_LIST_NOT_EXISTS);
         }
 
         // 统一保存
-        List<SupplyWaterTmpSettingsDO> list = BeanUtils.toBean(supplyAnalysisSettingsList, SupplyWaterTmpSettingsDO.class);
+        List<SupplyWaterTmpSettingsDO> list = BeanUtils.toBean(supplyWaterTmpSettingsList, SupplyWaterTmpSettingsDO.class);
         list.forEach(l -> {
             Long standingBookId = l.getStandingbookId();
             if (!Objects.isNull(standingBookId)) {
@@ -121,12 +117,12 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         }
 
         // 4.获取所有standingBookids
-        List<SupplyWaterTmpSettingsDO> supplyAnalysisSettingsList = supplyWaterTmpSettingsMapper.selectList(paramVO);
+        List<SupplyWaterTmpSettingsDO> supplyWaterTmpSettingsList = supplyWaterTmpSettingsMapper.selectList(paramVO);
         // 4.4.设置为空直接返回结果
-        if (CollUtil.isEmpty(supplyAnalysisSettingsList)) {
+        if (CollUtil.isEmpty(supplyWaterTmpSettingsList)) {
             return resultVO;
         }
-        List<Long> standingBookIds = supplyAnalysisSettingsList
+        List<Long> standingBookIds = supplyWaterTmpSettingsList
                 .stream()
                 .map(SupplyWaterTmpSettingsDO::getStandingbookId)
                 .filter(Objects::nonNull)
@@ -138,14 +134,14 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
             return resultVO;
         }
 
-        List<String> paramCodes = supplyAnalysisSettingsList
+        List<String> paramCodes = supplyWaterTmpSettingsList
                 .stream()
                 .map(SupplyWaterTmpSettingsDO::getEnergyParamCode)
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
 
-        List<String> codes = supplyAnalysisSettingsList
+        List<String> codes = supplyWaterTmpSettingsList
                 .stream()
                 .map(SupplyWaterTmpSettingsDO::getCode)
                 .filter(Objects::nonNull)
@@ -154,7 +150,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
 
 
         Map<String, Long> standingBookCodeMap = new HashMap<>();
-        supplyAnalysisSettingsList.forEach(s -> standingBookCodeMap.put(s.getCode(), s.getStandingbookId()));
+        supplyWaterTmpSettingsList.forEach(s -> standingBookCodeMap.put(s.getCode(), s.getStandingbookId()));
 
         // 5.根据台账ID和参数code查用小时用量数据
         List<SupplyWaterTmpMinuteAggData> minuteAggDataList = minuteAggDataService.getTmpRangeDataSteady(
@@ -265,7 +261,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
 
         for (int i = 1; i <= 31; i++) {
             Map<String, Object> map = new HashMap<>();
-            map.put("date", i + "日 00:00:00");
+            map.put("date", i + "日00:00:00");
 
             // 月份处理
             LocalDateTime tempStartTime = startTime;
@@ -593,118 +589,260 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
     }
 
     @Override
-    public SupplyAnalysisPieResultVO supplyWaterTmpChart(SupplyWaterTmpReportParamVO paramVO) {
+    public SupplyWaterTmpChartResultVO supplyWaterTmpChart(SupplyWaterTmpReportParamVO paramVO) {
 
-        // 1.校验时间范围
-        LocalDateTime[] range = validateRange(paramVO.getRange());
-        // 2.时间处理
-        LocalDateTime startTime = LocalDateTimeUtils.beginOfMonth(range[0]);
-        LocalDateTime endTime = LocalDateTimeUtils.endOfMonth(range[1]);
+        SupplyWaterTmpChartResultVO resultVO = new SupplyWaterTmpChartResultVO();
 
-        // 2.校验时间类型
-        Integer dateType = paramVO.getDateType();
-        DataTypeEnum dataTypeEnum = validateDateType(dateType);
 
-        // 3.如果是天 则 班组标记必须要有
+        // TODO: 2025/8/13 需要填充一下 双图的情况
+
+
+        SupplyWaterTmpTableResultVO result = supplyWaterTmpTable(paramVO);
+        resultVO.setDataTime(result.getDataTime());
+
+        List<Map<String, Object>> list = result.getList();
+
+        if (CollUtil.isEmpty(list)) {
+            return resultVO;
+        }
+
         Integer teamFlag = paramVO.getTeamFlag();
-        if (dataTypeEnum.equals(DataTypeEnum.DAY)) {
-            validateTeamFlag(teamFlag);
+
+        SupplyWaterTmpSettingsDO one = supplyWaterTmpSettingsMapper.selectOne(paramVO.getSingleSystem());
+        if (Objects.isNull(one)) {
+            return resultVO;
+        }
+        String code = one.getCode();
+
+        switch (code) {
+            case LTWT:
+                // 低温水供水温度
+                LtwtChartVO ltwt = dealLtwt(list, one, teamFlag);
+                resultVO.setLtwt(ltwt);
+                break;
+            case MTWT:
+                // 中温水供水温度
+                LtwtChartVO mtwt = dealLtwt(list, one, teamFlag);
+                resultVO.setMtwt(mtwt);
+                break;
+            case HRWT:
+                // 热回收水供水温度
+                LtwtChartVO hrwt = dealLtwt(list, one, teamFlag);
+                resultVO.setHrwt(hrwt);
+                break;
+            case BHWT:
+                // 热水供水温度（锅炉出水）  热水供水温度（市政出水）
+                SupplyWaterTmpSettingsDO two = supplyWaterTmpSettingsMapper.selectOneByCode(MHWT);
+                resultVO.setBhwt(dealPcwp(list, one, two, teamFlag));
+                break;
+            case MHWT:
+                // 热水供水温度（锅炉出水）  热水供水温度（市政出水）
+                SupplyWaterTmpSettingsDO bhwt = supplyWaterTmpSettingsMapper.selectOneByCode(BHWT);
+                resultVO.setBhwt(dealPcwp(list, bhwt, one, teamFlag));
+                break;
+            case PCWP:
+                // PCW供水压力温度（供水压力） PCW供水压力温度（供水温度）
+                SupplyWaterTmpSettingsDO pcwt = supplyWaterTmpSettingsMapper.selectOneByCode(PCWT);
+                resultVO.setPcwp(dealPcwp(list, one, pcwt, teamFlag));
+                break;
+            case PCWT:
+                // PCW供水压力温度（供水压力） PCW供水压力温度（供水温度）
+                SupplyWaterTmpSettingsDO pcwp = supplyWaterTmpSettingsMapper.selectOneByCode(PCWP);
+                resultVO.setPcwp(dealPcwp(list, pcwp, one, teamFlag));
+                break;
+            default:
         }
 
+        return resultVO;
+    }
 
-        SupplyWaterTmpTableResultVO resultVO = new SupplyWaterTmpTableResultVO();
-        resultVO.setDataTime(LocalDateTime.now());
-
-        // 校验系统 没值就返空
-        List<String> system1 = paramVO.getSystem();
-        if (CollUtil.isEmpty(system1)) {
-            return null;
-        }
-
-        // 4.获取所有standingBookids
-        List<SupplyWaterTmpSettingsDO> supplyAnalysisSettingsList = supplyWaterTmpSettingsMapper.selectList(paramVO);
-        // 4.4.设置为空直接返回结果
-        if (CollUtil.isEmpty(supplyAnalysisSettingsList)) {
-            return null;
-        }
-        List<Long> standingBookIds = supplyAnalysisSettingsList
-                .stream()
-                .map(SupplyWaterTmpSettingsDO::getStandingbookId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .collect(Collectors.toList());
-
-        // 4.4.台账id为空直接返回结果
-        if (CollUtil.isEmpty(standingBookIds)) {
-            return null;
-        }
-
-        List<String> paramCodes = supplyAnalysisSettingsList
-                .stream()
-                .map(SupplyWaterTmpSettingsDO::getEnergyParamCode)
-                .filter(Objects::nonNull)
-                .distinct()
-                .collect(Collectors.toList());
-
-        List<String> codes = supplyAnalysisSettingsList
-                .stream()
-                .map(SupplyWaterTmpSettingsDO::getCode)
-                .filter(Objects::nonNull)
-                .distinct()
-                .collect(Collectors.toList());
+    /**
+     * 热水供水温度（锅炉出水）  热水供水温度（市政出水） PCW供水压力温度（供水压力） PCW供水压力温度（供水温度）
+     *
+     * @param list
+     * @param one
+     * @param teamFlag
+     * @return
+     */
+    private PcwChartVO dealPcwp(List<Map<String, Object>> list,
+                                SupplyWaterTmpSettingsDO one,
+                                SupplyWaterTmpSettingsDO two,
+                                Integer teamFlag) {
 
 
-        Map<String, Long> standingBookCodeMap = new HashMap<>();
-        supplyAnalysisSettingsList.forEach(s -> standingBookCodeMap.put(s.getCode(), s.getStandingbookId()));
+        // TODO: 2025/8/12 需要处理 两个settings 的数据
+        PcwChartVO ltwt = new PcwChartVO();
+        // 锅炉上限/压力上限
+        ltwt.setMax1(one.getMax());
+        // 锅炉下限/压力下限
+        ltwt.setMin1(one.getMin());
+        // 市政上限/温度上限
+        ltwt.setMax2(two.getMax());
+        // 市政下限/温度下限
+        ltwt.setMin2(two.getMin());
 
-        // 5.根据台账ID和参数code查用小时用量数据
-        List<SupplyWaterTmpMinuteAggData> minuteAggDataList = minuteAggDataService.getTmpRangeDataSteady(
-                standingBookIds,
-                paramCodes,
-                startTime,
-                endTime);
+        String code = one.getCode();
 
-        if (CollUtil.isEmpty(minuteAggDataList)) {
-            return null;
-        }
+        List<String> xdata = new ArrayList<>();
+        // 锅炉供水温度/供水压力
+        List<BigDecimal> ydata1 = new ArrayList<>();
+        // 市政供水温度/供水温度
+        List<BigDecimal> ydata3 = new ArrayList<>();
 
-        List<Map<String, Object>> result = new ArrayList<>();
-        // 天
-        if (dataTypeEnum.equals(DataTypeEnum.DAY)) {
-            result = dealDayData(
-                    minuteAggDataList,
-                    startTime,
-                    endTime,
-                    standingBookCodeMap,
-                    codes,
-                    teamFlag);
+        if (teamFlag.equals(0)) {
+            //非班组
+            list.forEach(l -> {
 
-        } else if (dataTypeEnum.equals(DataTypeEnum.HOUR)) {
-            // 小时数据
-            result = dealHourData(
-                    minuteAggDataList,
-                    startTime,
-                    endTime,
-                    standingBookCodeMap,
-                    codes);
+                String key = getKey(l, code);
+
+                if (!Objects.isNull(key)) {
+                    //处理时间
+                    String date = (String) l.get("date");
+                    date = dealDate(date, key);
+
+                    // 处理数据
+                    Object value = l.get(key);
+
+                    xdata.add(date);
+                    ydata1.add((BigDecimal) value);
+                }
+            });
+            ltwt.setXdata(xdata);
+            ltwt.setYdata11(ydata1);
+            ltwt.setYdata12(ydata1);
+
         } else {
+            // 班组
+            List<BigDecimal> ydata2 = new ArrayList<>();
+            List<BigDecimal> ydata4 = new ArrayList<>();
+            list.forEach(l -> {
 
+                String key1 = getKey(l, "1_" + code);
+                String key2 = getKey(l, "2_" + code);
+
+                if (!Objects.isNull(key1) && !Objects.isNull(key2)) {
+
+                    //处理时间
+                    String date = (String) l.get("date");
+                    date = dealDate(date, key1);
+
+                    // 处理数据
+                    Object value1 = l.get(key1);
+                    Object value2 = l.get(key2);
+                    xdata.add(date);
+                    ydata1.add((BigDecimal) value1);
+                    ydata2.add((BigDecimal) value2);
+                }
+            });
+
+            ltwt.setXdata(xdata);
+            ltwt.setYdata11(ydata1);
+            ltwt.setYdata12(ydata2);
+            ltwt.setYdata21(ydata3);
+            ltwt.setYdata22(ydata4);
         }
 
-
-        LocalDateTime lastTime = minuteAggDataService.getLastTime(
-                standingBookIds,
-                paramCodes,
-                range[0],
-                range[1]);
-
-        resultVO.setDataTime(lastTime);
-        resultVO.setList(result);
+        return ltwt;
+    }
 
 
+    /**
+     * 低温水供水温度 中温水供水温度 热回收水供水温度
+     *
+     * @param list
+     * @param one
+     * @param teamFlag
+     * @return
+     */
+    private LtwtChartVO dealLtwt(List<Map<String, Object>> list, SupplyWaterTmpSettingsDO one, Integer teamFlag) {
+        LtwtChartVO ltwt = new LtwtChartVO();
+        ltwt.setMax(one.getMax());
+        ltwt.setMin(one.getMin());
+        String code = one.getCode();
 
+        List<String> xdata = new ArrayList<>();
+        List<BigDecimal> ydata1 = new ArrayList<>();
+
+        if (teamFlag.equals(0)) {
+            //非班组
+            list.forEach(l -> {
+
+                String key = getKey(l, code);
+
+                if (!Objects.isNull(key)) {
+                    //处理时间
+                    String date = (String) l.get("date");
+                    date = dealDate(date, key);
+
+                    // 处理数据
+                    Object value = l.get(key);
+
+                    xdata.add(date);
+                    ydata1.add((BigDecimal) value);
+                }
+            });
+            ltwt.setXdata(xdata);
+            ltwt.setYdata1(ydata1);
+
+        } else {
+            // 班组
+            List<BigDecimal> ydata2 = new ArrayList<>();
+            list.forEach(l -> {
+
+                String key1 = getKey(l, "1_" + code);
+                String key2 = getKey(l, "2_" + code);
+
+                if (!Objects.isNull(key1) && !Objects.isNull(key2)) {
+
+                    //处理时间
+                    String date = (String) l.get("date");
+                    date = dealDate(date, key1);
+
+                    // 处理数据
+                    Object value1 = l.get(key1);
+                    Object value2 = l.get(key2);
+                    xdata.add(date);
+                    ydata1.add((BigDecimal) value1);
+                    ydata2.add((BigDecimal) value2);
+                }
+            });
+
+            ltwt.setXdata(xdata);
+            ltwt.setYdata1(ydata1);
+            ltwt.setYdata2(ydata2);
+        }
+
+        return ltwt;
+    }
+
+    private String getKey(Map<String, Object> l, String key) {
+
+        for (String k : l.keySet()) {
+            if (k.contains(key)) {
+                return k;
+            }
+        }
         return null;
     }
+
+    private String dealDate(String date, String key) {
+
+        // 天 时 处理
+        String[] l1 = date.split(DAY);
+        int day = Integer.parseInt(l1[0]);
+        String[] l2 = l1[1].split(StrPool.COLON);
+        int hour = Integer.parseInt(l2[0]);
+
+        // 年 月 处理
+        String[] l3 = key.split(StrPool.UNDERLINE);
+        String[] l4 = l3[l3.length - 1].split(StrPool.DASHED);
+        int year = Integer.parseInt(l4[0]);
+        int month = Integer.parseInt(l4[1]);
+
+        LocalDateTime currentTime = LocalDateTime.of(year, month, day, hour, 0, 0);
+        return LocalDateTimeUtils.getFormatTime(currentTime);
+    }
+
 
     @Override
     public List<List<String>> getExcelHeader(SupplyWaterTmpReportParamVO paramVO) {
@@ -717,15 +855,14 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         // 表头数据
         List<List<String>> list = ListUtils.newArrayList();
         // 表单名称
-        String sheetName = SUPPLY_ANALYSIS;
+        String sheetName = SUPPLY_WATER_TMP;
         // 统计周期
         String strTime = getFormatTime(startTime) + "~" + getFormatTime(endTime);
         // 统计系统
         List<String> system = paramVO.getSystem();
         String systemStr = CollUtil.isNotEmpty(system) ? String.join("、", system) : "全";
 
-        list.add(Arrays.asList("表单名称", "统计系统", "统计周期", "系统", "系统"));
-        list.add(Arrays.asList(sheetName, systemStr, strTime, "分析项", "分析项"));
+        list.add(Arrays.asList("表单名称", "统计系统", "统计周期", "时间/系统", "时间/系统"));
 
         // 月份数据处理
         DataTypeEnum dataTypeEnum = validateDateType(paramVO.getDateType());
@@ -749,11 +886,6 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         List<List<Object>> result = ListUtils.newArrayList();
         SupplyWaterTmpTableResultVO resultVO = supplyWaterTmpTable(paramVO);
 
-
-        List<SupplyAnalysisStructureInfo> statisticsInfoList = resultVO.getList();
-        // 底部合计map
-        Map<String, BigDecimal> sumStandardCoatMap = new HashMap<>();
-        Map<String, BigDecimal> sumProportionMap = new HashMap<>();
 
         return result;
     }

@@ -5,7 +5,6 @@ import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.FullCellMergeStrategy;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.SupplyAnalysisPieResultVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.report.supplywatertmp.SupplyWaterTmpSettingsDO;
 import cn.bitlinks.ems.module.power.service.report.supplywatertmp.SupplyWaterTmpSettingsService;
 import com.alibaba.excel.EasyExcelFactory;
@@ -85,7 +84,7 @@ public class SupplyWaterTmpController {
 
     @PostMapping("/supplyWaterTmpChart")
     @Operation(summary = "供水温度图")
-    public CommonResult<SupplyAnalysisPieResultVO> supplyWaterTmpChart(@Valid @RequestBody SupplyWaterTmpReportParamVO paramVO) {
+    public CommonResult<SupplyWaterTmpChartResultVO> supplyWaterTmpChart(@Valid @RequestBody SupplyWaterTmpReportParamVO paramVO) {
         return success(supplyWaterTmpSettingsService.supplyWaterTmpChart(paramVO));
     }
 

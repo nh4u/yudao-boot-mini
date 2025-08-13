@@ -18,7 +18,7 @@ import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_M
  *
  * @author liumingqiang
  */
-@Schema(description = "管理后台 - 用能统计入参 VO")
+@Schema(description = "管理后台 - 供水温度入参 VO")
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class SupplyWaterTmpReportParamVO {
@@ -43,5 +43,8 @@ public class SupplyWaterTmpReportParamVO {
     @Schema(description = "班组标记 0：非班组；1：班组。")
     @NotNull(message = "班组不能为空")
     private Integer teamFlag;
+
+    @Schema(description = "单个系统")
+    private String singleSystem;
 
 }
