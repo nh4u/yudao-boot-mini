@@ -814,12 +814,22 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         info.setMeasurementName(measurement.getMeasurementName());
         
         // 直接查询台账属性信息，获取standingbookId
-        StandingbookAttributeDO attr = standingbookAttributeMapper.selectOne(
+        List<StandingbookAttributeDO> attrs = standingbookAttributeMapper.selectList(
                 new LambdaQueryWrapperX<StandingbookAttributeDO>()
                         .eq(StandingbookAttributeDO::getName, "计量器具编号")
                         .eq(StandingbookAttributeDO::getValue, measurement.getMeasurementCode())
                         .eq(StandingbookAttributeDO::getDeleted, false)
+                        .orderByDesc(StandingbookAttributeDO::getCreateTime) // 按创建时间倒序，取最新的
         );
+        
+        StandingbookAttributeDO attr = null;
+        if (!attrs.isEmpty()) {
+            // 如果有多条记录，取最新的一条（按创建时间倒序）
+            attr = attrs.get(0);
+            if (attrs.size() > 1) {
+                log.warn("计量器具 {} 存在{}条台账属性记录，使用最新的一条", measurement.getMeasurementCode(), attrs.size());
+            }
+        }
         
         if (attr != null && attr.getStandingbookId() != null) {
             info.setStandingbookId(attr.getStandingbookId());
