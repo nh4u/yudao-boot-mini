@@ -2,21 +2,16 @@ package cn.bitlinks.ems.module.power.service.report.gas;
 
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.report.gas.vo.GasMeasurementInfo;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.report.gas.PowerGasMeasurementDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
-import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.report.gas.PowerGasMeasurementMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.templ.StandingbookTmplDaqAttrMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.report.gas.PowerTankSettingsMapper;
-import cn.bitlinks.ems.module.power.dal.mysql.energyparameters.EnergyParametersMapper;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.report.gas.PowerTankSettingsDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -49,12 +44,6 @@ public class PowerGasMeasurementServiceImpl implements PowerGasMeasurementServic
 
     @Resource
     private PowerTankSettingsMapper powerTankSettingsMapper;
-
-    @Resource
-    private EnergyParametersMapper energyParametersMapper;
-
-    @Resource
-    private EnergyConfigurationMapper energyConfigurationMapper;
 
     @Override
     public List<PowerGasMeasurementDO> getAllValidMeasurements() {
@@ -92,55 +81,24 @@ public class PowerGasMeasurementServiceImpl implements PowerGasMeasurementServic
             Long standingbookId = attr.getStandingbookId();
             String name = attr.getName();
             String value = attr.getValue();
-            if (standingbookId == null) {
-                continue;
-            }
-            Map<String, String> nameToValue = standingbookAttrMap.computeIfAbsent(standingbookId, k -> new HashMap<>());
-            nameToValue.put(name, value);
-            // 在收集完成一对名称/编号后，建立 code -> standingbookId / name 的索引
-            if (Objects.equals(name, "计量器具编号") && value != null) {
+
+            // 构建 standingbookId -> {name -> value} 的映射
+            standingbookAttrMap.computeIfAbsent(standingbookId, k -> new HashMap<>()).put(name, value);
+
+            // 如果是计量器具编号，构建 code -> standingbookId 的映射
+            if ("计量器具编号".equals(name)) {
                 codeToStandingbookId.put(value, standingbookId);
-            } else if (Objects.equals(name, "计量器具名称") && value != null) {
-                // 暂存名称，最终以编号匹配为准
-                codeToAttrName.put("__TMP_NAME__" + standingbookId, value);
+            }
+            // 如果是计量器具名称，构建 code -> name 的映射
+            else if ("计量器具名称".equals(name)) {
+                // 需要找到对应的计量器具编号
+                Map<String, String> attrMap = standingbookAttrMap.get(standingbookId);
+                String code = attrMap.get("计量器具编号");
+                if (code != null) {
+                    codeToAttrName.put(code, value);
+                }
             }
         }
-        // 将暂存的名称与编号按 standingbookId 结合，得到 code -> attrName
-        for (Map.Entry<String, Long> e : codeToStandingbookId.entrySet()) {
-            String code = e.getKey();
-            Long sbId = e.getValue();
-            String attrName = codeToAttrName.get("__TMP_NAME__" + sbId);
-            if (attrName != null) {
-                codeToAttrName.put(code, attrName);
-            }
-        }
-
-        // 批量查询能源参数信息
-        List<String> energyParams = measurements.stream()
-                .map(PowerGasMeasurementDO::getEnergyParam)
-                .distinct()
-                .collect(Collectors.toList());
-
-        log.info("需要查询的能源参数: {}", energyParams);
-
-        // 可能存在重复的能源参数名称，故加能源分组作为限制条件
-        List<Long> energyIdS = energyConfigurationMapper
-                .selectList(new LambdaQueryWrapper<EnergyConfigurationDO>().in(EnergyConfigurationDO::getEnergyName, Arrays.asList("气化-正累积", "气化-压力", "气化-压差")))
-                .stream()
-                .map(EnergyConfigurationDO::getId)
-                .collect(Collectors.toList());
-
-        List<EnergyParametersDO> energyParametersList = energyParametersMapper.selectList(
-                new LambdaQueryWrapper<EnergyParametersDO>()
-                        .in(EnergyParametersDO::getParameter, energyParams)
-                        .in(EnergyParametersDO::getEnergyId, energyIdS)
-        );
-
-        log.info("查询到{}条能源参数", energyParametersList.size());
-
-        // 构建能源参数中文名到参数信息的映射
-        Map<String, EnergyParametersDO> energyParamMap = energyParametersList.stream()
-                .collect(Collectors.toMap(EnergyParametersDO::getParameter, param -> param));
 
         // 批量查询 Standingbook，构建 standingbookId -> typeId 的映射，再得到 code -> typeId
         Set<Long> standingbookIds = new HashSet<>(codeToStandingbookId.values());
@@ -171,6 +129,34 @@ public class PowerGasMeasurementServiceImpl implements PowerGasMeasurementServic
             typeIdToDataFeature = tmplList.stream()
                     .filter(t -> t.getTypeId() != null && t.getDataFeature() != null)
                     .collect(Collectors.toMap(StandingbookTmplDaqAttrDO::getTypeId, StandingbookTmplDaqAttrDO::getDataFeature, (a, b) -> a));
+        }
+
+        // 预取能源参数信息：批量查询power_standingbook_tmpl_daq_attr表，构建typeId+parameter -> code的映射
+        Map<String, String> typeIdAndParamToCode = new HashMap<>();
+        if (!typeIds.isEmpty()) {
+            // 获取所有需要的能源参数名称
+            Set<String> energyParams = measurements.stream()
+                    .map(PowerGasMeasurementDO::getEnergyParam)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            
+            if (!energyParams.isEmpty()) {
+                List<StandingbookTmplDaqAttrDO> energyTmplAttrs = standingbookTmplDaqAttrMapper.selectList(
+                        new LambdaQueryWrapperX<StandingbookTmplDaqAttrDO>()
+                                .in(StandingbookTmplDaqAttrDO::getTypeId, typeIds)
+                                .in(StandingbookTmplDaqAttrDO::getParameter, energyParams)
+                                .eq(StandingbookTmplDaqAttrDO::getEnergyFlag, true) // 只查询能源数采参数
+                                .eq(StandingbookTmplDaqAttrDO::getDeleted, false)
+                );
+                
+                // 构建 typeId + parameter -> code 的映射
+                for (StandingbookTmplDaqAttrDO attr : energyTmplAttrs) {
+                    String key = attr.getTypeId() + "_" + attr.getParameter();
+                    typeIdAndParamToCode.put(key, attr.getCode());
+                }
+                
+                log.info("批量查询到{}条能源参数模板配置", energyTmplAttrs.size());
+            }
         }
 
         // 预取储罐设置编码集合：判断是否液压
@@ -219,14 +205,24 @@ public class PowerGasMeasurementServiceImpl implements PowerGasMeasurementServic
                 log.debug("未找到计量器具编码 {} 对应的台账信息，使用默认名称", measurement.getMeasurementCode());
             }
 
-            // 设置参数编码
-            EnergyParametersDO energyParam = energyParamMap.get(measurement.getEnergyParam());
-            if (energyParam != null) {
-                info.setParamCode(energyParam.getCode());
+            // 设置参数编码 - 修改逻辑：通过power_standingbook_tmpl_daq_attr表查询
+            String paramCode = null;
+            if (typeId != null) {
+                // 使用预构建的映射关系查询参数编码
+                String key = typeId + "_" + measurement.getEnergyParam();
+                paramCode = typeIdAndParamToCode.get(key);
+                
+                if (paramCode != null) {
+                    log.debug("找到计量器具 {} 对应的参数编码: {}", measurement.getMeasurementCode(), paramCode);
+                } else {
+                    log.debug("未找到计量器具 {} 对应的参数编码，typeId: {}, energyParam: {}", 
+                            measurement.getMeasurementCode(), typeId, measurement.getEnergyParam());
+                }
             } else {
-                info.setParamCode(null);
-                log.debug("未找到能源参数中文名 {} 对应的参数编码", measurement.getEnergyParam());
+                log.debug("计量器具 {} 没有对应的typeId，无法查询参数编码", measurement.getMeasurementCode());
             }
+            
+            info.setParamCode(paramCode);
 
             // 动态计算计算类型（使用预取的 data_feature 与储罐设置编码，避免 N+1 查询）
             Integer calculateType = null;
@@ -255,6 +251,19 @@ public class PowerGasMeasurementServiceImpl implements PowerGasMeasurementServic
 
         // 记录返回的计量器具信息条数
         log.info("返回{}条计量器具信息", result.size());
+        
+        // 添加调试信息：统计参数编码获取情况
+        long successCount = result.stream().filter(info -> info.getParamCode() != null).count();
+        long failCount = result.size() - successCount;
+        log.info("参数编码获取统计 - 成功: {}, 失败: {}", successCount, failCount);
+        
+        // 如果有失败的，输出详细信息
+        if (failCount > 0) {
+            result.stream()
+                    .filter(info -> info.getParamCode() == null)
+                    .forEach(info -> log.warn("未获取到参数编码 - 计量器具: {}, typeId: {}, energyParam: {}", 
+                            info.getMeasurementCode(), info.getTypeId(), info.getEnergyParam()));
+        }
 
         return result;
     }
