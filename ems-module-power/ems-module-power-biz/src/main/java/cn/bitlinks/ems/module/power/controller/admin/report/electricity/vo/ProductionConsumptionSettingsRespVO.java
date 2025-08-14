@@ -19,5 +19,7 @@ public class ProductionConsumptionSettingsRespVO {
     @Schema(description = "台账id")
     private Long standingbookId;
 
+    @Schema(description = "台账名称")
+    private String standingbookName;
 
 }

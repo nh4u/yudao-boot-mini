@@ -6,11 +6,13 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.*;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
 import cn.bitlinks.ems.module.power.dal.dataobject.report.electricity.ProductionConsumptionSettingsDO;
 import cn.bitlinks.ems.module.power.dal.mysql.report.electricity.ProductionConsumptionSettingsMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
+import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -55,6 +57,9 @@ public class ProductionConsumptionSettingsServiceImpl implements ProductionConsu
     private UsageCostService usageCostService;
 
     @Resource
+    private StandingbookService standingbookService;
+
+    @Resource
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
 
     private Integer scale = DEFAULT_SCALE;
@@ -79,10 +84,30 @@ public class ProductionConsumptionSettingsServiceImpl implements ProductionConsu
     }
 
     @Override
-    public List<ProductionConsumptionSettingsDO> getProductionConsumptionSettingsList(ProductionConsumptionSettingsPageReqVO pageReqVO) {
-        return productionConsumptionSettingsMapper.selectList((new LambdaQueryWrapperX<ProductionConsumptionSettingsDO>()
+    public List<ProductionConsumptionSettingsRespVO> getProductionConsumptionSettingsList(ProductionConsumptionSettingsPageReqVO pageReqVO) {
+
+
+        List<ProductionConsumptionSettingsDO> productionConsumptionSettingsList = productionConsumptionSettingsMapper.selectList((new LambdaQueryWrapperX<ProductionConsumptionSettingsDO>()
                 .eqIfPresent(ProductionConsumptionSettingsDO::getName, pageReqVO.getName())
                 .orderByAsc(ProductionConsumptionSettingsDO::getId)));
+
+        List<ProductionConsumptionSettingsRespVO> list = BeanUtils.toBean(productionConsumptionSettingsList, ProductionConsumptionSettingsRespVO.class);
+        List<StandingbookDTO> standingbookDTOList = standingbookService.getStandingbookDTOList();
+
+        Map<Long, StandingbookDTO> standingbookMap = standingbookDTOList
+                .stream()
+                .collect(Collectors.toMap(StandingbookDTO::getStandingbookId, Function.identity()));
+
+        list.forEach(l -> {
+            Long standingbookId = l.getStandingbookId();
+            String name = "";
+            StandingbookDTO standingbook = standingbookMap.get(standingbookId);
+            if (!Objects.isNull(standingbook)) {
+                name = standingbook.getName();
+            }
+            l.setStandingbookName(name);
+        });
+        return list;
     }
 
     @Override

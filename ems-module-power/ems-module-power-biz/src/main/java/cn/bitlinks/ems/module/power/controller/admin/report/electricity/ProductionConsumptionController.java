@@ -2,11 +2,9 @@ package cn.bitlinks.ems.module.power.controller.admin.report.electricity;
 
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
-import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.FullCellMergeStrategy;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
-import cn.bitlinks.ems.module.power.dal.dataobject.report.electricity.ProductionConsumptionSettingsDO;
 import cn.bitlinks.ems.module.power.service.report.electricity.ProductionConsumptionSettingsService;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.write.metadata.style.WriteCellStyle;
@@ -64,8 +62,7 @@ public class ProductionConsumptionController {
     @Operation(summary = "获得生产源耗设置List")
     //@PreAuthorize("@ss.hasPermission('power:power_production_consumption_settings:query')")
     public CommonResult<List<ProductionConsumptionSettingsRespVO>> getProductionConsumptionSettingsList(@Valid ProductionConsumptionSettingsPageReqVO pageReqVO) {
-        List<ProductionConsumptionSettingsDO> list = productionConsumptionSettingsService.getProductionConsumptionSettingsList(pageReqVO);
-        return success(BeanUtils.toBean(list, ProductionConsumptionSettingsRespVO.class));
+        return success(productionConsumptionSettingsService.getProductionConsumptionSettingsList(pageReqVO));
     }
 
     @GetMapping("/getName")

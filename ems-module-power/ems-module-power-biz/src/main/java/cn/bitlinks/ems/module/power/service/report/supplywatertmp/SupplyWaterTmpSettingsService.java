@@ -15,7 +15,7 @@ public interface SupplyWaterTmpSettingsService {
 
     List<SupplyWaterTmpSettingsDO> getSupplyWaterTmpSettingsList(SupplyWaterTmpSettingsPageReqVO pageReqVO);
 
-    List<String> getSystem();
+    List<SupplyWaterTmpSettingsDO> getSystem();
 
     SupplyWaterTmpTableResultVO supplyWaterTmpTable(SupplyWaterTmpReportParamVO paramVO);
 
