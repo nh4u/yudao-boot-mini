@@ -129,7 +129,23 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
         if (CollUtil.isEmpty(transformerUtilizationSettingsDOList)) {
             return Collections.emptyList();
         }
-        return BeanUtils.toBean(transformerUtilizationSettingsDOList, TransformerUtilizationSettingsVO.class);
+        List<StandingbookDTO> list = standingbookService.getStandingbookDTOList();
+        if (CollUtil.isEmpty(list)) {
+            return Collections.emptyList();
+        }
+        Map<Long, StandingbookDTO> standingbookDTOMap = list.stream().collect(Collectors.toMap(StandingbookDTO::getStandingbookId, Function.identity()));
+        List<TransformerUtilizationSettingsVO> result = BeanUtils.toBean(transformerUtilizationSettingsDOList, TransformerUtilizationSettingsVO.class);
+        result.forEach(vo->{
+            Optional.ofNullable(standingbookDTOMap.get(vo.getTransformerId()))
+                    .ifPresent(dto -> {
+                        vo.setTransformerNodeName(dto.getName()+"("+dto.getCode()+")");
+                    });
+            Optional.ofNullable(standingbookDTOMap.get(vo.getLoadCurrentId()))
+                    .ifPresent(dto -> {
+                        vo.setLoadCurrentNodeName(dto.getName()+"("+dto.getCode()+")");
+                    });
+        });
+        return result;
     }
 
 
