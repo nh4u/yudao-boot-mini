@@ -41,6 +41,7 @@ import static cn.bitlinks.ems.framework.common.enums.DataTypeEnum.DAY;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_RANGE_EXCEED_LIMIT;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.END_TIME_MUST_AFTER_START_TIME;
+import static cn.bitlinks.ems.module.power.enums.GasStatisticsCacheConstants.GAS_STATISTICS_ENERGY_ITEMS_;
 import static cn.bitlinks.ems.module.power.enums.GasStatisticsCacheConstants.GAS_STATISTICS_TABLE;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
 
@@ -101,9 +102,19 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
 
     @Override
     public List<EnergyStatisticsItemInfoRespVO> getEnergyStatisticsItems() {
+        // 添加缓存，避免重复查询
+        byte[] compressed = byteArrayRedisTemplate.opsForValue().get(GAS_STATISTICS_ENERGY_ITEMS_);
+        if (compressed != null) {
+            String cacheRes = StrUtils.decompressGzip(compressed);
+            if (CharSequenceUtil.isNotEmpty(cacheRes)) {
+                log.debug("从缓存获取能源统计项列表");
+                return JSON.parseObject(cacheRes, new TypeReference<List<EnergyStatisticsItemInfoRespVO>>() {});
+            }
+        }
+
         // 改为从固定43条数据获取
         List<GasMeasurementInfo> gasMeasurementInfos = powerGasMeasurementService.getGasMeasurementInfos();
-        return gasMeasurementInfos.stream()
+        List<EnergyStatisticsItemInfoRespVO> result = gasMeasurementInfos.stream()
                 .map(info -> {
                     EnergyStatisticsItemInfoRespVO vo = new EnergyStatisticsItemInfoRespVO();
                     vo.setMeasurementCode(info.getMeasurementCode());
@@ -111,6 +122,14 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                     return vo;
                 })
                 .collect(Collectors.toList());
+
+        // 缓存结果，有效期30分钟
+        String jsonStr = JSONUtil.toJsonStr(result);
+        byte[] bytes = StrUtils.compressGzip(jsonStr);
+        byteArrayRedisTemplate.opsForValue().set(GAS_STATISTICS_ENERGY_ITEMS_, bytes, 30, TimeUnit.MINUTES);
+        
+        log.debug("能源统计项列表查询完成，共{}条，已缓存", result.size());
+        return result;
     }
 
     @Override
@@ -128,7 +147,8 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         }
         
         log.info("开始查询气化科报表，时间范围: {} ~ {}, 计量器具编码: {}", 
-                startTime, endTime, paramVO.getEnergyStatisticsItemCodes());
+                startTime, endTime, paramVO.getEnergyStatisticsItemCodes() != null ? 
+                String.join(",", paramVO.getEnergyStatisticsItemCodes()) : "全部");
         
         // 生成缓存key，包含计量器具编码信息
         String cacheKey = GAS_STATISTICS_TABLE + SecureUtil.md5(paramVO.toString());
@@ -192,6 +212,8 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
 
         // 对于液压计算类型，需要额外查询power_tank_settings表获取pressure_diff_id
         List<Long> pressureDiffIds = new ArrayList<>();
+        Map<String, PowerTankSettingsDO> tankSettingsMap = new HashMap<>();
+        
         if (!standingbookIds.isEmpty()) {
             // 获取所有计量器具编码
             List<String> mCodes = gasMeasurementInfos.stream()
@@ -204,6 +226,15 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                             .in(PowerTankSettingsDO::getCode, mCodes)
                             .eq(PowerTankSettingsDO::getDeleted, false)
             );
+            
+            // 构建储罐设置映射，避免后续重复查询
+            tankSettingsMap = tankSettings.stream()
+                    .filter(e -> e.getCode() != null)
+                    .collect(Collectors.toMap(
+                            PowerTankSettingsDO::getCode,
+                            settings -> settings,
+                            (v1, v2) -> v1 // 遇到重复key保留第一条
+                    ));
             
             pressureDiffIds = tankSettings.stream()
                     .map(PowerTankSettingsDO::getPressureDiffId)
@@ -228,20 +259,21 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
             return resultVO;
         }
 
-        // 获取储罐设置数据
-        List<PowerTankSettingsDO> powerTankSettings = powerTankSettingsMapper.selectList();
-        Map<String, PowerTankSettingsDO> tankSettingsMap = powerTankSettings.stream()
-                .filter(e -> e.getCode() != null)
-                .collect(Collectors.toMap(
-                        PowerTankSettingsDO::getCode,
-                        settings -> settings,
-                        (v1, v2) -> v1 // 遇到重复key保留第一条
-                ));
+        // 储罐设置数据已在前面查询并构建映射，无需重复查询
+        // 如果tankSettingsMap为空，初始化为空Map
+        if (tankSettingsMap == null) {
+            tankSettingsMap = new HashMap<>();
+        }
 
         // 生成日期列表（仅到日）。此处只构建 LocalDateTime 的零点时间，便于后续组装 key
         List<LocalDateTime> dateList = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, DAY).stream()
                 .map(dateStr -> LocalDateTime.parse(dateStr + " 00:00:00",
                         java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .collect(Collectors.toList());
+
+        // 预计算日期字符串格式，避免循环中重复格式化
+        List<String> dateStrings = dateList.stream()
+                .map(date -> date.format(DAY_FORMATTER))
                 .collect(Collectors.toList());
 
         // 性能优化：批量查询所有数据
@@ -280,9 +312,12 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
 
                 List<GasStatisticsInfoData> statisticsDateDataList = new ArrayList<>();
 
-                for (LocalDateTime date : dateList) {
+                for (int i = 0; i < dateList.size(); i++) {
+                    LocalDateTime date = dateList.get(i);
+                    String dateStr = dateStrings.get(i);
+                    
                     GasStatisticsInfoData data = new GasStatisticsInfoData();
-                    data.setDate(date.format(DAY_FORMATTER));
+                    data.setDate(dateStr);
 
                     // 获取当前计量器具的台账ID和参数编码
                     Long standingbookId = info.getStandingbookId();
@@ -293,12 +328,8 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                     
                     // 如果是液压计算类型，直接使用压差ID进行计算
                     if (info.getCalculateType() != null && info.getCalculateType() == 2) {
-                        // 查找对应的储罐设置，获取压差ID
-                        PowerTankSettingsDO tankSetting = powerTankSettingsMapper.selectOne(
-                                new LambdaQueryWrapperX<PowerTankSettingsDO>()
-                                        .eq(PowerTankSettingsDO::getCode, info.getMeasurementCode())
-                                        .eq(PowerTankSettingsDO::getDeleted, false)
-                        );
+                        // 从已构建的映射中获取储罐设置，避免重复查询
+                        PowerTankSettingsDO tankSetting = tankSettingsMap.get(info.getMeasurementCode());
                         
                         if (tankSetting != null && tankSetting.getPressureDiffId() != null) {
                             log.debug("液压计算类型 - 计量器具: {}, 台账ID: {}, 压差ID: {}", 
@@ -347,8 +378,8 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         // 缓存结果
         String jsonStr = JSONUtil.toJsonStr(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
-        // 延长缓存时间，提升重复查询的复用率
-        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 10, TimeUnit.MINUTES);
+        // 缓存时间，提升重复查询的复用率
+        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
 
         log.info("气化科报表查询完成，返回{}条统计数据", statisticsInfoList.size());
         return resultVO;
@@ -862,6 +893,8 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                         info.setCalculateType(1); // 累计值
                     } else if (dataFeature == 2) {
                         // 检查是否有储罐设置，使用计量器具编码查询
+                        // 注意：这里暂时保留查询，因为tankSettingsMap可能还未构建
+                        // 在gasStatisticsTable方法中会使用已构建的映射
                         PowerTankSettingsDO tankSetting = powerTankSettingsMapper.selectOne(
                                 new LambdaQueryWrapperX<PowerTankSettingsDO>()
                                         .eq(PowerTankSettingsDO::getCode, measurement.getMeasurementCode())
