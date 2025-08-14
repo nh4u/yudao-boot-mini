@@ -137,11 +137,7 @@ public interface StandingbookService {
      * @return
      */
     List<StandingbookDTO> getStandingbookDTOList();
-    /**
-     * id-台账基础属性
-     * @return
-     */
-    Map<Long, StandingbookDTO> getStandingbookDTOMap();
+
 
     List<StandingBookHeaderDTO> getStandingBookHeadersByHeaders(List<String> headList);
     /**

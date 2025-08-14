@@ -357,12 +357,12 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
                 TimeAndNumData current = nowMap.get(time);
                 BigDecimal now = Optional.ofNullable(current)
                         .map(TimeAndNumData::getNum)
-                        .orElse(BigDecimal.ZERO);
-                String previousTime = LocalDateTimeUtils.getYearOnYearTime(time, dataTypeEnum);
+                        .orElse(null);
+                String previousTime = LocalDateTimeUtils.getYearOnYearTimeV2(time, dataTypeEnum);
                 TimeAndNumData previous = previousMap.get(previousTime);
                 BigDecimal last = Optional.ofNullable(previous)
                         .map(TimeAndNumData::getNum)
-                        .orElse(BigDecimal.ZERO);
+                        .orElse(null);
                 BigDecimal ratio = calculateYearOnYearRatio(now, last);
                 dataList.add(new HvacElectricityInfoData(time, now, last, ratio));
             }
@@ -427,8 +427,6 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
             });
         }
         BaseReportResultVO<HvacElectricityInfo> tableResult = getTable(paramVO);
-//        // 表头处理
-//        List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
 
         BaseReportMultiChartResultVO<LinkedHashMap<String, List<BigDecimal>>> resultVO = new BaseReportMultiChartResultVO<>();
         // x轴
@@ -440,13 +438,6 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
         LinkedHashMap<String, List<BigDecimal>> ydataNowListMap = new LinkedHashMap<>();
         LinkedHashMap<String, List<BigDecimal>> ydataPreListMap = new LinkedHashMap<>();
         List<HvacElectricityInfo> tableDataList = tableResult.getReportDataList();
-        // 无数据的填充0
-//        hvacElectricityInfos.forEach(l -> {
-//
-//            List<HvacElectricityInfoData> newList = new ArrayList<>();
-//            List<HvacElectricityInfoData> oldList = l.getHvacElectricityInfoDataList();
-//
-//        });
 
 
         tableDataList.forEach(info -> {
@@ -456,19 +447,10 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
             }
             dateList.forEach(data -> {
                 data.setNow(data.getNow() == null ? BigDecimal.ZERO : data.getNow());
-                data.setPrevious(data.getPrevious() == null ? BigDecimal.ZERO : data.getNow());
-                data.setRatio(data.getRatio() == null ? BigDecimal.ZERO : data.getNow());
+                data.setPrevious(data.getPrevious() == null ? BigDecimal.ZERO : data.getPrevious());
+                data.setRatio(data.getRatio() == null ? BigDecimal.ZERO : data.getRatio());
             });
-//            xdata.forEach(date -> {
-//                List<HvacElectricityInfoData> hvacElectricityInfoDataList = dateMap.get(date);
-//                if (hvacElectricityInfoDataList == null) {
-//                    HvacElectricityInfoData hvacElectricityInfoData = new HvacElectricityInfoData();
-//                    hvacElectricityInfoData.setDate(date);
-//                    newList.add(hvacElectricityInfoData);
-//                } else {
-//                    newList.add(hvacElectricityInfoDataList.get(0));
-//                }
-//            });
+
             Map<String, HvacElectricityInfoData> timeMap = dateList.stream()
                     .filter(data -> data.getDate() != null)
                     .collect(Collectors.toMap(
