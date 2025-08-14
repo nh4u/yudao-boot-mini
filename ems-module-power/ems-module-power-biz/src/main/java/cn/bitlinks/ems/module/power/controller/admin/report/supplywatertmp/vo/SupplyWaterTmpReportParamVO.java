@@ -36,6 +36,9 @@ public class SupplyWaterTmpReportParamVO {
     @Schema(description = "系统")
     private List<String> system;
 
+    @Schema(description = "编码")
+    private List<String> codes;
+
     @Schema(description = "时间类型 0：日；1：月；2：年；3：时。")
     @NotNull(message = "时间类型不能为空")
     private Integer dateType;

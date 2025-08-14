@@ -12,6 +12,7 @@ import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.service.minuteagg.MinuteAggDataService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.text.StrPool;
 import com.alibaba.excel.util.ListUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -80,7 +81,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
     }
 
     @Override
-    public List<String> getSystem() {
+    public List<SupplyWaterTmpSettingsDO> getSystem() {
         return supplyWaterTmpSettingsMapper.getSystem();
     }
 
@@ -108,8 +109,8 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         resultVO.setDataTime(LocalDateTime.now());
 
         // 校验系统 没值就返空
-        List<String> system1 = paramVO.getSystem();
-        if (CollUtil.isEmpty(system1)) {
+        List<String> codes1 = paramVO.getCodes();
+        if (CollUtil.isEmpty(codes1)) {
             return resultVO;
         }
 
@@ -809,8 +810,14 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         // 统计周期
         String strTime = getFormatTime(startTime) + "~" + getFormatTime(endTime);
         // 统计系统
-        List<String> system = paramVO.getSystem();
-        String systemStr = CollUtil.isNotEmpty(system) ? String.join("、", system) : "全";
+        List<SupplyWaterTmpSettingsDO> supplyWaterTmpSettingsList = supplyWaterTmpSettingsMapper.selectList(paramVO);
+
+        String collect = supplyWaterTmpSettingsList
+                .stream()
+                .map(SupplyWaterTmpSettingsDO::getSystem)
+                .collect(Collectors.joining("、"));
+
+        String systemStr = CharSequenceUtil.isNotEmpty(collect) ? collect : "全";
 
         list.add(Arrays.asList("表单名称", "统计系统", "统计周期", "时间/系统", "时间/系统"));
 
