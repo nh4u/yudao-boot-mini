@@ -369,7 +369,6 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<StandingbookTypeDO> standingbookTypeDOTree = standingbookTypeService.getStandingbookTypeIdList(energyTypeIds);
         return buildTreeWithDevices(standingbookTypeDOTree, sbNodes);
 
-
     }
 
     @Override
@@ -378,11 +377,6 @@ public class StandingbookServiceImpl implements StandingbookService {
         return standingbookAttributeMapper.getStandingbookDTO();
     }
 
-    @Override
-    public Map<Long, StandingbookDTO> getStandingbookDTOMap() {
-        List<StandingbookDTO> list = getStandingbookDTOList();
-        return list.stream().collect(Collectors.toMap(StandingbookDTO::getStandingbookId, Function.identity()));
-    }
 
     @Cacheable(value = RedisKeyConstants.STANDING_BOOK_CODE_KEYMAP, key = "'codeKeyAll'", unless = "#result == null || #result.isEmpty()")
     public Map<String, StandingBookHeaderDTO> getStandingBookCodeKeyMap() {

@@ -20,11 +20,17 @@ public class TransformerUtilizationSettingsVO {
      */
     @Schema(description = "变压器", requiredMode = Schema.RequiredMode.REQUIRED, example = "12042")
     private Long transformerId;
+
+    @Schema(description = "变压器节点选择名称（code）", requiredMode = Schema.RequiredMode.REQUIRED, example = "12042")
+    private String transformerNodeName;
     /**
      * '负载电流'
      */
     @Schema(description = "负载电流", example = "12042")
     private Long loadCurrentId;
+
+    @Schema(description = "负载电流节点选择名称（code）")
+    private String loadCurrentNodeName;
     /**
      * '电压等级'
      */
