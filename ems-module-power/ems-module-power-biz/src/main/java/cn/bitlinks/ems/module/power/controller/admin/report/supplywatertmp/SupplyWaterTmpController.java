@@ -70,9 +70,9 @@ public class SupplyWaterTmpController {
     @GetMapping("/getSystem")
     @Operation(summary = "获得供水温度系统")
     //@PreAuthorize("@ss.hasPermission('power:power_supply_water_tmp_settings:query')")
-    public CommonResult<List<String>> getSystem() {
-        List<String> list = supplyWaterTmpSettingsService.getSystem();
-        return success(list);
+    public CommonResult<List<SupplyWaterTmpSettingsRespVO>> getSystem() {
+        List<SupplyWaterTmpSettingsDO> list = supplyWaterTmpSettingsService.getSystem();
+        return success(BeanUtils.toBean(list, SupplyWaterTmpSettingsRespVO.class));
     }
 
 

@@ -1,11 +1,7 @@
 package cn.bitlinks.ems.module.power.service.report.electricity;
 
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ProductionConsumptionReportParamVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ProductionConsumptionSettingsPageReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ProductionConsumptionSettingsSaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ProductionConsumptionStatisticsInfo;
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
-import cn.bitlinks.ems.module.power.dal.dataobject.report.electricity.ProductionConsumptionSettingsDO;
 
 import java.util.List;
 
@@ -17,7 +13,7 @@ public interface ProductionConsumptionSettingsService {
 
     void updateBatch(List<ProductionConsumptionSettingsSaveReqVO> productionConsumptionList);
 
-    List<ProductionConsumptionSettingsDO> getProductionConsumptionSettingsList(ProductionConsumptionSettingsPageReqVO pageReqVO);
+    List<ProductionConsumptionSettingsRespVO> getProductionConsumptionSettingsList(ProductionConsumptionSettingsPageReqVO pageReqVO);
 
     List<String> getName();
 
