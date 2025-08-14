@@ -358,7 +358,7 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
                 BigDecimal now = Optional.ofNullable(current)
                         .map(TimeAndNumData::getNum)
                         .orElse(null);
-                String previousTime = LocalDateTimeUtils.getYearOnYearTime(time, dataTypeEnum);
+                String previousTime = LocalDateTimeUtils.getYearOnYearTimeV2(time, dataTypeEnum);
                 TimeAndNumData previous = previousMap.get(previousTime);
                 BigDecimal last = Optional.ofNullable(previous)
                         .map(TimeAndNumData::getNum)

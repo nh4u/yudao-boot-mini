@@ -613,9 +613,17 @@ public class LocalDateTimeUtils {
                 return date.minusYears(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
             case HOUR:
-                DateTimeFormatter shortFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH");
-                LocalDateTime dt = LocalDateTime.parse(current, shortFormatter);
-                return dt.minusYears(1).format(shortFormatter);
+                try {
+                    // 优先尝试更详细格式
+                    DateTimeFormatter fullFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                    LocalDateTime dt = LocalDateTime.parse(current, fullFormatter);
+                    return dt.minusYears(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                } catch (DateTimeParseException e) {
+                    // 退而使用短格式
+                    DateTimeFormatter shortFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH");
+                    LocalDateTime dt = LocalDateTime.parse(current, shortFormatter);
+                    return dt.minusYears(1).format(shortFormatter);
+                }
             default:
                 throw new IllegalArgumentException("不支持的时间类型：" + type);
         }
