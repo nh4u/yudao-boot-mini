@@ -122,7 +122,7 @@ public class GasStatisticsController {
                 // 设置表头数据
                 .head(header)
                 // 注册列宽策略，设置每列宽度为15个字符
-                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(15))
+                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
                 // 注册单元格样式策略，应用表头和内容的样式
                 .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
                 // 注册行高策略，设置表头行高为15，内容行高为15
