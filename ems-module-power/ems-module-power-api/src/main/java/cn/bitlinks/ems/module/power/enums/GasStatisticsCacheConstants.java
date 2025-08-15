@@ -8,5 +8,6 @@ public class GasStatisticsCacheConstants {
     }
 
     public static final String GAS_STATISTICS_TABLE = "report:gas:statistics:table:";
+    public static final String GAS_STATISTICS_ENERGY_ITEMS_= "report:gas:statistics:energy:items:";
 
 }
