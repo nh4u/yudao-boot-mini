@@ -377,7 +377,21 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         }
 
         resultVO.setStatisticsInfoList(statisticsInfoList);
-        resultVO.setDataTime(minuteAggDataService.getLastTime(allStandingbookIds, paramCodes, startTime, endTime));
+        // 从数据缓存中获取最新时间
+        LocalDateTime lastTime = null;
+        if (!dataCache.isEmpty()) {
+            lastTime = dataCache.values().stream()
+                    .map(MinuteAggregateDataDO::getAggregateTime)
+                    .max(LocalDateTime::compareTo)
+                    .orElse(null);
+        }
+
+        if (lastTime != null) {
+            resultVO.setDataTime(lastTime);
+            log.info("设置dataTime为查询周期内最新数据时间: {}", lastTime);
+        } else {
+            log.info("查询周期内无数据，不设置dataTime");
+        }
 
         // 缓存结果
         String jsonStr = JSONUtil.toJsonStr(resultVO);
