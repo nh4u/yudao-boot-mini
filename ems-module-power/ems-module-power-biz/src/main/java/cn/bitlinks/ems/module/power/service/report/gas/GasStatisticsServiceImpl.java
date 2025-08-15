@@ -29,6 +29,7 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -362,7 +363,7 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                         value = calculateValueByTypeOptimized(info, date, dataCache, tankSettingsMap);
                     }
 
-                    data.setValue(value);
+                    data.setValue(value.setScale(2, RoundingMode.HALF_UP));
 
                     statisticsDateDataList.add(data);
                 }
