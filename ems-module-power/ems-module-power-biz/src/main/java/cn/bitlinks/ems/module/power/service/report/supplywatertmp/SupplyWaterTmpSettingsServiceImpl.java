@@ -35,6 +35,7 @@ import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.SUPPLY_WATER_TMP;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.divideWithScale;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.getConvertData;
 
 /**
  * @author liumingqiang
@@ -135,7 +136,11 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         supplyWaterTmpSettingsList.forEach(s -> standingBookCodeMap.put(s.getCode(), s.getStandingbookId()));
 
         // 5.根据台账ID和参数code查用小时用量数据
-        List<SupplyWaterTmpMinuteAggData> minuteAggDataList = minuteAggDataService.getTmpRangeDataSteady(standingBookIds, paramCodes, startTime, endTime);
+        List<SupplyWaterTmpMinuteAggData> minuteAggDataList = minuteAggDataService.getTmpRangeDataSteady(
+                standingBookIds,
+                paramCodes,
+                range[0],
+                range[1]);
 
         if (CollUtil.isEmpty(minuteAggDataList)) {
             return resultVO;
@@ -176,7 +181,6 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         List<Map<String, Object>> result = new ArrayList<>();
 
         //  1.处理小时数据为天数据
-
         switch (teamFlag) {
             case 0:
                 //非班组
@@ -189,10 +193,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
             default:
 
         }
-
-
         return result;
-
     }
 
     /**
@@ -796,7 +797,6 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         }
     }
 
-
     @Override
     public List<List<String>> getExcelHeader(SupplyWaterTmpReportParamVO paramVO) {
 
@@ -844,13 +844,75 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         List<List<Object>> result = ListUtils.newArrayList();
         SupplyWaterTmpTableResultVO resultVO = supplyWaterTmpTable(paramVO);
 
+        List<Map<String, Object>> list = resultVO.getList();
 
+        if (CollUtil.isEmpty(list)) {
+            return result;
+        }
 
+        Integer teamFlag = paramVO.getTeamFlag();
 
+        List<SupplyWaterTmpSettingsDO> supplyWaterTmpSettingsList = supplyWaterTmpSettingsMapper.selectList(paramVO);
+        if (CollUtil.isEmpty(supplyWaterTmpSettingsList)) {
+            return result;
+        }
 
-        // TODO: 2025/8/14  还是根据table来画数据
+        List<String> codeList = supplyWaterTmpSettingsList
+                .stream()
+                .map(SupplyWaterTmpSettingsDO::getCode).collect(Collectors.toList());
+
+        // 找出所有月份 做循环
+        Map<String, Object> map = list.get(0);
+        List<String> monthList = getAllMonth(map);
+
+        // 处理表数据
+        if (teamFlag.equals(0)) {
+            //非班组
+            list.forEach(l -> {
+                List<Object> data = ListUtils.newArrayList();
+                data.add(l.get("date"));
+
+                monthList.forEach(m -> {
+                    codeList.forEach(c -> {
+                        String key = c + StrPool.UNDERLINE + m;
+                        // 处理数据
+                        Object value = l.get(key);
+                        data.add(getConvertData((BigDecimal) value));
+                    });
+                });
+
+                result.add(data);
+            });
+        } else {
+            // 班组
+            list.forEach(l -> {
+                List<Object> data = ListUtils.newArrayList();
+                data.add(l.get("date"));
+                monthList.forEach(m -> {
+                    codeList.forEach(c -> {
+                        String key1 = "1_" + c + StrPool.UNDERLINE + m;
+                        String key2 = "2_" + c + StrPool.UNDERLINE + m;
+                        Object value = l.get(key1);
+                        if (Objects.isNull(value)) {
+                            // 处理数据
+                            value = l.get(key2);
+                        }
+                        data.add(getConvertData((BigDecimal) value));
+                    });
+                });
+
+                result.add(data);
+            });
+        }
 
         return result;
+    }
+
+    private List<String> getAllMonth(Map<String, Object> map) {
+        return map.keySet().stream().filter(key -> !"date".equals(key)).map(key -> {
+            String[] list = key.split(StrPool.UNDERLINE);
+            return list[list.length - 1];
+        }).distinct().sorted().collect(Collectors.toList());
     }
 
     /**
