@@ -17,6 +17,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.templ.StandingbookTmplDaqAttrMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
+import cn.bitlinks.ems.module.power.service.minuteagg.MinuteAggDataService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -79,6 +80,9 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
 
     @Resource
     private StandingbookTmplDaqAttrMapper standingbookTmplDaqAttrMapper;
+
+    @Resource
+    private MinuteAggDataService minuteAggDataService;
 
     // 后续可能根据三目运算符来取动态的有效数字位scale
     private Integer scale = DEFAULT_SCALE;
@@ -189,7 +193,6 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         if (CollUtil.isEmpty(gasMeasurementInfos)) {
             log.warn("未找到有效的计量器具配置");
             resultVO.setStatisticsInfoList(new ArrayList<>());
-            resultVO.setDataTime(LocalDateTime.now());
             return resultVO;
         }
 
@@ -374,7 +377,7 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         }
 
         resultVO.setStatisticsInfoList(statisticsInfoList);
-        resultVO.setDataTime(LocalDateTime.now());
+        resultVO.setDataTime(minuteAggDataService.getLastTime(allStandingbookIds, paramCodes, startTime, endTime));
 
         // 缓存结果
         String jsonStr = JSONUtil.toJsonStr(resultVO);
