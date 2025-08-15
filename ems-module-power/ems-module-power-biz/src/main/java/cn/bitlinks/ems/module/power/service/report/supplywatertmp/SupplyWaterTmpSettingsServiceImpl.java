@@ -131,7 +131,6 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
 
         List<String> codes = supplyWaterTmpSettingsList.stream().map(SupplyWaterTmpSettingsDO::getCode).filter(Objects::nonNull).distinct().collect(Collectors.toList());
 
-
         Map<String, Long> standingBookCodeMap = new HashMap<>();
         supplyWaterTmpSettingsList.forEach(s -> standingBookCodeMap.put(s.getCode(), s.getStandingbookId()));
 
@@ -214,7 +213,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
 
         for (int i = 1; i <= 31; i++) {
             Map<String, Object> map = new HashMap<>();
-            map.put("date", i + "日00:00:00");
+            map.put("date", i + DAY);
 
             // 月份处理
             LocalDateTime tempStartTime = startTime;
@@ -283,9 +282,9 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
 
         for (int i = 1; i <= 31; i++) {
             Map<String, Object> map1 = new HashMap<>();
-            map1.put("date", i + "日00:00:00");
+            map1.put("date", i + DAY);
             Map<String, Object> map2 = new HashMap<>();
-            map2.put("date", i + "日00:00:00");
+            map2.put("date", i + DAY);
 
             // 月份处理
             LocalDateTime tempStartTime = startTime;
@@ -455,7 +454,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         for (int i = 1; i <= 31; i++) {
             for (int j = 0; j <= 23; j++) {
                 Map<String, Object> map = new HashMap<>();
-                map.put("date", i + "日" + j + ":00:00");
+                map.put("date", i + DAY + j + ":00:00");
 
                 // 月份处理
                 LocalDateTime tempStartTime = startTime;
@@ -776,8 +775,11 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         // 天 时 处理
         String[] l1 = date.split(DAY);
         int day = Integer.parseInt(l1[0].trim());
-        String[] l2 = l1[1].split(StrPool.COLON);
-        int hour = Integer.parseInt(l2[0].trim());
+        int hour = 0;
+        if (l1.length > 1) {
+            String[] l2 = l1[1].split(StrPool.COLON);
+            hour = Integer.parseInt(l2[0].trim());
+        }
 
         // 年 月 处理
         String[] l3 = key.split(StrPool.UNDERLINE);
@@ -801,8 +803,9 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         // 1.校验时间范围
         LocalDateTime[] range = validateRange(paramVO.getRange());
         // 2.时间处理
-        LocalDateTime startTime = range[0];
-        LocalDateTime endTime = range[1];
+        LocalDateTime startTime = LocalDateTimeUtils.beginOfMonth(range[0]);
+        LocalDateTime endTime = LocalDateTimeUtils.endOfMonth(range[1]);
+
         // 表头数据
         List<List<String>> list = ListUtils.newArrayList();
         // 表单名称
@@ -811,28 +814,26 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         String strTime = getFormatTime(startTime) + "~" + getFormatTime(endTime);
         // 统计系统
         List<SupplyWaterTmpSettingsDO> supplyWaterTmpSettingsList = supplyWaterTmpSettingsMapper.selectList(paramVO);
-
-        String collect = supplyWaterTmpSettingsList
+        List<String> systemList = supplyWaterTmpSettingsList
                 .stream()
-                .map(SupplyWaterTmpSettingsDO::getSystem)
+                .map(SupplyWaterTmpSettingsDO::getSystem).collect(Collectors.toList());
+        String system = systemList
+                .stream()
                 .collect(Collectors.joining("、"));
+        String systemStr = CharSequenceUtil.isNotEmpty(system) ? system : "全";
 
-        String systemStr = CharSequenceUtil.isNotEmpty(collect) ? collect : "全";
-
+        // 第一列处理
         list.add(Arrays.asList("表单名称", "统计系统", "统计周期", "时间/系统", "时间/系统"));
 
         // 月份数据处理
-        DataTypeEnum dataTypeEnum = validateDateType(paramVO.getDateType());
+        DataTypeEnum dataTypeEnum = validateDateType(1);
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, dataTypeEnum);
 
         xdata.forEach(x -> {
-            list.add(Arrays.asList(sheetName, systemStr, strTime, x, "用量"));
-            list.add(Arrays.asList(sheetName, systemStr, strTime, x, "占比(%)"));
+            systemList.forEach(s -> {
+                list.add(Arrays.asList(sheetName, systemStr, strTime, x, s));
+            });
         });
-
-        // 周期合计
-        list.add(Arrays.asList(sheetName, systemStr, strTime, "周期合计", "用量"));
-        list.add(Arrays.asList(sheetName, systemStr, strTime, "周期合计", "占比(%)"));
         return list;
     }
 
@@ -843,6 +844,11 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         List<List<Object>> result = ListUtils.newArrayList();
         SupplyWaterTmpTableResultVO resultVO = supplyWaterTmpTable(paramVO);
 
+
+
+
+
+        // TODO: 2025/8/14  还是根据table来画数据
 
         return result;
     }

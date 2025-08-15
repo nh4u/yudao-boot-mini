@@ -9,6 +9,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.report.supplywatertmp.SupplyW
 import cn.bitlinks.ems.module.power.service.report.supplywatertmp.SupplyWaterTmpSettingsService;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.write.metadata.style.WriteCellStyle;
+import com.alibaba.excel.write.metadata.style.WriteFont;
 import com.alibaba.excel.write.style.HorizontalCellStyleStrategy;
 import com.alibaba.excel.write.style.column.SimpleColumnWidthStyleStrategy;
 import com.alibaba.excel.write.style.row.SimpleRowHeightStyleStrategy;
@@ -117,10 +118,10 @@ public class SupplyWaterTmpController {
         // 设置背景色
 //        headerStyle.setFillBackgroundColor(IndexedColors.ROYAL_BLUE.getIndex());
         // 设置字体
-//        WriteFont headerFont = new WriteFont();
-//        headerFont.setFontHeightInPoints((short) 10);
+        WriteFont headerFont = new WriteFont();
+        headerFont.setFontHeightInPoints((short) 8);
 //        headerFont.setColor(IndexedColors.WHITE.getIndex());
-//        headerStyle.setWriteFont(headerFont);
+        headerStyle.setWriteFont(headerFont);
 
 
         // 创建一个新的 WriteCellStyle 对象
@@ -141,7 +142,7 @@ public class SupplyWaterTmpController {
         try (OutputStream outputStream = response.getOutputStream()) {
             EasyExcelFactory.write(outputStream)
                     .head(header)
-                    .registerWriteHandler(new SimpleColumnWidthStyleStrategy(15))
+                    .registerWriteHandler(new SimpleColumnWidthStyleStrategy(25))
                     .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
                     // 设置表头行高 30，内容行高 20
                     .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))
