@@ -21,7 +21,7 @@ public interface SupplyWaterTmpSettingsMapper extends BaseMapperX<SupplyWaterTmp
         return selectPage(reqVO, new LambdaQueryWrapperX<SupplyWaterTmpSettingsDO>()
                 .eqIfPresent(SupplyWaterTmpSettingsDO::getSystem, reqVO.getSystem())
                 .eqIfPresent(SupplyWaterTmpSettingsDO::getStandingbookId, reqVO.getStandingbookId())
-                .orderByAsc(SupplyWaterTmpSettingsDO::getCreateTime));
+                .orderByAsc(SupplyWaterTmpSettingsDO::getId));
     }
 
     /**
@@ -42,7 +42,7 @@ public interface SupplyWaterTmpSettingsMapper extends BaseMapperX<SupplyWaterTmp
         return selectList(new LambdaQueryWrapperX<SupplyWaterTmpSettingsDO>()
                 .inIfPresent(SupplyWaterTmpSettingsDO::getSystem, reqVO.getSystem())
                 .inIfPresent(SupplyWaterTmpSettingsDO::getCode, reqVO.getCodes())
-                .orderByAsc(SupplyWaterTmpSettingsDO::getCreateTime));
+                .orderByAsc(SupplyWaterTmpSettingsDO::getId));
     }
 
     /**
@@ -54,7 +54,7 @@ public interface SupplyWaterTmpSettingsMapper extends BaseMapperX<SupplyWaterTmp
     default SupplyWaterTmpSettingsDO selectOne(String system) {
         return selectOne(new LambdaQueryWrapperX<SupplyWaterTmpSettingsDO>()
                 .eq(SupplyWaterTmpSettingsDO::getSystem, system)
-                .orderByAsc(SupplyWaterTmpSettingsDO::getCreateTime).last("limit 1"), false);
+                .orderByAsc(SupplyWaterTmpSettingsDO::getId).last("limit 1"), false);
     }
 
     /**
@@ -66,6 +66,6 @@ public interface SupplyWaterTmpSettingsMapper extends BaseMapperX<SupplyWaterTmp
     default SupplyWaterTmpSettingsDO selectOneByCode(String code) {
         return selectOne(new LambdaQueryWrapperX<SupplyWaterTmpSettingsDO>()
                 .eq(SupplyWaterTmpSettingsDO::getCode, code)
-                .orderByAsc(SupplyWaterTmpSettingsDO::getCreateTime).last("limit 1"), false);
+                .orderByAsc(SupplyWaterTmpSettingsDO::getId).last("limit 1"), false);
     }
 }
