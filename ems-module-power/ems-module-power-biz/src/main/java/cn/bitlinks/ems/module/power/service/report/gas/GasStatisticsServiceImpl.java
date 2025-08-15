@@ -700,13 +700,13 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
             // 后续列：每个时间点的数值
             for (String date : tableHeader) {
                 GasStatisticsInfoData dateData = dateDataMap.get(date);
-                if (dateData != null && dateData.getValue() != null) {
+                if (dateData != null && dateData.getValue() != null && dateData.getValue().compareTo(BigDecimal.ZERO) != 0) {
                     // 保留指定的小数位数
                     BigDecimal value = dateData.getValue().setScale(scale, BigDecimal.ROUND_HALF_UP);
                     dataRow.add(value);
                 } else {
                     // 如果没有数据，填充0
-                    dataRow.add(BigDecimal.ZERO.setScale(scale, BigDecimal.ROUND_HALF_UP));
+                    dataRow.add("/");
                 }
             }
 
