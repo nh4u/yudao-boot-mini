@@ -38,6 +38,8 @@ import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.time.format.DateTimeFormatter;
 
 import static cn.bitlinks.ems.framework.common.enums.DataTypeEnum.DAY;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -139,105 +141,106 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
 
     @Override
     public GasStatisticsResultVO<GasStatisticsInfo> gasStatisticsTable(GasStatisticsParamVO paramVO) {
-        // 校验时间范围是否存在
+        // 参数校验
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         LocalDateTime startTime = rangeOrigin[0];
         LocalDateTime endTime = rangeOrigin[1];
         if (!startTime.isBefore(endTime)) {
             throw exception(END_TIME_MUST_AFTER_START_TIME);
         }
-        //时间不能相差1年
         if (!LocalDateTimeUtils.isWithinDays(startTime, endTime, CommonConstants.YEAR)) {
             throw exception(DATE_RANGE_EXCEED_LIMIT);
         }
-        
-        log.info("开始查询气化科报表，时间范围: {} ~ {}, 计量器具编码: {}", 
-                startTime, endTime, paramVO.getEnergyStatisticsItemCodes() != null ? 
-                String.join(",", paramVO.getEnergyStatisticsItemCodes()) : "全部");
-        
-        // 生成缓存key，包含计量器具编码信息
-        String cacheKey = GAS_STATISTICS_TABLE + SecureUtil.md5(paramVO.toString());
-        byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
-        String cacheRes = StrUtils.decompressGzip(compressed);
-        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            log.info("缓存结果");
-            return JSON.parseObject(cacheRes, new TypeReference<GasStatisticsResultVO<GasStatisticsInfo>>() {
-            });
+
+        // 生成缓存键
+        String cacheKey = GAS_STATISTICS_TABLE + ":" + 
+                startTime.format(DAY_FORMATTER) + ":" + 
+                endTime.format(DAY_FORMATTER) + ":" + 
+                (paramVO.getEnergyStatisticsItemCodes() != null ? 
+                        String.join(",", paramVO.getEnergyStatisticsItemCodes()) : "all");
+
+        // 尝试从缓存获取
+        byte[] cachedBytes = byteArrayRedisTemplate.opsForValue().get(cacheKey);
+        if (cachedBytes != null) {
+            try {
+                String jsonStr = StrUtils.decompressGzip(cachedBytes);
+                GasStatisticsResultVO<GasStatisticsInfo> cachedResult = JSON.parseObject(jsonStr, 
+                        new TypeReference<GasStatisticsResultVO<GasStatisticsInfo>>() {});
+                log.info("从缓存获取气化科报表数据，返回{}条记录", 
+                        cachedResult.getStatisticsInfoList() != null ? cachedResult.getStatisticsInfoList().size() : 0);
+                return cachedResult;
+            } catch (Exception e) {
+                log.warn("缓存数据解析失败，重新查询: {}", e.getMessage());
+            }
         }
 
-        // 表头处理，只展示到日
-        List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], DAY);
+        log.info("开始查询气化科报表数据，时间范围: {} ~ {}", startTime, endTime);
 
-        // 返回结果
+        // 构建结果对象
         GasStatisticsResultVO<GasStatisticsInfo> resultVO = new GasStatisticsResultVO<>();
-        resultVO.setHeader(tableHeader);
+        List<String> timeRangeList = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, DAY);
+        resultVO.setHeader(timeRangeList);
 
-        // 优化：根据传入的编码直接查询对应的计量器具信息，而不是先查43条再过滤
-        List<String> measurementCodes = paramVO.getEnergyStatisticsItemCodes();
+        // 获取计量器具信息
         List<GasMeasurementInfo> gasMeasurementInfos;
-        
-        if (CollUtil.isEmpty(measurementCodes)) {
-            // 如果没有传入编码列表，返回所有数据
-            gasMeasurementInfos = powerGasMeasurementService.getAllValidMeasurements().stream()
-                    .map(this::convertToGasMeasurementInfo)
-                    .collect(Collectors.toList());
-            log.info("未指定计量器具编码，获取所有{}条计量器具信息", gasMeasurementInfos.size());
+        if (CollUtil.isNotEmpty(paramVO.getEnergyStatisticsItemCodes())) {
+            // 直接查询指定的计量器具，避免查询所有43条记录
+            List<PowerGasMeasurementDO> measurements = powerGasMeasurementService.getMeasurementsByCodes(paramVO.getEnergyStatisticsItemCodes());
+            gasMeasurementInfos = batchConvertToGasMeasurementInfo(measurements);
+            log.info("根据指定编码查询到{}条计量器具记录", gasMeasurementInfos.size());
         } else {
-            // 如果传入了编码列表，直接查询对应的数据
-            gasMeasurementInfos = powerGasMeasurementService.getMeasurementsByCodes(measurementCodes).stream()
-                    .map(this::convertToGasMeasurementInfo)
-                    .collect(Collectors.toList());
-            log.info("指定计量器具编码: {}, 查询到{}条计量器具信息", measurementCodes, gasMeasurementInfos.size());
+            // 查询所有有效的计量器具
+            List<PowerGasMeasurementDO> measurements = powerGasMeasurementService.getAllValidMeasurements();
+            gasMeasurementInfos = batchConvertToGasMeasurementInfo(measurements);
+            log.info("查询到{}条有效计量器具记录", gasMeasurementInfos.size());
         }
 
         if (CollUtil.isEmpty(gasMeasurementInfos)) {
-            log.warn("未找到有效的计量器具配置");
-            resultVO.setStatisticsInfoList(new ArrayList<>());
+            log.warn("未找到有效的计量器具信息，返回空结果");
             return resultVO;
         }
 
-        // 提取台账ID和参数编码
-        List<Long> standingbookIds = gasMeasurementInfos.stream()
-                .map(GasMeasurementInfo::getStandingbookId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .collect(Collectors.toList());
-        List<String> paramCodes = gasMeasurementInfos.stream()
-                .map(GasMeasurementInfo::getParamCode)
-                .filter(Objects::nonNull)
-                .distinct()
-                .collect(Collectors.toList());
-        log.info("提取的台账ID: {}, 参数编码: {}", standingbookIds, paramCodes);
-
-        // 如果没有有效的台账ID或参数编码，仍然要处理数据，只是数据值会为0
-        if (CollUtil.isEmpty(standingbookIds) || CollUtil.isEmpty(paramCodes)) {
-            log.warn("未找到有效的台账ID或参数编码，将返回{}条记录但数据值为0", gasMeasurementInfos.size());
+        // 批量查询所有相关数据，避免N+1查询
+        Map<String, GasMeasurementInfo> measurementMap = new HashMap<>();
+        List<Long> allStandingbookIds = new ArrayList<>();
+        List<String> allParamCodes = new ArrayList<>();
+        Set<String> measurementCodes = new HashSet<>();
+        
+        for (GasMeasurementInfo info : gasMeasurementInfos) {
+            if (info.getStandingbookId() != null && info.getParamCode() != null) {
+                measurementMap.put(info.getMeasurementCode(), info);
+                allStandingbookIds.add(info.getStandingbookId());
+                allParamCodes.add(info.getParamCode());
+                measurementCodes.add(info.getMeasurementCode());
+            }
         }
 
-        // 对于液压计算类型，需要额外查询power_tank_settings表获取pressure_diff_id
-        List<Long> pressureDiffIds = new ArrayList<>();
+        // 去重
+        allStandingbookIds = allStandingbookIds.stream().distinct().collect(Collectors.toList());
+        allParamCodes = allParamCodes.stream().distinct().collect(Collectors.toList());
+
+        if (CollUtil.isEmpty(allStandingbookIds) || CollUtil.isEmpty(allParamCodes)) {
+            log.warn("台账ID或参数编码为空，返回空结果");
+            return resultVO;
+        }
+
+        // 批量查询储罐设置，避免循环中重复查询
         Map<String, PowerTankSettingsDO> tankSettingsMap = new HashMap<>();
+        List<Long> pressureDiffIds = new ArrayList<>();
         
-        if (!standingbookIds.isEmpty()) {
-            // 获取所有计量器具编码
-            List<String> mCodes = gasMeasurementInfos.stream()
-                    .map(GasMeasurementInfo::getMeasurementCode)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-            
+        if (!measurementCodes.isEmpty()) {
             List<PowerTankSettingsDO> tankSettings = powerTankSettingsMapper.selectList(
                     new LambdaQueryWrapperX<PowerTankSettingsDO>()
-                            .in(PowerTankSettingsDO::getCode, mCodes)
+                            .in(PowerTankSettingsDO::getCode, measurementCodes)
                             .eq(PowerTankSettingsDO::getDeleted, false)
             );
             
-            // 构建储罐设置映射，避免后续重复查询
             tankSettingsMap = tankSettings.stream()
                     .filter(e -> e.getCode() != null)
                     .collect(Collectors.toMap(
                             PowerTankSettingsDO::getCode,
                             settings -> settings,
-                            (v1, v2) -> v1 // 遇到重复key保留第一条
+                            (v1, v2) -> v1
                     ));
             
             pressureDiffIds = tankSettings.stream()
@@ -245,138 +248,47 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                     .filter(Objects::nonNull)
                     .distinct()
                     .collect(Collectors.toList());
-            
-            log.info("查询到{}条储罐设置，其中{}条有压差ID: {}", 
-                    tankSettings.size(), pressureDiffIds.size(), pressureDiffIds);
         }
 
-        // 合并所有需要查询的standingbook_id（包括压差ID）
-        List<Long> allStandingbookIds = new ArrayList<>(standingbookIds);
+        // 合并所有需要查询的standingbook_id
         allStandingbookIds.addAll(pressureDiffIds);
         allStandingbookIds = allStandingbookIds.stream().distinct().collect(Collectors.toList());
-        
-        log.info("最终查询的台账ID列表: {} (原始: {}, 压差: {})", 
-                allStandingbookIds, standingbookIds, pressureDiffIds);
 
-        if (CollUtil.isEmpty(allStandingbookIds) || CollUtil.isEmpty(paramCodes)) {
-            log.warn("台账ID或参数编码为空，返回空结果");
-            return resultVO;
-        }
-
-        // 储罐设置数据已在前面查询并构建映射，无需重复查询
-        // 如果tankSettingsMap为空，初始化为空Map
-        if (tankSettingsMap == null) {
-            tankSettingsMap = new HashMap<>();
-        }
-
-        // 生成日期列表（仅到日）。此处只构建 LocalDateTime 的零点时间，便于后续组装 key
-        List<LocalDateTime> dateList = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, DAY).stream()
-                .map(dateStr -> LocalDateTime.parse(dateStr + " 00:00:00",
-                        java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+        // 预生成日期列表
+        List<LocalDateTime> dateList = timeRangeList.stream()
+                .map(dateStr -> LocalDateTime.parse(dateStr + " 00:00:00", 
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                 .collect(Collectors.toList());
 
-        // 预计算日期字符串格式，避免循环中重复格式化
-        List<String> dateStrings = dateList.stream()
-                .map(date -> date.format(DAY_FORMATTER))
-                .collect(Collectors.toList());
-
-        // 性能优化：批量查询所有数据
-        // 一次性批量查询并构建数据缓存，避免逐条按天/设备/参数访问数据库
+        // 批量查询数据并构建缓存
         Map<String, MinuteAggregateDataDO> dataCache = batchQueryData(
-                allStandingbookIds, paramCodes, startTime, endTime);
-        
-        log.info("批量查询数据完成，缓存大小: {}", dataCache.size());
-        if (!dataCache.isEmpty()) {
-            // 输出前几条缓存数据用于调试
-            dataCache.entrySet().stream().limit(3).forEach(entry -> 
-                log.info("缓存数据示例 - Key: {}, Value: standingbookId={}, paramCode={}, fullValue={}, incrementalValue={}", 
-                    entry.getKey(), 
-                    entry.getValue().getStandingbookId(),
-                    entry.getValue().getParamCode(),
-                    entry.getValue().getFullValue(),
-                    entry.getValue().getIncrementalValue()));
-        } else {
-            log.warn("⚠️ 数据缓存为空！这可能是问题的根源");
-            log.warn("请检查以下SQL查询是否返回数据：");
-            log.warn("SELECT COUNT(*) FROM minute_aggregate_data WHERE energy_flag=1;");
-            log.error("SELECT COUNT(*) as total_count FROM minute_aggregate_data WHERE energy_flag=1;");
-            log.error("SELECT COUNT(*) as filtered_count FROM minute_aggregate_data WHERE standingbook_id IN ({}) AND energy_flag=1;", 
-                    allStandingbookIds.stream().map(String::valueOf).collect(Collectors.joining(",")));
-        }
+                allStandingbookIds, allParamCodes, startTime, endTime);
 
-        // 处理每个计量器具的数据
+        // 构建结果数据
         List<GasStatisticsInfo> statisticsInfoList = new ArrayList<>();
+        
+        for (GasMeasurementInfo info : gasMeasurementInfos) {
+            GasStatisticsInfo gasStatisticsInfo = new GasStatisticsInfo();
+            gasStatisticsInfo.setMeasurementName(info.getMeasurementName());
+            gasStatisticsInfo.setMeasurementCode(info.getMeasurementCode());
 
-        // 确保即使没有数据也要返回完整的结构
-        if (CollUtil.isNotEmpty(gasMeasurementInfos)) {
-            for (GasMeasurementInfo info : gasMeasurementInfos) {
-                GasStatisticsInfo gasStatisticsInfo = new GasStatisticsInfo();
-                gasStatisticsInfo.setMeasurementName(info.getMeasurementName());
-                gasStatisticsInfo.setMeasurementCode(info.getMeasurementCode());
+            List<GasStatisticsInfoData> statisticsDateDataList = new ArrayList<>();
 
-                List<GasStatisticsInfoData> statisticsDateDataList = new ArrayList<>();
+            for (LocalDateTime date : dateList) {
+                GasStatisticsInfoData data = new GasStatisticsInfoData();
+                data.setDate(date.format(DAY_FORMATTER));
 
-                for (int i = 0; i < dateList.size(); i++) {
-                    LocalDateTime date = dateList.get(i);
-                    String dateStr = dateStrings.get(i);
-                    
-                    GasStatisticsInfoData data = new GasStatisticsInfoData();
-                    data.setDate(dateStr);
-
-                    // 获取当前计量器具的台账ID和参数编码
-                    Long standingbookId = info.getStandingbookId();
-                    String paramCode = info.getParamCode();
-
-                    // 根据计算类型计算值
-                    BigDecimal value;
-                    
-                    // 如果是液压计算类型，直接使用压差ID进行计算
-                    if (info.getCalculateType() != null && info.getCalculateType() == 2) {
-                        // 从已构建的映射中获取储罐设置，避免重复查询
-                        PowerTankSettingsDO tankSetting = tankSettingsMap.get(info.getMeasurementCode());
-                        
-                        if (tankSetting != null && tankSetting.getPressureDiffId() != null) {
-                            log.debug("液压计算类型 - 计量器具: {}, 台账ID: {}, 压差ID: {}", 
-                                    info.getMeasurementCode(), standingbookId, tankSetting.getPressureDiffId());
-                            
-                            // 对于液压计算类型，直接使用压差ID进行计算
-                            // 重新构建一个临时的GasMeasurementInfo，使用压差ID
-                            GasMeasurementInfo tempInfo = new GasMeasurementInfo();
-                            tempInfo.setStandingbookId(tankSetting.getPressureDiffId());
-                            tempInfo.setParamCode(paramCode);
-                            tempInfo.setCalculateType(info.getCalculateType());
-                            tempInfo.setMeasurementCode(info.getMeasurementCode());
-                            
-                            // 直接使用压差ID计算值
-                            value = calculateValueByTypeOptimized(tempInfo, date, dataCache, tankSettingsMap);
-                            
-                            if (value.compareTo(BigDecimal.ZERO) != 0) {
-                                log.debug("使用压差ID计算成功 - 压差ID: {}, 值: {}", tankSetting.getPressureDiffId(), value);
-                            } else {
-                                log.debug("使用压差ID计算完成但结果为0 - 压差ID: {}", tankSetting.getPressureDiffId());
-                            }
-                        } else {
-                            log.warn("液压计算类型但未找到储罐设置或压差ID - 计量器具: {}, 台账ID: {}", 
-                                    info.getMeasurementCode(), standingbookId);
-                            // 如果没有压差ID，返回0
-                            value = BigDecimal.ZERO;
-                        }
-                    } else {
-                        // 非液压计算类型，使用计量器具自身的standingbook_id进行计算
-                        value = calculateValueByTypeOptimized(info, date, dataCache, tankSettingsMap);
-                    }
-
-                    data.setValue(value.setScale(2, RoundingMode.HALF_UP));
-
-                    statisticsDateDataList.add(data);
-                }
-
-                gasStatisticsInfo.setStatisticsDateDataList(statisticsDateDataList);
-                statisticsInfoList.add(gasStatisticsInfo);
+                BigDecimal value = calculateValueByTypeOptimized(info, date, dataCache, tankSettingsMap);
+                data.setValue(value.setScale(2, RoundingMode.HALF_UP));
+                statisticsDateDataList.add(data);
             }
+
+            gasStatisticsInfo.setStatisticsDateDataList(statisticsDateDataList);
+            statisticsInfoList.add(gasStatisticsInfo);
         }
 
         resultVO.setStatisticsInfoList(statisticsInfoList);
+
         // 从数据缓存中获取最新时间
         LocalDateTime lastTime = null;
         if (!dataCache.isEmpty()) {
@@ -388,16 +300,16 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
 
         if (lastTime != null) {
             resultVO.setDataTime(lastTime);
-            log.info("设置dataTime为查询周期内最新数据时间: {}", lastTime);
-        } else {
-            log.info("查询周期内无数据，不设置dataTime");
         }
 
         // 缓存结果
-        String jsonStr = JSONUtil.toJsonStr(resultVO);
-        byte[] bytes = StrUtils.compressGzip(jsonStr);
-        // 缓存时间，提升重复查询的复用率
-        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+        try {
+            String jsonStr = JSONUtil.toJsonStr(resultVO);
+            byte[] bytes = StrUtils.compressGzip(jsonStr);
+            byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.warn("缓存结果失败: {}", e.getMessage());
+        }
 
         log.info("气化科报表查询完成，返回{}条统计数据", statisticsInfoList.size());
         return resultVO;
@@ -412,41 +324,21 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
             LocalDateTime startTime,
             LocalDateTime endTime) {
 
-        log.info("🔍 开始批量查询数据 - standingbookIds: {}, paramCodes: {}, 时间范围: {} ~ {}", 
-                standingbookIds, paramCodes, startTime, endTime);
-
         if (CollUtil.isEmpty(standingbookIds) || CollUtil.isEmpty(paramCodes)) {
-            log.warn("❌ 台账ID或参数编码为空，返回空缓存");
+            log.warn("台账ID或参数编码为空，返回空缓存");
             return new HashMap<>();
         }
 
+        log.info("开始批量查询数据 - standingbookIds: {}, paramCodes: {}, 时间范围: {} ~ {}", 
+                standingbookIds.size(), paramCodes.size(), startTime, endTime);
+
         // 一次性查询所有最后一分钟数据
-        log.info("📊 开始查询最后一分钟数据...");
         List<MinuteAggregateDataDO> lastMinuteData = minuteAggregateDataService
                 .selectLastMinuteDataByDateBatch(standingbookIds, paramCodes, startTime, endTime);
-        log.info("✅ 查询最后一分钟数据完成，结果数量: {}", lastMinuteData.size());
-        
-        if (!lastMinuteData.isEmpty()) {
-            log.info("📋 最后一分钟数据示例:");
-            lastMinuteData.stream().limit(3).forEach(data -> 
-                log.info("  - standingbookId: {}, paramCode: {}, aggregateTime: {}, fullValue: {}, energyFlag: {}", 
-                    data.getStandingbookId(), data.getParamCode(), data.getAggregateTime(), 
-                    data.getFullValue(), data.getEnergyFlag()));
-        }
 
         // 一次性查询所有增量数据
-        log.info("📊 开始查询增量数据...");
         List<MinuteAggregateDataDO> incrementalData = minuteAggregateDataService
                 .selectIncrementalSumByDateBatch(standingbookIds, paramCodes, startTime, endTime);
-        log.info("✅ 查询增量数据完成，结果数量: {}", incrementalData.size());
-        
-        if (!incrementalData.isEmpty()) {
-            log.info("📋 增量数据示例:");
-            incrementalData.stream().limit(3).forEach(data -> 
-                log.info("  - standingbookId: {}, paramCode: {}, aggregateTime: {}, incrementalValue: {}, energyFlag: {}", 
-                    data.getStandingbookId(), data.getParamCode(), data.getAggregateTime(), 
-                    data.getIncrementalValue(), data.getEnergyFlag()));
-        }
 
         // 构建缓存Map，key为 "standingbookId:paramCode:date"
         Map<String, MinuteAggregateDataDO> dataCache = new HashMap<>();
@@ -458,8 +350,6 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                     data.getParamCode(),
                     data.getAggregateTime().toLocalDate());
             dataCache.put(key, data);
-            log.debug("➕ 添加最后一分钟数据到缓存 - Key: {}, standingbookId: {}, paramCode: {}, fullValue: {}", 
-                    key, data.getStandingbookId(), data.getParamCode(), data.getFullValue());
         }
 
         // 处理增量数据
@@ -469,26 +359,14 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                     data.getParamCode(),
                     data.getAggregateTime().toLocalDate());
             dataCache.put(key, data);
-            log.debug("➕ 添加增量数据到缓存 - Key: {}, standingbookId: {}, paramCode: {}, incrementalValue: {}", 
-                    key, data.getStandingbookId(), data.getParamCode(), data.getIncrementalValue());
         }
 
-        log.info("🎯 数据缓存构建完成，总缓存条目数: {}", dataCache.size());
+        log.info("数据缓存构建完成，总缓存条目数: {} (最后一分钟: {}, 增量: {})", 
+                dataCache.size(), lastMinuteData.size(), incrementalData.size());
         
-        // 如果没有数据，输出详细的调试信息
+        // 如果没有数据，输出调试信息
         if (dataCache.isEmpty()) {
-            log.error("❌ 数据缓存为空！可能的原因：");
-            log.error("1. 台账ID不匹配 - 检查power_standingbook表中的code字段");
-            log.error("2. 参数编码不匹配 - 检查power_standingbook_tmpl_daq_attr表中的配置");
-            log.error("3. 时间范围问题 - 检查查询时间是否覆盖数据时间");
-            log.error("4. 数据源问题 - 检查@DS('starrocks')注解和数据源配置");
-            log.error("5. energy_flag问题 - 检查minute_aggregate_data表中的energy_flag字段");
-            
-            // 输出建议的SQL查询语句
-            log.error("🔍 建议执行以下SQL查询来验证数据：");
-            log.error("SELECT COUNT(*) as total_count FROM minute_aggregate_data WHERE energy_flag=1;");
-            log.error("SELECT COUNT(*) as filtered_count FROM minute_aggregate_data WHERE standingbook_id IN ({}) AND energy_flag=1;", 
-                    standingbookIds.stream().map(String::valueOf).collect(Collectors.joining(",")));
+            log.warn("数据缓存为空，请检查数据库配置和数据");
         }
         
         return dataCache;
@@ -506,18 +384,13 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         Long standingbookId = info.getStandingbookId();
         String paramCode = info.getParamCode();
 
-        log.debug("开始计算值 - 计量器具: {}, standingbookId: {}, paramCode: {}, calculateType: {}, 日期: {}", 
-                info.getMeasurementCode(), standingbookId, paramCode, calculateType, date);
-
         // 如果 standingbookId 为 null 或 paramCode 为 null，返回0
         if (standingbookId == null || paramCode == null) {
-            log.debug("台账ID或参数编码为空，返回0 - standingbookId: {}, paramCode: {}", standingbookId, paramCode);
             return BigDecimal.ZERO;
         }
 
         // 如果calculateType为null，返回0
         if (calculateType == null) {
-            log.debug("计算类型为空，返回0");
             return BigDecimal.ZERO;
         }
 
@@ -527,28 +400,23 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                 case 0:
                     // 取得今天有数据的最后一分钟的数值full_value
                     result = getLastMinuteFullValueOptimized(standingbookId, paramCode, date, dataCache);
-                    log.debug("计算类型0(稳态值) - 结果: {}", result);
                     break;
 
                 case 1:
                     // 取得今天所有increment_value值之和
                     result = getIncrementalSumOptimized(standingbookId, paramCode, date, dataCache);
-                    log.debug("计算类型1(累计值) - 结果: {}", result);
                     break;
 
                 case 2:
                     // 取得今天有数据的最后一分钟的数值full_value，带入到公式H=Δp/(ρg)求出的H值
                     result = calculateHValueOptimized(standingbookId, paramCode, info.getMeasurementCode(), date, dataCache, tankSettingsMap);
-                    log.debug("计算类型2(液压值) - 结果: {}", result);
                     break;
 
                 default:
-                    log.debug("未知计算类型: {}, 返回0", calculateType);
                     result = BigDecimal.ZERO;
                     break;
             }
             
-            log.debug("计算完成 - 计量器具: {}, 结果: {}", info.getMeasurementCode(), result);
             return result;
             
         } catch (Exception e) {
@@ -563,20 +431,14 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
      */
     private BigDecimal getLastMinuteFullValueOptimized(Long standingbookId, String paramCode, LocalDateTime date, Map<String, MinuteAggregateDataDO> dataCache) {
         if (standingbookId == null || paramCode == null) {
-            log.debug("❌ 台账ID或参数编码为空，返回0 - standingbookId: {}, paramCode: {}", standingbookId, paramCode);
             return BigDecimal.ZERO;
         }
         
         String key = String.format("%d:%s:%s", standingbookId, paramCode, date.toLocalDate());
-        log.debug("🔍 查找缓存键: {}", key);
-        
         MinuteAggregateDataDO data = dataCache.get(key);
         if (data != null && data.getFullValue() != null) {
-            log.debug("✅ 找到缓存数据 - Key: {}, fullValue: {}", key, data.getFullValue());
             return data.getFullValue();
         } else {
-            log.debug("❌ 未找到缓存数据 - Key: {}, data存在: {}, fullValue: {}", 
-                    key, data != null, data != null ? data.getFullValue() : "N/A");
             return BigDecimal.ZERO;
         }
     }
@@ -586,20 +448,14 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
      */
     private BigDecimal getIncrementalSumOptimized(Long standingbookId, String paramCode, LocalDateTime date, Map<String, MinuteAggregateDataDO> dataCache) {
         if (standingbookId == null || paramCode == null) {
-            log.debug("❌ 台账ID或参数编码为空，返回0 - standingbookId: {}, paramCode: {}", standingbookId, paramCode);
             return BigDecimal.ZERO;
         }
         
         String key = String.format("%d:%s:%s:incremental", standingbookId, paramCode, date.toLocalDate());
-        log.debug("🔍 查找增量缓存键: {}", key);
-        
         MinuteAggregateDataDO data = dataCache.get(key);
         if (data != null && data.getIncrementalValue() != null) {
-            log.debug("✅ 找到增量缓存数据 - Key: {}, incrementalValue: {}", key, data.getIncrementalValue());
             return data.getIncrementalValue();
         } else {
-            log.debug("❌ 未找到增量缓存数据 - Key: {}, data存在: {}, incrementalValue: {}", 
-                    key, data != null, data != null ? data.getIncrementalValue() : "N/A");
             return BigDecimal.ZERO;
         }
     }
@@ -899,7 +755,6 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                 
                 if (tmplAttr != null) {
                     info.setParamCode(tmplAttr.getCode());
-                    log.debug("找到计量器具 {} 的参数编码: {}", measurement.getMeasurementCode(), tmplAttr.getCode());
                 } else {
                     log.warn("未找到计量器具 {} 的参数编码配置", measurement.getMeasurementCode());
                 }
@@ -934,5 +789,152 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         }
         
         return info;
+    }
+
+    /**
+     * 批量转换PowerGasMeasurementDO为GasMeasurementInfo，减少数据库查询次数
+     */
+    private List<GasMeasurementInfo> batchConvertToGasMeasurementInfo(List<PowerGasMeasurementDO> measurements) {
+        if (CollUtil.isEmpty(measurements)) {
+            return new ArrayList<>();
+        }
+
+        // 收集所有需要查询的计量器具编码
+        List<String> measurementCodes = measurements.stream()
+                .map(PowerGasMeasurementDO::getMeasurementCode)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        // 批量查询台账属性
+        List<StandingbookAttributeDO> allAttrs = standingbookAttributeMapper.selectList(
+                new LambdaQueryWrapperX<StandingbookAttributeDO>()
+                        .eq(StandingbookAttributeDO::getName, "计量器具编号")
+                        .in(StandingbookAttributeDO::getValue, measurementCodes)
+                        .eq(StandingbookAttributeDO::getDeleted, false)
+        );
+
+        // 构建计量器具编码到台账属性的映射
+        Map<String, StandingbookAttributeDO> attrMap = allAttrs.stream()
+                .collect(Collectors.groupingBy(StandingbookAttributeDO::getValue))
+                .entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().stream()
+                                .max(Comparator.comparing(StandingbookAttributeDO::getCreateTime))
+                                .orElse(null)
+                ));
+
+        // 收集所有需要查询的台账ID
+        List<Long> standingbookIds = attrMap.values().stream()
+                .filter(Objects::nonNull)
+                .map(StandingbookAttributeDO::getStandingbookId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        // 批量查询台账信息
+        Map<Long, StandingbookDO> standingbookMap = new HashMap<>();
+        if (!standingbookIds.isEmpty()) {
+            List<StandingbookDO> standingbooks = standingbookMapper.selectBatchIds(standingbookIds);
+            standingbookMap = standingbooks.stream()
+                    .collect(Collectors.toMap(StandingbookDO::getId, standingbook -> standingbook));
+        }
+
+        // 收集所有需要查询的typeId
+        List<Long> typeIds = standingbookMap.values().stream()
+                .map(StandingbookDO::getTypeId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // 批量查询台账模板配置
+        Map<String, StandingbookTmplDaqAttrDO> tmplAttrMap = new HashMap<>();
+        if (!typeIds.isEmpty()) {
+            List<String> energyParams = measurements.stream()
+                    .map(PowerGasMeasurementDO::getEnergyParam)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            List<StandingbookTmplDaqAttrDO> tmplAttrs = standingbookTmplDaqAttrMapper.selectList(
+                    new LambdaQueryWrapperX<StandingbookTmplDaqAttrDO>()
+                            .in(StandingbookTmplDaqAttrDO::getTypeId, typeIds)
+                            .in(StandingbookTmplDaqAttrDO::getParameter, energyParams)
+                            .eq(StandingbookTmplDaqAttrDO::getEnergyFlag, true)
+                            .eq(StandingbookTmplDaqAttrDO::getDeleted, false)
+            );
+
+            tmplAttrMap = tmplAttrs.stream()
+                    .collect(Collectors.toMap(
+                            attr -> attr.getTypeId() + ":" + attr.getParameter(),
+                            attr -> attr
+                    ));
+        }
+
+        // 批量查询储罐设置
+        Map<String, PowerTankSettingsDO> tankSettingsMap = new HashMap<>();
+        if (!measurementCodes.isEmpty()) {
+            List<PowerTankSettingsDO> tankSettings = powerTankSettingsMapper.selectList(
+                    new LambdaQueryWrapperX<PowerTankSettingsDO>()
+                            .in(PowerTankSettingsDO::getCode, measurementCodes)
+                            .eq(PowerTankSettingsDO::getDeleted, false)
+            );
+
+            tankSettingsMap = tankSettings.stream()
+                    .collect(Collectors.toMap(
+                            PowerTankSettingsDO::getCode,
+                            settings -> settings,
+                            (v1, v2) -> v1
+                    ));
+        }
+
+        // 转换结果
+        List<GasMeasurementInfo> result = new ArrayList<>();
+        for (PowerGasMeasurementDO measurement : measurements) {
+            GasMeasurementInfo info = new GasMeasurementInfo();
+            info.setMeasurementCode(measurement.getMeasurementCode());
+            info.setEnergyParam(measurement.getEnergyParam());
+            info.setSortNo(measurement.getSortNo());
+            info.setMeasurementName(measurement.getMeasurementName());
+
+            StandingbookAttributeDO attr = attrMap.get(measurement.getMeasurementCode());
+            if (attr != null && attr.getStandingbookId() != null) {
+                info.setStandingbookId(attr.getStandingbookId());
+
+                StandingbookDO standingbook = standingbookMap.get(attr.getStandingbookId());
+                if (standingbook != null && standingbook.getTypeId() != null) {
+                    info.setTypeId(standingbook.getTypeId());
+
+                    String tmplKey = standingbook.getTypeId() + ":" + measurement.getEnergyParam();
+                    StandingbookTmplDaqAttrDO tmplAttr = tmplAttrMap.get(tmplKey);
+                    if (tmplAttr != null) {
+                        info.setParamCode(tmplAttr.getCode());
+
+                        Integer dataFeature = tmplAttr.getDataFeature();
+                        if (dataFeature != null) {
+                            if (dataFeature == 1) {
+                                info.setCalculateType(1); // 累计值
+                            } else if (dataFeature == 2) {
+                                PowerTankSettingsDO tankSetting = tankSettingsMap.get(measurement.getMeasurementCode());
+                                info.setCalculateType(tankSetting != null ? 2 : 0);
+                            } else {
+                                info.setCalculateType(0); // 默认稳态值
+                            }
+                        } else {
+                            info.setCalculateType(0);
+                        }
+                    } else {
+                        log.warn("未找到计量器具 {} 的参数编码配置", measurement.getMeasurementCode());
+                    }
+                } else {
+                    log.warn("未找到计量器具 {} 对应的台账信息", measurement.getMeasurementCode());
+                }
+            } else {
+                log.warn("未找到计量器具 {} 对应的台账属性", measurement.getMeasurementCode());
+            }
+
+            result.add(info);
+        }
+
+        return result;
     }
 }
