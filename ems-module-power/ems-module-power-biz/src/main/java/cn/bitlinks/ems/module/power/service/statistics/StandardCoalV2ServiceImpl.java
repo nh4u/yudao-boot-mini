@@ -275,8 +275,10 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 .collect(Collectors.toList());
 
         // 4.3.2.根据标签id查询
+        String topLabel = paramVO.getTopLabel();
+        String childLabels = paramVO.getChildLabels();
         List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService
-                .getStandingbookIdsByLabel(paramVO.getTopLabel(), paramVO.getChildLabels(), standingBookIdList);
+                .getStandingbookIdsByLabel(topLabel, childLabels);
 
         // 4.3.3.能源台账ids和标签台账ids是否有交集。如果有就取交集，如果没有则取能源台账ids
         if (CollUtil.isNotEmpty(standingbookIdsByLabel)) {

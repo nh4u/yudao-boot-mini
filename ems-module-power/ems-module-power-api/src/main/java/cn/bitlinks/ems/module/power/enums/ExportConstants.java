@@ -16,9 +16,9 @@ public interface ExportConstants {
 
     // 用能成本
 
-    String COST_ALL = "用能成本分析明细报表（整体）";
-    String COST_ENERGY = "用能成本分析明细报表（按能源）";
-    String COST_LABEL = "用能成本分析明细报表（按标签）";
+    String COST_ALL = "成本分析明细报表（整体）";
+    String COST_ENERGY = "成本分析明细报表（按能源）";
+    String COST_LABEL = "成本分析明细报表（按标签）";
 
     // 同比-折标煤
 
@@ -77,9 +77,9 @@ public interface ExportConstants {
 
     // 用能结构
 
-    String STANDARD_COAL_STRUCTURE_ALL = "用能结构分析明细报表（整体）";
-    String STANDARD_COAL_STRUCTURE_ENERGY = "用能结构分析明细报表（按能源）";
-    String STANDARD_COAL_STRUCTURE_LABEL = "用能结构分析明细报表（按标签）";
+    String STANDARD_COAL_STRUCTURE_ALL = "折标煤用量结构分析明细报表（整体）";
+    String STANDARD_COAL_STRUCTURE_ENERGY = "折标煤用量结构分析明细报表（按能源）";
+    String STANDARD_COAL_STRUCTURE_LABEL = "折标煤用量结构分析明细报表（按标签）";
 
     // 价格结构
 
