@@ -224,7 +224,13 @@ public class FullCellMergeStrategy extends AbstractMergeStrategy {
         if (startRow != curRowIndex || startCol != curColumnIndex) {
             // 添加合并单元格
             CellRangeAddress cellAddresses = new CellRangeAddress(startRow, curRowIndex, startCol, curColumnIndex);
-            sheet.addMergedRegion(cellAddresses);
+
+            try {
+                sheet.addMergedRegion(cellAddresses);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
         }
     }
 }

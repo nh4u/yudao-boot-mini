@@ -71,6 +71,18 @@ public class ProductionConsumptionSettingsServiceImpl implements ProductionConsu
             throw exception(SUPPLY_ANALYSIS_SETTINGS_LIST_NOT_EXISTS);
         }
 
+        List<ProductionConsumptionSettingsDO> oldList = productionConsumptionSettingsMapper.selectList();
+        List<Long> newIdList = productionConsumptionList
+                .stream()
+                .filter(p -> !Objects.isNull(p.getId()))
+                .map(ProductionConsumptionSettingsSaveReqVO::getId)
+                .collect(Collectors.toList());
+
+        List<ProductionConsumptionSettingsDO> deleteList = oldList
+                .stream()
+                .filter(p -> !newIdList.contains(p.getId()))
+                .collect(Collectors.toList());
+
         // 统一保存
         List<ProductionConsumptionSettingsDO> list = BeanUtils.toBean(productionConsumptionList, ProductionConsumptionSettingsDO.class);
         list.forEach(l -> {
@@ -80,6 +92,14 @@ public class ProductionConsumptionSettingsServiceImpl implements ProductionConsu
                 productionConsumptionSettingsMapper.updateById(l);
             }
         });
+
+        // 删除deleteList
+        if (CollUtil.isNotEmpty(deleteList)) {
+            productionConsumptionSettingsMapper.deleteByIds(deleteList
+                    .stream()
+                    .map(ProductionConsumptionSettingsDO::getId)
+                    .collect(Collectors.toList()));
+        }
 
     }
 
@@ -187,7 +207,7 @@ public class ProductionConsumptionSettingsServiceImpl implements ProductionConsu
                         // 如果为空自动填充/
                         tableHeader.forEach(date -> {
                             ProductionConsumptionStatisticInfoData infoData = new ProductionConsumptionStatisticInfoData();
-                            infoData.setConsumption(BigDecimal.ZERO);
+                            infoData.setConsumption(null);
                             infoData.setDate(date);
                             statisticInfoDataList.add(infoData);
                         });
@@ -203,7 +223,7 @@ public class ProductionConsumptionSettingsServiceImpl implements ProductionConsu
                             UsageCostData usageCostData = usageCostMap.get(date);
                             if (usageCostData == null) {
                                 ProductionConsumptionStatisticInfoData infoData = new ProductionConsumptionStatisticInfoData();
-                                infoData.setConsumption(BigDecimal.ZERO);
+                                infoData.setConsumption(null);
                                 infoData.setDate(date);
 
                                 statisticInfoDataList.add(infoData);
@@ -221,6 +241,7 @@ public class ProductionConsumptionSettingsServiceImpl implements ProductionConsu
                     BigDecimal sumConsumption = statisticInfoDataList
                             .stream()
                             .map(ProductionConsumptionStatisticInfoData::getConsumption)
+                            .filter(c -> !Objects.isNull(c))
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                     List<ProductionConsumptionStatisticInfoData> dataList = statisticInfoDataList.stream().peek(i -> {

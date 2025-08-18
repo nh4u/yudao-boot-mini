@@ -107,7 +107,6 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
 
 
         SupplyWaterTmpTableResultVO resultVO = new SupplyWaterTmpTableResultVO();
-        resultVO.setDataTime(LocalDateTime.now());
 
         // 校验系统 没值就返空
         List<String> codes1 = paramVO.getCodes();
@@ -142,9 +141,10 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                 range[0],
                 range[1]);
 
-        if (CollUtil.isEmpty(minuteAggDataList)) {
-            return resultVO;
-        }
+//        if (CollUtil.isEmpty(minuteAggDataList)) {
+//            // TODO: 2025/8/17 处理没数据时的数据
+//            return resultVO;
+//        }
 
         List<Map<String, Object>> result = new ArrayList<>();
         // 天

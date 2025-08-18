@@ -51,7 +51,7 @@ public abstract class AbstractMergeStrategy implements CellWriteHandler {
             CellRangeAddress cellAddresses = mergedRegions.get(i);
             // 判断上一行单元格是否已经被合并，是则先移出原有的合并单元，再重新添加合并单元
             if (cellAddresses.isInRange(rowIndex, columnIndex)) {
-                sheet.removeMergedRegion(i);
+                    sheet.removeMergedRegion(i);
                 break;
             }
         }
