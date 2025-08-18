@@ -258,23 +258,23 @@ public class CommonUtil {
     /**
      * BigDecimal除法，包含有效位
      *
-     * @param num1
-     * @param num2
+     * @param num
+     * @param sum
      * @param scale
      * @return
      */
-    public static BigDecimal divideWithScale(BigDecimal num1, BigDecimal num2, Integer scale) {
+    public static BigDecimal divideWithScale(BigDecimal num, BigDecimal sum, Integer scale) {
         BigDecimal result = BigDecimal.ZERO;
 
         if (Objects.isNull(scale)) {
             return result;
         }
 
-        if (num1 == null || num2 == null || num2.compareTo(BigDecimal.ZERO) == 0) {
+        if (num == null || sum == null || sum.compareTo(BigDecimal.ZERO) == 0) {
             return result;
         }
 
-        result = num1.divide(num2, scale, RoundingMode.HALF_UP);
+        result = sum.divide(num, scale, RoundingMode.HALF_UP);
 
         return result;
     }

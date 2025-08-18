@@ -47,6 +47,23 @@ public class LocalDateTimeUtils {
         }
     }
 
+    /**
+     * 解析时间
+     * <p>
+     * 相比 {@link LocalDateTimeUtil#parse(CharSequence)} 方法来说，会尽量去解析，直到成功
+     *
+     * @param time 时间
+     * @return 时间字符串
+     */
+    public static LocalDateTime parseDateTime(String time) {
+        try {
+            return LocalDateTimeUtil.parse(time, DatePattern.NORM_DATETIME_PATTERN);
+        } catch (DateTimeParseException e) {
+            return LocalDateTimeUtil.parse(time);
+        }
+    }
+
+
     public static LocalDateTime addTime(Duration duration) {
         return LocalDateTime.now().plus(duration);
     }
@@ -96,7 +113,7 @@ public class LocalDateTimeUtils {
         if (startTime == null || endTime == null || time == null) {
             return false;
         }
-        return LocalDateTimeUtil.isIn(parse(time), startTime, endTime);
+        return LocalDateTimeUtil.isIn(parseDateTime(time), startTime, endTime);
     }
 
     /**
@@ -593,6 +610,7 @@ public class LocalDateTimeUtils {
                 throw new IllegalArgumentException("不支持的时间类型：" + type);
         }
     }
+
     /**
      * 根据当前时间字符串和类型推算“去年同期”的时间字符串（格式与原格式一致）
      */
@@ -757,4 +775,10 @@ public class LocalDateTimeUtils {
             throw new IllegalArgumentException("Unsupported time type: " + time.getClass());
         }
     }
+
+    public static LocalDateTime getFormatTime(String time) {
+
+        return LocalDateTime.parse(time, DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN));
+    }
+
 }
