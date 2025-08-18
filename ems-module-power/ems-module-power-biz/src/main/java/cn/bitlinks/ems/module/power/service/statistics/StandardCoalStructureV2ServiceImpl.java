@@ -22,6 +22,8 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.util.ListUtils;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -83,7 +85,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (StrUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
-            return JSONUtil.toBean(cacheRes, StatisticsResultV2VO.class);
+            return JSON.parseObject(cacheRes, new TypeReference<StatisticsResultV2VO<StructureInfo>>() {});
         }
 
         // 获取结果

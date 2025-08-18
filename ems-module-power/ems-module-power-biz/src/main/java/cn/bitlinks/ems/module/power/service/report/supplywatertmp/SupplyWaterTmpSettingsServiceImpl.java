@@ -299,7 +299,9 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     List<SupplyWaterTmpMinuteAggData> minuteAggDatas = minuteAggDataMap.get(currentTime);
 
                     if (CollUtil.isNotEmpty(minuteAggDatas)) {
-                        Map<Long, List<SupplyWaterTmpMinuteAggData>> minuteAggregateDataMap = minuteAggDatas.stream().collect(Collectors.groupingBy(SupplyWaterTmpMinuteAggData::getStandingbookId));
+                        Map<Long, List<SupplyWaterTmpMinuteAggData>> minuteAggregateDataMap = minuteAggDatas
+                                .stream()
+                                .collect(Collectors.groupingBy(SupplyWaterTmpMinuteAggData::getStandingbookId));
 
                         // 处理一下 点1  点2
                         codes.forEach(c -> {
@@ -314,9 +316,16 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                                 list.forEach(l -> {
                                     if (POINT_ONE.equals(l.getPoint())) {
                                         map1.put(key1, l.getFullValue());
-                                        map2.put(key2, BigDecimal.ZERO);
+                                        Object o = map2.getOrDefault(key2, 0);
+                                        if (o.equals(0)) {
+                                            map2.put(key2, BigDecimal.ZERO);
+                                        }
                                     } else {
-                                        map1.put(key1, BigDecimal.ZERO);
+                                        Object o = map1.getOrDefault(key1, 0);
+                                        // 如果不存在才赋值0 如果存在则不赋值0，保留原来的值
+                                        if (o.equals(0)) {
+                                            map2.put(key2, BigDecimal.ZERO);
+                                        }
                                         map2.put(key2, l.getFullValue());
                                     }
                                 });
@@ -365,8 +374,8 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                 // 第二个分组条件：按参数code
                 Collectors.groupingBy(SupplyWaterTmpMinuteAggData::getParamCode, Collectors.groupingBy(SupplyWaterTmpMinuteAggData::getAggregateTime, Collectors.collectingAndThen(Collectors.toList(), list -> {
                     BigDecimal sum = list.stream().map(SupplyWaterTmpMinuteAggData::getFullValue).reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                    BigDecimal avg = sum.divide(new BigDecimal(list.size()), 10, RoundingMode.HALF_UP);
+                    // 取平均数:00:00~23:00小时温度值之和除以24. （2025-08-18 14:33变更）
+                    BigDecimal avg = sum.divide(new BigDecimal(24), 10, RoundingMode.HALF_UP);
                     SupplyWaterTmpMinuteAggData minuteAggregateDataDO = list.get(0);
                     minuteAggregateDataDO.setFullValue(avg);
                     result.add(minuteAggregateDataDO);
@@ -417,17 +426,22 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     BigDecimal twoAvg = divideWithScale(new BigDecimal(two.size()), twoSum, 10);
 
                     // 点位1 构建
-                    SupplyWaterTmpMinuteAggData minuteAggDataOne = list.get(0);
-                    minuteAggDataOne.setAggregateTime(minuteAggDataOne.getAggregateTime().truncatedTo(ChronoUnit.DAYS));
+                    SupplyWaterTmpMinuteAggData old = list.get(0);
+                    SupplyWaterTmpMinuteAggData minuteAggDataOne = new SupplyWaterTmpMinuteAggData();
+                    minuteAggDataOne.setParamCode(old.getParamCode());
+                    minuteAggDataOne.setStandingbookId(old.getStandingbookId());
+                    minuteAggDataOne.setAggregateTime(old.getAggregateTime().truncatedTo(ChronoUnit.DAYS));
                     minuteAggDataOne.setFullValue(onwAvg);
-                    minuteAggDataOne.setPoint(POINT_ONE);
+                    minuteAggDataOne.setPoint(1);
                     result.add(minuteAggDataOne);
 
                     // 点位2 构建
-                    SupplyWaterTmpMinuteAggData minuteAggDataTwo = list.get(0);
-                    minuteAggDataTwo.setAggregateTime(minuteAggDataTwo.getAggregateTime().truncatedTo(ChronoUnit.DAYS));
+                    SupplyWaterTmpMinuteAggData minuteAggDataTwo = new SupplyWaterTmpMinuteAggData();
+                    minuteAggDataTwo.setParamCode(old.getParamCode());
+                    minuteAggDataTwo.setStandingbookId(old.getStandingbookId());
+                    minuteAggDataTwo.setAggregateTime(old.getAggregateTime().truncatedTo(ChronoUnit.DAYS));
                     minuteAggDataTwo.setFullValue(twoAvg);
-                    minuteAggDataOne.setPoint(POINT_TWO);
+                    minuteAggDataTwo.setPoint(2);
                     result.add(minuteAggDataTwo);
 
                     return minuteAggDataTwo;
@@ -513,6 +527,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         SupplyWaterTmpTableResultVO result = supplyWaterTmpTable(paramVO);
         resultVO.setDataTime(result.getDataTime());
 
+        LocalDateTime[] range = paramVO.getRange();
         List<Map<String, Object>> list = result.getList();
 
         if (CollUtil.isEmpty(list)) {
@@ -532,38 +547,38 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
             switch (code) {
                 case LTWT:
                     // 低温水供水温度
-                    LtwtChartVO ltwt = dealSingleSystem(list, one, teamFlag);
+                    LtwtChartVO ltwt = dealSingleSystem(list, one, teamFlag, range);
                     resultVO.setLtwt(ltwt);
                     break;
                 case MTWT:
                     // 中温水供水温度
-                    LtwtChartVO mtwt = dealSingleSystem(list, one, teamFlag);
+                    LtwtChartVO mtwt = dealSingleSystem(list, one, teamFlag, range);
                     resultVO.setMtwt(mtwt);
                     break;
                 case HRWT:
                     // 热回收水供水温度
-                    LtwtChartVO hrwt = dealSingleSystem(list, one, teamFlag);
+                    LtwtChartVO hrwt = dealSingleSystem(list, one, teamFlag, range);
                     resultVO.setHrwt(hrwt);
                     break;
                 case BHWT:
                     // 热水供水温度（锅炉出水）  热水供水温度（市政出水）
                     SupplyWaterTmpSettingsDO two = supplyWaterTmpSettingsMapper.selectOneByCode(MHWT);
-                    resultVO.setBhwt(dealDoubleSystem(list, one, two, teamFlag));
+                    resultVO.setBhwt(dealDoubleSystem(list, one, two, teamFlag, range));
                     break;
                 case MHWT:
                     // 热水供水温度（锅炉出水）  热水供水温度（市政出水）
                     SupplyWaterTmpSettingsDO bhwt = supplyWaterTmpSettingsMapper.selectOneByCode(BHWT);
-                    resultVO.setBhwt(dealDoubleSystem(list, bhwt, one, teamFlag));
+                    resultVO.setBhwt(dealDoubleSystem(list, bhwt, one, teamFlag, range));
                     break;
                 case PCWP:
                     // PCW供水压力温度（供水压力） PCW供水压力温度（供水温度）
                     SupplyWaterTmpSettingsDO pcwt = supplyWaterTmpSettingsMapper.selectOneByCode(PCWT);
-                    resultVO.setPcwp(dealDoubleSystem(list, one, pcwt, teamFlag));
+                    resultVO.setPcwp(dealDoubleSystem(list, one, pcwt, teamFlag, range));
                     break;
                 case PCWT:
                     // PCW供水压力温度（供水压力） PCW供水压力温度（供水温度）
                     SupplyWaterTmpSettingsDO pcwp = supplyWaterTmpSettingsMapper.selectOneByCode(PCWP);
-                    resultVO.setPcwp(dealDoubleSystem(list, pcwp, one, teamFlag));
+                    resultVO.setPcwp(dealDoubleSystem(list, pcwp, one, teamFlag, range));
                     break;
                 default:
             }
@@ -581,7 +596,11 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
      * @param teamFlag
      * @return
      */
-    private PcwChartVO dealDoubleSystem(List<Map<String, Object>> list, SupplyWaterTmpSettingsDO one, SupplyWaterTmpSettingsDO two, Integer teamFlag) {
+    private PcwChartVO dealDoubleSystem(List<Map<String, Object>> list,
+                                        SupplyWaterTmpSettingsDO one,
+                                        SupplyWaterTmpSettingsDO two,
+                                        Integer teamFlag,
+                                        LocalDateTime[] range) {
         PcwChartVO pcwp = new PcwChartVO();
         // 锅炉上限/压力上限
         pcwp.setMax1(one.getMax());
@@ -613,20 +632,24 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     //处理时间
                     String date = (String) l.get("date");
                     date = dealDate(date, key1);
-                    // 处理数据
-                    Object value = l.get(key1);
-                    xdata.add(date);
-                    ydata11.add((BigDecimal) value);
+                    if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        // 处理数据
+                        Object value = l.get(key1);
+                        xdata.add(date);
+                        ydata11.add((BigDecimal) value);
+                    }
                 }
 
                 if (!Objects.isNull(key2)) {
                     //处理时间
                     String date = (String) l.get("date");
                     date = dealDate(date, key2);
-                    // 处理数据
-                    Object value = l.get(key2);
-                    xdata.add(date);
-                    ydata12.add((BigDecimal) value);
+                    if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        // 处理数据
+                        Object value = l.get(key2);
+                        xdata.add(date);
+                        ydata12.add((BigDecimal) value);
+                    }
                 }
             });
             pcwp.setXdata(xdata.stream().sorted().collect(Collectors.toList()));
@@ -648,37 +671,46 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     //处理时间
                     String date = (String) l.get("date");
                     date = dealDate(date, oneKey1);
-                    // 处理数据
-                    Object value = l.get(oneKey1);
-                    xdata.add(date);
-                    ydata11.add((BigDecimal) value);
+                    if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        // 处理数据
+                        Object value = l.get(oneKey1);
+                        xdata.add(date);
+                        ydata11.add((BigDecimal) value);
+                    }
                 }
                 if (!Objects.isNull(oneKey2)) {
                     //处理时间
                     String date = (String) l.get("date");
                     date = dealDate(date, oneKey2);
-                    // 处理数据
-                    Object value = l.get(oneKey2);
-                    xdata.add(date);
-                    ydata12.add((BigDecimal) value);
+                    if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        // 处理数据
+                        Object value = l.get(oneKey2);
+                        xdata.add(date);
+                        ydata12.add((BigDecimal) value);
+                    }
                 }
                 if (!Objects.isNull(twoKey1)) {
                     //处理时间
                     String date = (String) l.get("date");
                     date = dealDate(date, twoKey1);
-                    // 处理数据
-                    Object value = l.get(twoKey1);
-                    xdata.add(date);
-                    ydata21.add((BigDecimal) value);
+                    if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        // 处理数据
+                        Object value = l.get(twoKey1);
+                        xdata.add(date);
+                        ydata21.add((BigDecimal) value);
+                    }
                 }
                 if (!Objects.isNull(twoKey2)) {
                     //处理时间
                     String date = (String) l.get("date");
                     date = dealDate(date, twoKey2);
-                    // 处理数据
-                    Object value = l.get(twoKey2);
-                    xdata.add(date);
-                    ydata22.add((BigDecimal) value);
+                    if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        // 处理数据
+                        Object value = l.get(twoKey2);
+                        xdata.add(date);
+                        ydata22.add((BigDecimal) value);
+                    }
+
                 }
             });
 
@@ -701,7 +733,10 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
      * @param teamFlag
      * @return
      */
-    private LtwtChartVO dealSingleSystem(List<Map<String, Object>> list, SupplyWaterTmpSettingsDO one, Integer teamFlag) {
+    private LtwtChartVO dealSingleSystem(List<Map<String, Object>> list,
+                                         SupplyWaterTmpSettingsDO one,
+                                         Integer teamFlag,
+                                         LocalDateTime[] range) {
         LtwtChartVO ltwt = new LtwtChartVO();
         ltwt.setMax(one.getMax());
         ltwt.setMin(one.getMin());
@@ -720,10 +755,12 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     //处理时间
                     String date = (String) l.get("date");
                     date = dealDate(date, key);
-                    // 处理数据
-                    Object value = l.get(key);
-                    xdata.add(date);
-                    ydata1.add((BigDecimal) value);
+                    if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        // 处理数据
+                        Object value = l.get(key);
+                        xdata.add(date);
+                        ydata1.add((BigDecimal) value);
+                    }
                 }
             });
         } else {
@@ -738,20 +775,24 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     //处理时间
                     String date = (String) l.get("date");
                     date = dealDate(date, key1);
-                    // 处理数据
-                    Object value1 = l.get(key1);
-                    xdata.add(date);
-                    ydata1.add((BigDecimal) value1);
+                    if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        // 处理数据
+                        Object value1 = l.get(key1);
+                        xdata.add(date);
+                        ydata1.add((BigDecimal) value1);
+                    }
                 }
 
                 if (!Objects.isNull(key2)) {
                     //处理时间
                     String date = (String) l.get("date");
                     date = dealDate(date, key2);
-                    // 处理数据
-                    Object value2 = l.get(key2);
-                    xdata.add(date);
-                    ydata2.add((BigDecimal) value2);
+                    if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        // 处理数据
+                        Object value2 = l.get(key2);
+                        xdata.add(date);
+                        ydata2.add((BigDecimal) value2);
+                    }
                 }
             });
             ltwt.setYdata2(ydata2);
@@ -966,5 +1007,10 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         if (teamFlag != 0 && teamFlag != 1) {
             throw exception(DATE_TYPE_NOT_MATCH);
         }
+    }
+
+    private Boolean checkDate(String date, LocalDateTime[] range) {
+        return LocalDateTimeUtils.isBetween(range[0], range[1], date);
+
     }
 }
