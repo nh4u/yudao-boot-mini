@@ -3,7 +3,9 @@ package cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import javax.validation.constraints.Digits;
 import javax.validation.constraints.NotEmpty;
+import java.math.BigDecimal;
 
 /**
  * @author liumingqiang
@@ -26,9 +28,11 @@ public class SupplyWaterTmpSettingsSaveReqVO {
     private String energyParamName;
 
     @Schema(description = "上限")
-    private Integer max;
+    @Digits(integer = 3, fraction = 2, message = "上限整数位3，小数位2")
+    private BigDecimal max;
 
     @Schema(description = "下限")
-    private Integer min;
+    @Digits(integer = 3, fraction = 2, message = "下限整数位3，小数位2")
+    private BigDecimal min;
 
 }
