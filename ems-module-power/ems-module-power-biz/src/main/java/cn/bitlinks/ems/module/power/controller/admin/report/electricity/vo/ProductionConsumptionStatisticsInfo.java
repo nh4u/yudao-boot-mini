@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,6 +15,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @Schema(description = "管理后台 - 供水温度统计结果信息 VO")
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class ProductionConsumptionStatisticsInfo {
 
     @Schema(description = "id 用于排序")
