@@ -24,6 +24,7 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -375,7 +376,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                 // 第二个分组条件：按参数code
                 Collectors.groupingBy(SupplyWaterTmpMinuteAggData::getParamCode, Collectors.groupingBy(SupplyWaterTmpMinuteAggData::getAggregateTime, Collectors.collectingAndThen(Collectors.toList(), list -> {
                     BigDecimal sum = list.stream().map(SupplyWaterTmpMinuteAggData::getFullValue).reduce(BigDecimal.ZERO, BigDecimal::add);
-                    // 取平均数:00:00~23:00小时温度值之和除以24. （2025-08-18 14:33变更）
+                    // 取平均数:00:00~23:00小时温度值之和除以24. （2025-08-18 14:33变更） 当中间采集时间数据缺失时，分母保持24、14、10
                     BigDecimal avg = sum.divide(new BigDecimal(24), 10, RoundingMode.HALF_UP);
                     SupplyWaterTmpMinuteAggData minuteAggregateDataDO = list.get(0);
                     minuteAggregateDataDO.setFullValue(avg);
@@ -423,8 +424,11 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     // 点位2 计算
                     BigDecimal twoSum = two.stream().map(SupplyWaterTmpMinuteAggData::getFullValue).reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                    BigDecimal onwAvg = divideWithScale(new BigDecimal(one.size()), oneSum, 10);
-                    BigDecimal twoAvg = divideWithScale(new BigDecimal(two.size()), twoSum, 10);
+                    // 点位1：0点到7点，18点到23点，共14个点，用14个小时点总值求平均，得到点位1的值。
+                    //点位2：8点到17点，共10个点，用10个小时点总值求平均，得到点位2的值。
+                    //注：当中间采集时间数据缺失时，分母保持24、14、10。
+                    BigDecimal onwAvg = divideWithScale(new BigDecimal(14), oneSum, 10);
+                    BigDecimal twoAvg = divideWithScale(new BigDecimal(10), twoSum, 10);
 
                     // 点位1 构建
                     SupplyWaterTmpMinuteAggData old = list.get(0);
@@ -528,6 +532,10 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         SupplyWaterTmpTableResultVO result = supplyWaterTmpTable(paramVO);
         resultVO.setDataTime(result.getDataTime());
 
+        // 2.校验时间类型
+        Integer dateType = paramVO.getDateType();
+        DataTypeEnum dataTypeEnum = validateDateType(dateType);
+
         LocalDateTime[] range = paramVO.getRange();
         List<Map<String, Object>> list = result.getList();
 
@@ -548,38 +556,38 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
             switch (code) {
                 case LTWT:
                     // 低温水供水温度
-                    LtwtChartVO ltwt = dealSingleSystem(list, one, teamFlag, range);
+                    LtwtChartVO ltwt = dealSingleSystem(list, one, teamFlag, range, dataTypeEnum);
                     resultVO.setLtwt(ltwt);
                     break;
                 case MTWT:
                     // 中温水供水温度
-                    LtwtChartVO mtwt = dealSingleSystem(list, one, teamFlag, range);
+                    LtwtChartVO mtwt = dealSingleSystem(list, one, teamFlag, range, dataTypeEnum);
                     resultVO.setMtwt(mtwt);
                     break;
                 case HRWT:
                     // 热回收水供水温度
-                    LtwtChartVO hrwt = dealSingleSystem(list, one, teamFlag, range);
+                    LtwtChartVO hrwt = dealSingleSystem(list, one, teamFlag, range, dataTypeEnum);
                     resultVO.setHrwt(hrwt);
                     break;
                 case BHWT:
                     // 热水供水温度（锅炉出水）  热水供水温度（市政出水）
                     SupplyWaterTmpSettingsDO two = supplyWaterTmpSettingsMapper.selectOneByCode(MHWT);
-                    resultVO.setBhwt(dealDoubleSystem(list, one, two, teamFlag, range));
+                    resultVO.setBhwt(dealDoubleSystem(list, one, two, teamFlag, range, dataTypeEnum));
                     break;
                 case MHWT:
                     // 热水供水温度（锅炉出水）  热水供水温度（市政出水）
                     SupplyWaterTmpSettingsDO bhwt = supplyWaterTmpSettingsMapper.selectOneByCode(BHWT);
-                    resultVO.setBhwt(dealDoubleSystem(list, bhwt, one, teamFlag, range));
+                    resultVO.setBhwt(dealDoubleSystem(list, bhwt, one, teamFlag, range, dataTypeEnum));
                     break;
                 case PCWP:
                     // PCW供水压力温度（供水压力） PCW供水压力温度（供水温度）
                     SupplyWaterTmpSettingsDO pcwt = supplyWaterTmpSettingsMapper.selectOneByCode(PCWT);
-                    resultVO.setPcwp(dealDoubleSystem(list, one, pcwt, teamFlag, range));
+                    resultVO.setPcwp(dealDoubleSystem(list, one, pcwt, teamFlag, range, dataTypeEnum));
                     break;
                 case PCWT:
                     // PCW供水压力温度（供水压力） PCW供水压力温度（供水温度）
                     SupplyWaterTmpSettingsDO pcwp = supplyWaterTmpSettingsMapper.selectOneByCode(PCWP);
-                    resultVO.setPcwp(dealDoubleSystem(list, pcwp, one, teamFlag, range));
+                    resultVO.setPcwp(dealDoubleSystem(list, pcwp, one, teamFlag, range, dataTypeEnum));
                     break;
                 default:
             }
@@ -594,14 +602,19 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
      *
      * @param list
      * @param one
+     * @param two
      * @param teamFlag
+     * @param range
+     * @param dataTypeEnum
      * @return
      */
+
     private PcwChartVO dealDoubleSystem(List<Map<String, Object>> list,
                                         SupplyWaterTmpSettingsDO one,
                                         SupplyWaterTmpSettingsDO two,
                                         Integer teamFlag,
-                                        LocalDateTime[] range) {
+                                        LocalDateTime[] range,
+                                        DataTypeEnum dataTypeEnum) {
         PcwChartVO pcwp = new PcwChartVO();
         // 锅炉上限/压力上限
         pcwp.setMax1(one.getMax());
@@ -618,9 +631,9 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
 
         Set<String> xdata = new HashSet<>();
         // 锅炉供水温度/供水压力
-        List<BigDecimal> ydata11 = new ArrayList<>();
+        Map<String, BigDecimal> ydata11 = new HashMap<>();
         // 市政供水温度/供水温度
-        List<BigDecimal> ydata12 = new ArrayList<>();
+        Map<String, BigDecimal> ydata12 = new HashMap<>();
 
         if (teamFlag.equals(0)) {
             //非班组
@@ -633,12 +646,12 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     key1.forEach(key -> {
                         //处理时间
                         String date = (String) l.get("date");
-                        date = dealDate(date, key);
-                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        date = dealDate(date, key, dataTypeEnum);
+                        if (Boolean.TRUE.equals(checkDate(date, range, dataTypeEnum))) {
                             // 处理数据
                             Object value = l.get(key);
                             xdata.add(date);
-                            ydata11.add((BigDecimal) value);
+                            ydata11.put(date, (BigDecimal) value);
                         }
                     });
                 }
@@ -647,24 +660,41 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     key2.forEach(key -> {
                         //处理时间
                         String date = (String) l.get("date");
-                        date = dealDate(date, key);
-                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        date = dealDate(date, key, dataTypeEnum);
+                        if (Boolean.TRUE.equals(checkDate(date, range, dataTypeEnum))) {
                             // 处理数据
                             Object value = l.get(key);
                             xdata.add(date);
-                            ydata12.add((BigDecimal) value);
+                            ydata12.put(date, (BigDecimal) value);
                         }
                     });
                 }
             });
-            pcwp.setXdata(xdata.stream().sorted().collect(Collectors.toList()));
-            pcwp.setYdata11(ydata11);
-            pcwp.setYdata12(ydata12);
+
+
+            List<String> dateList = xdata.stream().sorted().collect(Collectors.toList());
+            pcwp.setXdata(dateList);
+
+            //  点位1锅炉供水温度/供水压力
+            List<BigDecimal> y11 = dateList
+                    .stream()
+                    .map(d -> ydata11.getOrDefault(d, BigDecimal.ZERO))
+                    .collect(Collectors.toList());
+            pcwp.setYdata11(y11);
+
+            //  点位1 市政供水温度/供水温度
+            if (CollUtil.isNotEmpty(ydata12)) {
+                List<BigDecimal> y12 = dateList
+                        .stream()
+                        .map(d -> ydata12.getOrDefault(d, BigDecimal.ZERO))
+                        .collect(Collectors.toList());
+                pcwp.setYdata12(y12);
+            }
 
         } else {
-            // 班组
-            List<BigDecimal> ydata21 = new ArrayList<>();
-            List<BigDecimal> ydata22 = new ArrayList<>();
+            // 班组  点位2
+            Map<String, BigDecimal> ydata21 = new HashMap<>();
+            Map<String, BigDecimal> ydata22 = new HashMap<>();
             list.forEach(l -> {
 
                 List<String> oneKey1 = getKey(l, "1_" + code1);
@@ -676,12 +706,12 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     oneKey1.forEach(key -> {
                         //处理时间
                         String date = (String) l.get("date");
-                        date = dealDate(date, key);
-                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        date = dealDate(date, key, dataTypeEnum);
+                        if (Boolean.TRUE.equals(checkDate(date, range, dataTypeEnum))) {
                             // 处理数据
                             Object value = l.get(key);
                             xdata.add(date);
-                            ydata11.add((BigDecimal) value);
+                            ydata11.put(date, (BigDecimal) value);
                         }
                     });
                 }
@@ -690,12 +720,12 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     oneKey2.forEach(key -> {
                         //处理时间
                         String date = (String) l.get("date");
-                        date = dealDate(date, key);
-                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        date = dealDate(date, key, dataTypeEnum);
+                        if (Boolean.TRUE.equals(checkDate(date, range, dataTypeEnum))) {
                             // 处理数据
                             Object value = l.get(key);
                             xdata.add(date);
-                            ydata12.add((BigDecimal) value);
+                            ydata12.put(date, (BigDecimal) value);
                         }
                     });
                 }
@@ -703,12 +733,12 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     twoKey1.forEach(key -> {
                         //处理时间
                         String date = (String) l.get("date");
-                        date = dealDate(date, key);
-                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        date = dealDate(date, key, dataTypeEnum);
+                        if (Boolean.TRUE.equals(checkDate(date, range, dataTypeEnum))) {
                             // 处理数据
                             Object value = l.get(key);
                             xdata.add(date);
-                            ydata21.add((BigDecimal) value);
+                            ydata21.put(date, (BigDecimal) value);
                         }
                     });
                 }
@@ -717,22 +747,52 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     twoKey2.forEach(key -> {
                         //处理时间
                         String date = (String) l.get("date");
-                        date = dealDate(date, key);
-                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        date = dealDate(date, key, dataTypeEnum);
+                        if (Boolean.TRUE.equals(checkDate(date, range, dataTypeEnum))) {
                             // 处理数据
                             Object value = l.get(key);
                             xdata.add(date);
-                            ydata22.add((BigDecimal) value);
+                            ydata22.put(date, (BigDecimal) value);
                         }
                     });
                 }
             });
 
-            pcwp.setXdata(xdata.stream().sorted().collect(Collectors.toList()));
-            pcwp.setYdata11(ydata11);
-            pcwp.setYdata12(ydata12);
-            pcwp.setYdata21(ydata21);
-            pcwp.setYdata22(ydata22);
+            List<String> dateList = xdata.stream().sorted().collect(Collectors.toList());
+            pcwp.setXdata(dateList);
+
+            // 点位1
+            if (CollUtil.isNotEmpty(ydata11)) {
+                List<BigDecimal> y = dateList
+                        .stream()
+                        .map(d -> ydata11.getOrDefault(d, BigDecimal.ZERO))
+                        .collect(Collectors.toList());
+                pcwp.setYdata11(y);
+            }
+            if (CollUtil.isNotEmpty(ydata12)) {
+                List<BigDecimal> y = dateList
+                        .stream()
+                        .map(d -> ydata12.getOrDefault(d, BigDecimal.ZERO))
+                        .collect(Collectors.toList());
+                pcwp.setYdata12(y);
+            }
+
+            // 点位2
+            if (CollUtil.isNotEmpty(ydata21)) {
+                List<BigDecimal> y = dateList
+                        .stream()
+                        .map(d -> ydata21.getOrDefault(d, BigDecimal.ZERO))
+                        .collect(Collectors.toList());
+                pcwp.setYdata21(y);
+            }
+
+            if (CollUtil.isNotEmpty(ydata22)) {
+                List<BigDecimal> y = dateList
+                        .stream()
+                        .map(d -> ydata22.getOrDefault(d, BigDecimal.ZERO))
+                        .collect(Collectors.toList());
+                pcwp.setYdata22(y);
+            }
         }
 
         return pcwp;
@@ -750,15 +810,18 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
     private LtwtChartVO dealSingleSystem(List<Map<String, Object>> list,
                                          SupplyWaterTmpSettingsDO one,
                                          Integer teamFlag,
-                                         LocalDateTime[] range) {
+                                         LocalDateTime[] range,
+                                         DataTypeEnum dataTypeEnum) {
         LtwtChartVO ltwt = new LtwtChartVO();
         ltwt.setMax(one.getMax());
         ltwt.setMin(one.getMin());
         String code = one.getCode();
 
         Set<String> xdata = new HashSet<>();
-        List<BigDecimal> ydata1 = new ArrayList<>();
-
+        // 点位1
+        Map<String, BigDecimal> ydata1 = new HashMap<>();
+        // 点位2  班组时才会用到此点位
+        Map<String, BigDecimal> ydata2 = new HashMap<>();
         if (teamFlag.equals(0)) {
             //非班组
             list.forEach(l -> {
@@ -769,12 +832,12 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     key.forEach(k -> {
                         //处理时间
                         String date = (String) l.get("date");
-                        date = dealDate(date, k);
-                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        date = dealDate(date, k, dataTypeEnum);
+                        if (Boolean.TRUE.equals(checkDate(date, range, dataTypeEnum))) {
                             // 处理数据
                             Object value = l.get(k);
                             xdata.add(date);
-                            ydata1.add((BigDecimal) value);
+                            ydata1.put(date, (BigDecimal) value);
                         }
                     });
 
@@ -782,7 +845,6 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
             });
         } else {
             // 班组
-            List<BigDecimal> ydata2 = new ArrayList<>();
             list.forEach(l -> {
 
                 List<String> key1 = getKey(l, "1_" + code);
@@ -792,12 +854,12 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     key1.forEach(k -> {
                         //处理时间
                         String date = (String) l.get("date");
-                        date = dealDate(date, k);
-                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        date = dealDate(date, k, dataTypeEnum);
+                        if (Boolean.TRUE.equals(checkDate(date, range, dataTypeEnum))) {
                             // 处理数据
                             Object value1 = l.get(k);
                             xdata.add(date);
-                            ydata1.add((BigDecimal) value1);
+                            ydata1.put(date, (BigDecimal) value1);
                         }
                     });
                 }
@@ -806,20 +868,35 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     key2.forEach(k -> {
                         //处理时间
                         String date = (String) l.get("date");
-                        date = dealDate(date, k);
-                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                        date = dealDate(date, k, dataTypeEnum);
+                        if (Boolean.TRUE.equals(checkDate(date, range, dataTypeEnum))) {
                             // 处理数据
                             Object value2 = l.get(k);
                             xdata.add(date);
-                            ydata2.add((BigDecimal) value2);
+                            ydata2.put(date, (BigDecimal) value2);
                         }
                     });
                 }
             });
-            ltwt.setYdata2(ydata2);
         }
-        ltwt.setXdata(xdata.stream().sorted().collect(Collectors.toList()));
-        ltwt.setYdata1(ydata1);
+        List<String> dateList = xdata.stream().sorted().collect(Collectors.toList());
+        ltwt.setXdata(dateList);
+
+        // 点位1
+        List<BigDecimal> y1 = dateList
+                .stream()
+                .map(d -> ydata1.getOrDefault(d, BigDecimal.ZERO))
+                .collect(Collectors.toList());
+        ltwt.setYdata1(y1);
+
+        // 点位2
+        if (CollUtil.isNotEmpty(ydata2)) {
+            List<BigDecimal> y2 = dateList
+                    .stream()
+                    .map(d -> ydata2.getOrDefault(d, BigDecimal.ZERO))
+                    .collect(Collectors.toList());
+            ltwt.setYdata2(y2);
+        }
         return ltwt;
     }
 
@@ -834,7 +911,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         return keyList.stream().sorted().collect(Collectors.toList());
     }
 
-    private String dealDate(String date, String key) {
+    private String dealDate(String date, String key, DataTypeEnum dataTypeEnum) {
 
         // 天 时 处理
         String[] l1 = date.split(DAY);
@@ -852,8 +929,13 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         int month = Integer.parseInt(l4[1].trim());
 
         try {
-            LocalDateTime currentTime = LocalDateTime.of(year, month, day, hour, 0, 0);
-            return LocalDateTimeUtils.getFormatTime(currentTime);
+            if (dataTypeEnum.equals(DataTypeEnum.DAY)) {
+                LocalDate currentTime = LocalDate.of(year, month, day);
+                return LocalDateTimeUtils.getFormatTime(currentTime);
+            } else {
+                LocalDateTime currentTime = LocalDateTime.of(year, month, day, hour, 0, 0);
+                return LocalDateTimeUtils.getFormatTime(currentTime);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return "";
@@ -1031,8 +1113,11 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         }
     }
 
-    private Boolean checkDate(String date, LocalDateTime[] range) {
+    private Boolean checkDate(String date, LocalDateTime[] range, DataTypeEnum dataTypeEnum) {
         if (CharSequenceUtil.isNotBlank(date)) {
+            if (dataTypeEnum.equals(DataTypeEnum.DAY)) {
+                date = date + " 00:00:00";
+            }
             return LocalDateTimeUtils.isBetween(range[0], range[1], date);
         } else {
             return false;
