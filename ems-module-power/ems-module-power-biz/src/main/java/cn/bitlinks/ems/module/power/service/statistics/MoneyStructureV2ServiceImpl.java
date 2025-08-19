@@ -49,7 +49,7 @@ import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
 /**
- * @Title: ydme-doublecarbon
+ * @Title: ydme-ems
  * @description:
  * @Author: Mingqiang LIU
  * @Date 2025/05/14 17:10
@@ -84,7 +84,8 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
-            return JSON.parseObject(cacheRes, new TypeReference<StatisticsResultV2VO<StructureInfo>>() {});
+            return JSON.parseObject(cacheRes, new TypeReference<StatisticsResultV2VO<StructureInfo>>() {
+            });
         }
 
         // 获取结果
@@ -192,6 +193,32 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
 
         resultVO.setStatisticsInfoList(statisticsInfoList);
 
+        // 填充0
+        statisticsInfoList.forEach(l -> {
+
+            List<StructureInfoData> newList = new ArrayList<>();
+            List<StructureInfoData> oldList = l.getStructureInfoDataList();
+            if (tableHeader.size() != oldList.size()) {
+                Map<String, List<StructureInfoData>> dateMap = oldList.stream()
+                        .collect(Collectors.groupingBy(StructureInfoData::getDate));
+
+                tableHeader.forEach(date -> {
+                    List<StructureInfoData> standardCoalInfoDataList = dateMap.get(date);
+                    if (standardCoalInfoDataList == null) {
+                        StructureInfoData standardCoalInfoData = new StructureInfoData();
+                        standardCoalInfoData.setDate(date);
+                        standardCoalInfoData.setNum(null);
+                        standardCoalInfoData.setProportion(null);
+                        newList.add(standardCoalInfoData);
+                    } else {
+                        newList.add(standardCoalInfoDataList.get(0));
+                    }
+                });
+
+                l.setStructureInfoDataList(newList);
+            }
+        });
+
         // 获取数据更新时间
         LocalDateTime lastTime = usageCostService.getLastTime(
                 paramVO,
@@ -226,7 +253,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         // 获取原始数据列表
         List<StructureInfo> dataList = tableResult.getStatisticsInfoList();
 
-        if (CollUtil.isEmpty(dataList)){
+        if (CollUtil.isEmpty(dataList)) {
             // 返回查询结果。
             return resultVO;
         }
@@ -321,7 +348,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         });
 
         // 周期合计
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计",getHeaderDesc(unit, 2, "用能成本")));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", getHeaderDesc(unit, 2, "用能成本")));
         list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "占比(%)"));
         return list;
 
@@ -965,7 +992,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         list.forEach(l -> {
             List<StructureInfoData> structureInfoDataList = l.getStructureInfoDataList();
             structureInfoDataList.forEach(s ->
-                sumMap.put(s.getDate(), addBigDecimal(sumMap.get(s.getDate()), s.getNum()))
+                    sumMap.put(s.getDate(), addBigDecimal(sumMap.get(s.getDate()), s.getNum()))
             );
             sumMap.put("sumNum", addBigDecimal(sumMap.get("sumNum"), l.getSumNum()));
         });
@@ -1111,7 +1138,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
             // 按一级标签聚合数据
             Map<String, BigDecimal> labelMap = dataList.stream()
                     .filter(vo -> energy.getId().equals(vo.getEnergyId()))
-                    .map(vo->{
+                    .map(vo -> {
                         vo.setLabel1(getName(vo.getLabel1(), vo.getLabel2(), vo.getLabel3(), vo.getLabel4(), vo.getLabel5()));
                         return vo;
                     })
