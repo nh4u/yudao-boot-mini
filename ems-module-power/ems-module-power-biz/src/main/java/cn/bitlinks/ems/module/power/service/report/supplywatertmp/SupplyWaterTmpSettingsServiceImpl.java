@@ -14,6 +14,7 @@ import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDa
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.text.StrPool;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.excel.util.ListUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -625,31 +626,35 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
             //非班组
             list.forEach(l -> {
 
-                String key1 = getKey(l, code1);
-                String key2 = getKey(l, code2);
+                List<String> key1 = getKey(l, code1);
+                List<String> key2 = getKey(l, code2);
 
-                if (!Objects.isNull(key1)) {
-                    //处理时间
-                    String date = (String) l.get("date");
-                    date = dealDate(date, key1);
-                    if (Boolean.TRUE.equals(checkDate(date, range))) {
-                        // 处理数据
-                        Object value = l.get(key1);
-                        xdata.add(date);
-                        ydata11.add((BigDecimal) value);
-                    }
+                if (CollUtil.isNotEmpty(key1)) {
+                    key1.forEach(key -> {
+                        //处理时间
+                        String date = (String) l.get("date");
+                        date = dealDate(date, key);
+                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                            // 处理数据
+                            Object value = l.get(key);
+                            xdata.add(date);
+                            ydata11.add((BigDecimal) value);
+                        }
+                    });
                 }
 
-                if (!Objects.isNull(key2)) {
-                    //处理时间
-                    String date = (String) l.get("date");
-                    date = dealDate(date, key2);
-                    if (Boolean.TRUE.equals(checkDate(date, range))) {
-                        // 处理数据
-                        Object value = l.get(key2);
-                        xdata.add(date);
-                        ydata12.add((BigDecimal) value);
-                    }
+                if (CollUtil.isNotEmpty(key2)) {
+                    key2.forEach(key -> {
+                        //处理时间
+                        String date = (String) l.get("date");
+                        date = dealDate(date, key);
+                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                            // 处理数据
+                            Object value = l.get(key);
+                            xdata.add(date);
+                            ydata12.add((BigDecimal) value);
+                        }
+                    });
                 }
             });
             pcwp.setXdata(xdata.stream().sorted().collect(Collectors.toList()));
@@ -662,55 +667,64 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
             List<BigDecimal> ydata22 = new ArrayList<>();
             list.forEach(l -> {
 
-                String oneKey1 = getKey(l, "1_" + code1);
-                String oneKey2 = getKey(l, "2_" + code1);
-                String twoKey1 = getKey(l, "1_" + code2);
-                String twoKey2 = getKey(l, "2_" + code2);
+                List<String> oneKey1 = getKey(l, "1_" + code1);
+                List<String> oneKey2 = getKey(l, "2_" + code1);
+                List<String> twoKey1 = getKey(l, "1_" + code2);
+                List<String> twoKey2 = getKey(l, "2_" + code2);
 
-                if (!Objects.isNull(oneKey1)) {
-                    //处理时间
-                    String date = (String) l.get("date");
-                    date = dealDate(date, oneKey1);
-                    if (Boolean.TRUE.equals(checkDate(date, range))) {
-                        // 处理数据
-                        Object value = l.get(oneKey1);
-                        xdata.add(date);
-                        ydata11.add((BigDecimal) value);
-                    }
+                if (CollUtil.isNotEmpty(oneKey1)) {
+                    oneKey1.forEach(key -> {
+                        //处理时间
+                        String date = (String) l.get("date");
+                        date = dealDate(date, key);
+                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                            // 处理数据
+                            Object value = l.get(key);
+                            xdata.add(date);
+                            ydata11.add((BigDecimal) value);
+                        }
+                    });
                 }
-                if (!Objects.isNull(oneKey2)) {
-                    //处理时间
-                    String date = (String) l.get("date");
-                    date = dealDate(date, oneKey2);
-                    if (Boolean.TRUE.equals(checkDate(date, range))) {
-                        // 处理数据
-                        Object value = l.get(oneKey2);
-                        xdata.add(date);
-                        ydata12.add((BigDecimal) value);
-                    }
-                }
-                if (!Objects.isNull(twoKey1)) {
-                    //处理时间
-                    String date = (String) l.get("date");
-                    date = dealDate(date, twoKey1);
-                    if (Boolean.TRUE.equals(checkDate(date, range))) {
-                        // 处理数据
-                        Object value = l.get(twoKey1);
-                        xdata.add(date);
-                        ydata21.add((BigDecimal) value);
-                    }
-                }
-                if (!Objects.isNull(twoKey2)) {
-                    //处理时间
-                    String date = (String) l.get("date");
-                    date = dealDate(date, twoKey2);
-                    if (Boolean.TRUE.equals(checkDate(date, range))) {
-                        // 处理数据
-                        Object value = l.get(twoKey2);
-                        xdata.add(date);
-                        ydata22.add((BigDecimal) value);
-                    }
 
+                if (CollUtil.isNotEmpty(oneKey2)) {
+                    oneKey2.forEach(key -> {
+                        //处理时间
+                        String date = (String) l.get("date");
+                        date = dealDate(date, key);
+                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                            // 处理数据
+                            Object value = l.get(key);
+                            xdata.add(date);
+                            ydata12.add((BigDecimal) value);
+                        }
+                    });
+                }
+                if (CollUtil.isNotEmpty(twoKey1)) {
+                    twoKey1.forEach(key -> {
+                        //处理时间
+                        String date = (String) l.get("date");
+                        date = dealDate(date, key);
+                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                            // 处理数据
+                            Object value = l.get(key);
+                            xdata.add(date);
+                            ydata21.add((BigDecimal) value);
+                        }
+                    });
+                }
+
+                if (CollUtil.isNotEmpty(twoKey2)) {
+                    twoKey2.forEach(key -> {
+                        //处理时间
+                        String date = (String) l.get("date");
+                        date = dealDate(date, key);
+                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                            // 处理数据
+                            Object value = l.get(key);
+                            xdata.add(date);
+                            ydata22.add((BigDecimal) value);
+                        }
+                    });
                 }
             });
 
@@ -749,18 +763,21 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
             //非班组
             list.forEach(l -> {
 
-                String key = getKey(l, code);
+                List<String> key = getKey(l, code);
 
-                if (!Objects.isNull(key)) {
-                    //处理时间
-                    String date = (String) l.get("date");
-                    date = dealDate(date, key);
-                    if (Boolean.TRUE.equals(checkDate(date, range))) {
-                        // 处理数据
-                        Object value = l.get(key);
-                        xdata.add(date);
-                        ydata1.add((BigDecimal) value);
-                    }
+                if (CollUtil.isNotEmpty(key)) {
+                    key.forEach(k -> {
+                        //处理时间
+                        String date = (String) l.get("date");
+                        date = dealDate(date, k);
+                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                            // 处理数据
+                            Object value = l.get(k);
+                            xdata.add(date);
+                            ydata1.add((BigDecimal) value);
+                        }
+                    });
+
                 }
             });
         } else {
@@ -768,31 +785,35 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
             List<BigDecimal> ydata2 = new ArrayList<>();
             list.forEach(l -> {
 
-                String key1 = getKey(l, "1_" + code);
-                String key2 = getKey(l, "2_" + code);
+                List<String> key1 = getKey(l, "1_" + code);
+                List<String> key2 = getKey(l, "2_" + code);
 
-                if (!Objects.isNull(key1)) {
-                    //处理时间
-                    String date = (String) l.get("date");
-                    date = dealDate(date, key1);
-                    if (Boolean.TRUE.equals(checkDate(date, range))) {
-                        // 处理数据
-                        Object value1 = l.get(key1);
-                        xdata.add(date);
-                        ydata1.add((BigDecimal) value1);
-                    }
+                if (CollUtil.isNotEmpty(key1)) {
+                    key1.forEach(k -> {
+                        //处理时间
+                        String date = (String) l.get("date");
+                        date = dealDate(date, k);
+                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                            // 处理数据
+                            Object value1 = l.get(k);
+                            xdata.add(date);
+                            ydata1.add((BigDecimal) value1);
+                        }
+                    });
                 }
 
-                if (!Objects.isNull(key2)) {
-                    //处理时间
-                    String date = (String) l.get("date");
-                    date = dealDate(date, key2);
-                    if (Boolean.TRUE.equals(checkDate(date, range))) {
-                        // 处理数据
-                        Object value2 = l.get(key2);
-                        xdata.add(date);
-                        ydata2.add((BigDecimal) value2);
-                    }
+                if (CollUtil.isNotEmpty(key2)) {
+                    key2.forEach(k -> {
+                        //处理时间
+                        String date = (String) l.get("date");
+                        date = dealDate(date, k);
+                        if (Boolean.TRUE.equals(checkDate(date, range))) {
+                            // 处理数据
+                            Object value2 = l.get(k);
+                            xdata.add(date);
+                            ydata2.add((BigDecimal) value2);
+                        }
+                    });
                 }
             });
             ltwt.setYdata2(ydata2);
@@ -802,14 +823,15 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         return ltwt;
     }
 
-    private String getKey(Map<String, Object> l, String key) {
+    private List<String> getKey(Map<String, Object> l, String key) {
 
+        List<String> keyList = new ArrayList<>();
         for (String k : l.keySet()) {
             if (k.contains(key)) {
-                return k;
+                keyList.add(k);
             }
         }
-        return null;
+        return keyList.stream().sorted().collect(Collectors.toList());
     }
 
     private String dealDate(String date, String key) {
@@ -1010,7 +1032,12 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
     }
 
     private Boolean checkDate(String date, LocalDateTime[] range) {
-        return LocalDateTimeUtils.isBetween(range[0], range[1], date);
+        if (CharSequenceUtil.isNotBlank(date)) {
+            return LocalDateTimeUtils.isBetween(range[0], range[1], date);
+        } else {
+            return false;
+        }
+
 
     }
 }
