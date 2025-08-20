@@ -625,9 +625,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
                 BigDecimal now = nowSeries.getOrDefault(time, BigDecimal.ZERO);
                 String lastTime = LocalDateTimeUtils.getYearOnYearTime(time, dataTypeEnum);
                 BigDecimal previous = lastSeries.getOrDefault(lastTime, BigDecimal.ZERO);
-                nowList.add(now);
-                lastList.add(previous);
-                ratioList.add(calculateYearOnYearRatio(now, previous));
+                nowList.add(dealBigDecimalScale(now, DEFAULT_SCALE));
+                lastList.add(dealBigDecimalScale(previous, DEFAULT_SCALE));
+                ratioList.add(dealBigDecimalScale(calculateYearOnYearRatio(now, previous), DEFAULT_SCALE));
             }
 
             List<ChartSeriesItemVO> ydata = Arrays.asList(
@@ -702,9 +702,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
                 BigDecimal now = nowSeries.getOrDefault(time, BigDecimal.ZERO);
                 String lastTime = LocalDateTimeUtils.getYearOnYearTime(time, dataTypeEnum);
                 BigDecimal previous = lastSeries.getOrDefault(lastTime, BigDecimal.ZERO);
-                nowList.add(now);
-                lastList.add(previous);
-                ratioList.add(calculateYearOnYearRatio(now, previous));
+                nowList.add(dealBigDecimalScale(now, DEFAULT_SCALE));
+                lastList.add(dealBigDecimalScale(previous, DEFAULT_SCALE));
+                ratioList.add(dealBigDecimalScale(calculateYearOnYearRatio(now, previous), DEFAULT_SCALE));
             }
 
             List<ChartSeriesItemVO> ydata = Arrays.asList(
@@ -750,9 +750,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
             BigDecimal now = nowMap.getOrDefault(time, BigDecimal.ZERO);
             String lastTime = LocalDateTimeUtils.getYearOnYearTime(time, dataTypeEnum);
             BigDecimal previous = lastMap.getOrDefault(lastTime, BigDecimal.ZERO);
-            nowList.add(now);
-            lastList.add(previous);
-            ratioList.add(calculateYearOnYearRatio(now, previous));
+            nowList.add(dealBigDecimalScale(now, DEFAULT_SCALE));
+            lastList.add(dealBigDecimalScale(previous, DEFAULT_SCALE));
+            ratioList.add(dealBigDecimalScale(calculateYearOnYearRatio(now, previous), DEFAULT_SCALE));
         }
 
         List<ChartSeriesItemVO> ydata = Arrays.asList(
