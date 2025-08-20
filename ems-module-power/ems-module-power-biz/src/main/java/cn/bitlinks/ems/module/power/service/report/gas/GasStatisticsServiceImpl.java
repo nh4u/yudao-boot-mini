@@ -279,7 +279,7 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                 data.setDate(date.format(DAY_FORMATTER));
 
                 BigDecimal value = calculateValueByTypeOptimized(info, date, dataCache, tankSettingsMap);
-                data.setValue(value.setScale(2, RoundingMode.HALF_UP));
+                data.setValue(dealBigDecimalScale(value));
                 statisticsDateDataList.add(data);
             }
 
@@ -314,7 +314,13 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         log.info("气化科报表查询完成，返回{}条统计数据", statisticsInfoList.size());
         return resultVO;
     }
+    public static BigDecimal dealBigDecimalScale(BigDecimal num) {
+        if (num != null) {
+            return num.setScale(DEFAULT_SCALE, RoundingMode.HALF_UP);
 
+        }
+        return null;
+    }
     /**
      * 批量查询数据并构建缓存
      */
