@@ -240,7 +240,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                             Long standingBookId = standingBookCodeMap.get(c);
                             SupplyWaterTmpMinuteAggData minuteAggregateData = minuteAggregateDataMap.get(standingBookId);
                             if (Objects.isNull(minuteAggregateData)) {
-                                map.put(key, BigDecimal.ZERO);
+                                map.put(key, null);
                             } else {
                                 map.put(key, minuteAggregateData.getFullValue());
                             }
@@ -249,14 +249,14 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     } else {
                         codes.forEach(c -> {
                             String key = c + "_" + year + "-" + monthValue;
-                            map.put(key, BigDecimal.ZERO);
+                            map.put(key, null);
                         });
                     }
                 } catch (Exception e) {
                     log.error(e.getMessage());
                     codes.forEach(c -> {
                         String key = c + "_" + year + "-" + monthValue;
-                        map.put(key, BigDecimal.ZERO);
+                        map.put(key, null);
                     });
                 }
 
@@ -315,21 +315,21 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                             Long standingBookId = standingBookCodeMap.get(c);
                             List<SupplyWaterTmpMinuteAggData> list = minuteAggregateDataMap.get(standingBookId);
                             if (CollUtil.isEmpty(list)) {
-                                map1.put(key1, BigDecimal.ZERO);
-                                map2.put(key2, BigDecimal.ZERO);
+                                map1.put(key1, null);
+                                map2.put(key2, null);
                             } else {
                                 list.forEach(l -> {
                                     if (POINT_ONE.equals(l.getPoint())) {
                                         map1.put(key1, l.getFullValue());
                                         Object o = map2.getOrDefault(key2, 0);
                                         if (o.equals(0)) {
-                                            map2.put(key2, BigDecimal.ZERO);
+                                            map2.put(key2, null);
                                         }
                                     } else {
                                         Object o = map1.getOrDefault(key1, 0);
                                         // 如果不存在才赋值0 如果存在则不赋值0，保留原来的值
                                         if (o.equals(0)) {
-                                            map2.put(key2, BigDecimal.ZERO);
+                                            map2.put(key2, null);
                                         }
                                         map2.put(key2, l.getFullValue());
                                     }
@@ -341,8 +341,8 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                         codes.forEach(c -> {
                             String key1 = POINT_ONE + "_" + c + "_" + year + "-" + monthValue;
                             String key2 = POINT_TWO + "_" + c + "_" + year + "-" + monthValue;
-                            map1.put(key1, BigDecimal.ZERO);
-                            map2.put(key2, BigDecimal.ZERO);
+                            map1.put(key1, null);
+                            map2.put(key2, null);
                         });
                     }
                 } catch (Exception e) {
@@ -350,8 +350,8 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     codes.forEach(c -> {
                         String key1 = POINT_ONE + "_" + c + "_" + year + "-" + monthValue;
                         String key2 = POINT_TWO + "_" + c + "_" + year + "-" + monthValue;
-                        map1.put(key1, BigDecimal.ZERO);
-                        map2.put(key2, BigDecimal.ZERO);
+                        map1.put(key1, null);
+                        map2.put(key2, null);
                     });
                 }
 
@@ -378,7 +378,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                 SupplyWaterTmpMinuteAggData::getStandingbookId,
                 // 第二个分组条件：按参数code
                 Collectors.groupingBy(SupplyWaterTmpMinuteAggData::getParamCode, Collectors.groupingBy(SupplyWaterTmpMinuteAggData::getAggregateTime, Collectors.collectingAndThen(Collectors.toList(), list -> {
-                    BigDecimal sum = list.stream().map(SupplyWaterTmpMinuteAggData::getFullValue).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal sum = list.stream().map(SupplyWaterTmpMinuteAggData::getFullValue).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
                     // 取平均数:00:00~23:00小时温度值之和除以24. （2025-08-18 14:33变更） 当中间采集时间数据缺失时，分母保持24、14、10
                     BigDecimal avg = sum.divide(new BigDecimal(24), 10, RoundingMode.HALF_UP);
                     SupplyWaterTmpMinuteAggData minuteAggregateDataDO = list.get(0);
@@ -422,10 +422,16 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     });
 
                     // 点位1 计算
-                    BigDecimal oneSum = one.stream().map(SupplyWaterTmpMinuteAggData::getFullValue).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal oneSum = one.stream()
+                            .map(SupplyWaterTmpMinuteAggData::getFullValue)
+                            .filter(Objects::nonNull)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                     // 点位2 计算
-                    BigDecimal twoSum = two.stream().map(SupplyWaterTmpMinuteAggData::getFullValue).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal twoSum = two.stream()
+                            .map(SupplyWaterTmpMinuteAggData::getFullValue)
+                            .filter(Objects::nonNull)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                     // 点位1：0点到7点，18点到23点，共14个点，用14个小时点总值求平均，得到点位1的值。
                     //点位2：8点到17点，共10个点，用10个小时点总值求平均，得到点位2的值。
@@ -499,7 +505,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                                 Long standingBookId = standingBookCodeMap.get(c);
                                 SupplyWaterTmpMinuteAggData minuteAggregateData = minuteAggregateDataMap.get(standingBookId);
                                 if (Objects.isNull(minuteAggregateData)) {
-                                    map.put(key, BigDecimal.ZERO);
+                                    map.put(key, null);
                                 } else {
                                     map.put(key, minuteAggregateData.getFullValue());
                                 }
@@ -508,7 +514,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                         } else {
                             codes.forEach(c -> {
                                 String key = c + "_" + year + "-" + monthValue;
-                                map.put(key, BigDecimal.ZERO);
+                                map.put(key, null);
                             });
                         }
                     } catch (Exception e) {

@@ -95,6 +95,18 @@ public class CommonUtil {
                 .multiply(BigDecimal.valueOf(100));
     }
 
+    /**
+     * 定基比率计算（避免除零）
+     */
+    public static BigDecimal calculateBaseRatio(BigDecimal now, BigDecimal previous) {
+        if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0 || now == null) {
+            return null;
+        }
+        return now.subtract(previous)
+                .divide(previous, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100));
+    }
+
     public static BigDecimal dealBigDecimalScale(BigDecimal num, Integer scale) {
         if (num != null) {
             return num.setScale(scale, RoundingMode.HALF_UP);

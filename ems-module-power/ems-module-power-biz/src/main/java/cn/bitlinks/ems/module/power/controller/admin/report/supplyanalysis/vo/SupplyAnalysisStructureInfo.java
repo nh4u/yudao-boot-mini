@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StructureInfoData;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,6 +18,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @Schema(description = "管理后台 - 供应分析结果信息 VO")
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class SupplyAnalysisStructureInfo {
 
     @Schema(description = "id 用于排序")
