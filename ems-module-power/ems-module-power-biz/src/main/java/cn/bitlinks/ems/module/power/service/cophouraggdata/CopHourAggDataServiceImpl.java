@@ -109,7 +109,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
                                     CopHourAggData copHourAggData = copHourAggDatasMap.get(c);
 
                                     if (Objects.isNull(copHourAggData)) {
-                                        map.put(key, BigDecimal.ZERO);
+                                        map.put(key, null);
                                     } else {
                                         map.put(key, copHourAggData.getCopValue());
                                     }
@@ -119,7 +119,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
                         } else {
                             copTypes.forEach(c -> {
                                 String key = c + "_" + year + "-" + monthValue;
-                                map.put(key, BigDecimal.ZERO);
+                                map.put(key, null);
                             });
                         }
                     } catch (Exception e) {

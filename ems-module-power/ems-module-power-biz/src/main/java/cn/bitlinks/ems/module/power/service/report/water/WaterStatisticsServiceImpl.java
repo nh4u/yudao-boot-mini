@@ -207,7 +207,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
                     if (standardCoalInfoDataList == null) {
                         StatisticInfoDataV2 standardCoalInfoData = new StatisticInfoDataV2();
                         standardCoalInfoData.setDate(date);
-                        standardCoalInfoData.setConsumption(BigDecimal.ZERO);
+                        standardCoalInfoData.setConsumption(null);
                         newList.add(standardCoalInfoData);
                     } else {
                         newList.add(standardCoalInfoDataList.get(0));
@@ -309,6 +309,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
                             list -> {
                                 BigDecimal totalConsumption = list.stream()
                                         .map(UsageCostData::getCurrentTotalUsage)
+                                        .filter(Objects::nonNull)
                                         .reduce(BigDecimal.ZERO, BigDecimal::add);
                                 return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, null);
                             }
@@ -317,6 +318,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
 
             BigDecimal totalConsumption = dataList.stream()
                     .map(StatisticInfoDataV2::getConsumption)
+                    .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             StatisticsInfoV2 info = new StatisticsInfoV2();
@@ -405,6 +407,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
                                     list -> {
                                         BigDecimal totalConsumption = list.stream()
                                                 .map(UsageCostData::getCurrentTotalUsage)
+                                                .filter(Objects::nonNull)
                                                 .reduce(BigDecimal.ZERO, BigDecimal::add);
                                         return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, null);
                                     }
@@ -413,6 +416,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
 
                     BigDecimal totalConsumption = dataList.stream()
                             .map(StatisticInfoDataV2::getConsumption)
+                            .filter(Objects::nonNull)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                     StatisticsInfoV2 info = new StatisticsInfoV2();
@@ -494,6 +498,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
                                 list -> {
                                     BigDecimal totalConsumption = list.stream()
                                             .map(UsageCostData::getCurrentTotalUsage)
+                                            .filter(Objects::nonNull)
                                             .reduce(BigDecimal.ZERO, BigDecimal::add);
                                     return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, null);
                                 }
@@ -503,6 +508,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
         //按标签统计时候 用量不用合计
         BigDecimal totalConsumption = dataList.stream()
                 .map(StatisticInfoDataV2::getConsumption)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 //        BigDecimal totalStandardCoal = dataList.stream()
 //                .map(StandardCoalInfoData::getStandardCoal)
@@ -526,7 +532,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
         }).collect(Collectors.toList());
 
         info.setStatisticsDateDataList(dataList);
-        info.setSumEnergyConsumption(dealBigDecimalScale(BigDecimal.ZERO, DEFAULT_SCALE));
+        info.setSumEnergyConsumption(dealBigDecimalScale(null, DEFAULT_SCALE));
 
         resultList.add(info);
 
@@ -592,6 +598,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
                                         list -> {
                                             BigDecimal totalConsumption = list.stream()
                                                     .map(UsageCostData::getCurrentTotalUsage)
+                                                    .filter(Objects::nonNull)
                                                     .reduce(BigDecimal.ZERO, BigDecimal::add);
                                             return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, null);
                                         }
@@ -601,6 +608,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
                 //按标签统计时候 用量不用合计
                 BigDecimal totalConsumption = dataList.stream()
                         .map(StatisticInfoDataV2::getConsumption)
+                        .filter(Objects::nonNull)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                 StatisticsInfoV2 info = new StatisticsInfoV2();
