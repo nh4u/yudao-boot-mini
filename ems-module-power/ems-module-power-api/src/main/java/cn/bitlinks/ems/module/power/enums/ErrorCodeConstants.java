@@ -182,8 +182,9 @@ public interface ErrorCodeConstants {
     ErrorCode SUPPLY_ANALYSIS_SETTINGS_LIST_NOT_EXISTS = new ErrorCode(1_001_102_011, "供应分析list不存在");
     ErrorCode SUPPLY_ANALYSIS_SETTINGS_STANDINGBOOK_NOT_EMPTY = new ErrorCode(1_001_102_012, "供应分析关联的台账不能为空");
 
-
-
+    ErrorCode TEAM_NOT_EMPTY = new ErrorCode(1_001_102_013, "班组不能为空");
+    ErrorCode TEAM_NOT_MATCH = new ErrorCode(1_001_102_014, "班组不匹配 只能0或1");
+    ErrorCode TEAM_NOT_INPUT = new ErrorCode(1_001_102_015, "按时统计时，不应传班组");
     // ========== 用能分析  ==========
     ErrorCode UNIT_NOT_EMPTY = new ErrorCode(1_001_103_001, "单位不能为空");
     //======== 个性报表

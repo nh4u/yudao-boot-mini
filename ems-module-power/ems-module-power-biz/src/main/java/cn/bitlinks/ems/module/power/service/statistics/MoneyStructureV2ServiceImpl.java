@@ -16,8 +16,10 @@ import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.text.StrPool;
 import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.util.ListUtils;
@@ -49,7 +51,7 @@ import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
 /**
- * @Title: ydme-doublecarbon
+ * @Title: ydme-ems
  * @description:
  * @Author: Mingqiang LIU
  * @Date 2025/05/14 17:10
@@ -84,7 +86,8 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
-            return JSON.parseObject(cacheRes, new TypeReference<StatisticsResultV2VO<StructureInfo>>() {});
+            return JSON.parseObject(cacheRes, new TypeReference<StatisticsResultV2VO<StructureInfo>>() {
+            });
         }
 
         // 获取结果
@@ -192,6 +195,32 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
 
         resultVO.setStatisticsInfoList(statisticsInfoList);
 
+        // 填充0
+        statisticsInfoList.forEach(l -> {
+
+            List<StructureInfoData> newList = new ArrayList<>();
+            List<StructureInfoData> oldList = l.getStructureInfoDataList();
+            if (tableHeader.size() != oldList.size()) {
+                Map<String, List<StructureInfoData>> dateMap = oldList.stream()
+                        .collect(Collectors.groupingBy(StructureInfoData::getDate));
+
+                tableHeader.forEach(date -> {
+                    List<StructureInfoData> standardCoalInfoDataList = dateMap.get(date);
+                    if (standardCoalInfoDataList == null) {
+                        StructureInfoData standardCoalInfoData = new StructureInfoData();
+                        standardCoalInfoData.setDate(date);
+                        standardCoalInfoData.setNum(null);
+                        standardCoalInfoData.setProportion(null);
+                        newList.add(standardCoalInfoData);
+                    } else {
+                        newList.add(standardCoalInfoDataList.get(0));
+                    }
+                });
+
+                l.setStructureInfoDataList(newList);
+            }
+        });
+
         // 获取数据更新时间
         LocalDateTime lastTime = usageCostService.getLastTime(
                 paramVO,
@@ -226,7 +255,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         // 获取原始数据列表
         List<StructureInfo> dataList = tableResult.getStatisticsInfoList();
 
-        if (CollUtil.isEmpty(dataList)){
+        if (CollUtil.isEmpty(dataList)) {
             // 返回查询结果。
             return resultVO;
         }
@@ -321,7 +350,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         });
 
         // 周期合计
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计",getHeaderDesc(unit, 2, "用能成本")));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", getHeaderDesc(unit, 2, "用能成本")));
         list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", "占比(%)"));
         return list;
 
@@ -407,8 +436,8 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
             tableHeader.forEach(date -> {
                 StructureInfoData structureInfoData = dateMap.get(date);
                 if (structureInfoData == null) {
-                    data.add("/");
-                    data.add("/");
+                    data.add(StrPool.SLASH);
+                    data.add(StrPool.SLASH);
                 } else {
                     BigDecimal cost = structureInfoData.getNum();
                     BigDecimal proportion = structureInfoData.getProportion();
@@ -598,10 +627,10 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
             LabelConfigDO topLabel = labelMap.get(topLabelId);
 
             info.setLabel1(topLabel.getLabelName());
-            info.setLabel2("/");
-            info.setLabel3("/");
-            info.setLabel4("/");
-            info.setLabel5("/");
+            info.setLabel2(StrPool.SLASH);
+            info.setLabel3(StrPool.SLASH);
+            info.setLabel4(StrPool.SLASH);
+            info.setLabel5(StrPool.SLASH);
             info.setStructureInfoDataList(dataList);
             info.setSumNum(totalNum);
             info.setSumProportion(null);
@@ -645,9 +674,9 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
             labelInfoGroup.forEach((valueKey, labelInfoList) -> {
                 String[] labelIds = valueKey.split(",");
                 String label2Name = getLabelName(labelMap, labelIds, 0);
-                String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : "/";
-                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : "/";
-                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : "/";
+                String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : StrPool.SLASH;
+                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : StrPool.SLASH;
+                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : StrPool.SLASH;
 
                 List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
                 // 获取标签关联的台账id，并取到对应的数据
@@ -778,10 +807,10 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         LabelConfigDO topLabel = labelMap.get(topLabelId);
 
         info.setLabel1(topLabel.getLabelName());
-        info.setLabel2("/");
-        info.setLabel3("/");
-        info.setLabel4("/");
-        info.setLabel5("/");
+        info.setLabel2(StrPool.SLASH);
+        info.setLabel3(StrPool.SLASH);
+        info.setLabel4(StrPool.SLASH);
+        info.setLabel5(StrPool.SLASH);
         info.setStructureInfoDataList(dataList);
         info.setSumNum(totalNum);
         info.setSumProportion(null);
@@ -818,9 +847,9 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
             labelInfoGroup.forEach((valueKey, labelInfoList) -> {
                 String[] labelIds = valueKey.split(",");
                 String label2Name = getLabelName(labelMap, labelIds, 0);
-                String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : "/";
-                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : "/";
-                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : "/";
+                String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : StrPool.SLASH;
+                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : StrPool.SLASH;
+                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : StrPool.SLASH;
 
                 List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
                 // 获取标签关联的台账id，并取到对应的数据
@@ -965,7 +994,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         list.forEach(l -> {
             List<StructureInfoData> structureInfoDataList = l.getStructureInfoDataList();
             structureInfoDataList.forEach(s ->
-                sumMap.put(s.getDate(), addBigDecimal(sumMap.get(s.getDate()), s.getNum()))
+                    sumMap.put(s.getDate(), addBigDecimal(sumMap.get(s.getDate()), s.getNum()))
             );
             sumMap.put("sumNum", addBigDecimal(sumMap.get("sumNum"), l.getSumNum()));
         });
@@ -1005,7 +1034,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
                 return label.getLabelName();
             }
         }
-        return "/";
+        return StrPool.SLASH;
     }
 
     /**
@@ -1111,7 +1140,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
             // 按一级标签聚合数据
             Map<String, BigDecimal> labelMap = dataList.stream()
                     .filter(vo -> energy.getId().equals(vo.getEnergyId()))
-                    .map(vo->{
+                    .map(vo -> {
                         vo.setLabel1(getName(vo.getLabel1(), vo.getLabel2(), vo.getLabel3(), vo.getLabel4(), vo.getLabel5()));
                         return vo;
                     })
@@ -1230,7 +1259,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
      */
     private String getFullLabelPath(StructureInfo vo) {
         return Stream.of(vo.getLabel1(), vo.getLabel2(), vo.getLabel3())
-                .filter(Objects::nonNull)
+                .filter(l -> CharSequenceUtil.isNotBlank(l) && !StrPool.SLASH.equals(l))
                 .distinct()
                 .collect(Collectors.joining("-"));
     }

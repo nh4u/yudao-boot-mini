@@ -14,7 +14,6 @@ import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDa
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.text.StrPool;
-import cn.hutool.core.util.StrUtil;
 import com.alibaba.excel.util.ListUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -105,6 +104,10 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         Integer teamFlag = paramVO.getTeamFlag();
         if (dataTypeEnum.equals(DataTypeEnum.DAY)) {
             validateTeamFlag(teamFlag);
+        }else {
+            if (teamFlag == 1){
+                throw exception(TEAM_NOT_INPUT);
+            }
         }
 
 
@@ -1105,11 +1108,11 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
     private void validateTeamFlag(Integer teamFlag) {
         // 时间类型不存在
         if (Objects.isNull(teamFlag)) {
-            throw exception(DATE_TYPE_NOT_EXISTS);
+            throw exception(TEAM_NOT_EMPTY);
         }
 
         if (teamFlag != 0 && teamFlag != 1) {
-            throw exception(DATE_TYPE_NOT_MATCH);
+            throw exception(TEAM_NOT_MATCH);
         }
     }
 
