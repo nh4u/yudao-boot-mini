@@ -182,8 +182,6 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
                     if (standardCoalInfoDataList == null) {
                         ConsumptionStatisticsInfoData standardCoalInfoData = new ConsumptionStatisticsInfoData();
                         standardCoalInfoData.setDate(date);
-                        standardCoalInfoData.setMoney(BigDecimal.ZERO);
-                        standardCoalInfoData.setConsumption(BigDecimal.ZERO);
                         newList.add(standardCoalInfoData);
                     } else {
                         newList.add(standardCoalInfoDataList.get(0));
