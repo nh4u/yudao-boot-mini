@@ -5,7 +5,6 @@ import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ProductionConsumptionStatisticInfoData;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
@@ -17,6 +16,7 @@ import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.text.StrPool;
 import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
@@ -45,7 +45,6 @@ import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getF
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
-import static cn.bitlinks.ems.module.power.enums.ExportConstants.DEFAULT;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_STANDARD_COAL_STRUCTURE_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_STANDARD_COAL_STRUCTURE_TABLE;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
@@ -432,8 +431,8 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
             tableHeader.forEach(date -> {
                 StructureInfoData structureInfoData = dateMap.get(date);
                 if (structureInfoData == null) {
-                    data.add("/");
-                    data.add("/");
+                    data.add(StrPool.SLASH);
+                    data.add(StrPool.SLASH);
                 } else {
                     BigDecimal standardCoal = structureInfoData.getNum();
                     BigDecimal proportion = structureInfoData.getProportion();
@@ -643,10 +642,10 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
             LabelConfigDO topLabel = labelMap.get(topLabelId);
 
             info.setLabel1(topLabel.getLabelName());
-            info.setLabel2("/");
-            info.setLabel3("/");
-            info.setLabel4("/");
-            info.setLabel5("/");
+            info.setLabel2(StrPool.SLASH);
+            info.setLabel3(StrPool.SLASH);
+            info.setLabel4(StrPool.SLASH);
+            info.setLabel5(StrPool.SLASH);
             info.setStructureInfoDataList(dataList);
             info.setSumNum(totalNum);
             info.setSumProportion(null);
@@ -690,9 +689,9 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
             labelInfoGroup.forEach((valueKey, labelInfoList) -> {
                 String[] labelIds = valueKey.split(",");
                 String label2Name = getLabelName(labelMap, labelIds, 0);
-                String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : "/";
-                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : "/";
-                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : "/";
+                String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : StrPool.SLASH;
+                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : StrPool.SLASH;
+                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : StrPool.SLASH;
 
                 List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
                 // 获取标签关联的台账id，并取到对应的数据
@@ -870,10 +869,10 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         LabelConfigDO topLabel = labelMap.get(topLabelId);
 
         info.setLabel1(topLabel.getLabelName());
-        info.setLabel2("/");
-        info.setLabel3("/");
-        info.setLabel4("/");
-        info.setLabel5("/");
+        info.setLabel2(StrPool.SLASH);
+        info.setLabel3(StrPool.SLASH);
+        info.setLabel4(StrPool.SLASH);
+        info.setLabel5(StrPool.SLASH);
         info.setStructureInfoDataList(dataList);
         info.setSumNum(totalNum);
         info.setSumProportion(null);
@@ -911,9 +910,9 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
             labelInfoGroup.forEach((valueKey, labelInfoList) -> {
                 String[] labelIds = valueKey.split(",");
                 String label2Name = getLabelName(labelMap, labelIds, 0);
-                String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : "/";
-                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : "/";
-                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : "/";
+                String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : StrPool.SLASH;
+                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : StrPool.SLASH;
+                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : StrPool.SLASH;
 
                 List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
                 // 获取标签关联的台账id，并取到对应的数据
@@ -1116,7 +1115,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                 return label.getLabelName();
             }
         }
-        return "/";
+        return StrPool.SLASH;
     }
 
     /**
@@ -1336,7 +1335,7 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
      */
     private String getFullLabelPath(StructureInfo vo) {
         return Stream.of(vo.getLabel1(), vo.getLabel2(), vo.getLabel3())
-                .filter(Objects::nonNull)
+                .filter(l -> CharSequenceUtil.isNotBlank(l) && !StrPool.SLASH.equals(l))
                 .distinct()
                 .collect(Collectors.joining("-"));
     }
