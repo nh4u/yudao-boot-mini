@@ -185,8 +185,8 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
                     if (standardCoalInfoDataList == null) {
                         StatisticInfoDataV2 standardCoalInfoData = new StatisticInfoDataV2();
                         standardCoalInfoData.setDate(date);
-                        standardCoalInfoData.setMoney(BigDecimal.ZERO);
-                        standardCoalInfoData.setConsumption(BigDecimal.ZERO);
+                        standardCoalInfoData.setMoney(null);
+                        standardCoalInfoData.setConsumption(null);
                         newList.add(standardCoalInfoData);
                     } else {
                         newList.add(standardCoalInfoDataList.get(0));
@@ -344,9 +344,11 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
                                 list -> {
                                     BigDecimal totalConsumption = list.stream()
                                             .map(UsageCostData::getCurrentTotalUsage)
+                                            .filter(Objects::nonNull)
                                             .reduce(BigDecimal.ZERO, BigDecimal::add);
                                     BigDecimal totalCost = list.stream()
                                             .map(UsageCostData::getTotalCost)
+                                            .filter(Objects::nonNull)
                                             .reduce(BigDecimal.ZERO, BigDecimal::add);
                                     return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, totalCost);
                                 }
@@ -355,9 +357,11 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
         //按标签统计时候 用量不用合计
         BigDecimal totalConsumption = dataList.stream()
                 .map(StatisticInfoDataV2::getConsumption)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal totalCost = dataList.stream()
                 .map(StatisticInfoDataV2::getMoney)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         StatisticsInfoV2 info = new StatisticsInfoV2();
@@ -439,9 +443,11 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
                                         list -> {
                                             BigDecimal totalConsumption = list.stream()
                                                     .map(UsageCostData::getCurrentTotalUsage)
+                                                    .filter(Objects::nonNull)
                                                     .reduce(BigDecimal.ZERO, BigDecimal::add);
                                             BigDecimal totalCost = list.stream()
                                                     .map(UsageCostData::getTotalCost)
+                                                    .filter(Objects::nonNull)
                                                     .reduce(BigDecimal.ZERO, BigDecimal::add);
                                             return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, totalCost);
                                         }
@@ -451,9 +457,11 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
                 //按标签统计时候 用量不用合计
                 BigDecimal totalConsumption = dataList.stream()
                         .map(StatisticInfoDataV2::getConsumption)
+                        .filter(Objects::nonNull)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
                 BigDecimal totalCost = dataList.stream()
                         .map(StatisticInfoDataV2::getMoney)
+                        .filter(Objects::nonNull)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                 StatisticsInfoV2 info = new StatisticsInfoV2();

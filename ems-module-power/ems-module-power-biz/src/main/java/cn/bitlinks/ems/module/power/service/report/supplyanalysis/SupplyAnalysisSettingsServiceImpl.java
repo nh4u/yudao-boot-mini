@@ -181,15 +181,15 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
                         // 如果为空自动填充/
                         tableHeader.forEach(date -> {
                             StructureInfoData structureInfoData = new StructureInfoData();
-                            structureInfoData.setNum(BigDecimal.ZERO);
-                            structureInfoData.setProportion(BigDecimal.ZERO);
+                            structureInfoData.setNum(null);
+                            structureInfoData.setProportion(null);
                             structureInfoData.setDate(date);
 
                             structureInfoDataList.add(structureInfoData);
                         });
                         info.setStructureInfoDataList(structureInfoDataList);
-                        info.setSumNum(BigDecimal.ZERO);
-                        info.setSumProportion(BigDecimal.ZERO);
+                        info.setSumNum(null);
+                        info.setSumProportion(null);
 
                     } else {
                         // 如何不空 填充对应数据
@@ -201,8 +201,8 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
                             UsageCostData usageCostData = usageCostMap.get(date);
                             if (usageCostData == null) {
                                 StructureInfoData structureInfoData = new StructureInfoData();
-                                structureInfoData.setNum(BigDecimal.ZERO);
-                                structureInfoData.setProportion(BigDecimal.ZERO);
+                                structureInfoData.setNum(null);
+                                structureInfoData.setProportion(null);
                                 structureInfoData.setDate(date);
 
                                 structureInfoDataList.add(structureInfoData);
@@ -223,6 +223,7 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
                     BigDecimal sumNum = structureInfoDataList
                             .stream()
                             .map(StructureInfoData::getNum)
+                            .filter(Objects::nonNull)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                     info.setStructureInfoDataList(structureInfoDataList);
