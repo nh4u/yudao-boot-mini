@@ -386,16 +386,16 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
 
         // 如果 standingbookId 为 null 或 paramCode 为 null，返回0
         if (standingbookId == null || paramCode == null) {
-            return BigDecimal.ZERO;
+            return null;
         }
 
         // 如果calculateType为null，返回0
         if (calculateType == null) {
-            return BigDecimal.ZERO;
+            return null;
         }
 
         try {
-            BigDecimal result = BigDecimal.ZERO;
+            BigDecimal result = null;
             switch (calculateType) {
                 case 0:
                     // 取得今天有数据的最后一分钟的数值full_value
@@ -413,7 +413,7 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                     break;
 
                 default:
-                    result = BigDecimal.ZERO;
+                    result = null;
                     break;
             }
             
@@ -422,7 +422,7 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         } catch (Exception e) {
             log.error("计算值失败，standingbookId: {}, paramCode: {}, date: {}, calculateType: {}",
                     standingbookId, paramCode, date, calculateType, e);
-            return BigDecimal.ZERO;
+            return null;
         }
     }
 
@@ -431,7 +431,7 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
      */
     private BigDecimal getLastMinuteFullValueOptimized(Long standingbookId, String paramCode, LocalDateTime date, Map<String, MinuteAggregateDataDO> dataCache) {
         if (standingbookId == null || paramCode == null) {
-            return BigDecimal.ZERO;
+            return null;
         }
         
         String key = String.format("%d:%s:%s", standingbookId, paramCode, date.toLocalDate());
@@ -439,7 +439,7 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         if (data != null && data.getFullValue() != null) {
             return data.getFullValue();
         } else {
-            return BigDecimal.ZERO;
+            return null;
         }
     }
 
@@ -448,7 +448,7 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
      */
     private BigDecimal getIncrementalSumOptimized(Long standingbookId, String paramCode, LocalDateTime date, Map<String, MinuteAggregateDataDO> dataCache) {
         if (standingbookId == null || paramCode == null) {
-            return BigDecimal.ZERO;
+            return null;
         }
         
         String key = String.format("%d:%s:%s:incremental", standingbookId, paramCode, date.toLocalDate());
@@ -456,7 +456,7 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         if (data != null && data.getIncrementalValue() != null) {
             return data.getIncrementalValue();
         } else {
-            return BigDecimal.ZERO;
+            return null;
         }
     }
 
@@ -467,7 +467,7 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                                                  Map<String, MinuteAggregateDataDO> dataCache,
                                                  Map<String, PowerTankSettingsDO> tankSettingsMap) {
         if (standingbookId == null || paramCode == null || measurementCode == null) {
-            return BigDecimal.ZERO;
+            return null;
         }
 
         // 获取储罐设置 - 通过计量器具编码查找
@@ -475,19 +475,19 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         
         if (tankSettings == null || tankSettings.getPressureDiffId() == null) {
             log.warn("储罐设置数据不完整，measurementCode: {}", measurementCode);
-            return BigDecimal.ZERO;
+            return null;
         }
 
         // 获取Δp值（最后一分钟的full_value）
         BigDecimal deltaP = getLastMinuteFullValueOptimized(tankSettings.getPressureDiffId(), paramCode, date, dataCache);
 
         if (deltaP.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
+            return null;
         }
 
         if (tankSettings.getDensity() == null || tankSettings.getGravityAcceleration() == null) {
             log.warn("储罐设置数据不完整，standingbookId: {}", standingbookId);
-            return BigDecimal.ZERO;
+            return null;
         }
 
         BigDecimal density = tankSettings.getDensity();
@@ -496,7 +496,7 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         // 计算H = Δp/(ρg)
         if (density.compareTo(BigDecimal.ZERO) == 0 || gravity.compareTo(BigDecimal.ZERO) == 0) {
             log.warn("密度或重力加速度为0，无法计算H值，standingbookId: {}", standingbookId);
-            return BigDecimal.ZERO;
+            return null;
         }
 
         BigDecimal denominator = density.multiply(gravity);
@@ -652,9 +652,9 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                 startOfDay, endOfDay);
         log.info("[getLastMinuteFullValue] result: {}", JSON.toJSONString(dataList));
         if (CollUtil.isNotEmpty(dataList)) {
-            return dataList.get(0).getFullValue() != null ? dataList.get(0).getFullValue() : BigDecimal.ZERO;
+            return dataList.get(0).getFullValue();
         }
-        return BigDecimal.ZERO;
+        return null;
     }
 
     /**
@@ -670,9 +670,9 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                 startOfDay, endOfDay);
         log.info("[getIncrementalSum] result: {}", JSON.toJSONString(dataList));
         if (CollUtil.isNotEmpty(dataList)) {
-            return dataList.get(0).getIncrementalValue() != null ? dataList.get(0).getIncrementalValue() : BigDecimal.ZERO;
+            return dataList.get(0).getIncrementalValue();
         }
-        return BigDecimal.ZERO;
+        return null;
     }
 
     /**
@@ -685,23 +685,23 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
         
         if (tankSettings == null || tankSettings.getDensity() == null || tankSettings.getGravityAcceleration() == null) {
             log.warn("储罐设置数据不完整，measurementCode: {}", measurementCode);
-            return BigDecimal.ZERO;
+            return null;
         }
         
         // 获取Δp值（最后一分钟的full_value）
         BigDecimal deltaP = getLastMinuteFullValue(tankSettings.getPressureDiffId(), paramCode, date);
 
-        if (deltaP.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
+        if (deltaP == null || deltaP.compareTo(BigDecimal.ZERO) == 0) {
+            return null;
         }
 
         BigDecimal density = tankSettings.getDensity();
         BigDecimal gravity = tankSettings.getGravityAcceleration();
 
         // 计算H = Δp/(ρg)
-        if (density.compareTo(BigDecimal.ZERO) == 0 || gravity.compareTo(BigDecimal.ZERO) == 0) {
+        if (density == null || gravity == null || density.compareTo(BigDecimal.ZERO) == 0 || gravity.compareTo(BigDecimal.ZERO) == 0) {
             log.warn("密度或重力加速度为0，无法计算H值，standingbookId: {}", standingbookId);
-            return BigDecimal.ZERO;
+            return null;
         }
 
         BigDecimal denominator = density.multiply(gravity);

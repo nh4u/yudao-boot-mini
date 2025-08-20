@@ -408,8 +408,8 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
                         if (standardCoalInfoDataList == null) {
                             StructureInfoData standardCoalInfoData = new StructureInfoData();
                             standardCoalInfoData.setDate(date);
-                            standardCoalInfoData.setNum(BigDecimal.ZERO);
-                            standardCoalInfoData.setProportion(BigDecimal.ZERO);
+//                            standardCoalInfoData.setNum(BigDecimal.ZERO);
+//                            standardCoalInfoData.setProportion(BigDecimal.ZERO);
                             newList.add(standardCoalInfoData);
                         } else {
                             newList.add(standardCoalInfoDataList.get(0));
