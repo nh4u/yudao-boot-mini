@@ -1,9 +1,14 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
+import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
+import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
+import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.hutool.core.text.CharSequenceUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,6 +43,9 @@ import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
+
+import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
 
 /**
@@ -92,6 +100,28 @@ public class StatisticsCommonService {
         return byTypeIds;
     }
 
+    /**
+     * 统一校验时间类型、时间范围
+     * @param paramVO
+     */
+    public void validParamConditionDate(StatisticsParamV2VO paramVO){
+        // 校验时间范围合法性
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+        LocalDateTime startTime = rangeOrigin[0];
+        LocalDateTime endTime = rangeOrigin[1];
+        if (!startTime.isBefore(endTime)) {
+            throw exception(END_TIME_MUST_AFTER_START_TIME);
+        }
+        if (!LocalDateTimeUtils.isWithinDays(startTime, endTime, CommonConstants.YEAR)) {
+            throw exception(DATE_RANGE_EXCEED_LIMIT);
+        }
+
+        // 获取查询维度类型和时间类型
+        DataTypeEnum dataTypeEnum = DataTypeEnum.codeOf(paramVO.getDateType());
+        if (Objects.isNull(dataTypeEnum)) {
+            throw exception(DATE_TYPE_NOT_EXISTS);
+        }
+    }
     /**
      * 根据筛选条件筛选台账ID
      *

@@ -140,11 +140,11 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
         result.forEach(vo->{
             Optional.ofNullable(standingbookDTOMap.get(vo.getTransformerId()))
                     .ifPresent(dto -> {
-                        vo.setTransformerNodeName(dto.getName()+"("+dto.getCode()+")");
+                        vo.setTransformerNodeName(String.format(namePattern, dto.getName(), dto.getCode()));
                     });
             Optional.ofNullable(standingbookDTOMap.get(vo.getLoadCurrentId()))
                     .ifPresent(dto -> {
-                        vo.setLoadCurrentNodeName(dto.getName()+"("+dto.getCode()+")");
+                        vo.setLoadCurrentNodeName(String.format(namePattern, dto.getName(), dto.getCode()));
                     });
         });
         return result;
