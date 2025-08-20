@@ -201,8 +201,6 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                     if (standardCoalInfoDataList == null) {
                         StandardCoalInfoData standardCoalInfoData = new StandardCoalInfoData();
                         standardCoalInfoData.setDate(date);
-                        standardCoalInfoData.setStandardCoal(BigDecimal.ZERO);
-                        standardCoalInfoData.setConsumption(BigDecimal.ZERO);
                         newList.add(standardCoalInfoData);
                     } else {
                         newList.add(standardCoalInfoDataList.get(0));
