@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.report.gas.vo;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @Schema(description = "管理后台 - 气化科报表统计结果信息 VO")
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class GasStatisticsInfo {
 
     @Schema(description = "能源统计项", example = "123")

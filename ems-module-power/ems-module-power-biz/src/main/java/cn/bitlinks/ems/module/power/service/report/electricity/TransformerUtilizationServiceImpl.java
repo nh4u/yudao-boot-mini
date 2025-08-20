@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.MinuteAggDataDTO;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.TransformerUtilizationSettingsDTO;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.TransformerUtilizationSettingsOptionsVO;
@@ -72,6 +73,7 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
     private MinuteAggDataService minuteAggDataService;
     private final Integer scale = DEFAULT_SCALE;
 
+    private final BigDecimal sqrt3=new BigDecimal("1.732050807568877293527446341505");
     @Override
     @Transactional
     public void updSettings(List<TransformerUtilizationSettingsVO> settings) {
@@ -138,11 +140,11 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
         result.forEach(vo->{
             Optional.ofNullable(standingbookDTOMap.get(vo.getTransformerId()))
                     .ifPresent(dto -> {
-                        vo.setTransformerNodeName(dto.getName()+"("+dto.getCode()+")");
+                        vo.setTransformerNodeName(String.format(namePattern, dto.getName(), dto.getCode()));
                     });
             Optional.ofNullable(standingbookDTOMap.get(vo.getLoadCurrentId()))
                     .ifPresent(dto -> {
-                        vo.setLoadCurrentNodeName(dto.getName()+"("+dto.getCode()+")");
+                        vo.setLoadCurrentNodeName(String.format(namePattern, dto.getName(), dto.getCode()));
                     });
         });
         return result;
@@ -191,11 +193,12 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
      *
      * @return list 配置
      */
-    public List<TransformerUtilizationSettingsDTO> getSettingsDTO() {
+    public List<TransformerUtilizationSettingsDTO> getSettingsDTO(List<Long> transformerIds) {
 
         try {
             List<TransformerUtilizationSettingsDO> transformerUtilizationSettingsDOList = transformerUtilizationSettingsMapper
-                    .selectList(new LambdaQueryWrapper<TransformerUtilizationSettingsDO>()
+                    .selectList(new LambdaQueryWrapperX<TransformerUtilizationSettingsDO>()
+                            .inIfPresent(TransformerUtilizationSettingsDO::getTransformerId, transformerIds)
                             .orderByAsc(TransformerUtilizationSettingsDO::getCreateTime));
             if (CollUtil.isEmpty(transformerUtilizationSettingsDOList)) {
                 return Collections.emptyList();
@@ -225,14 +228,10 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
                 Optional<StandingbookTmplDaqAttrDO> matched = attrList.stream()
                         .filter(attr -> "电流".equals(attr.getParameter()))
                         .findFirst();
-
-                if (!matched.isPresent()) {
-                    log.info("未找到该台账id【{}】匹配的【电流】能源参数编码，跳过该COP", sbId);
-                    continue;
+                if (matched.isPresent()) {
+                    String paramCode = matched.get().getCode();
+                    settingsDTO.setLoadCurrentParamCode(paramCode);
                 }
-
-                String paramCode = matched.get().getCode();
-                settingsDTO.setLoadCurrentParamCode(paramCode);
                 StandingbookDTO sbDO = standingbookDTOMap.get(settingsDTO.getTransformerId());
                 settingsDTO.setTransformerName(sbDO.getName());
 
@@ -268,7 +267,7 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
         List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
 
         // 获取变压器利用率设置
-        List<TransformerUtilizationSettingsDTO> transformerUtilizationSettingsDTOList = getSettingsDTO();
+        List<TransformerUtilizationSettingsDTO> transformerUtilizationSettingsDTOList = getSettingsDTO(paramVO.getTransformerIds());
         if (CollUtil.isEmpty(transformerUtilizationSettingsDTOList)) {
             return defaultNullData(tableHeader);
         }
@@ -453,7 +452,7 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
                                         .map(MinuteAggDataDTO::getFullValue)
                                         .max(Comparator.naturalOrder());
                                 // 计算利用率
-                                BigDecimal result = max.get().multiply(new BigDecimal(level)).multiply(new BigDecimal(NumberUtil.sqrt(3L)))
+                                BigDecimal result = max.get().multiply(new BigDecimal(level)).multiply(sqrt3)
                                         .divide(ratedCapacity.multiply(new BigDecimal(10)), 2, RoundingMode.HALF_UP);
                                 return new TransformerUtilizationInfoData(list.get(0).getTime(), max.get(), result);
                             }
@@ -474,7 +473,7 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
             if (maxPeriodLoad.isPresent()) {
                 info.setPeriodActualLoad(dealBigDecimalScale(maxPeriodLoad.get(), scale));
                 // 计算利用率
-                BigDecimal result = maxPeriodLoad.get().multiply(new BigDecimal(level)).multiply(new BigDecimal(NumberUtil.sqrt(3L)))
+                BigDecimal result = maxPeriodLoad.get().multiply(new BigDecimal(level)).multiply(sqrt3)
                         .divide(ratedCapacity.multiply(new BigDecimal(10)), 2, RoundingMode.HALF_UP);
                 info.setPeriodUtilization(dealBigDecimalScale(result, scale));
             }

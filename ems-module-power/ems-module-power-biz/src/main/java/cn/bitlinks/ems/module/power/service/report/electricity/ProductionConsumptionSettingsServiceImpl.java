@@ -238,11 +238,19 @@ public class ProductionConsumptionSettingsServiceImpl implements ProductionConsu
                     }
 
                     // 横向折标煤总和
-                    BigDecimal sumConsumption = statisticInfoDataList
+                    BigDecimal sumConsumption = null;
+
+                    List<BigDecimal> list = statisticInfoDataList
                             .stream()
                             .map(ProductionConsumptionStatisticInfoData::getConsumption)
                             .filter(c -> !Objects.isNull(c))
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                            .collect(Collectors.toList());
+
+                    if (CollUtil.isNotEmpty(list)) {
+                        sumConsumption = list
+                                .stream()
+                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    }
 
                     List<ProductionConsumptionStatisticInfoData> dataList = statisticInfoDataList.stream().peek(i -> {
                         i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));

@@ -42,4 +42,9 @@ public class SupplyWaterTmpReportParamVO {
     @NotNull(message = "班组不能为空")
     private Integer teamFlag;
 
+    /**
+     * chart图标志
+     */
+    private Integer chartFlag;
+
 }

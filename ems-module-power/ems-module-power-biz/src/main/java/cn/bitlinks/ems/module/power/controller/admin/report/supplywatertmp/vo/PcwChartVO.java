@@ -28,16 +28,16 @@ public class PcwChartVO {
     private List<BigDecimal> ydata22;
 
     @Schema(description = "锅炉上限/压力上限")
-    private Integer max1;
+    private BigDecimal max1;
 
     @Schema(description = "锅炉下限/压力下限")
-    private Integer min1;
+    private BigDecimal min1;
 
     @Schema(description = "市政上限/温度上限")
-    private Integer max2;
+    private BigDecimal max2;
 
     @Schema(description = "市政下限/温度下限")
-    private Integer min2;
+    private BigDecimal min2;
 
     @Schema(description = "x轴")
     private List<String> xdata;

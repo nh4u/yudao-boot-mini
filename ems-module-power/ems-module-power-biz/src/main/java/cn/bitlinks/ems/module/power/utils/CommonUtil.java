@@ -95,6 +95,18 @@ public class CommonUtil {
                 .multiply(BigDecimal.valueOf(100));
     }
 
+    /**
+     * 定基比率计算（避免除零）
+     */
+    public static BigDecimal calculateBaseRatio(BigDecimal now, BigDecimal previous) {
+        if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0 || now == null) {
+            return null;
+        }
+        return now.subtract(previous)
+                .divide(previous, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100));
+    }
+
     public static BigDecimal dealBigDecimalScale(BigDecimal num, Integer scale) {
         if (num != null) {
             return num.setScale(scale, RoundingMode.HALF_UP);
@@ -217,7 +229,7 @@ public class CommonUtil {
         if (now == null || total == null) {
             return null;
         }
-        BigDecimal proportion = BigDecimal.ZERO;
+        BigDecimal proportion = null;
         if (total.compareTo(BigDecimal.ZERO) != 0) {
             proportion = now.divide(total, 10, RoundingMode.HALF_UP)
                     .multiply(new BigDecimal(100))
@@ -258,23 +270,23 @@ public class CommonUtil {
     /**
      * BigDecimal除法，包含有效位
      *
-     * @param num1
-     * @param num2
+     * @param num
+     * @param sum
      * @param scale
      * @return
      */
-    public static BigDecimal divideWithScale(BigDecimal num1, BigDecimal num2, Integer scale) {
+    public static BigDecimal divideWithScale(BigDecimal num, BigDecimal sum, Integer scale) {
         BigDecimal result = BigDecimal.ZERO;
 
         if (Objects.isNull(scale)) {
             return result;
         }
 
-        if (num1 == null || num2 == null || num2.compareTo(BigDecimal.ZERO) == 0) {
+        if (num == null || sum == null || sum.compareTo(BigDecimal.ZERO) == 0) {
             return result;
         }
 
-        result = num1.divide(num2, scale, RoundingMode.HALF_UP);
+        result = sum.divide(num, scale, RoundingMode.HALF_UP);
 
         return result;
     }

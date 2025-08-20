@@ -22,10 +22,10 @@ public class LtwtChartVO {
     private List<BigDecimal> ydata2;
 
     @Schema(description = "上限")
-    private Integer max;
+    private BigDecimal max;
 
     @Schema(description = "下限")
-    private Integer min;
+    private BigDecimal min;
 
     @Schema(description = "x轴")
     private List<String> xdata;
