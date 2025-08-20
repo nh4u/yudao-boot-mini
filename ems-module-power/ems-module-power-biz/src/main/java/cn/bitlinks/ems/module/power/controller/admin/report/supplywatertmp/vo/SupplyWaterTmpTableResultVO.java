@@ -18,12 +18,13 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @ToString(callSuper = true)
-@JsonInclude(JsonInclude.Include.ALWAYS)
+
 public class SupplyWaterTmpTableResultVO {
 
     /**
      * 统计信息
      */
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     private List<Map<String, Object>> list;
 
     /**

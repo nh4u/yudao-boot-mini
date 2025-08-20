@@ -97,7 +97,6 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
 
         // 4.如果没有则去数据库查询
         StatisticsResultV2VO<StatisticsInfoV2> resultVO = new StatisticsResultV2VO<>();
-        resultVO.setDataTime(LocalDateTime.now());
 
         // 4.1.表头处理
         List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], dataTypeEnum);
@@ -163,7 +162,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
 
         // 4.4.台账id为空直接返回结果
         if (CollUtil.isEmpty(standingBookIds)) {
-            return resultVO;
+            return defaultNullData(tableHeader);
         }
 
         // 4.5.根据台账和其他条件从数据库里拿出折标煤数据
@@ -175,7 +174,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
                 standingBookIds);
 
         if (CollUtil.isEmpty(usageCostDataList)) {
-            return resultVO;
+            return defaultNullData(tableHeader);
         }
 
         List<StatisticsInfoV2> statisticsInfoList = new ArrayList<>();
@@ -310,7 +309,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
                                 BigDecimal totalConsumption = list.stream()
                                         .map(UsageCostData::getCurrentTotalUsage)
                                         .filter(Objects::nonNull)
-                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                        .reduce(BigDecimal::add).orElse(null);
                                 return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, null);
                             }
                     )
@@ -319,7 +318,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
             BigDecimal totalConsumption = dataList.stream()
                     .map(StatisticInfoDataV2::getConsumption)
                     .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    .reduce(BigDecimal::add).orElse(null);
 
             StatisticsInfoV2 info = new StatisticsInfoV2();
             info.setEnergyId(energyId);
@@ -408,7 +407,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
                                         BigDecimal totalConsumption = list.stream()
                                                 .map(UsageCostData::getCurrentTotalUsage)
                                                 .filter(Objects::nonNull)
-                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                .reduce(BigDecimal::add).orElse(null);
                                         return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, null);
                                     }
                             )
@@ -417,7 +416,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
                     BigDecimal totalConsumption = dataList.stream()
                             .map(StatisticInfoDataV2::getConsumption)
                             .filter(Objects::nonNull)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                            .reduce(BigDecimal::add).orElse(null);
 
                     StatisticsInfoV2 info = new StatisticsInfoV2();
                     info.setEnergyId(energyId);
@@ -499,7 +498,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
                                     BigDecimal totalConsumption = list.stream()
                                             .map(UsageCostData::getCurrentTotalUsage)
                                             .filter(Objects::nonNull)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .reduce(BigDecimal::add).orElse(null);
                                     return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, null);
                                 }
                         )
@@ -509,7 +508,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
         BigDecimal totalConsumption = dataList.stream()
                 .map(StatisticInfoDataV2::getConsumption)
                 .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal::add).orElse(null);
 //        BigDecimal totalStandardCoal = dataList.stream()
 //                .map(StandardCoalInfoData::getStandardCoal)
 //                .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -599,7 +598,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
                                             BigDecimal totalConsumption = list.stream()
                                                     .map(UsageCostData::getCurrentTotalUsage)
                                                     .filter(Objects::nonNull)
-                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                    .reduce(BigDecimal::add).orElse(null);
                                             return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, null);
                                         }
                                 )
@@ -609,7 +608,7 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
                 BigDecimal totalConsumption = dataList.stream()
                         .map(StatisticInfoDataV2::getConsumption)
                         .filter(Objects::nonNull)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        .reduce(BigDecimal::add).orElse(null);
 
                 StatisticsInfoV2 info = new StatisticsInfoV2();
                 info.setLabel1(topLabel.getLabelName());
@@ -937,5 +936,10 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
         return dataTypeEnum;
     }
 
-
+    private StatisticsResultV2VO<StatisticsInfoV2> defaultNullData(List<String> tableHeader) {
+        StatisticsResultV2VO<StatisticsInfoV2>resultVO = new StatisticsResultV2VO<>();
+        resultVO.setHeader(tableHeader);
+        resultVO.setStatisticsInfoList(Collections.emptyList());
+        return resultVO;
+    }
 }

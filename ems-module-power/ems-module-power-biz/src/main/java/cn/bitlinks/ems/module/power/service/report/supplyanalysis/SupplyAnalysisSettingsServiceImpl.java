@@ -132,7 +132,7 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
 
         // 校验系统 没值就返空
         List<String> system1 = paramVO.getSystem();
-        if (CollUtil.isEmpty(system1)){
+        if (CollUtil.isEmpty(system1)) {
             return resultVO;
         }
 
@@ -224,7 +224,8 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
                             .stream()
                             .map(StructureInfoData::getNum)
                             .filter(Objects::nonNull)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                            .reduce(BigDecimal::add)
+                            .orElse(null);
 
                     info.setStructureInfoDataList(structureInfoDataList);
 

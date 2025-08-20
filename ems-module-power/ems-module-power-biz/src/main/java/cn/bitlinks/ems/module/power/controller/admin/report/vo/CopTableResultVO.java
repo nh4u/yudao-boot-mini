@@ -17,12 +17,12 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @ToString(callSuper = true)
-@JsonInclude(JsonInclude.Include.ALWAYS)
 public class CopTableResultVO<T> {
 
     /**
      * 统计信息
      */
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     private List<T> copMapList;
 
     /**

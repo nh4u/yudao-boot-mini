@@ -345,11 +345,11 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
                                     BigDecimal totalConsumption = list.stream()
                                             .map(UsageCostData::getCurrentTotalUsage)
                                             .filter(Objects::nonNull)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .reduce(BigDecimal::add).orElse(null);
                                     BigDecimal totalCost = list.stream()
                                             .map(UsageCostData::getTotalCost)
                                             .filter(Objects::nonNull)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .reduce(BigDecimal::add).orElse(null);
                                     return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, totalCost);
                                 }
                         )
@@ -358,11 +358,11 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
         BigDecimal totalConsumption = dataList.stream()
                 .map(StatisticInfoDataV2::getConsumption)
                 .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal::add).orElse(null);
         BigDecimal totalCost = dataList.stream()
                 .map(StatisticInfoDataV2::getMoney)
                 .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal::add).orElse(null);
 
         StatisticsInfoV2 info = new StatisticsInfoV2();
 
@@ -444,11 +444,11 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
                                             BigDecimal totalConsumption = list.stream()
                                                     .map(UsageCostData::getCurrentTotalUsage)
                                                     .filter(Objects::nonNull)
-                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                    .reduce(BigDecimal::add).orElse(null);
                                             BigDecimal totalCost = list.stream()
                                                     .map(UsageCostData::getTotalCost)
                                                     .filter(Objects::nonNull)
-                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                    .reduce(BigDecimal::add).orElse(null);
                                             return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, totalCost);
                                         }
                                 )
@@ -458,11 +458,11 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
                 BigDecimal totalConsumption = dataList.stream()
                         .map(StatisticInfoDataV2::getConsumption)
                         .filter(Objects::nonNull)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        .reduce(BigDecimal::add).orElse(null);
                 BigDecimal totalCost = dataList.stream()
                         .map(StatisticInfoDataV2::getMoney)
                         .filter(Objects::nonNull)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        .reduce(BigDecimal::add).orElse(null);
 
                 StatisticsInfoV2 info = new StatisticsInfoV2();
                 info.setLabel1(topLabel.getLabelName());
