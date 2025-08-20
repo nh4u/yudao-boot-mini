@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.statistics.vo;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -13,6 +14,7 @@ import java.math.BigDecimal;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class StandardCoalInfoData {
 
 
