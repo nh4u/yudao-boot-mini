@@ -609,7 +609,8 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                                 if (CollUtil.isNotEmpty(collect)) {
                                     totalStandardCoal = collect
                                             .stream()
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .filter(Objects::nonNull)
+                                            .reduce(BigDecimal::add).orElse(null);
                                 }
 
                                 return new StructureInfoData(list.get(0).getTime(), totalStandardCoal, null);
@@ -628,7 +629,8 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
             if (CollUtil.isNotEmpty(collect)) {
                 totalNum = collect
                         .stream()
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal::add).orElse(null);
             }
 
             StructureInfo info = new StructureInfo();
@@ -730,7 +732,8 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                                         if (CollUtil.isNotEmpty(collect)) {
                                             totalStandardCoal = collect
                                                     .stream()
-                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                    .filter(Objects::nonNull)
+                                                    .reduce(BigDecimal::add).orElse(null);
                                         }
                                         return new StructureInfoData(list.get(0).getTime(), totalStandardCoal, null);
                                     }
@@ -748,7 +751,8 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                     if (CollUtil.isNotEmpty(collect)) {
                         totalNum = collect
                                 .stream()
-                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                .filter(Objects::nonNull)
+                                .reduce(BigDecimal::add).orElse(null);
                     }
 
                     StructureInfo info = new StructureInfo();
@@ -835,7 +839,8 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                                     if (CollUtil.isNotEmpty(collect)) {
                                         totalStandardCoal = collect
                                                 .stream()
-                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                .filter(Objects::nonNull)
+                                                .reduce(BigDecimal::add).orElse(null);
                                     }
                                     return new StructureInfoData(list.get(0).getTime(), totalStandardCoal, null);
                                 }
@@ -854,7 +859,8 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         if (CollUtil.isNotEmpty(collect)) {
             totalNum = collect
                     .stream()
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal::add).orElse(null);
         }
         StructureInfo info = new StructureInfo();
         StandingbookLabelInfoDO standingbookLabelInfoDO = standingbookIdsByLabel.get(0);
@@ -937,7 +943,8 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                                             if (CollUtil.isNotEmpty(collect)) {
                                                 totalStandardCoal = collect
                                                         .stream()
-                                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                        .filter(Objects::nonNull)
+                                                        .reduce(BigDecimal::add).orElse(null);
                                             }
 
                                             return new StructureInfoData(list.get(0).getTime(), totalStandardCoal, null);
@@ -956,7 +963,8 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                 if (CollUtil.isNotEmpty(collect)) {
                     totalNum = collect
                             .stream()
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                            .filter(Objects::nonNull)
+                            .reduce(BigDecimal::add).orElse(null);
                 }
 
                 StructureInfo info = new StructureInfo();
@@ -1022,7 +1030,8 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                     if (CollUtil.isNotEmpty(list)) {
                         sumNum = list
                                 .stream()
-                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                .filter(Objects::nonNull)
+                                .reduce(BigDecimal::add).orElse(null);
                     }
 
                     info.setStructureInfoDataList(structureDataList);

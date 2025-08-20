@@ -5,6 +5,7 @@ import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopTableResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.ReportParamVO;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author liumingqiang
