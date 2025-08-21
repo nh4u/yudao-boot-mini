@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.voucher;
 import cn.bitlinks.ems.framework.common.exception.ErrorCode;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.config.OcrProperties;
 import cn.bitlinks.ems.module.power.controller.admin.voucher.vo.VoucherPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.voucher.vo.VoucherSaveReqVO;
@@ -20,6 +21,7 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -172,7 +174,14 @@ public class VoucherServiceImpl implements VoucherService {
     @Override
     public String recognition(String url) {
 
-        return OcrUtil.ocrRecognition(url,ocrProperties);
+        return OcrUtil.ocrRecognition(url, ocrProperties);
+    }
+
+    @Override
+    public List<VoucherDO> getVoucherByEnergy(Long energyId, LocalDateTime[] range) {
+        return voucherMapper.selectList(new LambdaQueryWrapperX<VoucherDO>()
+                .eqIfPresent(VoucherDO::getEnergyId, energyId)
+                .inIfPresent(VoucherDO::getPurchaseTime, range));
     }
 
 

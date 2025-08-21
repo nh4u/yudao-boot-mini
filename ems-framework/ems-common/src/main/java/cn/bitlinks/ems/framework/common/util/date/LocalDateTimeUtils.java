@@ -711,4 +711,27 @@ public class LocalDateTimeUtils {
         return LocalDateTime.parse(time, DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN));
     }
 
+    public static String getFormatTime(LocalDateTime current, DataTypeEnum type) {
+        switch (type) {
+            case YEAR:
+                return String.valueOf(current.getYear());
+
+            case MONTH:
+                // 格式：yyyy-MM
+                return current.format(DateTimeFormatter.ofPattern(DatePattern.NORM_MONTH_PATTERN));
+
+            case DAY:
+                // 格式：yyyy-MM-dd
+                return current.format(DateTimeFormatter.ofPattern(DatePattern.NORM_DATE_PATTERN));
+
+            case HOUR:
+                // 优先尝试更详细格式
+                return current.format(DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN));
+
+            default:
+                throw new IllegalArgumentException("不支持的时间类型：" + type);
+        }
+    }
+
+
 }
