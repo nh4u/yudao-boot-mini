@@ -255,6 +255,11 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         // 获取原始数据列表
         List<StructureInfo> dataList = tableResult.getStatisticsInfoList();
 
+        if (CollUtil.isEmpty(dataList)) {
+            // 返回查询结果。
+            return resultVO;
+        }
+
         QueryDimensionEnum queryDimensionEnum = QueryDimensionEnum.codeOf(queryType);
         switch (queryDimensionEnum) {
             case OVERALL_REVIEW:
