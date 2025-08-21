@@ -38,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.END_TIME_MUST_AFTER_START_TIME;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.QUERY_TYPE_NOT_EXISTS;
@@ -138,7 +137,6 @@ public class DeviationServiceImpl implements DeviationService {
         List<BigDecimal> ydata1 = xdata
                 .stream()
                 .map(time -> {
-                    time = dealStrTime(time);
                     BigDecimal standardCoal = timeUsageMap.get(time);
                     return dealBigDecimalScale(standardCoal, DEFAULT_SCALE);
                 })
@@ -161,7 +159,6 @@ public class DeviationServiceImpl implements DeviationService {
         List<BigDecimal> ydata2 = xdata
                 .stream()
                 .map(time -> {
-                    time = dealStrTime(time);
                     BigDecimal standardCoal = voucherUsageMap.get(time);
                     return dealBigDecimalScale(standardCoal, DEFAULT_SCALE);
                 })
