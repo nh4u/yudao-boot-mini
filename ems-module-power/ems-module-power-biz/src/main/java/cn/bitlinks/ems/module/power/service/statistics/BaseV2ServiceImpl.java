@@ -289,8 +289,8 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                 .collect(Collectors.toList());
 
         // 汇总统计
-        BigDecimal sumNow = dataList.stream().map(BaseDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal sumPrevious = dataList.stream().map(BaseDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal sumNow = dataList.stream().map(BaseDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
+        BigDecimal sumPrevious = dataList.stream().map(BaseDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
         BigDecimal sumRatio = calculateBaseRatio(sumNow, sumPrevious);
 
         // 构造结果对象
@@ -408,8 +408,8 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                         .collect(Collectors.toList());
 
                 // 汇总统计
-                BigDecimal sumNow = dataList.stream().map(BaseDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
-                BigDecimal sumPrevious = dataList.stream().map(BaseDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal sumNow = dataList.stream().map(BaseDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
+                BigDecimal sumPrevious = dataList.stream().map(BaseDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
                 BigDecimal sumRatio = calculateBaseRatio(sumNow, sumPrevious);
 
                 // 构造结果对象
@@ -534,8 +534,8 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                     .collect(Collectors.toList());
 
             // 汇总
-            BigDecimal sumNow = dataList.stream().map(BaseDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
-            BigDecimal sumPrevious = dataList.stream().map(BaseDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal sumNow = dataList.stream().map(BaseDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
+            BigDecimal sumPrevious = dataList.stream().map(BaseDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
             BigDecimal sumRatio = calculateBaseRatio(sumNow, sumPrevious);
 
             // 构造结果对象
@@ -653,8 +653,8 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                             .collect(Collectors.toList());
 
                     // 汇总
-                    BigDecimal sumNow = dataList.stream().map(BaseDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
-                    BigDecimal sumPrevious = dataList.stream().map(BaseDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal sumNow = dataList.stream().map(BaseDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
+                    BigDecimal sumPrevious = dataList.stream().map(BaseDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
                     BigDecimal sumRatio = calculateBaseRatio(sumNow, sumPrevious);
 
                     // 构造结果对象
@@ -702,7 +702,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                                 list -> {
                                     BigDecimal totalNum = list.stream()
                                             .map(valueExtractor)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .reduce(BigDecimal::add).orElse(null);
                                     return new TimeAndNumData(list.get(0).getTime(), totalNum);
                                 }
                         )
@@ -727,7 +727,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                                 list -> {
                                     BigDecimal totalStandardCoal = list.stream()
                                             .map(valueExtractor)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .reduce(BigDecimal::add).orElse(null);
                                     return new TimeAndNumData(list.get(0).getTime(), totalStandardCoal);
                                 }
                         )
@@ -751,8 +751,6 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         }
         return "/";
     }
-
-
 
 
     @Override
@@ -1449,8 +1447,8 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         }
 
         // 汇总统计
-        BigDecimal sumNow = dataList.stream().map(BaseDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal sumPrevious = dataList.stream().map(BaseDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal sumNow = dataList.stream().map(BaseDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
+        BigDecimal sumPrevious = dataList.stream().map(BaseDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
         BigDecimal sumRatio = calculateBaseRatio(sumNow, sumPrevious);
         // 构造结果对象
         BaseItemVO vo = new BaseItemVO();

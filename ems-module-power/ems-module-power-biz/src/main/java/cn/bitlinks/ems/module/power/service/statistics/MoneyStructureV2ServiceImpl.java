@@ -255,11 +255,6 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         // 获取原始数据列表
         List<StructureInfo> dataList = tableResult.getStatisticsInfoList();
 
-        if (CollUtil.isEmpty(dataList)) {
-            // 返回查询结果。
-            return resultVO;
-        }
-
         QueryDimensionEnum queryDimensionEnum = QueryDimensionEnum.codeOf(queryType);
         switch (queryDimensionEnum) {
             case OVERALL_REVIEW:
@@ -606,7 +601,8 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
                             list -> {
                                 BigDecimal totalCost = list.stream()
                                         .map(UsageCostData::getTotalCost)
-                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                        .filter(Objects::nonNull)
+                                        .reduce(BigDecimal::add).orElse(null);
                                 return new StructureInfoData(list.get(0).getTime(), totalCost, null);
                             }
                     )
@@ -615,7 +611,8 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
             // 折标煤数据求和
             BigDecimal totalNum = dataList.stream()
                     .map(StructureInfoData::getNum)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal::add).orElse(null);
 
             StructureInfo info = new StructureInfo();
             info.setEnergyId(energyId);
@@ -707,7 +704,8 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
                                     list -> {
                                         BigDecimal totalCost = list.stream()
                                                 .map(UsageCostData::getTotalCost)
-                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                .filter(Objects::nonNull)
+                                                .reduce(BigDecimal::add).orElse(null);
                                         return new StructureInfoData(list.get(0).getTime(), totalCost, null);
                                     }
                             )
@@ -716,8 +714,8 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
                     // 折标煤数据求和
                     BigDecimal totalNum = dataList.stream()
                             .map(StructureInfoData::getNum)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
+                            .filter(Objects::nonNull)
+                            .reduce(BigDecimal::add).orElse(null);
 
                     StructureInfo info = new StructureInfo();
                     info.setEnergyId(energyId);
@@ -789,7 +787,8 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
                                 list -> {
                                     BigDecimal totalCost = list.stream()
                                             .map(UsageCostData::getTotalCost)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .filter(Objects::nonNull)
+                                            .reduce(BigDecimal::add).orElse(null);
                                     return new StructureInfoData(list.get(0).getTime(), totalCost, null);
                                 }
                         )
@@ -797,8 +796,8 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
 
         BigDecimal totalNum = dataList.stream()
                 .map(StructureInfoData::getNum)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal::add).orElse(null);
         StructureInfo info = new StructureInfo();
 
         StandingbookLabelInfoDO standingbookLabelInfoDO = standingbookIdsByLabel.get(0);
@@ -870,7 +869,8 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
                                         list -> {
                                             BigDecimal totalCost = list.stream()
                                                     .map(UsageCostData::getTotalCost)
-                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                    .filter(Objects::nonNull)
+                                                    .reduce(BigDecimal::add).orElse(null);
                                             return new StructureInfoData(list.get(0).getTime(), totalCost, null);
                                         }
                                 )
@@ -878,7 +878,8 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
 
                 BigDecimal totalNum = dataList.stream()
                         .map(StructureInfoData::getNum)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal::add).orElse(null);
 
                 StructureInfo info = new StructureInfo();
                 info.setLabel1(topLabel.getLabelName());
@@ -934,7 +935,8 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
                     BigDecimal sumNum = structureDataList
                             .stream()
                             .map(StructureInfoData::getNum)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                            .filter(Objects::nonNull)
+                            .reduce(BigDecimal::add).orElse(null);
 
                     info.setStructureInfoDataList(structureDataList);
 
