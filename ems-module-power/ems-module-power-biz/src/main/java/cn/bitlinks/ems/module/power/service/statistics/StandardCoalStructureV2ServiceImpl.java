@@ -1223,6 +1223,10 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
             // 按一级标签聚合数据
             Map<String, BigDecimal> labelMap = dataList.stream()
                     .filter(vo -> energy.getId().equals(vo.getEnergyId()))
+                    .map(vo -> {
+                        vo.setLabel1(getName(vo.getLabel1(), vo.getLabel2(), vo.getLabel3(), vo.getLabel4(), vo.getLabel5()));
+                        return vo;
+                    })
                     .collect(Collectors.groupingBy(
                             StructureInfo::getLabel1, // 关键修改：使用一级标签分组
                             Collectors.reducing(BigDecimal.ZERO, StructureInfo::getSumNum, BigDecimal::add)
