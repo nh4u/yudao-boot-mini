@@ -32,7 +32,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.REPORT_NATURAL_GAS;
@@ -241,7 +240,6 @@ public class NaturalGasServiceImpl implements NaturalGasService {
             }
             Map<String, BigDecimal> finalSbCodeMap = sbCodeMap;
             List<BigDecimal> sbDataList = xdata.stream().map(time -> {
-                time = dealStrTime(time);
                 return dealBigDecimalScale(finalSbCodeMap.getOrDefault(time, BigDecimal.ZERO), scale);
             }).collect(Collectors.toList());
             ydataListMap.put(sbCode, sbDataList);
