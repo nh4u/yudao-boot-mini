@@ -38,7 +38,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
@@ -801,7 +800,6 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                         Map<String, BigDecimal> timeCostMap = energyTimeCostMap.getOrDefault(energyId, Collections.emptyMap());
 
                         List<StatisticsChartYDataV2VO> dataList = xdata.stream().map(time -> {
-                            time = dealStrTime(time);
                             StatisticsChartYDataV2VO vo = new StatisticsChartYDataV2VO();
                             vo.setCost(dealBigDecimalScale(timeCostMap.getOrDefault(time, BigDecimal.ZERO), scale));
                             return vo;
@@ -865,7 +863,6 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                 if (labelConfigDO == null) return;
 
                 List<StatisticsChartYDataV2VO> ydata = xdata.stream().map(x -> {
-                    x = dealStrTime(x);
                     BigDecimal cost = timeCostMap.getOrDefault(x, BigDecimal.ZERO);
                     StatisticsChartYDataV2VO vo = new StatisticsChartYDataV2VO();
                     vo.setCost(cost.compareTo(BigDecimal.ZERO) > 0 ? cost : BigDecimal.ZERO);
@@ -886,8 +883,7 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             List<StatisticsChartYInfoV2VO> ydata = new ArrayList<>();
             xdata.forEach(s -> {
                 // substring 返回 endIndex-beginIndex哥字符 因为是[ )
-                String subs = dealStrTime(s);
-                StatsResult statsResult = statsResultMap.get(subs);
+                StatsResult statsResult = statsResultMap.get(s);
                 StatisticsChartYInfoV2VO yInfoV2VO = new StatisticsChartYInfoV2VO();
                 StatisticsChartYDataV2VO dataV2VO = new StatisticsChartYDataV2VO();
                 if (Objects.nonNull(statsResult)) {
