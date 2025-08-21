@@ -40,7 +40,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ConsumptionStatisticsCacheConstants.ELECTRICITY_CONSUMPTION_STATISTICS_CHART;
@@ -177,8 +176,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
                 Map<String, List<ConsumptionStatisticsInfoData>> dateMap = oldList.stream()
                         .collect(Collectors.groupingBy(ConsumptionStatisticsInfoData::getDate));
                 tableHeader.forEach(date -> {
-                    String time = dealStrTime(date);
-                    List<ConsumptionStatisticsInfoData> standardCoalInfoDataList = dateMap.get(time);
+                    List<ConsumptionStatisticsInfoData> standardCoalInfoDataList = dateMap.get(date);
                     if (standardCoalInfoDataList == null) {
                         ConsumptionStatisticsInfoData standardCoalInfoData = new ConsumptionStatisticsInfoData();
                         standardCoalInfoData.setDate(date);
@@ -697,8 +695,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
             List<BigDecimal> data = ListUtils.newArrayList();
             xdata.forEach(date -> {
-                String time = dealStrTime(date);  // 使用dealStrTime处理时间格式
-                ConsumptionStatisticsInfoData statisticInfoDataV2 = dateMap.get(time);
+                ConsumptionStatisticsInfoData statisticInfoDataV2 = dateMap.get(date);
                 if (statisticInfoDataV2 == null) {
                     data.add(BigDecimal.ZERO);
                 } else {

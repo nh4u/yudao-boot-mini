@@ -33,7 +33,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
@@ -394,7 +393,6 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         int count = 0;
 
         for (String time : xdata) {
-            time = dealStrTime(time);
             BigDecimal value = nowMap.getOrDefault(time, BigDecimal.ZERO);
             nowList.add(value);
             total = total.add(value);
