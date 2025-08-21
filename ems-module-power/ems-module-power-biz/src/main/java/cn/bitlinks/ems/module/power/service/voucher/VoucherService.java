@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.voucher.VoucherDO;
 import cn.hutool.json.JSONObject;
 
 import javax.validation.Valid;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -63,4 +64,6 @@ public interface VoucherService {
 
 
     String recognition(String url);
+
+    List<VoucherDO> getVoucherByEnergy(Long energyId, LocalDateTime[] range);
 }
