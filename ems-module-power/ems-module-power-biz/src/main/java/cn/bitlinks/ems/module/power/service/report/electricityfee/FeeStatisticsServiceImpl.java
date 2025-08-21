@@ -40,7 +40,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
@@ -180,8 +179,7 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
                         .collect(Collectors.groupingBy(StatisticInfoDataV2::getDate));
 
                 tableHeader.forEach(date -> {
-                    String time = dealStrTime(date);
-                    List<StatisticInfoDataV2> standardCoalInfoDataList = dateMap.get(time);
+                    List<StatisticInfoDataV2> standardCoalInfoDataList = dateMap.get(date);
                     if (standardCoalInfoDataList == null) {
                         StatisticInfoDataV2 standardCoalInfoData = new StatisticInfoDataV2();
                         standardCoalInfoData.setDate(date);
@@ -258,8 +256,7 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
 
             List<BigDecimal> data = ListUtils.newArrayList();
             xdata.forEach(date -> {
-                String time = dealStrTime(date);
-                StatisticInfoDataV2 statisticInfoDataV2 = dateMap.get(time);
+                StatisticInfoDataV2 statisticInfoDataV2 = dateMap.get(date);
                 if (statisticInfoDataV2 == null) {
                     data.add(BigDecimal.ZERO);
                 } else {
