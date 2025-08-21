@@ -669,16 +669,6 @@ public class LocalDateTimeUtils {
 
 
     /**
-     * 格式时间对应  2025-06-12 17 和 2025-06-12 17:00:00 对应处理
-     *
-     * @param strTime
-     * @return
-     */
-    public static String dealStrTime(String strTime) {
-        return strTime.length() > 13 ? strTime.substring(0, 13) : strTime;
-    }
-
-    /**
      * 根据时间字符串 来返回去年同期时间字符串 边界情况测试（闰年也OK）
      *
      * @param dateStr 时间字符串

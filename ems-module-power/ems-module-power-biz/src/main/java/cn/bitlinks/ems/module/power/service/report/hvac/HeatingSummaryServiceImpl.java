@@ -31,11 +31,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.REPORT_HVAC_HEAT;
-import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.REPORT_NATURAL_GAS;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ReportCacheConstants.HVAC_HEATING_SUMMARY_CHART;
 import static cn.bitlinks.ems.module.power.enums.ReportCacheConstants.HVAC_HEATING_SUMMARY_TABLE;
@@ -226,7 +224,6 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
                 ));
         Map<String, BigDecimal> timeCostMap = standingbookIdTimeCostMap.get(targetDTO.getStandingbookId());
         List<BigDecimal> ydataList = xdata.stream().map(time -> {
-            time = dealStrTime(time);
             return dealBigDecimalScale(timeCostMap.getOrDefault(time, BigDecimal.ZERO), scale);
         }).collect(Collectors.toList());
         resultVO.setYdata(ydataList);
