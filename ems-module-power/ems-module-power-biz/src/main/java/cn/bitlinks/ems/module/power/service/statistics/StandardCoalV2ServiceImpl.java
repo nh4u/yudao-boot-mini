@@ -340,20 +340,32 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                                     .map(time -> {
                                         StandardCoalChartYData vo = new StandardCoalChartYData();
                                         BigDecimal standardCoal = timeCostMap.get(time);
-                                        vo.setStandardCoal(dealBigDecimalScale(standardCoal, DEFAULT_SCALE));
+
+                                        if (!Objects.isNull(standardCoal) && BigDecimal.ZERO.compareTo(standardCoal) != 0) {
+                                            vo.setStandardCoal(dealBigDecimalScale(standardCoal, DEFAULT_SCALE));
+                                        }
                                         return vo;
                                     })
                                     .collect(Collectors.toList());
 
-                            StatisticsChartYInfoV2VO<StandardCoalChartYData> yInfo = new StatisticsChartYInfoV2VO<>();
-                            yInfo.setId(energyId);
-                            yInfo.setName(energy.getEnergyName());
-                            yInfo.setData(dataList);
-                            return yInfo;
+                            List<BigDecimal> collect = dataList
+                                    .stream()
+                                    .map(StandardCoalChartYData::getStandardCoal)
+                                    .filter(Objects::nonNull)
+                                    .collect(Collectors.toList());
+
+                            if (CollUtil.isNotEmpty(collect)) {
+                                StatisticsChartYInfoV2VO<StandardCoalChartYData> yInfo = new StatisticsChartYInfoV2VO<>();
+                                yInfo.setId(energyId);
+                                yInfo.setName(energy.getEnergyName());
+                                yInfo.setData(dataList);
+                                return yInfo;
+                            } else {
+                                return null;
+                            }
                         } else {
                             return null;
                         }
-
                     })
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
