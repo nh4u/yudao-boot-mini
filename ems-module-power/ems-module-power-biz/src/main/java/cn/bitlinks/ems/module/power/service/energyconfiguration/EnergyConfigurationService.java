@@ -103,6 +103,7 @@ public interface EnergyConfigurationService {
      */
     List<EnergyConfigurationDO> getByEnergyClassify(Set<Long> energyIds, Integer energyClassify);
 
+     EnergyConfigurationDO getEnergyAndUnit(Long energyId);
     /**
      * 获取无单位的能源list
      * @param energyIds

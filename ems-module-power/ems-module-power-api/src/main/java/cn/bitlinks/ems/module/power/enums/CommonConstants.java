@@ -134,6 +134,11 @@ public interface CommonConstants {
     String PCWT = "PCWT";
 
     String DAY = "日";
+
+
+    String SYSTEM = "系统";
+
+    String VOUCHER = "凭证";
     /**
      * 随机成功概率
      */
