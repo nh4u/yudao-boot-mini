@@ -810,16 +810,30 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                                     .stream()
                                     .map(time -> {
                                         StatisticsChartYDataV2VO vo = new StatisticsChartYDataV2VO();
-                                        vo.setCost(dealBigDecimalScale(timeCostMap.get(time), scale));
+                                        BigDecimal cost = timeCostMap.get(time);
+
+                                        if (!Objects.isNull(cost) && BigDecimal.ZERO.compareTo(cost) != 0) {
+                                            vo.setCost(dealBigDecimalScale(cost, scale));
+                                        }
                                         return vo;
                                     })
                                     .collect(Collectors.toList());
 
-                            StatisticsChartYInfoV2VO yInfo = new StatisticsChartYInfoV2VO();
-                            yInfo.setId(energyId);
-                            yInfo.setName(energy.getEnergyName());
-                            yInfo.setData(dataList);
-                            return yInfo;
+                            List<BigDecimal> collect = dataList
+                                    .stream()
+                                    .map(StatisticsChartYDataV2VO::getCost)
+                                    .filter(Objects::nonNull)
+                                    .collect(Collectors.toList());
+
+                            if (CollUtil.isNotEmpty(collect)) {
+                                StatisticsChartYInfoV2VO yInfo = new StatisticsChartYInfoV2VO();
+                                yInfo.setId(energyId);
+                                yInfo.setName(energy.getEnergyName());
+                                yInfo.setData(dataList);
+                                return yInfo;
+                            } else {
+                                return null;
+                            }
                         } else {
                             return null;
                         }
