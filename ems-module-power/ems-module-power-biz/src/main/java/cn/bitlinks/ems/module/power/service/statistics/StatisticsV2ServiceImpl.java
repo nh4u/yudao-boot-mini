@@ -20,6 +20,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.crypto.SecureUtil;
+import cn.hutool.json.JSONConfig;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.util.ListUtils;
 import com.alibaba.fastjson.JSON;
@@ -714,10 +715,10 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         String cacheKey = USAGE_COST_CHART + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
-        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            log.info("缓存结果");
-            return JSONUtil.toBean(cacheRes, StatisticsChartResultV2VO.class);
-        }
+//        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
+//            log.info("缓存结果");
+//            return JSONUtil.toBean(cacheRes, StatisticsChartResultV2VO.class);
+//        }
 
 
         //能源列表
@@ -930,7 +931,9 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             });
             resultV2VO.setYdata(ydata);
         }
-        String jsonStr = JSONUtil.toJsonStr(resultV2VO);
+
+        // 保留 null 值字段
+        String jsonStr = JSONUtil.toJsonStr(resultV2VO,JSONConfig.create().setIgnoreNullValue(false));
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return resultV2VO;

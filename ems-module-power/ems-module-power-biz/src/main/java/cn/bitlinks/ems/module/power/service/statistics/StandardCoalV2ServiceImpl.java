@@ -241,10 +241,10 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         String cacheKey = USAGE_STANDARD_COAL_CHART + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
-        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            log.info("缓存结果");
-            return JSONUtil.toBean(cacheRes, StatisticsChartResultV2VO.class);
-        }
+//        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
+//            log.info("缓存结果");
+//            return JSONUtil.toBean(cacheRes, StatisticsChartResultV2VO.class);
+//        }
 
         // 4.如果没有则去数据库查询
         StatisticsChartResultV2VO resultV2VO = new StatisticsChartResultV2VO();

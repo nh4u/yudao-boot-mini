@@ -725,7 +725,6 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                         }
                     });
                 }
-
                 if (CollUtil.isNotEmpty(oneKey2)) {
                     // 第一条线 点位2
                     oneKey2.forEach(key -> {
@@ -754,7 +753,6 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                         }
                     });
                 }
-
                 if (CollUtil.isNotEmpty(twoKey2)) {
                     // 第二条线 点位2
                     twoKey2.forEach(key -> {
@@ -786,7 +784,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
             if (CollUtil.isNotEmpty(ydata21)) {
                 List<BigDecimal> y = dateList
                         .stream()
-                        .map(d -> ydata12.getOrDefault(d, BigDecimal.ZERO))
+                        .map(d -> ydata21.getOrDefault(d, BigDecimal.ZERO))
                         .collect(Collectors.toList());
                 pcwp.setYdata21(y);
             }
@@ -795,7 +793,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
             if (CollUtil.isNotEmpty(ydata12)) {
                 List<BigDecimal> y = dateList
                         .stream()
-                        .map(d -> ydata21.getOrDefault(d, BigDecimal.ZERO))
+                        .map(d -> ydata12.getOrDefault(d, BigDecimal.ZERO))
                         .collect(Collectors.toList());
                 pcwp.setYdata12(y);
             }
