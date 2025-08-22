@@ -1189,7 +1189,11 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                         Collectors.reducing(BigDecimal.ZERO, StructureInfo::getSumNum, BigDecimal::add)
                 ));
 
-        return createPieChart("能源用能结构", energyMap);
+        if (CollUtil.isNotEmpty(energyMap)) {
+            return createPieChart("能源用能结构", energyMap);
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -1205,8 +1209,11 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                         this::getFullLabelPath,
                         Collectors.reducing(BigDecimal.ZERO, StructureInfo::getSumNum, BigDecimal::add)
                 ));
-
-        return createPieChart("标签用能结构", labelMap);
+        if (CollUtil.isNotEmpty(labelMap)) {
+            return createPieChart("标签用能结构", labelMap);
+        } else {
+            return null;
+        }
     }
 
     /**
