@@ -17,32 +17,6 @@ import lombok.ToString;
 public class StatisticsHomeResultVO {
 
 
-    @Schema(description = "计量器具总数", example = "计量器具总数")
-    private Long measurementInstrumentNum;
-
-    @Schema(description = "重点设备总数", example = "重点设备总数")
-    private Long keyEquipmentNum;
-
-    @Schema(description = "其他设备总数", example = "其他设备总数")
-    private Long otherEquipmentNum;
-
-    @Schema(description = "单位产值能耗", example = "单位产值能耗")
-    private BigDecimal outputValueEnergyConsumption;
-
-    @Schema(description = "单位产品能耗（8英寸）", example = "单位产品能耗（8英寸）")
-    private BigDecimal productEnergyConsumption8;
-
-    @Schema(description = "单位产品能耗（12英寸）", example = "单位产品能耗（12英寸）")
-    private BigDecimal productEnergyConsumption12;
-
-    @Schema(description = "能源利用率（外购）", example = "能源利用率（外购）")
-    private BigDecimal outsourceEnergyUtilizationRate;
-
-    @Schema(description = "能源利用率（园区）", example = "能源利用率（园区）")
-    private BigDecimal parkEnergyUtilizationRate;
-
-    @Schema(description = "能源转换率", example = "能源转换率")
-    private BigDecimal energyConversionRate;
 
     @Schema(description = "能源列表数据", example = "能源列表数据")
     private List<StatisticsOverviewEnergyData> statisticsOverviewEnergyDataList;

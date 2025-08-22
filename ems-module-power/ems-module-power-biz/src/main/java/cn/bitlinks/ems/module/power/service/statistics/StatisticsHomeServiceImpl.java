@@ -3,7 +3,7 @@ package cn.bitlinks.ems.module.power.service.statistics;
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.StatisticsParamHomeV2VO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamHomeV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
@@ -71,7 +71,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
     @Override
     public StatisticsHomeResultVO overview(StatisticsParamHomeV2VO paramVO) {
         StatisticsHomeResultVO statisticsHomeResultVO = new StatisticsHomeResultVO();
-        statisticsHomeResultVO.setDataUpdateTime(LocalDateTime.now());
+       // statisticsHomeResultVO.setDataUpdateTime(LocalDateTime.now());
         // 尝试读取缓存
         String cacheKey = StatisticsCacheConstants.COMPARISON_HOME_TOTAL + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
@@ -80,19 +80,6 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
             log.info("缓存结果");
             return JSONUtil.toBean(cacheRes, StatisticsHomeResultVO.class);
         }
-
-        // 1.计量器具、重点设备、其他设备
-        statisticsHomeResultVO.setMeasurementInstrumentNum(standingbookService.count(CommonConstants.MEASUREMENT_INSTRUMENT_ID));
-        statisticsHomeResultVO.setKeyEquipmentNum(standingbookService.count(CommonConstants.KEY_EQUIPMENT_ID));
-        statisticsHomeResultVO.setOtherEquipmentNum(standingbookService.count(CommonConstants.OTHER_EQUIPMENT_ID));
-
-        // 2.产值能耗利用率
-        statisticsHomeResultVO.setOutputValueEnergyConsumption(BigDecimal.ZERO);
-        statisticsHomeResultVO.setProductEnergyConsumption8(BigDecimal.ZERO);
-        statisticsHomeResultVO.setProductEnergyConsumption12(BigDecimal.ZERO);
-        statisticsHomeResultVO.setOutsourceEnergyUtilizationRate(BigDecimal.ZERO);
-        statisticsHomeResultVO.setParkEnergyUtilizationRate(BigDecimal.ZERO);
-        statisticsHomeResultVO.setEnergyConversionRate(BigDecimal.ZERO);
 
         // 3.能源、折标煤、用能成本展示
         // 能源处理
@@ -150,7 +137,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         data.setMoney(totalMoney);
         list.add(0, data);
 
-        statisticsHomeResultVO.setStatisticsOverviewEnergyDataList(list);
+        //statisticsHomeResultVO.setStatisticsOverviewEnergyDataList(list);
 
         // 3.2 折标煤用量统计
         List<StandingbookDO> standingbookIdsByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIdList);
@@ -186,8 +173,8 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         List<StatisticsHomeData> moneyStatistics = buildStatisticsHomeData(
                 usageCostDataList, comparisonDataList, yoyDataList, UsageCostData::getTotalCost);
 
-        statisticsHomeResultVO.setStandardCoalStatistics(standardCoalStatistics);
-        statisticsHomeResultVO.setMoneyStatistics(moneyStatistics);
+//        statisticsHomeResultVO.setStandardCoalStatistics(standardCoalStatistics);
+//        statisticsHomeResultVO.setMoneyStatistics(moneyStatistics);
 
         // 获取数据更新时间
         LocalDateTime lastTime = usageCostService.getLastTime(
@@ -195,7 +182,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
                 paramVO.getRange()[0],
                 paramVO.getRange()[1],
                 standingBookIds);
-        statisticsHomeResultVO.setDataUpdateTime(lastTime);
+//        statisticsHomeResultVO.setDataUpdateTime(lastTime);
 
         String jsonStr = JSONUtil.toJsonStr(statisticsHomeResultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
@@ -252,6 +239,28 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
             return result;
         }
         return energy(usageCostDataList, energyList);
+    }
+
+    @Override
+    public StatisticsHomeTopResultVO overviewTop() {
+        // 1.计量器具、重点设备、其他设备
+        StatisticsHomeTopResultVO resultVO = new StatisticsHomeTopResultVO();
+        resultVO.setMeasurementInstrumentNum(standingbookService.count(CommonConstants.MEASUREMENT_INSTRUMENT_ID));
+        resultVO.setKeyEquipmentNum(standingbookService.count(CommonConstants.KEY_EQUIPMENT_ID));
+        resultVO.setOtherEquipmentNum(standingbookService.count(CommonConstants.OTHER_EQUIPMENT_ID));
+        return resultVO;
+    }
+
+    @Override
+    public StatisticsHomeTop2ResultVO overviewTop2(StatisticsParamHomeVO paramVO) {
+        // 2.产值能耗利用率
+        statisticsHomeResultVO.setOutputValueEnergyConsumption(BigDecimal.ZERO);
+        statisticsHomeResultVO.setProductEnergyConsumption8(BigDecimal.ZERO);
+        statisticsHomeResultVO.setProductEnergyConsumption12(BigDecimal.ZERO);
+        statisticsHomeResultVO.setOutsourceEnergyUtilizationRate(BigDecimal.ZERO);
+        statisticsHomeResultVO.setParkEnergyUtilizationRate(BigDecimal.ZERO);
+        statisticsHomeResultVO.setEnergyConversionRate(BigDecimal.ZERO);
+
     }
 
     public List<StatisticsOverviewEnergyData> energy(List<UsageCostData> usageCostDataList, List<EnergyConfigurationDO> energyList) {
