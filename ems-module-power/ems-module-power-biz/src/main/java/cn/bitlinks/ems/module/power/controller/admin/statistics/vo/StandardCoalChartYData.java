@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.controller.admin.statistics.vo;
 
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -12,6 +13,7 @@ import java.math.BigDecimal;
  */
 @Schema(description = "堆叠图Y轴数据")
 @Data
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class StandardCoalChartYData {
 
     private BigDecimal max;
