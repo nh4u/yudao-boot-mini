@@ -101,7 +101,8 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
-            return JSON.parseObject(cacheRes, new TypeReference<StatisticsResultV2VO<StatisticsInfoV2>>() {});
+            return JSON.parseObject(cacheRes, new TypeReference<StatisticsResultV2VO<StatisticsInfoV2>>() {
+            });
         }
 
         // 表头处理
@@ -729,15 +730,18 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         //能源ID energyIds
         List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
 
+        List<Long> standingBookIds = new ArrayList<>();
 
         //根据能源查询台账
         List<StandingbookDO> standingbookIdsByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIds);
 
         //根据标签查询
         List<Long> standingBookIdList = standingbookIdsByEnergy.stream().map(StandingbookDO::getId).collect(Collectors.toList());
-        List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByLabel(paramVO.getTopLabel(), paramVO.getChildLabels(), standingBookIdList);
 
-        List<Long> standingBookIds = new ArrayList<>();
+        String topLabel = paramVO.getTopLabel();
+        String childLabels = paramVO.getChildLabels();
+        List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByLabel(topLabel, childLabels);
+
         if (CollUtil.isNotEmpty(standingbookIdsByLabel)) {
             List<Long> sids = standingbookIdsByLabel.stream().map(StandingbookLabelInfoDO::getStandingbookId).collect(Collectors.toList());
             List<StandingbookDO> collect = standingbookIdsByEnergy.stream().filter(s -> sids.contains(s.getId())).collect(Collectors.toList());
@@ -749,10 +753,8 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             List<Long> collect1 = collect.stream().map(StandingbookDO::getId).collect(Collectors.toList());
             standingBookIds.addAll(collect1);
         } else {
-            List<Long> collect = standingbookIdsByEnergy.stream().map(StandingbookDO::getId).collect(Collectors.toList());
-            standingBookIds.addAll(collect);
+            standingBookIds.addAll(standingBookIdList);
         }
-
 
         if (CollUtil.isEmpty(standingBookIds)) {
             resultV2VO.setDataTime(LocalDateTime.now());
@@ -791,26 +793,38 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
                                     UsageCostData::getTotalCost
                             )
                     ));
-            Map<Long, EnergyConfigurationDO> energyMap = energyList.stream().collect(Collectors.toMap(EnergyConfigurationDO::getId, Function.identity()));
-            List<StatisticsChartYInfoV2VO> ydata = energyMap.entrySet().stream()
+            Map<Long, EnergyConfigurationDO> energyMap = energyList
+                    .stream()
+                    .collect(Collectors.toMap(EnergyConfigurationDO::getId, Function.identity()));
+
+            List<StatisticsChartYInfoV2VO> ydata = energyMap.entrySet()
+                    .stream()
                     .filter(entry -> energyTimeCostMap.containsKey(entry.getKey())) // 仅处理有数据的 energy
                     .map(entry -> {
                         Long energyId = entry.getKey();
                         EnergyConfigurationDO energy = entry.getValue();
-                        Map<String, BigDecimal> timeCostMap = energyTimeCostMap.getOrDefault(energyId, Collections.emptyMap());
+                        Map<String, BigDecimal> timeCostMap = energyTimeCostMap.get(energyId);
 
-                        List<StatisticsChartYDataV2VO> dataList = xdata.stream().map(time -> {
-                            StatisticsChartYDataV2VO vo = new StatisticsChartYDataV2VO();
-                            vo.setCost(dealBigDecimalScale(timeCostMap.getOrDefault(time, BigDecimal.ZERO), scale));
-                            return vo;
-                        }).collect(Collectors.toList());
+                        if (CollUtil.isNotEmpty(timeCostMap)) {
+                            List<StatisticsChartYDataV2VO> dataList = xdata
+                                    .stream()
+                                    .map(time -> {
+                                        StatisticsChartYDataV2VO vo = new StatisticsChartYDataV2VO();
+                                        vo.setCost(dealBigDecimalScale(timeCostMap.get(time), scale));
+                                        return vo;
+                                    })
+                                    .collect(Collectors.toList());
 
-                        StatisticsChartYInfoV2VO yInfo = new StatisticsChartYInfoV2VO();
-                        yInfo.setId(energyId);
-                        yInfo.setName(energy.getEnergyName());
-                        yInfo.setData(dataList);
-                        return yInfo;
+                            StatisticsChartYInfoV2VO yInfo = new StatisticsChartYInfoV2VO();
+                            yInfo.setId(energyId);
+                            yInfo.setName(energy.getEnergyName());
+                            yInfo.setData(dataList);
+                            return yInfo;
+                        } else {
+                            return null;
+                        }
                     })
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
 
             resultV2VO.setYdata(ydata);
