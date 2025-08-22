@@ -13,7 +13,7 @@ import lombok.Data;
  */
 @Schema(description = "堆叠图Y轴数据")
 @Data
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class StatisticsChartYDataV2VO {
 
     @Schema(description = "最大成本")

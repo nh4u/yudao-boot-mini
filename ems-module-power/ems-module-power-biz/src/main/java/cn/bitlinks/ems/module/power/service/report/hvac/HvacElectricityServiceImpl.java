@@ -107,10 +107,21 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
             HvacElectricityInfo info = new HvacElectricityInfo();
             info.setItemName(labelName);
             info.setItemCode(labelCode);
-            info.setHvacElectricityInfoDataList(Collections.emptyList());
+            List<HvacElectricityInfoData> hvacElectricityInfoDataList = Collections.emptyList();
+            tableHeader.forEach(date -> {
+                if (hvacElectricityInfoDataList == null) {
+                    HvacElectricityInfoData hvacElectricityInfoData = new HvacElectricityInfoData();
+                    hvacElectricityInfoData.setDate(date);
+                    hvacElectricityInfoDataList.add(hvacElectricityInfoData);
+                } else {
+                    hvacElectricityInfoDataList.add(hvacElectricityInfoDataList.get(0));
+                }
+            });
+            info.setHvacElectricityInfoDataList(hvacElectricityInfoDataList);
             infoList.add(info);
         });
         resultVO.setReportDataList(infoList);
+
         return resultVO;
     }
 
