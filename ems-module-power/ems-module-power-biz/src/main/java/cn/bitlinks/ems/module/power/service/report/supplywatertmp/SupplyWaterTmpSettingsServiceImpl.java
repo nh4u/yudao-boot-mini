@@ -104,8 +104,8 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
         Integer teamFlag = paramVO.getTeamFlag();
         if (dataTypeEnum.equals(DataTypeEnum.DAY)) {
             validateTeamFlag(teamFlag);
-        }else {
-            if (teamFlag == 1){
+        } else {
+            if (teamFlag == 1) {
                 throw exception(TEAM_NOT_INPUT);
             }
         }
@@ -712,6 +712,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                 List<String> twoKey2 = getKey(l, "2_" + code2);
 
                 if (CollUtil.isNotEmpty(oneKey1)) {
+                    // 第一条线 点位1
                     oneKey1.forEach(key -> {
                         //处理时间
                         String date = (String) l.get("date");
@@ -726,20 +727,8 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                 }
 
                 if (CollUtil.isNotEmpty(oneKey2)) {
+                    // 第一条线 点位2
                     oneKey2.forEach(key -> {
-                        //处理时间
-                        String date = (String) l.get("date");
-                        date = dealDate(date, key, dataTypeEnum);
-                        if (Boolean.TRUE.equals(checkDate(date, range, dataTypeEnum))) {
-                            // 处理数据
-                            Object value = l.get(key);
-                            xdata.add(date);
-                            ydata12.put(date, (BigDecimal) value);
-                        }
-                    });
-                }
-                if (CollUtil.isNotEmpty(twoKey1)) {
-                    twoKey1.forEach(key -> {
                         //处理时间
                         String date = (String) l.get("date");
                         date = dealDate(date, key, dataTypeEnum);
@@ -751,8 +740,23 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                         }
                     });
                 }
+                if (CollUtil.isNotEmpty(twoKey1)) {
+                    // 第二条线 点位1
+                    twoKey1.forEach(key -> {
+                        //处理时间
+                        String date = (String) l.get("date");
+                        date = dealDate(date, key, dataTypeEnum);
+                        if (Boolean.TRUE.equals(checkDate(date, range, dataTypeEnum))) {
+                            // 处理数据
+                            Object value = l.get(key);
+                            xdata.add(date);
+                            ydata12.put(date, (BigDecimal) value);
+                        }
+                    });
+                }
 
                 if (CollUtil.isNotEmpty(twoKey2)) {
+                    // 第二条线 点位2
                     twoKey2.forEach(key -> {
                         //处理时间
                         String date = (String) l.get("date");
@@ -770,7 +774,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
             List<String> dateList = xdata.stream().sorted().collect(Collectors.toList());
             pcwp.setXdata(dateList);
 
-            // 点位1
+            // 第一条线 点位1（先点位后线）
             if (CollUtil.isNotEmpty(ydata11)) {
                 List<BigDecimal> y = dateList
                         .stream()
@@ -778,23 +782,24 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                         .collect(Collectors.toList());
                 pcwp.setYdata11(y);
             }
-            if (CollUtil.isNotEmpty(ydata12)) {
+            // 第一条线 点位2（先点位后线）
+            if (CollUtil.isNotEmpty(ydata21)) {
                 List<BigDecimal> y = dateList
                         .stream()
                         .map(d -> ydata12.getOrDefault(d, BigDecimal.ZERO))
                         .collect(Collectors.toList());
-                pcwp.setYdata12(y);
+                pcwp.setYdata21(y);
             }
 
-            // 点位2
-            if (CollUtil.isNotEmpty(ydata21)) {
+            // 第二条线 点位1（先点位后线）
+            if (CollUtil.isNotEmpty(ydata12)) {
                 List<BigDecimal> y = dateList
                         .stream()
                         .map(d -> ydata21.getOrDefault(d, BigDecimal.ZERO))
                         .collect(Collectors.toList());
-                pcwp.setYdata21(y);
+                pcwp.setYdata12(y);
             }
-
+            // 第二条线 点位2（先点位后线）
             if (CollUtil.isNotEmpty(ydata22)) {
                 List<BigDecimal> y = dateList
                         .stream()
