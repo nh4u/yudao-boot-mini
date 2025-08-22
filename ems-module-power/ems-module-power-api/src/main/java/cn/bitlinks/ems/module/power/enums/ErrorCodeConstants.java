@@ -84,6 +84,12 @@ public interface ErrorCodeConstants {
     ErrorCode IMPORT_NO_TIMES = new ErrorCode(1_001_301_228,"时间选择有误，读取不到有效时间");
     ErrorCode IMPORT_TIMES_ERROR = new ErrorCode(1_001_301_229,"时间选择有误，存在非时间数据");
     ErrorCode IMPORT_NO_METER = new ErrorCode(1_001_301_230,"采集点选择有误，读取不到有效数据");
+
+    // ========== 外部接口 ==========
+    ErrorCode EXTERNAL_API_NOT_EXISTS = new ErrorCode(1_001_301_240,"外部接口不存在");
+
+    ErrorCode EXTERNAL_API_CODE_REPEAT = new ErrorCode(1_001_301_241,"外部接口编码重复");
+
     // ========== 台账类型 ==========
     ErrorCode STANDINGBOOK_TYPE_NOT_EXISTS = new ErrorCode(1_001_202_000, "台账类型不存在");
     ErrorCode STANDINGBOOK_TYPE_EXITS_CHILDREN = new ErrorCode(1_001_202_001, "存在存在子台账类型，无法删除");
@@ -176,7 +182,7 @@ public interface ErrorCodeConstants {
     ErrorCode COP_SETTINGS_LIST_NOT_EXISTS = new ErrorCode(1_001_102_003, "COP参数list不存在");
     ErrorCode COP_SETTINGS_STANDINGBOOK_NOT_EMPTY = new ErrorCode(1_001_102_003, "COP公式参数关联的台账不能为空");
 
-    // ========== COP参数设置  ==========
+    // ========== 供应分析参数设置  ==========
 
     ErrorCode SUPPLY_ANALYSIS_STANDINGBOOK_REPEAT = new ErrorCode(1_001_102_010, "供应分析关联台账重复");
     ErrorCode SUPPLY_ANALYSIS_SETTINGS_LIST_NOT_EXISTS = new ErrorCode(1_001_102_011, "供应分析list不存在");

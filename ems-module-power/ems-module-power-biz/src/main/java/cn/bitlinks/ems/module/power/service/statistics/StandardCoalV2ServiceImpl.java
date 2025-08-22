@@ -332,24 +332,30 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                     .map(entry -> {
                         Long energyId = entry.getKey();
                         EnergyConfigurationDO energy = entry.getValue();
-                        Map<String, BigDecimal> timeCostMap = energyTimeStandardCoalMap.getOrDefault(energyId, Collections.emptyMap());
+                        Map<String, BigDecimal> timeCostMap = energyTimeStandardCoalMap.get(energyId);
 
-                        List<StandardCoalChartYData> dataList = xdata
-                                .stream()
-                                .map(time -> {
-                                    StandardCoalChartYData vo = new StandardCoalChartYData();
-                                    BigDecimal standardCoal = timeCostMap.getOrDefault(time, BigDecimal.ZERO);
-                                    vo.setStandardCoal(dealBigDecimalScale(standardCoal, DEFAULT_SCALE));
-                                    return vo;
-                                })
-                                .collect(Collectors.toList());
+                        if (CollUtil.isNotEmpty(timeCostMap)) {
+                            List<StandardCoalChartYData> dataList = xdata
+                                    .stream()
+                                    .map(time -> {
+                                        StandardCoalChartYData vo = new StandardCoalChartYData();
+                                        BigDecimal standardCoal = timeCostMap.get(time);
+                                        vo.setStandardCoal(dealBigDecimalScale(standardCoal, DEFAULT_SCALE));
+                                        return vo;
+                                    })
+                                    .collect(Collectors.toList());
 
-                        StatisticsChartYInfoV2VO<StandardCoalChartYData> yInfo = new StatisticsChartYInfoV2VO<>();
-                        yInfo.setId(energyId);
-                        yInfo.setName(energy.getEnergyName());
-                        yInfo.setData(dataList);
-                        return yInfo;
+                            StatisticsChartYInfoV2VO<StandardCoalChartYData> yInfo = new StatisticsChartYInfoV2VO<>();
+                            yInfo.setId(energyId);
+                            yInfo.setName(energy.getEnergyName());
+                            yInfo.setData(dataList);
+                            return yInfo;
+                        } else {
+                            return null;
+                        }
+
                     })
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
 
             resultV2VO.setYdata(ydata);
