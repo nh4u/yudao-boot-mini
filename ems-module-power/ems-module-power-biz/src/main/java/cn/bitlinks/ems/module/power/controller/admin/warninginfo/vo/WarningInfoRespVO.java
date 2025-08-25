@@ -51,6 +51,9 @@ public class WarningInfoRespVO {
     @ExcelProperty("告警内容")
     private String content;
 
+    @Schema(description = "处理意见（非必填，≤500字）")
+    private String handleOpinion;
+
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("创建时间")
     private LocalDateTime createTime;

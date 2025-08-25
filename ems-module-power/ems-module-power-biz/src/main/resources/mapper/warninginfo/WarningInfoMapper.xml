@@ -25,4 +25,18 @@
                     strategy_id
             ) AS latest ON pwi.strategy_id = latest.strategy_id AND pwi.warning_time = latest.max_warning_time
     </select>
+
+
+    <!-- 批量更新：与单条一致 —— 按 (strategy_id, warning_time) 成组更新 -->
+    <update id="updateStatusAndOpinionByGroups">
+        UPDATE power_warning_info
+        SET
+        status = #{status},
+        handle_opinion = #{handleOpinion}
+        WHERE (strategy_id, warning_time) IN
+        <foreach collection="groups" item="g" open="(" separator="," close=")">
+            (#{g.strategyId}, #{g.warningTime})
+        </foreach>
+    </update>
+
 </mapper>
