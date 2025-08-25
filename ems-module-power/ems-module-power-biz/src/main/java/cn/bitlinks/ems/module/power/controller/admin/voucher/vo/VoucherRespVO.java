@@ -1,12 +1,17 @@
 package cn.bitlinks.ems.module.power.controller.admin.voucher.vo;
 
+import cn.hutool.core.date.DatePattern;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 
 @Schema(description = "管理后台 - 凭证管理 Response VO")
 @Data
@@ -71,4 +76,17 @@ public class VoucherRespVO {
     @Schema(description = "凭证附件")
     private String appendix;
 
+    @Schema(description = "月份")
+    private String tempMonth;
+
+    @Schema(hidden = true)
+    @JsonIgnore
+    private LocalDate month;
+
+    public void setMonth(LocalDate month) {
+        this.month = month;
+        if (!Objects.isNull(month)) {
+            this.tempMonth = month.format(DateTimeFormatter.ofPattern(DatePattern.NORM_MONTH_PATTERN));
+        }
+    }
 }

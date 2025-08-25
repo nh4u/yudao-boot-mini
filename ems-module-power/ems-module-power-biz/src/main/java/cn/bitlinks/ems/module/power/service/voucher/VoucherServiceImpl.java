@@ -181,7 +181,7 @@ public class VoucherServiceImpl implements VoucherService {
     public List<VoucherDO> getVoucherByEnergy(Long energyId, LocalDateTime[] range) {
         return voucherMapper.selectList(new LambdaQueryWrapperX<VoucherDO>()
                 .eqIfPresent(VoucherDO::getEnergyId, energyId)
-                .inIfPresent(VoucherDO::getPurchaseTime, range));
+                .inIfPresent(VoucherDO::getMonth, range));
     }
 
 
