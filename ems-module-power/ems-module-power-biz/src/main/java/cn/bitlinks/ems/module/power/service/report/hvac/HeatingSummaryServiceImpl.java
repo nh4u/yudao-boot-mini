@@ -31,11 +31,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.REPORT_HVAC_HEAT;
-import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.REPORT_NATURAL_GAS;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ReportCacheConstants.HVAC_HEATING_SUMMARY_CHART;
 import static cn.bitlinks.ems.module.power.enums.ReportCacheConstants.HVAC_HEATING_SUMMARY_TABLE;
@@ -70,7 +68,6 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
     private BaseReportResultVO<HeatingSummaryInfo> defaultNullData(LinkedHashMap<String,String> itemMapping,List<String> tableHeader){
         BaseReportResultVO<HeatingSummaryInfo> resultVO = new BaseReportResultVO<>();
         resultVO.setHeader(tableHeader);
-        resultVO.setDataTime(LocalDateTime.now());
         List<HeatingSummaryInfo> infoList =new ArrayList<>();
         itemMapping.forEach((itemName,sbCode)->{
             HeatingSummaryInfo info = new HeatingSummaryInfo();
@@ -121,7 +118,7 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         //返回结果
         BaseReportResultVO<HeatingSummaryInfo> resultVO = new BaseReportResultVO<>();
         resultVO.setHeader(tableHeader);
-        resultVO.setReportDataList(heatingSummaryInfoList);
+
 
         // 无数据的填充0
         heatingSummaryInfoList.forEach(l -> {
@@ -137,7 +134,6 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
                     if (heatingSummaryInfoDataList == null) {
                         HeatingSummaryInfoData heatingSummaryInfoData = new HeatingSummaryInfoData();
                         heatingSummaryInfoData.setDate(date);
-                        heatingSummaryInfoData.setConsumption(BigDecimal.ZERO);
                         newList.add(heatingSummaryInfoData);
                     } else {
                         newList.add(heatingSummaryInfoDataList.get(0));
@@ -147,7 +143,7 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
                 l.setHeatingSummaryInfoDataList(newList);
             }
         });
-
+        resultVO.setReportDataList(heatingSummaryInfoList);
         resultVO.setDataTime(getLastTime(paramVO.getRange()[0], paramVO.getRange()[1], new ArrayList<>(sbMapping.values())));
         String jsonStr = JSONUtil.toJsonStr(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
@@ -204,7 +200,6 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
         resultVO.setXdata(xdata);
         if (Objects.isNull(targetDTO)) {
-            resultVO.setDataTime(LocalDateTime.now());
             resultVO.setYdata(Collections.emptyList());
             return resultVO;
         }
@@ -213,7 +208,6 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
         List<UsageCostData> usageCostDataList = usageCostService.getUsageByStandingboookIdGroup(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], Collections.singletonList(targetDTO.getStandingbookId()));
 
         if (CollUtil.isEmpty(usageCostDataList)) {
-            resultVO.setDataTime(LocalDateTime.now());
             resultVO.setYdata(Collections.emptyList());
             return resultVO;
         }
@@ -230,7 +224,6 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
                 ));
         Map<String, BigDecimal> timeCostMap = standingbookIdTimeCostMap.get(targetDTO.getStandingbookId());
         List<BigDecimal> ydataList = xdata.stream().map(time -> {
-            time = dealStrTime(time);
             return dealBigDecimalScale(timeCostMap.getOrDefault(time, BigDecimal.ZERO), scale);
         }).collect(Collectors.toList());
         resultVO.setYdata(ydataList);

@@ -19,7 +19,7 @@ import lombok.Data;
  */
 @Schema(description = "堆叠图Y轴数据")
 @Data
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class StatisticsChartYInfoV2VO<T> {
     /**
      * 元素id

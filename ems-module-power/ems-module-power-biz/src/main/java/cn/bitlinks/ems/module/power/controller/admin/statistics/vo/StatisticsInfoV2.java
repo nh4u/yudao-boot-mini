@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.controller.admin.statistics.vo;
 import java.math.BigDecimal;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,6 +15,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @Schema(description = "管理后台 - 用能统计结果信息 VO")
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class StatisticsInfoV2 extends StatisticsInfoBase{
 
         @Schema(description = "数据", example = "数据")

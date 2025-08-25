@@ -41,14 +41,22 @@ public interface StandingbookAttributeMapper extends BaseMapperX<StandingbookAtt
     List<Long> selectStandingbookIdByAttrCondition(@Param("children") Map<String, List<String>> children, @Param("sbIds") List<Long> sbIds);
 
     /**
-     * 根据编码和名称查询台账node
+     * 根据编码和名称查询实体计量器具node
      * @param sbCode
      * @param sbName
      * @param sbIds
      * @return
      */
     List<StandingBookTypeTreeRespVO> selectSbNodeByCodeAndName(@Param("sbCode")String sbCode, @Param("sbName")String sbName,@Param("sbIds") List<Long> sbIds);
-
+    /**
+     * 根据编码和名称查询重点设备node
+     * @param sbCode
+     * @param sbName
+     * @param sbIds
+     * @return
+     */
+    List<StandingBookTypeTreeRespVO> selectDeviceNodeByCodeAndName(@Param("sbCode")String sbCode, @Param("sbName")String sbName,@Param("sbIds") List<Long> sbIds);
+    
     /**
      * 查询全部台账的id、name、code
      * @return

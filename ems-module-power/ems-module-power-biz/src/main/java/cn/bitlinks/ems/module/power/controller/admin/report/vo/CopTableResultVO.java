@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.report.vo;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -21,6 +22,7 @@ public class CopTableResultVO<T> {
     /**
      * 统计信息
      */
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     private List<T> copMapList;
 
     /**

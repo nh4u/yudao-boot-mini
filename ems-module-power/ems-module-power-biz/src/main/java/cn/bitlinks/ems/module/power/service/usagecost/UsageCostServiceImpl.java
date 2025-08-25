@@ -71,6 +71,12 @@ public class UsageCostServiceImpl implements UsageCostService {
 
     @Override
     @TenantIgnore
+    public LocalDateTime getLastTime(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getLastTime(dateType, startDate, endDate, standingBookIds);
+    }
+
+    @Override
+    @TenantIgnore
     public LocalDateTime getLastTime(StatisticsParamV2VO paramVO, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
         return usageCostMapper.getLastTime(paramVO, startDate, endDate, standingBookIds);
     }
@@ -154,6 +160,21 @@ public class UsageCostServiceImpl implements UsageCostService {
     public List<UsageCostData> getStandingbookStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
         return usageCostMapper.getStandingbookStandardCoal(startDate, endDate, standingBookIds);
     }
+
+    /**
+     * 获取能源用量
+     * @param dateType
+     * @param startDate
+     * @param endDate
+     * @param standingBookIds
+     * @return
+     */
+    @Override
+    @TenantIgnore
+    public List<UsageCostData> getEnergyUsage(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getEnergyUsage(dateType, startDate, endDate, standingBookIds);
+    }
+
     /**
      * 按台账分组
      *

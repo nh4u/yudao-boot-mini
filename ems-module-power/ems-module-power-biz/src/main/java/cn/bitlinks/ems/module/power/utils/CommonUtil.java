@@ -82,12 +82,25 @@ public class CommonUtil {
 
         return headerList;
     }
+
     /**
      * 同比率计算（避免除零）
      */
     public static BigDecimal calculateYearOnYearRatio(BigDecimal now, BigDecimal previous) {
         if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0 || now == null) {
-            return BigDecimal.ZERO;
+            return null;
+        }
+        return now.subtract(previous)
+                .divide(previous, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100));
+    }
+
+    /**
+     * 定基比率计算（避免除零）
+     */
+    public static BigDecimal calculateBaseRatio(BigDecimal now, BigDecimal previous) {
+        if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0 || now == null) {
+            return null;
         }
         return now.subtract(previous)
                 .divide(previous, 4, RoundingMode.HALF_UP)
@@ -186,7 +199,7 @@ public class CommonUtil {
 
     }
 
-    public static  String getHeaderDesc(Integer unit, Integer flag, String prefix) {
+    public static String getHeaderDesc(Integer unit, Integer flag, String prefix) {
         if (flag == 1) {
             if (unit == 1) {
                 return prefix + COAT_UNIT1;
@@ -216,7 +229,7 @@ public class CommonUtil {
         if (now == null || total == null) {
             return null;
         }
-        BigDecimal proportion = BigDecimal.ZERO;
+        BigDecimal proportion = null;
         if (total.compareTo(BigDecimal.ZERO) != 0) {
             proportion = now.divide(total, 10, RoundingMode.HALF_UP)
                     .multiply(new BigDecimal(100))
@@ -227,6 +240,7 @@ public class CommonUtil {
 
     /**
      * 获得标签名称
+     *
      * @param label1
      * @param label2
      * @param label3
@@ -234,7 +248,7 @@ public class CommonUtil {
      * @param label5
      * @return
      */
-    public static  String getName(String label1, String label2, String label3, String label4, String label5) {
+    public static String getName(String label1, String label2, String label3, String label4, String label5) {
         if (CharSequenceUtil.isNotEmpty(label5) && !"/".equals(label5)) {
             return label5;
         }
@@ -251,5 +265,29 @@ public class CommonUtil {
             return label1;
         }
         return null;
+    }
+
+    /**
+     * BigDecimal除法，包含有效位
+     *
+     * @param num
+     * @param sum
+     * @param scale
+     * @return
+     */
+    public static BigDecimal divideWithScale(BigDecimal num, BigDecimal sum, Integer scale) {
+        BigDecimal result = BigDecimal.ZERO;
+
+        if (Objects.isNull(scale)) {
+            return result;
+        }
+
+        if (num == null || sum == null || sum.compareTo(BigDecimal.ZERO) == 0) {
+            return result;
+        }
+
+        result = sum.divide(num, scale, RoundingMode.HALF_UP);
+
+        return result;
     }
 }

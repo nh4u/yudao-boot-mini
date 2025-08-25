@@ -39,7 +39,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.dealStrTime;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
@@ -201,8 +200,6 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                     if (standardCoalInfoDataList == null) {
                         StandardCoalInfoData standardCoalInfoData = new StandardCoalInfoData();
                         standardCoalInfoData.setDate(date);
-                        standardCoalInfoData.setStandardCoal(BigDecimal.ZERO);
-                        standardCoalInfoData.setConsumption(BigDecimal.ZERO);
                         newList.add(standardCoalInfoData);
                     } else {
                         newList.add(standardCoalInfoDataList.get(0));
@@ -244,10 +241,10 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         String cacheKey = USAGE_STANDARD_COAL_CHART + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
-        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            log.info("缓存结果");
-            return JSONUtil.toBean(cacheRes, StatisticsChartResultV2VO.class);
-        }
+//        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
+//            log.info("缓存结果");
+//            return JSONUtil.toBean(cacheRes, StatisticsChartResultV2VO.class);
+//        }
 
         // 4.如果没有则去数据库查询
         StatisticsChartResultV2VO resultV2VO = new StatisticsChartResultV2VO();
@@ -275,8 +272,10 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 .collect(Collectors.toList());
 
         // 4.3.2.根据标签id查询
+        String topLabel = paramVO.getTopLabel();
+        String childLabels = paramVO.getChildLabels();
         List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService
-                .getStandingbookIdsByLabel(paramVO.getTopLabel(), paramVO.getChildLabels(), standingBookIdList);
+                .getStandingbookIdsByLabel(topLabel, childLabels);
 
         // 4.3.3.能源台账ids和标签台账ids是否有交集。如果有就取交集，如果没有则取能源台账ids
         if (CollUtil.isNotEmpty(standingbookIdsByLabel)) {
@@ -333,25 +332,42 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                     .map(entry -> {
                         Long energyId = entry.getKey();
                         EnergyConfigurationDO energy = entry.getValue();
-                        Map<String, BigDecimal> timeCostMap = energyTimeStandardCoalMap.getOrDefault(energyId, Collections.emptyMap());
+                        Map<String, BigDecimal> timeCostMap = energyTimeStandardCoalMap.get(energyId);
 
-                        List<StandardCoalChartYData> dataList = xdata
-                                .stream()
-                                .map(time -> {
-                                    time = dealStrTime(time);
-                                    StandardCoalChartYData vo = new StandardCoalChartYData();
-                                    BigDecimal standardCoal = timeCostMap.getOrDefault(time, BigDecimal.ZERO);
-                                    vo.setStandardCoal(dealBigDecimalScale(standardCoal, DEFAULT_SCALE));
-                                    return vo;
-                                })
-                                .collect(Collectors.toList());
+                        if (CollUtil.isNotEmpty(timeCostMap)) {
+                            List<StandardCoalChartYData> dataList = xdata
+                                    .stream()
+                                    .map(time -> {
+                                        StandardCoalChartYData vo = new StandardCoalChartYData();
+                                        BigDecimal standardCoal = timeCostMap.get(time);
 
-                        StatisticsChartYInfoV2VO<StandardCoalChartYData> yInfo = new StatisticsChartYInfoV2VO<>();
-                        yInfo.setId(energyId);
-                        yInfo.setName(energy.getEnergyName());
-                        yInfo.setData(dataList);
-                        return yInfo;
+                                        if (!Objects.isNull(standardCoal) && BigDecimal.ZERO.compareTo(standardCoal) != 0) {
+                                            vo.setStandardCoal(dealBigDecimalScale(standardCoal, DEFAULT_SCALE));
+                                        }
+                                        return vo;
+                                    })
+                                    .collect(Collectors.toList());
+
+                            List<BigDecimal> collect = dataList
+                                    .stream()
+                                    .map(StandardCoalChartYData::getStandardCoal)
+                                    .filter(Objects::nonNull)
+                                    .collect(Collectors.toList());
+
+                            if (CollUtil.isNotEmpty(collect)) {
+                                StatisticsChartYInfoV2VO<StandardCoalChartYData> yInfo = new StatisticsChartYInfoV2VO<>();
+                                yInfo.setId(energyId);
+                                yInfo.setName(energy.getEnergyName());
+                                yInfo.setData(dataList);
+                                return yInfo;
+                            } else {
+                                return null;
+                            }
+                        } else {
+                            return null;
+                        }
                     })
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
 
             resultV2VO.setYdata(ydata);
@@ -407,7 +423,6 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                 }
 
                 List<StandardCoalChartYData> ydata = xdata.stream().map(x -> {
-                    x = dealStrTime(x);
                     BigDecimal standardCoal = timeCostMap.getOrDefault(x, BigDecimal.ZERO);
                     StandardCoalChartYData vo = new StandardCoalChartYData();
                     vo.setStandardCoal(standardCoal.compareTo(BigDecimal.ZERO) > 0 ? dealBigDecimalScale(standardCoal, DEFAULT_SCALE) : BigDecimal.ZERO);
@@ -457,8 +472,7 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                     dataV2VO.setMin(dealBigDecimalScale(statsResult.getMin(), DEFAULT_SCALE));
                     dataV2VO.setSum(dealBigDecimalScale(statsResult.getSum(), DEFAULT_SCALE));
                     // substring 返回 endIndex-beginIndex哥字符 因为是[ )
-                    String subs = dealStrTime(s);
-                    List<UsageCostData> collect = dataList.stream().filter(u -> u.getTime().equals(subs)).collect(Collectors.toList());
+                    List<UsageCostData> collect = dataList.stream().filter(u -> u.getTime().equals(s)).collect(Collectors.toList());
                     if (CollUtil.isNotEmpty(collect)) {
                         dataV2VO.setStandardCoal(dealBigDecimalScale(collect.get(0).getTotalStandardCoalEquivalent(), DEFAULT_SCALE));
                     } else {

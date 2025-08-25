@@ -4,11 +4,11 @@ import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
 import cn.bitlinks.ems.framework.common.enums.FullIncrementEnum;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.calc.AggSplitUtils;
-import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataFiveMinuteApi;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelListResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelResultVO;
@@ -64,7 +64,8 @@ public class ExcelMeterDataProcessor {
     private SplitTaskDispatcher splitTaskDispatcher;
     @Autowired
     private StandingbookServiceImpl standingbookService;
-
+    @Resource
+    private MinuteAggregateDataFiveMinuteApi minuteAggregateDataFiveMinuteApi;
 
     public AcqDataExcelListResultVO process(InputStream file, String timeStartCell, String timeEndCell,
                                             String meterStartCell, String meterEndCell) throws IOException {
@@ -303,7 +304,8 @@ public class ExcelMeterDataProcessor {
                     if (i == 0) {
                         if (minuteAggDataSplitDTO != null && minuteAggDataSplitDTO.getStartDataDO() != null) {
                             MinuteAggregateDataDTO preDTO = minuteAggDataSplitDTO.getStartDataDO();
-                            curDTO.setIncrementalValue(AggSplitUtils.calculatePerMinuteIncrement(preDTO.getAggregateTime(), curDTO.getAggregateTime(), preDTO.getFullValue(), curDTO.getFullValue()));
+                            BigDecimal incr = AggSplitUtils.calculatePerMinuteIncrement(preDTO.getAggregateTime(), curDTO.getAggregateTime(), preDTO.getFullValue(), curDTO.getFullValue());
+                            curDTO.setIncrementalValue(incr.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : incr);
                             toAddAcqDataList.add(curDTO);
                             toAddNotAcqSplitDataList.add(new MinuteAggDataSplitDTO(preDTO, curDTO));
                         } else {
@@ -312,19 +314,22 @@ public class ExcelMeterDataProcessor {
                         }
                     } else if (i == times.size() - 1) {
                         MinuteAggregateDataDTO preDTO = toAddAcqDataList.get(i - 1);
-                        curDTO.setIncrementalValue(AggSplitUtils.calculatePerMinuteIncrement(times.get(i - 1), curTime, values.get(i - 1), values.get(i)));
+                        BigDecimal incr = AggSplitUtils.calculatePerMinuteIncrement(times.get(i - 1), curTime, values.get(i - 1), values.get(i));
+                        curDTO.setIncrementalValue(incr.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : incr);
                         toAddAcqDataList.add(curDTO);
                         toAddNotAcqSplitDataList.add(new MinuteAggDataSplitDTO(preDTO, curDTO));
 
                         if (minuteAggDataSplitDTO != null && minuteAggDataSplitDTO.getEndDataDO() != null) {
                             MinuteAggregateDataDTO lastDTO = minuteAggDataSplitDTO.getEndDataDO();
-                            lastDTO.setIncrementalValue(AggSplitUtils.calculatePerMinuteIncrement(curDTO.getAggregateTime(), lastDTO.getAggregateTime(), curDTO.getFullValue(), lastDTO.getFullValue()));
+                            BigDecimal incr2 = AggSplitUtils.calculatePerMinuteIncrement(curDTO.getAggregateTime(), lastDTO.getAggregateTime(), curDTO.getFullValue(), lastDTO.getFullValue());
+                            lastDTO.setIncrementalValue(incr2.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : incr);
                             toAddAcqDataList.add(lastDTO);
                             toAddNotAcqSplitDataList.add(new MinuteAggDataSplitDTO(curDTO, lastDTO));
                         }
                     } else {
                         MinuteAggregateDataDTO preDTO = toAddAcqDataList.get(i - 1);
-                        curDTO.setIncrementalValue(AggSplitUtils.calculatePerMinuteIncrement(times.get(i - 1), curTime, values.get(i - 1), values.get(i)));
+                        BigDecimal incr = AggSplitUtils.calculatePerMinuteIncrement(times.get(i - 1), curTime, values.get(i - 1), values.get(i));
+                        curDTO.setIncrementalValue(incr.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : incr);
                         toAddAcqDataList.add(curDTO);
                         toAddNotAcqSplitDataList.add(new MinuteAggDataSplitDTO(preDTO, curDTO));
                     }
@@ -359,7 +364,7 @@ public class ExcelMeterDataProcessor {
 
         executor.shutdown();
 
-        minuteAggregateDataApi.insertDataBatch(toAddAllAcqList);
+        minuteAggregateDataFiveMinuteApi.insertDataBatch(toAddAllAcqList);
         additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
         splitTaskDispatcher.dispatchSplitTaskBatch(toAddAllNotAcqSplitList);
 

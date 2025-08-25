@@ -21,7 +21,7 @@ public interface SupplyWaterTmpSettingsMapper extends BaseMapperX<SupplyWaterTmp
         return selectPage(reqVO, new LambdaQueryWrapperX<SupplyWaterTmpSettingsDO>()
                 .eqIfPresent(SupplyWaterTmpSettingsDO::getSystem, reqVO.getSystem())
                 .eqIfPresent(SupplyWaterTmpSettingsDO::getStandingbookId, reqVO.getStandingbookId())
-                .orderByAsc(SupplyWaterTmpSettingsDO::getCreateTime));
+                .orderByAsc(SupplyWaterTmpSettingsDO::getId));
     }
 
     /**
@@ -29,11 +29,11 @@ public interface SupplyWaterTmpSettingsMapper extends BaseMapperX<SupplyWaterTmp
      *
      * @return
      */
-    @Select("select distinct `system` from power_supply_water_tmp_settings where  deleted = 0")
-    List<String> getSystem();
+    @Select("select distinct `system`,code from power_supply_water_tmp_settings where  deleted = 0")
+    List<SupplyWaterTmpSettingsDO> getSystem();
 
     /**
-     * 根据copType获取所有cop参数数据
+     * 根据系统获取所有供水温度参数数据
      *
      * @param reqVO
      * @return
@@ -41,6 +41,31 @@ public interface SupplyWaterTmpSettingsMapper extends BaseMapperX<SupplyWaterTmp
     default List<SupplyWaterTmpSettingsDO> selectList(SupplyWaterTmpReportParamVO reqVO) {
         return selectList(new LambdaQueryWrapperX<SupplyWaterTmpSettingsDO>()
                 .inIfPresent(SupplyWaterTmpSettingsDO::getSystem, reqVO.getSystem())
-                .orderByAsc(SupplyWaterTmpSettingsDO::getCreateTime));
+                .inIfPresent(SupplyWaterTmpSettingsDO::getCode, reqVO.getCodes())
+                .orderByAsc(SupplyWaterTmpSettingsDO::getId));
+    }
+
+    /**
+     * 根据系统获取对应供水温度参数数据
+     *
+     * @param system
+     * @return
+     */
+    default SupplyWaterTmpSettingsDO selectOne(String system) {
+        return selectOne(new LambdaQueryWrapperX<SupplyWaterTmpSettingsDO>()
+                .eq(SupplyWaterTmpSettingsDO::getSystem, system)
+                .orderByAsc(SupplyWaterTmpSettingsDO::getId).last("limit 1"), false);
+    }
+
+    /**
+     * 根据code获取对应供水温度参数数据
+     *
+     * @param code
+     * @return
+     */
+    default SupplyWaterTmpSettingsDO selectOneByCode(String code) {
+        return selectOne(new LambdaQueryWrapperX<SupplyWaterTmpSettingsDO>()
+                .eq(SupplyWaterTmpSettingsDO::getCode, code)
+                .orderByAsc(SupplyWaterTmpSettingsDO::getId).last("limit 1"), false);
     }
 }

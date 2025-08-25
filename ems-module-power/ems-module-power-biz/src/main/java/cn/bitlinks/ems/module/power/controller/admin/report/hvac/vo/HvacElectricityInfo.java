@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,6 +11,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @Schema(description = "管理后台 - 暖通电量信息 VO")
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class HvacElectricityInfo {
     @Schema(description = "数据", example = "数据")
     private List<HvacElectricityInfoData> hvacElectricityInfoDataList;

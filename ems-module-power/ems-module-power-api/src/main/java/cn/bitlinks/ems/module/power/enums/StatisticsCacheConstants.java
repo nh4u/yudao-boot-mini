@@ -46,12 +46,19 @@ public class StatisticsCacheConstants {
 
     public static final String COMPARISON_BASE_CHART_COAL = "statistics:base:discount:chart:coal:";
 
+    public static final String DEVIATION_CHART = "statistics:usage:deviation:chart:";
+
+
     // 个性化报表 缓存key
     /**
      * 电费统计
      */
     public static final String USAGE_FEE_TABLE = "report:usage:fee:table:";
     public static final String USAGE_FEE_CHART = "report:usage:fee:chart:";
+    /**
+     * 生产源耗表
+     */
+    public static final String  USAGE_PRODUCTION_CONSUMPTION_TABLE = "report:usage:productionConsumption:table:";
 
     /**
      * 水科

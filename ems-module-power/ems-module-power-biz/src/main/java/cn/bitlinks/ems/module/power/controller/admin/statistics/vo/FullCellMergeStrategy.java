@@ -188,7 +188,7 @@ public class FullCellMergeStrategy extends AbstractMergeStrategy {
                         if (aboveMergeColumn[0] == startCol && aboveMergeColumn[1] == curColumnIndex) {
                             startRow = aboveRowIndex;
                             // 移除原有的单元格
-                            this.removeCellRangeAddress(sheet, aboveRowIndex, curColumnIndex);
+//                            this.removeCellRangeAddress(sheet, aboveRowIndex, curColumnIndex);
                         }
                     } else {
                         startRow = aboveRowIndex;
@@ -196,8 +196,10 @@ public class FullCellMergeStrategy extends AbstractMergeStrategy {
                 } else {
                     startRow = aboveRowIndex;
                     // 移除原有的单元格
-                    this.removeCellRangeAddress(sheet, aboveRowIndex, curColumnIndex);
+//                    this.removeCellRangeAddress(sheet, aboveRowIndex, curColumnIndex);
                 }
+                // 移除原有的单元格 不论匹配不匹配上 都先删除一遍，因为只要有相同就要去删除包含的合并单元格
+                this.removeCellRangeAddress(sheet, aboveRowIndex, curColumnIndex);
             } else {
                 int leftColumnIndex = curColumnIndex - 1;
                 if (leftColumnIndex < 0) {
@@ -224,7 +226,13 @@ public class FullCellMergeStrategy extends AbstractMergeStrategy {
         if (startRow != curRowIndex || startCol != curColumnIndex) {
             // 添加合并单元格
             CellRangeAddress cellAddresses = new CellRangeAddress(startRow, curRowIndex, startCol, curColumnIndex);
-            sheet.addMergedRegion(cellAddresses);
+
+            try {
+                sheet.addMergedRegion(cellAddresses);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
         }
     }
 }

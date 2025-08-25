@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.statistics.vo;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -8,6 +9,7 @@ import java.util.List;
 
 @Data
 @Schema(description = "定基比统计项")
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class BaseItemVO extends StatisticsInfoBase {
 
     @Schema(description = "每日同比详情列表")

@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.Consu
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsInfo;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.FullCellMergeStrategy;
 import cn.bitlinks.ems.module.power.service.report.electricity.ConsumptionStatisticsService;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.write.metadata.style.WriteCellStyle;
@@ -65,32 +66,13 @@ public class ConsumptionStatisticsController {
     @Operation(summary = "导出用电量统计表")
     @ApiAccessLog(operateType = EXPORT)
     public void exportConsumptionStatisticsTable(@Valid @RequestBody ConsumptionStatisticsParamVO paramVO,
-                                         HttpServletResponse response) throws IOException {
+                                                 HttpServletResponse response) throws IOException {
         paramVO.setQueryType(QueryDimensionEnum.OVERALL_REVIEW.getCode());
         String childLabels = paramVO.getChildLabels();
         Integer labelDeep = getLabelDeep(childLabels);
-        Integer mergeIndex = 0;
+        Integer mergeIndex = labelDeep - 1;
         // 文件名字处理
-        Integer queryType = paramVO.getQueryType();
-        String filename = "";
-        switch (queryType) {
-            case 0:
-                filename = CONSUMPTION_STATISTICS_ALL + XLSX;
-                mergeIndex = labelDeep;
-                break;
-            case 1:
-                filename = CONSUMPTION_STATISTICS_ENERGY + XLSX;
-                // 能源不需要合并
-                mergeIndex = 0;
-                break;
-            case 2:
-                filename = CONSUMPTION_STATISTICS_LABEL + XLSX;
-                // 标签没有能源
-                mergeIndex = labelDeep - 1;
-                break;
-            default:
-                filename = DEFAULT + XLSX;
-        }
+        String filename = "用电量统计表" + XLSX;
 
         List<List<String>> header = consumptionStatisticsService.getExcelHeader(paramVO);
         List<List<Object>> dataList = consumptionStatisticsService.getExcelData(paramVO);
@@ -99,6 +81,8 @@ public class ConsumptionStatisticsController {
         // 放在 write前配置response才会生效，放在后面不生效
         // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
+        response.addHeader("Access-Control-Expose-Headers", "File-Name");
+        response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
         response.setContentType("application/vnd.ms-excel;charset=UTF-8");
 
         WriteCellStyle headerStyle = new WriteCellStyle();
@@ -132,14 +116,14 @@ public class ConsumptionStatisticsController {
 
         EasyExcelFactory.write(response.getOutputStream())
                 .head(header)
-                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(15))
+                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
                 .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
                 // 设置表头行高 30，内容行高 20
                 .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))
                 // 自适应表头宽度
 //                .registerWriteHandler(new MatchTitleWidthStyleStrategy())
                 // 由于column索引从0开始 返回来的labelDeep是从1开始，又由于有个能源列，所以合并索引 正好相抵，直接使用labelDeep即可
-                //.registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
+                .registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
                 .sheet("数据").doWrite(dataList);
     }
 }

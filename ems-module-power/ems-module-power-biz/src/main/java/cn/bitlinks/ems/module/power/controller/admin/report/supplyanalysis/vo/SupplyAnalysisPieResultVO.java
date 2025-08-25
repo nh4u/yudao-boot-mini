@@ -1,5 +1,6 @@
-package cn.bitlinks.ems.module.power.controller.admin.statistics.vo;
+package cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo;
 
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.PieChartVO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

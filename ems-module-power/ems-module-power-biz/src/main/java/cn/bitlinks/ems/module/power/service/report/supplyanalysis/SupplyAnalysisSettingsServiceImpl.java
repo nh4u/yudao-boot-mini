@@ -4,13 +4,8 @@ import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.SupplyAnalysisReportParamVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.SupplyAnalysisSettingsPageReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.SupplyAnalysisSettingsSaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.SupplyAnalysisStructureInfo;
+import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.SupplyAnalysisPieResultVO;
-import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.report.supplyanalysis.SupplyAnalysisSettingsDO;
 import cn.bitlinks.ems.module.power.dal.mysql.report.supplyanalysis.SupplyAnalysisSettingsMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
@@ -24,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
-import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -138,7 +132,7 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
 
         // 校验系统 没值就返空
         List<String> system1 = paramVO.getSystem();
-        if (CollUtil.isEmpty(system1)){
+        if (CollUtil.isEmpty(system1)) {
             return resultVO;
         }
 
@@ -187,15 +181,15 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
                         // 如果为空自动填充/
                         tableHeader.forEach(date -> {
                             StructureInfoData structureInfoData = new StructureInfoData();
-                            structureInfoData.setNum(BigDecimal.ZERO);
-                            structureInfoData.setProportion(BigDecimal.ZERO);
+                            structureInfoData.setNum(null);
+                            structureInfoData.setProportion(null);
                             structureInfoData.setDate(date);
 
                             structureInfoDataList.add(structureInfoData);
                         });
                         info.setStructureInfoDataList(structureInfoDataList);
-                        info.setSumNum(BigDecimal.ZERO);
-                        info.setSumProportion(BigDecimal.ZERO);
+                        info.setSumNum(null);
+                        info.setSumProportion(null);
 
                     } else {
                         // 如何不空 填充对应数据
@@ -207,8 +201,8 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
                             UsageCostData usageCostData = usageCostMap.get(date);
                             if (usageCostData == null) {
                                 StructureInfoData structureInfoData = new StructureInfoData();
-                                structureInfoData.setNum(BigDecimal.ZERO);
-                                structureInfoData.setProportion(BigDecimal.ZERO);
+                                structureInfoData.setNum(null);
+                                structureInfoData.setProportion(null);
                                 structureInfoData.setDate(date);
 
                                 structureInfoDataList.add(structureInfoData);
@@ -229,7 +223,9 @@ public class SupplyAnalysisSettingsServiceImpl implements SupplyAnalysisSettings
                     BigDecimal sumNum = structureInfoDataList
                             .stream()
                             .map(StructureInfoData::getNum)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                            .filter(Objects::nonNull)
+                            .reduce(BigDecimal::add)
+                            .orElse(null);
 
                     info.setStructureInfoDataList(structureInfoDataList);
 

@@ -78,4 +78,12 @@ public interface StandingbookAttributeService {
      * @return
      */
     List<StandingBookTypeTreeRespVO> getStandingbookByCodeAndName(String sbCode, String sbName, List<Long> sbIds);
+    /**
+     * 根据编码和名称模糊查询所有重点设备
+     * @param sbCode
+     * @param sbName
+     * @param sbIds
+     * @return
+     */
+    List<StandingBookTypeTreeRespVO> selectDeviceNodeByCodeAndName(String sbCode, String sbName, List<Long> sbIds);
 }

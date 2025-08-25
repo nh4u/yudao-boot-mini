@@ -2,9 +2,7 @@ package cn.bitlinks.ems.module.power.controller.admin.report.gas;
 
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.gas.vo.*;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.FullCellMergeStrategy;
 import cn.bitlinks.ems.module.power.service.report.gas.GasStatisticsService;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.write.metadata.style.WriteCellStyle;
@@ -29,9 +27,6 @@ import java.util.List;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
-import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.getLabelDeep;
-
 
 @Tag(name = "管理后台 - 个性化报表[气]-气化科报表")
 @RestController
@@ -41,7 +36,7 @@ public class GasStatisticsController {
     @Resource
     private GasStatisticsService gasStatisticsService;
 
-    @PostMapping("/getPowerTankSettings")
+    @GetMapping("/getPowerTankSettings")
     @Operation(summary = "获得储罐液位设置列表")
     public CommonResult<List<PowerTankSettingsRespVO>> getPowerTankSettings() {
         return success(gasStatisticsService.getPowerTankSettings());
@@ -53,7 +48,7 @@ public class GasStatisticsController {
         return success(gasStatisticsService.savePowerTankSettings(paramVO));
     }
 
-    @PostMapping("/getEnergyStatisticsItems")
+    @GetMapping("/getEnergyStatisticsItems")
     @Operation(summary = "获得能源统计项列表")
     public CommonResult<List<EnergyStatisticsItemInfoRespVO>> getEnergyStatisticsItems() {
         return success(gasStatisticsService.getEnergyStatisticsItems());
@@ -69,82 +64,74 @@ public class GasStatisticsController {
     @PostMapping("/exportGasStatisticsTable")
     @Operation(summary = "导出气化科报表")
     @ApiAccessLog(operateType = EXPORT)
-    public void exportGasStatisticsTable(@Valid @RequestBody ConsumptionStatisticsParamVO paramVO,
+    public void exportGasStatisticsTable(@Valid @RequestBody GasStatisticsParamVO paramVO,
                                          HttpServletResponse response) throws IOException {
 
-        String childLabels = paramVO.getChildLabels();
-        Integer labelDeep = getLabelDeep(childLabels);
-        Integer mergeIndex = 0;
-        // 文件名字处理
-        Integer queryType = paramVO.getQueryType();
-        String filename = "";
-        switch (queryType) {
-            case 0:
-                filename = CONSUMPTION_STATISTICS_ALL + XLSX;
-                mergeIndex = labelDeep;
-                break;
-            case 1:
-                filename = CONSUMPTION_STATISTICS_ENERGY + XLSX;
-                // 能源不需要合并
-                mergeIndex = 0;
-                break;
-            case 2:
-                filename = CONSUMPTION_STATISTICS_LABEL + XLSX;
-                // 标签没有能源
-                mergeIndex = labelDeep - 1;
-                break;
-            default:
-                filename = DEFAULT + XLSX;
-        }
+        // 设置导出文件名
+        String filename = "气化科报表.xlsx";
 
+        // 获取Excel表头数据
+        // 表头格式：
+        // 第一行：表单名称（气化科报表）- 需要合并所有列
+        // 第二行：统计周期（yyyy-MM-dd~yyyy-MM-dd）- 需要合并所有列
+        // 第三行：能源统计项、计量器具编号、日期列表
         List<List<String>> header = gasStatisticsService.getExcelHeader(paramVO);
+
+        // 获取Excel数据内容
+        // 数据格式：每行包含能源统计项、计量器具编号、各时间点的数值
         List<List<Object>> dataList = gasStatisticsService.getExcelData(paramVO);
 
-
-        // 放在 write前配置response才会生效，放在后面不生效
-        // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
+        // 配置HTTP响应头，设置文件下载
+        // 必须在write之前配置response才会生效，放在后面不生效
+        // 设置Content-Disposition头，指定文件名为附件下载
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
+        // 设置Content-Type为Excel文件类型
         response.setContentType("application/vnd.ms-excel;charset=UTF-8");
+        // 添加跨域访问头，允许前端获取文件名
+        response.addHeader("Access-Control-Expose-Headers", "File-Name");
+        response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
 
+        // 创建表头样式
         WriteCellStyle headerStyle = new WriteCellStyle();
-        // 设置水平居中对齐
+        // 设置水平居中对齐，使表头文字居中显示
         headerStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
-        // 设置垂直居中对齐
+        // 设置垂直居中对齐，使表头文字垂直居中
         headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-        // 设置背景色
-//        headerStyle.setFillBackgroundColor(IndexedColors.ROYAL_BLUE.getIndex());
-        // 设置字体
-//        WriteFont headerFont = new WriteFont();
-//        headerFont.setFontHeightInPoints((short) 10);
-//        headerFont.setColor(IndexedColors.WHITE.getIndex());
-//        headerStyle.setWriteFont(headerFont);
+        // 可以设置背景色，目前注释掉保持默认
+        // headerStyle.setFillBackgroundColor(IndexedColors.ROYAL_BLUE.getIndex());
+        // 可以设置字体样式，目前注释掉保持默认
+        // WriteFont headerFont = new WriteFont();
+        // headerFont.setFontHeightInPoints((short) 10);
+        // headerFont.setColor(IndexedColors.WHITE.getIndex());
+        // headerStyle.setWriteFont(headerFont);
 
-
-        // 创建一个新的 WriteCellStyle 对象
+        // 创建内容样式
         WriteCellStyle contentStyle = new WriteCellStyle();
-
-        // 设置水平居中对齐
+        // 设置水平居中对齐，使数据内容居中显示
         contentStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
-
-        // 设置垂直居中对齐
+        // 设置垂直居中对齐，使数据内容垂直居中
         contentStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        // 设置边框样式，为所有单元格添加细边框
+        contentStyle.setBorderLeft(BorderStyle.THIN);    // 左边框
+        contentStyle.setBorderTop(BorderStyle.THIN);     // 上边框
+        contentStyle.setBorderRight(BorderStyle.THIN);   // 右边框
+        contentStyle.setBorderBottom(BorderStyle.THIN);  // 下边框
 
-        // 设置边框
-        contentStyle.setBorderLeft(BorderStyle.THIN);
-        contentStyle.setBorderTop(BorderStyle.THIN);
-        contentStyle.setBorderRight(BorderStyle.THIN);
-        contentStyle.setBorderBottom(BorderStyle.THIN);
-
+        // 使用EasyExcel写入Excel文件
         EasyExcelFactory.write(response.getOutputStream())
+                // 设置表头数据
                 .head(header)
-                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(15))
+                // 注册列宽策略，设置每列宽度为15个字符
+                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
+                // 注册单元格样式策略，应用表头和内容的样式
                 .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
-                // 设置表头行高 30，内容行高 20
+                // 注册行高策略，设置表头行高为15，内容行高为15
                 .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))
-                // 自适应表头宽度
-//                .registerWriteHandler(new MatchTitleWidthStyleStrategy())
-                // 由于column索引从0开始 返回来的labelDeep是从1开始，又由于有个能源列，所以合并索引 正好相抵，直接使用labelDeep即可
-                .registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
-                .sheet("数据").doWrite(dataList);
+                // 可以注册自适应表头宽度策略，目前注释掉
+                // .registerWriteHandler(new MatchTitleWidthStyleStrategy())
+                // 设置工作表名称为"数据"
+                .sheet("数据")
+                // 执行写入操作，将数据写入Excel文件
+                .doWrite(dataList);
     }
 }

@@ -32,6 +32,11 @@ public interface UsageCostMapper {
                                 @Param("startDate") LocalDateTime startDate,
                                 @Param("endDate") LocalDateTime endDate,
                                 @Param("standingBookIds") List<Long> standingBookIds);
+
+    LocalDateTime getLastTime(@Param("dateType") Integer dateType,
+                              @Param("startDate") LocalDateTime startDate,
+                              @Param("endDate") LocalDateTime endDate,
+                              @Param("standingBookIds") List<Long> standingBookIds);
     List<UsageCostData> getDataList(@Param("startDate") LocalDateTime startDate,
                                     @Param("endDate") LocalDateTime endDate,
                                     @Param("standingBookIds") List<Long> standingBookIds);
@@ -76,4 +81,18 @@ public interface UsageCostMapper {
                                                     @Param("startDate")LocalDateTime startDate,
                                                   @Param("endDate")LocalDateTime endDate,
                                                   @Param("standingBookIds")List<Long> standingBookIds);
+
+    /**
+     *  获取能源用量
+     *
+     * @param dateType
+     * @param startDate
+     * @param endDate
+     * @param standingBookIds
+     * @return
+     */
+    List<UsageCostData> getEnergyUsage(@Param("dateType") Integer dateType,
+                                        @Param("startDate") LocalDateTime startDate,
+                                        @Param("endDate") LocalDateTime endDate,
+                                        @Param("standingBookIds") List<Long> standingBookIds);
 }

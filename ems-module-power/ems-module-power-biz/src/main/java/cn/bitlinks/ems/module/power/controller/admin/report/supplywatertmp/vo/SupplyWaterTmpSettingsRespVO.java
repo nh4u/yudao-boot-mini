@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import javax.validation.constraints.NotEmpty;
+import java.math.BigDecimal;
 
 /**
  * @author liumingqiang
@@ -17,6 +18,9 @@ public class SupplyWaterTmpSettingsRespVO {
     @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "12042")
     private Long id;
 
+    @Schema(description = "标识")
+    private String code;
+
     @Schema(description = "系统")
     @NotEmpty(message = "系统不能为空")
     private String system;
@@ -28,10 +32,10 @@ public class SupplyWaterTmpSettingsRespVO {
     private String energyParamName;
 
     @Schema(description = "上限")
-    private Integer max;
+    private BigDecimal max;
 
     @Schema(description = "下限")
-    private Integer min;
+    private BigDecimal min;
 
 
 }

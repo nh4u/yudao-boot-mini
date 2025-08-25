@@ -32,6 +32,10 @@ public interface UsageCostService {
                                 LocalDateTime endDate,
                                 List<Long> standingBookIds);
 
+    LocalDateTime getLastTime(Integer dateType,
+                              LocalDateTime startDate,
+                              LocalDateTime endDate,
+                              List<Long> standingBookIds);
     LocalDateTime getLastTime(StatisticsParamV2VO paramVO,
                               LocalDateTime startDate,
                               LocalDateTime endDate,
@@ -56,6 +60,8 @@ public interface UsageCostService {
     List<UsageCostData> getEnergyStandardCoalByEnergyIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds);
 
     List<UsageCostData> getStandingbookStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
+
+    List<UsageCostData> getEnergyUsage(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
 
     /**
      * 台账分组计算用量

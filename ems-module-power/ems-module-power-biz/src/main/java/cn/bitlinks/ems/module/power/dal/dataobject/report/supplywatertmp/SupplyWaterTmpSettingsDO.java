@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 /**
  * 供应分设置析 DO
  *
@@ -28,6 +30,10 @@ public class SupplyWaterTmpSettingsDO extends BaseDO {
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
+     * 标识
+     */
+    private String code;
+    /**
      * 系统
      */
     private String system;
@@ -46,9 +52,9 @@ public class SupplyWaterTmpSettingsDO extends BaseDO {
     /**
      * 上限
      */
-    private Integer max;
+    private BigDecimal max;
     /**
      * 下限
      */
-    private Integer min;
+    private BigDecimal min;
 }

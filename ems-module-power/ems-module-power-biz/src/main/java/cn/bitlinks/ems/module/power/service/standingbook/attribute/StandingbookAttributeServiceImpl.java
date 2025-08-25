@@ -419,5 +419,10 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
         return standingbookAttributeMapper.selectSbNodeByCodeAndName(sbCode, sbName, sbIds);
     }
 
+    @Override
+    public List<StandingBookTypeTreeRespVO> selectDeviceNodeByCodeAndName(String sbCode, String sbName, List<Long> sbIds) {
+        return standingbookAttributeMapper.selectDeviceNodeByCodeAndName(sbCode, sbName, sbIds);
+    }
+
 
 }

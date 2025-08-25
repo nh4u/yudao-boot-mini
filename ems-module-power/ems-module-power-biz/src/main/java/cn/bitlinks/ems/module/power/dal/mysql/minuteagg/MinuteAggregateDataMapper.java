@@ -1,7 +1,9 @@
 package cn.bitlinks.ems.module.power.dal.mysql.minuteagg;
 
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.MinuteAggDataDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.SupplyWaterTmpMinuteAggData;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -72,9 +74,49 @@ public interface MinuteAggregateDataMapper {
      * @return
      */
     @TenantIgnore
-    List<MinuteAggregateDataDO> getTmpRangeDataSteady(@Param("standingbookIds") List<Long> standingbookIds,
-                                                      @Param("paramCodes") List<String> paramCodes,
-                                                      @Param("starTime") LocalDateTime starTime,
-                                                      @Param("endTime") LocalDateTime endTime);
+    List<SupplyWaterTmpMinuteAggData> getTmpRangeDataSteady(@Param("standingbookIds") List<Long> standingbookIds,
+                                                            @Param("paramCodes") List<String> paramCodes,
+                                                            @Param("starTime") LocalDateTime starTime,
+                                                            @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 批量查询最后一分钟数据 - 性能优化版本
+     *
+     * @param standingbookIds 台账ID列表
+     * @param paramCodes      参数编码列表
+     * @param startTime       开始时间
+     * @param endTime         结束时间
+     * @return 分钟聚合数据列表
+     */
+    @TenantIgnore
+    List<MinuteAggregateDataDO> selectLastMinuteDataByDateBatch(
+            @Param("standingbookIds") List<Long> standingbookIds,
+            @Param("paramCodes") List<String> paramCodes,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 批量查询增量数据之和 - 性能优化版本
+     *
+     * @param standingbookIds 台账ID列表
+     * @param paramCodes      参数编码列表
+     * @param startTime       开始时间
+     * @param endTime         结束时间
+     * @return 分钟聚合数据列表（已聚合）
+     */
+    @TenantIgnore
+    List<MinuteAggregateDataDO> selectIncrementalSumByDateBatch(
+            @Param("standingbookIds") List<Long> standingbookIds,
+            @Param("paramCodes") List<String> paramCodes,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime);
+    @TenantIgnore
+    LocalDateTime getLastTime(@Param("standingbookIds") List<Long> standingbookIds,
+                              @Param("paramCodes") List<String> paramCodes,
+                              @Param("starTime") LocalDateTime starTime,
+                              @Param("endTime") LocalDateTime endTime);
+    @TenantIgnore
+    List<MinuteAggDataDTO> getMaxDataGpByDateType(@Param("standingbookIds")List<Long> standingbookIds, @Param("paramCodes") List<String> paramCodes, @Param("dateType") Integer dateType,
+                                                  @Param("starTime")LocalDateTime starTime, @Param("endTime") LocalDateTime endTime);
 }
 

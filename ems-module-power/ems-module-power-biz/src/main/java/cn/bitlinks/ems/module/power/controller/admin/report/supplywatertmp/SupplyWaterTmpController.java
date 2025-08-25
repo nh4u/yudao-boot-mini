@@ -3,18 +3,13 @@ package cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp;
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import cn.bitlinks.ems.module.power.controller.admin.report.supplyanalysis.vo.SupplyAnalysisReportParamVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.SupplyWaterTmpReportParamVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.SupplyWaterTmpSettingsPageReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.SupplyWaterTmpSettingsRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.SupplyWaterTmpSettingsSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.supplywatertmp.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.FullCellMergeStrategy;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.SupplyAnalysisPieResultVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.report.supplywatertmp.SupplyWaterTmpSettingsDO;
 import cn.bitlinks.ems.module.power.service.report.supplywatertmp.SupplyWaterTmpSettingsService;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.write.metadata.style.WriteCellStyle;
+import com.alibaba.excel.write.metadata.style.WriteFont;
 import com.alibaba.excel.write.style.HorizontalCellStyleStrategy;
 import com.alibaba.excel.write.style.column.SimpleColumnWidthStyleStrategy;
 import com.alibaba.excel.write.style.row.SimpleRowHeightStyleStrategy;
@@ -30,6 +25,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -46,7 +42,7 @@ import static cn.bitlinks.ems.module.power.enums.ExportConstants.XLSX;
  * @Date 2025/08/05 19:23
  **/
 
-@Tag(name = "管理后台 - 供水温度报表")
+@Tag(name = "管理后台 - 个性化报表[暖通]-供水温度报表")
 @RestController
 @RequestMapping("/power/supplyWaterTmp")
 @Validated
@@ -75,28 +71,28 @@ public class SupplyWaterTmpController {
     @GetMapping("/getSystem")
     @Operation(summary = "获得供水温度系统")
     //@PreAuthorize("@ss.hasPermission('power:power_supply_water_tmp_settings:query')")
-    public CommonResult<List<String>> getSystem() {
-        List<String> list = supplyWaterTmpSettingsService.getSystem();
-        return success(list);
+    public CommonResult<List<SupplyWaterTmpSettingsRespVO>> getSystem() {
+        List<SupplyWaterTmpSettingsDO> list = supplyWaterTmpSettingsService.getSystem();
+        return success(BeanUtils.toBean(list, SupplyWaterTmpSettingsRespVO.class));
     }
 
 
-    @PostMapping("/supplyAnalysisTable")
+    @PostMapping("/supplyWaterTmpTable")
     @Operation(summary = "供水温度表")
-    public CommonResult<StatisticsResultV2VO> supplyAnalysisTable(@Valid @RequestBody SupplyWaterTmpReportParamVO paramVO) {
-        return success(supplyWaterTmpSettingsService.supplyAnalysisTable(paramVO));
+    public CommonResult<SupplyWaterTmpTableResultVO> supplyWaterTmpTable(@Valid @RequestBody SupplyWaterTmpReportParamVO paramVO) {
+        return success(supplyWaterTmpSettingsService.supplyWaterTmpTable(paramVO));
     }
 
-    @PostMapping("/supplyAnalysisChart")
+    @PostMapping("/supplyWaterTmpChart")
     @Operation(summary = "供水温度图")
-    public CommonResult<SupplyAnalysisPieResultVO> supplyAnalysisChart(@Valid @RequestBody SupplyWaterTmpReportParamVO paramVO) {
-        return success(supplyWaterTmpSettingsService.supplyAnalysisChart(paramVO));
+    public CommonResult<SupplyWaterTmpChartResultVO> supplyWaterTmpChart(@Valid @RequestBody SupplyWaterTmpReportParamVO paramVO) {
+        return success(supplyWaterTmpSettingsService.supplyWaterTmpChart(paramVO));
     }
 
-    @PostMapping("/exportSupplyAnalysisTable")
+    @PostMapping("/exportSupplyWaterTmpTable")
     @Operation(summary = "导出供水温度表")
     @ApiAccessLog(operateType = EXPORT)
-    public void exportSupplyAnalysisTable(@Valid @RequestBody SupplyWaterTmpReportParamVO paramVO,
+    public void exportSupplyWaterTmpTable(@Valid @RequestBody SupplyWaterTmpReportParamVO paramVO,
                                           HttpServletResponse response) throws IOException {
 
 
@@ -110,6 +106,8 @@ public class SupplyWaterTmpController {
         // 放在 write前配置response才会生效，放在后面不生效
         // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
+        response.addHeader("Access-Control-Expose-Headers", "File-Name");
+        response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
         response.setContentType("application/vnd.ms-excel;charset=UTF-8");
 
         WriteCellStyle headerStyle = new WriteCellStyle();
@@ -121,7 +119,7 @@ public class SupplyWaterTmpController {
 //        headerStyle.setFillBackgroundColor(IndexedColors.ROYAL_BLUE.getIndex());
         // 设置字体
 //        WriteFont headerFont = new WriteFont();
-//        headerFont.setFontHeightInPoints((short) 10);
+//        headerFont.setFontHeightInPoints((short) 8);
 //        headerFont.setColor(IndexedColors.WHITE.getIndex());
 //        headerStyle.setWriteFont(headerFont);
 
@@ -141,16 +139,20 @@ public class SupplyWaterTmpController {
         contentStyle.setBorderRight(BorderStyle.THIN);
         contentStyle.setBorderBottom(BorderStyle.THIN);
 
-        EasyExcelFactory.write(response.getOutputStream())
-                .head(header)
-                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(15))
-                .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
-                // 设置表头行高 30，内容行高 20
-                .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))
-                // 自适应表头宽度
+        try (OutputStream outputStream = response.getOutputStream()) {
+            EasyExcelFactory.write(outputStream)
+                    .head(header)
+                    .registerWriteHandler(new SimpleColumnWidthStyleStrategy(35))
+                    .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
+                    // 设置表头行高 30，内容行高 20
+                    .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))
+                    // 自适应表头宽度
 //                .registerWriteHandler(new MatchTitleWidthStyleStrategy())
-                // 由于column索引从0开始 返回来的labelDeep是从1开始，又由于有个能源列，所以合并索引 正好相抵，直接使用labelDeep即可
-                .registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
-                .sheet("数据").doWrite(dataList);
+                    // 由于column索引从0开始 返回来的labelDeep是从1开始，又由于有个能源列，所以合并索引 正好相抵，直接使用labelDeep即可
+                    .registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
+                    .sheet("数据").doWrite(dataList);
+        } catch (Exception e) {
+            e.printStackTrace(); // 或者没打印
+        }// try-with-resources 会自动关闭 outputStream
     }
 }

@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.math.BigDecimal;
+
 /**
  * @author liumingqiang
  */
@@ -19,6 +21,9 @@ public class SupplyWaterTmpSettingsPageReqVO extends PageParam {
     @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "12042")
     private Long id;
 
+    @Schema(description = "标识")
+    private String code;
+
     @Schema(description = "系统")
     private String system;
 
@@ -29,8 +34,8 @@ public class SupplyWaterTmpSettingsPageReqVO extends PageParam {
     private String energyParamName;
 
     @Schema(description = "上限")
-    private Integer max;
+    private BigDecimal max;
 
     @Schema(description = "下限")
-    private Integer min;
+    private BigDecimal min;
 }

@@ -84,6 +84,12 @@ public interface ErrorCodeConstants {
     ErrorCode IMPORT_NO_TIMES = new ErrorCode(1_001_301_228,"时间选择有误，读取不到有效时间");
     ErrorCode IMPORT_TIMES_ERROR = new ErrorCode(1_001_301_229,"时间选择有误，存在非时间数据");
     ErrorCode IMPORT_NO_METER = new ErrorCode(1_001_301_230,"采集点选择有误，读取不到有效数据");
+
+    // ========== 外部接口 ==========
+    ErrorCode EXTERNAL_API_NOT_EXISTS = new ErrorCode(1_001_301_240,"外部接口不存在");
+
+    ErrorCode EXTERNAL_API_CODE_REPEAT = new ErrorCode(1_001_301_241,"外部接口编码重复");
+
     // ========== 台账类型 ==========
     ErrorCode STANDINGBOOK_TYPE_NOT_EXISTS = new ErrorCode(1_001_202_000, "台账类型不存在");
     ErrorCode STANDINGBOOK_TYPE_EXITS_CHILDREN = new ErrorCode(1_001_202_001, "存在存在子台账类型，无法删除");
@@ -153,7 +159,8 @@ public interface ErrorCodeConstants {
     ErrorCode QUERY_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_003, "查看类型不存在");
     ErrorCode DATE_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_004, "时间类型不存在");
     ErrorCode BENCH_MARK_NOT_EXISTS = new ErrorCode(1_001_601_005, "基准年限不存在");
-    ErrorCode SYSTEM_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_004, "系统类型不存在");
+    ErrorCode SYSTEM_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_006, "系统类型不存在");
+    ErrorCode DATE_TYPE_NOT_MATCH = new ErrorCode(1_001_601_006, "时间类型不匹配");
     // ========== 服务设置  ==========
     ErrorCode SERVICE_SETTINGS_NOT_EXISTS = new ErrorCode(1_001_901_001, "服务设置不存在");
     ErrorCode SERVICE_SETTINGS_ADD_ERROR = new ErrorCode(1_001_901_002, "服务设置添加失败，请检查服务设置信息是否正确");
@@ -175,15 +182,18 @@ public interface ErrorCodeConstants {
     ErrorCode COP_SETTINGS_LIST_NOT_EXISTS = new ErrorCode(1_001_102_003, "COP参数list不存在");
     ErrorCode COP_SETTINGS_STANDINGBOOK_NOT_EMPTY = new ErrorCode(1_001_102_003, "COP公式参数关联的台账不能为空");
 
-    // ========== COP参数设置  ==========
+    // ========== 供应分析参数设置  ==========
 
     ErrorCode SUPPLY_ANALYSIS_STANDINGBOOK_REPEAT = new ErrorCode(1_001_102_010, "供应分析关联台账重复");
     ErrorCode SUPPLY_ANALYSIS_SETTINGS_LIST_NOT_EXISTS = new ErrorCode(1_001_102_011, "供应分析list不存在");
     ErrorCode SUPPLY_ANALYSIS_SETTINGS_STANDINGBOOK_NOT_EMPTY = new ErrorCode(1_001_102_012, "供应分析关联的台账不能为空");
 
-
-
+    ErrorCode TEAM_NOT_EMPTY = new ErrorCode(1_001_102_013, "班组不能为空");
+    ErrorCode TEAM_NOT_MATCH = new ErrorCode(1_001_102_014, "班组不匹配 只能0或1");
+    ErrorCode TEAM_NOT_INPUT = new ErrorCode(1_001_102_015, "按时统计时，不应传班组");
     // ========== 用能分析  ==========
     ErrorCode UNIT_NOT_EMPTY = new ErrorCode(1_001_103_001, "单位不能为空");
+    //======== 个性报表
+    ErrorCode DUPLICATE_TRANSFORMER_ID = new ErrorCode(1_001_301_001, "变压器不可重复");
 
 }

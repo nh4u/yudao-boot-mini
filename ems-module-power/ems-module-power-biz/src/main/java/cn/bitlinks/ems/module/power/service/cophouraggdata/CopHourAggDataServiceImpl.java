@@ -29,7 +29,6 @@ import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.SYSTEM_TYPE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_TYPE_NOT_EXISTS;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.END_TIME_MUST_AFTER_START_TIME;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.COP;
-import static cn.bitlinks.ems.module.power.enums.ExportConstants.STATISTICS_FEE;
 
 /**
  * @author liumingqiang
@@ -110,7 +109,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
                                     CopHourAggData copHourAggData = copHourAggDatasMap.get(c);
 
                                     if (Objects.isNull(copHourAggData)) {
-                                        map.put(key, BigDecimal.ZERO);
+                                        map.put(key, null);
                                     } else {
                                         map.put(key, copHourAggData.getCopValue());
                                     }
@@ -120,7 +119,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
                         } else {
                             copTypes.forEach(c -> {
                                 String key = c + "_" + year + "-" + monthValue;
-                                map.put(key, BigDecimal.ZERO);
+                                map.put(key, null);
                             });
                         }
                     } catch (Exception e) {

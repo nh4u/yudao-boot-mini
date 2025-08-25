@@ -139,7 +139,8 @@ public class SplitMinuteAggTask {
             MinuteAggregateDataDTO d = BeanUtils.toBean(dto.getStartDataDO(), MinuteAggregateDataDTO.class);
             d.setAggregateTime(start.plusMinutes(i));
             d.setFullValue(dto.getStartDataDO().getFullValue().add(perMin.multiply(BigDecimal.valueOf(i))));
-            d.setIncrementalValue(perMin);
+            // 增量不为负数
+            d.setIncrementalValue(perMin.compareTo(BigDecimal.ZERO)<0 ? BigDecimal.ZERO : perMin);
             dataList.add(d);
         }
         minuteAggregateDataService.insertDataBatch(dataList);

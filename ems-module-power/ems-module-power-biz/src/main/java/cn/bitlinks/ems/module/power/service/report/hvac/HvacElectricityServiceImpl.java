@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.report.hvac;
 
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
+import cn.bitlinks.ems.framework.common.util.date.DateUtils;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
@@ -38,6 +39,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
@@ -100,15 +102,22 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
     private BaseReportResultVO<HvacElectricityInfo> defaultNullData(LinkedHashMap<String, String> itemMapping, List<String> tableHeader) {
         BaseReportResultVO<HvacElectricityInfo> resultVO = new BaseReportResultVO<>();
         resultVO.setHeader(tableHeader);
-        resultVO.setDataTime(LocalDateTime.now());
         List<HvacElectricityInfo> infoList = new ArrayList<>();
-        itemMapping.forEach((itemName, sbCode) -> {
+        itemMapping.forEach((labelCode, labelName) -> {
             HvacElectricityInfo info = new HvacElectricityInfo();
-            info.setItemName(itemName);
-            info.setHvacElectricityInfoDataList(Collections.emptyList());
+            info.setItemName(labelName);
+            info.setItemCode(labelCode);
+            List<HvacElectricityInfoData> hvacElectricityInfoDataList = new ArrayList<>();
+            tableHeader.forEach(date -> {
+                HvacElectricityInfoData hvacElectricityInfoData = new HvacElectricityInfoData();
+                hvacElectricityInfoData.setDate(date);
+                hvacElectricityInfoDataList.add(hvacElectricityInfoData);
+            });
+            info.setHvacElectricityInfoDataList(hvacElectricityInfoDataList);
             infoList.add(info);
         });
         resultVO.setReportDataList(infoList);
+
         return resultVO;
     }
 
@@ -131,6 +140,9 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
 
         // 查询字典统计标签
         LinkedHashMap<String, String> itemMapping = getItemMapping(paramVO.getLabelCodes());
+        if (CollUtil.isEmpty(itemMapping)) {
+            return defaultNullData(itemMapping, tableHeader);
+        }
 
         List<LabelConfigDO> itemsLabel = labelConfigService.getByCodes(new ArrayList<>(itemMapping.keySet()));
 
@@ -189,15 +201,40 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
         Map<Long, LabelConfigDO> labelMap = labelConfigService.getAllLabelConfig().stream()
                 .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
 
+        boolean isCrossYear = DateUtils.isCrossYear(paramVO.getRange()[0], paramVO.getRange()[1]);
         List<HvacElectricityInfo> hvacElectricityInfos = new ArrayList<>(queryByDefaultLabel(
                 standingbookIdsByLabel,
                 usageCostDataList,
                 lastYearUsageCostDataList,
                 labelMap,
                 DataTypeEnum.codeOf(paramVO.getDateType()),
-                itemMapping
+                itemMapping,
+                isCrossYear,
+                tableHeader
         ));
+        // 无数据的填充0
+        hvacElectricityInfos.forEach(l -> {
 
+            List<HvacElectricityInfoData> newList = new ArrayList<>();
+            List<HvacElectricityInfoData> oldList = l.getHvacElectricityInfoDataList();
+            if (tableHeader.size() != oldList.size()) {
+                Map<String, List<HvacElectricityInfoData>> dateMap = oldList.stream()
+                        .collect(Collectors.groupingBy(HvacElectricityInfoData::getDate));
+
+                tableHeader.forEach(date -> {
+                    List<HvacElectricityInfoData> hvacElectricityInfoDataList = dateMap.get(date);
+                    if (hvacElectricityInfoDataList == null) {
+                        HvacElectricityInfoData hvacElectricityInfoData = new HvacElectricityInfoData();
+                        hvacElectricityInfoData.setDate(date);
+                        newList.add(hvacElectricityInfoData);
+                    } else {
+                        newList.add(hvacElectricityInfoDataList.get(0));
+                    }
+                });
+                // 设置新数据list
+                l.setHvacElectricityInfoDataList(newList);
+            }
+        });
         BaseReportResultVO<HvacElectricityInfo> resultVO = new BaseReportResultVO<>();
         resultVO.setHeader(tableHeader);
         // 设置最终返回值
@@ -215,66 +252,6 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
         return resultVO;
     }
 
-//    @Override
-//    public List<List<String>> getExcelHeader(HvacElectricityParamVO paramVO) {
-//        validCondition(paramVO);
-//
-//        List<List<String>> list = ListUtils.newArrayList();
-//        list.add(Arrays.asList("表单名称", "统计周期", ""));
-//        String sheetName = "天然气用量";
-//        // 统计周期
-//        String period = getFormatTime(paramVO.getRange()[0]) + "~" + getFormatTime(paramVO.getRange()[1]);
-//
-//        // 月份处理
-//        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
-//        xdata.forEach(x -> {
-//            list.add(Arrays.asList(sheetName, period, x));
-//        });
-//        list.add(Arrays.asList(sheetName, period, "周期合计"));
-//        return list;
-//    }
-//
-//    @Override
-//    public List<List<Object>> getExcelData(HvacElectricityParamVO paramVO) {
-//        // 结果list
-//        List<List<Object>> result = ListUtils.newArrayList();
-//
-//        BaseReportResultVO<HvacElectricityInfo> resultVO = getTable(paramVO);
-//        List<String> tableHeader = resultVO.getHeader();
-//
-//        List<HvacElectricityInfo> hvacElectricityInfos = resultVO.getReportDataList();
-//
-//        for (HvacElectricityInfo s : hvacElectricityInfos) {
-//
-//            List<Object> data = ListUtils.newArrayList();
-//
-//            data.add(s.getItemName());
-//
-//            // 处理数据
-//            List<HvacElectricityInfoData> hvacElectricityInfoDatas = s.getHvacElectricityInfoDataList();
-//
-//            Map<String, HvacElectricityInfoData> dateMap = hvacElectricityInfoDatas.stream()
-//                    .collect(Collectors.toMap(HvacElectricityInfoData::getDate, Function.identity()));
-//
-//            tableHeader.forEach(date -> {
-//                HvacElectricityInfoData hvacElectricityInfoData = dateMap.get(date);
-//                if (hvacElectricityInfoData == null) {
-//                    data.add("/");
-//                } else {
-//                    BigDecimal consumption = hvacElectricityInfoData.get();
-//                    data.add(getConvertData(consumption));
-//                }
-//            });
-//
-//            BigDecimal periodSum = s.getPeriodSum();
-//            // 处理周期合计
-//            data.add(getConvertData(periodSum));
-//
-//            result.add(data);
-//        }
-//
-//        return result;
-//    }
 
     private void validCondition(BaseTimeDateParamVO paramVO) {
         LocalDateTime[] rangeOrigin = paramVO.getRange();
@@ -303,7 +280,9 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
                                                           List<UsageCostData> lastUsageCostDataList,
                                                           Map<Long, LabelConfigDO> labelMap,
                                                           DataTypeEnum dataTypeEnum,
-                                                          LinkedHashMap<String, String> itemMapping
+                                                          LinkedHashMap<String, String> itemMapping,
+                                                          boolean isCrossYear,
+                                                          List<String> tableHeader
     ) {
         //以value 分组 台账id
         Map<String, List<StandingbookLabelInfoDO>> grouped = standingbookIdsByLabel.stream()
@@ -315,13 +294,9 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
         Map<Long, List<UsageCostData>> currentMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
 
-        // 同期数据以 standingbookId + time 为key 构建map
-        Map<String, UsageCostData> lastMap = lastUsageCostDataList.stream()
-                .collect(Collectors.toMap(
-                        d -> d.getStandingbookId() + "_" + d.getTime(),
-                        Function.identity(),
-                        (a, b) -> a
-                ));
+
+        Map<Long, List<UsageCostData>> lastMap = lastUsageCostDataList.stream()
+                .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
 
 
         List<HvacElectricityInfo> resultList = new ArrayList<>();
@@ -343,36 +318,31 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
             // 获取本期
             labelInfoList.forEach(labelInfo -> {
                 List<UsageCostData> usageList = currentMap.get(labelInfo.getStandingbookId());
-                if (usageList == null || usageList.isEmpty()) {
-                    return; // 计量器具没有数据，跳过
+                if (usageList != null) {
+                    labelUsageListNow.addAll(usageList);
                 }
-                labelUsageListNow.addAll(usageList);
             });
-
-            // 获取去年同期
-            labelUsageListNow.forEach(u -> {
-                String previousTime = LocalDateTimeUtils.getYearOnYearTime(u.getTime(), dataTypeEnum);
-                String key = u.getStandingbookId() + "_" + previousTime;
-                UsageCostData previous = lastMap.get(key);
-                if (Objects.isNull(previous)) {
-                    return; // 计量器具没有数据，跳过
+            labelInfoList.forEach(labelInfo -> {
+                List<UsageCostData> usageList = lastMap.get(labelInfo.getStandingbookId());
+                if (usageList != null) {
+                    labelUsageListPrevious.addAll(usageList);
                 }
-                labelUsageListPrevious.add(previous);
             });
 
             // 1.处理当前
-            List<TimeAndNumData> nowList = new ArrayList<>(labelUsageListNow.stream().collect(Collectors.groupingBy(
-                    UsageCostData::getTime,
-                    Collectors.collectingAndThen(
-                            Collectors.toList(),
-                            list -> {
-                                BigDecimal totalConsumption = list.stream()
-                                        .map(UsageCostData::getCurrentTotalUsage)
-                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-                                return new TimeAndNumData(list.get(0).getTime(), totalConsumption);
-                            }
-                    )
-            )).values());
+            Map<String, TimeAndNumData> nowMap = labelUsageListNow.stream()
+                    .collect(Collectors.groupingBy(
+                            UsageCostData::getTime,
+                            Collectors.collectingAndThen(
+                                    Collectors.toList(),
+                                    list -> {
+                                        BigDecimal totalConsumption = list.stream()
+                                                .map(UsageCostData::getCurrentTotalUsage)
+                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                        return new TimeAndNumData(list.get(0).getTime(), totalConsumption);
+                                    }
+                            )
+                    ));
             // 2.处理上期
             Map<String, TimeAndNumData> previousMap = labelUsageListPrevious.stream()
                     .collect(Collectors.groupingBy(
@@ -380,26 +350,29 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
                             Collectors.collectingAndThen(
                                     Collectors.toList(),
                                     list -> {
-                                        BigDecimal totalStandardCoal = list.stream()
+                                        BigDecimal totalConsumption = list.stream()
                                                 .map(UsageCostData::getCurrentTotalUsage)
                                                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-                                        return new TimeAndNumData(list.get(0).getTime(), totalStandardCoal);
+                                        return new TimeAndNumData(list.get(0).getTime(), totalConsumption);
                                     }
                             )
                     ));
 
             // 构造同比详情列表
-            List<HvacElectricityInfoData> dataList = nowList.stream()
-                    .map(current -> {
-                        String previousTime = LocalDateTimeUtils.getYearOnYearTime(current.getTime(), dataTypeEnum);
-                        TimeAndNumData previous = previousMap.get(previousTime);
-                        BigDecimal now = Optional.ofNullable(current.getNum()).orElse(BigDecimal.ZERO);
-                        BigDecimal last = previous != null ? Optional.ofNullable(previous.getNum()).orElse(BigDecimal.ZERO) : BigDecimal.ZERO;
-                        BigDecimal ratio = calculateYearOnYearRatio(now, last);
-                        return new HvacElectricityInfoData(current.getTime(), now, last, ratio);
-                    })
-                    .sorted(Comparator.comparing(HvacElectricityInfoData::getDate))
-                    .collect(Collectors.toList());
+            List<HvacElectricityInfoData> dataList = new ArrayList<>();
+            for (String time : tableHeader) {
+                TimeAndNumData current = nowMap.get(time);
+                BigDecimal now = Optional.ofNullable(current)
+                        .map(TimeAndNumData::getNum)
+                        .orElse(null);
+                String previousTime = LocalDateTimeUtils.getYearOnYearTime(time, dataTypeEnum);
+                TimeAndNumData previous = previousMap.get(previousTime);
+                BigDecimal last = Optional.ofNullable(previous)
+                        .map(TimeAndNumData::getNum)
+                        .orElse(null);
+                BigDecimal ratio = calculateYearOnYearRatio(now, last);
+                dataList.add(new HvacElectricityInfoData(time, now, last, ratio));
+            }
 
             // 汇总统计
             BigDecimal sumNow = dataList.stream().map(HvacElectricityInfoData::getNow).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -419,8 +392,11 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
             info.setHvacElectricityInfoDataList(dataList);
 
             info.setPeriodNow(dealBigDecimalScale(sumNow, DEFAULT_SCALE));
-            info.setPeriodPrevious(dealBigDecimalScale(sumPrevious, DEFAULT_SCALE));
-            info.setPeriodRatio(dealBigDecimalScale(sumRatio, DEFAULT_SCALE));
+            // 当统计周期跨年时，周期合计列中同期、同比值无需进行计算，展示为“/”
+            if (!isCrossYear) {
+                info.setPeriodPrevious(dealBigDecimalScale(sumPrevious, DEFAULT_SCALE));
+                info.setPeriodRatio(dealBigDecimalScale(sumRatio, DEFAULT_SCALE));
+            }
 
             resultList.add(info);
         });
@@ -458,6 +434,7 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
             });
         }
         BaseReportResultVO<HvacElectricityInfo> tableResult = getTable(paramVO);
+
         BaseReportMultiChartResultVO<LinkedHashMap<String, List<BigDecimal>>> resultVO = new BaseReportMultiChartResultVO<>();
         // x轴
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
@@ -468,8 +445,19 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
         LinkedHashMap<String, List<BigDecimal>> ydataNowListMap = new LinkedHashMap<>();
         LinkedHashMap<String, List<BigDecimal>> ydataPreListMap = new LinkedHashMap<>();
         List<HvacElectricityInfo> tableDataList = tableResult.getReportDataList();
+
+
         tableDataList.forEach(info -> {
             List<HvacElectricityInfoData> dateList = info.getHvacElectricityInfoDataList();
+            if (CollUtil.isEmpty(dateList)) {
+                return;
+            }
+            dateList.forEach(data -> {
+                data.setNow(data.getNow() == null ? BigDecimal.ZERO : data.getNow());
+                data.setPrevious(data.getPrevious() == null ? BigDecimal.ZERO : data.getPrevious());
+                data.setRatio(data.getRatio() == null ? BigDecimal.ZERO : data.getRatio());
+            });
+
             Map<String, HvacElectricityInfoData> timeMap = dateList.stream()
                     .filter(data -> data.getDate() != null)
                     .collect(Collectors.toMap(
@@ -477,9 +465,7 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
                             data -> data,
                             (existing, replacement) -> replacement // 处理重复时间，保留后者
                     ));
-            if (CollUtil.isEmpty(dateList)) {
-                return;
-            }
+
             List<BigDecimal> nowList = xdata.stream().map(time -> {
                         HvacElectricityInfoData infoData = timeMap.get(time);
                         if (Objects.isNull(infoData)) {
@@ -487,7 +473,6 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
                         }
                         return infoData.getNow();
                     }
-
             ).collect(Collectors.toList());
             List<BigDecimal> preList = xdata.stream().map(time -> {
                         HvacElectricityInfoData infoData = timeMap.get(time);
@@ -509,19 +494,15 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
             sumNowList.add(BigDecimal.ZERO);
             sumPreList.add(BigDecimal.ZERO);
         }
+        ydataNowListMap.values().forEach(list ->
+                IntStream.range(0, Math.min(list.size(), sumNowList.size()))
+                        .forEach(i -> sumNowList.set(i, sumNowList.get(i).add(Optional.ofNullable(list.get(i)).orElse(BigDecimal.ZERO))))
+        );
 
-        // 遍历每个 sbCode 的数据列表，逐项累加
-        for (List<BigDecimal> sbDataList : ydataNowListMap.values()) {
-            for (int i = 0; i < sbDataList.size(); i++) {
-                sumNowList.set(i, sumNowList.get(i).add(sbDataList.get(i)));
-            }
-        }
-        // 遍历每个 sbCode 的数据列表，逐项累加
-        for (List<BigDecimal> sbDataList : ydataPreListMap.values()) {
-            for (int i = 0; i < sbDataList.size(); i++) {
-                sumPreList.set(i, sumPreList.get(i).add(sbDataList.get(i)));
-            }
-        }
+        ydataPreListMap.values().forEach(list ->
+                IntStream.range(0, Math.min(list.size(), sumPreList.size()))
+                        .forEach(i -> sumPreList.set(i, sumPreList.get(i).add(Optional.ofNullable(list.get(i)).orElse(BigDecimal.ZERO))))
+        );
 
         List<BigDecimal> scaledSumNowList = sumNowList.stream()
                 .map(val -> dealBigDecimalScale(val, scale))
