@@ -1140,7 +1140,8 @@ public class YoyV2ServiceImpl implements YoyV2Service {
 
         // 汇总统计
         BigDecimal sumNow = dataList.stream().map(YoyDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal sumPrevious = dataList.stream().map(YoyDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal sumPrevious = lastUsageList.stream().map(valueExtractor).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+//        BigDecimal sumPrevious = dataList.stream().map(YoyDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal sumRatio = calculateYearOnYearRatio(sumNow, sumPrevious);
         // 构造结果对象
         YoyItemVO vo = new YoyItemVO();
