@@ -1,6 +1,5 @@
 package cn.bitlinks.ems.module.power.service.energyconfiguration;
 
-import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
@@ -27,7 +26,6 @@ import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.alibaba.nacos.common.utils.StringUtils;
@@ -50,7 +48,6 @@ import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.security.core.util.SecurityFrameworkUtils.getLoginUserNickname;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.GROUP_ELECTRICITY;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
 /**
@@ -617,17 +614,7 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         if (CollectionUtil.isEmpty(energyIds) && Objects.isNull(energyClassify)) {
             return Collections.emptyList();
         }
-        MPJLambdaWrapperX<EnergyConfigurationDO> wrapper = new MPJLambdaWrapperX<>();
-        if (CollectionUtil.isNotEmpty(energyIds)) {
-            wrapper.in(EnergyConfigurationDO::getId, energyIds);
-        } else {
-            wrapper.eq(EnergyConfigurationDO::getEnergyClassify, energyClassify);
-        }
-        wrapper.select("t.id", "t.group_id", "t.CODE", "t.energy_classify", "t.energy_icon", "t.factor", "t.create_time", "t.update_time", "t.creator", "t.updater", "t.deleted");
-        wrapper.select("IF(t1.unit is not null,CONCAT( t.energy_name, '(', t1.unit, ')' ),t.energy_name) AS energy_name ");
-        wrapper.leftJoin(EnergyParametersDO.class, EnergyParametersDO::getEnergyId, EnergyConfigurationDO::getId);
-        wrapper.eq(EnergyParametersDO::getUsage, 1);
-        return energyConfigurationMapper.selectJoinList(EnergyConfigurationDO.class, wrapper);
+        return energyConfigurationMapper.getByEnergyClassify(energyIds, energyClassify);
     }
 
     /**

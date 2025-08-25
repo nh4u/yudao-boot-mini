@@ -253,6 +253,10 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         // 构建饼图结果
         StatisticsChartPieResultVO resultVO = new StatisticsChartPieResultVO();
 
+        if (CollUtil.isEmpty(dataList)) {
+            return resultVO;
+        }
+
         QueryDimensionEnum queryDimensionEnum = QueryDimensionEnum.codeOf(queryType);
         switch (queryDimensionEnum) {
             case OVERALL_REVIEW:
