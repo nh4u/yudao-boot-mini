@@ -192,7 +192,12 @@ public class YoyV2ServiceImpl implements YoyV2Service {
 
         List<YoyItemVO> detailList = new ArrayList<>();
         energyList.forEach(energy -> {
-            YoyItemVO vo = buildYoyItemVODataList(nowUsageMap.get(energy.getId()), lastUsageMap.get(energy.getId()), dataTypeEnum, tableHeader, isCrossYear, valueExtractor);
+            List<UsageCostData> nowList = nowUsageMap.get(energy.getId());
+            List<UsageCostData> lastList = lastUsageMap.get(energy.getId());
+            if (CollUtil.isEmpty(nowList) && CollUtil.isEmpty(lastList)) {
+                return;
+            }
+            YoyItemVO vo = buildYoyItemVODataList(nowList, lastList, dataTypeEnum, tableHeader, isCrossYear, valueExtractor);
             vo.setEnergyId(energy.getId());
             vo.setEnergyName(energy.getEnergyName());
             detailList.add(vo);

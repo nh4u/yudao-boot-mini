@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.statistics.vo;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,6 +12,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 @Schema(description = "同比每日详情")
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class YoyDetailVO {
 
     @Schema(description = "日期", example = "2025-05-12")
