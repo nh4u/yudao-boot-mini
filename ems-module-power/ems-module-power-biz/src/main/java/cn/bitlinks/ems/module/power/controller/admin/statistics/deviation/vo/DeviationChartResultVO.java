@@ -1,4 +1,4 @@
-package cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo;
+package cn.bitlinks.ems.module.power.controller.admin.statistics.deviation.vo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -18,21 +18,18 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = false)
 @ToString(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class FeeChartResultVO<T> {
+public class DeviationChartResultVO<T> {
 
-    /**
-     * y数据
-     */
+    @Schema(description = "y轴数据")
     private List<T> ydata;
 
-
-    /**
-     * 表头
-     */
+    @Schema(description = "x轴数据")
     private List<String> xdata;
 
-    /**
-     * 数据最后更新时间
-     */
+    @Schema(description = "数据最后更新时间")
     private LocalDateTime dataTime;
+
+    @Schema(description = "单位")
+    private String unit;
+
 }

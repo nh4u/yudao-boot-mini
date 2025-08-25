@@ -255,6 +255,11 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         // 获取原始数据列表
         List<StructureInfo> dataList = tableResult.getStatisticsInfoList();
 
+        if (CollUtil.isEmpty(dataList)) {
+            // 返回查询结果。
+            return resultVO;
+        }
+
         QueryDimensionEnum queryDimensionEnum = QueryDimensionEnum.codeOf(queryType);
         switch (queryDimensionEnum) {
             case OVERALL_REVIEW:
@@ -1138,23 +1143,32 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
      */
     private List<PieChartVO> buildEnergyDimensionPies(List<StructureInfo> dataList, StatisticsParamV2VO paramVO) {
         List<EnergyConfigurationDO> energyList = dealEnergyQueryData(paramVO);
-        return energyList.stream().map(energy -> {
-            // 按一级标签聚合数据
-            Map<String, BigDecimal> labelMap = dataList.stream()
-                    .filter(vo -> energy.getId().equals(vo.getEnergyId()))
-                    .map(vo -> {
-                        vo.setLabel1(getName(vo.getLabel1(), vo.getLabel2(), vo.getLabel3(), vo.getLabel4(), vo.getLabel5()));
-                        return vo;
-                    })
-                    .collect(Collectors.groupingBy(
-                            StructureInfo::getLabel1, // 关键修改：使用一级标签分组
-                            Collectors.reducing(BigDecimal.ZERO, StructureInfo::getSumNum, BigDecimal::add)
-                    ));
+        return energyList
+                .stream()
+                .map(energy -> {
+                    // 按一级标签聚合数据
+                    Map<String, BigDecimal> labelMap = dataList.stream()
+                            .filter(vo -> energy.getId().equals(vo.getEnergyId()))
+                            .map(vo -> {
+                                vo.setLabel1(getName(vo.getLabel1(), vo.getLabel2(), vo.getLabel3(), vo.getLabel4(), vo.getLabel5()));
+                                return vo;
+                            })
+                            .collect(Collectors.groupingBy(
+                                    StructureInfo::getLabel1, // 关键修改：使用一级标签分组
+                                    Collectors.reducing(BigDecimal.ZERO, StructureInfo::getSumNum, BigDecimal::add)
+                            ));
 
-            String energyName = energy.getEnergyName();
+                    String energyName = energy.getEnergyName();
 
-            return createPieChart(energyName, labelMap);
-        }).collect(Collectors.toList());
+                    if (CollUtil.isNotEmpty(labelMap)) {
+                        return createPieChart(energyName, labelMap);
+                    } else {
+                        return null;
+                    }
+
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     /**

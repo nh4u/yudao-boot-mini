@@ -241,10 +241,10 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
         String cacheKey = USAGE_STANDARD_COAL_CHART + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
-        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            log.info("缓存结果");
-            return JSONUtil.toBean(cacheRes, StatisticsChartResultV2VO.class);
-        }
+//        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
+//            log.info("缓存结果");
+//            return JSONUtil.toBean(cacheRes, StatisticsChartResultV2VO.class);
+//        }
 
         // 4.如果没有则去数据库查询
         StatisticsChartResultV2VO resultV2VO = new StatisticsChartResultV2VO();
@@ -332,24 +332,42 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                     .map(entry -> {
                         Long energyId = entry.getKey();
                         EnergyConfigurationDO energy = entry.getValue();
-                        Map<String, BigDecimal> timeCostMap = energyTimeStandardCoalMap.getOrDefault(energyId, Collections.emptyMap());
+                        Map<String, BigDecimal> timeCostMap = energyTimeStandardCoalMap.get(energyId);
 
-                        List<StandardCoalChartYData> dataList = xdata
-                                .stream()
-                                .map(time -> {
-                                    StandardCoalChartYData vo = new StandardCoalChartYData();
-                                    BigDecimal standardCoal = timeCostMap.getOrDefault(time, BigDecimal.ZERO);
-                                    vo.setStandardCoal(dealBigDecimalScale(standardCoal, DEFAULT_SCALE));
-                                    return vo;
-                                })
-                                .collect(Collectors.toList());
+                        if (CollUtil.isNotEmpty(timeCostMap)) {
+                            List<StandardCoalChartYData> dataList = xdata
+                                    .stream()
+                                    .map(time -> {
+                                        StandardCoalChartYData vo = new StandardCoalChartYData();
+                                        BigDecimal standardCoal = timeCostMap.get(time);
 
-                        StatisticsChartYInfoV2VO<StandardCoalChartYData> yInfo = new StatisticsChartYInfoV2VO<>();
-                        yInfo.setId(energyId);
-                        yInfo.setName(energy.getEnergyName());
-                        yInfo.setData(dataList);
-                        return yInfo;
+                                        if (!Objects.isNull(standardCoal) && BigDecimal.ZERO.compareTo(standardCoal) != 0) {
+                                            vo.setStandardCoal(dealBigDecimalScale(standardCoal, DEFAULT_SCALE));
+                                        }
+                                        return vo;
+                                    })
+                                    .collect(Collectors.toList());
+
+                            List<BigDecimal> collect = dataList
+                                    .stream()
+                                    .map(StandardCoalChartYData::getStandardCoal)
+                                    .filter(Objects::nonNull)
+                                    .collect(Collectors.toList());
+
+                            if (CollUtil.isNotEmpty(collect)) {
+                                StatisticsChartYInfoV2VO<StandardCoalChartYData> yInfo = new StatisticsChartYInfoV2VO<>();
+                                yInfo.setId(energyId);
+                                yInfo.setName(energy.getEnergyName());
+                                yInfo.setData(dataList);
+                                return yInfo;
+                            } else {
+                                return null;
+                            }
+                        } else {
+                            return null;
+                        }
                     })
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
 
             resultV2VO.setYdata(ydata);

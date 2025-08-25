@@ -61,6 +61,8 @@ public interface UsageCostService {
 
     List<UsageCostData> getStandingbookStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
 
+    List<UsageCostData> getEnergyUsage(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
+
     /**
      * 台账分组计算用量
      *

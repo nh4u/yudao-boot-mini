@@ -631,6 +631,24 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     }
 
     /**
+     * 获取有单位的能源
+     *
+     * @param energyId
+     * @return
+     */
+    @Override
+    public EnergyConfigurationDO getEnergyAndUnit(Long energyId) {
+
+        MPJLambdaWrapperX<EnergyConfigurationDO> wrapper = new MPJLambdaWrapperX<>();
+        wrapper.eq(EnergyConfigurationDO::getId, energyId);
+        wrapper.select("t.id", "t.group_id", "t.CODE", "t.energy_classify", "t.energy_name", "t.energy_icon", "t.factor", "t.create_time", "t.update_time", "t.creator", "t.updater", "t.deleted", "t1.unit");
+        wrapper.leftJoin(EnergyParametersDO.class, EnergyParametersDO::getEnergyId, EnergyConfigurationDO::getId);
+        wrapper.eq(EnergyParametersDO::getUsage, 1);
+        wrapper.last("limit 1");
+        return energyConfigurationMapper.selectJoinOne(EnergyConfigurationDO.class, wrapper);
+    }
+
+    /**
      * 获取无单位的能源list
      *
      * @param energyIds

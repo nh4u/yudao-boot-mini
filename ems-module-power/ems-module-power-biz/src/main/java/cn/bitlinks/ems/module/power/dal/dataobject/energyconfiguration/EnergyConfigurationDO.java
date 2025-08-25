@@ -79,6 +79,12 @@ public class EnergyConfigurationDO extends BaseDO {
     @TableField(exist = false)
     private UnitPriceConfigurationDO unitPrice;
 
+    /**
+     * 能源单位
+     */
+    @TableField(exist = false)
+    private String unit;
+
     @TableField(exist = false)
     List<EnergyConfigurationDO> children = new ArrayList<>();
 
