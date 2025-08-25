@@ -26,7 +26,7 @@
         FROM ems_energy_configuration t
                  LEFT JOIN ems_energy_parameters t1 ON (t1.energy_id = t.id AND t1.deleted = 0 and t1.`usage` = 1)
         WHERE t.deleted = 0
-        <if test="energyIds != energyIds != null and energyIds.size() != 0">
+        <if test="energyIds != null and energyIds.size() != 0">
             and t.id in
             <foreach collection="energyIds" item="energyId" separator="," close=")" open="(">
                 #{energyId}
