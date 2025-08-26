@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
 
@@ -130,10 +131,10 @@ public class StandingbookController {
     }
 
     @GetMapping("/export-ledger-template")
-    @Operation(summary = "下载台账模板（device=重点设备 / meter=计量器具）")
+    @Operation(summary = "下载台账模板")
     // @PreAuthorize("@ss.hasPermission('power:standingbook:export')")
-    public void exportLedgerTemplate(@RequestParam("type") String type, HttpServletResponse response) {
-        standingbookService.exportLedgerTemplate(type, response);
+    public void exportLedgerTemplate(HttpServletResponse response) throws UnsupportedEncodingException {
+        standingbookService.exportLedgerTemplate(response);
     }
 
 }
