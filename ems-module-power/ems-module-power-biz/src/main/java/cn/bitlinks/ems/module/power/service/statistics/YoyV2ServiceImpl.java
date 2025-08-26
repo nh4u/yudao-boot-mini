@@ -462,12 +462,12 @@ public class YoyV2ServiceImpl implements YoyV2Service {
                 // 按能源ID分组当前周期数据
                 Map<Long, List<UsageCostData>> energyUsageCostNowMap = new HashMap<>();
                 Map<Long, List<UsageCostData>> energyUsageCostPrevMap = new HashMap<>();
-                if (CollUtil.isEmpty(labelUsageCostDataNowList)) {
+                if (CollUtil.isNotEmpty(labelUsageCostDataNowList)) {
                     energyUsageCostNowMap = labelUsageCostDataNowList
                             .stream()
                             .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
                 }
-                if (CollUtil.isEmpty(labelUsageCostDataPrevList)) {
+                if (CollUtil.isNotEmpty(labelUsageCostDataPrevList)) {
                     energyUsageCostPrevMap = labelUsageCostDataPrevList
                             .stream()
                             .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
