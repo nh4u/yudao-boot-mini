@@ -266,6 +266,21 @@ public class CommonUtil {
         }
         return null;
     }
+    public static BigDecimal safeDivide100(BigDecimal numerator, BigDecimal denominator) {
+
+        // 检查值是否为null
+        if (numerator == null || denominator == null) {
+            return null;
+        }
+
+        // 检查分母是否为零
+        if (denominator.compareTo(BigDecimal.ZERO) == 0) {
+            return null;
+        }
+
+        // 执行除法运算
+        return numerator.multiply(new BigDecimal(100)).divide(denominator, DEFAULT_SCALE, RoundingMode.HALF_UP);
+    }
 
     /**
      * BigDecimal除法，包含有效位

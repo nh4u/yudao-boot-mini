@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -95,4 +96,11 @@ public interface UsageCostMapper {
                                         @Param("startDate") LocalDateTime startDate,
                                         @Param("endDate") LocalDateTime endDate,
                                         @Param("standingBookIds") List<Long> standingBookIds);
+
+    /**
+     * 获取折标煤总量
+     */
+    BigDecimal getSumStandardCoal(@Param("startDate") LocalDateTime startDate,
+                                  @Param("endDate") LocalDateTime endDate,
+                                  @Param("standingBookIds") List<Long> standingBookIds);
 }
