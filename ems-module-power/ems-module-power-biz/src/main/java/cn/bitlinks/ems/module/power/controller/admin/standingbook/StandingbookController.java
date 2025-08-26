@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.standingbook;
 
+import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
@@ -14,6 +15,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Map;
@@ -119,5 +121,19 @@ public class StandingbookController {
         return success(standingbookService.treeDeviceWithParam(standingbookParamReqVO));
     }
 
+
+    @GetMapping("/export-meter-template")
+    @Operation(summary = "下载计量器具导入模板")
+    // @PreAuthorize("@ss.hasPermission('power:standingbook:export')")
+    public void exportMeterTemplate(HttpServletResponse response) {
+        standingbookService.exportMeterTemplate(response);
+    }
+
+    @GetMapping("/export-ledger-template")
+    @Operation(summary = "下载台账模板（device=重点设备 / meter=计量器具）")
+    // @PreAuthorize("@ss.hasPermission('power:standingbook:export')")
+    public void exportLedgerTemplate(@RequestParam("type") String type, HttpServletResponse response) {
+        standingbookService.exportLedgerTemplate(type, response);
+    }
 
 }
