@@ -14,6 +14,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
+import com.alibaba.excel.util.ListUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import lombok.extern.slf4j.Slf4j;
@@ -26,10 +27,13 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_UTILIZATION_RATE_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_UTILIZATION_RATE_TABLE;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.getConvertData;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.safeDivide100;
 
 @Service
@@ -163,7 +167,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         EnergyUtilizationRateInfo info = new EnergyUtilizationRateInfo();
         info.setEnergyUtilizationRateInfoDataList(dataList);
         info.setItemName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR);
-        info.setPeriodSum(ratio);
+        info.setPeriodRate(ratio);
         return info;
     }
 
@@ -276,5 +280,60 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return resultVOList;
+    }
+
+    @Override
+    public List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO) {
+        statisticsCommonService.validParamConditionDate(paramVO);
+
+        List<List<String>> list = ListUtils.newArrayList();
+        list.add(Arrays.asList("表单名称", "统计周期", ""));
+        String sheetName = "利用率";
+        // 统计周期
+        String period = getFormatTime(paramVO.getRange()[0]) + "~" + getFormatTime(paramVO.getRange()[1]);
+
+        // 月份处理
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
+        xdata.forEach(x -> {
+            list.add(Arrays.asList(sheetName, period, x));
+        });
+        list.add(Arrays.asList(sheetName, period, "周期利用率（%）"));
+        return list;
+    }
+
+    @Override
+    public List<List<Object>> getExcelData(StatisticsParamV2VO paramVO) {
+        // 结果list
+        List<List<Object>> result = ListUtils.newArrayList();
+
+        StatisticsResultV2VO<EnergyUtilizationRateInfo> resultVO = getTable(paramVO);
+        List<String> tableHeader = resultVO.getHeader();
+
+        List<EnergyUtilizationRateInfo> energyUtilizationRateInfo = resultVO.getStatisticsInfoList();
+
+        for (EnergyUtilizationRateInfo s : energyUtilizationRateInfo) {
+            List<Object> data = ListUtils.newArrayList();
+            data.add(s.getItemName());
+            // 处理数据
+            List<EnergyUtilizationRateInfoData> energyUtilizationRateInfoDataList = s.getEnergyUtilizationRateInfoDataList();
+
+            Map<String, EnergyUtilizationRateInfoData> dateMap = energyUtilizationRateInfoDataList.stream()
+                    .collect(Collectors.toMap(EnergyUtilizationRateInfoData::getDate, Function.identity()));
+
+            tableHeader.forEach(date -> {
+                EnergyUtilizationRateInfoData energyUtilizationRateInfoData = dateMap.get(date);
+                if (energyUtilizationRateInfoData == null) {
+                    data.add("/");
+                } else {
+                    data.add(getConvertData(energyUtilizationRateInfoData.getRate()));
+                }
+            });
+            // 处理周期合计
+            data.add(getConvertData(s.getPeriodRate()));
+
+            result.add(data);
+        }
+
+        return result;
     }
 }

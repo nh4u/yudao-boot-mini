@@ -19,7 +19,7 @@ public class EnergyUtilizationRateInfo {
     private List<EnergyUtilizationRateInfoData> energyUtilizationRateInfoDataList;
 
     @Schema(description = "周期合计", example = "0.00")
-    private BigDecimal periodSum;
+    private BigDecimal periodRate;
 
     @Schema(description = "数据项", example = "热力")
     private String itemName;
