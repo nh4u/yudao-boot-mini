@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
 
@@ -159,6 +160,6 @@ public interface StandingbookService {
      * 导出台账模板
      * @param type device|meter
      */
-    void exportLedgerTemplate(String type, HttpServletResponse response);
+    void exportLedgerTemplate(HttpServletResponse response) throws UnsupportedEncodingException;
 
 }

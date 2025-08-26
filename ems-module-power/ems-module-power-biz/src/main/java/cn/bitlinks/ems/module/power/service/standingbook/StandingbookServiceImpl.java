@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -34,6 +35,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
@@ -1259,6 +1262,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             // 可选：避免缓存
             response.setHeader("Pragma", "no-cache");
             response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            response.addHeader("File-Name", fileName);
             wb.write(response.getOutputStream());
             response.flushBuffer();
         } catch (Exception e) {
@@ -1267,24 +1271,38 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
     @Override
-    public void exportLedgerTemplate(String type, HttpServletResponse response) {
-        LedgerType ledgerType = LedgerType.from(type);
-        try (Workbook wb = new XSSFWorkbook()) {
-            buildMainSheet(wb, ledgerType);       // Sheet1：台账
-            buildDictionarySheet(wb, ledgerType); // Sheet2：数据字典
+    public void exportLedgerTemplate(HttpServletResponse response) throws UnsupportedEncodingException {
+        String zipName = URLEncoder.encode("台账模板.zip", StandardCharsets.UTF_8.name())
+                .replaceAll("\\+", "%20");
+        response.setContentType("application/zip");
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + zipName);
+        response.setHeader("Pragma", "no-cache");
+        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.addHeader("File-Name", zipName);
 
-            String fileName = URLEncoder.encode(ledgerType.fileName(), StandardCharsets.UTF_8.name())
-                    .replaceAll("\\+", "%20");
-            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-            response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + fileName);
-            response.setHeader("Pragma", "no-cache");
-            response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-            wb.write(response.getOutputStream());
+        try (ZipOutputStream zos = new ZipOutputStream(response.getOutputStream())) {
+            // 1) 重点设备台账模版.xlsx
+            writeWorkbookToZip(zos, LedgerType.DEVICE, "重点设备台账模版.xlsx");
+            // 2) 计量器具台账模版.xlsx
+            writeWorkbookToZip(zos, LedgerType.METER, "计量器具台账模版.xlsx");
+
+            zos.finish();
             response.flushBuffer();
         } catch (Exception e) {
-            throw new RuntimeException("导出台账模板失败: " + type, e);
+            throw new RuntimeException("导出台账模板失败", e);
         }
+    }
+
+    private void writeWorkbookToZip(ZipOutputStream zos, LedgerType type, String entryName) throws Exception {
+        ZipEntry entry = new ZipEntry(entryName);
+        zos.putNextEntry(entry);
+        try (Workbook wb = new XSSFWorkbook()) {
+            buildMainSheet(wb, type);       // Sheet1：台账（你的原逻辑 + 首行说明）
+            buildDictionarySheet(wb, type); // Sheet2：数据字典（两列）
+            wb.write(zos);
+        }
+        zos.closeEntry();
     }
 
     // ================= Sheet1：台账（固定列 + ems_label_config顶级标签名） =================
