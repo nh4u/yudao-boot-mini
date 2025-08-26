@@ -148,6 +148,8 @@ public interface StandingbookService {
      */
     List<StandingBookTypeTreeRespVO> treeDeviceWithParam(StandingbookParamReqVO standingbookParamReqVO);
 
+    List<Long> getStandingBookIdsByStage(Integer stage);
+
     /**
      * 下载“计量器具导入模板”
      */
@@ -158,4 +160,5 @@ public interface StandingbookService {
      * @param type device|meter
      */
     void exportLedgerTemplate(String type, HttpServletResponse response);
+
 }

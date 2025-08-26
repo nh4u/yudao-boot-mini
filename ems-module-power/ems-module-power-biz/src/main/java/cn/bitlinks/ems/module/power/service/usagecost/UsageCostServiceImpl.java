@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -159,6 +160,12 @@ public class UsageCostServiceImpl implements UsageCostService {
     @TenantIgnore
     public List<UsageCostData> getStandingbookStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
         return usageCostMapper.getStandingbookStandardCoal(startDate, endDate, standingBookIds);
+    }
+
+    @Override
+    @TenantIgnore
+    public BigDecimal getSumStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getSumStandardCoal(startDate, endDate, standingBookIds);
     }
 
     /**

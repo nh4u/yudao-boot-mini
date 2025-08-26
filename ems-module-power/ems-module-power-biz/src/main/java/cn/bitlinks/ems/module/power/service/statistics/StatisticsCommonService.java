@@ -2,47 +2,37 @@ package cn.bitlinks.ems.module.power.service.statistics;
 
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
-import cn.bitlinks.ems.module.power.enums.CommonConstants;
-import cn.hutool.core.text.CharSequenceUtil;
-import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import javax.annotation.Resource;
-
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookEnergyTypeVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.mysql.measurementassociation.MeasurementAssociationMapper;
+import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.label.StandingbookLabelInfoService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
+
+import javax.annotation.Resource;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
@@ -84,6 +74,18 @@ public class StatisticsCommonService {
 
     private static final Map<String, Pattern> PATTERN_CACHE = new ConcurrentHashMap<>();
 
+    /**
+     * 能源id获取台账id
+     *
+     * @return
+     */
+    public List<Long> getSbIdsByEnergy(List<Long> energyIds) {
+        List<StandingbookDO> standingbookIdsByEnergy = getStandingbookIdsByEnergy(energyIds);
+        if (CollUtil.isEmpty(standingbookIdsByEnergy)) {
+            return Collections.emptyList();
+        }
+        return standingbookIdsByEnergy.stream().map(StandingbookDO::getId).collect(Collectors.toList());
+    }
 
     /**
      * 根据筛选条件筛选台账ID
@@ -102,9 +104,10 @@ public class StatisticsCommonService {
 
     /**
      * 统一校验时间类型、时间范围
+     *
      * @param paramVO
      */
-    public void validParamConditionDate(StatisticsParamV2VO paramVO){
+    public void validParamConditionDate(StatisticsParamV2VO paramVO) {
         // 校验时间范围合法性
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         LocalDateTime startTime = rangeOrigin[0];
@@ -122,6 +125,7 @@ public class StatisticsCommonService {
             throw exception(DATE_TYPE_NOT_EXISTS);
         }
     }
+
     /**
      * 根据筛选条件筛选台账ID
      *
@@ -156,6 +160,7 @@ public class StatisticsCommonService {
         }
         return labelInfoDOList;
     }
+
     /**
      * 根据指定的子级标签筛选台账ID
      *
@@ -164,6 +169,7 @@ public class StatisticsCommonService {
     public List<StandingbookLabelInfoDO> getStandingbookIdsByDefaultLabel(List<String> childLabels) {
         return standingbookLabelInfoService.getByValuesSelected(childLabels);
     }
+
     /**
      * 根据筛选条件筛选台账ID
      *
@@ -177,7 +183,7 @@ public class StatisticsCommonService {
             if (CharSequenceUtil.isBlank(childLabels)) {
                 //只有顶级标签
                 return standingbookLabelInfoService.getByLabelNames(Collections.singletonList(topLabel));
-            }else {
+            } else {
                 // 只有子标签
                 List<String> childLabelValues = StrSplitter.split(childLabels, "#", 0, true, true);
                 return standingbookLabelInfoService.getByValues(childLabelValues);

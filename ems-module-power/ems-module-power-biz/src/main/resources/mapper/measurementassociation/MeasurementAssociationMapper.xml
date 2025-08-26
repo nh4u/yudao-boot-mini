@@ -9,4 +9,28 @@
         文档可见：https://www.bitlinks.cn/MyBatis/x-plugins/
      -->
 
+    <select id="getNotLeafMeasurementId" resultType="java.lang.Long">
+        SELECT DISTINCT measurement_instrument_id
+        FROM power_measurement_association
+        WHERE  deleted = 0 and AND measurement_id IN
+        <foreach collection="sbIds" item="sbId" open="(" separator="," close=")">
+            #{sbId}
+        </foreach>
+        and measurement_instrument_id in
+        <foreach collection="sbIds" item="sbId" open="(" separator="," close=")">
+            #{sbId}
+        </foreach>
+    </select>
+    <select id="getNotToppestMeasurementId" resultType="java.lang.Long">
+        SELECT DISTINCT measurement_id
+        FROM power_measurement_association
+        WHERE  deleted = 0 and AND measurement_id IN
+        <foreach collection="sbIds" item="sbId" open="(" separator="," close=")">
+            #{sbId}
+        </foreach>
+        and measurement_instrument_id in
+        <foreach collection="sbIds" item="sbId" open="(" separator="," close=")">
+            #{sbId}
+        </foreach>
+    </select>
 </mapper>

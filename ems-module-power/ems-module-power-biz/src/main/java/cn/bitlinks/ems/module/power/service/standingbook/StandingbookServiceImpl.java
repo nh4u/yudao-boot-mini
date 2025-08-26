@@ -468,6 +468,11 @@ public class StandingbookServiceImpl implements StandingbookService {
             return buildTreeWithDevices(standingbookTypeDOTree, filterNodes);
     }
 
+    @Override
+    public List<Long> getStandingBookIdsByStage(Integer stage) {
+        return standingbookMapper.selectStandingbookIdByCondition(null,null,stage,null);
+    }
+
 
     /**
      * 分类list和台账节点list
