@@ -1,11 +1,9 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
-import java.util.List;
-
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamHomeV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 /**
  * 统计总览 Service 接口
@@ -18,22 +16,24 @@ public interface StatisticsHomeService {
      * @param paramVO
      * @return
      */
-    StatisticsHomeResultVO overview(StatisticsParamHomeV2VO paramVO);
+    StatisticsHomeResultVO overview(StatisticsParamHomeVO paramVO);
 
-    ComparisonChartResultVO costChart(StatisticsParamHomeV2VO paramVO);
+    ComparisonChartResultVO costChart(StatisticsParamHomeVO paramVO);
 
-    ComparisonChartResultVO coalChart(StatisticsParamHomeV2VO paramVO);
+    ComparisonChartResultVO coalChart(StatisticsParamHomeVO paramVO);
 
-    List<StatisticsOverviewEnergyData> energy(StatisticsParamHomeV2VO paramVO);
+    List<StatisticsOverviewEnergyData> energy(StatisticsParamHomeVO paramVO);
 
     /**
      * 统计总览-顶部设备数量
+     *
      * @return vo
      */
     StatisticsHomeTopResultVO overviewTop();
 
     /**
      * 统计总览-顶部 单位能源、查询条件时间维度
+     *
      * @param paramVO timeRange
      * @return vo
      */
