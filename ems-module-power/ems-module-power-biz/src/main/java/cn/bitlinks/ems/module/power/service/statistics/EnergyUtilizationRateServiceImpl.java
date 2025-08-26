@@ -6,11 +6,11 @@ import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseReportChartResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
-import cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants;
 import cn.bitlinks.ems.module.power.enums.StatisticsQueryType;
 import cn.bitlinks.ems.module.power.enums.standingbook.StandingBookStageEnum;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
@@ -28,6 +28,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_UTILIZATION_RATE_CHART;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_UTILIZATION_RATE_TABLE;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.safeDivide100;
 
 @Service
@@ -49,7 +51,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         // 校验条件的合法性
         statisticsCommonService.validParamConditionDate(paramVO);
 
-        String cacheKey = StatisticsCacheConstants.ENERGY_UTILIZATION_RATE_TABLE + SecureUtil.md5(paramVO.toString());
+        String cacheKey = ENERGY_UTILIZATION_RATE_TABLE + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (StrUtil.isNotEmpty(cacheRes)) {
@@ -218,6 +220,61 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
 
     @Override
     public List<BaseReportChartResultVO<BigDecimal>> getChart(StatisticsParamV2VO paramVO) {
-        return Collections.emptyList();
+        // 校验参数
+        statisticsCommonService.validParamConditionDate(paramVO);
+
+        String cacheKey = ENERGY_UTILIZATION_RATE_CHART + SecureUtil.md5(paramVO.toString());
+        byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
+        String cacheRes = StrUtils.decompressGzip(compressed);
+        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
+            return JSON.parseObject(cacheRes, new TypeReference<List<BaseReportChartResultVO<BigDecimal>>>() {
+            });
+        }
+        StatisticsResultV2VO<EnergyUtilizationRateInfo> tableResult = getTable(paramVO);
+
+        List<BaseReportChartResultVO<BigDecimal>> resultVOList = new ArrayList<>();
+        // x轴
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
+
+
+        List<EnergyUtilizationRateInfo> tableDataList = tableResult.getStatisticsInfoList();
+
+        tableDataList.forEach(info -> {
+            BaseReportChartResultVO<BigDecimal> resultVO = new BaseReportChartResultVO<>();
+            List<EnergyUtilizationRateInfoData> dateList = info.getEnergyUtilizationRateInfoDataList();
+            if (CollUtil.isEmpty(dateList)) {
+                return;
+            }
+            // 处理空数据
+            dateList.forEach(data -> {
+                data.setRate(data.getRate() == null ? BigDecimal.ZERO : data.getRate());
+            });
+            Map<String, EnergyUtilizationRateInfoData> timeMap = dateList.stream()
+                    .filter(data -> data.getDate() != null)
+                    .collect(Collectors.toMap(
+                            EnergyUtilizationRateInfoData::getDate,
+                            data -> data,
+                            (existing, replacement) -> replacement // 处理重复时间，保留后者
+                    ));
+            List<BigDecimal> nowList = xdata.stream().map(time -> {
+                        EnergyUtilizationRateInfoData infoData = timeMap.get(time);
+                        if (Objects.isNull(infoData)) {
+                            return BigDecimal.ZERO;
+                        }
+                        return infoData.getRate();
+                    }
+            ).collect(Collectors.toList());
+            LocalDateTime lastTime = tableResult.getDataTime();
+            resultVO.setDataTime(lastTime);
+            resultVO.setYdata(nowList);
+            resultVO.setXdata(xdata);
+            resultVOList.add(resultVO);
+        });
+
+
+        String jsonStr = JSONUtil.toJsonStr(resultVOList);
+        byte[] bytes = StrUtils.compressGzip(jsonStr);
+        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+        return resultVOList;
     }
 }
