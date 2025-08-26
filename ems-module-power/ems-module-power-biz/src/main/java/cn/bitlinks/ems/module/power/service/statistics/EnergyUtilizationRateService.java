@@ -11,7 +11,7 @@ import java.util.List;
  * 能源利用率
  */
 public interface EnergyUtilizationRateService {
-    StatisticsResultV2VO<EnergyUtilizationRateInfo> getTable(@Valid StatisticsParamV2VO paramVO);
+    StatisticsResultV2VO<EnergyRateInfo> getTable(@Valid StatisticsParamV2VO paramVO);
 
 
     List<BaseReportChartResultVO<BigDecimal>> getChart(@Valid StatisticsParamV2VO paramVO);

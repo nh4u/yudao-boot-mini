@@ -50,7 +50,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
     public static final String UTILIZATION_RATE_STR = "利用率";
 
     @Override
-    public StatisticsResultV2VO<EnergyUtilizationRateInfo> getTable(StatisticsParamV2VO paramVO) {
+    public StatisticsResultV2VO<EnergyRateInfo> getTable(StatisticsParamV2VO paramVO) {
         paramVO.setQueryType(StatisticsQueryType.COMPREHENSIVE_VIEW.getCode());
         // 校验条件的合法性
         statisticsCommonService.validParamConditionDate(paramVO);
@@ -59,13 +59,12 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (StrUtil.isNotEmpty(cacheRes)) {
-            log.info("缓存结果");
-            return JSON.parseObject(cacheRes, new TypeReference<StatisticsResultV2VO<EnergyUtilizationRateInfo>>() {
+            return JSON.parseObject(cacheRes, new TypeReference<StatisticsResultV2VO<EnergyRateInfo>>() {
             });
         }
         // 构建表头
         List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
-        StatisticsResultV2VO<EnergyUtilizationRateInfo> resultVO = new StatisticsResultV2VO<>();
+        StatisticsResultV2VO<EnergyRateInfo> resultVO = new StatisticsResultV2VO<>();
         resultVO.setHeader(tableHeader);
 
         // 查询台账id
@@ -93,7 +92,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         List<UsageCostData> numeratorList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], sbIds);
 
         // 综合默认查看
-        List<EnergyUtilizationRateInfo> statisticsInfoList = queryList(outsourceList, parkList, numeratorList, tableHeader);
+        List<EnergyRateInfo> statisticsInfoList = queryList(outsourceList, parkList, numeratorList, tableHeader);
 
         // 设置最终返回值
         resultVO.setStatisticsInfoList(statisticsInfoList);
@@ -124,17 +123,17 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         return resultVO;
     }
 
-    private StatisticsResultV2VO<EnergyUtilizationRateInfo> defaultNullData(List<String> tableHeader) {
-        StatisticsResultV2VO<EnergyUtilizationRateInfo> resultVO = new StatisticsResultV2VO<>();
+    private StatisticsResultV2VO<EnergyRateInfo> defaultNullData(List<String> tableHeader) {
+        StatisticsResultV2VO<EnergyRateInfo> resultVO = new StatisticsResultV2VO<>();
         resultVO.setHeader(tableHeader);
-        List<EnergyUtilizationRateInfo> infoList = new ArrayList<>();
+        List<EnergyRateInfo> infoList = new ArrayList<>();
 
-        EnergyUtilizationRateInfo osInfo = new EnergyUtilizationRateInfo();
-        osInfo.setEnergyUtilizationRateInfoDataList(Collections.emptyList());
+        EnergyRateInfo osInfo = new EnergyRateInfo();
+        osInfo.setEnergyRateInfoDataList(Collections.emptyList());
         osInfo.setItemName(EnergyClassifyEnum.OUTSOURCED.getDetail() + UTILIZATION_RATE_STR);
 
-        EnergyUtilizationRateInfo parkInfo = new EnergyUtilizationRateInfo();
-        parkInfo.setEnergyUtilizationRateInfoDataList(Collections.emptyList());
+        EnergyRateInfo parkInfo = new EnergyRateInfo();
+        parkInfo.setEnergyRateInfoDataList(Collections.emptyList());
         parkInfo.setItemName(EnergyClassifyEnum.PARK.getDetail() + UTILIZATION_RATE_STR);
         infoList.add(osInfo);
         infoList.add(parkInfo);
@@ -142,9 +141,9 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         return resultVO;
     }
 
-    private EnergyUtilizationRateInfo getUtilizationRateInfo(EnergyClassifyEnum energyClassifyEnum, Map<String, TimeAndNumData> denominatorMap, Map<String, TimeAndNumData> numeratorMap, List<String> tableHeader) {
+    private EnergyRateInfo getUtilizationRateInfo(EnergyClassifyEnum energyClassifyEnum, Map<String, TimeAndNumData> denominatorMap, Map<String, TimeAndNumData> numeratorMap, List<String> tableHeader) {
 
-        List<EnergyUtilizationRateInfoData> dataList = new ArrayList<>();
+        List<EnergyRateInfoData> dataList = new ArrayList<>();
         for (String time : tableHeader) {
             TimeAndNumData numeratorData = numeratorMap.get(time);
             BigDecimal numeratorValue = Optional.ofNullable(numeratorData)
@@ -156,7 +155,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
                     .map(TimeAndNumData::getNum)
                     .orElse(null);
             BigDecimal ratio = safeDivide100(numeratorValue, denominatorValue);
-            dataList.add(new EnergyUtilizationRateInfoData(time, ratio));
+            dataList.add(new EnergyRateInfoData(time, ratio));
         }
 
         // 汇总统计
@@ -164,8 +163,8 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         BigDecimal sumNumerator = numeratorMap.values().stream().filter(Objects::nonNull).map(data -> data.getNum() != null ? data.getNum() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal ratio = safeDivide100(sumNumerator, sumDenominator);
         // 构造结果对象
-        EnergyUtilizationRateInfo info = new EnergyUtilizationRateInfo();
-        info.setEnergyUtilizationRateInfoDataList(dataList);
+        EnergyRateInfo info = new EnergyRateInfo();
+        info.setEnergyRateInfoDataList(dataList);
         info.setItemName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR);
         info.setPeriodRate(ratio);
         return info;
@@ -174,10 +173,10 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
     /**
      * 按能源维度统计：以 energyId 为主键，构建同比统计数据
      */
-    private List<EnergyUtilizationRateInfo> queryList(List<UsageCostData> outsourceList,
-                                                      List<UsageCostData> parkList,
-                                                      List<UsageCostData> numeratorList,
-                                                      List<String> tableHeader) {
+    private List<EnergyRateInfo> queryList(List<UsageCostData> outsourceList,
+                                           List<UsageCostData> parkList,
+                                           List<UsageCostData> numeratorList,
+                                           List<String> tableHeader) {
         if (CollUtil.isEmpty(outsourceList)) {
             outsourceList = Collections.emptyList();
         }
@@ -191,7 +190,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         Map<String, TimeAndNumData> parkMap = getTimeAndNumDataMap(parkList);
         Map<String, TimeAndNumData> numeratorMap = getTimeAndNumDataMap(numeratorList);
 
-        List<EnergyUtilizationRateInfo> result = new ArrayList<>();
+        List<EnergyRateInfo> result = new ArrayList<>();
 
         result.add(getUtilizationRateInfo(EnergyClassifyEnum.OUTSOURCED, outsourceMap, numeratorMap, tableHeader));
         result.add(getUtilizationRateInfo(EnergyClassifyEnum.PARK, parkMap, numeratorMap, tableHeader));
@@ -234,18 +233,18 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
             return JSON.parseObject(cacheRes, new TypeReference<List<BaseReportChartResultVO<BigDecimal>>>() {
             });
         }
-        StatisticsResultV2VO<EnergyUtilizationRateInfo> tableResult = getTable(paramVO);
+        StatisticsResultV2VO<EnergyRateInfo> tableResult = getTable(paramVO);
 
         List<BaseReportChartResultVO<BigDecimal>> resultVOList = new ArrayList<>();
         // x轴
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
 
 
-        List<EnergyUtilizationRateInfo> tableDataList = tableResult.getStatisticsInfoList();
+        List<EnergyRateInfo> tableDataList = tableResult.getStatisticsInfoList();
 
         tableDataList.forEach(info -> {
             BaseReportChartResultVO<BigDecimal> resultVO = new BaseReportChartResultVO<>();
-            List<EnergyUtilizationRateInfoData> dateList = info.getEnergyUtilizationRateInfoDataList();
+            List<EnergyRateInfoData> dateList = info.getEnergyRateInfoDataList();
             if (CollUtil.isEmpty(dateList)) {
                 return;
             }
@@ -253,15 +252,15 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
             dateList.forEach(data -> {
                 data.setRate(data.getRate() == null ? BigDecimal.ZERO : data.getRate());
             });
-            Map<String, EnergyUtilizationRateInfoData> timeMap = dateList.stream()
+            Map<String, EnergyRateInfoData> timeMap = dateList.stream()
                     .filter(data -> data.getDate() != null)
                     .collect(Collectors.toMap(
-                            EnergyUtilizationRateInfoData::getDate,
+                            EnergyRateInfoData::getDate,
                             data -> data,
                             (existing, replacement) -> replacement // 处理重复时间，保留后者
                     ));
             List<BigDecimal> nowList = xdata.stream().map(time -> {
-                        EnergyUtilizationRateInfoData infoData = timeMap.get(time);
+                        EnergyRateInfoData infoData = timeMap.get(time);
                         if (Objects.isNull(infoData)) {
                             return BigDecimal.ZERO;
                         }
@@ -306,22 +305,22 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         // 结果list
         List<List<Object>> result = ListUtils.newArrayList();
 
-        StatisticsResultV2VO<EnergyUtilizationRateInfo> resultVO = getTable(paramVO);
+        StatisticsResultV2VO<EnergyRateInfo> resultVO = getTable(paramVO);
         List<String> tableHeader = resultVO.getHeader();
 
-        List<EnergyUtilizationRateInfo> energyUtilizationRateInfo = resultVO.getStatisticsInfoList();
+        List<EnergyRateInfo> energyUtilizationRateInfo = resultVO.getStatisticsInfoList();
 
-        for (EnergyUtilizationRateInfo s : energyUtilizationRateInfo) {
+        for (EnergyRateInfo s : energyUtilizationRateInfo) {
             List<Object> data = ListUtils.newArrayList();
             data.add(s.getItemName());
             // 处理数据
-            List<EnergyUtilizationRateInfoData> energyUtilizationRateInfoDataList = s.getEnergyUtilizationRateInfoDataList();
+            List<EnergyRateInfoData> energyUtilizationRateInfoDataList = s.getEnergyRateInfoDataList();
 
-            Map<String, EnergyUtilizationRateInfoData> dateMap = energyUtilizationRateInfoDataList.stream()
-                    .collect(Collectors.toMap(EnergyUtilizationRateInfoData::getDate, Function.identity()));
+            Map<String, EnergyRateInfoData> dateMap = energyUtilizationRateInfoDataList.stream()
+                    .collect(Collectors.toMap(EnergyRateInfoData::getDate, Function.identity()));
 
             tableHeader.forEach(date -> {
-                EnergyUtilizationRateInfoData energyUtilizationRateInfoData = dateMap.get(date);
+                EnergyRateInfoData energyUtilizationRateInfoData = dateMap.get(date);
                 if (energyUtilizationRateInfoData == null) {
                     data.add("/");
                 } else {

@@ -3,7 +3,7 @@ package cn.bitlinks.ems.module.power.controller.admin.statistics;
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseReportChartResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.EnergyUtilizationRateInfo;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.EnergyRateInfo;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
 import cn.bitlinks.ems.module.power.service.statistics.EnergyUtilizationRateService;
@@ -39,7 +39,7 @@ public class EnergyUtilizationRateController {
 
     @PostMapping("/table")
     @Operation(summary = "表")
-    public CommonResult<StatisticsResultV2VO<EnergyUtilizationRateInfo>> getTable(@Valid @RequestBody StatisticsParamV2VO paramVO) {
+    public CommonResult<StatisticsResultV2VO<EnergyRateInfo>> getTable(@Valid @RequestBody StatisticsParamV2VO paramVO) {
         return success(energyUtilizationRateService.getTable(paramVO));
     }
 
