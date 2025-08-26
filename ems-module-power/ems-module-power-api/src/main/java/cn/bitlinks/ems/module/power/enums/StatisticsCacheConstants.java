@@ -29,6 +29,11 @@ public class StatisticsCacheConstants {
     public static final String COMPARISON_YOY_TABLE_COST = "statistics:yoy:discount:table:cost:";
     public static final String COMPARISON_YOY_TABLE_COAL = "statistics:yoy:discount:table:coal:";
 
+
+    public static final String ENERGY_UTILIZATION_RATE_TABLE = "statistics:energy-utilization-rate:table:";
+    public static final String ENERGY_UTILIZATION_RATE_CHART = "statistics:energy-utilization-rate:chart:";
+
+
     public static final String COMPARISON_YOY_CHART_COST = "statistics:yoy:discount:chart:cost:";
     public static final String COMPARISON_YOY_CHART_COAL = "statistics:yoy:discount:chart:coal:";
 

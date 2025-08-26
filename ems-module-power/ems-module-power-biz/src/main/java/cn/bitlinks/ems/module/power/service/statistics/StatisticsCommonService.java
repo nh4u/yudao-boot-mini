@@ -1,9 +1,11 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
+import cn.bitlinks.ems.framework.common.enums.EnergyClassifyEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookEnergyTypeVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
@@ -124,6 +126,48 @@ public class StatisticsCommonService {
         if (Objects.isNull(dataTypeEnum)) {
             throw exception(DATE_TYPE_NOT_EXISTS);
         }
+    }
+
+    /**
+     * 查询终端使用的最底层叶子节点的计量器具
+     */
+    public List<Long> getStageEnergySbIds(Integer stage, boolean toppest, EnergyClassifyEnum energyClassifyEnum) {
+        // 查询终端使用的最底层叶子节点的计量器具
+        List<Long> stageSbIds = standingbookService.getStandingBookIdsByStage(stage);
+        if (CollUtil.isEmpty(stageSbIds)) {
+            return Collections.emptyList();
+        }
+        List<Long> measurementIds;
+        if (toppest) {
+            measurementIds = measurementAssociationMapper.getNotToppestMeasurementId(stageSbIds);
+        } else {
+            measurementIds = measurementAssociationMapper.getNotLeafMeasurementId(stageSbIds);
+        }
+
+        Set<Long> measurementSet = new HashSet<>(measurementIds);
+        // 先过滤掉null
+        stageSbIds = stageSbIds.stream()
+                .filter(Objects::nonNull) // 先过滤掉null
+                .filter(id -> !measurementSet.contains(id))
+                .collect(Collectors.toList());
+        if (CollUtil.isEmpty(stageSbIds)) {
+            return Collections.emptyList();
+        }
+        if (energyClassifyEnum != null) {
+            // 查询外购能源 计量器具ids
+            List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(energyClassifyEnum.getCode());
+            if (CollUtil.isEmpty(energyList)) {
+                return Collections.emptyList();
+            }
+            List<Long> energySbIds = getSbIdsByEnergy(energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList()));
+            if (CollUtil.isEmpty(energySbIds)) {
+                return Collections.emptyList();
+            }
+            // 取外购能源计量器具与环节最底层节点交集
+            stageSbIds.retainAll(new HashSet<>(energySbIds));
+            return stageSbIds;
+        }
+        return stageSbIds;
     }
 
     /**

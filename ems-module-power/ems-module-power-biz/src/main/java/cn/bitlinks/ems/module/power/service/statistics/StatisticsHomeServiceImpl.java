@@ -447,23 +447,11 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
      * 获取折标煤总量
      */
     private StatisticsHomeTop2Data getStandardCoalTop2Data(StandingBookStageEnum stageEnum, boolean toppest, EnergyClassifyEnum energyClassifyEnum, StatisticsParamHomeVO paramVO) {
-        List<Long> stageSbIds = getStageSbIds(stageEnum.getCode(), toppest);
+        List<Long> stageSbIds = statisticsCommonService.getStageEnergySbIds(stageEnum.getCode(), toppest, energyClassifyEnum);
         if (CollUtil.isEmpty(stageSbIds)) {
             return StatisticsHomeTop2Data.builder().build();
         }
-        if (energyClassifyEnum != null) {
-            // 查询外购能源 计量器具ids
-            List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(energyClassifyEnum.getCode());
-            if (CollUtil.isEmpty(energyList)) {
-                return StatisticsHomeTop2Data.builder().build();
-            }
-            List<Long> energySbIds = statisticsCommonService.getSbIdsByEnergy(energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList()));
-            if (CollUtil.isEmpty(energySbIds)) {
-                return StatisticsHomeTop2Data.builder().build();
-            }
-            // 取外购能源计量器具与环节最底层节点交集
-            stageSbIds.retainAll(new HashSet<>(energySbIds));
-        }
+
         if (CollUtil.isEmpty(stageSbIds)) {
             return StatisticsHomeTop2Data.builder().build();
         }
@@ -475,30 +463,6 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
                 paramVO.getRange()[1],
                 stageSbIds);
         return StatisticsHomeTop2Data.builder().dataUpdateTime(updTime).value(sumStandardCoal).build();
-    }
-
-    /**
-     * 查询终端使用的最底层叶子节点的计量器具
-     */
-    private List<Long> getStageSbIds(Integer stage, boolean toppest) {
-        // 查询终端使用的最底层叶子节点的计量器具
-        List<Long> stageSbIds = standingbookService.getStandingBookIdsByStage(stage);
-        if (CollUtil.isEmpty(stageSbIds)) {
-            return Collections.emptyList();
-        }
-        List<Long> measurementIds = new ArrayList<>();
-        if (toppest) {
-            measurementIds = measurementAssociationMapper.getNotLeafMeasurementId(stageSbIds);
-        } else {
-            measurementIds = measurementAssociationMapper.getNotToppestMeasurementId(stageSbIds);
-        }
-
-        Set<Long> measurementSet = new HashSet<>(measurementIds);
-        // 先过滤掉null
-        return stageSbIds.stream()
-                .filter(Objects::nonNull) // 先过滤掉null
-                .filter(id -> !measurementSet.contains(id))
-                .collect(Collectors.toList());
     }
 
 
