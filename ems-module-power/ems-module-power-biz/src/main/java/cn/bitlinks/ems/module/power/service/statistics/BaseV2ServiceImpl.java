@@ -524,25 +524,31 @@ public class BaseV2ServiceImpl implements BaseV2Service {
 
                 // 获取标签关联的台账id，并取到对应的数据
                 labelInfoList.forEach(labelInfo -> {
+
                     List<UsageCostData> usageNowList = standingBookUsageNowMap.get(labelInfo.getStandingbookId());
-                    List<UsageCostData> usagePrevList = standingBookUsagePrevMap.get(labelInfo.getStandingbookId());
                     if (CollUtil.isNotEmpty(usageNowList)) {
                         labelUsageCostDataNowList.addAll(usageNowList);
                     }
+
+                    List<UsageCostData> usagePrevList = standingBookUsagePrevMap.get(labelInfo.getStandingbookId());
                     if (CollUtil.isNotEmpty(usagePrevList)) {
                         labelUsageCostDataPrevList.addAll(usagePrevList);
                     }
+
                 });
 
                 // 按能源ID分组当前周期数据
                 Map<Long, List<UsageCostData>> energyUsageCostNowMap = new HashMap<>();
-                Map<Long, List<UsageCostData>> energyUsageCostPrevMap = new HashMap<>();
-                if (CollUtil.isEmpty(labelUsageCostDataNowList)) {
+
+                if (CollUtil.isNotEmpty(labelUsageCostDataNowList)) {
                     energyUsageCostNowMap = labelUsageCostDataNowList
                             .stream()
                             .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
                 }
-                if (CollUtil.isEmpty(labelUsageCostDataPrevList)) {
+
+                // 按能源ID分组上期数据
+                Map<Long, List<UsageCostData>> energyUsageCostPrevMap = new HashMap<>();
+                if (CollUtil.isNotEmpty(labelUsageCostDataPrevList)) {
                     energyUsageCostPrevMap = labelUsageCostDataPrevList
                             .stream()
                             .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
