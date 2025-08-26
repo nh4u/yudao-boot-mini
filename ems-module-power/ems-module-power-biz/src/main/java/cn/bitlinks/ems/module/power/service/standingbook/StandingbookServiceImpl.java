@@ -1263,6 +1263,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             response.setHeader("Pragma", "no-cache");
             response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
             response.addHeader("File-Name", fileName);
+            response.addHeader("Access-Control-Expose-Headers", "File-Name");
             wb.write(response.getOutputStream());
             response.flushBuffer();
         } catch (Exception e) {
@@ -1279,6 +1280,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + zipName);
         response.setHeader("Pragma", "no-cache");
         response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.addHeader("Access-Control-Expose-Headers", "File-Name");
         response.addHeader("File-Name", zipName);
 
         try (ZipOutputStream zos = new ZipOutputStream(response.getOutputStream())) {
