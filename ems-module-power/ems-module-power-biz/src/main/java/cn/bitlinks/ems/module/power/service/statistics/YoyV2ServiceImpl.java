@@ -870,13 +870,13 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         xdata.forEach(x -> {
             list.add(Arrays.asList(finalSheetName, labelName, strTime, x, getHeaderDesc(unit, flag, NOW)));
             list.add(Arrays.asList(finalSheetName, labelName, strTime, x, getHeaderDesc(unit, flag, PREVIOUS)));
-            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, getHeaderDesc(unit, flag, RATIO_PERCENT)));
+            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, RATIO_PERCENT));
         });
 
         // 周期合计
         list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", getHeaderDesc(unit, flag, NOW)));
         list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", getHeaderDesc(unit, flag, PREVIOUS)));
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", getHeaderDesc(unit, flag, RATIO_PERCENT)));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", RATIO_PERCENT));
         return list;
 
     }
