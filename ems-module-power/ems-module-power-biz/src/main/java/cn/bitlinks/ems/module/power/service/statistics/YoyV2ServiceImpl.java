@@ -462,12 +462,12 @@ public class YoyV2ServiceImpl implements YoyV2Service {
                 // 按能源ID分组当前周期数据
                 Map<Long, List<UsageCostData>> energyUsageCostNowMap = new HashMap<>();
                 Map<Long, List<UsageCostData>> energyUsageCostPrevMap = new HashMap<>();
-                if (CollUtil.isEmpty(labelUsageCostDataNowList)) {
+                if (CollUtil.isNotEmpty(labelUsageCostDataNowList)) {
                     energyUsageCostNowMap = labelUsageCostDataNowList
                             .stream()
                             .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
                 }
-                if (CollUtil.isEmpty(labelUsageCostDataPrevList)) {
+                if (CollUtil.isNotEmpty(labelUsageCostDataPrevList)) {
                     energyUsageCostPrevMap = labelUsageCostDataPrevList
                             .stream()
                             .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
@@ -1140,7 +1140,8 @@ public class YoyV2ServiceImpl implements YoyV2Service {
 
         // 汇总统计
         BigDecimal sumNow = dataList.stream().map(YoyDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal sumPrevious = dataList.stream().map(YoyDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal sumPrevious = lastUsageList.stream().map(valueExtractor).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+//        BigDecimal sumPrevious = dataList.stream().map(YoyDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal sumRatio = calculateYearOnYearRatio(sumNow, sumPrevious);
         // 构造结果对象
         YoyItemVO vo = new YoyItemVO();
