@@ -18,6 +18,7 @@ import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.text.StrPool;
 import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -32,12 +33,12 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
@@ -100,6 +101,8 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         // 2.2.校验时间类型
         DataTypeEnum dataTypeEnum = validateDateType(paramVO.getDateType());
 
+        Integer benchmark = paramVO.getBenchmark();
+
         String cacheKey = commonType + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
@@ -158,25 +161,53 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         List<UsageCostData> usageCostDataList = usageCostService.getList(paramVO, startTime, endTime, standingBookIds);
 
         // 查询上一年周期折扣数据
-        LocalDateTime[] lastRange = LocalDateTimeUtils.getBenchmarkRange(rangeOrigin, dataTypeEnum, paramVO.getBenchmark());
+        LocalDateTime[] lastRange = LocalDateTimeUtils.getBenchmarkRange(rangeOrigin, dataTypeEnum, benchmark);
         List<UsageCostData> lastUsageCostDataList = usageCostService.getList(paramVO, lastRange[0], lastRange[1], standingBookIds);
 
         List<BaseItemVO> statisticsInfoList = new ArrayList<>();
         boolean isCrossYear = DateUtils.isCrossYear(paramVO.getRange()[0], paramVO.getRange()[1]);
         if (QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)) {
             // 按能源查看，无需构建标签分组
-            statisticsInfoList.addAll(queryByEnergy(energyList, usageCostDataList, lastUsageCostDataList, dataTypeEnum, valueExtractor, tableHeader, isCrossYear, paramVO.getBenchmark()));
-        } else if (QueryDimensionEnum.LABEL_REVIEW.getCode().equals(queryType)) {
-            // 按标签查看
-            statisticsInfoList.addAll(queryByLabel(
-                    topLabel,
-                    childLabels,
-                    standingbookIdsByLabel,
+            statisticsInfoList.addAll(queryByEnergy(
+                    energyList,
                     usageCostDataList,
                     lastUsageCostDataList,
                     dataTypeEnum,
                     valueExtractor,
-                    paramVO.getBenchmark()));
+                    tableHeader,
+                    isCrossYear,
+                    benchmark));
+        } else if (QueryDimensionEnum.LABEL_REVIEW.getCode().equals(queryType)) {
+            // 按标签查看
+            Map<Long, LabelConfigDO> labelMap = labelConfigService.getAllLabelConfig().stream()
+                    .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
+
+            if (CharSequenceUtil.isNotBlank(topLabel) && CharSequenceUtil.isBlank(childLabels)) {
+                // 只有顶级标签
+                statisticsInfoList.addAll(queryByTopLabel(
+                        usageCostDataList,
+                        lastUsageCostDataList,
+                        labelMap,
+                        topLabel,
+                        dataTypeEnum,
+                        tableHeader,
+                        isCrossYear,
+                        valueExtractor,
+                        benchmark));
+            } else {
+                // 有顶级、有子集标签
+                statisticsInfoList.addAll(queryBySubLabel(
+                        standingbookIdsByLabel,
+                        usageCostDataList,
+                        lastUsageCostDataList,
+                        labelMap,
+                        dataTypeEnum,
+                        tableHeader,
+                        isCrossYear,
+                        valueExtractor,
+                        benchmark));
+            }
+
         } else {
             // 综合默认查看
             statisticsInfoList.addAll(queryDefault(
@@ -186,8 +217,10 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                     usageCostDataList,
                     lastUsageCostDataList,
                     dataTypeEnum,
+                    tableHeader,
+                    isCrossYear,
                     valueExtractor,
-                    paramVO.getBenchmark()));
+                    benchmark));
         }
 
 
@@ -229,7 +262,12 @@ public class BaseV2ServiceImpl implements BaseV2Service {
 
         List<BaseItemVO> detailList = new ArrayList<>();
         energyList.forEach(energy -> {
-            BaseItemVO vo = buildBaseItemVODataList(nowUsageMap.get(energy.getId()), lastUsageMap.get(energy.getId()), dataTypeEnum, tableHeader, isCrossYear, benchmark, valueExtractor);
+            List<UsageCostData> nowList = nowUsageMap.get(energy.getId());
+            List<UsageCostData> lastList = lastUsageMap.get(energy.getId());
+            if (CollUtil.isEmpty(nowList) && CollUtil.isEmpty(lastList)) {
+                return;
+            }
+            BaseItemVO vo = buildBaseItemVODataList(nowList, lastList, dataTypeEnum, tableHeader, isCrossYear, benchmark, valueExtractor);
             vo.setEnergyId(energy.getId());
             vo.setEnergyName(energy.getEnergyName());
             detailList.add(vo);
@@ -238,83 +276,27 @@ public class BaseV2ServiceImpl implements BaseV2Service {
     }
 
 
-    private List<BaseItemVO> queryByLabel(String topLabel,
-                                          String childLabels,
-                                          List<StandingbookLabelInfoDO> standingbookIdsByLabel,
-                                          List<UsageCostData> usageCostDataList,
-                                          List<UsageCostData> lastUsageCostDataList,
-                                          DataTypeEnum dateTypeEnum,
-                                          Function<UsageCostData, BigDecimal> valueExtractor,
-                                          Integer benchmark) {
-
-        Map<Long, LabelConfigDO> labelMap = labelConfigService.getAllLabelConfig().stream()
-                .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
-
-        if (CharSequenceUtil.isNotBlank(topLabel) && CharSequenceUtil.isBlank(childLabels)) {
-            // 只有顶级标签
-            return queryByTopLabel(usageCostDataList, lastUsageCostDataList, labelMap, topLabel, dateTypeEnum, valueExtractor, benchmark);
-        } else {
-            // 有顶级、有子集标签
-            return queryBySubLabel(standingbookIdsByLabel, usageCostDataList, lastUsageCostDataList, labelMap, dateTypeEnum, valueExtractor, benchmark);
-        }
-    }
-
     private List<BaseItemVO> queryByTopLabel(List<UsageCostData> usageCostDataList,
                                              List<UsageCostData> lastUsageCostDataList,
                                              Map<Long, LabelConfigDO> labelMap,
                                              String topLabelKey,
                                              DataTypeEnum dateTypeEnum,
+                                             List<String> tableHeader,
+                                             boolean isCrossYear,
                                              Function<UsageCostData, BigDecimal> valueExtractor,
                                              Integer benchmark) {
 
         List<BaseItemVO> resultList = new ArrayList<>();
-
-        // 1.处理当前
-        List<TimeAndNumData> usageList = getTimeAndNumDataList(usageCostDataList, valueExtractor);
-
-        // 处理上期
-        Map<String, TimeAndNumData> lastMap = getTimeAndNumDataMap(lastUsageCostDataList, valueExtractor);
-
-        // 构造定基比详情列表
-        List<BaseDetailVO> dataList = usageList.stream()
-                .map(current -> {
-                    String previousTime = LocalDateTimeUtils.getBenchmarkTime(current.getTime(), dateTypeEnum, benchmark);
-                    TimeAndNumData previous = lastMap.get(previousTime);
-                    BigDecimal now = Optional.ofNullable(current.getNum()).orElse(BigDecimal.ZERO);
-                    BigDecimal last = previous != null ? Optional.ofNullable(previous.getNum()).orElse(BigDecimal.ZERO) : BigDecimal.ZERO;
-                    BigDecimal ratio = calculateBaseRatio(now, last);
-                    return new BaseDetailVO(current.getTime(), now, last, ratio);
-                })
-                .sorted(Comparator.comparing(BaseDetailVO::getDate))
-                .collect(Collectors.toList());
-
-        // 汇总统计
-        BigDecimal sumNow = dataList.stream().map(BaseDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
-        BigDecimal sumPrevious = dataList.stream().map(BaseDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
-        BigDecimal sumRatio = calculateBaseRatio(sumNow, sumPrevious);
-
+        BaseItemVO info = buildBaseItemVODataList(usageCostDataList, lastUsageCostDataList, dateTypeEnum, tableHeader, isCrossYear, benchmark, valueExtractor);
         // 构造结果对象
-        BaseItemVO info = new BaseItemVO();
-
         Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
         LabelConfigDO topLabel = labelMap.get(topLabelId);
         info.setLabel1(topLabel.getLabelName());
 
-        info.setLabel2("/");
-        info.setLabel3("/");
-        info.setLabel4("/");
-        info.setLabel5("/");
-
-        dataList = dataList.stream().peek(i -> {
-            i.setNow(dealBigDecimalScale(i.getNow(), DEFAULT_SCALE));
-            i.setPrevious(dealBigDecimalScale(i.getPrevious(), DEFAULT_SCALE));
-            i.setRatio(dealBigDecimalScale(i.getRatio(), DEFAULT_SCALE));
-        }).collect(Collectors.toList());
-        info.setStatisticsRatioDataList(dataList);
-
-        info.setSumNow(dealBigDecimalScale(sumNow, DEFAULT_SCALE));
-        info.setSumPrevious(dealBigDecimalScale(sumPrevious, DEFAULT_SCALE));
-        info.setSumRatio(dealBigDecimalScale(sumRatio, DEFAULT_SCALE));
+        info.setLabel2(StrPool.SLASH);
+        info.setLabel3(StrPool.SLASH);
+        info.setLabel4(StrPool.SLASH);
+        info.setLabel5(StrPool.SLASH);
 
         resultList.add(info);
 
@@ -329,6 +311,8 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                                              List<UsageCostData> lastUsageCostDataList,
                                              Map<Long, LabelConfigDO> labelMap,
                                              DataTypeEnum dateTypeEnum,
+                                             List<String> tableHeader,
+                                             boolean isCrossYear,
                                              Function<UsageCostData, BigDecimal> valueExtractor,
                                              Integer benchmark) {
         Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
@@ -340,12 +324,8 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
 
         // 同期数据以 standingbookId + time 为key 构建map
-        Map<String, UsageCostData> lastMap = lastUsageCostDataList.stream()
-                .collect(Collectors.toMap(
-                        d -> d.getStandingbookId() + "_" + d.getTime(),
-                        Function.identity(),
-                        (a, b) -> a
-                ));
+        Map<Long, List<UsageCostData>> lastMap = lastUsageCostDataList.stream()
+                .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
 
 
         List<BaseItemVO> resultList = new ArrayList<>();
@@ -360,76 +340,32 @@ public class BaseV2ServiceImpl implements BaseV2Service {
             labelInfoGroup.forEach((valueKey, labelInfoList) -> {
                 String[] labelIds = valueKey.split(",");
                 String label2Name = getLabelName(labelMap, labelIds, 0);
-                String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : "/";
-                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : "/";
-                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : "/";
+                String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : StrPool.SLASH;
+                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : StrPool.SLASH;
+                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : StrPool.SLASH;
 
                 List<UsageCostData> labelUsageListNow = new ArrayList<>();
                 List<UsageCostData> labelUsageListPrevious = new ArrayList<>();
 
                 // 获取本期标签关联的台账id，并取到对应的数据
-                // 获取本期
                 labelInfoList.forEach(labelInfo -> {
                     List<UsageCostData> usageList = currentMap.get(labelInfo.getStandingbookId());
-                    if (usageList == null || usageList.isEmpty()) {
-                        return; // 计量器具没有数据，跳过
+                    if (usageList != null) {
+                        labelUsageListNow.addAll(usageList);
                     }
-                    labelUsageListNow.addAll(usageList);
-                });
-
-                // 获取定基年年同期
-                labelUsageListNow.forEach(u -> {
-                    String previousTime = LocalDateTimeUtils.getBenchmarkTime(u.getTime(), dateTypeEnum, benchmark);
-                    String key = u.getStandingbookId() + "_" + previousTime;
-                    UsageCostData previous = lastMap.get(key);
-                    if (Objects.isNull(previous)) {
-                        return; // 计量器具没有数据，跳过
+                    List<UsageCostData> usageList1 = lastMap.get(labelInfo.getStandingbookId());
+                    if (usageList1 != null) {
+                        labelUsageListPrevious.addAll(usageList1);
                     }
-                    labelUsageListPrevious.add(previous);
                 });
-
-                // 1.处理当前
-                List<TimeAndNumData> nowList = getTimeAndNumDataList(labelUsageListNow, valueExtractor);
-
-                // 2.处理上期
-                Map<String, TimeAndNumData> previousMap = getTimeAndNumDataMap(labelUsageListPrevious, valueExtractor);
-
-                // 构造定基比详情列表
-                List<BaseDetailVO> dataList = nowList.stream()
-                        .map(current -> {
-                            String previousTime = LocalDateTimeUtils.getBenchmarkTime(current.getTime(), dateTypeEnum, benchmark);
-                            TimeAndNumData previous = previousMap.get(previousTime);
-                            BigDecimal now = Optional.ofNullable(current.getNum()).orElse(BigDecimal.ZERO);
-                            BigDecimal last = previous != null ? Optional.ofNullable(previous.getNum()).orElse(BigDecimal.ZERO) : BigDecimal.ZERO;
-                            BigDecimal ratio = calculateBaseRatio(now, last);
-                            return new BaseDetailVO(current.getTime(), now, last, ratio);
-                        })
-                        .sorted(Comparator.comparing(BaseDetailVO::getDate))
-                        .collect(Collectors.toList());
-
-                // 汇总统计
-                BigDecimal sumNow = dataList.stream().map(BaseDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
-                BigDecimal sumPrevious = dataList.stream().map(BaseDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
-                BigDecimal sumRatio = calculateBaseRatio(sumNow, sumPrevious);
 
                 // 构造结果对象
-                BaseItemVO info = new BaseItemVO();
+                BaseItemVO info = buildBaseItemVODataList(labelUsageListNow, labelUsageListPrevious, dateTypeEnum, tableHeader, isCrossYear, benchmark, valueExtractor);
                 info.setLabel1(topLabel.getLabelName());
                 info.setLabel2(label2Name);
                 info.setLabel3(label3Name);
                 info.setLabel4(label4Name);
                 info.setLabel5(label5Name);
-
-                dataList = dataList.stream().peek(i -> {
-                    i.setNow(dealBigDecimalScale(i.getNow(), DEFAULT_SCALE));
-                    i.setPrevious(dealBigDecimalScale(i.getPrevious(), DEFAULT_SCALE));
-                    i.setRatio(dealBigDecimalScale(i.getRatio(), DEFAULT_SCALE));
-                }).collect(Collectors.toList());
-                info.setStatisticsRatioDataList(dataList);
-
-                info.setSumNow(dealBigDecimalScale(sumNow, DEFAULT_SCALE));
-                info.setSumPrevious(dealBigDecimalScale(sumPrevious, DEFAULT_SCALE));
-                info.setSumRatio(dealBigDecimalScale(sumRatio, DEFAULT_SCALE));
 
                 resultList.add(info);
             });
@@ -445,22 +381,21 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                                          List<UsageCostData> usageCostDataList,
                                          List<UsageCostData> lastUsageCostDataList,
                                          DataTypeEnum dateTypeEnum,
+                                         List<String> tableHeader,
+                                         boolean isCrossYear,
                                          Function<UsageCostData, BigDecimal> valueExtractor,
                                          Integer benchmark) {
 
-        // 提取所有能源ID
-        Set<Long> energyIdSet = usageCostDataList.stream().map(UsageCostData::getEnergyId).collect(Collectors.toSet());
+        // 实际用到的能源ids
+        Set<Long> energyIdSet = Stream.concat(
+                usageCostDataList.stream().map(UsageCostData::getEnergyId),
+                lastUsageCostDataList.stream().map(UsageCostData::getEnergyId)
+        ).collect(Collectors.toSet());
+
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getPureByEnergyClassify(energyIdSet, null);
+
         Map<Long, EnergyConfigurationDO> energyMap = energyList.stream()
                 .collect(Collectors.toMap(EnergyConfigurationDO::getId, Function.identity()));
-
-        // 上期数据构建 key = standingbookId_energyId_time 的 map
-        Map<String, UsageCostData> lastMap = lastUsageCostDataList.stream()
-                .collect(Collectors.toMap(
-                        d -> d.getStandingbookId() + "_" + d.getEnergyId() + "_" + d.getTime(),
-                        Function.identity(),
-                        (a, b) -> a
-                ));
 
         // 查询所有标签配置
         Map<Long, LabelConfigDO> labelMap = labelConfigService.getAllLabelConfig().stream()
@@ -469,95 +404,74 @@ public class BaseV2ServiceImpl implements BaseV2Service {
 
         if (CharSequenceUtil.isNotBlank(topLabel) && CharSequenceUtil.isBlank(childLabels)) {
             // 只有顶级标签
-            return queryDefaultTopLabel(usageCostDataList, lastMap, labelMap, energyMap, topLabel, dateTypeEnum, valueExtractor, benchmark);
+            return queryDefaultTopLabel(
+                    usageCostDataList,
+                    lastUsageCostDataList,
+                    labelMap,
+                    energyMap,
+                    topLabel,
+                    dateTypeEnum,
+                    tableHeader,
+                    isCrossYear,
+                    valueExtractor,
+                    benchmark);
         } else {
             // 有顶级、有子集标签
-            return queryDefaultSubLabel(standingbookIdsByLabel, usageCostDataList, lastMap, labelMap, energyMap, dateTypeEnum, valueExtractor, benchmark);
+            return queryDefaultSubLabel(
+                    standingbookIdsByLabel,
+                    usageCostDataList,
+                    lastUsageCostDataList,
+                    labelMap,
+                    energyMap,
+                    dateTypeEnum,
+                    tableHeader,
+                    isCrossYear,
+                    valueExtractor,
+                    benchmark);
         }
     }
 
     private List<BaseItemVO> queryDefaultTopLabel(List<UsageCostData> usageCostDataList,
-                                                  Map<String, UsageCostData> lastMap,
+                                                  List<UsageCostData> lastUsageCostDataList,
                                                   Map<Long, LabelConfigDO> labelMap,
                                                   Map<Long, EnergyConfigurationDO> energyMap,
                                                   String topLabelKey,
                                                   DataTypeEnum dateTypeEnum,
+                                                  List<String> tableHeader,
+                                                  boolean isCrossYear,
                                                   Function<UsageCostData, BigDecimal> valueExtractor,
                                                   Integer benchmark) {
 
-        List<BaseItemVO> resultList = new ArrayList<>();
-
-        // 当前计量器具下按 energyId 再分组
-        Map<Long, List<UsageCostData>> energyUsageCostMap = usageCostDataList.stream()
+        // 按能源ID分组当前周期数据
+        Map<Long, List<UsageCostData>> nowUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
+        Map<Long, List<UsageCostData>> lastUsageMap = lastUsageCostDataList.stream()
+                .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
+
+        List<BaseItemVO> resultList = new ArrayList<>();
 
         Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
         LabelConfigDO topLabel = labelMap.get(topLabelId);
 
-
-        energyUsageCostMap.forEach((energyId, usageCostList) -> {
-            EnergyConfigurationDO energyConfigurationDO = energyMap.get(energyId);
-            if (energyConfigurationDO == null) return;
-
-
-            // 取数
-            List<UsageCostData> previousUsageCostList = new ArrayList<>();
-            // 获取上期
-            usageCostList.forEach(u -> {
-                String previousTime = LocalDateTimeUtils.getBenchmarkTime(u.getTime(), dateTypeEnum, benchmark);
-                String key = u.getStandingbookId() + "_" + energyId + "_" + previousTime;
-                UsageCostData previous = lastMap.get(key);
-                if (Objects.isNull(previous)) {
-                    return; // 计量器具没有数据，跳过
-                }
-                previousUsageCostList.add(previous);
-            });
-
-
-            // 1.处理当前
-            List<TimeAndNumData> nowList = getTimeAndNumDataList(usageCostList, valueExtractor);
-
-            // 2.处理去年同期
-            Map<String, TimeAndNumData> previousMap = getTimeAndNumDataMap(previousUsageCostList, valueExtractor);
-
-            // 构造明细列表
-            List<BaseDetailVO> dataList = nowList.stream()
-                    .map(current -> {
-                        String previousTime = LocalDateTimeUtils.getBenchmarkTime(current.getTime(), dateTypeEnum, benchmark);
-                        TimeAndNumData previous = previousMap.get(previousTime);
-                        BigDecimal now = Optional.ofNullable(current.getNum()).orElse(BigDecimal.ZERO);
-                        BigDecimal last = previous != null ? Optional.ofNullable(previous.getNum()).orElse(BigDecimal.ZERO) : BigDecimal.ZERO;
-                        BigDecimal ratio = calculateBaseRatio(now, last);
-                        return new BaseDetailVO(current.getTime(), now, last, ratio);
-                    })
-                    .sorted(Comparator.comparing(BaseDetailVO::getDate))
-                    .collect(Collectors.toList());
-
-            // 汇总
-            BigDecimal sumNow = dataList.stream().map(BaseDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
-            BigDecimal sumPrevious = dataList.stream().map(BaseDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
-            BigDecimal sumRatio = calculateBaseRatio(sumNow, sumPrevious);
+        energyMap.forEach((energyId, energyConfigurationDO) -> {
 
             // 构造结果对象
-            BaseItemVO info = new BaseItemVO();
+            BaseItemVO info = buildBaseItemVODataList(
+                    nowUsageMap.get(energyId),
+                    lastUsageMap.get(energyId),
+                    dateTypeEnum,
+                    tableHeader,
+                    isCrossYear,
+                    benchmark,
+                    valueExtractor);
+
             info.setEnergyId(energyId);
             info.setEnergyName(energyConfigurationDO.getEnergyName());
             info.setLabel1(topLabel.getLabelName());
-            info.setLabel2("/");
-            info.setLabel3("/");
-            info.setLabel4("/");
-            info.setLabel5("/");
-
-            dataList = dataList.stream().peek(i -> {
-                i.setNow(dealBigDecimalScale(i.getNow(), DEFAULT_SCALE));
-                i.setPrevious(dealBigDecimalScale(i.getPrevious(), DEFAULT_SCALE));
-                i.setRatio(dealBigDecimalScale(i.getRatio(), DEFAULT_SCALE));
-            }).collect(Collectors.toList());
-            info.setStatisticsRatioDataList(dataList);
-
-            info.setSumNow(dealBigDecimalScale(sumNow, DEFAULT_SCALE));
-            info.setSumPrevious(dealBigDecimalScale(sumPrevious, DEFAULT_SCALE));
-            info.setSumRatio(dealBigDecimalScale(sumRatio, DEFAULT_SCALE));
+            info.setLabel2(StrPool.SLASH);
+            info.setLabel3(StrPool.SLASH);
+            info.setLabel4(StrPool.SLASH);
+            info.setLabel5(StrPool.SLASH);
 
             resultList.add(info);
         });
@@ -570,10 +484,12 @@ public class BaseV2ServiceImpl implements BaseV2Service {
      */
     private List<BaseItemVO> queryDefaultSubLabel(List<StandingbookLabelInfoDO> standingbookIdsByLabel,
                                                   List<UsageCostData> usageCostDataList,
-                                                  Map<String, UsageCostData> lastMap,
+                                                  List<UsageCostData> lastUsageCostDataList,
                                                   Map<Long, LabelConfigDO> labelMap,
                                                   Map<Long, EnergyConfigurationDO> energyMap,
                                                   DataTypeEnum dateTypeEnum,
+                                                  List<String> tableHeader,
+                                                  boolean isCrossYear,
                                                   Function<UsageCostData, BigDecimal> valueExtractor,
                                                   Integer benchmark) {
         Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
@@ -582,8 +498,11 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                         Collectors.groupingBy(StandingbookLabelInfoDO::getValue)));
 
         // 聚合数据按台账id分组
-        Map<Long, List<UsageCostData>> standingBookUsageMap = usageCostDataList.stream()
+        Map<Long, List<UsageCostData>> standingBookUsageNowMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
+        Map<Long, List<UsageCostData>> standingBookUsagePrevMap = lastUsageCostDataList.stream()
+                .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
+
 
         List<BaseItemVO> resultList = new ArrayList<>();
 
@@ -596,69 +515,61 @@ public class BaseV2ServiceImpl implements BaseV2Service {
             labelInfoGroup.forEach((valueKey, labelInfoList) -> {
                 String[] labelIds = valueKey.split(",");
                 String label2Name = getLabelName(labelMap, labelIds, 0);
-                String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : "/";
-                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : "/";
-                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : "/";
+                String label3Name = labelIds.length > 1 ? getLabelName(labelMap, labelIds, 1) : StrPool.SLASH;
+                String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : StrPool.SLASH;
+                String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : StrPool.SLASH;
 
-                List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
+                List<UsageCostData> labelUsageCostDataNowList = new ArrayList<>();
+                List<UsageCostData> labelUsageCostDataPrevList = new ArrayList<>();
 
                 // 获取标签关联的台账id，并取到对应的数据
                 labelInfoList.forEach(labelInfo -> {
-                    List<UsageCostData> usageList = standingBookUsageMap.get(labelInfo.getStandingbookId());
-                    if (usageList == null || usageList.isEmpty()) {
-                        return; // 计量器具没有数据，跳过
+
+                    List<UsageCostData> usageNowList = standingBookUsageNowMap.get(labelInfo.getStandingbookId());
+                    if (CollUtil.isNotEmpty(usageNowList)) {
+                        labelUsageCostDataNowList.addAll(usageNowList);
                     }
-                    labelUsageCostDataList.addAll(usageList);
+
+                    List<UsageCostData> usagePrevList = standingBookUsagePrevMap.get(labelInfo.getStandingbookId());
+                    if (CollUtil.isNotEmpty(usagePrevList)) {
+                        labelUsageCostDataPrevList.addAll(usagePrevList);
+                    }
+
                 });
 
-                // 当前计量器具下按 energyId 再分组
-                Map<Long, List<UsageCostData>> energyUsageCostMap = labelUsageCostDataList.stream()
-                        .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
+                // 按能源ID分组当前周期数据
+                Map<Long, List<UsageCostData>> energyUsageCostNowMap = new HashMap<>();
 
-                energyUsageCostMap.forEach((energyId, usageCostList) -> {
-                    EnergyConfigurationDO energyConfigurationDO = energyMap.get(energyId);
+                if (CollUtil.isNotEmpty(labelUsageCostDataNowList)) {
+                    energyUsageCostNowMap = labelUsageCostDataNowList
+                            .stream()
+                            .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
+                }
+
+                // 按能源ID分组上期数据
+                Map<Long, List<UsageCostData>> energyUsageCostPrevMap = new HashMap<>();
+                if (CollUtil.isNotEmpty(labelUsageCostDataPrevList)) {
+                    energyUsageCostPrevMap = labelUsageCostDataPrevList
+                            .stream()
+                            .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
+                }
+
+                Map<Long, List<UsageCostData>> finalEnergyUsageCostNowMap = energyUsageCostNowMap;
+                Map<Long, List<UsageCostData>> finalEnergyUsageCostPrevMap = energyUsageCostPrevMap;
+
+                energyMap.forEach((energyId, energyConfigurationDO) -> {
                     if (energyConfigurationDO == null) return;
 
-                    // 取数
-                    List<UsageCostData> previousUsageCostList = new ArrayList<>();
-                    // 获取上期
-                    usageCostList.forEach(u -> {
-                        String previousTime = LocalDateTimeUtils.getBenchmarkTime(u.getTime(), dateTypeEnum, benchmark);
-                        String key = u.getStandingbookId() + "_" + energyId + "_" + previousTime;
-                        UsageCostData previous = lastMap.get(key);
-                        if (Objects.isNull(previous)) {
-                            return; // 计量器具没有数据，跳过
-                        }
-                        previousUsageCostList.add(previous);
-                    });
-
-                    // 1.处理当前
-                    List<TimeAndNumData> nowList = getTimeAndNumDataList(usageCostList, valueExtractor);
-
-                    // 2.处理上期
-                    Map<String, TimeAndNumData> previousMap = getTimeAndNumDataMap(previousUsageCostList, valueExtractor);
-
-
-                    // 构造明细列表
-                    List<BaseDetailVO> dataList = nowList.stream()
-                            .map(current -> {
-                                String previousTime = LocalDateTimeUtils.getBenchmarkTime(current.getTime(), dateTypeEnum, benchmark);
-                                TimeAndNumData previous = previousMap.get(previousTime);
-                                BigDecimal now = Optional.ofNullable(current.getNum()).orElse(BigDecimal.ZERO);
-                                BigDecimal last = previous != null ? Optional.ofNullable(previous.getNum()).orElse(BigDecimal.ZERO) : BigDecimal.ZERO;
-                                BigDecimal ratio = calculateBaseRatio(now, last);
-                                return new BaseDetailVO(current.getTime(), now, last, ratio);
-                            })
-                            .sorted(Comparator.comparing(BaseDetailVO::getDate))
-                            .collect(Collectors.toList());
-
-                    // 汇总
-                    BigDecimal sumNow = dataList.stream().map(BaseDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
-                    BigDecimal sumPrevious = dataList.stream().map(BaseDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
-                    BigDecimal sumRatio = calculateBaseRatio(sumNow, sumPrevious);
-
                     // 构造结果对象
-                    BaseItemVO info = new BaseItemVO();
+                    BaseItemVO info = buildBaseItemVODataList(
+                            finalEnergyUsageCostNowMap.get(energyId),
+                            finalEnergyUsageCostPrevMap.get(energyId),
+                            dateTypeEnum,
+                            tableHeader,
+                            isCrossYear,
+                            benchmark,
+                            valueExtractor);
+
                     info.setEnergyId(energyId);
                     info.setEnergyName(energyConfigurationDO.getEnergyName());
                     info.setLabel1(topLabel.getLabelName());
@@ -666,17 +577,6 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                     info.setLabel3(label3Name);
                     info.setLabel4(label4Name);
                     info.setLabel5(label5Name);
-
-                    dataList = dataList.stream().peek(i -> {
-                        i.setNow(dealBigDecimalScale(i.getNow(), DEFAULT_SCALE));
-                        i.setPrevious(dealBigDecimalScale(i.getPrevious(), DEFAULT_SCALE));
-                        i.setRatio(dealBigDecimalScale(i.getRatio(), DEFAULT_SCALE));
-                    }).collect(Collectors.toList());
-                    info.setStatisticsRatioDataList(dataList);
-
-                    info.setSumNow(dealBigDecimalScale(sumNow, DEFAULT_SCALE));
-                    info.setSumPrevious(dealBigDecimalScale(sumPrevious, DEFAULT_SCALE));
-                    info.setSumRatio(dealBigDecimalScale(sumRatio, DEFAULT_SCALE));
 
                     resultList.add(info);
                 });
@@ -749,7 +649,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                 return label.getLabelName();
             }
         }
-        return "/";
+        return StrPool.SLASH;
     }
 
 
@@ -791,13 +691,12 @@ public class BaseV2ServiceImpl implements BaseV2Service {
             log.info("缓存结果");
             return JSONUtil.toBean(cacheRes, ComparisonChartResultVO.class);
         }
+        ComparisonChartResultVO result = new ComparisonChartResultVO();
 
         // 4. 查询能源信息及能源ID
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getPureByEnergyClassify(
                 new HashSet<>(paramVO.getEnergyIds()), paramVO.getEnergyClassify());
-        ComparisonChartResultVO result = new ComparisonChartResultVO();
         if (CollUtil.isEmpty(energyList)) {
-            result.setDataTime(LocalDateTime.now());
             return result;
         }
         List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
@@ -816,8 +715,6 @@ public class BaseV2ServiceImpl implements BaseV2Service {
             List<StandingbookDO> collect = standingbookIdsByEnergy.stream()
                     .filter(s -> sids.contains(s.getId())).collect(Collectors.toList());
             if (CollUtil.isEmpty(collect)) {
-
-                result.setDataTime(LocalDateTime.now());
                 result.setList(Collections.emptyList());
                 return result;
             }
@@ -894,9 +791,9 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                 BigDecimal now = nowSeries.getOrDefault(time, BigDecimal.ZERO);
                 String lastTime = LocalDateTimeUtils.getBenchmarkTime(time, dataTypeEnum, benchmark);
                 BigDecimal previous = lastSeries.getOrDefault(lastTime, BigDecimal.ZERO);
-                nowList.add(now);
-                lastList.add(previous);
-                ratioList.add(calculateBaseRatio(now, previous));
+                nowList.add(dealBigDecimalScale(now, DEFAULT_SCALE));
+                lastList.add(dealBigDecimalScale(previous, DEFAULT_SCALE));
+                ratioList.add(dealBigDecimalScale(calculateBaseRatio(now, previous), DEFAULT_SCALE));
             }
 
             List<ChartSeriesItemVO> ydata = Arrays.asList(
@@ -972,9 +869,9 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                 BigDecimal now = nowSeries.getOrDefault(time, BigDecimal.ZERO);
                 String lastTime = LocalDateTimeUtils.getBenchmarkTime(time, dataTypeEnum, benchmark);
                 BigDecimal previous = lastSeries.getOrDefault(lastTime, BigDecimal.ZERO);
-                nowList.add(now);
-                lastList.add(previous);
-                ratioList.add(calculateBaseRatio(now, previous));
+                nowList.add(dealBigDecimalScale(now, DEFAULT_SCALE));
+                lastList.add(dealBigDecimalScale(previous, DEFAULT_SCALE));
+                ratioList.add(dealBigDecimalScale(calculateBaseRatio(now, previous), DEFAULT_SCALE));
             }
 
             List<ChartSeriesItemVO> ydata = Arrays.asList(
@@ -1021,9 +918,9 @@ public class BaseV2ServiceImpl implements BaseV2Service {
             BigDecimal now = nowMap.getOrDefault(time, BigDecimal.ZERO);
             String lastTime = LocalDateTimeUtils.getBenchmarkTime(time, dataTypeEnum, benchmark);
             BigDecimal previous = lastMap.getOrDefault(lastTime, BigDecimal.ZERO);
-            nowList.add(now);
-            lastList.add(previous);
-            ratioList.add(calculateBaseRatio(now, previous));
+            nowList.add(dealBigDecimalScale(now, DEFAULT_SCALE));
+            lastList.add(dealBigDecimalScale(previous, DEFAULT_SCALE));
+            ratioList.add(dealBigDecimalScale(calculateBaseRatio(now, previous), DEFAULT_SCALE));
         }
 
         List<ChartSeriesItemVO> ydata = Arrays.asList(
@@ -1232,9 +1129,9 @@ public class BaseV2ServiceImpl implements BaseV2Service {
             tableHeader.forEach(date -> {
                 BaseDetailVO comparisonDetailVO = dateMap.get(date);
                 if (comparisonDetailVO == null) {
-                    data.add("/");
-                    data.add("/");
-                    data.add("/");
+                    data.add(StrPool.SLASH);
+                    data.add(StrPool.SLASH);
+                    data.add(StrPool.SLASH);
                 } else {
                     BigDecimal now = comparisonDetailVO.getNow();
                     BigDecimal previous = comparisonDetailVO.getPrevious();
@@ -1432,16 +1329,21 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         // 构造同比详情列表
         List<BaseDetailVO> dataList = new ArrayList<>();
         for (String time : tableHeader) {
+
+            // 当前
             TimeAndNumData current = nowMap.get(time);
             BigDecimal now = Optional.ofNullable(current)
                     .map(TimeAndNumData::getNum)
                     .orElse(null);
 
+            // 上期
             String previousTime = LocalDateTimeUtils.getBenchmarkTime(time, dataTypeEnum, benchmark);
             TimeAndNumData previous = previousMap.get(previousTime);
             BigDecimal last = Optional.ofNullable(previous)
                     .map(TimeAndNumData::getNum)
                     .orElse(null);
+
+            // 定基比
             BigDecimal ratio = calculateBaseRatio(now, last);
             dataList.add(new BaseDetailVO(time, now, last, ratio));
         }
