@@ -40,4 +40,10 @@ public interface WarningInfoService {
      * @param updateReqVO 更新信息
      */
     void updateWarningInfoStatus(WarningInfoStatusUpdReqVO updateReqVO);
+
+    /**
+     * 批量处理告警
+     * @param reqVO  更新信息
+     */
+    void updateWarningInfoStatusBatch(WarningInfoStatusBatchUpdReqVO reqVO);
 }

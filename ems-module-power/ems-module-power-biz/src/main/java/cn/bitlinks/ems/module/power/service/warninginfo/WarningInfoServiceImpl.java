@@ -1,16 +1,20 @@
 package cn.bitlinks.ems.module.power.service.warninginfo;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
-import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoPageReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatisticsRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatusUpdReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
 import cn.bitlinks.ems.module.power.dal.mysql.warninginfo.WarningInfoMapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.web.core.util.WebFrameworkUtils.getLoginUserId;
@@ -74,10 +78,45 @@ public class WarningInfoServiceImpl implements WarningInfoService {
 
         warningInfoMapper.update(new LambdaUpdateWrapper<WarningInfoDO>()
                 .set(WarningInfoDO::getStatus, updateReqVO.getStatus())
+                .set(WarningInfoDO::getHandleOpinion, updateReqVO.getHandleOpinion())
                 .eq(WarningInfoDO::getWarningTime, warningInfo.getWarningTime())
                 .eq(WarningInfoDO::getStrategyId, warningInfo.getStrategyId()));
 
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateWarningInfoStatusBatch(WarningInfoStatusBatchUpdReqVO reqVO) {
+        // 1) 批量存在性校验：一次查出所有 id
+        List<WarningInfoDO> picked = warningInfoMapper.selectBatchIds(reqVO.getIds());
+        if (picked == null || picked.isEmpty() || picked.size() != reqVO.getIds().size()) {
+            // 与你的单条风格保持一致
+            throw exception(WARNING_INFO_NOT_EXISTS);
+        }
+
+        // 2) 组装“去重后的组”：按 (strategyId, warningTime)
+        //    ——这就是“与单条一致”的关键差异：只更新与被点记录同“告警时间+策略”的那批
+        Map<String, WarningInfoGroupDTO> groupMap = new LinkedHashMap<>();
+        for (WarningInfoDO it : picked) {
+            Long strategyId = it.getStrategyId();
+            LocalDateTime warningTime = it.getWarningTime();
+            if (strategyId == null || warningTime == null) {
+                continue;
+            }
+            String key = strategyId + "|" + warningTime;
+            groupMap.putIfAbsent(key, new WarningInfoGroupDTO(strategyId, warningTime));
+        }
+        if (groupMap.isEmpty()) {
+            return; // 无有效组，不更新
+        }
+        List<WarningInfoGroupDTO> groups = new ArrayList<>(groupMap.values());
+
+        // 3) 批量更新
+        warningInfoMapper.updateStatusAndOpinionByGroups(
+                reqVO.getStatus(),
+                reqVO.getHandleOpinion(),
+                groups
+        );
+    }
 
 }
