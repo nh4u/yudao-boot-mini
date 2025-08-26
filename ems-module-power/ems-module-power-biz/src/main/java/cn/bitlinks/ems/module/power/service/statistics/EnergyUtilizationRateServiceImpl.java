@@ -91,16 +91,26 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
 
         // 设置最终返回值
         resultVO.setStatisticsInfoList(statisticsInfoList);
-        sbIds.addAll(outsourceSbIds);
-        sbIds.addAll(parkSbIds);
-        LocalDateTime lastTime = usageCostService.getLastTime(
-                paramVO,
+        LocalDateTime lastTime1 = usageCostService.getLastTimeNoParam(
+                paramVO.getRange()[0],
+                paramVO.getRange()[1],
+                outsourceSbIds
+        );
+        LocalDateTime lastTime2 = usageCostService.getLastTimeNoParam(
+                paramVO.getRange()[0],
+                paramVO.getRange()[1],
+                parkSbIds
+        );
+        LocalDateTime lastTime3 = usageCostService.getLastTimeNoParam(
                 paramVO.getRange()[0],
                 paramVO.getRange()[1],
                 sbIds
         );
-        resultVO.setDataTime(lastTime);
-
+        // 找出三个时间中的最大值（最新时间）
+        LocalDateTime latestTime = Arrays.stream(new LocalDateTime[]{lastTime1, lastTime2, lastTime3})
+                .max(Comparator.naturalOrder())
+                .orElse(null);
+        resultVO.setDataTime(latestTime);
         // 结果保存在缓存中
         String jsonStr = JSONUtil.toJsonStr(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);

@@ -139,9 +139,9 @@ public class StatisticsCommonService {
         }
         List<Long> measurementIds;
         if (toppest) {
-            measurementIds = measurementAssociationMapper.getNotLeafMeasurementId(stageSbIds);
-        } else {
             measurementIds = measurementAssociationMapper.getNotToppestMeasurementId(stageSbIds);
+        } else {
+            measurementIds = measurementAssociationMapper.getNotLeafMeasurementId(stageSbIds);
         }
 
         Set<Long> measurementSet = new HashSet<>(measurementIds);
