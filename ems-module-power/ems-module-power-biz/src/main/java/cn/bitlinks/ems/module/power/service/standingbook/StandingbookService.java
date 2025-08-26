@@ -5,6 +5,7 @@ import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Map;
@@ -146,5 +147,18 @@ public interface StandingbookService {
      * @return
      */
     List<StandingBookTypeTreeRespVO> treeDeviceWithParam(StandingbookParamReqVO standingbookParamReqVO);
+
     List<Long> getStandingBookIdsByStage(Integer stage);
+
+    /**
+     * 下载“计量器具导入模板”
+     */
+    void exportMeterTemplate(HttpServletResponse response);
+
+    /**
+     * 导出台账模板
+     * @param type device|meter
+     */
+    void exportLedgerTemplate(String type, HttpServletResponse response);
+
 }

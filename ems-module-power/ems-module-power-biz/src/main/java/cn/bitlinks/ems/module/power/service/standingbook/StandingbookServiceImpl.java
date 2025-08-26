@@ -2,11 +2,17 @@ package cn.bitlinks.ems.module.power.service.standingbook;
 
 import cn.bitlinks.ems.framework.common.util.collection.CollectionUtils;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
+import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
+import cn.bitlinks.ems.module.power.dal.mysql.labelconfig.LabelConfigMapper;
 import cn.bitlinks.ems.module.power.enums.RedisKeyConstants;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
@@ -14,6 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,6 +36,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
@@ -98,6 +107,8 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Resource
     private StandingbookAttributeService standingbookAttributeService;
 
+    @Resource
+    private LabelConfigMapper labelConfigMapper;
 
     @Resource
     private StandingbookTypeMapper standingbookTypeMapper;
@@ -1160,5 +1171,291 @@ public class StandingbookServiceImpl implements StandingbookService {
 
         return result;
     }
+
+    @Override
+    public void exportMeterTemplate(HttpServletResponse response) {
+        try (Workbook wb = new XSSFWorkbook()) {
+            Sheet sheet = wb.createSheet("导入模板");
+
+            // 列宽
+            sheet.setColumnWidth(0, 28 * 256); // 计量器具编号
+            sheet.setColumnWidth(1, 36 * 256); // 下级计量器具编号
+            sheet.setColumnWidth(2, 16 * 256); // 环节
+
+            // —— 样式
+            // 说明样式
+            CellStyle noteStyle = wb.createCellStyle();
+            noteStyle.setWrapText(true);
+            noteStyle.setVerticalAlignment(VerticalAlignment.TOP);
+            Font noteFont = wb.createFont();
+            noteFont.setFontHeightInPoints((short) 11);
+            noteStyle.setFont(noteFont);
+
+            // 表头样式
+            CellStyle headerStyle = wb.createCellStyle();
+            Font headerFont = wb.createFont();
+            headerFont.setBold(true);
+            headerFont.setFontHeightInPoints((short) 11);
+            headerStyle.setFont(headerFont);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setBorderTop(BorderStyle.THIN);
+            headerStyle.setBorderBottom(BorderStyle.THIN);
+            headerStyle.setBorderLeft(BorderStyle.THIN);
+            headerStyle.setBorderRight(BorderStyle.THIN);
+
+            // 普通单元格样式
+            CellStyle bodyStyle = wb.createCellStyle();
+            bodyStyle.setBorderTop(BorderStyle.THIN);
+            bodyStyle.setBorderBottom(BorderStyle.THIN);
+            bodyStyle.setBorderLeft(BorderStyle.THIN);
+            bodyStyle.setBorderRight(BorderStyle.THIN);
+            bodyStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+
+            // —— 说明（A1:C1 合并）
+            Row noteRow = sheet.createRow(0);
+            noteRow.setHeightInPoints(46);
+            Cell noteCell = noteRow.createCell(0);
+            noteCell.setCellValue("说明：\n1、*为必填；\n2、下级计量器具有多个时请以英文“;”隔开。");
+            noteCell.setCellStyle(noteStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 2));
+            for (int c = 1; c <= 2; c++) {
+                Cell tmp = noteRow.createCell(c);
+                tmp.setCellStyle(noteStyle);
+            }
+
+            // —— 表头（第2行）
+            Row header = sheet.createRow(1);
+            header.setHeightInPoints(20);
+            String[] headers = {"*计量器具编号", "下级计量器具编号", "环节"};
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            // —— 示例数据（第3行）
+            Row demo = sheet.createRow(2);
+            demo.setHeightInPoints(18);
+            String[] demoValues = {
+                    "FMCS_051F_BLR01_FT11_PV",
+                    "FMCS_051F_BLR01_FT12_PV;5103Fab",
+                    "购入存储"
+            };
+            for (int i = 0; i < demoValues.length; i++) {
+                Cell cell = demo.createCell(i);
+                cell.setCellValue(demoValues[i]);
+                cell.setCellStyle(bodyStyle);
+            }
+
+            // —— 输出响应
+            String fileName = URLEncoder.encode("计量器具导入模板.xlsx", StandardCharsets.UTF_8.name())
+                    .replaceAll("\\+", "%20");
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + fileName);
+            // 可选：避免缓存
+            response.setHeader("Pragma", "no-cache");
+            response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            wb.write(response.getOutputStream());
+            response.flushBuffer();
+        } catch (Exception e) {
+            throw new RuntimeException("导出模板失败", e);
+        }
+    }
+
+    @Override
+    public void exportLedgerTemplate(String type, HttpServletResponse response) {
+        LedgerType ledgerType = LedgerType.from(type);
+        try (Workbook wb = new XSSFWorkbook()) {
+            buildMainSheet(wb, ledgerType);       // Sheet1：台账
+            buildDictionarySheet(wb, ledgerType); // Sheet2：数据字典
+
+            String fileName = URLEncoder.encode(ledgerType.fileName(), StandardCharsets.UTF_8.name())
+                    .replaceAll("\\+", "%20");
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + fileName);
+            response.setHeader("Pragma", "no-cache");
+            response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            wb.write(response.getOutputStream());
+            response.flushBuffer();
+        } catch (Exception e) {
+            throw new RuntimeException("导出台账模板失败: " + type, e);
+        }
+    }
+
+    // ================= Sheet1：台账（固定列 + ems_label_config顶级标签名） =================
+    private void buildMainSheet(Workbook wb, LedgerType type) {
+        final String sheetName = (type == LedgerType.DEVICE) ? "重点设备台账" : "计量器具台账";
+        Sheet sheet = wb.createSheet(sheetName);
+
+        int col = 0;
+        sheet.setColumnWidth(col++, 18 * 256); // 设备分类
+        if (type == LedgerType.METER) {
+            sheet.setColumnWidth(col++, 14 * 256); // 表类型（仅 meter 主表需要）
+        }
+        sheet.setColumnWidth(col++, 18 * 256); // 设备名称
+        sheet.setColumnWidth(col++, 20 * 256); // 设备编号
+
+        // 取 ems_label_config：未删除 & parent_id IS NULL/0 的顶级标签名，作为追加列头
+        List<String> topLabelNames = loadTopLevelLabelNames();
+        for (int i = 0; i < topLabelNames.size(); i++) {
+            sheet.setColumnWidth(col + i, 18 * 256);
+        }
+
+        // ① 首行“说明”（索引 0），合并 A1 ~ 最后一列
+        CellStyle noteStyle = wb.createCellStyle();
+        noteStyle.setWrapText(true);
+        noteStyle.setVerticalAlignment(VerticalAlignment.TOP);
+        noteStyle.setAlignment(HorizontalAlignment.LEFT);
+        Font noteFont = wb.createFont();
+        noteFont.setFontHeightInPoints((short) 11);
+        noteStyle.setFont(noteFont);
+
+        Row noteRow = sheet.createRow(0);
+        noteRow.setHeightInPoints(46);
+        Cell noteCell = noteRow.createCell(0);
+        noteCell.setCellValue("说明：\n1、*为必填；\n2、请按照模板格式填写或选择对应在信息。");
+        noteCell.setCellStyle(noteStyle);
+
+        // 计算总列数用于合并
+        int totalCols = (type == LedgerType.METER ? 4 : 3) + topLabelNames.size();
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, totalCols - 1));
+        // 合并区域内其余单元格也套上样式，避免选中出现差异
+        for (int c = 1; c < totalCols; c++) {
+            Cell tmp = noteRow.createCell(c);
+            tmp.setCellStyle(noteStyle);
+        }
+
+        // ② 表头（索引 1）
+        CellStyle headerStyle = headerStyle(wb);
+        Row header = sheet.createRow(1);
+        header.setHeightInPoints(20);
+
+        int idx = 0;
+        createCell(header, idx++, "*设备分类", headerStyle);
+        if (type == LedgerType.METER) {
+            createCell(header, idx++, "*表类型", headerStyle);
+        }
+        createCell(header, idx++, "设备名称", headerStyle);
+        createCell(header, idx++, "*设备编号", headerStyle);
+        for (String label : topLabelNames) {
+            createCell(header, idx++, label, headerStyle);
+        }
+
+    }
+
+    // ================= Sheet2：数据字典（两列固定） =================
+    private void buildDictionarySheet(Workbook wb, LedgerType type) {
+        Sheet sheet = wb.createSheet("数据字典");
+        CellStyle headerStyle = headerStyle(wb);
+
+        // 列头
+        Row head = sheet.createRow(0);
+        head.setHeightInPoints(20);
+        sheet.setColumnWidth(0, 22 * 256);
+        sheet.setColumnWidth(1, 22 * 256);
+        createCell(head, 0, "设备分类", headerStyle);
+        createCell(head, 1, "标签", headerStyle);
+
+        // 数据
+        List<String> categories = loadAllStandingbookTypesDisplay();
+        List<String> allTypes   = loadAllLabelConfigDisplay();
+
+        int maxRows = Math.max(categories.size(), allTypes.size());
+        for (int i = 0; i < maxRows; i++) {
+            Row row = sheet.createRow(i + 1);
+            String v1 = (i < categories.size()) ? categories.get(i) : "";
+            String v2 = (i < allTypes.size()) ? allTypes.get(i) : "";
+            row.createCell(0).setCellValue(v1);
+            row.createCell(1).setCellValue(v2);
+        }
+    }
+
+
+    private CellStyle headerStyle(Workbook wb) {
+        CellStyle style = wb.createCellStyle();
+        Font font = wb.createFont();
+        font.setBold(true);
+        font.setFontHeightInPoints((short) 11);
+        style.setFont(font);
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        return style;
+    }
+
+    private void createCell(Row row, int col, String text, CellStyle style) {
+        Cell cell = row.createCell(col);
+        cell.setCellValue(text);
+        cell.setCellStyle(style);
+    }
+
+
+    enum LedgerType {
+        DEVICE, METER;
+        static LedgerType from(String s) {
+            if ("device".equalsIgnoreCase(s)) return DEVICE;
+            if ("meter".equalsIgnoreCase(s)) return METER;
+            throw new IllegalArgumentException("type 仅支持 device|meter, 实际: " + s);
+        }
+        String fileName() {
+            return (this == DEVICE) ? "重点设备台账模版.xlsx" : "计量器具台账模版.xlsx";
+        }
+    }
+
+    private List<String> loadTopLevelLabelNames() {
+        List<LabelConfigDO> rows = labelConfigMapper.selectList(
+                Wrappers.<LabelConfigDO>lambdaQuery()
+                        .eq(LabelConfigDO::getDeleted, false)
+                        .and(w -> w.isNull(LabelConfigDO::getParentId).or().eq(LabelConfigDO::getParentId, 0L))
+                        .orderByAsc(LabelConfigDO::getSort, LabelConfigDO::getId)
+        );
+        return rows.stream()
+                .map(LabelConfigDO::getLabelName)
+                .filter(s -> s != null && !s.trim().isEmpty())
+                .collect(Collectors.toList());
+    }
+
+    /** 字典页第1列：ems_label_config 全部未删除 → label_name（code） */
+    private List<String> loadAllLabelConfigDisplay() {
+        List<LabelConfigDO> rows = labelConfigMapper.selectList(
+                Wrappers.<LabelConfigDO>lambdaQuery()
+                        .eq(LabelConfigDO::getDeleted, false)
+                        .orderByAsc(LabelConfigDO::getSort, LabelConfigDO::getId)
+        );
+        return rows.stream()
+                .map(r -> {
+                    String name = r.getLabelName() == null ? "" : r.getLabelName().trim();
+                    String code = r.getCode() == null ? "" : r.getCode().trim();
+                    return String.format("%s(%s)", name, code);
+                })
+                .collect(Collectors.toList());
+    }
+
+    /** 字典页第2列：power_standingbook_type 全部未删除 → name（code） */
+    private List<String> loadAllStandingbookTypesDisplay() {
+        List<StandingbookTypeDO> rows = standingbookTypeMapper.selectList(
+                Wrappers.<StandingbookTypeDO>lambdaQuery()
+                        .eq(StandingbookTypeDO::getDeleted, false)
+                        .orderByAsc(StandingbookTypeDO::getSort, StandingbookTypeDO::getId)
+        );
+        return rows.stream()
+                .map(r -> {
+                    String name = r.getName() == null ? "" : r.getName().trim();
+                    String code = r.getCode() == null ? "" : r.getCode().trim();
+                    return String.format("%s(%s)", name, code);
+                })
+                .collect(Collectors.toList());
+    }
+
 
 }
