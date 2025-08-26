@@ -76,7 +76,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
 
     @Override
-    public StatisticsHomeResultVO overview(StatisticsParamHomeV2VO paramVO) {
+    public StatisticsHomeResultVO overview(StatisticsParamHomeVO paramVO) {
         StatisticsHomeResultVO statisticsHomeResultVO = new StatisticsHomeResultVO();
         // statisticsHomeResultVO.setDataUpdateTime(LocalDateTime.now());
         // 尝试读取缓存
@@ -199,17 +199,17 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
     }
 
     @Override
-    public ComparisonChartResultVO costChart(StatisticsParamHomeV2VO paramVO) {
+    public ComparisonChartResultVO costChart(StatisticsParamHomeVO paramVO) {
         return analysisChart(paramVO, UsageCostData::getTotalCost, StatisticsCacheConstants.COMPARISON_HOME_CHART_COST);
     }
 
     @Override
-    public ComparisonChartResultVO coalChart(StatisticsParamHomeV2VO paramVO) {
+    public ComparisonChartResultVO coalChart(StatisticsParamHomeVO paramVO) {
         return analysisChart(paramVO, UsageCostData::getTotalStandardCoalEquivalent, StatisticsCacheConstants.COMPARISON_HOME_CHART_COAL);
     }
 
     @Override
-    public List<StatisticsOverviewEnergyData> energy(StatisticsParamHomeV2VO paramVO) {
+    public List<StatisticsOverviewEnergyData> energy(StatisticsParamHomeVO paramVO) {
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(paramVO.getEnergyClassify());
         if (CollUtil.isEmpty(energyList)) {
             return Collections.emptyList();
@@ -464,7 +464,9 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
             // 取外购能源计量器具与环节最底层节点交集
             stageSbIds.retainAll(new HashSet<>(energySbIds));
         }
-
+        if (CollUtil.isEmpty(stageSbIds)) {
+            return StatisticsHomeTop2Data.builder().build();
+        }
         BigDecimal sumStandardCoal = usageCostService.getSumStandardCoal(
                 paramVO.getRange()[0],
                 paramVO.getRange()[1],
@@ -552,7 +554,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
     }
 
 
-    public ComparisonChartResultVO analysisChart(StatisticsParamHomeV2VO paramVO, Function<UsageCostData, BigDecimal> valueExtractor, String commonType) {
+    public ComparisonChartResultVO analysisChart(StatisticsParamHomeVO paramVO, Function<UsageCostData, BigDecimal> valueExtractor, String commonType) {
         // 1. 校验时间范围合法性
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         LocalDateTime startTime = rangeOrigin[0];

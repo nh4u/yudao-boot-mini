@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -25,8 +24,10 @@ public class StatisticsParamHomeVO {
     @Size(min = 2, max = 2, message = "统计周期不能为空")
     private LocalDateTime[] range;
 
+    @Schema(description = "能源类型 1：外购能源；2：园区能源。")
+    private Integer energyClassify;
+
     @Schema(description = "时间类型 0：日；1：月；2：年；3：时。")
-    @NotNull(message = "时间类型不能为空")
     private Integer dateType;
 
     @Override
@@ -34,6 +35,7 @@ public class StatisticsParamHomeVO {
         return "StatisticsParamV2VO{" +
                 "range=" + Arrays.toString(range) +
                 ", dateType=" + dateType +
+                ", energyClassify=" + energyClassify +
                 '}';
     }
 }
