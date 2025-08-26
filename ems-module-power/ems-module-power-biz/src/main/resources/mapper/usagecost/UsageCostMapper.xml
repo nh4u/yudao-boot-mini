@@ -392,5 +392,22 @@
             </when>
         </choose>
     </select>
+    <select id="getSumStandardCoal"
+            resultType="java.math.BigDecimal">
+        SELECT
+        SUM(standard_coal_equivalent) AS totalStandardCoalEquivalent
+        FROM
+        usage_cost
+        WHERE
+        aggregate_time &gt;= #{startDate}
+        AND aggregate_time &lt;= #{endDate}
+        <if test="standingBookIds != null and standingBookIds.size() > 0">
+            AND standingbook_id IN
+            <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+
+    </select>
 </mapper>
 

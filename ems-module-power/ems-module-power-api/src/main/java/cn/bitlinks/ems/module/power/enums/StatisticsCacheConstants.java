@@ -37,6 +37,9 @@ public class StatisticsCacheConstants {
     public static final String COMPARISON_HOME_CHART_COAL = "statistics:home:chart:coal:";
 
     public static final String COMPARISON_HOME_TOTAL = "statistics:home:total:";
+    public static final String COMPARISON_HOME_TOP2_ENERGY_CONVERSION_RATE = "statistics:home:top2:energy-conversion-rate:";
+    public static final String COMPARISON_HOME_TOP2_PARK_ENERGY_UTILIZATION_RATE = "statistics:home:top2:park-energy-utilization-rate:";
+    public static final String COMPARISON_HOME_TOP2_OUTSOURCE_ENERGY_UTILIZATION_RATE = "statistics:home:top2:outsource-energy-utilization-rate:";
 
     public static final String COMPARISON_BASE_TABLE_COST  = "statistics:base:discount:table:cost:";
 

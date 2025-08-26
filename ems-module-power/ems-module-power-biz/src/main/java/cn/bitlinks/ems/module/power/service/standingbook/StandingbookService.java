@@ -146,4 +146,5 @@ public interface StandingbookService {
      * @return
      */
     List<StandingBookTypeTreeRespVO> treeDeviceWithParam(StandingbookParamReqVO standingbookParamReqVO);
+    List<Long> getStandingBookIdsByStage(Integer stage);
 }
