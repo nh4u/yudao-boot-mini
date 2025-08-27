@@ -4,7 +4,6 @@ import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.EnergyRateChartResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.EnergyRateInfo;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
@@ -24,7 +23,6 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -50,7 +48,7 @@ public class EnergyConversionRateController {
 
     @PostMapping("/chart")
     @Operation(summary = "图")
-    public CommonResult<List<EnergyRateChartResultVO<BigDecimal>>> getChart(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
+    public CommonResult<EnergyRateChartResVO> getChart(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
         StatisticsParamV2VO vo = BeanUtils.toBean(paramVO, StatisticsParamV2VO.class);
         vo.setQueryType(StatisticsQueryType.COMPREHENSIVE_VIEW.getCode());
         return success(energyConversionRateService.getChart(vo));
