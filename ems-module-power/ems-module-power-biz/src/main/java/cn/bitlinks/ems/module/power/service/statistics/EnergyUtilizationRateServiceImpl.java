@@ -80,13 +80,25 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
 
         // 查询外购
         List<UsageCostData> outsourceList = new ArrayList<>();
+        LocalDateTime lastTime1 = null;
         if (CollUtil.isNotEmpty(outsourceSbIds)) {
             outsourceList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], outsourceSbIds);
+            lastTime1 = usageCostService.getLastTimeNoParam(
+                    paramVO.getRange()[0],
+                    paramVO.getRange()[1],
+                    outsourceSbIds
+            );
         }
         // 查询园区
+        LocalDateTime lastTime2 = null;
         List<UsageCostData> parkList = new ArrayList<>();
         if (CollUtil.isNotEmpty(parkSbIds)) {
             parkList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], parkSbIds);
+            lastTime2 = usageCostService.getLastTimeNoParam(
+                    paramVO.getRange()[0],
+                    paramVO.getRange()[1],
+                    parkSbIds
+            );
         }
         // 查询分子
         List<UsageCostData> numeratorList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], sbIds);
@@ -96,16 +108,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
 
         // 设置最终返回值
         resultVO.setStatisticsInfoList(statisticsInfoList);
-        LocalDateTime lastTime1 = usageCostService.getLastTimeNoParam(
-                paramVO.getRange()[0],
-                paramVO.getRange()[1],
-                outsourceSbIds
-        );
-        LocalDateTime lastTime2 = usageCostService.getLastTimeNoParam(
-                paramVO.getRange()[0],
-                paramVO.getRange()[1],
-                parkSbIds
-        );
+
         LocalDateTime lastTime3 = usageCostService.getLastTimeNoParam(
                 paramVO.getRange()[0],
                 paramVO.getRange()[1],
