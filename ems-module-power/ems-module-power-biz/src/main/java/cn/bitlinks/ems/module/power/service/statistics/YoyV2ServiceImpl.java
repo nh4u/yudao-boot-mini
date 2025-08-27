@@ -622,7 +622,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
             Map<String, BigDecimal> nowSeries = nowMap.getOrDefault(energy.getId(), new HashMap<>());
             Map<String, BigDecimal> lastSeries = lastMap.getOrDefault(energy.getId(), new HashMap<>());
 
-            if(CollUtil.isEmpty(nowSeries) && CollUtil.isEmpty(lastSeries)){
+            if (CollUtil.isEmpty(nowSeries) && CollUtil.isEmpty(lastSeries)) {
                 continue;
             }
             List<BigDecimal> nowList = new ArrayList<>();
@@ -707,9 +707,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
             List<BigDecimal> ratioList = new ArrayList<>();
 
             for (String time : xdata) {
-                BigDecimal now = nowSeries.getOrDefault(time, BigDecimal.ZERO);
+                BigDecimal now = nowSeries.get(time);
                 String lastTime = LocalDateTimeUtils.getYearOnYearTime(time, dataTypeEnum);
-                BigDecimal previous = lastSeries.getOrDefault(lastTime, BigDecimal.ZERO);
+                BigDecimal previous = lastSeries.get(lastTime);
                 nowList.add(dealBigDecimalScale(now, DEFAULT_SCALE));
                 lastList.add(dealBigDecimalScale(previous, DEFAULT_SCALE));
                 ratioList.add(dealBigDecimalScale(calculateYearOnYearRatio(now, previous), DEFAULT_SCALE));
@@ -755,9 +755,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         List<BigDecimal> ratioList = new ArrayList<>();
 
         for (String time : xdata) {
-            BigDecimal now = nowMap.getOrDefault(time, BigDecimal.ZERO);
+            BigDecimal now = nowMap.get(time);
             String lastTime = LocalDateTimeUtils.getYearOnYearTime(time, dataTypeEnum);
-            BigDecimal previous = lastMap.getOrDefault(lastTime, BigDecimal.ZERO);
+            BigDecimal previous = lastMap.get(lastTime);
             nowList.add(dealBigDecimalScale(now, DEFAULT_SCALE));
             lastList.add(dealBigDecimalScale(previous, DEFAULT_SCALE));
             ratioList.add(dealBigDecimalScale(calculateYearOnYearRatio(now, previous), DEFAULT_SCALE));
@@ -932,7 +932,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         // 底部合计map
         Map<String, BigDecimal> sumNowMap = new HashMap<>();
         Map<String, BigDecimal> sumPreviousMap = new HashMap<>();
-       // Map<String, BigDecimal> sumProportionMap = new HashMap<>();
+        // Map<String, BigDecimal> sumProportionMap = new HashMap<>();
 
         for (YoyItemVO s : yoyItemVOList) {
 
@@ -985,7 +985,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
                     // 底部合计处理
                     sumNowMap.put(date, addBigDecimal(sumNowMap.get(date), now));
                     sumPreviousMap.put(date, addBigDecimal(sumPreviousMap.get(date), previous));
-                   // sumProportionMap.put(date, addBigDecimal(sumProportionMap.get(date), proportion));
+                    // sumProportionMap.put(date, addBigDecimal(sumProportionMap.get(date), proportion));
                 }
 
             });
