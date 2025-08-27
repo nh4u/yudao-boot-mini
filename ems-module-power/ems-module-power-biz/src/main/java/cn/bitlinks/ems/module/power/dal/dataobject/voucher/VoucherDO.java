@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -80,5 +81,9 @@ public class VoucherDO extends BaseDO {
      * 凭证附件
      */
     private String appendix;
+    /**
+     * 月份
+     */
+    private LocalDate month;
 
 }

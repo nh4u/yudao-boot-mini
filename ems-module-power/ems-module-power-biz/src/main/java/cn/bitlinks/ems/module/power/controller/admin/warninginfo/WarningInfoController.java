@@ -4,10 +4,7 @@ import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
-import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoPageReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatisticsRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatusUpdReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
 import cn.bitlinks.ems.module.power.service.warninginfo.WarningInfoService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -69,5 +66,12 @@ public class WarningInfoController {
         return success(BeanUtils.toBean(pageResult, WarningInfoRespVO.class));
     }
 
+    @PutMapping("/updateStatusBatch")
+    @Operation(summary = "批量更新告警信息状态（处理中→已处理）")
+    @TenantIgnore
+    public CommonResult<Boolean> updateWarningInfoStatusBatch(@Valid @RequestBody WarningInfoStatusBatchUpdReqVO reqVO) {
+        warningInfoService.updateWarningInfoStatusBatch(reqVO);
+        return success(true);
+    }
 
 }

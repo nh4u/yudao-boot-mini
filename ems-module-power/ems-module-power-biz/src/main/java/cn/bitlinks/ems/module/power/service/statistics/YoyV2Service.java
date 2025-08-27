@@ -1,8 +1,6 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.ComparisonChartResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 
 import java.util.List;
 
@@ -44,4 +42,9 @@ public interface YoyV2Service {
     List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO, Integer flag);
 
     List<List<Object>> getExcelData(StatisticsParamV2VO paramVO, Integer flag);
+
+    /**
+     * 利用率表
+     */
+    StatisticsResultV2VO<YoyItemVO> getUtilizationRateTable(StatisticsParamV2VO vo);
 }
