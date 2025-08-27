@@ -788,12 +788,19 @@ public class BaseV2ServiceImpl implements BaseV2Service {
             List<BigDecimal> ratioList = new ArrayList<>();
             // 遍历横轴时间点构造每条数据序列
             for (String time : xdata) {
-                BigDecimal now = nowSeries.getOrDefault(time, BigDecimal.ZERO);
+                BigDecimal now = nowSeries.get(time);
                 String lastTime = LocalDateTimeUtils.getBenchmarkTime(time, dataTypeEnum, benchmark);
-                BigDecimal previous = lastSeries.getOrDefault(lastTime, BigDecimal.ZERO);
+                BigDecimal previous = lastSeries.get(lastTime);
                 nowList.add(dealBigDecimalScale(now, DEFAULT_SCALE));
                 lastList.add(dealBigDecimalScale(previous, DEFAULT_SCALE));
                 ratioList.add(dealBigDecimalScale(calculateBaseRatio(now, previous), DEFAULT_SCALE));
+            }
+
+            // 当期，上期都没值的情况下，则不返回该能源。
+            long count1 = nowList.stream().filter(Objects::nonNull).count();
+            long count2 = nowList.stream().filter(Objects::nonNull).count();
+            if (count1 == 0 && count2 == 0) {
+                continue;
             }
 
             List<ChartSeriesItemVO> ydata = Arrays.asList(
@@ -866,9 +873,9 @@ public class BaseV2ServiceImpl implements BaseV2Service {
             List<BigDecimal> ratioList = new ArrayList<>();
 
             for (String time : xdata) {
-                BigDecimal now = nowSeries.getOrDefault(time, BigDecimal.ZERO);
+                BigDecimal now = nowSeries.get(time);
                 String lastTime = LocalDateTimeUtils.getBenchmarkTime(time, dataTypeEnum, benchmark);
-                BigDecimal previous = lastSeries.getOrDefault(lastTime, BigDecimal.ZERO);
+                BigDecimal previous = lastSeries.get(lastTime);
                 nowList.add(dealBigDecimalScale(now, DEFAULT_SCALE));
                 lastList.add(dealBigDecimalScale(previous, DEFAULT_SCALE));
                 ratioList.add(dealBigDecimalScale(calculateBaseRatio(now, previous), DEFAULT_SCALE));
@@ -915,9 +922,9 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         List<BigDecimal> ratioList = new ArrayList<>();
 
         for (String time : xdata) {
-            BigDecimal now = nowMap.getOrDefault(time, BigDecimal.ZERO);
+            BigDecimal now = nowMap.get(time);
             String lastTime = LocalDateTimeUtils.getBenchmarkTime(time, dataTypeEnum, benchmark);
-            BigDecimal previous = lastMap.getOrDefault(lastTime, BigDecimal.ZERO);
+            BigDecimal previous = lastMap.get(lastTime);
             nowList.add(dealBigDecimalScale(now, DEFAULT_SCALE));
             lastList.add(dealBigDecimalScale(previous, DEFAULT_SCALE));
             ratioList.add(dealBigDecimalScale(calculateBaseRatio(now, previous), DEFAULT_SCALE));
@@ -1031,13 +1038,13 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         xdata.forEach(x -> {
             list.add(Arrays.asList(finalSheetName, labelName, strTime, x, getHeaderDesc(unit, flag, NOW)));
             list.add(Arrays.asList(finalSheetName, labelName, strTime, x, getHeaderDesc(unit, flag, PREVIOUS)));
-            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, getHeaderDesc(unit, flag, RATIO_PERCENT)));
+            list.add(Arrays.asList(finalSheetName, labelName, strTime, x, RATIO_PERCENT));
         });
 
         // 周期合计
         list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", getHeaderDesc(unit, flag, NOW)));
         list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", getHeaderDesc(unit, flag, PREVIOUS)));
-        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", getHeaderDesc(unit, flag, RATIO_PERCENT)));
+        list.add(Arrays.asList(sheetName, labelName, strTime, "周期合计", RATIO_PERCENT));
         return list;
 
     }
