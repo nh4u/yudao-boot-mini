@@ -54,6 +54,13 @@ public class YoyStatisticsV2Controller {
         return success(yoyV2Service.getUtilizationRateTable(vo));
     }
 
+    @PostMapping("/utilizationRateChart")
+    @Operation(summary = "利用率图")
+    public CommonResult<ComparisonChartResultVO> getUtilizationRateChart(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
+        StatisticsParamV2VO vo = BeanUtils.toBean(paramVO, StatisticsParamV2VO.class);
+        vo.setQueryType(StatisticsQueryType.COMPREHENSIVE_VIEW.getCode());
+        return success(yoyV2Service.getUtilizationRateChart(vo));
+    }
 
     @PostMapping("/discountAnalysisTable")
     @Operation(summary = "折价同比分析（表）")

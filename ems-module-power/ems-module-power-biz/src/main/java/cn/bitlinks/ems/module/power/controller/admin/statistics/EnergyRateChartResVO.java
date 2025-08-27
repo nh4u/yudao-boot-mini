@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.controller.admin.statistics;
 
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.EnergyRateChartResultVO;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -10,6 +11,7 @@ import java.util.List;
 
 @Schema(description = "图表统计 - 利用率转换率 图表返回结果")
 @Data
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class EnergyRateChartResVO {
     @Schema(description = "图表列表")
     private List<EnergyRateChartResultVO<BigDecimal>> list;

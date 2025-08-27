@@ -47,4 +47,9 @@ public interface YoyV2Service {
      * 利用率表
      */
     StatisticsResultV2VO<YoyItemVO> getUtilizationRateTable(StatisticsParamV2VO vo);
+
+    /**
+     * 利用率图
+     */
+    ComparisonChartResultVO getUtilizationRateChart(StatisticsParamV2VO vo);
 }

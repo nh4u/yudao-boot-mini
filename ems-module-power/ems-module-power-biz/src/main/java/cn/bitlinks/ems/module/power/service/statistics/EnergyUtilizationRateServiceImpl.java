@@ -30,7 +30,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.TREND_STR;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.UTILIZATION_RATE_STR;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_UTILIZATION_RATE_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_UTILIZATION_RATE_TABLE;
@@ -274,7 +273,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
             //resultVO.setDataTime(lastTime);
             resultVO.setYdata(nowList);
             resultVO.setXdata(xdata);
-            resultVO.setName(info.getItemName() + TREND_STR);
+            resultVO.setName(info.getItemName());
             localDateTimes.add(lastTime);
             resultVOList.add(resultVO);
         });
