@@ -100,8 +100,9 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
 
         // 找出三个时间中的最大值（最新时间）
         LocalDateTime latestTime = Arrays.stream(new LocalDateTime[]{lastTime1, lastTime2})
+                .filter(Objects::nonNull) // 排除null
                 .max(Comparator.naturalOrder())
-                .orElse(null);
+                .orElse(null); // 若全部为null，返回null
         resultVO.setDataTime(latestTime);
         // 结果保存在缓存中
         String jsonStr = JSONUtil.toJsonStr(resultVO);

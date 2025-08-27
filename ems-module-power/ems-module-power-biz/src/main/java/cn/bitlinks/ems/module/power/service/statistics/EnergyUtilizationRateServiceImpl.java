@@ -51,7 +51,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
 
     @Override
     public StatisticsResultV2VO<EnergyRateInfo> getTable(StatisticsParamV2VO paramVO) {
-        paramVO.setQueryType(StatisticsQueryType.COMPREHENSIVE_VIEW.getCode());
+
         // 校验条件的合法性
         statisticsCommonService.validParamConditionDate(paramVO);
 
@@ -113,8 +113,9 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         );
         // 找出三个时间中的最大值（最新时间）
         LocalDateTime latestTime = Arrays.stream(new LocalDateTime[]{lastTime1, lastTime2, lastTime3})
+                .filter(Objects::nonNull) // 排除null
                 .max(Comparator.naturalOrder())
-                .orElse(null);
+                .orElse(null); // 若全部为null，返回null
         resultVO.setDataTime(latestTime);
         // 结果保存在缓存中
         String jsonStr = JSONUtil.toJsonStr(resultVO);

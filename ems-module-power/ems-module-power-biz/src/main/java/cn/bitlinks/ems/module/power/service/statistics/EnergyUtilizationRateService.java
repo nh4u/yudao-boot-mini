@@ -11,12 +11,12 @@ import java.util.List;
  * 能源利用率
  */
 public interface EnergyUtilizationRateService {
-    StatisticsResultV2VO<EnergyRateInfo> getTable(@Valid StatisticsParamV2VO paramVO);
+    StatisticsResultV2VO<EnergyRateInfo> getTable(StatisticsParamV2VO paramVO);
 
 
-    List<BaseReportChartResultVO<BigDecimal>> getChart(@Valid StatisticsParamV2VO paramVO);
+    List<BaseReportChartResultVO<BigDecimal>> getChart(StatisticsParamV2VO paramVO);
 
-    List<List<String>> getExcelHeader(@Valid StatisticsParamV2VO paramVO);
+    List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO);
 
-    List<List<Object>> getExcelData(@Valid StatisticsParamV2VO paramVO);
+    List<List<Object>> getExcelData(StatisticsParamV2VO paramVO);
 }
