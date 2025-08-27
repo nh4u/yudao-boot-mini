@@ -260,7 +260,7 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
                 .orElse(null); // 若全部为null，返回null
         resVO.setList(resultVOList);
         resVO.setDataTime(latestTime);
-        String jsonStr = JSONUtil.toJsonStr(resultVOList);
+        String jsonStr = JSONUtil.toJsonStr(resVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return resVO;
