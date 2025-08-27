@@ -622,6 +622,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
             Map<String, BigDecimal> nowSeries = nowMap.getOrDefault(energy.getId(), new HashMap<>());
             Map<String, BigDecimal> lastSeries = lastMap.getOrDefault(energy.getId(), new HashMap<>());
 
+            if(CollUtil.isEmpty(nowSeries) && CollUtil.isEmpty(lastSeries)){
+                continue;
+            }
             List<BigDecimal> nowList = new ArrayList<>();
             List<BigDecimal> lastList = new ArrayList<>();
             List<BigDecimal> ratioList = new ArrayList<>();
