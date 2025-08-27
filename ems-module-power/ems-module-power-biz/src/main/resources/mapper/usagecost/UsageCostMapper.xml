@@ -52,10 +52,19 @@
             </when>
         </choose>
         ,
-
-        SUM(cost) AS totalCost,
+        SUM(
+            CASE
+                WHEN cost = -1 THEN NULL
+            ELSE cost
+            END
+        ) AS totalCost,
         SUM(current_usage) AS currentTotalUsage,
-        SUM(standard_coal_equivalent) AS totalStandardCoalEquivalent
+        SUM(
+            CASE
+                WHEN standard_coal_equivalent = -1 THEN NULL
+            ELSE standard_coal_equivalent
+            END
+        ) AS totalStandardCoalEquivalent
         FROM
         usage_cost
         WHERE
@@ -137,9 +146,19 @@
     <select id="getListOfHome" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData">
         SELECT
         energy_id,
-        SUM( cost ) AS totalCost,
-        SUM( current_usage ) AS currentTotalUsage,
-        SUM( standard_coal_equivalent ) AS totalStandardCoalEquivalent
+        SUM(
+            CASE
+                WHEN cost = -1 THEN NULL
+            ELSE cost
+        END
+        ) AS totalCost,
+        SUM(current_usage) AS currentTotalUsage,
+        SUM(
+            CASE
+                WHEN standard_coal_equivalent = -1 THEN NULL
+            ELSE standard_coal_equivalent
+            END
+        ) AS totalStandardCoalEquivalent
         FROM
         usage_cost
         WHERE
@@ -160,7 +179,12 @@
         SELECT
         energy_id,
         standingbook_id,
-        SUM(standard_coal_equivalent) AS totalStandardCoalEquivalent
+        SUM(
+            CASE
+                WHEN standard_coal_equivalent = -1 THEN NULL
+            ELSE standard_coal_equivalent
+            END
+        ) AS totalStandardCoalEquivalent
         FROM
         usage_cost
         WHERE
@@ -178,7 +202,12 @@
     <select id="getEnergyStandardCoal" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData">
         SELECT
         energy_id,
-        SUM(standard_coal_equivalent) AS totalStandardCoalEquivalent
+        SUM(
+            CASE
+                WHEN standard_coal_equivalent = -1 THEN NULL
+            ELSE standard_coal_equivalent
+            END
+        ) AS totalStandardCoalEquivalent
         FROM
         usage_cost
         WHERE
@@ -193,9 +222,19 @@
     </select>
     <select id="getEnergyStandardCoalByEnergyIds" resultMap="UsageCostDataResultMap">
         SELECT energy_id,
-        SUM( cost ) AS totalCost,
-        SUM( current_usage ) AS currentTotalUsage,
-        SUM( standard_coal_equivalent ) AS totalStandardCoalEquivalent
+        SUM(
+        CASE
+        WHEN cost = -1 THEN NULL
+        ELSE cost
+        END
+        ) AS totalCost,
+        SUM(current_usage) AS currentTotalUsage,
+        SUM(
+        CASE
+        WHEN standard_coal_equivalent = -1 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS totalStandardCoalEquivalent
         FROM usage_cost
         WHERE aggregate_time &gt;= #{startDate}
         AND aggregate_time &lt;= #{endDate}
@@ -209,7 +248,12 @@
     <select id="getStandingbookStandardCoal" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData">
         SELECT
         standingbook_id,
-        SUM(standard_coal_equivalent) AS totalStandardCoalEquivalent
+        SUM(
+        CASE
+        WHEN standard_coal_equivalent = -1 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS totalStandardCoalEquivalent
         FROM
         usage_cost
         WHERE

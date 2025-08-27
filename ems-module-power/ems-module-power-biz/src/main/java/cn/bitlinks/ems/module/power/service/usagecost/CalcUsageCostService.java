@@ -198,7 +198,7 @@ public class CalcUsageCostService {
 
 
                 //成本
-                BigDecimal cost = BigDecimal.ZERO;
+                BigDecimal cost = BigDecimal.valueOf(-1);
                 if(MapUtil.isNotEmpty(finalEnergyTimeFormula) && finalEnergyTimeFormula.containsKey(energyIdAndTimeUsageCostKey)&& MapUtil.isNotEmpty(finalDetailsByPriceIds)){
                     //单价公式
                     EnergyTimeResultVO energyTimeResultVO = finalEnergyTimeFormula.get(energyIdAndTimeUsageCostKey);
@@ -210,7 +210,7 @@ public class CalcUsageCostService {
                 }
 
                 //折标煤
-                BigDecimal coalNum = BigDecimal.ZERO;
+                BigDecimal coalNum = BigDecimal.valueOf(-1);
                 if(finalCoalFactorFormulaDataMap.containsKey(energyIdAndTimeCoalKey)){
                     //折标煤公式
                     CoalFactorFormulaData coalFactorFormulaData = finalCoalFactorFormulaDataMap.get(energyIdAndTimeCoalKey);
