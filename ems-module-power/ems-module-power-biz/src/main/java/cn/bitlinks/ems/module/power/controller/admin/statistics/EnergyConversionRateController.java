@@ -3,14 +3,13 @@ package cn.bitlinks.ems.module.power.controller.admin.statistics;
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseReportChartResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.EnergyRateChartResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.EnergyRateInfo;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
 import cn.bitlinks.ems.module.power.enums.StatisticsQueryType;
 import cn.bitlinks.ems.module.power.service.statistics.EnergyConversionRateService;
-import cn.bitlinks.ems.module.power.service.statistics.EnergyUtilizationRateService;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.write.style.column.SimpleColumnWidthStyleStrategy;
 import io.swagger.v3.oas.annotations.Operation;
@@ -51,7 +50,7 @@ public class EnergyConversionRateController {
 
     @PostMapping("/chart")
     @Operation(summary = "图")
-    public CommonResult<List<BaseReportChartResultVO<BigDecimal>>> getChart(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
+    public CommonResult<List<EnergyRateChartResultVO<BigDecimal>>> getChart(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
         StatisticsParamV2VO vo = BeanUtils.toBean(paramVO, StatisticsParamV2VO.class);
         vo.setQueryType(StatisticsQueryType.COMPREHENSIVE_VIEW.getCode());
         return success(energyConversionRateService.getChart(vo));

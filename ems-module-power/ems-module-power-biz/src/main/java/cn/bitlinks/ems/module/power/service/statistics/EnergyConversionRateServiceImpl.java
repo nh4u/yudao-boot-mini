@@ -4,7 +4,6 @@ import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.enums.EnergyClassifyEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
-import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseReportChartResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.enums.StatisticsQueryType;
 import cn.bitlinks.ems.module.power.enums.standingbook.StandingBookStageEnum;
@@ -32,6 +31,7 @@ import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.CONVERSION_RATE_STR;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.TREND_STR;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_CONVERSION_RATE_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_CONVERSION_RATE_TABLE;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.getConvertData;
@@ -202,7 +202,7 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
     }
 
     @Override
-    public List<BaseReportChartResultVO<BigDecimal>> getChart(StatisticsParamV2VO paramVO) {
+    public List<EnergyRateChartResultVO<BigDecimal>> getChart(StatisticsParamV2VO paramVO) {
         // 校验参数
         statisticsCommonService.validParamConditionDate(paramVO);
 
@@ -210,12 +210,12 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            return JSON.parseObject(cacheRes, new TypeReference<List<BaseReportChartResultVO<BigDecimal>>>() {
+            return JSON.parseObject(cacheRes, new TypeReference<List<EnergyRateChartResultVO<BigDecimal>>>() {
             });
         }
         StatisticsResultV2VO<EnergyRateInfo> tableResult = getTable(paramVO);
 
-        List<BaseReportChartResultVO<BigDecimal>> resultVOList = new ArrayList<>();
+        List<EnergyRateChartResultVO<BigDecimal>> resultVOList = new ArrayList<>();
         // x轴
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
 
@@ -223,15 +223,12 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
         List<EnergyRateInfo> tableDataList = tableResult.getStatisticsInfoList();
 
         tableDataList.forEach(info -> {
-            BaseReportChartResultVO<BigDecimal> resultVO = new BaseReportChartResultVO<>();
+            EnergyRateChartResultVO<BigDecimal> resultVO = new EnergyRateChartResultVO<>();
             List<EnergyRateInfoData> dateList = info.getEnergyRateInfoDataList();
             if (CollUtil.isEmpty(dateList)) {
                 return;
             }
-            // 处理空数据
-            dateList.forEach(data -> {
-                data.setRate(data.getRate() == null ? BigDecimal.ZERO : data.getRate());
-            });
+
             Map<String, EnergyRateInfoData> timeMap = dateList.stream()
                     .filter(data -> data.getDate() != null)
                     .collect(Collectors.toMap(
@@ -242,7 +239,7 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
             List<BigDecimal> nowList = xdata.stream().map(time -> {
                         EnergyRateInfoData infoData = timeMap.get(time);
                         if (Objects.isNull(infoData)) {
-                            return BigDecimal.ZERO;
+                            return null;
                         }
                         return infoData.getRate();
                     }
@@ -251,6 +248,7 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
             resultVO.setDataTime(lastTime);
             resultVO.setYdata(nowList);
             resultVO.setXdata(xdata);
+            resultVO.setName(info.getItemName() + TREND_STR);
             resultVOList.add(resultVO);
         });
 
