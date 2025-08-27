@@ -6,7 +6,6 @@ import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseReportChartResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
-import cn.bitlinks.ems.module.power.enums.StatisticsQueryType;
 import cn.bitlinks.ems.module.power.enums.standingbook.StandingBookStageEnum;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollUtil;
@@ -31,6 +30,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.UTILIZATION_RATE_STR;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_UTILIZATION_RATE_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_UTILIZATION_RATE_TABLE;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.getConvertData;
@@ -47,7 +47,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
 
     @Resource
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
-    public static final String UTILIZATION_RATE_STR = "利用率";
+
 
     @Override
     public StatisticsResultV2VO<EnergyRateInfo> getTable(StatisticsParamV2VO paramVO) {

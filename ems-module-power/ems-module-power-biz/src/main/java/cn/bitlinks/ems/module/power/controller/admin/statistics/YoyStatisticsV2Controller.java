@@ -2,10 +2,10 @@ package cn.bitlinks.ems.module.power.controller.admin.statistics;
 
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.ComparisonChartResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.FullCellMergeStrategy;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
+import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
+import cn.bitlinks.ems.module.power.enums.StatisticsQueryType;
 import cn.bitlinks.ems.module.power.service.statistics.YoyV2Service;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.write.metadata.style.WriteCellStyle;
@@ -46,10 +46,18 @@ public class YoyStatisticsV2Controller {
     @Resource
     private YoyV2Service yoyV2Service;
 
+    @PostMapping("/utilizationRateTable")
+    @Operation(summary = "利用率表")
+    public CommonResult<StatisticsResultV2VO<YoyItemVO>> getUtilizationRateTable(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
+        StatisticsParamV2VO vo = BeanUtils.toBean(paramVO, StatisticsParamV2VO.class);
+        vo.setQueryType(StatisticsQueryType.COMPREHENSIVE_VIEW.getCode());
+        return success(yoyV2Service.getUtilizationRateTable(vo));
+    }
+
 
     @PostMapping("/discountAnalysisTable")
     @Operation(summary = "折价同比分析（表）")
-    public CommonResult<StatisticsResultV2VO> discountAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO) {
+    public CommonResult<StatisticsResultV2VO<YoyItemVO>> discountAnalysisTable(@Valid @RequestBody StatisticsParamV2VO paramVO) {
         return success(yoyV2Service.discountAnalysisTable(paramVO));
     }
 
@@ -57,7 +65,6 @@ public class YoyStatisticsV2Controller {
     @Operation(summary = "折价同比分析（图）")
     public CommonResult<ComparisonChartResultVO> discountAnalysisChart(@Valid @RequestBody StatisticsParamV2VO paramVO) {
         return success(yoyV2Service.discountAnalysisChart(paramVO));
-
     }
 
     @PostMapping("/exportDiscountAnalysisTable")
@@ -91,14 +98,14 @@ public class YoyStatisticsV2Controller {
                 filename = DEFAULT + XLSX;
         }
 
-        List<List<String>> header = yoyV2Service.getExcelHeader(paramVO,2);
-        List<List<Object>> dataList = yoyV2Service.getExcelData(paramVO,2);
+        List<List<String>> header = yoyV2Service.getExcelHeader(paramVO, 2);
+        List<List<Object>> dataList = yoyV2Service.getExcelData(paramVO, 2);
 
 
         // 放在 write前配置response才会生效，放在后面不生效
         // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
-        response.addHeader("Access-Control-Expose-Headers","File-Name");
+        response.addHeader("Access-Control-Expose-Headers", "File-Name");
         response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
         response.setContentType("application/vnd.ms-excel;charset=UTF-8");
 
@@ -188,14 +195,14 @@ public class YoyStatisticsV2Controller {
                 filename = DEFAULT + XLSX;
         }
 
-        List<List<String>> header = yoyV2Service.getExcelHeader(paramVO,1);
-        List<List<Object>> dataList = yoyV2Service.getExcelData(paramVO,1);
+        List<List<String>> header = yoyV2Service.getExcelHeader(paramVO, 1);
+        List<List<Object>> dataList = yoyV2Service.getExcelData(paramVO, 1);
 
 
         // 放在 write前配置response才会生效，放在后面不生效
         // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
-        response.addHeader("Access-Control-Expose-Headers","File-Name");
+        response.addHeader("Access-Control-Expose-Headers", "File-Name");
         response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
         response.setContentType("application/vnd.ms-excel;charset=UTF-8");
 

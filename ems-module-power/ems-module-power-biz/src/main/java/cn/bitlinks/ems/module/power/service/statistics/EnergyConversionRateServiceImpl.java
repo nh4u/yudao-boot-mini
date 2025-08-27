@@ -31,6 +31,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.CONVERSION_RATE_STR;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_CONVERSION_RATE_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_CONVERSION_RATE_TABLE;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.getConvertData;
@@ -47,7 +48,6 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
 
     @Resource
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
-    public static final String UTILIZATION_RATE_STR = "转换率";
 
     @Override
     public StatisticsResultV2VO<EnergyRateInfo> getTable(StatisticsParamV2VO paramVO) {
@@ -118,7 +118,7 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
 
         EnergyRateInfo osInfo = new EnergyRateInfo();
         osInfo.setEnergyRateInfoDataList(Collections.emptyList());
-        osInfo.setItemName(UTILIZATION_RATE_STR);
+        osInfo.setItemName(CONVERSION_RATE_STR);
 
 
         infoList.add(osInfo);
@@ -150,7 +150,7 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
         // 构造结果对象
         EnergyRateInfo info = new EnergyRateInfo();
         info.setEnergyRateInfoDataList(dataList);
-        info.setItemName(UTILIZATION_RATE_STR);
+        info.setItemName(CONVERSION_RATE_STR);
         info.setPeriodRate(ratio);
         return info;
     }
@@ -274,9 +274,9 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
         // 月份处理
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
         xdata.forEach(x -> {
-            list.add(Arrays.asList(UTILIZATION_RATE_STR, period, x));
+            list.add(Arrays.asList(CONVERSION_RATE_STR, period, x));
         });
-        list.add(Arrays.asList(UTILIZATION_RATE_STR, period, "周期转换率（%）"));
+        list.add(Arrays.asList(CONVERSION_RATE_STR, period, "周期转换率（%）"));
         return list;
     }
 
