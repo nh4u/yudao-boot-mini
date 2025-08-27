@@ -273,6 +273,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
                 return;
             }
             YoyItemVO vo = buildYoyItemVODataList(nowList, lastList, dataTypeEnum, tableHeader, isCrossYear, valueExtractor);
+            if(Objects.isNull(vo)){
+                return;
+            }
             vo.setEnergyId(energy.getId());
             vo.setEnergyName(energy.getEnergyName());
             detailList.add(vo);
@@ -322,7 +325,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
 
         List<YoyItemVO> resultList = new ArrayList<>();
         YoyItemVO info = buildYoyItemVODataList(usageCostDataList, lastUsageCostDataList, dateTypeEnum, tableHeader, isCrossYear, valueExtractor);
-
+        if(Objects.isNull(info)){
+            return Collections.emptyList();
+        }
         // 构造结果对象
         Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
         LabelConfigDO topLabel = labelMap.get(topLabelId);
@@ -393,6 +398,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
 
                 // 构造结果对象
                 YoyItemVO info = buildYoyItemVODataList(labelUsageListNow, labelUsageListPrevious, dateTypeEnum, tableHeader, isCrossYear, valueExtractor);
+                if(Objects.isNull(info)){
+                    return;
+                }
                 info.setLabel1(topLabel.getLabelName());
                 info.setLabel2(label2Name);
                 info.setLabel3(label3Name);
@@ -465,7 +473,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         energyMap.forEach((energyId, energyConfigurationDO) -> {
 
             YoyItemVO info = buildYoyItemVODataList(nowUsageMap.get(energyId), lastUsageMap.get(energyId), dateTypeEnum, tableHeader, isCrossYear, valueExtractor);
-
+            if(Objects.isNull(info)){
+                return;
+            }
             // 构造结果对象
             info.setEnergyId(energyId);
             info.setEnergyName(energyConfigurationDO.getEnergyName());
@@ -553,7 +563,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
                 energyMap.forEach((energyId, energyConfigurationDO) -> {
                     if (energyConfigurationDO == null) return;
                     YoyItemVO info = buildYoyItemVODataList(finalEnergyUsageCostNowMap.get(energyId), finalEnergyUsageCostPrevMap.get(energyId), dateTypeEnum, tableHeader, isCrossYear, valueExtractor);
-
+                    if(Objects.isNull(info)){
+                        return;
+                    }
                     // 构造结果对象
                     info.setEnergyId(energyId);
                     info.setEnergyName(energyConfigurationDO.getEnergyName());
@@ -1456,6 +1468,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
             List<String> tableHeader,
             boolean isCrossYear,
             Function<UsageCostData, BigDecimal> valueExtractor) {
+        if (CollUtil.isEmpty(nowUsageList) && CollUtil.isEmpty(lastUsageList)) {
+            return null;
+        }
         if (CollUtil.isEmpty(nowUsageList)) {
             nowUsageList = Collections.emptyList();
         }

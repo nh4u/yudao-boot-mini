@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.statistics.vo;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -8,6 +9,7 @@ import java.util.List;
 
 @Schema(description = "图表统计 - 单组图表数据")
 @Data
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class ComparisonChartGroupVO {
 
     @Schema(description = "分组名称")
