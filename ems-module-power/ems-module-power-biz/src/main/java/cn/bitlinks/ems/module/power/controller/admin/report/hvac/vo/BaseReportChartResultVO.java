@@ -13,7 +13,6 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @ToString(callSuper = true)
-@JsonInclude(JsonInclude.Include.ALWAYS)
 public class BaseReportChartResultVO<T> {
     /**
      * y轴

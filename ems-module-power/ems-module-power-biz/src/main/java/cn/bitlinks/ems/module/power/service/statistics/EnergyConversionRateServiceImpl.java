@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.enums.EnergyClassifyEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.EnergyRateChartResVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.enums.StatisticsQueryType;
 import cn.bitlinks.ems.module.power.enums.standingbook.StandingBookStageEnum;
@@ -202,7 +203,7 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
     }
 
     @Override
-    public List<EnergyRateChartResultVO<BigDecimal>> getChart(StatisticsParamV2VO paramVO) {
+    public EnergyRateChartResVO getChart(StatisticsParamV2VO paramVO) {
         // 校验参数
         statisticsCommonService.validParamConditionDate(paramVO);
 
@@ -210,9 +211,10 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            return JSON.parseObject(cacheRes, new TypeReference<List<EnergyRateChartResultVO<BigDecimal>>>() {
+            return JSON.parseObject(cacheRes, new TypeReference<EnergyRateChartResVO>() {
             });
         }
+        EnergyRateChartResVO resVO = new EnergyRateChartResVO();
         StatisticsResultV2VO<EnergyRateInfo> tableResult = getTable(paramVO);
 
         List<EnergyRateChartResultVO<BigDecimal>> resultVOList = new ArrayList<>();
@@ -221,7 +223,7 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
 
 
         List<EnergyRateInfo> tableDataList = tableResult.getStatisticsInfoList();
-
+        List<LocalDateTime> localDateTimes = new ArrayList<>();
         tableDataList.forEach(info -> {
             EnergyRateChartResultVO<BigDecimal> resultVO = new EnergyRateChartResultVO<>();
             List<EnergyRateInfoData> dateList = info.getEnergyRateInfoDataList();
@@ -245,18 +247,24 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
                     }
             ).collect(Collectors.toList());
             LocalDateTime lastTime = tableResult.getDataTime();
-            resultVO.setDataTime(lastTime);
+            //resultVO.setDataTime(lastTime);
             resultVO.setYdata(nowList);
             resultVO.setXdata(xdata);
             resultVO.setName(info.getItemName() + TREND_STR);
+            localDateTimes.add(lastTime);
             resultVOList.add(resultVO);
         });
 
-
+        LocalDateTime latestTime = localDateTimes.stream()
+                .filter(Objects::nonNull) // 排除null
+                .max(Comparator.naturalOrder())
+                .orElse(null); // 若全部为null，返回null
+        resVO.setList(resultVOList);
+        resVO.setDataTime(latestTime);
         String jsonStr = JSONUtil.toJsonStr(resultVOList);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
-        return resultVOList;
+        return resVO;
     }
 
     @Override

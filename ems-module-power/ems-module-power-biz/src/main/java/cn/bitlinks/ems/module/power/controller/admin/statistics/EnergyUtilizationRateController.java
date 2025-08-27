@@ -51,7 +51,7 @@ public class EnergyUtilizationRateController {
 
     @PostMapping("/chart")
     @Operation(summary = "图")
-    public CommonResult<List<EnergyRateChartResultVO<BigDecimal>>> getChart(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
+    public CommonResult<EnergyRateChartResVO> getChart(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
         StatisticsParamV2VO vo = BeanUtils.toBean(paramVO, StatisticsParamV2VO.class);
         vo.setQueryType(StatisticsQueryType.COMPREHENSIVE_VIEW.getCode());
         return success(energyUtilizationRateService.getChart(vo));
