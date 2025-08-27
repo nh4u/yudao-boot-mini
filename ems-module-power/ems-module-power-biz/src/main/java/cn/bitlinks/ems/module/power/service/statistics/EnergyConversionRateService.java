@@ -1,7 +1,9 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseReportChartResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.EnergyRateInfo;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
 
 import javax.validation.Valid;
 import java.math.BigDecimal;
@@ -10,7 +12,7 @@ import java.util.List;
 /**
  * 能源利用率
  */
-public interface EnergyUtilizationRateService {
+public interface EnergyConversionRateService {
     StatisticsResultV2VO<EnergyRateInfo> getTable(@Valid StatisticsParamV2VO paramVO);
 
 

@@ -11,15 +11,15 @@ import java.util.List;
 
 @Data
 @NoArgsConstructor
-@Schema(description = "管理后台 - 利用率 VO")
+@Schema(description = "管理后台 - 利用率+转换率 VO")
 @JsonInclude(JsonInclude.Include.ALWAYS)
-public class EnergyUtilizationRateInfo {
+public class EnergyRateInfo {
 
     @Schema(description = "数据", example = "数据")
-    private List<EnergyUtilizationRateInfoData> energyUtilizationRateInfoDataList;
+    private List<EnergyRateInfoData> energyRateInfoDataList;
 
     @Schema(description = "周期合计", example = "0.00")
-    private BigDecimal periodSum;
+    private BigDecimal periodRate;
 
     @Schema(description = "数据项", example = "热力")
     private String itemName;

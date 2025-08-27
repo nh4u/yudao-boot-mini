@@ -29,11 +29,11 @@ import java.util.List;
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 
-@Tag(name = "管理后台 - 用能分析 (利用率)")
+@Tag(name = "管理后台 - 用能分析 (转换率)")
 @RestController
-@RequestMapping("/power/statistics/utilizationRate")
+@RequestMapping("/power/statistics/conversionRate")
 @Validated
-public class EnergyUtilizationRateController {
+public class EnergyConversionRateController {
     @Resource
     private EnergyUtilizationRateService energyUtilizationRateService;
 

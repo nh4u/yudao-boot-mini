@@ -31,15 +31,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
-import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_UTILIZATION_RATE_CHART;
-import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_UTILIZATION_RATE_TABLE;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_CONVERSION_RATE_CHART;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_CONVERSION_RATE_TABLE;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.getConvertData;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.safeDivide100;
 
 @Service
 @Validated
 @Slf4j
-public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateService {
+public class EnergyConversionRateServiceImpl implements EnergyConversionRateService {
     @Resource
     private StatisticsCommonService statisticsCommonService;
     @Resource
@@ -47,7 +47,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
 
     @Resource
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
-    public static final String UTILIZATION_RATE_STR = "利用率";
+    public static final String UTILIZATION_RATE_STR = "转换率";
 
     @Override
     public StatisticsResultV2VO<EnergyRateInfo> getTable(StatisticsParamV2VO paramVO) {
@@ -55,7 +55,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         // 校验条件的合法性
         statisticsCommonService.validParamConditionDate(paramVO);
 
-        String cacheKey = ENERGY_UTILIZATION_RATE_TABLE + SecureUtil.md5(paramVO.toString());
+        String cacheKey = ENERGY_CONVERSION_RATE_TABLE + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (StrUtil.isNotEmpty(cacheRes)) {
@@ -69,30 +69,21 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
 
         // 查询台账id
         // 查询园区利用率 台账ids
-        List<Long> sbIds = statisticsCommonService.getStageEnergySbIds(StandingBookStageEnum.TERMINAL_USE.getCode(), false, null);
-        List<Long> outsourceSbIds = statisticsCommonService.getStageEnergySbIds(StandingBookStageEnum.PROCUREMENT_STORAGE.getCode(), true, EnergyClassifyEnum.OUTSOURCED);
+        List<Long> outsourceSbIds = statisticsCommonService.getStageEnergySbIds(StandingBookStageEnum.PROCUREMENT_STORAGE.getCode(), false, EnergyClassifyEnum.OUTSOURCED);
         List<Long> parkSbIds = statisticsCommonService.getStageEnergySbIds(StandingBookStageEnum.PROCESSING_CONVERSION.getCode(), true, EnergyClassifyEnum.PARK);
 
         // 无台账数据直接返回
-        if (CollUtil.isEmpty(sbIds)) {
+        if (CollUtil.isEmpty(outsourceSbIds) || CollUtil.isEmpty(parkSbIds)) {
             return defaultNullData(tableHeader);
         }
 
         // 查询外购
-        List<UsageCostData> outsourceList = new ArrayList<>();
-        if (CollUtil.isNotEmpty(outsourceSbIds)) {
-            outsourceList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], outsourceSbIds);
-        }
+        List<UsageCostData> outsourceList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], outsourceSbIds);
         // 查询园区
-        List<UsageCostData> parkList = new ArrayList<>();
-        if (CollUtil.isNotEmpty(parkSbIds)) {
-            parkList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], parkSbIds);
-        }
-        // 查询分子
-        List<UsageCostData> numeratorList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], sbIds);
+        List<UsageCostData> parkList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], parkSbIds);
 
         // 综合默认查看
-        List<EnergyRateInfo> statisticsInfoList = queryList(outsourceList, parkList, numeratorList, tableHeader);
+        List<EnergyRateInfo> statisticsInfoList = queryList(outsourceList, parkList, tableHeader);
 
         // 设置最终返回值
         resultVO.setStatisticsInfoList(statisticsInfoList);
@@ -106,13 +97,9 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
                 paramVO.getRange()[1],
                 parkSbIds
         );
-        LocalDateTime lastTime3 = usageCostService.getLastTimeNoParam(
-                paramVO.getRange()[0],
-                paramVO.getRange()[1],
-                sbIds
-        );
+
         // 找出三个时间中的最大值（最新时间）
-        LocalDateTime latestTime = Arrays.stream(new LocalDateTime[]{lastTime1, lastTime2, lastTime3})
+        LocalDateTime latestTime = Arrays.stream(new LocalDateTime[]{lastTime1, lastTime2})
                 .max(Comparator.naturalOrder())
                 .orElse(null);
         resultVO.setDataTime(latestTime);
@@ -130,18 +117,15 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
 
         EnergyRateInfo osInfo = new EnergyRateInfo();
         osInfo.setEnergyRateInfoDataList(Collections.emptyList());
-        osInfo.setItemName(EnergyClassifyEnum.OUTSOURCED.getDetail() + UTILIZATION_RATE_STR);
+        osInfo.setItemName(UTILIZATION_RATE_STR);
 
-        EnergyRateInfo parkInfo = new EnergyRateInfo();
-        parkInfo.setEnergyRateInfoDataList(Collections.emptyList());
-        parkInfo.setItemName(EnergyClassifyEnum.PARK.getDetail() + UTILIZATION_RATE_STR);
+
         infoList.add(osInfo);
-        infoList.add(parkInfo);
         resultVO.setStatisticsInfoList(infoList);
         return resultVO;
     }
 
-    private EnergyRateInfo getUtilizationRateInfo(EnergyClassifyEnum energyClassifyEnum, Map<String, TimeAndNumData> denominatorMap, Map<String, TimeAndNumData> numeratorMap, List<String> tableHeader) {
+    private EnergyRateInfo getUtilizationRateInfo(Map<String, TimeAndNumData> numeratorMap, Map<String, TimeAndNumData> denominatorMap, List<String> tableHeader) {
 
         List<EnergyRateInfoData> dataList = new ArrayList<>();
         for (String time : tableHeader) {
@@ -165,7 +149,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         // 构造结果对象
         EnergyRateInfo info = new EnergyRateInfo();
         info.setEnergyRateInfoDataList(dataList);
-        info.setItemName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR);
+        info.setItemName(UTILIZATION_RATE_STR);
         info.setPeriodRate(ratio);
         return info;
     }
@@ -175,7 +159,6 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
      */
     private List<EnergyRateInfo> queryList(List<UsageCostData> outsourceList,
                                            List<UsageCostData> parkList,
-                                           List<UsageCostData> numeratorList,
                                            List<String> tableHeader) {
         if (CollUtil.isEmpty(outsourceList)) {
             outsourceList = Collections.emptyList();
@@ -183,17 +166,13 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         if (CollUtil.isEmpty(parkList)) {
             parkList = Collections.emptyList();
         }
-        if (CollUtil.isEmpty(numeratorList)) {
-            numeratorList = Collections.emptyList();
-        }
+
         Map<String, TimeAndNumData> outsourceMap = getTimeAndNumDataMap(outsourceList);
         Map<String, TimeAndNumData> parkMap = getTimeAndNumDataMap(parkList);
-        Map<String, TimeAndNumData> numeratorMap = getTimeAndNumDataMap(numeratorList);
 
         List<EnergyRateInfo> result = new ArrayList<>();
 
-        result.add(getUtilizationRateInfo(EnergyClassifyEnum.OUTSOURCED, outsourceMap, numeratorMap, tableHeader));
-        result.add(getUtilizationRateInfo(EnergyClassifyEnum.PARK, parkMap, numeratorMap, tableHeader));
+        result.add(getUtilizationRateInfo(parkMap, outsourceMap, tableHeader));
         return result;
 
     }
@@ -226,7 +205,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         // 校验参数
         statisticsCommonService.validParamConditionDate(paramVO);
 
-        String cacheKey = ENERGY_UTILIZATION_RATE_CHART + SecureUtil.md5(paramVO.toString());
+        String cacheKey = ENERGY_CONVERSION_RATE_CHART + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
@@ -287,16 +266,16 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
 
         List<List<String>> list = ListUtils.newArrayList();
         list.add(Arrays.asList("表单名称", "统计周期", ""));
-        String sheetName = "利用率";
+        //String sheetName = "转换率";
         // 统计周期
         String period = getFormatTime(paramVO.getRange()[0]) + "~" + getFormatTime(paramVO.getRange()[1]);
 
         // 月份处理
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
         xdata.forEach(x -> {
-            list.add(Arrays.asList(sheetName, period, x));
+            list.add(Arrays.asList(UTILIZATION_RATE_STR, period, x));
         });
-        list.add(Arrays.asList(sheetName, period, "周期利用率（%）"));
+        list.add(Arrays.asList(UTILIZATION_RATE_STR, period, "周期转换率（%）"));
         return list;
     }
 

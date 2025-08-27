@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.ALWAYS)
-public class EnergyUtilizationRateInfoData {
+public class EnergyRateInfoData {
 
     @Schema(description = "日期", example = "2024-12-11 | 2024-12 | 2024")
     private String date;
