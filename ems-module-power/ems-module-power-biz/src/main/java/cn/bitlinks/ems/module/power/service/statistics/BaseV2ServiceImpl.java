@@ -705,9 +705,11 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         List<StandingbookDO> standingbookIdsByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIds);
         List<Long> standingBookIdList = standingbookIdsByEnergy.stream().map(StandingbookDO::getId).collect(Collectors.toList());
 
-        // 6. 查询标签信息（按标签过滤台账）
-        List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByLabel(
-                paramVO.getTopLabel(), paramVO.getChildLabels(), standingBookIdList);
+        // 查询标签信息（按标签过滤台账）
+        String topLabel = paramVO.getTopLabel();
+        String childLabels = paramVO.getChildLabels();
+        List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService
+                .getStandingbookIdsByLabel(topLabel, childLabels);
 
         List<Long> standingBookIds = new ArrayList<>();
         if (CollUtil.isNotEmpty(standingbookIdsByLabel)) {
@@ -721,6 +723,11 @@ public class BaseV2ServiceImpl implements BaseV2Service {
             standingBookIds.addAll(collect.stream().map(StandingbookDO::getId).collect(Collectors.toList()));
         } else {
             standingBookIds.addAll(standingBookIdList);
+        }
+
+        if (CollUtil.isEmpty(standingBookIds)) {
+            result.setList(Collections.emptyList());
+            return result;
         }
 
         // 7. 查询当前周期与上周期的折扣数据
@@ -1081,7 +1088,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         StatisticsResultV2VO<BaseItemVO> resultVO;
         if (flag == 1) {
             // 折标煤
-            resultVO = discountAnalysisTable(paramVO);
+            resultVO = foldCoalAnalysisTable(paramVO);
         } else {
             // 折价
             resultVO = discountAnalysisTable(paramVO);
@@ -1357,7 +1364,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
 
         // 汇总统计
         BigDecimal sumNow = dataList.stream().map(BaseDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
-        BigDecimal sumPrevious = dataList.stream().map(BaseDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
+        BigDecimal sumPrevious = lastUsageList.stream().map(valueExtractor).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
         BigDecimal sumRatio = calculateBaseRatio(sumNow, sumPrevious);
         // 构造结果对象
         BaseItemVO vo = new BaseItemVO();

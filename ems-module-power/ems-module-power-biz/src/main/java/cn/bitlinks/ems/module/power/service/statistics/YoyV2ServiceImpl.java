@@ -633,9 +633,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
             List<BigDecimal> ratioList = new ArrayList<>();
             // 遍历横轴时间点构造每条数据序列
             for (String time : xdata) {
-                BigDecimal now = nowSeries.getOrDefault(time, BigDecimal.ZERO);
+                BigDecimal now = nowSeries.get(time);
                 String lastTime = LocalDateTimeUtils.getYearOnYearTime(time, dataTypeEnum);
-                BigDecimal previous = lastSeries.getOrDefault(lastTime, BigDecimal.ZERO);
+                BigDecimal previous = lastSeries.get(lastTime);
                 nowList.add(dealBigDecimalScale(now, DEFAULT_SCALE));
                 lastList.add(dealBigDecimalScale(previous, DEFAULT_SCALE));
                 ratioList.add(dealBigDecimalScale(calculateYearOnYearRatio(now, previous), DEFAULT_SCALE));
@@ -710,9 +710,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
             List<BigDecimal> ratioList = new ArrayList<>();
 
             for (String time : xdata) {
-                BigDecimal now = nowSeries.getOrDefault(time, BigDecimal.ZERO);
+                BigDecimal now = nowSeries.get(time);
                 String lastTime = LocalDateTimeUtils.getYearOnYearTime(time, dataTypeEnum);
-                BigDecimal previous = lastSeries.getOrDefault(lastTime, BigDecimal.ZERO);
+                BigDecimal previous = lastSeries.get(lastTime);
                 nowList.add(dealBigDecimalScale(now, DEFAULT_SCALE));
                 lastList.add(dealBigDecimalScale(previous, DEFAULT_SCALE));
                 ratioList.add(dealBigDecimalScale(calculateYearOnYearRatio(now, previous), DEFAULT_SCALE));
@@ -758,9 +758,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         List<BigDecimal> ratioList = new ArrayList<>();
 
         for (String time : xdata) {
-            BigDecimal now = nowMap.getOrDefault(time, BigDecimal.ZERO);
+            BigDecimal now = nowMap.get(time);
             String lastTime = LocalDateTimeUtils.getYearOnYearTime(time, dataTypeEnum);
-            BigDecimal previous = lastMap.getOrDefault(lastTime, BigDecimal.ZERO);
+            BigDecimal previous = lastMap.get(lastTime);
             nowList.add(dealBigDecimalScale(now, DEFAULT_SCALE));
             lastList.add(dealBigDecimalScale(previous, DEFAULT_SCALE));
             ratioList.add(dealBigDecimalScale(calculateYearOnYearRatio(now, previous), DEFAULT_SCALE));
