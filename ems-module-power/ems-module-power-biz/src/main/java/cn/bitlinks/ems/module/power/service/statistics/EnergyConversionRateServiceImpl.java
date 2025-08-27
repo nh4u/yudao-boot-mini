@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.CONVERSION_RATE_STR;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.TREND_STR;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_CONVERSION_RATE_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_CONVERSION_RATE_TABLE;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.getConvertData;
@@ -250,7 +249,7 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
             //resultVO.setDataTime(lastTime);
             resultVO.setYdata(nowList);
             resultVO.setXdata(xdata);
-            resultVO.setName(info.getItemName() + TREND_STR);
+            resultVO.setName(info.getItemName());
             localDateTimes.add(lastTime);
             resultVOList.add(resultVO);
         });

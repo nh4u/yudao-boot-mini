@@ -30,7 +30,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.TREND_STR;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.UTILIZATION_RATE_STR;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_UTILIZATION_RATE_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_UTILIZATION_RATE_TABLE;
@@ -274,16 +273,22 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
             //resultVO.setDataTime(lastTime);
             resultVO.setYdata(nowList);
             resultVO.setXdata(xdata);
-            resultVO.setName(info.getItemName() + TREND_STR);
+            resultVO.setName(info.getItemName());
             localDateTimes.add(lastTime);
             resultVOList.add(resultVO);
         });
+        if (EnergyClassifyEnum.OUTSOURCED.getCode().equals(paramVO.getEnergyClassify())) {
+            resVO.setList(Collections.singletonList(resultVOList.get(0)));
+        } else if (EnergyClassifyEnum.PARK.getCode().equals(paramVO.getEnergyClassify())) {
+            resVO.setList(Collections.singletonList(resultVOList.get(1)));
+        } else {
+            resVO.setList(resultVOList);
+        }
 
         LocalDateTime latestTime = localDateTimes.stream()
                 .filter(Objects::nonNull) // 排除null
                 .max(Comparator.naturalOrder())
                 .orElse(null); // 若全部为null，返回null
-        resVO.setList(resultVOList);
         resVO.setDataTime(latestTime);
         String jsonStr = JSONUtil.toJsonStr(resultVOList);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
