@@ -206,13 +206,6 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
         // 校验参数
         statisticsCommonService.validParamConditionDate(paramVO);
 
-        String cacheKey = ENERGY_CONVERSION_RATE_CHART + SecureUtil.md5(paramVO.toString());
-        byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
-        String cacheRes = StrUtils.decompressGzip(compressed);
-        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            return JSON.parseObject(cacheRes, new TypeReference<EnergyRateChartResVO>() {
-            });
-        }
         EnergyRateChartResVO resVO = new EnergyRateChartResVO();
         StatisticsResultV2VO<EnergyRateInfo> tableResult = getTable(paramVO);
 
@@ -222,7 +215,6 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
 
 
         List<EnergyRateInfo> tableDataList = tableResult.getStatisticsInfoList();
-        List<LocalDateTime> localDateTimes = new ArrayList<>();
         tableDataList.forEach(info -> {
             EnergyRateChartResultVO<BigDecimal> resultVO = new EnergyRateChartResultVO<>();
             List<EnergyRateInfoData> dateList = info.getEnergyRateInfoDataList();
@@ -250,19 +242,13 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
             resultVO.setYdata(nowList);
             resultVO.setXdata(xdata);
             resultVO.setName(info.getItemName());
-            localDateTimes.add(lastTime);
             resultVOList.add(resultVO);
         });
 
-        LocalDateTime latestTime = localDateTimes.stream()
-                .filter(Objects::nonNull) // 排除null
-                .max(Comparator.naturalOrder())
-                .orElse(null); // 若全部为null，返回null
+
         resVO.setList(resultVOList);
-        resVO.setDataTime(latestTime);
-        String jsonStr = JSONUtil.toJsonStr(resVO);
-        byte[] bytes = StrUtils.compressGzip(jsonStr);
-        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+        resVO.setDataTime(tableResult.getDataTime());
+
         return resVO;
     }
 

@@ -230,13 +230,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         // 校验参数
         statisticsCommonService.validParamConditionDate(paramVO);
 
-        String cacheKey = ENERGY_UTILIZATION_RATE_CHART + SecureUtil.md5(paramVO.toString());
-        byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
-        String cacheRes = StrUtils.decompressGzip(compressed);
-        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            return JSON.parseObject(cacheRes, new TypeReference<EnergyRateChartResVO>() {
-            });
-        }
+
         StatisticsResultV2VO<EnergyRateInfo> tableResult = getTable(paramVO);
 
         EnergyRateChartResVO resVO = new EnergyRateChartResVO();
@@ -246,17 +240,13 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
 
 
         List<EnergyRateInfo> tableDataList = tableResult.getStatisticsInfoList();
-        List<LocalDateTime> localDateTimes = new ArrayList<>();
         tableDataList.forEach(info -> {
             EnergyRateChartResultVO<BigDecimal> resultVO = new EnergyRateChartResultVO<>();
             List<EnergyRateInfoData> dateList = info.getEnergyRateInfoDataList();
             if (CollUtil.isEmpty(dateList)) {
                 return;
             }
-//            // 处理空数据
-//            dateList.forEach(data -> {
-//                data.setRate(data.getRate() == null ? BigDecimal.ZERO : data.getRate());
-//            });
+
             Map<String, EnergyRateInfoData> timeMap = dateList.stream()
                     .filter(data -> data.getDate() != null)
                     .collect(Collectors.toMap(
@@ -272,30 +262,16 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
                         return infoData.getRate();
                     }
             ).collect(Collectors.toList());
-            LocalDateTime lastTime = tableResult.getDataTime();
-            //resultVO.setDataTime(lastTime);
             resultVO.setYdata(nowList);
             resultVO.setXdata(xdata);
             resultVO.setName(info.getItemName());
-            localDateTimes.add(lastTime);
             resultVOList.add(resultVO);
         });
-        if (EnergyClassifyEnum.OUTSOURCED.getCode().equals(paramVO.getEnergyClassify())) {
-            resVO.setList(Collections.singletonList(resultVOList.get(0)));
-        } else if (EnergyClassifyEnum.PARK.getCode().equals(paramVO.getEnergyClassify())) {
-            resVO.setList(Collections.singletonList(resultVOList.get(1)));
-        } else {
-            resVO.setList(resultVOList);
-        }
 
-        LocalDateTime latestTime = localDateTimes.stream()
-                .filter(Objects::nonNull) // 排除null
-                .max(Comparator.naturalOrder())
-                .orElse(null); // 若全部为null，返回null
-        resVO.setDataTime(latestTime);
-        String jsonStr = JSONUtil.toJsonStr(resVO);
-        byte[] bytes = StrUtils.compressGzip(jsonStr);
-        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+        resVO.setList(resultVOList);
+
+        resVO.setDataTime(tableResult.getDataTime());
+
         return resVO;
     }
 
