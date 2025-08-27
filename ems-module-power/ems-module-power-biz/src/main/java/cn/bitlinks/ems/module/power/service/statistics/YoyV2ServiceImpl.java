@@ -1201,40 +1201,63 @@ public class YoyV2ServiceImpl implements YoyV2Service {
 
         List<YoyItemVO> result = new ArrayList<>();
 
-//        result.add(getUtilizationRateInfo(EnergyClassifyEnum.OUTSOURCED, outsourceMap, numeratorMap,lastOutsourceMap, lastNumeratorMap, tableHeader));
-//        result.add(getUtilizationRateInfo(EnergyClassifyEnum.PARK, parkMap, numeratorMap, tableHeader));
+        result.add(getUtilizationRateInfo(EnergyClassifyEnum.OUTSOURCED, outsourceMap, numeratorMap, lastOutsourceMap, lastNumeratorMap, isCrossYear, tableHeader));
+        result.add(getUtilizationRateInfo(EnergyClassifyEnum.PARK, parkMap, numeratorMap, lastParkMap, lastNumeratorMap, isCrossYear, tableHeader));
         return result;
 
     }
 
-    //    private YoyItemVO getUtilizationRateInfo(EnergyClassifyEnum energyClassifyEnum, Map<String, TimeAndNumData> denominatorMap, Map<String, TimeAndNumData> numeratorMap, List<String> tableHeader) {
-//
-//        List<YoyDetailVO> dataList = new ArrayList<>();
-//        for (String time : tableHeader) {
-//            TimeAndNumData numeratorData = numeratorMap.get(time);
-//            BigDecimal numeratorValue = Optional.ofNullable(numeratorData)
-//                    .map(TimeAndNumData::getNum)
-//                    .orElse(null);
-//
-//            TimeAndNumData denominatorData = denominatorMap.get(time);
-//            BigDecimal denominatorValue = Optional.ofNullable(denominatorData)
-//                    .map(TimeAndNumData::getNum)
-//                    .orElse(null);
-//            BigDecimal ratio = safeDivide100(numeratorValue, denominatorValue);
-//            dataList.add(new EnergyRateInfoData(time, ratio));
-//        }
-//
-//        // 汇总统计
-//        BigDecimal sumDenominator = denominatorMap.values().stream().filter(Objects::nonNull).map(data -> data.getNum() != null ? data.getNum() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
-//        BigDecimal sumNumerator = numeratorMap.values().stream().filter(Objects::nonNull).map(data -> data.getNum() != null ? data.getNum() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
-//        BigDecimal ratio = safeDivide100(sumNumerator, sumDenominator);
-//        // 构造结果对象
-//        EnergyRateInfo info = new EnergyRateInfo();
-//        info.setEnergyRateInfoDataList(dataList);
-//        info.setItemName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR);
-//        info.setPeriodRate(ratio);
-//        return info;
-//    }
+    private YoyItemVO getUtilizationRateInfo(EnergyClassifyEnum energyClassifyEnum, Map<String, TimeAndNumData> denominatorMap, Map<String, TimeAndNumData> numeratorMap,
+                                             Map<String, TimeAndNumData> lastDenominatorMap, Map<String, TimeAndNumData> lastNumeratorMap, boolean isCrossYear, List<String> tableHeader) {
+
+        List<YoyDetailVO> dataList = new ArrayList<>();
+        for (String time : tableHeader) {
+
+            TimeAndNumData numeratorData = numeratorMap.get(time);
+            BigDecimal numeratorValue = Optional.ofNullable(numeratorData)
+                    .map(TimeAndNumData::getNum)
+                    .orElse(null);
+
+            TimeAndNumData denominatorData = denominatorMap.get(time);
+            BigDecimal denominatorValue = Optional.ofNullable(denominatorData)
+                    .map(TimeAndNumData::getNum)
+                    .orElse(null);
+            BigDecimal nowRatio = safeDivide100(numeratorValue, denominatorValue);
+
+            TimeAndNumData lastNumeratorData = lastNumeratorMap.get(time);
+            BigDecimal lastNumeratorValue = Optional.ofNullable(lastNumeratorData)
+                    .map(TimeAndNumData::getNum)
+                    .orElse(null);
+
+            TimeAndNumData lastDenominatorData = lastDenominatorMap.get(time);
+            BigDecimal lastDenominatorValue = Optional.ofNullable(lastDenominatorData)
+                    .map(TimeAndNumData::getNum)
+                    .orElse(null);
+            BigDecimal lastRatio = safeDivide100(lastNumeratorValue, lastDenominatorValue);
+            BigDecimal ratio = calculateYearOnYearRatio(nowRatio, lastRatio);
+            dataList.add(new YoyDetailVO(time, nowRatio, lastRatio, ratio));
+        }
+        // 汇总统计
+        BigDecimal sumDenominator = denominatorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
+        BigDecimal sumNumerator = numeratorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
+        BigDecimal nowSumRadio = safeDivide100(sumNumerator, sumDenominator);
+        BigDecimal lastSumDenominator = lastDenominatorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
+        BigDecimal lastSumNumerator = lastNumeratorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
+        BigDecimal lastSumRadio = safeDivide100(lastSumNumerator, lastSumDenominator);
+        BigDecimal ratio = calculateYearOnYearRatio(nowSumRadio, lastSumRadio);
+        // 构造结果对象
+        YoyItemVO info = new YoyItemVO();
+        info.setStatisticsRatioDataList(dataList);
+        info.setEnergyName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR);
+
+        info.setSumNow(dealBigDecimalScale(nowSumRadio, DEFAULT_SCALE));
+        if (!isCrossYear) {
+            info.setSumPrevious(dealBigDecimalScale(lastSumRadio, DEFAULT_SCALE));
+            info.setSumRatio(dealBigDecimalScale(ratio, DEFAULT_SCALE));
+        }
+        return info;
+    }
+
     private StatisticsResultV2VO<YoyItemVO> defaultNullData(List<String> tableHeader) {
         StatisticsResultV2VO<YoyItemVO> resultVO = new StatisticsResultV2VO<>();
         resultVO.setHeader(tableHeader);
