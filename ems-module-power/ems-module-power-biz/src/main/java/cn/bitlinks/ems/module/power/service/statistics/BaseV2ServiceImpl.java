@@ -1364,7 +1364,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
 
         // 汇总统计
         BigDecimal sumNow = dataList.stream().map(BaseDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
-        BigDecimal sumPrevious = dataList.stream().map(BaseDetailVO::getPrevious).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
+        BigDecimal sumPrevious = lastUsageList.stream().map(valueExtractor).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
         BigDecimal sumRatio = calculateBaseRatio(sumNow, sumPrevious);
         // 构造结果对象
         BaseItemVO vo = new BaseItemVO();
