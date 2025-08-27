@@ -622,6 +622,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
             Map<String, BigDecimal> nowSeries = nowMap.getOrDefault(energy.getId(), new HashMap<>());
             Map<String, BigDecimal> lastSeries = lastMap.getOrDefault(energy.getId(), new HashMap<>());
 
+            if(CollUtil.isEmpty(nowSeries) && CollUtil.isEmpty(lastSeries)){
+                continue;
+            }
             List<BigDecimal> nowList = new ArrayList<>();
             List<BigDecimal> lastList = new ArrayList<>();
             List<BigDecimal> ratioList = new ArrayList<>();
@@ -929,7 +932,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         // 底部合计map
         Map<String, BigDecimal> sumNowMap = new HashMap<>();
         Map<String, BigDecimal> sumPreviousMap = new HashMap<>();
-        Map<String, BigDecimal> sumProportionMap = new HashMap<>();
+       // Map<String, BigDecimal> sumProportionMap = new HashMap<>();
 
         for (YoyItemVO s : yoyItemVOList) {
 
@@ -982,7 +985,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
                     // 底部合计处理
                     sumNowMap.put(date, addBigDecimal(sumNowMap.get(date), now));
                     sumPreviousMap.put(date, addBigDecimal(sumPreviousMap.get(date), previous));
-                    sumProportionMap.put(date, addBigDecimal(sumProportionMap.get(date), proportion));
+                   // sumProportionMap.put(date, addBigDecimal(sumProportionMap.get(date), proportion));
                 }
 
             });
@@ -998,7 +1001,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
             // 处理底部合计
             sumNowMap.put("sumNum", addBigDecimal(sumNowMap.get("sumNum"), sumNow));
             sumPreviousMap.put("sumNum", addBigDecimal(sumPreviousMap.get("sumNum"), sumPrevious));
-            sumProportionMap.put("sumNum", addBigDecimal(sumProportionMap.get("sumNum"), sumProportion));
+            //sumProportionMap.put("sumNum", addBigDecimal(sumProportionMap.get("sumNum"), sumProportion));
             result.add(data);
         }
 
@@ -1056,8 +1059,8 @@ public class YoyV2ServiceImpl implements YoyV2Service {
             BigDecimal previous = sumPreviousMap.get(date);
             bottom.add(getConvertData(unit, flag, previous));
             // 同比
-            BigDecimal proportion = sumProportionMap.get(date);
-            bottom.add(getConvertData(proportion));
+            //BigDecimal proportion = sumProportionMap.get(date);
+            bottom.add(getConvertData(calculateYearOnYearRatio(now, previous)));
         });
 
         // 底部周期合计
@@ -1068,9 +1071,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         BigDecimal sumPrevious = sumPreviousMap.get("sumNum");
         bottom.add(getConvertData(unit, flag, sumPrevious));
         // 同比
-        BigDecimal proportion = sumProportionMap.get("sumNum");
-        bottom.add(getConvertData(proportion));
-
+//        BigDecimal proportion = sumProportionMap.get("sumNum");
+//        bottom.add(getConvertData(proportion));
+        bottom.add(getConvertData(calculateYearOnYearRatio(sumNow, sumPrevious)));
         result.add(bottom);
 
         return result;
