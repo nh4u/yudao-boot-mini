@@ -6,6 +6,7 @@ import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsPar
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
 import cn.bitlinks.ems.module.power.dto.UsageCostDTO;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -61,6 +62,14 @@ public interface UsageCostService {
 
     List<UsageCostData> getStandingbookStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
 
+    /**
+     * 获取合计折标煤用量
+     * @param startDate 开始时间
+     * @param endDate 结束时间
+     * @param standingBookIds 台账id
+     * @return 总用量
+     */
+    BigDecimal getSumStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
     List<UsageCostData> getEnergyUsage(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
 
     /**

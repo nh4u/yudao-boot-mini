@@ -5,6 +5,8 @@ import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import cn.bitlinks.ems.framework.common.pojo.PageParam;
 import org.springframework.format.annotation.DateTimeFormat;
+
+import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 
 import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
@@ -33,6 +35,9 @@ public class WarningInfoPageReqVO extends PageParam {
 
     @Schema(description = "告警内容")
     private String content;
+
+    @Schema(description = "处理意见（非必填，≤500字）")
+    private String handleOpinion;
 
     @Schema(description = "创建时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)

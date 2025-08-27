@@ -66,4 +66,6 @@ public class WarningInfoDO extends BaseDO {
      */
     private String content;
 
+    /** 处理意见 */
+    private String handleOpinion;
 }

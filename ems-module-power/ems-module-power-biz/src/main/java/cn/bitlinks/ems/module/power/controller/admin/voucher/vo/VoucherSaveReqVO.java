@@ -1,11 +1,16 @@
 package cn.bitlinks.ems.module.power.controller.admin.voucher.vo;
 
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.text.CharSequenceUtil;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -15,7 +20,6 @@ public class VoucherSaveReqVO {
 
     @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "3687")
     private Long id;
-
 
 
     @Schema(description = "凭证编号")
@@ -59,11 +63,28 @@ public class VoucherSaveReqVO {
     @Schema(description = "凭证附件")
     private String appendix;
 
+    @Schema(description = "月份")
+    private String tempMonth;
+
+    @Schema(hidden = true)
+    @JsonIgnore
+    private LocalDate month;
+
     @Schema(description = "ids")
     private List<Long> ids;
 
     public void setAppendix(String appendix) {
         // 空字符串转为 null
         this.appendix = (appendix != null && appendix.trim().isEmpty()) ? null : appendix;
+    }
+
+    public void setTempMonth(String tempMonth) {
+        this.tempMonth = tempMonth;
+        if (CharSequenceUtil.isNotBlank(tempMonth)) {
+            String[] split = tempMonth.trim().split("-");
+            int year = Integer.parseInt(split[0]);
+            int month1 = Integer.parseInt(split[1]);
+            this.month = LocalDate.of(year, month1, 1);
+        }
     }
 }

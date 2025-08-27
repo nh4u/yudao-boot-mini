@@ -28,15 +28,27 @@ public class StatisticsCacheConstants {
     public static final String USAGE_STANDARD_COAL_ENERGY_FLOW_CHART = "statistics:usage:standardCoalEnergyFlow:chart:";
     public static final String COMPARISON_YOY_TABLE_COST = "statistics:yoy:discount:table:cost:";
     public static final String COMPARISON_YOY_TABLE_COAL = "statistics:yoy:discount:table:coal:";
+    public static final String COMPARISON_YOY_TABLE_UTILIZATION_RATE = "statistics:yoy:discount:table:utilization-rate:";
+
+
+    public static final String ENERGY_UTILIZATION_RATE_TABLE = "statistics:energy-utilization-rate:table:";
+    public static final String ENERGY_UTILIZATION_RATE_CHART = "statistics:energy-utilization-rate:chart:";
+    public static final String ENERGY_CONVERSION_RATE_TABLE = "statistics:energy-conversion-rate:table:";
+    public static final String ENERGY_CONVERSION_RATE_CHART = "statistics:energy-conversion-rate:chart:";
+
 
     public static final String COMPARISON_YOY_CHART_COST = "statistics:yoy:discount:chart:cost:";
     public static final String COMPARISON_YOY_CHART_COAL = "statistics:yoy:discount:chart:coal:";
+    public static final String COMPARISON_YOY_CHART_UTILIZATION_RATE = "statistics:yoy:discount:chart:utilization-rate:";
 
     public static final String COMPARISON_HOME_CHART_COST = "statistics:home:chart:cost:";
 
     public static final String COMPARISON_HOME_CHART_COAL = "statistics:home:chart:coal:";
 
     public static final String COMPARISON_HOME_TOTAL = "statistics:home:total:";
+    public static final String COMPARISON_HOME_TOP2_ENERGY_CONVERSION_RATE = "statistics:home:top2:energy-conversion-rate:";
+    public static final String COMPARISON_HOME_TOP2_PARK_ENERGY_UTILIZATION_RATE = "statistics:home:top2:park-energy-utilization-rate:";
+    public static final String COMPARISON_HOME_TOP2_OUTSOURCE_ENERGY_UTILIZATION_RATE = "statistics:home:top2:outsource-energy-utilization-rate:";
 
     public static final String COMPARISON_BASE_TABLE_COST  = "statistics:base:discount:table:cost:";
 

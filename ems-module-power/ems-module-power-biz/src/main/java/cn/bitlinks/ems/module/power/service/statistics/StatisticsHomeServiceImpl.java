@@ -1,16 +1,18 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
+import cn.bitlinks.ems.framework.common.enums.EnergyClassifyEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.StatisticsParamHomeV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
+import cn.bitlinks.ems.module.power.dal.mysql.measurementassociation.MeasurementAssociationMapper;
 import cn.bitlinks.ems.module.power.enums.ChartSeriesTypeEnum;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants;
 import cn.bitlinks.ems.module.power.enums.StatisticsQueryType;
+import cn.bitlinks.ems.module.power.enums.standingbook.StandingBookStageEnum;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
@@ -18,6 +20,8 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -36,6 +40,7 @@ import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUt
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.safeDivide100;
 
 /**
  * 统计总览 Service 实现类
@@ -61,6 +66,8 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
     @Resource
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
+    @Resource
+    private MeasurementAssociationMapper measurementAssociationMapper;
 
     public static final String ITEM_ACCUMULATE = "累计";
     public static final String ITEM_MAX = "最高(Max)";
@@ -69,9 +76,9 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
 
     @Override
-    public StatisticsHomeResultVO overview(StatisticsParamHomeV2VO paramVO) {
+    public StatisticsHomeResultVO overview(StatisticsParamHomeVO paramVO) {
         StatisticsHomeResultVO statisticsHomeResultVO = new StatisticsHomeResultVO();
-        statisticsHomeResultVO.setDataUpdateTime(LocalDateTime.now());
+        // statisticsHomeResultVO.setDataUpdateTime(LocalDateTime.now());
         // 尝试读取缓存
         String cacheKey = StatisticsCacheConstants.COMPARISON_HOME_TOTAL + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
@@ -80,19 +87,6 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
             log.info("缓存结果");
             return JSONUtil.toBean(cacheRes, StatisticsHomeResultVO.class);
         }
-
-        // 1.计量器具、重点设备、其他设备
-        statisticsHomeResultVO.setMeasurementInstrumentNum(standingbookService.count(CommonConstants.MEASUREMENT_INSTRUMENT_ID));
-        statisticsHomeResultVO.setKeyEquipmentNum(standingbookService.count(CommonConstants.KEY_EQUIPMENT_ID));
-        statisticsHomeResultVO.setOtherEquipmentNum(standingbookService.count(CommonConstants.OTHER_EQUIPMENT_ID));
-
-        // 2.产值能耗利用率
-        statisticsHomeResultVO.setOutputValueEnergyConsumption(BigDecimal.ZERO);
-        statisticsHomeResultVO.setProductEnergyConsumption8(BigDecimal.ZERO);
-        statisticsHomeResultVO.setProductEnergyConsumption12(BigDecimal.ZERO);
-        statisticsHomeResultVO.setOutsourceEnergyUtilizationRate(BigDecimal.ZERO);
-        statisticsHomeResultVO.setParkEnergyUtilizationRate(BigDecimal.ZERO);
-        statisticsHomeResultVO.setEnergyConversionRate(BigDecimal.ZERO);
 
         // 3.能源、折标煤、用能成本展示
         // 能源处理
@@ -150,7 +144,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         data.setMoney(totalMoney);
         list.add(0, data);
 
-        statisticsHomeResultVO.setStatisticsOverviewEnergyDataList(list);
+        //statisticsHomeResultVO.setStatisticsOverviewEnergyDataList(list);
 
         // 3.2 折标煤用量统计
         List<StandingbookDO> standingbookIdsByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIdList);
@@ -186,8 +180,8 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         List<StatisticsHomeData> moneyStatistics = buildStatisticsHomeData(
                 usageCostDataList, comparisonDataList, yoyDataList, UsageCostData::getTotalCost);
 
-        statisticsHomeResultVO.setStandardCoalStatistics(standardCoalStatistics);
-        statisticsHomeResultVO.setMoneyStatistics(moneyStatistics);
+//        statisticsHomeResultVO.setStandardCoalStatistics(standardCoalStatistics);
+//        statisticsHomeResultVO.setMoneyStatistics(moneyStatistics);
 
         // 获取数据更新时间
         LocalDateTime lastTime = usageCostService.getLastTime(
@@ -195,7 +189,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
                 paramVO.getRange()[0],
                 paramVO.getRange()[1],
                 standingBookIds);
-        statisticsHomeResultVO.setDataUpdateTime(lastTime);
+//        statisticsHomeResultVO.setDataUpdateTime(lastTime);
 
         String jsonStr = JSONUtil.toJsonStr(statisticsHomeResultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
@@ -205,54 +199,272 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
     }
 
     @Override
-    public ComparisonChartResultVO costChart(StatisticsParamHomeV2VO paramVO) {
+    public ComparisonChartResultVO costChart(StatisticsParamHomeVO paramVO) {
         return analysisChart(paramVO, UsageCostData::getTotalCost, StatisticsCacheConstants.COMPARISON_HOME_CHART_COST);
     }
 
     @Override
-    public ComparisonChartResultVO coalChart(StatisticsParamHomeV2VO paramVO) {
+    public ComparisonChartResultVO coalChart(StatisticsParamHomeVO paramVO) {
         return analysisChart(paramVO, UsageCostData::getTotalStandardCoalEquivalent, StatisticsCacheConstants.COMPARISON_HOME_CHART_COAL);
     }
 
     @Override
-    public List<StatisticsOverviewEnergyData> energy(StatisticsParamHomeV2VO paramVO) {
-        // 查询能源类型与台账
+    public List<StatisticsOverviewEnergyData> energy(StatisticsParamHomeVO paramVO) {
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(paramVO.getEnergyClassify());
         if (CollUtil.isEmpty(energyList)) {
             return Collections.emptyList();
         }
-
         List<Long> energyIdList = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
-
 
         // 时间参数准备
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         LocalDateTime startTime = rangeOrigin[0];
         LocalDateTime endTime = rangeOrigin[1];
+        List<StatisticsOverviewEnergyData> list = new ArrayList<>();
+        List<UsageCostData> energyStandardCoalList = usageCostService.getEnergyStandardCoalByEnergyIds(startTime, endTime, energyIdList);
 
+        Map<Long, UsageCostData> energyStandardCoalMap = energyStandardCoalList
+                .stream()
+                .collect(Collectors.toMap(UsageCostData::getEnergyId, Function.identity()));
 
-        List<UsageCostData> usageCostDataList = usageCostService.getListOfHome(startTime, endTime, energyIdList);
-        if (CollUtil.isEmpty(usageCostDataList)) {
-            List<StatisticsOverviewEnergyData> result = new ArrayList<>();
-            energyList.forEach(energyConfigurationDO -> {
-                StatisticsOverviewEnergyData energyData = new StatisticsOverviewEnergyData();
-                energyData.setName(energyConfigurationDO.getEnergyName());
-                energyData.setEnergyIcon(energyConfigurationDO.getEnergyIcon());
-                energyData.setMoney(BigDecimal.ZERO);
-                energyData.setStandardCoal(BigDecimal.ZERO);
-                energyData.setConsumption(BigDecimal.ZERO);
-                result.add(energyData);
-            });
+        energyList.forEach(e -> {
+            StatisticsOverviewEnergyData data = new StatisticsOverviewEnergyData();
 
-            StatisticsOverviewEnergyData sum = new StatisticsOverviewEnergyData();
-            sum.setName("综合");
-            sum.setMoney(BigDecimal.ZERO);
-            sum.setStandardCoal(BigDecimal.ZERO);
-            result.add(sum);
-            return result;
-        }
-        return energy(usageCostDataList, energyList);
+            data.setName(e.getEnergyName());
+            data.setEnergyIcon(e.getEnergyIcon());
+            UsageCostData usageCostData = energyStandardCoalMap.get(e.getId());
+
+            if (Objects.isNull(usageCostData)) {
+                data.setConsumption(BigDecimal.ZERO);
+                data.setStandardCoal(BigDecimal.ZERO);
+                data.setMoney(BigDecimal.ZERO);
+            } else {
+                data.setConsumption(dealBigDecimalScale(usageCostData.getCurrentTotalUsage(), DEFAULT_SCALE));
+                data.setStandardCoal(dealBigDecimalScale(usageCostData.getTotalStandardCoalEquivalent(), DEFAULT_SCALE));
+                data.setMoney(dealBigDecimalScale(usageCostData.getTotalCost(), DEFAULT_SCALE));
+            }
+            list.add(data);
+        });
+
+        // 3.1.2 综合能耗
+        BigDecimal totalMoney = list.stream()
+                .map(StatisticsOverviewEnergyData::getMoney)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalStandardCoal = list.stream()
+                .map(StatisticsOverviewEnergyData::getStandardCoal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        StatisticsOverviewEnergyData data = new StatisticsOverviewEnergyData();
+        data.setName("综合能耗");
+        data.setStandardCoal(totalStandardCoal);
+        data.setMoney(totalMoney);
+        list.add(0, data);
+        return list;
+//        // 查询能源类型与台账
+//        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(paramVO.getEnergyClassify());
+//        if (CollUtil.isEmpty(energyList)) {
+//            return Collections.emptyList();
+//        }
+//
+//        List<Long> energyIdList = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
+//
+//
+//        // 时间参数准备
+//        LocalDateTime[] rangeOrigin = paramVO.getRange();
+//        LocalDateTime startTime = rangeOrigin[0];
+//        LocalDateTime endTime = rangeOrigin[1];
+//
+//
+//        List<UsageCostData> usageCostDataList = usageCostService.getListOfHome(startTime, endTime, energyIdList);
+//        if (CollUtil.isEmpty(usageCostDataList)) {
+//            List<StatisticsOverviewEnergyData> result = new ArrayList<>();
+//            energyList.forEach(energyConfigurationDO -> {
+//                StatisticsOverviewEnergyData energyData = new StatisticsOverviewEnergyData();
+//                energyData.setName(energyConfigurationDO.getEnergyName());
+//                energyData.setEnergyIcon(energyConfigurationDO.getEnergyIcon());
+//                energyData.setMoney(BigDecimal.ZERO);
+//                energyData.setStandardCoal(BigDecimal.ZERO);
+//                energyData.setConsumption(BigDecimal.ZERO);
+//                result.add(energyData);
+//            });
+//
+//            StatisticsOverviewEnergyData sum = new StatisticsOverviewEnergyData();
+//            sum.setName("综合");
+//            sum.setMoney(BigDecimal.ZERO);
+//            sum.setStandardCoal(BigDecimal.ZERO);
+//            result.add(sum);
+//            return result;
+//        }
+//        return energy(usageCostDataList, energyList);
     }
+
+    @Override
+    public StatisticsHomeTopResultVO overviewTop() {
+        // 1.计量器具、重点设备、其他设备
+        StatisticsHomeTopResultVO resultVO = new StatisticsHomeTopResultVO();
+        resultVO.setMeasurementInstrumentNum(standingbookService.count(CommonConstants.MEASUREMENT_INSTRUMENT_ID));
+        resultVO.setKeyEquipmentNum(standingbookService.count(CommonConstants.KEY_EQUIPMENT_ID));
+        resultVO.setOtherEquipmentNum(standingbookService.count(CommonConstants.OTHER_EQUIPMENT_ID));
+        return resultVO;
+    }
+
+    @Override
+    public StatisticsHomeTop2ResultVO overviewTop2(StatisticsParamHomeVO paramVO) {
+        // 2.产值能耗利用率
+        StatisticsHomeTop2ResultVO statisticsHomeResultVO = new StatisticsHomeTop2ResultVO();
+        // 单位产值能耗 todo
+        StatisticsHomeTop2Data outputValueEnergyConsumption = new StatisticsHomeTop2Data();
+        statisticsHomeResultVO.setOutputValueEnergyConsumption(outputValueEnergyConsumption);
+        // 单位产品能耗（8英寸） todo
+        StatisticsHomeTop2Data productEnergyConsumption8 = new StatisticsHomeTop2Data();
+        statisticsHomeResultVO.setProductEnergyConsumption8(productEnergyConsumption8);
+        // 单位产品能耗（12英寸） todo
+        StatisticsHomeTop2Data productEnergyConsumption12 = new StatisticsHomeTop2Data();
+        statisticsHomeResultVO.setProductEnergyConsumption12(productEnergyConsumption12);
+
+        // 能源利用率（外购）
+        statisticsHomeResultVO.setOutsourceEnergyUtilizationRate(getOutsourceEnergyUtilizationRate(paramVO));
+        // 能源利用率（园区）
+        statisticsHomeResultVO.setParkEnergyUtilizationRate(getParkEnergyUtilizationRate(paramVO));
+        // 能源转换率
+        statisticsHomeResultVO.setEnergyConversionRate(getEnergyConversionRate(paramVO));
+
+        return statisticsHomeResultVO;
+
+    }
+
+    /**
+     * 能源转换率
+     */
+    private StatisticsHomeTop2Data getEnergyConversionRate(StatisticsParamHomeVO paramVO) {
+        try {
+            String cacheKey = StatisticsCacheConstants.COMPARISON_HOME_TOP2_ENERGY_CONVERSION_RATE + SecureUtil.md5(paramVO.toString());
+            byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
+            String cacheRes = StrUtils.decompressGzip(compressed);
+            if (CharSequenceUtil.isNotEmpty(cacheRes)) {
+                return JSON.parseObject(cacheRes, new TypeReference<StatisticsHomeTop2Data>() {
+                });
+            }
+            StatisticsHomeTop2Data numeratorRes = getStandardCoalTop2Data(StandingBookStageEnum.PROCESSING_CONVERSION, true, EnergyClassifyEnum.PARK, paramVO);
+            StatisticsHomeTop2Data denominatorRes = getStandardCoalTop2Data(StandingBookStageEnum.PROCUREMENT_STORAGE, false, EnergyClassifyEnum.OUTSOURCED, paramVO);
+            // 获取最新时间
+            LocalDateTime lastTime;
+            if (Objects.isNull(numeratorRes.getDataUpdateTime()) || Objects.isNull(denominatorRes.getDataUpdateTime())) {
+                lastTime = null;
+            } else {
+                lastTime = numeratorRes.getDataUpdateTime().isBefore(denominatorRes.getDataUpdateTime()) ? denominatorRes.getDataUpdateTime() : numeratorRes.getDataUpdateTime();
+            }
+            // 计算结果
+            if (BigDecimal.ZERO.equals(denominatorRes.getValue())) {
+                return StatisticsHomeTop2Data.builder().dataUpdateTime(lastTime).build();
+            }
+            StatisticsHomeTop2Data resultData = StatisticsHomeTop2Data.builder().dataUpdateTime(lastTime).value(safeDivide100(numeratorRes.getValue(), denominatorRes.getValue())).build();
+            String jsonStr = JSONUtil.toJsonStr(resultData);
+            byte[] bytes = StrUtils.compressGzip(jsonStr);
+            byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+            return resultData;
+        } catch (Exception e) {
+            log.error("能源转换率计算异常", e);
+            return StatisticsHomeTop2Data.builder().build();
+        }
+    }
+
+    /**
+     * 能源利用率（园区）
+     */
+    private StatisticsHomeTop2Data getParkEnergyUtilizationRate(StatisticsParamHomeVO paramVO) {
+        try {
+            String cacheKey = StatisticsCacheConstants.COMPARISON_HOME_TOP2_PARK_ENERGY_UTILIZATION_RATE + SecureUtil.md5(paramVO.toString());
+            byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
+            String cacheRes = StrUtils.decompressGzip(compressed);
+            if (CharSequenceUtil.isNotEmpty(cacheRes)) {
+                return JSON.parseObject(cacheRes, new TypeReference<StatisticsHomeTop2Data>() {
+                });
+            }
+            StatisticsHomeTop2Data numeratorRes = getStandardCoalTop2Data(StandingBookStageEnum.TERMINAL_USE, false, null, paramVO);
+            StatisticsHomeTop2Data denominatorRes = getStandardCoalTop2Data(StandingBookStageEnum.PROCESSING_CONVERSION, true, EnergyClassifyEnum.PARK, paramVO);
+            // 获取最新时间
+            LocalDateTime lastTime;
+            if (Objects.isNull(numeratorRes.getDataUpdateTime()) || Objects.isNull(denominatorRes.getDataUpdateTime())) {
+                lastTime = null;
+            } else {
+                lastTime = numeratorRes.getDataUpdateTime().isBefore(denominatorRes.getDataUpdateTime()) ? denominatorRes.getDataUpdateTime() : numeratorRes.getDataUpdateTime();
+            }
+            // 计算结果
+            if (BigDecimal.ZERO.equals(denominatorRes.getValue())) {
+                return StatisticsHomeTop2Data.builder().dataUpdateTime(lastTime).build();
+            }
+            StatisticsHomeTop2Data resultData = StatisticsHomeTop2Data.builder().dataUpdateTime(lastTime).value(safeDivide100(numeratorRes.getValue(), denominatorRes.getValue())).build();
+            String jsonStr = JSONUtil.toJsonStr(resultData);
+            byte[] bytes = StrUtils.compressGzip(jsonStr);
+            byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+            return resultData;
+        } catch (Exception e) {
+            log.error("园区能源利用率计算异常", e);
+            return StatisticsHomeTop2Data.builder().build();
+        }
+
+    }
+
+    /**
+     * 能源利用率（外购）
+     */
+    private StatisticsHomeTop2Data getOutsourceEnergyUtilizationRate(StatisticsParamHomeVO paramVO) {
+        try {
+            String cacheKey = StatisticsCacheConstants.COMPARISON_HOME_TOP2_OUTSOURCE_ENERGY_UTILIZATION_RATE + SecureUtil.md5(paramVO.toString());
+            byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
+            String cacheRes = StrUtils.decompressGzip(compressed);
+            if (CharSequenceUtil.isNotEmpty(cacheRes)) {
+                return JSON.parseObject(cacheRes, new TypeReference<StatisticsHomeTop2Data>() {
+                });
+            }
+            StatisticsHomeTop2Data numeratorRes = getStandardCoalTop2Data(StandingBookStageEnum.TERMINAL_USE, false, null, paramVO);
+            StatisticsHomeTop2Data denominatorRes = getStandardCoalTop2Data(StandingBookStageEnum.PROCUREMENT_STORAGE, true, EnergyClassifyEnum.OUTSOURCED, paramVO);
+            // 获取最新时间
+            LocalDateTime lastTime;
+            if (Objects.isNull(numeratorRes.getDataUpdateTime()) || Objects.isNull(denominatorRes.getDataUpdateTime())) {
+                lastTime = null;
+            } else {
+                lastTime = numeratorRes.getDataUpdateTime().isBefore(denominatorRes.getDataUpdateTime()) ? denominatorRes.getDataUpdateTime() : numeratorRes.getDataUpdateTime();
+            }
+            // 计算结果
+            if (BigDecimal.ZERO.equals(denominatorRes.getValue())) {
+                return StatisticsHomeTop2Data.builder().dataUpdateTime(lastTime).build();
+            }
+            StatisticsHomeTop2Data resultData = StatisticsHomeTop2Data.builder().dataUpdateTime(lastTime).value(safeDivide100(numeratorRes.getValue(), denominatorRes.getValue())).build();
+            String jsonStr = JSONUtil.toJsonStr(resultData);
+            byte[] bytes = StrUtils.compressGzip(jsonStr);
+            byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+            return resultData;
+        } catch (Exception e) {
+            log.error("外购能源利用率计算异常", e);
+            return StatisticsHomeTop2Data.builder().build();
+        }
+    }
+
+    /**
+     * 获取折标煤总量
+     */
+    private StatisticsHomeTop2Data getStandardCoalTop2Data(StandingBookStageEnum stageEnum, boolean toppest, EnergyClassifyEnum energyClassifyEnum, StatisticsParamHomeVO paramVO) {
+        List<Long> stageSbIds = statisticsCommonService.getStageEnergySbIds(stageEnum.getCode(), toppest, energyClassifyEnum);
+        if (CollUtil.isEmpty(stageSbIds)) {
+            return StatisticsHomeTop2Data.builder().build();
+        }
+
+        if (CollUtil.isEmpty(stageSbIds)) {
+            return StatisticsHomeTop2Data.builder().build();
+        }
+        BigDecimal sumStandardCoal = usageCostService.getSumStandardCoal(
+                paramVO.getRange()[0],
+                paramVO.getRange()[1],
+                stageSbIds);
+        LocalDateTime updTime = usageCostService.getLastTimeNoParam(paramVO.getRange()[0],
+                paramVO.getRange()[1],
+                stageSbIds);
+        return StatisticsHomeTop2Data.builder().dataUpdateTime(updTime).value(sumStandardCoal).build();
+    }
+
 
     public List<StatisticsOverviewEnergyData> energy(List<UsageCostData> usageCostDataList, List<EnergyConfigurationDO> energyList) {
         //总成本
@@ -306,7 +518,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
     }
 
 
-    public ComparisonChartResultVO analysisChart(StatisticsParamHomeV2VO paramVO, Function<UsageCostData, BigDecimal> valueExtractor, String commonType) {
+    public ComparisonChartResultVO analysisChart(StatisticsParamHomeVO paramVO, Function<UsageCostData, BigDecimal> valueExtractor, String commonType) {
         // 1. 校验时间范围合法性
         LocalDateTime[] rangeOrigin = paramVO.getRange();
         LocalDateTime startTime = rangeOrigin[0];
