@@ -91,6 +91,77 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         return analysisTable(paramVO, UsageCostData::getTotalStandardCoalEquivalent, StatisticsCacheConstants.COMPARISON_YOY_TABLE_COAL);
     }
 
+    @Override
+    public List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO) {
+
+        statisticsCommonService.validParamConditionDate(paramVO);
+
+        List<List<String>> list = ListUtils.newArrayList();
+        list.add(Arrays.asList("表单名称", "统计周期", "", ""));
+        String sheetName = "利用率";
+        // 统计周期
+        String period = getFormatTime(paramVO.getRange()[0]) + "~" + getFormatTime(paramVO.getRange()[1]);
+
+        // 月份处理
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
+        xdata.forEach(x -> {
+            list.add(Arrays.asList(sheetName, period, x, "当期"));
+            list.add(Arrays.asList(sheetName, period, x, "同期"));
+            list.add(Arrays.asList(sheetName, period, x, "同比（%）"));
+        });
+        list.add(Arrays.asList(sheetName, period, "周期合计", "当期"));
+        list.add(Arrays.asList(sheetName, period, "周期合计", "同期"));
+        list.add(Arrays.asList(sheetName, period, "周期合计", "同比（%）"));
+        return list;
+    }
+
+    @Override
+    public List<List<Object>> getExcelData(StatisticsParamV2VO paramVO) {
+        // 结果list
+        List<List<Object>> result = ListUtils.newArrayList();
+
+        StatisticsResultV2VO<YoyItemVO> resultVO = getUtilizationRateTable(paramVO);
+        List<String> tableHeader = resultVO.getHeader();
+
+        List<YoyItemVO> infoList = resultVO.getStatisticsInfoList();
+
+        for (YoyItemVO s : infoList) {
+
+            List<Object> data = ListUtils.newArrayList();
+
+            data.add(s.getEnergyName());
+
+            // 处理数据
+            List<YoyDetailVO> detailVOS = s.getStatisticsRatioDataList();
+
+            Map<String, YoyDetailVO> dateMap = detailVOS.stream()
+                    .collect(Collectors.toMap(YoyDetailVO::getDate, Function.identity()));
+
+            tableHeader.forEach(date -> {
+                YoyDetailVO yoyDetailVO = dateMap.get(date);
+                if (yoyDetailVO == null) {
+                    data.add("/");
+                    data.add("/");
+                    data.add("/");
+                } else {
+                    data.add(getConvertData(yoyDetailVO.getNow()));
+                    data.add(getConvertData(yoyDetailVO.getPrevious()));
+                    data.add(getConvertData(yoyDetailVO.getRatio()));
+
+                }
+            });
+
+            // 处理周期合计
+            data.add(getConvertData(s.getSumNow()));
+            data.add(getConvertData(s.getSumPrevious()));
+            data.add(getConvertData(s.getSumRatio()));
+
+            result.add(data);
+        }
+
+        return result;
+    }
+
     public StatisticsResultV2VO<YoyItemVO> analysisTable(StatisticsParamV2VO paramVO
             , Function<UsageCostData, BigDecimal> valueExtractor, String commonType) {
         // 校验条件的合法性
