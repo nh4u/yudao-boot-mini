@@ -277,12 +277,18 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
             localDateTimes.add(lastTime);
             resultVOList.add(resultVO);
         });
+        if (EnergyClassifyEnum.OUTSOURCED.getCode().equals(paramVO.getEnergyClassify())) {
+            resVO.setList(Collections.singletonList(resultVOList.get(0)));
+        } else if (EnergyClassifyEnum.PARK.getCode().equals(paramVO.getEnergyClassify())) {
+            resVO.setList(Collections.singletonList(resultVOList.get(1)));
+        } else {
+            resVO.setList(resultVOList);
+        }
 
         LocalDateTime latestTime = localDateTimes.stream()
                 .filter(Objects::nonNull) // 排除null
                 .max(Comparator.naturalOrder())
                 .orElse(null); // 若全部为null，返回null
-        resVO.setList(resultVOList);
         resVO.setDataTime(latestTime);
         String jsonStr = JSONUtil.toJsonStr(resultVOList);
         byte[] bytes = StrUtils.compressGzip(jsonStr);

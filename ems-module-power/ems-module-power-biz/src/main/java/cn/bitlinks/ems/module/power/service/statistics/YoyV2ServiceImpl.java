@@ -1221,7 +1221,13 @@ public class YoyV2ServiceImpl implements YoyV2Service {
             resultVOList.add(group);
 
         });
-
+        if (EnergyClassifyEnum.OUTSOURCED.getCode().equals(paramVO.getEnergyClassify())) {
+            resVO.setList(Collections.singletonList(resultVOList.get(0)));
+        } else if (EnergyClassifyEnum.PARK.getCode().equals(paramVO.getEnergyClassify())) {
+            resVO.setList(Collections.singletonList(resultVOList.get(1)));
+        } else {
+            resVO.setList(resultVOList);
+        }
         resVO.setList(resultVOList);
         resVO.setDataTime(tableResult.getDataTime());
         String jsonStr = JSONUtil.toJsonStr(resultVOList);
