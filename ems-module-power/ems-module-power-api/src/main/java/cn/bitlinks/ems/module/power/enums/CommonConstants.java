@@ -139,6 +139,9 @@ public interface CommonConstants {
     String SYSTEM = "系统";
 
     String VOUCHER = "凭证";
+    String UTILIZATION_RATE_STR = "利用率";
+    String CONVERSION_RATE_STR = "转换率";
+    String TREND_STR = "趋势";
     /**
      * 随机成功概率
      */
