@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.utils;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.text.StrPool;
 import cn.hutool.core.text.StrSplitter;
 
 import java.math.BigDecimal;
@@ -166,7 +167,7 @@ public class CommonUtil {
      * @return
      */
     public static Object getConvertData(BigDecimal num) {
-        return !Objects.isNull(num) && num.compareTo(BigDecimal.ZERO) != 0 ? num : "/";
+        return !Objects.isNull(num) ? num : StrPool.SLASH;
     }
 
 
@@ -177,7 +178,7 @@ public class CommonUtil {
      * @return
      */
     public static Object getConvertData(Integer unit, Integer flag, BigDecimal num) {
-        return !Objects.isNull(num) && num.compareTo(BigDecimal.ZERO) != 0 ? getNum(unit, flag, num) : "/";
+        return !Objects.isNull(num) ? getNum(unit, flag, num) : StrPool.SLASH;
     }
 
     public static BigDecimal getNum(Integer unit, Integer flag, BigDecimal num) {
@@ -249,19 +250,19 @@ public class CommonUtil {
      * @return
      */
     public static String getName(String label1, String label2, String label3, String label4, String label5) {
-        if (CharSequenceUtil.isNotEmpty(label5) && !"/".equals(label5)) {
+        if (CharSequenceUtil.isNotEmpty(label5) && !StrPool.SLASH.equals(label5)) {
             return label5;
         }
-        if (CharSequenceUtil.isNotEmpty(label4) && !"/".equals(label4)) {
+        if (CharSequenceUtil.isNotEmpty(label4) && !StrPool.SLASH.equals(label4)) {
             return label4;
         }
-        if (CharSequenceUtil.isNotEmpty(label3) && !"/".equals(label3)) {
+        if (CharSequenceUtil.isNotEmpty(label3) && !StrPool.SLASH.equals(label3)) {
             return label3;
         }
-        if (CharSequenceUtil.isNotEmpty(label2) && !"/".equals(label2)) {
+        if (CharSequenceUtil.isNotEmpty(label2) && !StrPool.SLASH.equals(label2)) {
             return label2;
         }
-        if (CharSequenceUtil.isNotEmpty(label1) && !"/".equals(label1)) {
+        if (CharSequenceUtil.isNotEmpty(label1) && !StrPool.SLASH.equals(label1)) {
             return label1;
         }
         return null;
