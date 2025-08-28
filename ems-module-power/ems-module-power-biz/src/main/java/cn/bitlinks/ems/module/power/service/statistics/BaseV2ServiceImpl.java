@@ -73,7 +73,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
 
     public static final String NOW = "当期";
-    public static final String PREVIOUS = "上期";
+    public static final String PREVIOUS = "基准期";
     public static final String RATIO = "定基比";
     public static final String RATIO_PERCENT = "定基比(%)";
 
