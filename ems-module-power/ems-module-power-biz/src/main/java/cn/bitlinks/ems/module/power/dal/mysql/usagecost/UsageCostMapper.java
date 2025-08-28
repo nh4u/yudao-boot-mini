@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.dal.mysql.usagecost;
 
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsHomeChartResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsOverviewStatisticsTableData;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
@@ -59,9 +60,9 @@ public interface UsageCostMapper {
             @Param("endDate") LocalDateTime endDate,
             @Param("standingBookIds") List<Long> standingBookIds);
 
-    List<UsageCostData> getListOfHome(@Param("startDate") LocalDateTime startDate,
-                                      @Param("endDate") LocalDateTime endDate,
-                                      @Param("energyIdList") List<Long> energyIdList);
+    List<StatisticsHomeChartResultVO> getListOfHome(@Param("queryParam") StatisticsParamV2VO paramVO, @Param("startDate") LocalDateTime startDate,
+                                                    @Param("endDate") LocalDateTime endDate,
+                                                    @Param("energyIds") List<Long> energyIdList);
 
 
     List<UsageCostData> getEnergyAndSbStandardCoal(

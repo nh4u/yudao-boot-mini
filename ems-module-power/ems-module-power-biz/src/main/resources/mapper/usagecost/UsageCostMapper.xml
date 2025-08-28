@@ -144,34 +144,73 @@
 
 
 
-    <select id="getListOfHome" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData">
+    <select id="getListOfHome" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsHomeChartResultVO">
         SELECT
-        energy_id,
+        <choose>
+            <!-- 根据 dateType 选择聚合字段 -->
+            <when test="queryParam.dateType == 0">
+                DATE(aggregate_time) AS time
+            </when>
+            <when test="queryParam.dateType == 1">
+                DATE_FORMAT(aggregate_time, '%Y-%m') AS time
+            </when>
+            <when test="queryParam.dateType == 2">
+                YEAR(aggregate_time) AS time
+            </when>
+            <when test="queryParam.dateType == 3">
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00') AS time
+            </when>
+        </choose>
+        ,
         SUM(
-            CASE
-                WHEN cost &lt; 0 THEN NULL
-            ELSE cost
+        CASE
+        WHEN cost &lt; 0 THEN NULL
+        ELSE cost
         END
-        ) AS totalCost,
-        SUM(current_usage) AS currentTotalUsage,
+        ) AS accCost,
+        AVG(
+        CASE
+        WHEN cost &lt; 0 THEN NULL
+        ELSE cost
+        END
+        ) AS avgCost,
         SUM(
-            CASE
-                WHEN standard_coal_equivalent &lt; 0 THEN NULL
-            ELSE standard_coal_equivalent
-            END
-        ) AS totalStandardCoalEquivalent
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS accCoal,
+        AVG(
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS avgCoal
         FROM
         usage_cost
         WHERE
-        DATE_FORMAT(aggregate_time, '%Y-%m-%d')  &gt; #{startDate}
-        AND DATE_FORMAT(aggregate_time, '%Y-%m-%d')  &lt;= #{endDate}
-
+        aggregate_time &gt;= #{startDate}
+        AND aggregate_time &lt;= #{endDate}
         AND energy_id IN
-        <foreach collection="energyIdList" item="item" open="(" separator="," close=")">
+        <foreach collection="energyIds" item="item" open="(" separator="," close=")">
             #{item}
         </foreach>
         GROUP BY
-        energy_id
+        <choose>
+            <!-- 根据 dateType 选择聚合字段 -->
+            <when test="queryParam.dateType == 0">
+                DATE(aggregate_time)
+            </when>
+            <when test="queryParam.dateType == 1">
+                DATE_FORMAT(aggregate_time, '%Y-%m')
+            </when>
+            <when test="queryParam.dateType == 2">
+                YEAR(aggregate_time)
+            </when>
+            <when test="queryParam.dateType == 3">
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00')
+            </when>
+        </choose>
 
     </select>
 

@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.usagecost;
 
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsHomeChartResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsOverviewStatisticsTableData;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
@@ -52,9 +53,9 @@ public interface UsageCostService {
 
     void saveList(List<UsageCostDTO> usageCostDOs);
 
-    List<UsageCostData> getListOfHome(LocalDateTime startDate,
-                                      LocalDateTime endDate,
-                                      List<Long> energyIdList);
+    List<StatisticsHomeChartResultVO> getListOfHome(StatisticsParamV2VO paramV2VO, LocalDateTime startDate,
+                                                    LocalDateTime endDate,
+                                                    List<Long> energyIdList);
 
 
     List<UsageCostData> getEnergyAndSbStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
@@ -71,6 +72,7 @@ public interface UsageCostService {
 
     /**
      * 统计总览查询能源汇总数据最新时间
+     *
      * @param startDate
      * @param endDate
      * @param energyIdList
