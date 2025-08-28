@@ -5,6 +5,7 @@ import cn.bitlinks.ems.module.acquisition.api.starrocks.StreamLoadApi;
 import cn.bitlinks.ems.module.acquisition.api.starrocks.dto.StreamLoadDTO;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsHomeChartResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsOverviewStatisticsTableData;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
@@ -98,8 +99,8 @@ public class UsageCostServiceImpl implements UsageCostService {
 
     @Override
     @TenantIgnore
-    public List<UsageCostData> getListOfHome(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIdList) {
-        return usageCostMapper.getListOfHome(startDate, endDate, energyIdList);
+    public List<StatisticsHomeChartResultVO> getListOfHome(StatisticsParamV2VO paramV2VO, LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIdList) {
+        return usageCostMapper.getListOfHome(paramV2VO, startDate, endDate, energyIdList);
     }
 
     /**
@@ -149,11 +150,13 @@ public class UsageCostServiceImpl implements UsageCostService {
     public StatisticsOverviewStatisticsTableData getAggStatisticsByEnergyIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds) {
         return usageCostMapper.getAggStatisticsByEnergyIds(startDate, endDate, energyIds);
     }
+
     @Override
     @TenantIgnore
     public LocalDateTime getLastTime(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds) {
         return usageCostMapper.getLastTimeByEnergyIds(startDate, endDate, energyIds);
     }
+
     /**
      * 按台账分组
      *
