@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 import javax.validation.Valid;
 
+import java.math.BigDecimal;
+
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 首页")
@@ -45,13 +47,13 @@ public class StatisticsHomeController {
 
     @PostMapping("/costChart")
     @Operation(summary = "折价分析图")
-    public CommonResult<StatisticsHomeBarVO> costChart(@Valid @RequestBody StatisticsParamHomeVO paramVO) {
+    public CommonResult<StatisticsHomeBarVO<BigDecimal>> costChart(@Valid @RequestBody StatisticsParamHomeVO paramVO) {
         return success(statisticsHomeService.costChart(paramVO));
     }
 
     @PostMapping("/coalChart")
     @Operation(summary = "折标煤分析图")
-    public CommonResult<StatisticsHomeBarVO> coalChart(@Valid @RequestBody StatisticsParamHomeVO paramVO) {
+    public CommonResult<StatisticsHomeBarVO<BigDecimal>> coalChart(@Valid @RequestBody StatisticsParamHomeVO paramVO) {
         return success(statisticsHomeService.coalChart(paramVO));
     }
 
