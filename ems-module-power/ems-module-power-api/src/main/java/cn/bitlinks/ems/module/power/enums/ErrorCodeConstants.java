@@ -90,6 +90,8 @@ public interface ErrorCodeConstants {
 
     ErrorCode EXTERNAL_API_CODE_REPEAT = new ErrorCode(1_001_301_241,"外部接口编码重复");
 
+    ErrorCode EXTERNAL_API_HTTP_METHOD_ERROR = new ErrorCode(1_001_301_242,"请求方式不匹配");
+
     // ========== 台账类型 ==========
     ErrorCode STANDINGBOOK_TYPE_NOT_EXISTS = new ErrorCode(1_001_202_000, "台账类型不存在");
     ErrorCode STANDINGBOOK_TYPE_EXITS_CHILDREN = new ErrorCode(1_001_202_001, "存在存在子台账类型，无法删除");
