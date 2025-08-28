@@ -14,6 +14,7 @@
         <result column="energy_id" property="energyId" />
         <result column="currentTotalUsage" property="currentTotalUsage" />
         <result column="totalCost" property="totalCost" />
+        <result column="totalStandardCoalEquivalent" property="totalStandardCoalEquivalent" />
     </resultMap>
 
     <!-- 参数说明：aggregateType (聚合类型)，startDate (起始日期)，endDate (结束日期) -->
@@ -54,14 +55,14 @@
         ,
         SUM(
             CASE
-                WHEN cost = -1 THEN NULL
+                WHEN cost &lt; 0 THEN NULL
             ELSE cost
             END
         ) AS totalCost,
         SUM(current_usage) AS currentTotalUsage,
         SUM(
             CASE
-                WHEN standard_coal_equivalent = -1 THEN NULL
+                WHEN standard_coal_equivalent &lt; 0 THEN NULL
             ELSE standard_coal_equivalent
             END
         ) AS totalStandardCoalEquivalent
@@ -148,14 +149,14 @@
         energy_id,
         SUM(
             CASE
-                WHEN cost = -1 THEN NULL
+                WHEN cost &lt; 0 THEN NULL
             ELSE cost
         END
         ) AS totalCost,
         SUM(current_usage) AS currentTotalUsage,
         SUM(
             CASE
-                WHEN standard_coal_equivalent = -1 THEN NULL
+                WHEN standard_coal_equivalent &lt; 0 THEN NULL
             ELSE standard_coal_equivalent
             END
         ) AS totalStandardCoalEquivalent
@@ -181,7 +182,7 @@
         standingbook_id,
         SUM(
             CASE
-                WHEN standard_coal_equivalent = -1 THEN NULL
+                WHEN standard_coal_equivalent &lt; 0 THEN NULL
             ELSE standard_coal_equivalent
             END
         ) AS totalStandardCoalEquivalent
@@ -204,7 +205,7 @@
         energy_id,
         SUM(
             CASE
-                WHEN standard_coal_equivalent = -1 THEN NULL
+                WHEN standard_coal_equivalent &lt; 0 THEN NULL
             ELSE standard_coal_equivalent
             END
         ) AS totalStandardCoalEquivalent
@@ -224,14 +225,14 @@
         SELECT energy_id,
         SUM(
         CASE
-        WHEN cost = -1 THEN NULL
+        WHEN cost &lt; 0 THEN NULL
         ELSE cost
         END
         ) AS totalCost,
         SUM(current_usage) AS currentTotalUsage,
         SUM(
         CASE
-        WHEN standard_coal_equivalent = -1 THEN NULL
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
         ELSE standard_coal_equivalent
         END
         ) AS totalStandardCoalEquivalent
@@ -271,7 +272,7 @@
         standingbook_id,
         SUM(
         CASE
-        WHEN standard_coal_equivalent = -1 THEN NULL
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
         ELSE standard_coal_equivalent
         END
         ) AS totalStandardCoalEquivalent
@@ -460,7 +461,12 @@
     <select id="getSumStandardCoal"
             resultType="java.math.BigDecimal">
         SELECT
-        SUM(standard_coal_equivalent) AS totalStandardCoalEquivalent
+        SUM(
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS totalStandardCoalEquivalent
         FROM
         usage_cost
         WHERE
@@ -473,6 +479,76 @@
             </foreach>
         </if>
 
+    </select>
+    <select id="getAggStatisticsByEnergyIds"
+            resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsOverviewStatisticsTableData">
+        SELECT
+        SUM(
+        CASE
+        WHEN cost &lt; 0 THEN NULL
+        ELSE cost
+        END
+        ) AS accCost,
+        MAX(
+        CASE
+        WHEN cost &lt; 0 THEN NULL
+        ELSE cost
+        END
+        ) AS maxCost,
+        MIN(
+        CASE
+        WHEN cost &lt; 0 THEN NULL
+        ELSE cost
+        END
+        ) AS minCost,
+        AVG(
+        CASE
+        WHEN cost &lt; 0 THEN NULL
+        ELSE cost
+        END
+        ) AS avgCost,
+        SUM(
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS accCoal,
+        MAX(
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS maxCoal,
+        MIN(
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS minCoal,
+        AVG(
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS avgCoal
+        FROM usage_cost
+        WHERE aggregate_time &gt;= #{startDate}
+        AND aggregate_time &lt;= #{endDate}
+        AND energy_id IN
+        <foreach collection="energyIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+    <select id="getLastTimeByEnergyIds" resultType="java.time.LocalDateTime">
+        SELECT
+        MAX(aggregate_time) AS lastTime
+        FROM usage_cost
+        WHERE aggregate_time &gt;= #{startDate}
+        AND aggregate_time &lt;= #{endDate}
+        AND energy_id IN
+        <foreach collection="energyIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
     </select>
 </mapper>
 

@@ -1,30 +1,26 @@
 package cn.bitlinks.ems.module.power.service.usagecost;
 
+import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
+import cn.bitlinks.ems.module.acquisition.api.starrocks.StreamLoadApi;
+import cn.bitlinks.ems.module.acquisition.api.starrocks.dto.StreamLoadDTO;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsOverviewStatisticsTableData;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
+import cn.bitlinks.ems.module.power.dal.mysql.usagecost.UsageCostMapper;
+import cn.bitlinks.ems.module.power.dto.UsageCostDTO;
+import cn.hutool.core.util.RandomUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
-
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-
-import javax.annotation.Resource;
-
-import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
-import cn.bitlinks.ems.module.acquisition.api.starrocks.StreamLoadApi;
-import cn.bitlinks.ems.module.acquisition.api.starrocks.dto.StreamLoadDTO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
-import cn.bitlinks.ems.module.power.dal.dataobject.usagecost.UsageCostDO;
-import cn.bitlinks.ems.module.power.dal.mysql.usagecost.UsageCostMapper;
-import cn.bitlinks.ems.module.power.dto.UsageCostDTO;
-import cn.hutool.core.util.RandomUtil;
-import cn.hutool.json.JSONUtil;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author wangl
@@ -66,7 +62,7 @@ public class UsageCostServiceImpl implements UsageCostService {
 
     @Override
     @TenantIgnore
-    public List<UsageCostData> getList( LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+    public List<UsageCostData> getList(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
         return usageCostMapper.getDataList(startDate, endDate, standingBookIds);
     }
 
@@ -154,6 +150,16 @@ public class UsageCostServiceImpl implements UsageCostService {
         return usageCostMapper.getEnergySumStandardCoal(startDate, endDate, energyIds);
     }
 
+    @Override
+    @TenantIgnore
+    public StatisticsOverviewStatisticsTableData getAggStatisticsByEnergyIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds) {
+        return usageCostMapper.getAggStatisticsByEnergyIds(startDate, endDate, energyIds);
+    }
+    @Override
+    @TenantIgnore
+    public LocalDateTime getLastTime(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds) {
+        return usageCostMapper.getLastTimeByEnergyIds(startDate, endDate, energyIds);
+    }
     /**
      * 按台账分组
      *
@@ -176,6 +182,7 @@ public class UsageCostServiceImpl implements UsageCostService {
 
     /**
      * 获取能源用量
+     *
      * @param dateType
      * @param startDate
      * @param endDate
@@ -199,8 +206,9 @@ public class UsageCostServiceImpl implements UsageCostService {
     @Override
     @TenantIgnore
     public List<UsageCostData> getUsageByStandingboookIdGroup(BaseTimeDateParamVO paramVO, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
-        return usageCostMapper.getUsageByStandingboookIdGroup(paramVO,startDate, endDate, standingBookIds);
+        return usageCostMapper.getUsageByStandingboookIdGroup(paramVO, startDate, endDate, standingBookIds);
     }
+
     @Override
     @TenantIgnore
     public LocalDateTime getLastTimeNoParam(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
