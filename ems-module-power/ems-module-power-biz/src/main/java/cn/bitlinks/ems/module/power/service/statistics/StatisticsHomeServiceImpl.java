@@ -7,7 +7,6 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
-import cn.bitlinks.ems.module.power.enums.ChartSeriesTypeEnum;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants;
 import cn.bitlinks.ems.module.power.enums.StatisticsQueryType;
@@ -194,12 +193,12 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
     }
 
     @Override
-    public ComparisonChartResultVO costChart(StatisticsParamHomeVO paramVO) {
+    public StatisticsHomeBarVO costChart(StatisticsParamHomeVO paramVO) {
         return analysisChart(paramVO, StatisticsHomeChartResultVO::getAccCost, StatisticsHomeChartResultVO::getAvgCost, StatisticsCacheConstants.COMPARISON_HOME_CHART_COST);
     }
 
     @Override
-    public ComparisonChartResultVO coalChart(StatisticsParamHomeVO paramVO) {
+    public StatisticsHomeBarVO coalChart(StatisticsParamHomeVO paramVO) {
         return analysisChart(paramVO, StatisticsHomeChartResultVO::getAccCoal, StatisticsHomeChartResultVO::getAvgCoal, StatisticsCacheConstants.COMPARISON_HOME_CHART_COAL);
     }
 
@@ -370,7 +369,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         return StatisticsHomeTop2Data.builder().dataUpdateTime(updTime).value(sumStandardCoal).build();
     }
 
-    public ComparisonChartResultVO analysisChart(StatisticsParamHomeVO paramVO, Function<StatisticsHomeChartResultVO, BigDecimal> accExtractor, Function<StatisticsHomeChartResultVO, BigDecimal> avgExtractor, String commonType) {
+    public StatisticsHomeBarVO analysisChart(StatisticsParamHomeVO paramVO, Function<StatisticsHomeChartResultVO, BigDecimal> accExtractor, Function<StatisticsHomeChartResultVO, BigDecimal> avgExtractor, String commonType) {
         // 1. 校验时间范围合法性
         StatisticsParamV2VO paramV2VO = BeanUtils.toBean(paramVO, StatisticsParamV2VO.class);
         statisticsCommonService.validParamConditionDate(paramV2VO);
@@ -379,14 +378,14 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            return JSON.parseObject(cacheRes, new TypeReference<ComparisonChartResultVO>() {
+            return JSON.parseObject(cacheRes, new TypeReference<StatisticsHomeBarVO>() {
             });
         }
 
         // 4. 查询能源信息及能源ID
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(
                 null, paramVO.getEnergyClassify());
-        ComparisonChartResultVO result = new ComparisonChartResultVO();
+        StatisticsHomeBarVO result = StatisticsHomeBarVO.builder().build();
         if (CollUtil.isEmpty(energyList)) {
             return result;
         }
@@ -398,16 +397,13 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
         // 6. 查询当前周期的数据
         List<StatisticsHomeChartResultVO> usageCostDataList = usageCostService.getListOfHome(paramV2VO, paramVO.getRange()[0], paramVO.getRange()[1], energyIds);
-
+        StatisticsHomeChartResultVO avgListOfHome = usageCostService.getAvgListOfHome(paramVO.getRange()[0], paramVO.getRange()[1], energyIds);
         // 7. 构建横轴时间（xdata）
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
         LocalDateTime lastTime = usageCostService.getLastTime(paramVO.getRange()[0], paramVO.getRange()[1], energyIds);
         result.setDataTime(lastTime);
-        // 8. 构建图表组（柱状图 + 折线图）
-        List<ComparisonChartGroupVO> groupList = buildSimpleChart(usageCostDataList, xdata, accExtractor, avgExtractor);
-
-        // 9. 构建最终结果并缓存
-        result.setList(groupList);
+        buildSimpleChart(result, usageCostDataList, xdata, accExtractor);
+        result.setAvg(avgExtractor.apply(avgListOfHome));
 
 
         String jsonStr = JSONUtil.toJsonStr(result);
@@ -416,16 +412,13 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         return result;
     }
 
-    private List<ComparisonChartGroupVO> buildSimpleChart(List<StatisticsHomeChartResultVO> usageCostDataList,
-                                                          List<String> xdata,
-                                                          Function<StatisticsHomeChartResultVO, BigDecimal> accExtractor,
-                                                          Function<StatisticsHomeChartResultVO, BigDecimal> avgExtractor) {
+    private void buildSimpleChart(StatisticsHomeBarVO resultVO, List<StatisticsHomeChartResultVO> usageCostDataList,
+                                  List<String> xdata,
+                                  Function<StatisticsHomeChartResultVO, BigDecimal> accExtractor) {
         if (CollUtil.isEmpty(usageCostDataList)) {
-            ComparisonChartGroupVO group = new ComparisonChartGroupVO();
-            group.setXdata(Collections.emptyList());
-            group.setYdata(Collections.emptyList());
-
-            return Collections.singletonList(group);
+            resultVO.setXData(Collections.emptyList());
+            resultVO.setYData(Collections.emptyList());
+            return;
         }
         // 时间点 -> 值 映射
         Map<String, StatisticsHomeChartResultVO> nowMap = usageCostDataList.stream()
@@ -436,33 +429,23 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
                 ));
 
         List<BigDecimal> nowList = new ArrayList<>();
-        List<BigDecimal> avgList = new ArrayList<>();
         List<String> timeList = new ArrayList<>();
         for (String time : xdata) {
-            StatisticsHomeChartResultVO resultVO = nowMap.get(time);
-            if (Objects.isNull(resultVO)) {
+            StatisticsHomeChartResultVO chartResultVO = nowMap.get(time);
+            if (Objects.isNull(chartResultVO)) {
                 continue;
             }
 
-            BigDecimal value = accExtractor.apply(resultVO);
+            BigDecimal value = accExtractor.apply(chartResultVO);
             if (value == null) {
                 continue;
             }
             nowList.add(value);
-            avgList.add(avgExtractor.apply(resultVO));
             timeList.add(time);
         }
+        resultVO.setXData(timeList);
+        resultVO.setYData(nowList);
 
-        List<ChartSeriesItemVO> ydata = Arrays.asList(
-                new ChartSeriesItemVO("", ChartSeriesTypeEnum.BAR.getType(), nowList, null),
-                new ChartSeriesItemVO("", ChartSeriesTypeEnum.LINE.getType(), avgList, 1)
-        );
-
-        ComparisonChartGroupVO group = new ComparisonChartGroupVO();
-        group.setXdata(timeList);
-        group.setYdata(ydata);
-
-        return Collections.singletonList(group);
     }
 
     /**

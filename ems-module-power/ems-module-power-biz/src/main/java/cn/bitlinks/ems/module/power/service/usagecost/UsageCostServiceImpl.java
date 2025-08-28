@@ -103,6 +103,12 @@ public class UsageCostServiceImpl implements UsageCostService {
         return usageCostMapper.getListOfHome(paramV2VO, startDate, endDate, energyIdList);
     }
 
+    @Override
+    @TenantIgnore
+    public StatisticsHomeChartResultVO getAvgListOfHome(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIdList) {
+        return usageCostMapper.getAvgListOfHome(startDate, endDate, energyIdList);
+    }
+
     /**
      * 按能源和台账分组
      *
