@@ -167,7 +167,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         List<UsageCostData> lastUsageCostDataList = usageCostService.getList(paramVO, lastRange[0], lastRange[1], standingBookIds);
 
         // 用于合计 所取的数据
-        LocalDateTime[] totalRange = LocalDateTimeUtils.getPreviousRangeV1(rangeOrigin, dataTypeEnum);
+        LocalDateTime[] totalRange = LocalDateTimeUtils.getPreviousRangeV1(rangeOrigin, DataTypeEnum.DAY);
         List<UsageCostData> totalUsageCostDataList = usageCostService.getList(paramVO, totalRange[0], totalRange[1], standingBookIds);
 
 
