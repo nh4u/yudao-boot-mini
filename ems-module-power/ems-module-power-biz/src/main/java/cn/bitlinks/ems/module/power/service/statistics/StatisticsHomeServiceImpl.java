@@ -193,12 +193,12 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
     }
 
     @Override
-    public StatisticsHomeBarVO costChart(StatisticsParamHomeVO paramVO) {
+    public StatisticsHomeBarVO<BigDecimal> costChart(StatisticsParamHomeVO paramVO) {
         return analysisChart(paramVO, StatisticsHomeChartResultVO::getAccCost, StatisticsHomeChartResultVO::getAvgCost, StatisticsCacheConstants.COMPARISON_HOME_CHART_COST);
     }
 
     @Override
-    public StatisticsHomeBarVO coalChart(StatisticsParamHomeVO paramVO) {
+    public StatisticsHomeBarVO<BigDecimal> coalChart(StatisticsParamHomeVO paramVO) {
         return analysisChart(paramVO, StatisticsHomeChartResultVO::getAccCoal, StatisticsHomeChartResultVO::getAvgCoal, StatisticsCacheConstants.COMPARISON_HOME_CHART_COAL);
     }
 
@@ -369,7 +369,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         return StatisticsHomeTop2Data.builder().dataUpdateTime(updTime).value(sumStandardCoal).build();
     }
 
-    public StatisticsHomeBarVO analysisChart(StatisticsParamHomeVO paramVO, Function<StatisticsHomeChartResultVO, BigDecimal> accExtractor, Function<StatisticsHomeChartResultVO, BigDecimal> avgExtractor, String commonType) {
+    public StatisticsHomeBarVO<BigDecimal> analysisChart(StatisticsParamHomeVO paramVO, Function<StatisticsHomeChartResultVO, BigDecimal> accExtractor, Function<StatisticsHomeChartResultVO, BigDecimal> avgExtractor, String commonType) {
         // 1. 校验时间范围合法性
         StatisticsParamV2VO paramV2VO = BeanUtils.toBean(paramVO, StatisticsParamV2VO.class);
         statisticsCommonService.validParamConditionDate(paramV2VO);
@@ -378,14 +378,14 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            return JSON.parseObject(cacheRes, new TypeReference<StatisticsHomeBarVO>() {
+            return JSON.parseObject(cacheRes, new TypeReference<StatisticsHomeBarVO<BigDecimal>>() {
             });
         }
 
         // 4. 查询能源信息及能源ID
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(
                 null, paramVO.getEnergyClassify());
-        StatisticsHomeBarVO result = StatisticsHomeBarVO.builder().build();
+        StatisticsHomeBarVO<BigDecimal> result = new StatisticsHomeBarVO<>();
         if (CollUtil.isEmpty(energyList)) {
             return result;
         }
@@ -412,12 +412,12 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         return result;
     }
 
-    private void buildSimpleChart(StatisticsHomeBarVO resultVO, List<StatisticsHomeChartResultVO> usageCostDataList,
+    private void buildSimpleChart(StatisticsHomeBarVO<BigDecimal> resultVO, List<StatisticsHomeChartResultVO> usageCostDataList,
                                   List<String> xdata,
                                   Function<StatisticsHomeChartResultVO, BigDecimal> accExtractor) {
         if (CollUtil.isEmpty(usageCostDataList)) {
-            resultVO.setXData(Collections.emptyList());
-            resultVO.setYData(Collections.emptyList());
+            resultVO.setXdata(Collections.emptyList());
+            resultVO.setYdata(Collections.emptyList());
             return;
         }
         // 时间点 -> 值 映射
@@ -443,8 +443,8 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
             nowList.add(value);
             timeList.add(time);
         }
-        resultVO.setXData(timeList);
-        resultVO.setYData(nowList);
+        resultVO.setXdata(timeList);
+        resultVO.setYdata(nowList);
 
     }
 
