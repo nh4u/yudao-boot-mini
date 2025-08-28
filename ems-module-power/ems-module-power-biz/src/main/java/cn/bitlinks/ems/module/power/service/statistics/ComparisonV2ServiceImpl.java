@@ -1391,7 +1391,12 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
         // 汇总统计
         BigDecimal sumNow = dataList.stream().map(ComparisonDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
-        BigDecimal sumPrevious = totalList.stream().map(valueExtractor).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
+
+        BigDecimal sumPrevious = null;
+        if (CollUtil.isNotEmpty(totalList)) {
+            sumPrevious = totalList.stream().map(valueExtractor).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
+        }
+
         BigDecimal sumRatio = calculateRatio(sumNow, sumPrevious);
 
         // 构造结果对象
