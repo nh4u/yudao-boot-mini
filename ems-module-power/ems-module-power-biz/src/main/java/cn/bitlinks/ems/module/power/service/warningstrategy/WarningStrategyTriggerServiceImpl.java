@@ -245,7 +245,7 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                         conditionParamsMap.put(WARNING_CONDITION_VALUE.getKeyWord(), conditionVO.getValue());
 
                         if (deviceFlag) {
-                            conditionParamsMap.put(WARNING_DEVICE_TYPE.getKeyWord(), StringPool.EMPTY);
+                            conditionParamsMap.put(WARNING_DEVICE_TYPE.getKeyWord(), StringPool.SLASH);
                         } else {
                             conditionParamsMap.put(WARNING_DEVICE_TYPE.getKeyWord(), tyepIdNameMap.get(Long.valueOf(conditionSbOrTypeId)));
                         }
