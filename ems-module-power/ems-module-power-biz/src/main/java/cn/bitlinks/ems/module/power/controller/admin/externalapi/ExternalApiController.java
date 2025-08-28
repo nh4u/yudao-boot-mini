@@ -15,6 +15,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.annotation.security.PermitAll;
 import javax.validation.Valid;
 
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
@@ -83,4 +84,10 @@ public class ExternalApiController {
     }
 
 
+    @PostMapping("/getAllOut")
+    @Operation(summary = "模拟产量接口")
+    @PermitAll
+    public Object getAllOut() {
+        return externalApiService.getAllOut();
+    }
 }

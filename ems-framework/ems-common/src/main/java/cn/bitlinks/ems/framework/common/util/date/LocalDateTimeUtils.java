@@ -180,6 +180,25 @@ public class LocalDateTimeUtils {
     public static LocalDateTime endOfMonth(LocalDateTime date) {
         return date.with(TemporalAdjusters.lastDayOfMonth()).with(LocalTime.MAX);
     }
+    /**
+     * 指定年份月份获取当月开始时间
+     * @param year
+     * @param month
+     * @return
+     */
+    public static LocalDateTime startOfMonth(Integer year, Integer month) {
+        return LocalDateTime.MIN.withYear(year).withMonth(month);
+    }
+
+    /**
+     * 指定年份月份获取当月结束时间
+     * @param year
+     * @param month
+     * @return
+     */
+    public static LocalDateTime endOfMonth(Integer year, Integer month) {
+        return LocalDateTime.MAX.withYear(year).withMonth(month);
+    }
 
     /**
      * 获取指定日期所在的年份的开始时间

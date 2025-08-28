@@ -3,7 +3,6 @@ package cn.bitlinks.ems.module.power.service.statistics;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 
 import javax.validation.Valid;
-import java.util.List;
 
 /**
  * 统计总览 Service 接口
@@ -18,11 +17,9 @@ public interface StatisticsHomeService {
      */
     StatisticsHomeResultVO overview(StatisticsParamHomeVO paramVO);
 
-    ComparisonChartResultVO costChart(StatisticsParamHomeVO paramVO);
+    StatisticsHomeBarVO costChart(StatisticsParamHomeVO paramVO);
 
-    ComparisonChartResultVO coalChart(StatisticsParamHomeVO paramVO);
-
-    List<StatisticsOverviewEnergyData> energy(StatisticsParamHomeVO paramVO);
+    StatisticsHomeBarVO coalChart(StatisticsParamHomeVO paramVO);
 
     /**
      * 统计总览-顶部设备数量
