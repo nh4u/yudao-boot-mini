@@ -58,6 +58,8 @@ public class StatisticsCacheConstants {
 
     public static final String COMPARISON_BASE_CHART_COAL = "statistics:base:discount:chart:coal:";
 
+    public static final String COMPARISON_BASE_TABLE_UTILIZATION_RATE = "statistics:base:discount:table:utilizationRate:";
+    public static final String COMPARISON_BASE_CHART_UTILIZATION_RATE = "statistics:base:discount:chart:utilizationRate:";
     public static final String DEVIATION_CHART = "statistics:usage:deviation:chart:";
 
 
