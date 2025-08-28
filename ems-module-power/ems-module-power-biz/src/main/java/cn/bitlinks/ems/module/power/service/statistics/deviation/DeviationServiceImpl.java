@@ -79,13 +79,13 @@ public class DeviationServiceImpl implements DeviationService {
         String cacheKey = DEVIATION_CHART + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
-        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            log.info("缓存结果");
-            // 泛型放缓存避免强转问题
-            return JSON.parseObject(cacheRes, new TypeReference<DeviationChartResultVO<DeviationChartYInfo>>() {
-            });
-
-        }
+//        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
+//            log.info("缓存结果");
+//            // 泛型放缓存避免强转问题
+//            return JSON.parseObject(cacheRes, new TypeReference<DeviationChartResultVO<DeviationChartYInfo>>() {
+//            });
+//
+//        }
 
         // 3.如果没有则去数据库查询
         // 3.1. 构建返回体
@@ -174,7 +174,10 @@ public class DeviationServiceImpl implements DeviationService {
 
         // 4.能源单位
         EnergyConfigurationDO energy = energyConfigurationService.getEnergyAndUnit(energyId);
-        resultVO.setUnit(energy.getUnit());
+
+        if (Objects.nonNull(energy)) {
+            resultVO.setUnit(energy.getUnit());
+        }
 
         // 5.获取数据更新时间
         LocalDateTime lastTime = usageCostService.getLastTime(
