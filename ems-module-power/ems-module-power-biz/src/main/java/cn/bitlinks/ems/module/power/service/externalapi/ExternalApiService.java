@@ -52,4 +52,8 @@ public interface ExternalApiService {
     PageResult<ExternalApiDO> getExternalApiPage(ExternalApiPageReqVO pageReqVO);
 
     Object testExternalApi(ExternalApiSaveReqVO createReqVO);
+
+   String getProductYieldUrl();
+
+    Object getAllOut();
 }
