@@ -440,7 +440,12 @@
     <select id="getSumStandardCoal"
             resultType="java.math.BigDecimal">
         SELECT
-        SUM(standard_coal_equivalent) AS totalStandardCoalEquivalent
+        SUM(
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS totalStandardCoalEquivalent
         FROM
         usage_cost
         WHERE
@@ -475,6 +480,12 @@
         ELSE cost
         END
         ) AS minCost,
+        AVG(
+        CASE
+        WHEN cost &lt; 0 THEN NULL
+        ELSE cost
+        END
+        ) AS avgCost,
         SUM(
         CASE
         WHEN standard_coal_equivalent &lt; 0 THEN NULL
@@ -492,7 +503,13 @@
         WHEN standard_coal_equivalent &lt; 0 THEN NULL
         ELSE standard_coal_equivalent
         END
-        ) AS minCoal
+        ) AS minCoal,
+        AVG(
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS avgCoal
         FROM usage_cost
         WHERE aggregate_time &gt;= #{startDate}
         AND aggregate_time &lt;= #{endDate}
