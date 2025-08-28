@@ -42,9 +42,17 @@ public interface YoyV2Service {
     List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO, Integer flag);
 
     List<List<Object>> getExcelData(StatisticsParamV2VO paramVO, Integer flag);
+    List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO);
+
+    List<List<Object>> getExcelData(StatisticsParamV2VO paramVO);
 
     /**
      * 利用率表
      */
     StatisticsResultV2VO<YoyItemVO> getUtilizationRateTable(StatisticsParamV2VO vo);
+
+    /**
+     * 利用率图
+     */
+    ComparisonChartResultVO getUtilizationRateChart(StatisticsParamV2VO vo);
 }

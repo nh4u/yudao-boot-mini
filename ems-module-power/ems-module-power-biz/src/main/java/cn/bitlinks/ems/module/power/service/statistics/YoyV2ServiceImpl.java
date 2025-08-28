@@ -46,6 +46,7 @@ import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getF
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.UNIT_NOT_EMPTY;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.COMPARISON_YOY_CHART_UTILIZATION_RATE;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.COMPARISON_YOY_TABLE_UTILIZATION_RATE;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
@@ -88,6 +89,77 @@ public class YoyV2ServiceImpl implements YoyV2Service {
     @Override
     public StatisticsResultV2VO<YoyItemVO> foldCoalAnalysisTable(StatisticsParamV2VO paramVO) {
         return analysisTable(paramVO, UsageCostData::getTotalStandardCoalEquivalent, StatisticsCacheConstants.COMPARISON_YOY_TABLE_COAL);
+    }
+
+    @Override
+    public List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO) {
+
+        statisticsCommonService.validParamConditionDate(paramVO);
+
+        List<List<String>> list = ListUtils.newArrayList();
+        list.add(Arrays.asList("表单名称", "统计周期", "", ""));
+        String sheetName = "利用率";
+        // 统计周期
+        String period = getFormatTime(paramVO.getRange()[0]) + "~" + getFormatTime(paramVO.getRange()[1]);
+
+        // 月份处理
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
+        xdata.forEach(x -> {
+            list.add(Arrays.asList(sheetName, period, x, "当期"));
+            list.add(Arrays.asList(sheetName, period, x, "同期"));
+            list.add(Arrays.asList(sheetName, period, x, "同比（%）"));
+        });
+        list.add(Arrays.asList(sheetName, period, "周期合计", "当期"));
+        list.add(Arrays.asList(sheetName, period, "周期合计", "同期"));
+        list.add(Arrays.asList(sheetName, period, "周期合计", "同比（%）"));
+        return list;
+    }
+
+    @Override
+    public List<List<Object>> getExcelData(StatisticsParamV2VO paramVO) {
+        // 结果list
+        List<List<Object>> result = ListUtils.newArrayList();
+
+        StatisticsResultV2VO<YoyItemVO> resultVO = getUtilizationRateTable(paramVO);
+        List<String> tableHeader = resultVO.getHeader();
+
+        List<YoyItemVO> infoList = resultVO.getStatisticsInfoList();
+
+        for (YoyItemVO s : infoList) {
+
+            List<Object> data = ListUtils.newArrayList();
+
+            data.add(s.getEnergyName());
+
+            // 处理数据
+            List<YoyDetailVO> detailVOS = s.getStatisticsRatioDataList();
+
+            Map<String, YoyDetailVO> dateMap = detailVOS.stream()
+                    .collect(Collectors.toMap(YoyDetailVO::getDate, Function.identity()));
+
+            tableHeader.forEach(date -> {
+                YoyDetailVO yoyDetailVO = dateMap.get(date);
+                if (yoyDetailVO == null) {
+                    data.add("/");
+                    data.add("/");
+                    data.add("/");
+                } else {
+                    data.add(getConvertData(yoyDetailVO.getNow()));
+                    data.add(getConvertData(yoyDetailVO.getPrevious()));
+                    data.add(getConvertData(yoyDetailVO.getRatio()));
+
+                }
+            });
+
+            // 处理周期合计
+            data.add(getConvertData(s.getSumNow()));
+            data.add(getConvertData(s.getSumPrevious()));
+            data.add(getConvertData(s.getSumRatio()));
+
+            result.add(data);
+        }
+
+        return result;
     }
 
     public StatisticsResultV2VO<YoyItemVO> analysisTable(StatisticsParamV2VO paramVO
@@ -201,6 +273,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
                 return;
             }
             YoyItemVO vo = buildYoyItemVODataList(nowList, lastList, dataTypeEnum, tableHeader, isCrossYear, valueExtractor);
+            if(Objects.isNull(vo)){
+                return;
+            }
             vo.setEnergyId(energy.getId());
             vo.setEnergyName(energy.getEnergyName());
             detailList.add(vo);
@@ -250,7 +325,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
 
         List<YoyItemVO> resultList = new ArrayList<>();
         YoyItemVO info = buildYoyItemVODataList(usageCostDataList, lastUsageCostDataList, dateTypeEnum, tableHeader, isCrossYear, valueExtractor);
-
+        if(Objects.isNull(info)){
+            return Collections.emptyList();
+        }
         // 构造结果对象
         Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
         LabelConfigDO topLabel = labelMap.get(topLabelId);
@@ -321,6 +398,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
 
                 // 构造结果对象
                 YoyItemVO info = buildYoyItemVODataList(labelUsageListNow, labelUsageListPrevious, dateTypeEnum, tableHeader, isCrossYear, valueExtractor);
+                if(Objects.isNull(info)){
+                    return;
+                }
                 info.setLabel1(topLabel.getLabelName());
                 info.setLabel2(label2Name);
                 info.setLabel3(label3Name);
@@ -393,7 +473,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         energyMap.forEach((energyId, energyConfigurationDO) -> {
 
             YoyItemVO info = buildYoyItemVODataList(nowUsageMap.get(energyId), lastUsageMap.get(energyId), dateTypeEnum, tableHeader, isCrossYear, valueExtractor);
-
+            if(Objects.isNull(info)){
+                return;
+            }
             // 构造结果对象
             info.setEnergyId(energyId);
             info.setEnergyName(energyConfigurationDO.getEnergyName());
@@ -481,7 +563,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
                 energyMap.forEach((energyId, energyConfigurationDO) -> {
                     if (energyConfigurationDO == null) return;
                     YoyItemVO info = buildYoyItemVODataList(finalEnergyUsageCostNowMap.get(energyId), finalEnergyUsageCostPrevMap.get(energyId), dateTypeEnum, tableHeader, isCrossYear, valueExtractor);
-
+                    if(Objects.isNull(info)){
+                        return;
+                    }
                     // 构造结果对象
                     info.setEnergyId(energyId);
                     info.setEnergyName(energyConfigurationDO.getEnergyName());
@@ -1162,6 +1246,79 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         return resultVO;
     }
 
+    @Override
+    public ComparisonChartResultVO getUtilizationRateChart(StatisticsParamV2VO paramVO) {
+        // 校验参数
+        statisticsCommonService.validParamConditionDate(paramVO);
+
+        String cacheKey = COMPARISON_YOY_CHART_UTILIZATION_RATE + SecureUtil.md5(paramVO.toString());
+        byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
+        String cacheRes = StrUtils.decompressGzip(compressed);
+        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
+            return JSON.parseObject(cacheRes, new TypeReference<ComparisonChartResultVO>() {
+            });
+        }
+        StatisticsResultV2VO<YoyItemVO> tableResult = getUtilizationRateTable(paramVO);
+
+        ComparisonChartResultVO resVO = new ComparisonChartResultVO();
+        List<ComparisonChartGroupVO> resultVOList = new ArrayList<>();
+        // x轴
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
+
+
+        List<YoyItemVO> tableDataList = tableResult.getStatisticsInfoList();
+        tableDataList.forEach(info -> {
+            List<YoyDetailVO> dateList = info.getStatisticsRatioDataList();
+            if (CollUtil.isEmpty(dateList)) {
+                return;
+            }
+
+            Map<String, YoyDetailVO> timeMap = dateList.stream()
+                    .filter(data -> data.getDate() != null)
+                    .collect(Collectors.toMap(
+                            YoyDetailVO::getDate,
+                            data -> data,
+                            (existing, replacement) -> replacement // 处理重复时间，保留后者
+                    ));
+            List<BigDecimal> nowList = new ArrayList<>();
+            List<BigDecimal> lastList = new ArrayList<>();
+            List<BigDecimal> ratioList = new ArrayList<>();
+
+            for (String time : xdata) {
+                YoyDetailVO detailVO = timeMap.get(time);
+                nowList.add(dealBigDecimalScale(detailVO.getNow(), DEFAULT_SCALE));
+                lastList.add(dealBigDecimalScale(detailVO.getPrevious(), DEFAULT_SCALE));
+                ratioList.add(dealBigDecimalScale(calculateYearOnYearRatio(detailVO.getNow(), detailVO.getPrevious()), DEFAULT_SCALE));
+            }
+
+            List<ChartSeriesItemVO> ydata = Arrays.asList(
+                    new ChartSeriesItemVO(NOW, ChartSeriesTypeEnum.BAR.getType(), nowList, null),
+                    new ChartSeriesItemVO(PREVIOUS, ChartSeriesTypeEnum.BAR.getType(), lastList, null),
+                    new ChartSeriesItemVO(RATIO, ChartSeriesTypeEnum.LINE.getType(), ratioList, 1)
+            );
+
+            ComparisonChartGroupVO group = new ComparisonChartGroupVO();
+            group.setName(info.getEnergyName());
+            group.setXdata(xdata);
+            group.setYdata(ydata);
+            resultVOList.add(group);
+
+        });
+        if (EnergyClassifyEnum.OUTSOURCED.getCode().equals(paramVO.getEnergyClassify())) {
+            resVO.setList(Collections.singletonList(resultVOList.get(0)));
+        } else if (EnergyClassifyEnum.PARK.getCode().equals(paramVO.getEnergyClassify())) {
+            resVO.setList(Collections.singletonList(resultVOList.get(1)));
+        } else {
+            resVO.setList(resultVOList);
+        }
+        resVO.setList(resultVOList);
+        resVO.setDataTime(tableResult.getDataTime());
+        String jsonStr = JSONUtil.toJsonStr(resultVOList);
+        byte[] bytes = StrUtils.compressGzip(jsonStr);
+        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+        return resVO;
+    }
+
     /**
      * 按能源维度统计：以 energyId 为主键，构建同比统计数据
      */
@@ -1201,40 +1358,63 @@ public class YoyV2ServiceImpl implements YoyV2Service {
 
         List<YoyItemVO> result = new ArrayList<>();
 
-//        result.add(getUtilizationRateInfo(EnergyClassifyEnum.OUTSOURCED, outsourceMap, numeratorMap,lastOutsourceMap, lastNumeratorMap, tableHeader));
-//        result.add(getUtilizationRateInfo(EnergyClassifyEnum.PARK, parkMap, numeratorMap, tableHeader));
+        result.add(getUtilizationRateInfo(EnergyClassifyEnum.OUTSOURCED, outsourceMap, numeratorMap, lastOutsourceMap, lastNumeratorMap, isCrossYear, tableHeader));
+        result.add(getUtilizationRateInfo(EnergyClassifyEnum.PARK, parkMap, numeratorMap, lastParkMap, lastNumeratorMap, isCrossYear, tableHeader));
         return result;
 
     }
 
-    //    private YoyItemVO getUtilizationRateInfo(EnergyClassifyEnum energyClassifyEnum, Map<String, TimeAndNumData> denominatorMap, Map<String, TimeAndNumData> numeratorMap, List<String> tableHeader) {
-//
-//        List<YoyDetailVO> dataList = new ArrayList<>();
-//        for (String time : tableHeader) {
-//            TimeAndNumData numeratorData = numeratorMap.get(time);
-//            BigDecimal numeratorValue = Optional.ofNullable(numeratorData)
-//                    .map(TimeAndNumData::getNum)
-//                    .orElse(null);
-//
-//            TimeAndNumData denominatorData = denominatorMap.get(time);
-//            BigDecimal denominatorValue = Optional.ofNullable(denominatorData)
-//                    .map(TimeAndNumData::getNum)
-//                    .orElse(null);
-//            BigDecimal ratio = safeDivide100(numeratorValue, denominatorValue);
-//            dataList.add(new EnergyRateInfoData(time, ratio));
-//        }
-//
-//        // 汇总统计
-//        BigDecimal sumDenominator = denominatorMap.values().stream().filter(Objects::nonNull).map(data -> data.getNum() != null ? data.getNum() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
-//        BigDecimal sumNumerator = numeratorMap.values().stream().filter(Objects::nonNull).map(data -> data.getNum() != null ? data.getNum() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
-//        BigDecimal ratio = safeDivide100(sumNumerator, sumDenominator);
-//        // 构造结果对象
-//        EnergyRateInfo info = new EnergyRateInfo();
-//        info.setEnergyRateInfoDataList(dataList);
-//        info.setItemName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR);
-//        info.setPeriodRate(ratio);
-//        return info;
-//    }
+    private YoyItemVO getUtilizationRateInfo(EnergyClassifyEnum energyClassifyEnum, Map<String, TimeAndNumData> denominatorMap, Map<String, TimeAndNumData> numeratorMap,
+                                             Map<String, TimeAndNumData> lastDenominatorMap, Map<String, TimeAndNumData> lastNumeratorMap, boolean isCrossYear, List<String> tableHeader) {
+
+        List<YoyDetailVO> dataList = new ArrayList<>();
+        for (String time : tableHeader) {
+
+            TimeAndNumData numeratorData = numeratorMap.get(time);
+            BigDecimal numeratorValue = Optional.ofNullable(numeratorData)
+                    .map(TimeAndNumData::getNum)
+                    .orElse(null);
+
+            TimeAndNumData denominatorData = denominatorMap.get(time);
+            BigDecimal denominatorValue = Optional.ofNullable(denominatorData)
+                    .map(TimeAndNumData::getNum)
+                    .orElse(null);
+            BigDecimal nowRatio = safeDivide100(numeratorValue, denominatorValue);
+
+            TimeAndNumData lastNumeratorData = lastNumeratorMap.get(time);
+            BigDecimal lastNumeratorValue = Optional.ofNullable(lastNumeratorData)
+                    .map(TimeAndNumData::getNum)
+                    .orElse(null);
+
+            TimeAndNumData lastDenominatorData = lastDenominatorMap.get(time);
+            BigDecimal lastDenominatorValue = Optional.ofNullable(lastDenominatorData)
+                    .map(TimeAndNumData::getNum)
+                    .orElse(null);
+            BigDecimal lastRatio = safeDivide100(lastNumeratorValue, lastDenominatorValue);
+            BigDecimal ratio = calculateYearOnYearRatio(nowRatio, lastRatio);
+            dataList.add(new YoyDetailVO(time, nowRatio, lastRatio, ratio));
+        }
+        // 汇总统计
+        BigDecimal sumDenominator = denominatorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
+        BigDecimal sumNumerator = numeratorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
+        BigDecimal nowSumRadio = safeDivide100(sumNumerator, sumDenominator);
+        BigDecimal lastSumDenominator = lastDenominatorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
+        BigDecimal lastSumNumerator = lastNumeratorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
+        BigDecimal lastSumRadio = safeDivide100(lastSumNumerator, lastSumDenominator);
+        BigDecimal ratio = calculateYearOnYearRatio(nowSumRadio, lastSumRadio);
+        // 构造结果对象
+        YoyItemVO info = new YoyItemVO();
+        info.setStatisticsRatioDataList(dataList);
+        info.setEnergyName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR);
+
+        info.setSumNow(dealBigDecimalScale(nowSumRadio, DEFAULT_SCALE));
+        if (!isCrossYear) {
+            info.setSumPrevious(dealBigDecimalScale(lastSumRadio, DEFAULT_SCALE));
+            info.setSumRatio(dealBigDecimalScale(ratio, DEFAULT_SCALE));
+        }
+        return info;
+    }
+
     private StatisticsResultV2VO<YoyItemVO> defaultNullData(List<String> tableHeader) {
         StatisticsResultV2VO<YoyItemVO> resultVO = new StatisticsResultV2VO<>();
         resultVO.setHeader(tableHeader);
@@ -1288,6 +1468,9 @@ public class YoyV2ServiceImpl implements YoyV2Service {
             List<String> tableHeader,
             boolean isCrossYear,
             Function<UsageCostData, BigDecimal> valueExtractor) {
+        if (CollUtil.isEmpty(nowUsageList) && CollUtil.isEmpty(lastUsageList)) {
+            return null;
+        }
         if (CollUtil.isEmpty(nowUsageList)) {
             nowUsageList = Collections.emptyList();
         }

@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseReportChartResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateChartParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.EnergyRateChartResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.EnergyRateInfo;
@@ -51,8 +52,9 @@ public class EnergyUtilizationRateController {
 
     @PostMapping("/chart")
     @Operation(summary = "图")
-    public CommonResult<EnergyRateChartResVO> getChart(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
+    public CommonResult<EnergyRateChartResVO> getChart(@Valid @RequestBody BaseTimeDateChartParamVO paramVO) {
         StatisticsParamV2VO vo = BeanUtils.toBean(paramVO, StatisticsParamV2VO.class);
+        vo.setEnergyClassify(paramVO.getEnergyClassify());
         vo.setQueryType(StatisticsQueryType.COMPREHENSIVE_VIEW.getCode());
         return success(energyUtilizationRateService.getChart(vo));
     }

@@ -30,7 +30,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.TREND_STR;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.UTILIZATION_RATE_STR;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_UTILIZATION_RATE_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_UTILIZATION_RATE_TABLE;
@@ -81,13 +80,25 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
 
         // 查询外购
         List<UsageCostData> outsourceList = new ArrayList<>();
+        LocalDateTime lastTime1 = null;
         if (CollUtil.isNotEmpty(outsourceSbIds)) {
             outsourceList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], outsourceSbIds);
+            lastTime1 = usageCostService.getLastTimeNoParam(
+                    paramVO.getRange()[0],
+                    paramVO.getRange()[1],
+                    outsourceSbIds
+            );
         }
         // 查询园区
+        LocalDateTime lastTime2 = null;
         List<UsageCostData> parkList = new ArrayList<>();
         if (CollUtil.isNotEmpty(parkSbIds)) {
             parkList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], parkSbIds);
+            lastTime2 = usageCostService.getLastTimeNoParam(
+                    paramVO.getRange()[0],
+                    paramVO.getRange()[1],
+                    parkSbIds
+            );
         }
         // 查询分子
         List<UsageCostData> numeratorList = usageCostService.getList(paramVO, paramVO.getRange()[0], paramVO.getRange()[1], sbIds);
@@ -97,16 +108,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
 
         // 设置最终返回值
         resultVO.setStatisticsInfoList(statisticsInfoList);
-        LocalDateTime lastTime1 = usageCostService.getLastTimeNoParam(
-                paramVO.getRange()[0],
-                paramVO.getRange()[1],
-                outsourceSbIds
-        );
-        LocalDateTime lastTime2 = usageCostService.getLastTimeNoParam(
-                paramVO.getRange()[0],
-                paramVO.getRange()[1],
-                parkSbIds
-        );
+
         LocalDateTime lastTime3 = usageCostService.getLastTimeNoParam(
                 paramVO.getRange()[0],
                 paramVO.getRange()[1],
@@ -228,13 +230,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         // 校验参数
         statisticsCommonService.validParamConditionDate(paramVO);
 
-        String cacheKey = ENERGY_UTILIZATION_RATE_CHART + SecureUtil.md5(paramVO.toString());
-        byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
-        String cacheRes = StrUtils.decompressGzip(compressed);
-        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            return JSON.parseObject(cacheRes, new TypeReference<EnergyRateChartResVO>() {
-            });
-        }
+
         StatisticsResultV2VO<EnergyRateInfo> tableResult = getTable(paramVO);
 
         EnergyRateChartResVO resVO = new EnergyRateChartResVO();
@@ -244,17 +240,13 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
 
 
         List<EnergyRateInfo> tableDataList = tableResult.getStatisticsInfoList();
-        List<LocalDateTime> localDateTimes = new ArrayList<>();
         tableDataList.forEach(info -> {
             EnergyRateChartResultVO<BigDecimal> resultVO = new EnergyRateChartResultVO<>();
             List<EnergyRateInfoData> dateList = info.getEnergyRateInfoDataList();
             if (CollUtil.isEmpty(dateList)) {
                 return;
             }
-//            // 处理空数据
-//            dateList.forEach(data -> {
-//                data.setRate(data.getRate() == null ? BigDecimal.ZERO : data.getRate());
-//            });
+
             Map<String, EnergyRateInfoData> timeMap = dateList.stream()
                     .filter(data -> data.getDate() != null)
                     .collect(Collectors.toMap(
@@ -270,24 +262,16 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
                         return infoData.getRate();
                     }
             ).collect(Collectors.toList());
-            LocalDateTime lastTime = tableResult.getDataTime();
-            //resultVO.setDataTime(lastTime);
             resultVO.setYdata(nowList);
             resultVO.setXdata(xdata);
-            resultVO.setName(info.getItemName() + TREND_STR);
-            localDateTimes.add(lastTime);
+            resultVO.setName(info.getItemName());
             resultVOList.add(resultVO);
         });
 
-        LocalDateTime latestTime = localDateTimes.stream()
-                .filter(Objects::nonNull) // 排除null
-                .max(Comparator.naturalOrder())
-                .orElse(null); // 若全部为null，返回null
         resVO.setList(resultVOList);
-        resVO.setDataTime(latestTime);
-        String jsonStr = JSONUtil.toJsonStr(resultVOList);
-        byte[] bytes = StrUtils.compressGzip(jsonStr);
-        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+
+        resVO.setDataTime(tableResult.getDataTime());
+
         return resVO;
     }
 
