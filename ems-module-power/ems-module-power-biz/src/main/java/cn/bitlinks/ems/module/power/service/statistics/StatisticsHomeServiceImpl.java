@@ -7,7 +7,6 @@ import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
-import cn.bitlinks.ems.module.power.dal.mysql.measurementassociation.MeasurementAssociationMapper;
 import cn.bitlinks.ems.module.power.enums.ChartSeriesTypeEnum;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants;
@@ -66,25 +65,83 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
     @Resource
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
-    @Resource
-    private MeasurementAssociationMapper measurementAssociationMapper;
+
 
     public static final String ITEM_ACCUMULATE = "累计";
     public static final String ITEM_MAX = "最高(Max)";
     public static final String ITEM_MIN = "最低(Min)";
     public static final String ITEM_AVG = "平均(Avg)";
+    public static final String OVERVIEW_ENERGY_STR = "综合能耗";
+
+    private List<StatisticsOverviewEnergyData> emptyEnergyList() {
+        StatisticsOverviewEnergyData data = new StatisticsOverviewEnergyData();
+        data.setName(OVERVIEW_ENERGY_STR);
+        return Collections.singletonList(data);
+    }
+
+    private List<StatisticsOverviewEnergyData> energyList(LocalDateTime startTime, LocalDateTime endTime, List<Long> energyIdList, List<EnergyConfigurationDO> energyList) {
+        try {
+            if (CollUtil.isEmpty(energyIdList)) {
+                return emptyEnergyList();
+            }
+            List<StatisticsOverviewEnergyData> list = new ArrayList<>();
+            List<UsageCostData> energyStandardCoalList = usageCostService.getEnergyStandardCoalByEnergyIds(startTime, endTime, energyIdList);
+
+            Map<Long, UsageCostData> energyStandardCoalMap = Collections.emptyMap();
+            if (CollUtil.isNotEmpty(energyStandardCoalList)) {
+                energyStandardCoalMap = energyStandardCoalList
+                        .stream()
+                        .collect(Collectors.toMap(UsageCostData::getEnergyId, Function.identity()));
+            }
+
+            for (EnergyConfigurationDO e : energyList) {
+                StatisticsOverviewEnergyData data = new StatisticsOverviewEnergyData();
+
+                data.setName(e.getEnergyName());
+                data.setEnergyIcon(e.getEnergyIcon());
+                UsageCostData usageCostData = energyStandardCoalMap.get(e.getId());
+
+                if (Objects.nonNull(usageCostData)) {
+                    data.setConsumption(dealBigDecimalScale(usageCostData.getCurrentTotalUsage(), DEFAULT_SCALE));
+                    data.setStandardCoal(dealBigDecimalScale(usageCostData.getTotalStandardCoalEquivalent(), DEFAULT_SCALE));
+                    data.setMoney(dealBigDecimalScale(usageCostData.getTotalCost(), DEFAULT_SCALE));
+                }
+                list.add(data);
+            }
+
+            // 3.1.2 综合能耗
+            BigDecimal totalMoney = list.stream()
+                    .filter(Objects::nonNull)
+                    .map(StatisticsOverviewEnergyData::getMoney)
+                    .reduce(BigDecimal::add).orElse(null);
+
+            BigDecimal totalStandardCoal = list.stream()
+                    .filter(Objects::nonNull)
+                    .map(StatisticsOverviewEnergyData::getStandardCoal)
+                    .reduce(BigDecimal::add).orElse(null);
+
+            StatisticsOverviewEnergyData data = new StatisticsOverviewEnergyData();
+            data.setName(OVERVIEW_ENERGY_STR);
+            data.setStandardCoal(totalStandardCoal);
+            data.setMoney(totalMoney);
+            list.add(0, data);
+            return list;
+        } catch (Exception e) {
+            log.error("统计总览【能源】发生异常：{}", e.getMessage(), e);
+            return emptyEnergyList();
+        }
+
+    }
 
 
     @Override
     public StatisticsHomeResultVO overview(StatisticsParamHomeVO paramVO) {
         StatisticsHomeResultVO statisticsHomeResultVO = new StatisticsHomeResultVO();
-        // statisticsHomeResultVO.setDataUpdateTime(LocalDateTime.now());
         // 尝试读取缓存
         String cacheKey = StatisticsCacheConstants.COMPARISON_HOME_TOTAL + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            log.info("缓存结果");
             return JSONUtil.toBean(cacheRes, StatisticsHomeResultVO.class);
         }
 
@@ -102,58 +159,9 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         LocalDateTime endTime = rangeOrigin[1];
 
         // 3.1能源展示
-        // 3.1.1 能源处理
-        List<StatisticsOverviewEnergyData> list = new ArrayList<>();
-        List<UsageCostData> energyStandardCoalList = usageCostService.getEnergyStandardCoalByEnergyIds(startTime, endTime, energyIdList);
-
-        Map<Long, UsageCostData> energyStandardCoalMap = energyStandardCoalList
-                .stream()
-                .collect(Collectors.toMap(UsageCostData::getEnergyId, Function.identity()));
-
-        energyList.forEach(e -> {
-            StatisticsOverviewEnergyData data = new StatisticsOverviewEnergyData();
-
-            data.setName(e.getEnergyName());
-            data.setEnergyIcon(e.getEnergyIcon());
-            UsageCostData usageCostData = energyStandardCoalMap.get(e.getId());
-
-            if (Objects.isNull(usageCostData)) {
-                data.setConsumption(BigDecimal.ZERO);
-                data.setStandardCoal(BigDecimal.ZERO);
-                data.setMoney(BigDecimal.ZERO);
-            } else {
-                data.setConsumption(dealBigDecimalScale(usageCostData.getCurrentTotalUsage(), DEFAULT_SCALE));
-                data.setStandardCoal(dealBigDecimalScale(usageCostData.getTotalStandardCoalEquivalent(), DEFAULT_SCALE));
-                data.setMoney(dealBigDecimalScale(usageCostData.getTotalCost(), DEFAULT_SCALE));
-            }
-            list.add(data);
-        });
-
-        // 3.1.2 综合能耗
-        BigDecimal totalMoney = list.stream()
-                .map(StatisticsOverviewEnergyData::getMoney)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalStandardCoal = list.stream()
-                .map(StatisticsOverviewEnergyData::getStandardCoal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        StatisticsOverviewEnergyData data = new StatisticsOverviewEnergyData();
-        data.setName("综合能耗");
-        data.setStandardCoal(totalStandardCoal);
-        data.setMoney(totalMoney);
-        list.add(0, data);
-
-        //statisticsHomeResultVO.setStatisticsOverviewEnergyDataList(list);
+        statisticsHomeResultVO.setStatisticsOverviewEnergyDataList(energyList(startTime, endTime, energyIdList, energyList));
 
         // 3.2 折标煤用量统计
-        List<StandingbookDO> standingbookIdsByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIdList);
-        List<Long> standingBookIds = standingbookIdsByEnergy.stream().map(StandingbookDO::getId).collect(Collectors.toList());
-
-        if (CollUtil.isEmpty(standingBookIds)) {
-            return statisticsHomeResultVO;
-        }
-
         DataTypeEnum dataTypeEnum = DataTypeEnum.codeOf(paramVO.getDateType());
         StatisticsParamV2VO param = new StatisticsParamV2VO();
         param.setRange(rangeOrigin);
@@ -161,35 +169,24 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         param.setDateType(paramVO.getDateType());
         param.setEnergyClassify(paramVO.getEnergyClassify());
 
-
-        // 查询数据
-        List<UsageCostData> usageCostDataList = usageCostService.getList(param, startTime, endTime, standingBookIds); // 当前
+        // 查询聚合数据
+        StatisticsOverviewStatisticsTableData nowResult = usageCostService.getAggStatisticsByEnergyIds(startTime, endTime, energyIdList); // 当前
         // 上一周期
-        List<UsageCostData> comparisonDataList = usageCostService.getList(param,
+        StatisticsOverviewStatisticsTableData prevResult = usageCostService.getAggStatisticsByEnergyIds(
                 LocalDateTimeUtils.getPreviousRange(rangeOrigin, dataTypeEnum)[0],
-                LocalDateTimeUtils.getPreviousRange(rangeOrigin, dataTypeEnum)[1], standingBookIds);
+                LocalDateTimeUtils.getPreviousRange(rangeOrigin, dataTypeEnum)[1], energyIdList);
         // 同期
-        List<UsageCostData> yoyDataList = usageCostService.getList(param,
-                LocalDateTimeUtils.getSamePeriodLastYear(rangeOrigin, dataTypeEnum)[0],
-                LocalDateTimeUtils.getSamePeriodLastYear(rangeOrigin, dataTypeEnum)[1], standingBookIds);
+        StatisticsOverviewStatisticsTableData lastResult = usageCostService.getAggStatisticsByEnergyIds(startTime.minusYears(1), endTime.minusYears(1), energyIdList);
 
-        // 折标煤统计
-        List<StatisticsHomeData> standardCoalStatistics = buildStatisticsHomeData(
-                usageCostDataList, comparisonDataList, yoyDataList, UsageCostData::getTotalStandardCoalEquivalent);
-        //折价统计
-        List<StatisticsHomeData> moneyStatistics = buildStatisticsHomeData(
-                usageCostDataList, comparisonDataList, yoyDataList, UsageCostData::getTotalCost);
-
-//        statisticsHomeResultVO.setStandardCoalStatistics(standardCoalStatistics);
-//        statisticsHomeResultVO.setMoneyStatistics(moneyStatistics);
+        // 折标煤统计 + 折价统计
+        buildStatisticsHomeData(nowResult, prevResult, lastResult, statisticsHomeResultVO);
 
         // 获取数据更新时间
         LocalDateTime lastTime = usageCostService.getLastTime(
-                param,
                 paramVO.getRange()[0],
                 paramVO.getRange()[1],
-                standingBookIds);
-//        statisticsHomeResultVO.setDataUpdateTime(lastTime);
+                energyIdList);
+        statisticsHomeResultVO.setDataUpdateTime(lastTime);
 
         String jsonStr = JSONUtil.toJsonStr(statisticsHomeResultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
@@ -208,96 +205,6 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         return analysisChart(paramVO, UsageCostData::getTotalStandardCoalEquivalent, StatisticsCacheConstants.COMPARISON_HOME_CHART_COAL);
     }
 
-    @Override
-    public List<StatisticsOverviewEnergyData> energy(StatisticsParamHomeVO paramVO) {
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(paramVO.getEnergyClassify());
-        if (CollUtil.isEmpty(energyList)) {
-            return Collections.emptyList();
-        }
-        List<Long> energyIdList = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
-
-        // 时间参数准备
-        LocalDateTime[] rangeOrigin = paramVO.getRange();
-        LocalDateTime startTime = rangeOrigin[0];
-        LocalDateTime endTime = rangeOrigin[1];
-        List<StatisticsOverviewEnergyData> list = new ArrayList<>();
-        List<UsageCostData> energyStandardCoalList = usageCostService.getEnergyStandardCoalByEnergyIds(startTime, endTime, energyIdList);
-
-        Map<Long, UsageCostData> energyStandardCoalMap = energyStandardCoalList
-                .stream()
-                .collect(Collectors.toMap(UsageCostData::getEnergyId, Function.identity()));
-
-        energyList.forEach(e -> {
-            StatisticsOverviewEnergyData data = new StatisticsOverviewEnergyData();
-
-            data.setName(e.getEnergyName());
-            data.setEnergyIcon(e.getEnergyIcon());
-            UsageCostData usageCostData = energyStandardCoalMap.get(e.getId());
-
-            if (Objects.isNull(usageCostData)) {
-                data.setConsumption(BigDecimal.ZERO);
-                data.setStandardCoal(BigDecimal.ZERO);
-                data.setMoney(BigDecimal.ZERO);
-            } else {
-                data.setConsumption(dealBigDecimalScale(usageCostData.getCurrentTotalUsage(), DEFAULT_SCALE));
-                data.setStandardCoal(dealBigDecimalScale(usageCostData.getTotalStandardCoalEquivalent(), DEFAULT_SCALE));
-                data.setMoney(dealBigDecimalScale(usageCostData.getTotalCost(), DEFAULT_SCALE));
-            }
-            list.add(data);
-        });
-
-        // 3.1.2 综合能耗
-        BigDecimal totalMoney = list.stream()
-                .map(StatisticsOverviewEnergyData::getMoney)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalStandardCoal = list.stream()
-                .map(StatisticsOverviewEnergyData::getStandardCoal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        StatisticsOverviewEnergyData data = new StatisticsOverviewEnergyData();
-        data.setName("综合能耗");
-        data.setStandardCoal(totalStandardCoal);
-        data.setMoney(totalMoney);
-        list.add(0, data);
-        return list;
-//        // 查询能源类型与台账
-//        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(paramVO.getEnergyClassify());
-//        if (CollUtil.isEmpty(energyList)) {
-//            return Collections.emptyList();
-//        }
-//
-//        List<Long> energyIdList = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
-//
-//
-//        // 时间参数准备
-//        LocalDateTime[] rangeOrigin = paramVO.getRange();
-//        LocalDateTime startTime = rangeOrigin[0];
-//        LocalDateTime endTime = rangeOrigin[1];
-//
-//
-//        List<UsageCostData> usageCostDataList = usageCostService.getListOfHome(startTime, endTime, energyIdList);
-//        if (CollUtil.isEmpty(usageCostDataList)) {
-//            List<StatisticsOverviewEnergyData> result = new ArrayList<>();
-//            energyList.forEach(energyConfigurationDO -> {
-//                StatisticsOverviewEnergyData energyData = new StatisticsOverviewEnergyData();
-//                energyData.setName(energyConfigurationDO.getEnergyName());
-//                energyData.setEnergyIcon(energyConfigurationDO.getEnergyIcon());
-//                energyData.setMoney(BigDecimal.ZERO);
-//                energyData.setStandardCoal(BigDecimal.ZERO);
-//                energyData.setConsumption(BigDecimal.ZERO);
-//                result.add(energyData);
-//            });
-//
-//            StatisticsOverviewEnergyData sum = new StatisticsOverviewEnergyData();
-//            sum.setName("综合");
-//            sum.setMoney(BigDecimal.ZERO);
-//            sum.setStandardCoal(BigDecimal.ZERO);
-//            result.add(sum);
-//            return result;
-//        }
-//        return energy(usageCostDataList, energyList);
-    }
 
     @Override
     public StatisticsHomeTopResultVO overviewTop() {
@@ -466,58 +373,6 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
     }
 
 
-    public List<StatisticsOverviewEnergyData> energy(List<UsageCostData> usageCostDataList, List<EnergyConfigurationDO> energyList) {
-        //总成本
-        BigDecimal totalCost = usageCostDataList.stream().map(UsageCostData::getTotalCost).reduce(BigDecimal.ZERO, BigDecimal::add);
-        //折标煤
-        BigDecimal totalStandardCoalEquivalent = usageCostDataList.stream().map(UsageCostData::getTotalStandardCoalEquivalent).reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        List<StatisticsOverviewEnergyData> result = new ArrayList<>();
-        StatisticsOverviewEnergyData sum = new StatisticsOverviewEnergyData();
-        sum.setName("综合");
-        sum.setMoney(totalCost);
-        sum.setStandardCoal(totalStandardCoalEquivalent);
-        result.add(sum);
-
-        Map<Long, UsageCostData> energyIdUsageCostDataMap =
-                usageCostDataList.stream().collect(Collectors.toMap(UsageCostData::getEnergyId, Function.identity()));
-
-        energyList.forEach(energyConfigurationDO -> {
-            UsageCostData usageCostData = energyIdUsageCostDataMap.get(energyConfigurationDO.getId());
-            //EnergyConfigurationDO energyConfigurationDO = energyIdMap.get(usageCostData.getEnergyId());
-            StatisticsOverviewEnergyData energyData = new StatisticsOverviewEnergyData();
-            energyData.setName(energyConfigurationDO.getEnergyName());
-            energyData.setEnergyIcon(energyConfigurationDO.getEnergyIcon());
-            if (Objects.nonNull(usageCostData)) {
-                energyData.setMoney(usageCostData.getTotalCost());
-                energyData.setStandardCoal(usageCostData.getTotalStandardCoalEquivalent());
-                energyData.setConsumption(usageCostData.getTotalCost());
-            } else {
-                energyData.setMoney(BigDecimal.ZERO);
-                energyData.setStandardCoal(BigDecimal.ZERO);
-                energyData.setConsumption(BigDecimal.ZERO);
-            }
-            result.add(energyData);
-        });
-
-//        Map<Long, EnergyConfigurationDO> energyIdMap = energyList.stream().collect(Collectors.toMap(EnergyConfigurationDO::getId, Function.identity()));
-//        usageCostDataList.forEach(usageCostData -> {
-//            EnergyConfigurationDO energyConfigurationDO = energyIdMap.get(usageCostData.getEnergyId());
-//            StatisticsOverviewEnergyData energyData = new StatisticsOverviewEnergyData();
-//            energyData.setName(energyConfigurationDO.getEnergyName());
-//            energyData.setMoney(usageCostData.getTotalCost());
-//            energyData.setStandardCoal(usageCostData.getTotalStandardCoalEquivalent());
-//            energyData.setConsumption(usageCostData.getTotalCost());
-//            energyData.setConsumption(usageCostData.getTotalCost());
-//            energyData.setEnergyIcon(energyConfigurationDO.getEnergyIcon());
-//            result.add(energyData);
-//        });
-
-
-        return result;
-    }
-
-
     public ComparisonChartResultVO analysisChart(StatisticsParamHomeVO paramVO, Function<UsageCostData, BigDecimal> valueExtractor, String commonType) {
         // 1. 校验时间范围合法性
         LocalDateTime[] rangeOrigin = paramVO.getRange();
@@ -630,28 +485,27 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
     /**
      * 构建统计数据（当前、同比、环比）- 重构版，返回 List<StatisticsHomeData>
      */
-    private List<StatisticsHomeData> buildStatisticsHomeData(List<UsageCostData> nowList,
-                                                             List<UsageCostData> previousList,
-                                                             List<UsageCostData> yoyList,
-                                                             Function<UsageCostData, BigDecimal> extractor) {
-        List<StatisticsHomeData> resultList = new ArrayList<>();
-
-        // 计算基础统计值
-        StatisticsOverviewStatisticsData nowStats = buildBasicStats(nowList, extractor);
-        StatisticsOverviewStatisticsData previousStats = buildBasicStats(previousList, extractor);
-        StatisticsOverviewStatisticsData yoy = buildBasicStats(yoyList, extractor);
-        //计算对应同比 环比
-        StatisticsOverviewStatisticsData yoyStats = buildRatioStats(nowStats, yoy);
-        StatisticsOverviewStatisticsData momStats = buildRatioStats(nowStats, previousStats);
-
-//        StatisticsOverviewStatisticsData yoyStats = buildRatioStats(nowList, yoyList, extractor);
-//        StatisticsOverviewStatisticsData momStats = buildRatioStats(nowList, previousList, extractor);
-
-        resultList.add(buildSingleItem(ITEM_ACCUMULATE, nowStats.getAccumulate(), previousStats.getAccumulate(), yoyStats.getAccumulate(), momStats.getAccumulate()));
-        resultList.add(buildSingleItem(ITEM_MAX, nowStats.getMax(), previousStats.getMax(), yoyStats.getMax(), momStats.getMax()));
-        resultList.add(buildSingleItem(ITEM_MIN, nowStats.getMin(), previousStats.getMin(), yoyStats.getMin(), momStats.getMin()));
-        resultList.add(buildSingleItem(ITEM_AVG, nowStats.getAverage(), previousStats.getAverage(), yoyStats.getAverage(), momStats.getAverage()));
-        return resultList;
+    private void buildStatisticsHomeData(StatisticsOverviewStatisticsTableData nowRes,
+                                         StatisticsOverviewStatisticsTableData prevRes,
+                                         StatisticsOverviewStatisticsTableData lastRes,
+                                         StatisticsHomeResultVO statisticsHomeResultVO
+    ) {
+        try {
+            List<StatisticsHomeData> coalList = new ArrayList<>();
+            coalList.add(buildSingleItem(ITEM_ACCUMULATE, nowRes.getAccCoal(), prevRes.getAccCoal(), calculateRatio(nowRes.getAccCoal(), lastRes.getAccCoal()), calculateRatio(nowRes.getAccCoal(), prevRes.getAccCoal())));
+            coalList.add(buildSingleItem(ITEM_MAX, nowRes.getMaxCoal(), prevRes.getMaxCoal(), calculateRatio(nowRes.getMaxCoal(), lastRes.getMaxCoal()), calculateRatio(nowRes.getMaxCoal(), prevRes.getMaxCoal())));
+            coalList.add(buildSingleItem(ITEM_MIN, nowRes.getMinCoal(), prevRes.getMinCoal(), calculateRatio(nowRes.getMinCoal(), lastRes.getMinCoal()), calculateRatio(nowRes.getMinCoal(), prevRes.getMinCoal())));
+            coalList.add(buildSingleItem(ITEM_AVG, nowRes.getAvgCoal(), prevRes.getAvgCoal(), calculateRatio(nowRes.getAvgCoal(), lastRes.getAvgCoal()), calculateRatio(nowRes.getAvgCoal(), prevRes.getAvgCoal())));
+            statisticsHomeResultVO.setStandardCoalStatistics(coalList);
+            List<StatisticsHomeData> costList = new ArrayList<>();
+            costList.add(buildSingleItem(ITEM_ACCUMULATE, nowRes.getAccCost(), prevRes.getAccCost(), calculateRatio(nowRes.getAccCost(), lastRes.getAccCost()), calculateRatio(nowRes.getAccCost(), prevRes.getAccCost())));
+            costList.add(buildSingleItem(ITEM_MAX, nowRes.getMaxCost(), prevRes.getMaxCost(), calculateRatio(nowRes.getMaxCost(), lastRes.getMaxCost()), calculateRatio(nowRes.getMaxCost(), prevRes.getMaxCost())));
+            costList.add(buildSingleItem(ITEM_MIN, nowRes.getMinCost(), prevRes.getMinCost(), calculateRatio(nowRes.getMinCost(), lastRes.getMinCost()), calculateRatio(nowRes.getMinCost(), prevRes.getMinCost())));
+            costList.add(buildSingleItem(ITEM_AVG, nowRes.getAvgCost(), prevRes.getAvgCost(), calculateRatio(nowRes.getAvgCost(), lastRes.getAvgCost()), calculateRatio(nowRes.getAvgCost(), prevRes.getAvgCost())));
+            statisticsHomeResultVO.setMoneyStatistics(costList);
+        } catch (Exception e) {
+            log.error("buildStatisticsHomeData error:{}", e.getMessage(), e);
+        }
     }
 
     private StatisticsHomeData buildSingleItem(String itemName, BigDecimal now, BigDecimal previous, BigDecimal yoy, BigDecimal mom) {
@@ -697,51 +551,51 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         return stats;
     }
 
-    /**
-     * 构建同比/环比差值百分比
-     */
-    private StatisticsOverviewStatisticsData buildRatioStats(List<UsageCostData> nowList,
-                                                             List<UsageCostData> refList,
-                                                             Function<UsageCostData, BigDecimal> extractor) {
-        BigDecimal nowSum = nowList.stream()
-                .map(extractor)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal refSum = refList.stream()
-                .map(extractor)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal ratio = calculateRatio(nowSum, refSum);
-
-        StatisticsOverviewStatisticsData result = new StatisticsOverviewStatisticsData();
-        result.setAccumulate(ratio);
-        result.setAverage(BigDecimal.ZERO); // 可选扩展：对每项做同比
-        result.setMax(BigDecimal.ZERO);
-        result.setMin(BigDecimal.ZERO);
-        return result;
-    }
-
-    /**
-     * 构建同比/环比差值百分比
-     */
-    private StatisticsOverviewStatisticsData buildRatioStats(StatisticsOverviewStatisticsData nowStats,
-                                                             StatisticsOverviewStatisticsData refStats) {
-        StatisticsOverviewStatisticsData result = new StatisticsOverviewStatisticsData();
-        result.setAccumulate(calculateRatio(nowStats.getAccumulate(), refStats.getAccumulate()));
-        result.setAverage(calculateRatio(nowStats.getAverage(), refStats.getAverage()));
-        result.setMax(calculateRatio(nowStats.getMax(), refStats.getMax()));
-        result.setMin(calculateRatio(nowStats.getMin(), refStats.getMin()));
-        return result;
-    }
+//    /**
+//     * 构建同比/环比差值百分比
+//     */
+//    private StatisticsOverviewStatisticsData buildRatioStats(List<UsageCostData> nowList,
+//                                                             List<UsageCostData> refList,
+//                                                             Function<UsageCostData, BigDecimal> extractor) {
+//        BigDecimal nowSum = nowList.stream()
+//                .map(extractor)
+//                .filter(Objects::nonNull)
+//                .reduce(BigDecimal.ZERO, BigDecimal::add);
+//
+//        BigDecimal refSum = refList.stream()
+//                .map(extractor)
+//                .filter(Objects::nonNull)
+//                .reduce(BigDecimal.ZERO, BigDecimal::add);
+//
+//        BigDecimal ratio = calculateRatio(nowSum, refSum);
+//
+//        StatisticsOverviewStatisticsData result = new StatisticsOverviewStatisticsData();
+//        result.setAccumulate(ratio);
+//        result.setAverage(BigDecimal.ZERO); // 可选扩展：对每项做同比
+//        result.setMax(BigDecimal.ZERO);
+//        result.setMin(BigDecimal.ZERO);
+//        return result;
+//    }
+//
+//    /**
+//     * 构建同比/环比差值百分比
+//     */
+//    private StatisticsOverviewStatisticsData buildRatioStats(StatisticsOverviewStatisticsData nowStats,
+//                                                             StatisticsOverviewStatisticsData refStats) {
+//        StatisticsOverviewStatisticsData result = new StatisticsOverviewStatisticsData();
+//        result.setAccumulate(calculateRatio(nowStats.getAccumulate(), refStats.getAccumulate()));
+//        result.setAverage(calculateRatio(nowStats.getAverage(), refStats.getAverage()));
+//        result.setMax(calculateRatio(nowStats.getMax(), refStats.getMax()));
+//        result.setMin(calculateRatio(nowStats.getMin(), refStats.getMin()));
+//        return result;
+//    }
 
     /**
      * 同比/环比率计算（避免除零）
      */
     private BigDecimal calculateRatio(BigDecimal now, BigDecimal previous) {
         if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0 || now == null) {
-            return BigDecimal.ZERO;
+            return null;
         }
         return now.subtract(previous)
                 .divide(previous, 4, RoundingMode.HALF_UP)

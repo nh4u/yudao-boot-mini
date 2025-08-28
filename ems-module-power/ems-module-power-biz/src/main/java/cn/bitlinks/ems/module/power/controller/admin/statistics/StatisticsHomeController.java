@@ -56,9 +56,4 @@ public class StatisticsHomeController {
         return success(statisticsHomeService.coalChart(paramVO));
     }
 
-    @PostMapping("/energy")
-    @Operation(summary = "首页能源数据")
-    public CommonResult<List<StatisticsOverviewEnergyData>> energy(@Valid @RequestBody StatisticsParamHomeVO paramVO) {
-        return success(statisticsHomeService.energy(paramVO));
-    }
 }
