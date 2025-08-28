@@ -13,7 +13,7 @@ import java.util.List;
  */
 @Schema(description = "堆叠图Y轴数据")
 @Data
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class DeviationChartYInfo {
     /**
      * 名称
