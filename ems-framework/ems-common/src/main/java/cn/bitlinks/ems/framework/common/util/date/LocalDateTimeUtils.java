@@ -471,6 +471,48 @@ public class LocalDateTimeUtils {
      * @param type         时间类型（DAY、MONTH、YEAR 等）
      * @return 上一周期的时间范围 [lastStart, lastEnd]
      */
+    public static LocalDateTime[] getPreviousRangeV1(LocalDateTime[] currentRange, DataTypeEnum type) {
+        LocalDateTime start = currentRange[0];
+        LocalDateTime end = currentRange[1];
+
+        LocalDateTime lastStart;
+        LocalDateTime lastEnd;
+
+        switch (type) {
+            case DAY:
+                long days = ChronoUnit.DAYS.between(start, end);
+                lastStart = start.minusDays(days);
+                lastEnd = end.minusDays(days);
+                break;
+            case MONTH:
+                long months = ChronoUnit.MONTHS.between(start.withDayOfMonth(1), end.withDayOfMonth(1));
+                lastStart = start.minusMonths(months);
+                lastEnd = end.minusMonths(months);
+                break;
+            case YEAR:
+                long years = ChronoUnit.YEARS.between(start.withDayOfYear(1), end.withDayOfYear(1));
+                lastStart = start.minusYears(years);
+                lastEnd = end.minusYears(years);
+                break;
+            case HOUR:
+                long hours = ChronoUnit.HOURS.between(start, end);
+                lastStart = start.minusHours(hours);
+                lastEnd = end.minusHours(hours);
+                break;
+            default:
+                throw new IllegalArgumentException("不支持的时间类型: " + type);
+        }
+
+        return new LocalDateTime[]{lastStart, lastEnd};
+    }
+
+    /**
+     * 获取上一周期的时间范围（用于环比）
+     *
+     * @param currentRange 当前时间范围 [start, end]
+     * @param type         时间类型（DAY、MONTH、YEAR 等）
+     * @return 上一周期的时间范围 [lastStart, lastEnd]
+     */
     public static LocalDateTime[] getPreviousRangeV2(LocalDateTime[] currentRange, DataTypeEnum type) {
         LocalDateTime start = currentRange[0];
         LocalDateTime end = currentRange[1];
