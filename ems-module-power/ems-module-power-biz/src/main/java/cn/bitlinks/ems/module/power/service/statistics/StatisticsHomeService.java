@@ -17,9 +17,9 @@ public interface StatisticsHomeService {
      */
     StatisticsHomeResultVO overview(StatisticsParamHomeVO paramVO);
 
-    ComparisonChartResultVO costChart(StatisticsParamHomeVO paramVO);
+    StatisticsHomeBarVO costChart(StatisticsParamHomeVO paramVO);
 
-    ComparisonChartResultVO coalChart(StatisticsParamHomeVO paramVO);
+    StatisticsHomeBarVO coalChart(StatisticsParamHomeVO paramVO);
 
     /**
      * 统计总览-顶部设备数量

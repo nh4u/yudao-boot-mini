@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
-import java.util.List;
 
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 
@@ -46,13 +45,13 @@ public class StatisticsHomeController {
 
     @PostMapping("/costChart")
     @Operation(summary = "折价分析图")
-    public CommonResult<ComparisonChartResultVO> costChart(@Valid @RequestBody StatisticsParamHomeVO paramVO) {
+    public CommonResult<StatisticsHomeBarVO> costChart(@Valid @RequestBody StatisticsParamHomeVO paramVO) {
         return success(statisticsHomeService.costChart(paramVO));
     }
 
     @PostMapping("/coalChart")
     @Operation(summary = "折标煤分析图")
-    public CommonResult<ComparisonChartResultVO> coalChart(@Valid @RequestBody StatisticsParamHomeVO paramVO) {
+    public CommonResult<StatisticsHomeBarVO> coalChart(@Valid @RequestBody StatisticsParamHomeVO paramVO) {
         return success(statisticsHomeService.coalChart(paramVO));
     }
 
