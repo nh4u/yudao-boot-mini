@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
+import cn.bitlinks.ems.framework.common.enums.EnergyClassifyEnum;
 import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.util.date.DateUtils;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
@@ -13,6 +14,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabe
 import cn.bitlinks.ems.module.power.enums.ChartSeriesTypeEnum;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants;
+import cn.bitlinks.ems.module.power.enums.standingbook.StandingBookStageEnum;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
@@ -48,6 +50,8 @@ import static cn.bitlinks.ems.module.power.enums.CommonConstants.ANNUAL_STATISTI
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.DEFAULT;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.COMPARISON_BASE_TABLE_UTILIZATION_RATE;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.COMPARISON_DISCOUNT_TABLE_UTILIZATION_RATE;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.getConvertData;
 
@@ -1267,6 +1271,113 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         result.add(bottom);
 
         return result;
+    }
+
+    @Override
+    public StatisticsResultV2VO<ComparisonItemVO> getUtilizationRateTable(StatisticsParamV2VO paramVO) {
+
+        // 1.校验时间范围合法性
+        LocalDateTime[] rangeOrigin = validateRange(paramVO.getRange());
+        LocalDateTime startTime = rangeOrigin[0];
+        LocalDateTime endTime = rangeOrigin[1];
+
+        // 2.2.校验时间类型
+        DataTypeEnum dataTypeEnum = validateDateType(paramVO.getDateType());
+
+        String cacheKey = COMPARISON_DISCOUNT_TABLE_UTILIZATION_RATE + SecureUtil.md5(paramVO.toString());
+        byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
+        String cacheRes = StrUtils.decompressGzip(compressed);
+        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
+            log.info("缓存结果");
+            return JSON.parseObject(cacheRes, new TypeReference<StatisticsResultV2VO<ComparisonItemVO>>() {
+            });
+        }
+
+        // 构建表头
+        List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, dataTypeEnum);
+        StatisticsResultV2VO<BaseItemVO> resultVO = new StatisticsResultV2VO<>();
+        resultVO.setHeader(tableHeader);
+
+        // 查询台账id
+        // 查询园区利用率 台账ids
+        List<Long> sbIds = statisticsCommonService.getStageEnergySbIds(StandingBookStageEnum.TERMINAL_USE.getCode(), false, null);
+        List<Long> outsourceSbIds = statisticsCommonService.getStageEnergySbIds(StandingBookStageEnum.PROCUREMENT_STORAGE.getCode(), true, EnergyClassifyEnum.OUTSOURCED);
+        List<Long> parkSbIds = statisticsCommonService.getStageEnergySbIds(StandingBookStageEnum.PROCESSING_CONVERSION.getCode(), true, EnergyClassifyEnum.PARK);
+        
+        // 无台账数据直接返回
+        if (CollUtil.isEmpty(sbIds)) {
+            return defaultNullData(tableHeader);
+        }
+
+        // 查询外购
+        List<UsageCostData> outsourceList = new ArrayList<>();
+        List<UsageCostData> lastOutsourceList = new ArrayList<>();
+
+        LocalDateTime[] lastRange = LocalDateTimeUtils.getBenchmarkRange(rangeOrigin, dataTypeEnum, benchmark);
+
+        if (CollUtil.isNotEmpty(outsourceSbIds)) {
+            outsourceList = usageCostService.getList(paramVO, startTime, endTime, outsourceSbIds);
+            lastOutsourceList = usageCostService.getList(paramVO, lastRange[0], lastRange[1], outsourceSbIds);
+        }
+        // 查询园区
+        List<UsageCostData> parkList = new ArrayList<>();
+        List<UsageCostData> lastParkList = new ArrayList<>();
+        if (CollUtil.isNotEmpty(parkSbIds)) {
+            parkList = usageCostService.getList(paramVO, startTime, endTime, parkSbIds);
+            lastParkList = usageCostService.getList(paramVO, lastRange[0], lastRange[1], parkSbIds);
+        }
+        // 查询分子
+        List<UsageCostData> numeratorList = usageCostService.getList(paramVO, startTime, endTime, sbIds);
+        List<UsageCostData> lastNumeratorList = usageCostService.getList(paramVO, lastRange[0], lastRange[1], sbIds);
+        boolean isCrossYear = DateUtils.isCrossYear(startTime, endTime);
+        // 综合默认查看
+        List<BaseItemVO> statisticsInfoList = queryList(outsourceList, parkList, numeratorList, lastOutsourceList, lastParkList, lastNumeratorList, isCrossYear, tableHeader);
+
+
+        // 设置最终返回值
+        resultVO.setStatisticsInfoList(statisticsInfoList);
+        LocalDateTime lastTime1 = usageCostService.getLastTimeNoParam(
+                paramVO.getRange()[0],
+                paramVO.getRange()[1],
+                outsourceSbIds
+        );
+        LocalDateTime lastTime2 = usageCostService.getLastTimeNoParam(
+                paramVO.getRange()[0],
+                paramVO.getRange()[1],
+                parkSbIds
+        );
+        LocalDateTime lastTime3 = usageCostService.getLastTimeNoParam(
+                paramVO.getRange()[0],
+                paramVO.getRange()[1],
+                sbIds
+        );
+        // 找出三个时间中的最大值（最新时间）
+        LocalDateTime latestTime = Arrays.stream(new LocalDateTime[]{lastTime1, lastTime2, lastTime3})
+                .filter(Objects::nonNull) // 排除null
+                .max(Comparator.naturalOrder())
+                .orElse(null); // 若全部为null，返回null
+        resultVO.setDataTime(latestTime);
+        // 结果保存在缓存中
+        String jsonStr = JSONUtil.toJsonStr(resultVO);
+        byte[] bytes = StrUtils.compressGzip(jsonStr);
+        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+
+        return resultVO;
+    }
+
+    @Override
+    public ComparisonChartResultVO getUtilizationRateChart(StatisticsParamV2VO vo) {
+        return null;
+    }
+
+    @Override
+    public List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO) {
+        return null;
+    }
+
+    @Override
+    public List<List<Object>> getExcelData(StatisticsParamV2VO paramVO) {
+        return null;
     }
 
     /**
