@@ -111,13 +111,13 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
             // 3.1.2 综合能耗
             BigDecimal totalMoney = list.stream()
-                    .filter(Objects::nonNull)
                     .map(StatisticsOverviewEnergyData::getMoney)
+                    .filter(Objects::nonNull)
                     .reduce(BigDecimal::add).orElse(null);
 
             BigDecimal totalStandardCoal = list.stream()
-                    .filter(Objects::nonNull)
                     .map(StatisticsOverviewEnergyData::getStandardCoal)
+                    .filter(Objects::nonNull)
                     .reduce(BigDecimal::add).orElse(null);
 
             StatisticsOverviewEnergyData data = new StatisticsOverviewEnergyData();
