@@ -3,9 +3,12 @@ package cn.bitlinks.ems.module.power.service.statistics;
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.enums.EnergyClassifyEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
+import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
+import cn.bitlinks.ems.module.power.controller.admin.externalapi.vo.ProductionPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.production.ProductionDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.mysql.measurementassociation.MeasurementAssociationMapper;
 import cn.bitlinks.ems.module.power.enums.ChartSeriesTypeEnum;
@@ -14,8 +17,10 @@ import cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants;
 import cn.bitlinks.ems.module.power.enums.StatisticsQueryType;
 import cn.bitlinks.ems.module.power.enums.standingbook.StandingBookStageEnum;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
+import cn.bitlinks.ems.module.power.service.production.ProductionService;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
+import cn.bitlinks.ems.module.power.utils.CommonUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -63,6 +68,9 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
     @Resource
     private UsageCostService usageCostService;
+
+    @Resource
+    private ProductionService productionService;
 
     @Resource
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
@@ -313,15 +321,8 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
     public StatisticsHomeTop2ResultVO overviewTop2(StatisticsParamHomeVO paramVO) {
         // 2.产值能耗利用率
         StatisticsHomeTop2ResultVO statisticsHomeResultVO = new StatisticsHomeTop2ResultVO();
-        // 单位产值能耗 todo
-        StatisticsHomeTop2Data outputValueEnergyConsumption = new StatisticsHomeTop2Data();
-        statisticsHomeResultVO.setOutputValueEnergyConsumption(outputValueEnergyConsumption);
-        // 单位产品能耗（8英寸） todo
-        StatisticsHomeTop2Data productEnergyConsumption8 = new StatisticsHomeTop2Data();
-        statisticsHomeResultVO.setProductEnergyConsumption8(productEnergyConsumption8);
-        // 单位产品能耗（12英寸） todo
-        StatisticsHomeTop2Data productEnergyConsumption12 = new StatisticsHomeTop2Data();
-        statisticsHomeResultVO.setProductEnergyConsumption12(productEnergyConsumption12);
+        // 单位产值能耗
+        dealProductEnergyConsumption(statisticsHomeResultVO, paramVO);
 
         // 能源利用率（外购）
         statisticsHomeResultVO.setOutsourceEnergyUtilizationRate(getOutsourceEnergyUtilizationRate(paramVO));
@@ -332,6 +333,66 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
         return statisticsHomeResultVO;
 
+    }
+
+    private StatisticsHomeTop2ResultVO dealProductEnergyConsumption(StatisticsHomeTop2ResultVO statisticsHomeResultVO, StatisticsParamHomeVO paramVO) {
+
+        ProductionPageReqVO param = BeanUtils.toBean(paramVO, ProductionPageReqVO.class);
+        param.setSize(8);
+        ProductionDO eight = productionService.getHomeProduction(param);
+
+        param.setSize(12);
+        ProductionDO twelve = productionService.getHomeProduction(param);
+
+        // 综合能耗
+        // 能源处理 外购
+        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(1);
+        if (CollUtil.isEmpty(energyList)) {
+            return statisticsHomeResultVO;
+        }
+        List<Long> energyIdList = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
+
+        // 时间参数准备
+        LocalDateTime[] rangeOrigin = paramVO.getRange();
+        LocalDateTime startTime = rangeOrigin[0];
+        LocalDateTime endTime = rangeOrigin[1];
+
+        // 3.1能源展示
+        BigDecimal energySumStandardCoal = usageCostService.getEnergySumStandardCoal(startTime, endTime, energyIdList);
+
+        BigDecimal sum = null;
+        // 单位产品能耗（8英寸）
+        StatisticsHomeTop2Data product8 = new StatisticsHomeTop2Data();
+        if (Objects.nonNull(eight)) {
+
+            sum = eight.getLot();
+            BigDecimal value8 = CommonUtil.divideWithScale(eight.getLot(), energySumStandardCoal, 2);
+            product8.setValue(value8);
+            product8.setDataUpdateTime(eight.getTime());
+            statisticsHomeResultVO.setProductEnergyConsumption8(product8);
+
+        }
+
+        // 单位产品能耗（12英寸）
+        StatisticsHomeTop2Data product12 = new StatisticsHomeTop2Data();
+        if (Objects.nonNull(eight)) {
+
+            sum = Objects.isNull(sum) ? twelve.getLot() : sum.add(twelve.getLot());
+            BigDecimal value12 = CommonUtil.divideWithScale(twelve.getLot(), energySumStandardCoal, 2);
+            product12.setValue(value12);
+            product12.setDataUpdateTime(eight.getTime());
+            statisticsHomeResultVO.setProductEnergyConsumption12(product12);
+
+        }
+
+        // 单位产值能耗 综合能耗÷总产值
+        StatisticsHomeTop2Data total = new StatisticsHomeTop2Data();
+        BigDecimal sumValue = CommonUtil.divideWithScale(sum, energySumStandardCoal, 2);
+        total.setValue(sumValue);
+        total.setDataUpdateTime(product8.getDataUpdateTime().compareTo(product12.getDataUpdateTime()) < 0 ? product8.getDataUpdateTime() : product12.getDataUpdateTime());
+        statisticsHomeResultVO.setOutputValueEnergyConsumption(total);
+
+        return statisticsHomeResultVO;
     }
 
     /**

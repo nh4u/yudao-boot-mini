@@ -292,18 +292,14 @@ public class CommonUtil {
      * @return
      */
     public static BigDecimal divideWithScale(BigDecimal num, BigDecimal sum, Integer scale) {
-        BigDecimal result = BigDecimal.ZERO;
-
         if (Objects.isNull(scale)) {
-            return result;
+            return null;
         }
 
         if (num == null || sum == null || sum.compareTo(BigDecimal.ZERO) == 0) {
-            return result;
+            return null;
         }
 
-        result = sum.divide(num, scale, RoundingMode.HALF_UP);
-
-        return result;
+        return sum.divide(num, scale, RoundingMode.HALF_UP);
     }
 }
