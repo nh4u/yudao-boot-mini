@@ -170,6 +170,11 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
         List<UsageCostData> lastUsageCostDataList = usageCostService.getList(paramVO, lastRange[0], lastRange[1], standingBookIds);
 
+        // 用于合计 所取的数据
+        LocalDateTime[] totalRange = LocalDateTimeUtils.getPreviousRangeV1(rangeOrigin, DataTypeEnum.DAY);
+        List<UsageCostData> totalUsageCostDataList = usageCostService.getList(paramVO, totalRange[0], totalRange[1], standingBookIds);
+
+
         List<ComparisonItemVO> statisticsInfoList = new ArrayList<>();
         boolean isCrossYear = DateUtils.isCrossYear(paramVO.getRange()[0], paramVO.getRange()[1]);
 
@@ -179,6 +184,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                     energyList,
                     usageCostDataList,
                     lastUsageCostDataList,
+                    totalUsageCostDataList,
                     dataTypeEnum,
                     tableHeader,
                     isCrossYear,
@@ -193,6 +199,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                 statisticsInfoList.addAll(queryByTopLabel(
                         usageCostDataList,
                         lastUsageCostDataList,
+                        totalUsageCostDataList,
                         labelMap,
                         topLabel,
                         dataTypeEnum,
@@ -205,6 +212,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                         standingbookIdsByLabel,
                         usageCostDataList,
                         lastUsageCostDataList,
+                        totalUsageCostDataList,
                         labelMap,
                         dataTypeEnum,
                         tableHeader,
@@ -219,6 +227,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                     standingbookIdsByLabel,
                     usageCostDataList,
                     lastUsageCostDataList,
+                    totalUsageCostDataList,
                     dataTypeEnum,
                     tableHeader,
                     isCrossYear,
@@ -249,6 +258,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
     private List<ComparisonItemVO> queryByEnergy(List<EnergyConfigurationDO> energyList,
                                                  List<UsageCostData> usageCostDataList,
                                                  List<UsageCostData> lastUsageCostDataList,
+                                                 List<UsageCostData> totalUsageCostDataList,
                                                  DataTypeEnum dataTypeEnum,
                                                  List<String> tableHeader,
                                                  boolean isCrossYear,
@@ -258,16 +268,24 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                 .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
         Map<Long, List<UsageCostData>> lastUsageMap = lastUsageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
+        Map<Long, List<UsageCostData>> totalUsageMap = totalUsageCostDataList.stream()
+                .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
 
         List<ComparisonItemVO> detailList = new ArrayList<>();
 
         energyList.forEach(energy -> {
             List<UsageCostData> nowList = nowUsageMap.get(energy.getId());
             List<UsageCostData> lastList = lastUsageMap.get(energy.getId());
+            List<UsageCostData> totalList = totalUsageMap.get(energy.getId());
             if (CollUtil.isEmpty(nowList) && CollUtil.isEmpty(lastList)) {
                 return;
             }
-            ComparisonItemVO vo = buildYoyItemVODataList(nowList, lastList, dataTypeEnum, tableHeader, isCrossYear, valueExtractor);
+            ComparisonItemVO vo = buildComparisonItemVODataList(nowList, lastList, totalList, dataTypeEnum, tableHeader, isCrossYear, valueExtractor);
+
+            if (Objects.isNull(vo)) {
+                return;
+            }
+
             vo.setEnergyId(energy.getId());
             vo.setEnergyName(energy.getEnergyName());
             detailList.add(vo);
@@ -282,6 +300,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
     private List<ComparisonItemVO> queryByTopLabel(
             List<UsageCostData> usageCostDataList,
             List<UsageCostData> lastUsageCostDataList,
+            List<UsageCostData> totalUsageCostDataList,
             Map<Long, LabelConfigDO> labelMap,
             String topLabelKey,
             DataTypeEnum dateTypeEnum,
@@ -292,13 +311,18 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         List<ComparisonItemVO> resultList = new ArrayList<>();
 
         // 构造结果对象
-        ComparisonItemVO info = buildYoyItemVODataList(
+        ComparisonItemVO info = buildComparisonItemVODataList(
                 usageCostDataList,
                 lastUsageCostDataList,
+                totalUsageCostDataList,
                 dateTypeEnum,
                 tableHeader,
                 isCrossYear,
                 valueExtractor);
+
+        if (Objects.isNull(info)) {
+            return Collections.emptyList();
+        }
 
         Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
         LabelConfigDO topLabel = labelMap.get(topLabelId);
@@ -320,6 +344,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
     private List<ComparisonItemVO> queryBySubLabel(List<StandingbookLabelInfoDO> standingbookIdsByLabel,
                                                    List<UsageCostData> usageCostDataList,
                                                    List<UsageCostData> lastUsageCostDataList,
+                                                   List<UsageCostData> totalUsageCostDataList,
                                                    Map<Long, LabelConfigDO> labelMap,
                                                    DataTypeEnum dateTypeEnum,
                                                    List<String> tableHeader,
@@ -337,6 +362,9 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
         // 上期数据以 standingbookId
         Map<Long, List<UsageCostData>> lastMap = lastUsageCostDataList.stream()
+                .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
+
+        Map<Long, List<UsageCostData>> totalMap = totalUsageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
 
         List<ComparisonItemVO> resultList = new ArrayList<>();
@@ -357,6 +385,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
                 List<UsageCostData> labelUsageListNow = new ArrayList<>();
                 List<UsageCostData> labelUsageListPrevious = new ArrayList<>();
+                List<UsageCostData> labelUsageListTotal = new ArrayList<>();
                 // 获取本期标签关联的台账id，并取到对应的数据
                 // 获取本期
                 labelInfoList.forEach(labelInfo -> {
@@ -368,17 +397,25 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                     if (usageList1 != null) {
                         labelUsageListPrevious.addAll(usageList1);
                     }
+
+                    List<UsageCostData> usageList2 = totalMap.get(labelInfo.getStandingbookId());
+                    if (usageList2 != null) {
+                        labelUsageListTotal.addAll(usageList2);
+                    }
                 });
 
                 // 构造结果对象
-                ComparisonItemVO info = buildYoyItemVODataList(
+                ComparisonItemVO info = buildComparisonItemVODataList(
                         labelUsageListNow,
                         labelUsageListPrevious,
+                        labelUsageListTotal,
                         dateTypeEnum,
                         tableHeader,
                         isCrossYear,
                         valueExtractor);
-
+                if (Objects.isNull(info)) {
+                    return;
+                }
                 info.setLabel1(topLabel.getLabelName());
                 info.setLabel2(label2Name);
                 info.setLabel3(label3Name);
@@ -398,6 +435,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                                                List<StandingbookLabelInfoDO> standingbookIdsByLabel,
                                                List<UsageCostData> usageCostDataList,
                                                List<UsageCostData> lastUsageCostDataList,
+                                               List<UsageCostData> totalUsageCostDataList,
                                                DataTypeEnum dateTypeEnum,
                                                List<String> tableHeader,
                                                boolean isCrossYear,
@@ -405,8 +443,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
         // 实际用到的能源ids
         Set<Long> energyIdSet = Stream.concat(
-                usageCostDataList.stream().map(UsageCostData::getEnergyId),
-                lastUsageCostDataList.stream().map(UsageCostData::getEnergyId))
+                        usageCostDataList.stream().map(UsageCostData::getEnergyId),
+                        lastUsageCostDataList.stream().map(UsageCostData::getEnergyId))
                 .collect(Collectors.toSet());
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getPureByEnergyClassify(energyIdSet, null);
         Map<Long, EnergyConfigurationDO> energyMap = energyList.stream()
@@ -422,6 +460,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             return queryDefaultTopLabel(
                     usageCostDataList,
                     lastUsageCostDataList,
+                    totalUsageCostDataList,
                     labelMap,
                     energyMap,
                     topLabel,
@@ -435,6 +474,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                     standingbookIdsByLabel,
                     usageCostDataList,
                     lastUsageCostDataList,
+                    totalUsageCostDataList,
                     labelMap,
                     energyMap,
                     dateTypeEnum,
@@ -451,6 +491,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
     private List<ComparisonItemVO> queryDefaultTopLabel(
             List<UsageCostData> usageCostDataList,
             List<UsageCostData> lastUsageCostDataList,
+            List<UsageCostData> totalUsageCostDataList,
             Map<Long, LabelConfigDO> labelMap,
             Map<Long, EnergyConfigurationDO> energyMap,
             String topLabelKey,
@@ -465,6 +506,10 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         Map<Long, List<UsageCostData>> lastUsageMap = lastUsageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
 
+        Map<Long, List<UsageCostData>> totalUsageMap = totalUsageCostDataList.stream()
+                .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
+
+
         List<ComparisonItemVO> resultList = new ArrayList<>();
 
         Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
@@ -473,13 +518,18 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         energyMap.forEach((energyId, energyConfigurationDO) -> {
 
             // 构造结果对象
-            ComparisonItemVO info = buildYoyItemVODataList(
+            ComparisonItemVO info = buildComparisonItemVODataList(
                     nowUsageMap.get(energyId),
                     lastUsageMap.get(energyId),
+                    totalUsageMap.get(energyId),
                     dateTypeEnum,
                     tableHeader,
                     isCrossYear,
                     valueExtractor);
+
+            if (Objects.isNull(info)) {
+                return;
+            }
 
             info.setEnergyId(energyId);
             info.setEnergyName(energyConfigurationDO.getEnergyName());
@@ -502,6 +552,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             List<StandingbookLabelInfoDO> standingbookIdsByLabel,
             List<UsageCostData> usageCostDataList,
             List<UsageCostData> lastUsageCostDataList,
+            List<UsageCostData> totalUsageCostDataList,
             Map<Long, LabelConfigDO> labelMap,
             Map<Long, EnergyConfigurationDO> energyMap,
             DataTypeEnum dateTypeEnum,
@@ -518,6 +569,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         Map<Long, List<UsageCostData>> standingBookUsageNowMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
         Map<Long, List<UsageCostData>> standingBookUsagePrevMap = lastUsageCostDataList.stream()
+                .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
+        Map<Long, List<UsageCostData>> standingBookUsageTotalMap = totalUsageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
 
         List<ComparisonItemVO> resultList = new ArrayList<>();
@@ -537,7 +590,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
                 List<UsageCostData> labelUsageCostDataNowList = new ArrayList<>();
                 List<UsageCostData> labelUsageCostDataPrevList = new ArrayList<>();
-
+                List<UsageCostData> labelUsageCostDataTotalList = new ArrayList<>();
                 // 获取标签关联的台账id，并取到对应的数据
                 labelInfoList.forEach(labelInfo -> {
                     List<UsageCostData> usageNowList = standingBookUsageNowMap.get(labelInfo.getStandingbookId());
@@ -549,11 +602,18 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                     if (CollUtil.isNotEmpty(usagePrevList)) {
                         labelUsageCostDataPrevList.addAll(usagePrevList);
                     }
+
+                    List<UsageCostData> usageTotalList = standingBookUsageTotalMap.get(labelInfo.getStandingbookId());
+                    if (CollUtil.isNotEmpty(usageTotalList)) {
+                        labelUsageCostDataTotalList.addAll(usageTotalList);
+                    }
                 });
 
                 // 按能源ID分组当前周期数据
                 Map<Long, List<UsageCostData>> energyUsageCostNowMap = new HashMap<>();
                 Map<Long, List<UsageCostData>> energyUsageCostPrevMap = new HashMap<>();
+                Map<Long, List<UsageCostData>> energyUsageCostTotalMap = new HashMap<>();
+
                 if (CollUtil.isNotEmpty(labelUsageCostDataNowList)) {
                     energyUsageCostNowMap = labelUsageCostDataNowList
                             .stream()
@@ -564,21 +624,32 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                             .stream()
                             .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
                 }
+                if (CollUtil.isNotEmpty(labelUsageCostDataTotalList)) {
+                    energyUsageCostTotalMap = labelUsageCostDataTotalList
+                            .stream()
+                            .collect(Collectors.groupingBy(UsageCostData::getEnergyId));
+                }
 
                 Map<Long, List<UsageCostData>> finalEnergyUsageCostNowMap = energyUsageCostNowMap;
                 Map<Long, List<UsageCostData>> finalEnergyUsageCostPrevMap = energyUsageCostPrevMap;
+                Map<Long, List<UsageCostData>> finalEnergyUsageCostTotalMap = energyUsageCostPrevMap;
 
                 energyMap.forEach((energyId, energyConfigurationDO) -> {
                     if (energyConfigurationDO == null) return;
 
                     // 构造结果对象
-                    ComparisonItemVO info = buildYoyItemVODataList(
+                    ComparisonItemVO info = buildComparisonItemVODataList(
                             finalEnergyUsageCostNowMap.get(energyId),
                             finalEnergyUsageCostPrevMap.get(energyId),
+                            finalEnergyUsageCostTotalMap.get(energyId),
                             dateTypeEnum,
                             tableHeader,
                             isCrossYear,
                             valueExtractor);
+
+                    if (Objects.isNull(info)) {
+                        return;
+                    }
 
                     info.setEnergyId(energyId);
                     info.setEnergyName(energyConfigurationDO.getEnergyName());
@@ -1126,7 +1197,6 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         // 底部合计map
         Map<String, BigDecimal> sumNowMap = new HashMap<>();
         Map<String, BigDecimal> sumPreviousMap = new HashMap<>();
-        Map<String, BigDecimal> sumProportionMap = new HashMap<>();
 
         for (ComparisonItemVO s : comparisonItemVOList) {
 
@@ -1179,7 +1249,6 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                     // 底部合计处理
                     sumNowMap.put(date, addBigDecimal(sumNowMap.get(date), now));
                     sumPreviousMap.put(date, addBigDecimal(sumPreviousMap.get(date), previous));
-                    sumProportionMap.put(date, addBigDecimal(sumProportionMap.get(date), proportion));
                 }
 
             });
@@ -1195,7 +1264,6 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             // 处理底部合计
             sumNowMap.put("sumNum", addBigDecimal(sumNowMap.get("sumNum"), sumNow));
             sumPreviousMap.put("sumNum", addBigDecimal(sumPreviousMap.get("sumNum"), sumPrevious));
-            sumProportionMap.put("sumNum", addBigDecimal(sumProportionMap.get("sumNum"), sumProportion));
             result.add(data);
         }
 
@@ -1253,8 +1321,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             BigDecimal previous = sumPreviousMap.get(date);
             bottom.add(getConvertData(unit, flag, previous));
             // 同比
-            BigDecimal proportion = sumProportionMap.get(date);
-            bottom.add(getConvertData(proportion));
+            bottom.add(getConvertData(calculateRatio(now, previous)));
         });
 
         // 底部周期合计
@@ -1265,8 +1332,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         BigDecimal sumPrevious = sumPreviousMap.get("sumNum");
         bottom.add(getConvertData(unit, flag, sumPrevious));
         // 同比
-        BigDecimal proportion = sumProportionMap.get("sumNum");
-        bottom.add(getConvertData(proportion));
+        bottom.add(getConvertData(calculateRatio(sumNow, sumPrevious)));
 
         result.add(bottom);
 
@@ -1391,13 +1457,17 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
      * @param valueExtractor
      * @return
      */
-    private ComparisonItemVO buildYoyItemVODataList(
+    private ComparisonItemVO buildComparisonItemVODataList(
             List<UsageCostData> nowUsageList,
             List<UsageCostData> lastUsageList,
+            List<UsageCostData> totalList,
             DataTypeEnum dataTypeEnum,
             List<String> tableHeader,
             boolean isCrossYear,
             Function<UsageCostData, BigDecimal> valueExtractor) {
+        if (CollUtil.isEmpty(nowUsageList) && CollUtil.isEmpty(lastUsageList)) {
+            return null;
+        }
         if (CollUtil.isEmpty(nowUsageList)) {
             nowUsageList = Collections.emptyList();
         }
@@ -1432,7 +1502,12 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
         // 汇总统计
         BigDecimal sumNow = dataList.stream().map(ComparisonDetailVO::getNow).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
-        BigDecimal sumPrevious = lastUsageList.stream().map(valueExtractor).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
+
+        BigDecimal sumPrevious = null;
+        if (CollUtil.isNotEmpty(totalList)) {
+            sumPrevious = totalList.stream().map(valueExtractor).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
+        }
+
         BigDecimal sumRatio = calculateRatio(sumNow, sumPrevious);
 
         // 构造结果对象

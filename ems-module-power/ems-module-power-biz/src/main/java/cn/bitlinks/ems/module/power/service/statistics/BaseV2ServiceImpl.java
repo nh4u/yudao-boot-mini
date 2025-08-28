@@ -77,7 +77,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
 
     public static final String NOW = "当期";
-    public static final String PREVIOUS = "上期";
+    public static final String PREVIOUS = "基准期";
     public static final String RATIO = "定基比";
     public static final String RATIO_PERCENT = "定基比(%)";
 
@@ -272,6 +272,9 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                 return;
             }
             BaseItemVO vo = buildBaseItemVODataList(nowList, lastList, dataTypeEnum, tableHeader, isCrossYear, benchmark, valueExtractor);
+            if(Objects.isNull(vo)){
+                return;
+            }
             vo.setEnergyId(energy.getId());
             vo.setEnergyName(energy.getEnergyName());
             detailList.add(vo);
@@ -292,6 +295,9 @@ public class BaseV2ServiceImpl implements BaseV2Service {
 
         List<BaseItemVO> resultList = new ArrayList<>();
         BaseItemVO info = buildBaseItemVODataList(usageCostDataList, lastUsageCostDataList, dateTypeEnum, tableHeader, isCrossYear, benchmark, valueExtractor);
+        if(Objects.isNull(info)){
+            return Collections.emptyList();
+        }
         // 构造结果对象
         Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
         LabelConfigDO topLabel = labelMap.get(topLabelId);
@@ -365,6 +371,9 @@ public class BaseV2ServiceImpl implements BaseV2Service {
 
                 // 构造结果对象
                 BaseItemVO info = buildBaseItemVODataList(labelUsageListNow, labelUsageListPrevious, dateTypeEnum, tableHeader, isCrossYear, benchmark, valueExtractor);
+                if(Objects.isNull(info)){
+                    return;
+                }
                 info.setLabel1(topLabel.getLabelName());
                 info.setLabel2(label2Name);
                 info.setLabel3(label3Name);
@@ -468,6 +477,10 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                     isCrossYear,
                     benchmark,
                     valueExtractor);
+
+            if(Objects.isNull(info)){
+                return;
+            }
 
             info.setEnergyId(energyId);
             info.setEnergyName(energyConfigurationDO.getEnergyName());
@@ -573,6 +586,10 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                             isCrossYear,
                             benchmark,
                             valueExtractor);
+
+                    if(Objects.isNull(info)){
+                        return;
+                    }
 
                     info.setEnergyId(energyId);
                     info.setEnergyName(energyConfigurationDO.getEnergyName());
@@ -1580,6 +1597,9 @@ public class BaseV2ServiceImpl implements BaseV2Service {
             boolean isCrossYear,
             Integer benchmark,
             Function<UsageCostData, BigDecimal> valueExtractor) {
+        if (CollUtil.isEmpty(nowUsageList) && CollUtil.isEmpty(lastUsageList)) {
+            return null;
+        }
         if (CollUtil.isEmpty(nowUsageList)) {
             nowUsageList = Collections.emptyList();
         }

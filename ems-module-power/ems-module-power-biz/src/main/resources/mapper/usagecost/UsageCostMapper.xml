@@ -168,24 +168,12 @@
         ELSE cost
         END
         ) AS accCost,
-        AVG(
-        CASE
-        WHEN cost &lt; 0 THEN NULL
-        ELSE cost
-        END
-        ) AS avgCost,
         SUM(
         CASE
         WHEN standard_coal_equivalent &lt; 0 THEN NULL
         ELSE standard_coal_equivalent
         END
-        ) AS accCoal,
-        AVG(
-        CASE
-        WHEN standard_coal_equivalent &lt; 0 THEN NULL
-        ELSE standard_coal_equivalent
-        END
-        ) AS avgCoal
+        ) AS accCoal
         FROM
         usage_cost
         WHERE
@@ -211,6 +199,32 @@
                 DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00')
             </when>
         </choose>
+
+    </select>
+
+    <select id="getAvgListOfHome" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsHomeChartResultVO">
+        SELECT
+        AVG(
+        CASE
+        WHEN cost &lt; 0 THEN NULL
+        ELSE cost
+        END
+        ) AS avgCost,
+        AVG(
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS avgCoal
+        FROM
+        usage_cost
+        WHERE
+        aggregate_time &gt;= #{startDate}
+        AND aggregate_time &lt;= #{endDate}
+        AND energy_id IN
+        <foreach collection="energyIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
 
     </select>
 

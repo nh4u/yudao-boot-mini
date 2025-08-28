@@ -63,6 +63,9 @@ public interface UsageCostMapper {
     List<StatisticsHomeChartResultVO> getListOfHome(@Param("queryParam") StatisticsParamV2VO paramVO, @Param("startDate") LocalDateTime startDate,
                                                     @Param("endDate") LocalDateTime endDate,
                                                     @Param("energyIds") List<Long> energyIdList);
+    StatisticsHomeChartResultVO getAvgListOfHome(@Param("startDate") LocalDateTime startDate,
+                                                    @Param("endDate") LocalDateTime endDate,
+                                                    @Param("energyIds") List<Long> energyIdList);
 
 
     List<UsageCostData> getEnergyAndSbStandardCoal(
