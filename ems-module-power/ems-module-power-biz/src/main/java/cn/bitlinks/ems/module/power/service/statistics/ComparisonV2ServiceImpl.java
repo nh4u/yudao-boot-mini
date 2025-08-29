@@ -440,8 +440,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
         // 实际用到的能源ids
         Set<Long> energyIdSet = Stream.concat(
-                        usageCostDataList.stream().map(UsageCostData::getEnergyId),
-                        lastUsageCostDataList.stream().map(UsageCostData::getEnergyId))
+                        Stream.concat(usageCostDataList.stream().map(UsageCostData::getEnergyId), lastUsageCostDataList.stream().map(UsageCostData::getEnergyId)),
+                        totalUsageCostDataList.stream().map(UsageCostData::getEnergyId))
                 .collect(Collectors.toSet());
         List<EnergyConfigurationDO> energyList = energyConfigurationService.getPureByEnergyClassify(energyIdSet, null);
         Map<Long, EnergyConfigurationDO> energyMap = energyList.stream()
