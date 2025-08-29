@@ -273,7 +273,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             List<UsageCostData> nowList = nowUsageMap.get(energy.getId());
             List<UsageCostData> lastList = lastUsageMap.get(energy.getId());
             List<UsageCostData> totalList = totalUsageMap.get(energy.getId());
-            if (CollUtil.isEmpty(nowList) && CollUtil.isEmpty(lastList)) {
+            if (CollUtil.isEmpty(nowList) && CollUtil.isEmpty(lastList) && CollUtil.isEmpty(totalList)) {
                 return;
             }
             ComparisonItemVO vo = buildComparisonItemVODataList(nowList, lastList, totalList, dataTypeEnum, tableHeader, isCrossYear, valueExtractor);
@@ -1354,7 +1354,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             List<String> tableHeader,
             boolean isCrossYear,
             Function<UsageCostData, BigDecimal> valueExtractor) {
-        if (CollUtil.isEmpty(nowUsageList) && CollUtil.isEmpty(lastUsageList)) {
+        if (CollUtil.isEmpty(nowUsageList) && CollUtil.isEmpty(lastUsageList) && CollUtil.isEmpty(totalList)) {
             return null;
         }
         if (CollUtil.isEmpty(nowUsageList)) {
