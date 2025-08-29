@@ -9,8 +9,6 @@ import cn.bitlinks.ems.module.power.controller.admin.externalapi.vo.ProductionPa
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.production.ProductionDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
-import cn.bitlinks.ems.module.power.enums.ChartSeriesTypeEnum;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants;
 import cn.bitlinks.ems.module.power.enums.StatisticsQueryType;
@@ -33,6 +31,7 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -458,13 +457,11 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
         // 6. 查询当前周期的数据
         List<StatisticsHomeChartResultVO> usageCostDataList = usageCostService.getListOfHome(paramV2VO, paramVO.getRange()[0], paramVO.getRange()[1], energyIds);
-        StatisticsHomeChartResultVO avgListOfHome = usageCostService.getAvgListOfHome(paramVO.getRange()[0], paramVO.getRange()[1], energyIds);
         // 7. 构建横轴时间（xdata）
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
         LocalDateTime lastTime = usageCostService.getLastTime(paramVO.getRange()[0], paramVO.getRange()[1], energyIds);
         result.setDataTime(lastTime);
         buildSimpleChart(result, usageCostDataList, xdata, accExtractor);
-        result.setAvg(avgExtractor.apply(avgListOfHome));
 
 
         String jsonStr = JSONUtil.toJsonStr(result);
@@ -491,6 +488,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
         List<BigDecimal> nowList = new ArrayList<>();
         List<String> timeList = new ArrayList<>();
+        BigDecimal sum = BigDecimal.ZERO;
         for (String time : xdata) {
             StatisticsHomeChartResultVO chartResultVO = nowMap.get(time);
             if (Objects.isNull(chartResultVO)) {
@@ -503,9 +501,15 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
             }
             nowList.add(value);
             timeList.add(time);
+            sum = sum.add(value);
         }
         resultVO.setXdata(timeList);
         resultVO.setYdata(nowList);
+        if (!timeList.isEmpty()) {
+            BigDecimal avg = sum.divide(new BigDecimal(timeList.size()), 2, RoundingMode.HALF_UP);
+            resultVO.setAvg(avg);
+        }
+
 
     }
 
