@@ -629,7 +629,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
                 Map<Long, List<UsageCostData>> finalEnergyUsageCostNowMap = energyUsageCostNowMap;
                 Map<Long, List<UsageCostData>> finalEnergyUsageCostPrevMap = energyUsageCostPrevMap;
-                Map<Long, List<UsageCostData>> finalEnergyUsageCostTotalMap = energyUsageCostPrevMap;
+                Map<Long, List<UsageCostData>> finalEnergyUsageCostTotalMap = energyUsageCostTotalMap;
 
                 energyMap.forEach((energyId, energyConfigurationDO) -> {
                     if (energyConfigurationDO == null) return;
