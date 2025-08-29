@@ -153,8 +153,10 @@ public class DeviationServiceImpl implements DeviationService {
         List<VoucherDO> voucherList = voucherService.getVoucherByEnergy(energyId, rangeOrigin);
         Map<String, BigDecimal> voucherUsageMap = voucherList.stream()
                 .collect(Collectors.toMap(
-                        key -> LocalDateTimeUtils.getFormatTime(key.getPurchaseTime(), DataTypeEnum.MONTH),
-                        VoucherDO::getUsage));
+                        key -> LocalDateTimeUtils.getFormatTime(key.getMonth().atStartOfDay(), DataTypeEnum.MONTH),
+                        VoucherDO::getUsage,
+                        BigDecimal::add));
+
 
         List<BigDecimal> ydata2 = xdata
                 .stream()
@@ -182,6 +184,7 @@ public class DeviationServiceImpl implements DeviationService {
         // 5.获取数据更新时间
         LocalDateTime lastTime = usageCostService.getLastTime(
                 1,
+
                 paramVO.getRange()[0],
                 paramVO.getRange()[1],
                 standingBookIds);
