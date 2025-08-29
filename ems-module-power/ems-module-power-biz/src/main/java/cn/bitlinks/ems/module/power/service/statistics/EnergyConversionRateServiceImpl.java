@@ -10,7 +10,6 @@ import cn.bitlinks.ems.module.power.enums.StatisticsQueryType;
 import cn.bitlinks.ems.module.power.enums.standingbook.StandingBookStageEnum;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
@@ -32,7 +31,6 @@ import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.CONVERSION_RATE_STR;
-import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_CONVERSION_RATE_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.ENERGY_CONVERSION_RATE_TABLE;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.getConvertData;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.safeDivide100;
@@ -114,10 +112,17 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
     private StatisticsResultV2VO<EnergyRateInfo> defaultNullData(List<String> tableHeader) {
         StatisticsResultV2VO<EnergyRateInfo> resultVO = new StatisticsResultV2VO<>();
         resultVO.setHeader(tableHeader);
+        List<EnergyRateInfoData> emptyList = new ArrayList<>();
+
+        for (String time : tableHeader) {
+            EnergyRateInfoData data = new EnergyRateInfoData();
+            data.setDate(time);
+            emptyList.add(data);
+        }
         List<EnergyRateInfo> infoList = new ArrayList<>();
 
         EnergyRateInfo osInfo = new EnergyRateInfo();
-        osInfo.setEnergyRateInfoDataList(Collections.emptyList());
+        osInfo.setEnergyRateInfoDataList(emptyList);
         osInfo.setItemName(CONVERSION_RATE_STR);
 
 
