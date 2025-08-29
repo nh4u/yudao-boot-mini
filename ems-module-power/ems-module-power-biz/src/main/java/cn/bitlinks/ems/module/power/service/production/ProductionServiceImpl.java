@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.power.controller.admin.externalapi.vo.ProductionPa
 import cn.bitlinks.ems.module.power.controller.admin.externalapi.vo.ProductionSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.production.ProductionDO;
 import cn.bitlinks.ems.module.power.dal.mysql.production.ProductionMapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -57,10 +58,10 @@ public class ProductionServiceImpl implements ProductionService {
     }
 
     @Override
-    public void updateExternalApi(ProductionSaveReqVO updateReqVO) {
+    public void updateProduction(ProductionSaveReqVO updateReqVO) {
         Long id = updateReqVO.getId();
         // Step 1: 校验凭证是否存在
-        validateExternalApiExists(id);
+        validateProductionExists(id);
 
         // Step 5: 更新凭证记录
         ProductionDO updateObj = BeanUtils.toBean(updateReqVO, ProductionDO.class);
@@ -68,23 +69,54 @@ public class ProductionServiceImpl implements ProductionService {
     }
 
     @Override
-    public void deleteExternalApi(Long id) {
+    public void deleteProduction(Long id) {
         // 删除
         productionMapper.deleteById(id);
     }
 
     @Override
-    public ProductionDO getExternalApi(Long id) {
+    public ProductionDO getProduction(Long id) {
         return productionMapper.selectById(id);
     }
 
     @Override
-    public PageResult<ProductionDO> getExternalApiPage(ProductionPageReqVO pageReqVO) {
+    public PageResult<ProductionDO> getProductionPage(ProductionPageReqVO pageReqVO) {
         return productionMapper.selectPage(pageReqVO);
     }
 
+    @Override
+    public ProductionDO getHomeProduction(ProductionPageReqVO pageReqVO) {
 
-    private void validateExternalApiExists(Long id) {
+        // 单位时间内第一条
+        ProductionDO start = productionMapper.selectOne(new LambdaQueryWrapper<ProductionDO>()
+                .between(ProductionDO::getTime, pageReqVO.getRange()[0], pageReqVO.getRange()[1])
+                .eq(ProductionDO::getSize, pageReqVO.getSize())
+                .orderByAsc(ProductionDO::getTime)
+                .last("limit 1"));
+
+        // 单位时间内最后一条
+        ProductionDO last = productionMapper.selectOne(new LambdaQueryWrapper<ProductionDO>()
+                .between(ProductionDO::getTime, pageReqVO.getRange()[0], pageReqVO.getRange()[1])
+                .eq(ProductionDO::getSize, pageReqVO.getSize())
+                .orderByDesc(ProductionDO::getTime)
+                .last("limit 1"));
+
+
+        ProductionDO result = new ProductionDO();
+
+        if (!Objects.isNull(start) && !Objects.isNull(last)) {
+
+            result.setLot(last.getLot().subtract(start.getLot()));
+            result.setTime(last.getTime());
+
+        }
+
+
+        return result;
+    }
+
+
+    private void validateProductionExists(Long id) {
         if (productionMapper.selectById(id) == null) {
             throw exception(EXTERNAL_API_NOT_EXISTS);
         }

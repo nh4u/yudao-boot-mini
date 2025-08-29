@@ -17,7 +17,7 @@ public interface ProductionService {
      * 创建外部接口
      *
      * @param createReqVO 创建信息
-     * @return ExternalApiDO
+     * @return ProductionDO
      */
     ProductionDO createProduction (@Valid ProductionSaveReqVO createReqVO);
 
@@ -26,14 +26,14 @@ public interface ProductionService {
      *
      * @param updateReqVO 更新信息
      */
-    void updateExternalApi(@Valid ProductionSaveReqVO updateReqVO);
+    void updateProduction(@Valid ProductionSaveReqVO updateReqVO);
 
     /**
      * 删除外部接口
      *
      * @param id 编号
      */
-    void deleteExternalApi(Long id);
+    void deleteProduction(Long id);
 
     /**
      * 获得外部接口
@@ -41,7 +41,7 @@ public interface ProductionService {
      * @param id 编号
      * @return 外部接口
      */
-    ProductionDO getExternalApi(Long id);
+    ProductionDO getProduction(Long id);
 
     /**
      * 获得外部接口分页
@@ -49,7 +49,8 @@ public interface ProductionService {
      * @param pageReqVO 分页查询
      * @return 外部接口分页
      */
-    PageResult<ProductionDO> getExternalApiPage(ProductionPageReqVO pageReqVO);
+    PageResult<ProductionDO> getProductionPage(ProductionPageReqVO pageReqVO);
 
+    ProductionDO getHomeProduction(ProductionPageReqVO pageReqVO);
 
 }

@@ -87,6 +87,10 @@ public interface UsageCostMapper {
                                                          @Param("endDate") LocalDateTime endDate,
                                                          @Param("energyIds") List<Long> energyIds);
 
+    BigDecimal getEnergySumStandardCoal(@Param("startDate") LocalDateTime startDate,
+                                        @Param("endDate") LocalDateTime endDate,
+                                        @Param("energyIds") List<Long> energyIds);
+
     List<UsageCostData> getUsageByStandingboookIdGroup(@Param("queryParam") BaseTimeDateParamVO paramVO,
                                                        @Param("startDate") LocalDateTime startDate,
                                                        @Param("endDate") LocalDateTime endDate,

@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
+import cn.bitlinks.ems.framework.common.enums.EnergyClassifyEnum;
 import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.util.date.DateUtils;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
@@ -13,6 +14,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabe
 import cn.bitlinks.ems.module.power.enums.ChartSeriesTypeEnum;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants;
+import cn.bitlinks.ems.module.power.enums.standingbook.StandingBookStageEnum;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
@@ -45,6 +47,8 @@ import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getF
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.COMPARISON_BASE_CHART_UTILIZATION_RATE;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.COMPARISON_BASE_TABLE_UTILIZATION_RATE;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
 /**
@@ -1270,6 +1274,251 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         return result;
     }
 
+    @Override
+    public StatisticsResultV2VO<BaseItemVO> getUtilizationRateTable(BaseStatisticsParamV2VO paramVO) {
+        // 1.校验时间范围合法性
+        LocalDateTime[] rangeOrigin = validateRange(paramVO.getRange());
+        LocalDateTime startTime = rangeOrigin[0];
+        LocalDateTime endTime = rangeOrigin[1];
+
+        // 2.2.校验时间类型
+        DataTypeEnum dataTypeEnum = validateDateType(paramVO.getDateType());
+
+        Integer benchmark = paramVO.getBenchmark();
+
+        String cacheKey = COMPARISON_BASE_TABLE_UTILIZATION_RATE + SecureUtil.md5(paramVO.toString());
+        byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
+        String cacheRes = StrUtils.decompressGzip(compressed);
+        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
+            log.info("缓存结果");
+            return JSON.parseObject(cacheRes, new TypeReference<StatisticsResultV2VO<BaseItemVO>>() {
+            });
+        }
+
+        // 构建表头
+        List<String> tableHeader = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, dataTypeEnum);
+        StatisticsResultV2VO<BaseItemVO> resultVO = new StatisticsResultV2VO<>();
+        resultVO.setHeader(tableHeader);
+
+        // 查询台账id
+        // 查询园区利用率 台账ids
+        List<Long> sbIds = statisticsCommonService.getStageEnergySbIds(StandingBookStageEnum.TERMINAL_USE.getCode(), false, null);
+        List<Long> outsourceSbIds = statisticsCommonService.getStageEnergySbIds(StandingBookStageEnum.PROCUREMENT_STORAGE.getCode(), true, EnergyClassifyEnum.OUTSOURCED);
+        List<Long> parkSbIds = statisticsCommonService.getStageEnergySbIds(StandingBookStageEnum.PROCESSING_CONVERSION.getCode(), true, EnergyClassifyEnum.PARK);
+
+        // 无台账数据直接返回
+        if (CollUtil.isEmpty(sbIds)) {
+            return defaultNullData(tableHeader);
+        }
+
+        // 查询外购
+        List<UsageCostData> outsourceList = new ArrayList<>();
+        List<UsageCostData> lastOutsourceList = new ArrayList<>();
+
+        LocalDateTime[] lastRange = LocalDateTimeUtils.getBenchmarkRange(rangeOrigin, dataTypeEnum, benchmark);
+
+        if (CollUtil.isNotEmpty(outsourceSbIds)) {
+            outsourceList = usageCostService.getList(paramVO, startTime, endTime, outsourceSbIds);
+            lastOutsourceList = usageCostService.getList(paramVO, lastRange[0], lastRange[1], outsourceSbIds);
+        }
+        // 查询园区
+        List<UsageCostData> parkList = new ArrayList<>();
+        List<UsageCostData> lastParkList = new ArrayList<>();
+        if (CollUtil.isNotEmpty(parkSbIds)) {
+            parkList = usageCostService.getList(paramVO, startTime, endTime, parkSbIds);
+            lastParkList = usageCostService.getList(paramVO, lastRange[0], lastRange[1], parkSbIds);
+        }
+        // 查询分子
+        List<UsageCostData> numeratorList = usageCostService.getList(paramVO, startTime, endTime, sbIds);
+        List<UsageCostData> lastNumeratorList = usageCostService.getList(paramVO, lastRange[0], lastRange[1], sbIds);
+        boolean isCrossYear = DateUtils.isCrossYear(startTime, endTime);
+        // 综合默认查看
+        List<BaseItemVO> statisticsInfoList = queryList(outsourceList, parkList, numeratorList, lastOutsourceList, lastParkList, lastNumeratorList, isCrossYear, tableHeader);
+
+
+        // 设置最终返回值
+        resultVO.setStatisticsInfoList(statisticsInfoList);
+        LocalDateTime lastTime1 = usageCostService.getLastTimeNoParam(
+                paramVO.getRange()[0],
+                paramVO.getRange()[1],
+                outsourceSbIds
+        );
+        LocalDateTime lastTime2 = usageCostService.getLastTimeNoParam(
+                paramVO.getRange()[0],
+                paramVO.getRange()[1],
+                parkSbIds
+        );
+        LocalDateTime lastTime3 = usageCostService.getLastTimeNoParam(
+                paramVO.getRange()[0],
+                paramVO.getRange()[1],
+                sbIds
+        );
+        // 找出三个时间中的最大值（最新时间）
+        LocalDateTime latestTime = Arrays.stream(new LocalDateTime[]{lastTime1, lastTime2, lastTime3})
+                .filter(Objects::nonNull) // 排除null
+                .max(Comparator.naturalOrder())
+                .orElse(null); // 若全部为null，返回null
+        resultVO.setDataTime(latestTime);
+        // 结果保存在缓存中
+        String jsonStr = JSONUtil.toJsonStr(resultVO);
+        byte[] bytes = StrUtils.compressGzip(jsonStr);
+        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+
+        return resultVO;
+    }
+
+    @Override
+    public ComparisonChartResultVO getUtilizationRateChart(BaseStatisticsParamV2VO paramVO) {
+
+        // 1.校验时间范围合法性
+        LocalDateTime[] rangeOrigin = validateRange(paramVO.getRange());
+        LocalDateTime startTime = rangeOrigin[0];
+        LocalDateTime endTime = rangeOrigin[1];
+
+        String cacheKey = COMPARISON_BASE_CHART_UTILIZATION_RATE + SecureUtil.md5(paramVO.toString());
+        byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
+        String cacheRes = StrUtils.decompressGzip(compressed);
+        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
+            log.info("缓存结果");
+            return JSON.parseObject(cacheRes, new TypeReference<ComparisonChartResultVO>() {
+            });
+        }
+        StatisticsResultV2VO<BaseItemVO> tableResult = getUtilizationRateTable(paramVO);
+
+        ComparisonChartResultVO resVO = new ComparisonChartResultVO();
+        List<ComparisonChartGroupVO> resultVOList = new ArrayList<>();
+        // x轴
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, DataTypeEnum.codeOf(paramVO.getDateType()));
+
+
+        List<BaseItemVO> tableDataList = tableResult.getStatisticsInfoList();
+        tableDataList.forEach(info -> {
+            List<BaseDetailVO> dateList = info.getStatisticsRatioDataList();
+            if (CollUtil.isEmpty(dateList)) {
+                return;
+            }
+
+            Map<String, BaseDetailVO> timeMap = dateList.stream()
+                    .filter(data -> data.getDate() != null)
+                    .collect(Collectors.toMap(
+                            BaseDetailVO::getDate,
+                            data -> data,
+                            (existing, replacement) -> replacement // 处理重复时间，保留后者
+                    ));
+            List<BigDecimal> nowList = new ArrayList<>();
+            List<BigDecimal> lastList = new ArrayList<>();
+            List<BigDecimal> ratioList = new ArrayList<>();
+
+            for (String time : xdata) {
+                BaseDetailVO detailVO = timeMap.get(time);
+                nowList.add(dealBigDecimalScale(detailVO.getNow(), DEFAULT_SCALE));
+                lastList.add(dealBigDecimalScale(detailVO.getPrevious(), DEFAULT_SCALE));
+                ratioList.add(dealBigDecimalScale(calculateYearOnYearRatio(detailVO.getNow(), detailVO.getPrevious()), DEFAULT_SCALE));
+            }
+
+            List<ChartSeriesItemVO> ydata = Arrays.asList(
+                    new ChartSeriesItemVO(NOW, ChartSeriesTypeEnum.BAR.getType(), nowList, null),
+                    new ChartSeriesItemVO(PREVIOUS, ChartSeriesTypeEnum.BAR.getType(), lastList, null),
+                    new ChartSeriesItemVO(RATIO, ChartSeriesTypeEnum.LINE.getType(), ratioList, 1)
+            );
+
+            ComparisonChartGroupVO group = new ComparisonChartGroupVO();
+            group.setName(info.getEnergyName());
+            group.setXdata(xdata);
+            group.setYdata(ydata);
+            resultVOList.add(group);
+
+        });
+        if (EnergyClassifyEnum.OUTSOURCED.getCode().equals(paramVO.getEnergyClassify())) {
+            resVO.setList(Collections.singletonList(resultVOList.get(0)));
+        } else if (EnergyClassifyEnum.PARK.getCode().equals(paramVO.getEnergyClassify())) {
+            resVO.setList(Collections.singletonList(resultVOList.get(1)));
+        } else {
+            resVO.setList(resultVOList);
+        }
+        resVO.setList(resultVOList);
+        resVO.setDataTime(tableResult.getDataTime());
+        String jsonStr = JSONUtil.toJsonStr(resultVOList);
+        byte[] bytes = StrUtils.compressGzip(jsonStr);
+        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+        return resVO;
+    }
+
+    @Override
+    public List<List<String>> getExcelHeader(BaseStatisticsParamV2VO paramVO) {
+        // 1.校验时间范围
+        LocalDateTime[] range = validateRange(paramVO.getRange());
+        // 2.时间处理
+        LocalDateTime startTime = range[0];
+        LocalDateTime endTime = range[1];
+
+        // 表头数据
+        List<List<String>> list = ListUtils.newArrayList();
+        // 统计周期
+        String strTime = getFormatTime(startTime) + "~" + getFormatTime(endTime);
+
+        list.add(Arrays.asList("表单名称", "统计周期", "", ""));
+        String sheetName = USAGE_RATE_BENCHMARK_ALL;
+
+        // 月份处理
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, DataTypeEnum.codeOf(paramVO.getDateType()));
+        xdata.forEach(x -> {
+            list.add(Arrays.asList(sheetName, strTime, x, NOW));
+            list.add(Arrays.asList(sheetName, strTime, x, PREVIOUS));
+            list.add(Arrays.asList(sheetName, strTime, x, RATIO_PERCENT));
+        });
+        list.add(Arrays.asList(sheetName, strTime, "周期利用率（定基比）", NOW));
+        list.add(Arrays.asList(sheetName, strTime, "周期利用率（定基比）", PREVIOUS));
+        list.add(Arrays.asList(sheetName, strTime, "周期利用率（定基比）", RATIO_PERCENT));
+        return list;
+    }
+
+    @Override
+    public List<List<Object>> getExcelData(BaseStatisticsParamV2VO paramVO) {
+        // 结果list
+        List<List<Object>> result = ListUtils.newArrayList();
+
+        StatisticsResultV2VO<BaseItemVO> resultVO = getUtilizationRateTable(paramVO);
+        List<String> tableHeader = resultVO.getHeader();
+
+        List<BaseItemVO> infoList = resultVO.getStatisticsInfoList();
+
+        for (BaseItemVO s : infoList) {
+
+            List<Object> data = ListUtils.newArrayList();
+
+            data.add(s.getEnergyName());
+
+            // 处理数据
+            List<BaseDetailVO> detailVOS = s.getStatisticsRatioDataList();
+
+            Map<String, BaseDetailVO> dateMap = detailVOS.stream()
+                    .collect(Collectors.toMap(BaseDetailVO::getDate, Function.identity()));
+
+            tableHeader.forEach(date -> {
+                BaseDetailVO baseDetailVO = dateMap.get(date);
+                if (baseDetailVO == null) {
+                    data.add(StrPool.SLASH);
+                    data.add(StrPool.SLASH);
+                    data.add(StrPool.SLASH);
+                } else {
+                    data.add(getConvertData(baseDetailVO.getNow()));
+                    data.add(getConvertData(baseDetailVO.getPrevious()));
+                    data.add(getConvertData(baseDetailVO.getRatio()));
+                }
+            });
+
+            // 处理周期合计
+            data.add(getConvertData(s.getSumNow()));
+            data.add(getConvertData(s.getSumPrevious()));
+            data.add(getConvertData(s.getSumRatio()));
+
+            result.add(data);
+        }
+
+        return result;
+    }
+
     /**
      * 校验时间范围
      *
@@ -1408,5 +1657,120 @@ public class BaseV2ServiceImpl implements BaseV2Service {
             vo.setSumRatio(dealBigDecimalScale(sumRatio, DEFAULT_SCALE));
         }
         return vo;
+    }
+
+    /**
+     * 按能源维度统计：以 energyId 为主键，构建同比统计数据
+     */
+    private List<BaseItemVO> queryList(List<UsageCostData> outsourceList,
+                                       List<UsageCostData> parkList,
+                                       List<UsageCostData> numeratorList,
+                                       List<UsageCostData> lastOutsourceList,
+                                       List<UsageCostData> lastParkList,
+                                       List<UsageCostData> lastNumeratorList,
+                                       boolean isCrossYear,
+                                       List<String> tableHeader) {
+        if (CollUtil.isEmpty(outsourceList)) {
+            outsourceList = Collections.emptyList();
+        }
+        if (CollUtil.isEmpty(parkList)) {
+            parkList = Collections.emptyList();
+        }
+        if (CollUtil.isEmpty(numeratorList)) {
+            numeratorList = Collections.emptyList();
+        }
+        if (CollUtil.isEmpty(lastOutsourceList)) {
+            lastOutsourceList = Collections.emptyList();
+        }
+        if (CollUtil.isEmpty(lastParkList)) {
+            lastParkList = Collections.emptyList();
+        }
+        if (CollUtil.isEmpty(lastNumeratorList)) {
+            lastNumeratorList = Collections.emptyList();
+        }
+        Map<String, TimeAndNumData> outsourceMap = getTimeAndNumDataMap(outsourceList, UsageCostData::getTotalStandardCoalEquivalent);
+        Map<String, TimeAndNumData> parkMap = getTimeAndNumDataMap(parkList, UsageCostData::getTotalStandardCoalEquivalent);
+        Map<String, TimeAndNumData> numeratorMap = getTimeAndNumDataMap(numeratorList, UsageCostData::getTotalStandardCoalEquivalent);
+
+        Map<String, TimeAndNumData> lastOutsourceMap = getTimeAndNumDataMap(lastOutsourceList, UsageCostData::getTotalStandardCoalEquivalent);
+        Map<String, TimeAndNumData> lastParkMap = getTimeAndNumDataMap(lastParkList, UsageCostData::getTotalStandardCoalEquivalent);
+        Map<String, TimeAndNumData> lastNumeratorMap = getTimeAndNumDataMap(lastNumeratorList, UsageCostData::getTotalStandardCoalEquivalent);
+
+        List<BaseItemVO> result = new ArrayList<>();
+
+        result.add(getUtilizationRateInfo(EnergyClassifyEnum.OUTSOURCED, outsourceMap, numeratorMap, lastOutsourceMap, lastNumeratorMap, isCrossYear, tableHeader));
+        result.add(getUtilizationRateInfo(EnergyClassifyEnum.PARK, parkMap, numeratorMap, lastParkMap, lastNumeratorMap, isCrossYear, tableHeader));
+        return result;
+
+    }
+
+    private BaseItemVO getUtilizationRateInfo(EnergyClassifyEnum energyClassifyEnum, Map<String, TimeAndNumData> denominatorMap, Map<String, TimeAndNumData> numeratorMap,
+                                              Map<String, TimeAndNumData> lastDenominatorMap, Map<String, TimeAndNumData> lastNumeratorMap, boolean isCrossYear, List<String> tableHeader) {
+
+        List<BaseDetailVO> dataList = new ArrayList<>();
+        for (String time : tableHeader) {
+
+            TimeAndNumData numeratorData = numeratorMap.get(time);
+            BigDecimal numeratorValue = Optional.ofNullable(numeratorData)
+                    .map(TimeAndNumData::getNum)
+                    .orElse(null);
+
+            TimeAndNumData denominatorData = denominatorMap.get(time);
+            BigDecimal denominatorValue = Optional.ofNullable(denominatorData)
+                    .map(TimeAndNumData::getNum)
+                    .orElse(null);
+            BigDecimal nowRatio = safeDivide100(numeratorValue, denominatorValue);
+
+            TimeAndNumData lastNumeratorData = lastNumeratorMap.get(time);
+            BigDecimal lastNumeratorValue = Optional.ofNullable(lastNumeratorData)
+                    .map(TimeAndNumData::getNum)
+                    .orElse(null);
+
+            TimeAndNumData lastDenominatorData = lastDenominatorMap.get(time);
+            BigDecimal lastDenominatorValue = Optional.ofNullable(lastDenominatorData)
+                    .map(TimeAndNumData::getNum)
+                    .orElse(null);
+            BigDecimal lastRatio = safeDivide100(lastNumeratorValue, lastDenominatorValue);
+            BigDecimal ratio = calculateYearOnYearRatio(nowRatio, lastRatio);
+            dataList.add(new BaseDetailVO(time, nowRatio, lastRatio, ratio));
+        }
+        // 汇总统计
+        BigDecimal sumDenominator = denominatorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
+        BigDecimal sumNumerator = numeratorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
+        BigDecimal nowSumRadio = safeDivide100(sumNumerator, sumDenominator);
+        BigDecimal lastSumDenominator = lastDenominatorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
+        BigDecimal lastSumNumerator = lastNumeratorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
+        BigDecimal lastSumRadio = safeDivide100(lastSumNumerator, lastSumDenominator);
+        BigDecimal ratio = calculateYearOnYearRatio(nowSumRadio, lastSumRadio);
+        // 构造结果对象
+        BaseItemVO info = new BaseItemVO();
+        info.setStatisticsRatioDataList(dataList);
+        info.setEnergyName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR);
+
+        info.setSumNow(dealBigDecimalScale(nowSumRadio, DEFAULT_SCALE));
+        if (!isCrossYear) {
+            info.setSumPrevious(dealBigDecimalScale(lastSumRadio, DEFAULT_SCALE));
+            info.setSumRatio(dealBigDecimalScale(ratio, DEFAULT_SCALE));
+        }
+        return info;
+    }
+
+
+    private StatisticsResultV2VO<BaseItemVO> defaultNullData(List<String> tableHeader) {
+        StatisticsResultV2VO<BaseItemVO> resultVO = new StatisticsResultV2VO<>();
+        resultVO.setHeader(tableHeader);
+        List<BaseItemVO> infoList = new ArrayList<>();
+
+        BaseItemVO osInfo = new BaseItemVO();
+        osInfo.setStatisticsRatioDataList(Collections.emptyList());
+        osInfo.setEnergyName(EnergyClassifyEnum.OUTSOURCED.getDetail() + UTILIZATION_RATE_STR);
+
+        BaseItemVO parkInfo = new BaseItemVO();
+        parkInfo.setStatisticsRatioDataList(Collections.emptyList());
+        parkInfo.setEnergyName(EnergyClassifyEnum.PARK.getDetail() + UTILIZATION_RATE_STR);
+        infoList.add(osInfo);
+        infoList.add(parkInfo);
+        resultVO.setStatisticsInfoList(infoList);
+        return resultVO;
     }
 }
