@@ -239,63 +239,67 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
     }
 
     private StatisticsHomeTop2ResultVO dealProductEnergyConsumption(StatisticsHomeTop2ResultVO statisticsHomeResultVO, StatisticsParamHomeVO paramVO) {
+        try {
+            ProductionPageReqVO param = BeanUtils.toBean(paramVO, ProductionPageReqVO.class);
+            param.setSize(8);
+            ProductionDO eight = productionService.getHomeProduction(param);
 
-        ProductionPageReqVO param = BeanUtils.toBean(paramVO, ProductionPageReqVO.class);
-        param.setSize(8);
-        ProductionDO eight = productionService.getHomeProduction(param);
+            param.setSize(12);
+            ProductionDO twelve = productionService.getHomeProduction(param);
 
-        param.setSize(12);
-        ProductionDO twelve = productionService.getHomeProduction(param);
+            // 综合能耗
+            // 能源处理 外购
+            List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(1);
+            if (CollUtil.isEmpty(energyList)) {
+                return statisticsHomeResultVO;
+            }
+            List<Long> energyIdList = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
 
-        // 综合能耗
-        // 能源处理 外购
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(1);
-        if (CollUtil.isEmpty(energyList)) {
+            // 时间参数准备
+            LocalDateTime[] rangeOrigin = paramVO.getRange();
+            LocalDateTime startTime = rangeOrigin[0];
+            LocalDateTime endTime = rangeOrigin[1];
+
+            // 3.1能源展示
+            BigDecimal energySumStandardCoal = usageCostService.getEnergySumStandardCoal(startTime, endTime, energyIdList);
+
+            BigDecimal sum = null;
+            // 单位产品能耗（8英寸）
+            StatisticsHomeTop2Data product8 = new StatisticsHomeTop2Data();
+            if (Objects.nonNull(eight)) {
+
+                sum = eight.getLot();
+                BigDecimal value8 = CommonUtil.divideWithScale(eight.getLot(), energySumStandardCoal, 2);
+                product8.setValue(value8);
+                product8.setDataUpdateTime(eight.getTime());
+                statisticsHomeResultVO.setProductEnergyConsumption8(product8);
+
+            }
+
+            // 单位产品能耗（12英寸）
+            StatisticsHomeTop2Data product12 = new StatisticsHomeTop2Data();
+            if (Objects.nonNull(eight)) {
+
+                sum = Objects.isNull(sum) ? twelve.getLot() : sum.add(twelve.getLot());
+                BigDecimal value12 = CommonUtil.divideWithScale(twelve.getLot(), energySumStandardCoal, 2);
+                product12.setValue(value12);
+                product12.setDataUpdateTime(eight.getTime());
+                statisticsHomeResultVO.setProductEnergyConsumption12(product12);
+
+            }
+
+            // 单位产值能耗 综合能耗÷总产值
+            StatisticsHomeTop2Data total = new StatisticsHomeTop2Data();
+            BigDecimal sumValue = CommonUtil.divideWithScale(sum, energySumStandardCoal, 2);
+            total.setValue(sumValue);
+            total.setDataUpdateTime(product8.getDataUpdateTime().compareTo(product12.getDataUpdateTime()) < 0 ? product8.getDataUpdateTime() : product12.getDataUpdateTime());
+            statisticsHomeResultVO.setOutputValueEnergyConsumption(total);
+
+            return statisticsHomeResultVO;
+        } catch (Exception e) {
+            log.error("单位产值能耗计算异常", e);
             return statisticsHomeResultVO;
         }
-        List<Long> energyIdList = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
-
-        // 时间参数准备
-        LocalDateTime[] rangeOrigin = paramVO.getRange();
-        LocalDateTime startTime = rangeOrigin[0];
-        LocalDateTime endTime = rangeOrigin[1];
-
-        // 3.1能源展示
-        BigDecimal energySumStandardCoal = usageCostService.getEnergySumStandardCoal(startTime, endTime, energyIdList);
-
-        BigDecimal sum = null;
-        // 单位产品能耗（8英寸）
-        StatisticsHomeTop2Data product8 = new StatisticsHomeTop2Data();
-        if (Objects.nonNull(eight)) {
-
-            sum = eight.getLot();
-            BigDecimal value8 = CommonUtil.divideWithScale(eight.getLot(), energySumStandardCoal, 2);
-            product8.setValue(value8);
-            product8.setDataUpdateTime(eight.getTime());
-            statisticsHomeResultVO.setProductEnergyConsumption8(product8);
-
-        }
-
-        // 单位产品能耗（12英寸）
-        StatisticsHomeTop2Data product12 = new StatisticsHomeTop2Data();
-        if (Objects.nonNull(eight)) {
-
-            sum = Objects.isNull(sum) ? twelve.getLot() : sum.add(twelve.getLot());
-            BigDecimal value12 = CommonUtil.divideWithScale(twelve.getLot(), energySumStandardCoal, 2);
-            product12.setValue(value12);
-            product12.setDataUpdateTime(eight.getTime());
-            statisticsHomeResultVO.setProductEnergyConsumption12(product12);
-
-        }
-
-        // 单位产值能耗 综合能耗÷总产值
-        StatisticsHomeTop2Data total = new StatisticsHomeTop2Data();
-        BigDecimal sumValue = CommonUtil.divideWithScale(sum, energySumStandardCoal, 2);
-        total.setValue(sumValue);
-        total.setDataUpdateTime(product8.getDataUpdateTime().compareTo(product12.getDataUpdateTime()) < 0 ? product8.getDataUpdateTime() : product12.getDataUpdateTime());
-        statisticsHomeResultVO.setOutputValueEnergyConsumption(total);
-
-        return statisticsHomeResultVO;
     }
 
     /**
