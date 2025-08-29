@@ -97,8 +97,19 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
     public void triggerWarning(List<WarningStrategyDO> warningStrategyDOS, LocalDateTime triggerTime) {
         // 查询范围里包含的所有台账分类ids + 缓存
         List<StandingbookTypeDO> typeTreeList = standingbookTypeService.getStandingbookTypeNode();
-        // 设备分类 id-name 映射
-        Map<Long, String> tyepIdNameMap = standingbookTypeService.getStandingbookTypeIdNameMap();
+        List<StandingbookTypeDO> allTypeList = standingbookTypeService.getStandingbookTypeList();
+        Map<Long, String> tyepIdNameMap;
+
+        if (CollUtil.isEmpty(allTypeList)) {
+            tyepIdNameMap = new HashMap<>();
+        } else {
+            // 映射为id -> name的Map
+            tyepIdNameMap = allTypeList.stream()
+                    .collect(Collectors.toMap(
+                            StandingbookTypeDO::getId,  // key为id
+                            StandingbookTypeDO::getName  // value为name
+                    ));
+        }
         // 获取所有台账的id-DTO 映射
         List<StandingbookDTO> list = standingbookService.getStandingbookDTOList();
         if(CollUtil.isEmpty(list)){
