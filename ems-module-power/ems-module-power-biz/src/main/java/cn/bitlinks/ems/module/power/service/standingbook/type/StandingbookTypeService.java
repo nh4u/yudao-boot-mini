@@ -45,6 +45,7 @@ public interface StandingbookTypeService {
      * @return 台账类型
      */
     StandingbookTypeDO getStandingbookType(Long id);
+
     List<StandingbookTypeDO> getStandingbookType(String name);
 
     /**
@@ -54,26 +55,33 @@ public interface StandingbookTypeService {
      * @return 台账类型列表
      */
     List<StandingbookTypeDO> getStandingbookTypeList(StandingbookTypeListReqVO listReqVO);
+
     List<StandingbookTypeDO> getStandingbookTypeNode();
 
     /**
      * 获取台账树形结构（带能源）
+     *
      * @return 台账类型列表
      */
     List<StandingbookTypeRespVO> getStandingbookTypeNodeWithEnergy();
+
     /**
      * 获得台账类型列表Map<id,DO>
+     *
      * @return map
      */
-    Map<Long,StandingbookTypeDO> getStandingbookTypeIdMap(List<Long> typeIds);
+    Map<Long, StandingbookTypeDO> getStandingbookTypeIdMap(List<Long> typeIds);
+
     /**
      * 获得台账类型列表Map<id,DO>
+     *
      * @return map
      */
     List<StandingbookTypeDO> getStandingbookTypeIdList(List<Long> typeIds);
 
     /**
      * 递归查询子节点 id
+     *
      * @param typeList
      * @param targetId
      * @return
@@ -82,6 +90,7 @@ public interface StandingbookTypeService {
 
     /**
      * 查询台账范围下是否关联台账
+     *
      * @param id 分类id
      * @return
      */
@@ -89,8 +98,10 @@ public interface StandingbookTypeService {
 
     /**
      * id-name
+     *
      * @return
      */
-    Map<Long, String> getStandingbookTypeIdNameMap();
+    List<StandingbookTypeDO> getStandingbookTypeList();
+
     List<StandingbookTypeDO> getStandingbookTypeByTopType(Integer topType);
 }
