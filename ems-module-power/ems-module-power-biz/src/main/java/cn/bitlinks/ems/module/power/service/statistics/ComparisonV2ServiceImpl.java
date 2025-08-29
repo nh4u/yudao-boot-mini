@@ -168,7 +168,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         List<UsageCostData> lastUsageCostDataList = usageCostService.getList(paramVO, lastRange[0], lastRange[1], standingBookIds);
 
         // 用于合计 所取的数据
-        LocalDateTime[] totalRange = LocalDateTimeUtils.getPreviousRangeV1(rangeOrigin, DataTypeEnum.DAY);
+        LocalDateTime[] totalRange = LocalDateTimeUtils.getPreviousRange(rangeOrigin, DataTypeEnum.DAY);
         List<UsageCostData> totalUsageCostDataList = usageCostService.getList(paramVO, totalRange[0], totalRange[1], standingBookIds);
 
 
@@ -1375,7 +1375,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         // 上期时间
         LocalDateTime[] lastRange = LocalDateTimeUtils.getPreviousRangeV2(rangeOrigin, dataTypeEnum);
         // 周期合计上期时间
-        LocalDateTime[] totalRange = LocalDateTimeUtils.getPreviousRangeV1(rangeOrigin, DataTypeEnum.DAY);
+        LocalDateTime[] totalRange = LocalDateTimeUtils.getPreviousRange(rangeOrigin, DataTypeEnum.DAY);
 
         // 查询外购
         List<UsageCostData> outsourceList = new ArrayList<>();
