@@ -420,6 +420,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<StandingBookHeaderDTO> standingBookHeaderDTOList = new ArrayList<>();
 
         for (String header : collect) {
+            header = header.trim();
             String s = header.split(" ")[0];
             s = s.trim();
             for (String value : standingBookHeaderMap.keySet()) {
