@@ -411,8 +411,8 @@ public class StandingbookServiceImpl implements StandingbookService {
             return null;
         }
 
-        // 去重
-        List<String> collect = headList.stream().distinct().collect(Collectors.toList());
+        // 去重 去空格
+        List<String> collect = headList.stream().map(String::trim).distinct().collect(Collectors.toList());
 
         // 获取已有台账数据
         Map<String, StandingBookHeaderDTO> standingBookHeaderMap = getStandingBookCodeKeyMap();
@@ -420,6 +420,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<StandingBookHeaderDTO> standingBookHeaderDTOList = new ArrayList<>();
 
         for (String header : collect) {
+            header = header.trim();
             String s = header.split(" ")[0];
             s = s.trim();
             for (String value : standingBookHeaderMap.keySet()) {
