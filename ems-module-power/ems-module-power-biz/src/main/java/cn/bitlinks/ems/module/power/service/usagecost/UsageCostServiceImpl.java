@@ -153,6 +153,12 @@ public class UsageCostServiceImpl implements UsageCostService {
 
     @Override
     @TenantIgnore
+    public BigDecimal getEnergySumStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds) {
+        return usageCostMapper.getEnergySumStandardCoal(startDate, endDate, energyIds);
+    }
+
+    @Override
+    @TenantIgnore
     public StatisticsOverviewStatisticsTableData getAggStatisticsByEnergyIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds) {
         return usageCostMapper.getAggStatisticsByEnergyIds(startDate, endDate, energyIds);
     }

@@ -11,6 +11,9 @@ public class StatisticsCacheConstants {
     public static final String COMPARISON_DISCOUNT_TABLE_COAL = "statistics:comparison:discount:table:coal:";
     public static final String COMPARISON_DISCOUNT_CHART_COST = "statistics:comparison:discount:chart:cost:";
     public static final String COMPARISON_DISCOUNT_CHART_COAL = "statistics:comparison:discount:chart:coal:";
+
+    public static final String COMPARISON_DISCOUNT_TABLE_UTILIZATION_RATE = "statistics:comparison:discount:table:utilizationRate:";
+    public static final String COMPARISON_DISCOUNT_CHART_UTILIZATION_RATE = "statistics:comparison:discount:chart:utilizationRate:";
     public static final String USAGE_COST_TABLE = "statistics:usage:cost:table:";
     public static final String USAGE_COST_CHART = "statistics:usage:cost:chart:";
     public static final String USAGE_COST_ELE_TABLE = "statistics:usage:cost:ele:table:";
@@ -58,6 +61,8 @@ public class StatisticsCacheConstants {
 
     public static final String COMPARISON_BASE_CHART_COAL = "statistics:base:discount:chart:coal:";
 
+    public static final String COMPARISON_BASE_TABLE_UTILIZATION_RATE = "statistics:base:discount:table:utilizationRate:";
+    public static final String COMPARISON_BASE_CHART_UTILIZATION_RATE = "statistics:base:discount:chart:utilizationRate:";
     public static final String DEVIATION_CHART = "statistics:usage:deviation:chart:";
 
 
