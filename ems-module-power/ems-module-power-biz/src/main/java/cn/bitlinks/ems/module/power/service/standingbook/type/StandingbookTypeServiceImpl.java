@@ -13,7 +13,6 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.Standingboo
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.templ.StandingbookTmplDaqAttrMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
 import cn.bitlinks.ems.module.power.enums.ApiConstants;
-import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.RedisKeyConstants;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
@@ -57,7 +56,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
 
     @Transactional
     @Override
-    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_TYPE_TREE, RedisKeyConstants.STANDING_BOOK_TYPE_ID_NAME_MAP}, allEntries = true)
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_TYPE_TREE, RedisKeyConstants.STANDING_BOOK_TYPE_LIST}, allEntries = true)
     public Long createStandingbookType(StandingbookTypeSaveReqVO createReqVO) {
         // 校验父级类型编号的有效性
         validateParentStandingbookType(null, createReqVO.getSuperId());
@@ -79,7 +78,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
 
     @Transactional
     @Override
-    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_TYPE_TREE, RedisKeyConstants.STANDING_BOOK_TYPE_ID_NAME_MAP}, allEntries = true)
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_TYPE_TREE, RedisKeyConstants.STANDING_BOOK_TYPE_LIST}, allEntries = true)
     public void updateStandingbookType(StandingbookTypeSaveReqVO updateReqVO) {
         // 校验台账是否存在
         StandingbookTypeDO standingbookTypeDO = standingbookTypeMapper.selectById(updateReqVO.getId());
@@ -144,7 +143,7 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
     }
 
     @Override
-    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_TYPE_TREE, RedisKeyConstants.STANDING_BOOK_TYPE_ID_NAME_MAP}, allEntries = true)
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_TYPE_TREE, RedisKeyConstants.STANDING_BOOK_TYPE_LIST}, allEntries = true)
     public void deleteStandingbookType(Long id) {
         ArrayList<Long> ids = new ArrayList<>();
         recursiveDeletion(ids, id);
@@ -390,18 +389,11 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
     }
 
     @Override
-    @Cacheable(value = RedisKeyConstants.STANDING_BOOK_TYPE_ID_NAME_MAP, key = "'all'", unless = "#result == null || #result.isEmpty()")
-    public Map<Long, String> getStandingbookTypeIdNameMap() {
-        Map<Long, String> result = new HashMap<>();
-        List<StandingbookTypeDO> typeList = standingbookTypeMapper.selectList();
-        if (CollUtil.isEmpty(typeList)) {
-            return result;
-        }
-        for (StandingbookTypeDO type : typeList) {
-            result.put(type.getId(), type.getName());
-        }
-        return result;
+    @Cacheable(value = RedisKeyConstants.STANDING_BOOK_TYPE_LIST, key = "'all'", unless = "#result == null || #result.isEmpty()")
+    public List<StandingbookTypeDO> getStandingbookTypeList() {
+        return standingbookTypeMapper.selectList();
     }
+
 
     @Override
     public List<StandingbookTypeDO> getStandingbookTypeByTopType(Integer topType) {

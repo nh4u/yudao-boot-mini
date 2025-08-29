@@ -42,4 +42,12 @@ public interface ComparisonV2Service {
     List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO, Integer flag);
 
     List<List<Object>> getExcelData(StatisticsParamV2VO paramVO, Integer flag);
+
+    StatisticsResultV2VO<ComparisonItemVO> getUtilizationRateTable(StatisticsParamV2VO paramVO);
+
+    ComparisonChartResultVO getUtilizationRateChart(StatisticsParamV2VO paramVO);
+
+    List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO);
+
+    List<List<Object>> getExcelData(StatisticsParamV2VO paramVO);
 }

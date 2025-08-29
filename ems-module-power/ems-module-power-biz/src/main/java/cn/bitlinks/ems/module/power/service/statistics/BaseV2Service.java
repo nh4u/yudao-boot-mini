@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.BaseItemVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.BaseStatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.ComparisonChartResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
@@ -44,4 +45,12 @@ public interface BaseV2Service {
     List<List<String>> getExcelHeader(BaseStatisticsParamV2VO paramVO, Integer flag);
 
     List<List<Object>> getExcelData(BaseStatisticsParamV2VO paramVO, Integer flag);
+
+    StatisticsResultV2VO<BaseItemVO> getUtilizationRateTable(BaseStatisticsParamV2VO vo);
+
+    ComparisonChartResultVO getUtilizationRateChart(BaseStatisticsParamV2VO vo);
+
+    List<List<String>> getExcelHeader(BaseStatisticsParamV2VO paramVO);
+
+    List<List<Object>> getExcelData(BaseStatisticsParamV2VO paramVO);
 }
