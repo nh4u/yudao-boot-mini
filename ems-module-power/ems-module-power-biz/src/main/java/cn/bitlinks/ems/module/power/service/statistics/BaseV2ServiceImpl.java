@@ -1467,9 +1467,9 @@ public class BaseV2ServiceImpl implements BaseV2Service {
             list.add(Arrays.asList(sheetName, strTime, x, PREVIOUS));
             list.add(Arrays.asList(sheetName, strTime, x, RATIO_PERCENT));
         });
-        list.add(Arrays.asList(sheetName, strTime, "周期合计", NOW));
-        list.add(Arrays.asList(sheetName, strTime, "周期合计", PREVIOUS));
-        list.add(Arrays.asList(sheetName, strTime, "周期合计", RATIO_PERCENT));
+        list.add(Arrays.asList(sheetName, strTime, "周期利用率（定基比）", NOW));
+        list.add(Arrays.asList(sheetName, strTime, "周期利用率（定基比）", PREVIOUS));
+        list.add(Arrays.asList(sheetName, strTime, "周期利用率（定基比）", RATIO_PERCENT));
         return list;
     }
 
