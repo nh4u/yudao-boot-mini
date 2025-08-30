@@ -389,7 +389,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 1.只有一级Label  则会拿去改一级表现下所有的标签
         // 2.一级和下级Label都没有， 则会拿能源关联的台账id所关联的标签信息
         // 3.一级和下级标签都有的话，则拿对应选中的下级标签信息
-        List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByLabel(paramVO.getTopLabel(), paramVO.getChildLabels(), standingBookIdList);
+        List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByLabel(paramVO.getTopLabel(), paramVO.getChildLabels());
 
         if (CollectionUtil.isNotEmpty(standingbookIdsByLabel)) {
             List<Long> labelSbIds = standingbookIdsByLabel.stream().map(StandingbookLabelInfoDO::getStandingbookId).collect(Collectors.toList());
