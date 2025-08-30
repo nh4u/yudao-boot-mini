@@ -1190,7 +1190,14 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                 .filter(vo -> selectedEnergyIds.contains(vo.getEnergyId()))
                 .collect(Collectors.groupingBy(
                         vo -> vo.getEnergyId() + "|" + vo.getEnergyName(),
-                        Collectors.reducing(BigDecimal.ZERO, StructureInfo::getSumNum, BigDecimal::add)
+                        Collectors.reducing(null,  // 初始值设为null
+                                StructureInfo::getSumNum,  // 提取需要累加的值
+                                (v1, v2) -> {  // 自定义累加器处理null情况
+                                    if (v1 == null && v2 == null) return null;  // 都为null则结果为null
+                                    if (v1 == null) return v2;  // v1为null则取v2
+                                    if (v2 == null) return v1;  // v2为null则取v1
+                                    return v1.add(v2);  // 都非null则正常相加
+                                })
                 ));
 
         if (CollUtil.isNotEmpty(energyMap)) {
@@ -1211,7 +1218,14 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
         Map<String, BigDecimal> labelMap = dataList.stream()
                 .collect(Collectors.groupingBy(
                         this::getFullLabelPath,
-                        Collectors.reducing(BigDecimal.ZERO, StructureInfo::getSumNum, BigDecimal::add)
+                        Collectors.reducing(null,  // 初始值设为null
+                                StructureInfo::getSumNum,  // 提取需要累加的值
+                                (v1, v2) -> {  // 自定义累加器处理null情况
+                                    if (v1 == null && v2 == null) return null;  // 都为null则结果为null
+                                    if (v1 == null) return v2;  // v1为null则取v2
+                                    if (v2 == null) return v1;  // v2为null则取v1
+                                    return v1.add(v2);  // 都非null则正常相加
+                                })
                 ));
         if (CollUtil.isNotEmpty(labelMap)) {
             return createPieChart("标签用能结构", labelMap);
@@ -1242,7 +1256,14 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
                             })
                             .collect(Collectors.groupingBy(
                                     StructureInfo::getLabel1, // 关键修改：使用一级标签分组
-                                    Collectors.reducing(BigDecimal.ZERO, StructureInfo::getSumNum, BigDecimal::add)
+                                    Collectors.reducing(null,  // 初始值设为null
+                                            StructureInfo::getSumNum,  // 提取需要累加的值
+                                            (v1, v2) -> {  // 自定义累加器处理null情况
+                                                if (v1 == null && v2 == null) return null;  // 都为null则结果为null
+                                                if (v1 == null) return v2;  // v1为null则取v2
+                                                if (v2 == null) return v1;  // v2为null则取v1
+                                                return v1.add(v2);  // 都非null则正常相加
+                                            })
                             ));
 
                     String energyName = energy.getEnergyName();
@@ -1299,7 +1320,14 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
             Map<String, BigDecimal> energyMap = labelData.stream()
                     .collect(Collectors.groupingBy(
                             vo -> vo.getEnergyId() + "|" + vo.getEnergyName(),
-                            Collectors.reducing(BigDecimal.ZERO, StructureInfo::getSumNum, BigDecimal::add)
+                            Collectors.reducing(null,  // 初始值设为null
+                                    StructureInfo::getSumNum,  // 提取需要累加的值
+                                    (v1, v2) -> {  // 自定义累加器处理null情况
+                                        if (v1 == null && v2 == null) return null;  // 都为null则结果为null
+                                        if (v1 == null) return v2;  // v1为null则取v2
+                                        if (v2 == null) return v1;  // v2为null则取v1
+                                        return v1.add(v2);  // 都非null则正常相加
+                                    })
                     ));
 
             return createPieChart(label1, energyMap);
