@@ -202,33 +202,6 @@
 
     </select>
 
-    <select id="getAvgListOfHome" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsHomeChartResultVO">
-        SELECT
-        AVG(
-        CASE
-        WHEN cost &lt; 0 THEN NULL
-        ELSE cost
-        END
-        ) AS avgCost,
-        AVG(
-        CASE
-        WHEN standard_coal_equivalent &lt; 0 THEN NULL
-        ELSE standard_coal_equivalent
-        END
-        ) AS avgCoal
-        FROM
-        usage_cost
-        WHERE
-        aggregate_time &gt;= #{startDate}
-        AND aggregate_time &lt;= #{endDate}
-        AND energy_id IN
-        <foreach collection="energyIds" item="item" open="(" separator="," close=")">
-            #{item}
-        </foreach>
-
-    </select>
-
-
     <select id="getEnergyAndSbStandardCoal" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData">
         SELECT
         energy_id,
