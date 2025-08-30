@@ -3,8 +3,10 @@ package cn.bitlinks.ems.module.power.service.standingbook;
 import cn.bitlinks.ems.framework.common.util.collection.CollectionUtils;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
 import cn.bitlinks.ems.module.power.dal.mysql.labelconfig.LabelConfigMapper;
 import cn.bitlinks.ems.module.power.enums.RedisKeyConstants;
+import cn.bitlinks.ems.module.power.service.warninginfo.WarningInfoService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -34,6 +36,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -78,20 +82,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_CREATE_TIME;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_ENERGY;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_EQUIPMENT_ID;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_EQUIPMENT_NAME;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_LABEL_INFO;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_LABEL_INFO_PREFIX;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_MEASURING_INSTRUMENT_ID;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_MEASURING_INSTRUMENT_MAME;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_SB_TYPE_ID;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_STAGE;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_TABLE_TYPE;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_TYPE_ID;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_VALUE_TYPE;
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.SB_TYPE_ATTR_TOP_TYPE;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_NOT_EXISTS;
 
 /**
@@ -131,6 +122,10 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Resource
     @Lazy
     private WarningStrategyService warningStrategyService;
+
+    @Resource
+    @Lazy
+    private WarningInfoService warningInfoService;
 
     @Lazy
     @Resource
@@ -453,28 +448,28 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Override
     public List<StandingBookTypeTreeRespVO> treeDeviceWithParam(StandingbookParamReqVO standingbookParamReqVO) {
 
-            // 查询 指定 模糊名称的重点设备
-            List<StandingBookTypeTreeRespVO> sbNodes = standingbookAttributeService.selectDeviceNodeByCodeAndName(null,standingbookParamReqVO.getActualSbName(),null);
+        // 查询 指定 模糊名称的重点设备
+        List<StandingBookTypeTreeRespVO> sbNodes = standingbookAttributeService.selectDeviceNodeByCodeAndName(null, standingbookParamReqVO.getActualSbName(), null);
 
-            if(CollUtil.isEmpty(sbNodes)){
-                return Collections.emptyList();
-            }
-            List<Long> sbIds = sbNodes.stream().map(StandingBookTypeTreeRespVO::getRawId).collect(Collectors.toList());
+        if (CollUtil.isEmpty(sbNodes)) {
+            return Collections.emptyList();
+        }
+        List<Long> sbIds = sbNodes.stream().map(StandingBookTypeTreeRespVO::getRawId).collect(Collectors.toList());
 
-            // 再进行 模糊搜索
-            List<StandingBookTypeTreeRespVO> filterNodes = standingbookAttributeService.selectDeviceNodeByCodeAndName(standingbookParamReqVO.getSbCode(), standingbookParamReqVO.getSbName(), sbIds);
-            if (CollUtil.isEmpty(filterNodes)) {
-                return Collections.emptyList();
-            }
+        // 再进行 模糊搜索
+        List<StandingBookTypeTreeRespVO> filterNodes = standingbookAttributeService.selectDeviceNodeByCodeAndName(standingbookParamReqVO.getSbCode(), standingbookParamReqVO.getSbName(), sbIds);
+        if (CollUtil.isEmpty(filterNodes)) {
+            return Collections.emptyList();
+        }
 
-            // 台账分类属性结构
-            List<StandingbookTypeDO> standingbookTypeDOTree = standingbookTypeService.getStandingbookTypeByTopType(CommonConstants.KEY_EQUIPMENT_ID.intValue());
-            return buildTreeWithDevices(standingbookTypeDOTree, filterNodes);
+        // 台账分类属性结构
+        List<StandingbookTypeDO> standingbookTypeDOTree = standingbookTypeService.getStandingbookTypeByTopType(CommonConstants.KEY_EQUIPMENT_ID.intValue());
+        return buildTreeWithDevices(standingbookTypeDOTree, filterNodes);
     }
 
     @Override
     public List<Long> getStandingBookIdsByStage(Integer stage) {
-        return standingbookMapper.selectStandingbookIdByCondition(null,null,stage,null);
+        return standingbookMapper.selectStandingbookIdByCondition(null, null, stage, null);
     }
 
 
@@ -872,6 +867,9 @@ public class StandingbookServiceImpl implements StandingbookService {
         //过滤空条件
         pageReqVO.entrySet().removeIf(entry -> StringUtils.isEmpty(entry.getValue()));
 
+        // 能耗状态
+        String standingbookStatus = pageReqVO.get(SB_STATUS);
+
         // 取出查询条件
         // 能源条件（可能为空）
         String energy = pageReqVO.get(ATTR_ENERGY);
@@ -925,6 +923,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         pageReqVO.remove(ATTR_STAGE);
         pageReqVO.remove(ATTR_TYPE_ID);
         pageReqVO.remove(ATTR_CREATE_TIME);
+        pageReqVO.remove(SB_STATUS);
         Map<String, List<String>> childrenConditions = new HashMap<>();
         Map<String, List<String>> labelInfoConditions = new HashMap<>();
         // 构造标签数组 和 属性表code条件数组
@@ -966,9 +965,85 @@ public class StandingbookServiceImpl implements StandingbookService {
         // 组装每个台账节点结构，可与上合起来优化，暂不敢动
         List<StandingbookDO> result = getByIds(sbIds);
 
+
+        if (StringUtils.isNotBlank(standingbookStatus) && CollUtil.isNotEmpty(result)) {
+            result = dealWarningStatus(result, standingbookStatus);
+        }
+
         return result;
     }
 
+    private List<StandingbookDO> dealWarningStatus(List<StandingbookDO> result, String standingbookStatus) {
+        try {
+            int status = Integer.parseInt(standingbookStatus);
+
+            List<Long> sbIds = null;
+
+            // 1.获取所有告警信息  warning的服务warning是根据加量器具编号处理的所以需要用编号做对应
+            List<WarningInfoDO> warningList = warningInfoService.getWarningList();
+
+            if (CollUtil.isNotEmpty(warningList)) {
+                // 定义正则表达式：匹配括号及其中内容
+                Pattern pattern = Pattern.compile("\\((.*?)\\)");
+                List<String> warningCodes = warningList
+                        .stream()
+                        .map(WarningInfoDO::getDeviceRel)
+                        .filter(Objects::nonNull)
+                        .map(w -> {
+                            Matcher matcher = pattern.matcher(w);
+                            List<String> codes = new ArrayList<>();
+                            while (matcher.find()) {
+                                codes.add(matcher.group(1)); // 括号内的内容，如 Low-m5
+                            }
+                            return codes;
+                        })
+                        .flatMap(List::stream)
+                        .distinct()
+                        .collect(Collectors.toList());
+
+                // 2.获取所有台账
+                List<StandingbookDTO> list = standingbookAttributeMapper.getStandingbookDTO();
+                // 2.1 告警的台账id
+                sbIds = list
+                        .stream()
+                        .filter(l -> warningCodes.contains(l.getCode()))
+                        .map(StandingbookDTO::getStandingbookId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+            }
+
+            List<Long> finalSbIds = sbIds;
+            switch (status) {
+                case 0:
+                    // 正常
+                    if (CollUtil.isEmpty(sbIds)) {
+                        return result;
+                    } else {
+                        return result
+                                .stream()
+                                .filter(r -> !finalSbIds.contains(r.getId()))
+                                .collect(Collectors.toList());
+                    }
+
+                case 1:
+                    // 异常
+                    if (CollUtil.isEmpty(sbIds)) {
+                        return Collections.emptyList();
+                    } else {
+                        return result
+                                .stream()
+                                .filter(r -> finalSbIds.contains(r.getId()))
+                                .collect(Collectors.toList());
+                    }
+                default:
+                    return result;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
 
     @Override
     public List<StandingbookWithAssociations> getStandingbookListWithAssociations(Map<String, String> pageReqVO) {
@@ -1384,7 +1459,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
         // 数据
         List<String> categories = loadAllStandingbookTypesDisplay();
-        List<String> allTypes   = loadAllLabelConfigDisplay();
+        List<String> allTypes = loadAllLabelConfigDisplay();
 
         int maxRows = Math.max(categories.size(), allTypes.size());
         for (int i = 0; i < maxRows; i++) {
@@ -1423,11 +1498,13 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     enum LedgerType {
         DEVICE, METER;
+
         static LedgerType from(String s) {
             if ("device".equalsIgnoreCase(s)) return DEVICE;
             if ("meter".equalsIgnoreCase(s)) return METER;
             throw new IllegalArgumentException("type 仅支持 device|meter, 实际: " + s);
         }
+
         String fileName() {
             return (this == DEVICE) ? "重点设备台账模版.xlsx" : "计量器具台账模版.xlsx";
         }
@@ -1446,7 +1523,9 @@ public class StandingbookServiceImpl implements StandingbookService {
                 .collect(Collectors.toList());
     }
 
-    /** 字典页第1列：ems_label_config 全部未删除 → label_name（code） */
+    /**
+     * 字典页第1列：ems_label_config 全部未删除 → label_name（code）
+     */
     private List<String> loadAllLabelConfigDisplay() {
         List<LabelConfigDO> rows = labelConfigMapper.selectList(
                 Wrappers.<LabelConfigDO>lambdaQuery()
@@ -1462,7 +1541,9 @@ public class StandingbookServiceImpl implements StandingbookService {
                 .collect(Collectors.toList());
     }
 
-    /** 字典页第2列：power_standingbook_type 全部未删除 → name（code） */
+    /**
+     * 字典页第2列：power_standingbook_type 全部未删除 → name（code）
+     */
     private List<String> loadAllStandingbookTypesDisplay() {
         List<StandingbookTypeDO> rows = standingbookTypeMapper.selectList(
                 Wrappers.<StandingbookTypeDO>lambdaQuery()

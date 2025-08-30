@@ -119,4 +119,9 @@ public class WarningInfoServiceImpl implements WarningInfoService {
         );
     }
 
+    @Override
+    public List<WarningInfoDO> getWarningList() {
+        return warningInfoMapper.getWarningList();
+    }
+
 }

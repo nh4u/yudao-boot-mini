@@ -10,6 +10,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Schema(description = "管理后台 - 台账属性 Response VO")
 @Data
@@ -53,4 +54,13 @@ public class StandingbookRespVO {
     private Long standingbookTypeId;
     @Schema(description = "计量器具类型名称")
     private String standingbookTypeName;
+
+    @Schema(description = "能耗状态")
+    private Integer standingbookStatus = 0;
+
+
+    public void setStandingbookStatus(Integer standingbookStatus) {
+        this.standingbookStatus = Objects.isNull(standingbookStatus) ? 0 : standingbookStatus;
+
+    }
 }
