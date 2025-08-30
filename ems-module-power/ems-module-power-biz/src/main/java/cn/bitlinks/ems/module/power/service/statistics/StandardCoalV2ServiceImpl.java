@@ -448,10 +448,12 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                                     list -> {
                                         BigDecimal totalConsumption = list.stream()
                                                 .map(UsageCostData::getCurrentTotalUsage)
-                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                .filter(Objects::nonNull)
+                                                .reduce(BigDecimal::add).orElse(null);
                                         BigDecimal totalStandardCoal = list.stream()
                                                 .map(UsageCostData::getTotalStandardCoalEquivalent)
-                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                .filter(Objects::nonNull)
+                                                .reduce(BigDecimal::add).orElse(null);
                                         return new UsageCostData(null, null, list.get(0).getTime(), totalConsumption, null, totalStandardCoal);
                                     }
                             )
@@ -831,10 +833,12 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                             list -> {
                                 BigDecimal totalConsumption = list.stream()
                                         .map(UsageCostData::getCurrentTotalUsage)
-                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                        .filter(Objects::nonNull)
+                                        .reduce(BigDecimal::add).orElse(null);
                                 BigDecimal totalStandardCoal = list.stream()
                                         .map(UsageCostData::getTotalStandardCoalEquivalent)
-                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                        .filter(Objects::nonNull)
+                                        .reduce(BigDecimal::add).orElse(null);
                                 return new StandardCoalInfoData(list.get(0).getTime(), totalConsumption, totalStandardCoal);
                             }
                     )
@@ -843,12 +847,14 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
             // 用量数据求和
             BigDecimal totalConsumption = dataList.stream()
                     .map(StandardCoalInfoData::getConsumption)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal::add).orElse(null);
 
             // 折标煤数据求和
             BigDecimal totalCost = dataList.stream()
                     .map(StandardCoalInfoData::getStandardCoal)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal::add).orElse(null);
 
 
             StandardCoalInfo info = new StandardCoalInfo();
@@ -945,10 +951,12 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                                     list -> {
                                         BigDecimal totalConsumption = list.stream()
                                                 .map(UsageCostData::getCurrentTotalUsage)
-                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                .filter(Objects::nonNull)
+                                                .reduce(BigDecimal::add).orElse(null);
                                         BigDecimal totalStandardCoal = list.stream()
                                                 .map(UsageCostData::getTotalStandardCoalEquivalent)
-                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                .filter(Objects::nonNull)
+                                                .reduce(BigDecimal::add).orElse(null);
                                         return new StandardCoalInfoData(list.get(0).getTime(), totalConsumption, totalStandardCoal);
                                     }
                             )
@@ -957,12 +965,14 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                     // 用量数据求和
                     BigDecimal totalConsumption = dataList.stream()
                             .map(StandardCoalInfoData::getConsumption)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                            .filter(Objects::nonNull)
+                            .reduce(BigDecimal::add).orElse(null);
 
                     // 折标煤数据求和
                     BigDecimal totalCost = dataList.stream()
                             .map(StandardCoalInfoData::getStandardCoal)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                            .filter(Objects::nonNull)
+                            .reduce(BigDecimal::add).orElse(null);
 
 
                     StandardCoalInfo info = new StandardCoalInfo();
@@ -1048,10 +1058,12 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                                 list -> {
                                     BigDecimal totalConsumption = list.stream()
                                             .map(UsageCostData::getCurrentTotalUsage)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .filter(Objects::nonNull)
+                                            .reduce(BigDecimal::add).orElse(null);
                                     BigDecimal totalStandardCoal = list.stream()
                                             .map(UsageCostData::getTotalStandardCoalEquivalent)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .filter(Objects::nonNull)
+                                            .reduce(BigDecimal::add).orElse(null);
                                     return new StandardCoalInfoData(list.get(0).getTime(), totalConsumption, totalStandardCoal);
                                 }
                         )
@@ -1063,7 +1075,8 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
 //                .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal totalStandardCoal = dataList.stream()
                 .map(StandardCoalInfoData::getStandardCoal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal::add).orElse(null);
 
         StandardCoalInfo info = new StandardCoalInfo();
         StandingbookLabelInfoDO standingbookLabelInfoDO = standingbookIdsByLabel.get(0);
@@ -1151,10 +1164,12 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                                         list -> {
                                             BigDecimal totalConsumption = list.stream()
                                                     .map(UsageCostData::getCurrentTotalUsage)
-                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                    .filter(Objects::nonNull)
+                                                    .reduce(BigDecimal::add).orElse(null);
                                             BigDecimal totalStandardCoal = list.stream()
                                                     .map(UsageCostData::getTotalStandardCoalEquivalent)
-                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                    .filter(Objects::nonNull)
+                                                    .reduce(BigDecimal::add).orElse(null);
                                             return new StandardCoalInfoData(list.get(0).getTime(), totalConsumption, totalStandardCoal);
                                         }
                                 )
@@ -1166,7 +1181,8 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
 //                        .reduce(BigDecimal.ZERO, BigDecimal::add);
                 BigDecimal totalStandardCoal = dataList.stream()
                         .map(StandardCoalInfoData::getStandardCoal)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal::add).orElse(null);
 
                 StandardCoalInfo info = new StandardCoalInfo();
                 info.setLabel1(topLabel.getLabelName());
@@ -1224,12 +1240,14 @@ public class StandardCoalV2ServiceImpl implements StandardCoalV2Service {
                     BigDecimal sumEnergyConsumption = infoDataV2List
                             .stream()
                             .map(StandardCoalInfoData::getConsumption)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                            .filter(Objects::nonNull)
+                            .reduce(BigDecimal::add).orElse(null);
 
                     BigDecimal sumEnergyStandardCoal = infoDataV2List
                             .stream()
                             .map(StandardCoalInfoData::getStandardCoal)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                            .filter(Objects::nonNull)
+                            .reduce(BigDecimal::add).orElse(null);
 
                     infoDataV2List = infoDataV2List.stream().peek(i -> {
                         i.setStandardCoal(dealBigDecimalScale(i.getStandardCoal(), DEFAULT_SCALE));
