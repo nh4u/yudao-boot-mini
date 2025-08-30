@@ -86,4 +86,14 @@ public interface WarningInfoMapper extends BaseMapperX<WarningInfoDO> {
                                        @Param("handleOpinion") String handleOpinion,
                                        @Param("groups") List<WarningInfoGroupDTO> groups);
 
+    /**
+     * 获取所有未处理的告警信息
+     *
+     * @return
+     */
+    default List<WarningInfoDO> getWarningList() {
+        return selectList(new LambdaQueryWrapperX<WarningInfoDO>()
+                .ne(WarningInfoDO::getStatus, 2)
+                .orderByDesc(WarningInfoDO::getWarningTime));
+    }
 }

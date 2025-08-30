@@ -52,7 +52,8 @@ public class StandingbookDO extends BaseDO {
     @TableField(exist = false)
     List<StandingbookAttributeDO> children = new ArrayList<>();
 
-
+    @TableField(exist = false)
+    private Integer standingbookStatus;
     public void addChild(StandingbookAttributeDO child) {
         children.add(child);
     }
