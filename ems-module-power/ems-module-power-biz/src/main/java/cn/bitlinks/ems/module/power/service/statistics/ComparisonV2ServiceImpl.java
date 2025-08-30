@@ -680,7 +680,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                                 list -> {
                                     BigDecimal totalNum = list.stream()
                                             .map(valueExtractor)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .filter(Objects::nonNull)
+                                            .reduce(BigDecimal::add).orElse(null);
                                     return new TimeAndNumData(list.get(0).getTime(), totalNum);
                                 }
                         )
@@ -705,7 +706,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                                 list -> {
                                     BigDecimal totalStandardCoal = list.stream()
                                             .map(valueExtractor)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .filter(Objects::nonNull)
+                                            .reduce(BigDecimal::add).orElse(null);
                                     return new TimeAndNumData(list.get(0).getTime(), totalStandardCoal);
                                 }
                         )
