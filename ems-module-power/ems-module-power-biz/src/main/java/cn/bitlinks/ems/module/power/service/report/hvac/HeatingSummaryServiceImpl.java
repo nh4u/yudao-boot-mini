@@ -331,7 +331,8 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
                             list -> {
                                 BigDecimal totalConsumption = list.stream()
                                         .map(UsageCostData::getCurrentTotalUsage)
-                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                        .filter(Objects::nonNull)
+                                        .reduce(BigDecimal::add).orElse(null);
                                 return new HeatingSummaryInfoData(list.get(0).getTime(), totalConsumption);
                             }
                     )
@@ -339,7 +340,8 @@ public class HeatingSummaryServiceImpl implements HeatingSummaryService {
 
             BigDecimal totalConsumption = dataList.stream()
                     .map(HeatingSummaryInfoData::getConsumption)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal::add).orElse(null);
 
             dataList = dataList.stream().peek(i -> {
                 i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));

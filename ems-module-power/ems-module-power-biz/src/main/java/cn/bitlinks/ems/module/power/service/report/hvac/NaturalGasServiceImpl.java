@@ -391,7 +391,8 @@ public class NaturalGasServiceImpl implements NaturalGasService {
                             list -> {
                                 BigDecimal totalConsumption = list.stream()
                                         .map(UsageCostData::getCurrentTotalUsage)
-                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                        .filter(Objects::nonNull)
+                                        .reduce(BigDecimal::add).orElse(null);
                                 return new NaturalGasInfoData(list.get(0).getTime(), totalConsumption);
                             }
                     )
@@ -399,7 +400,8 @@ public class NaturalGasServiceImpl implements NaturalGasService {
 
             BigDecimal totalConsumption = dataList.stream()
                     .map(NaturalGasInfoData::getConsumption)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal::add).orElse(null);
 
             dataList = dataList.stream().peek(i -> {
                 i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));

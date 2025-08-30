@@ -338,7 +338,8 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
                                     list -> {
                                         BigDecimal totalConsumption = list.stream()
                                                 .map(UsageCostData::getCurrentTotalUsage)
-                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                .filter(Objects::nonNull)
+                                                .reduce(BigDecimal::add).orElse(null);
                                         return new TimeAndNumData(list.get(0).getTime(), totalConsumption);
                                     }
                             )
@@ -352,7 +353,8 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
                                     list -> {
                                         BigDecimal totalConsumption = list.stream()
                                                 .map(UsageCostData::getCurrentTotalUsage)
-                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                .filter(Objects::nonNull)
+                                                .reduce(BigDecimal::add).orElse(null);
                                         return new TimeAndNumData(list.get(0).getTime(), totalConsumption);
                                     }
                             )
@@ -375,8 +377,10 @@ public class HvacElectricityServiceImpl implements HvacElectricityService {
             }
 
             // 汇总统计
-            BigDecimal sumNow = dataList.stream().map(HvacElectricityInfoData::getNow).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
-            BigDecimal sumPrevious = dataList.stream().map(HvacElectricityInfoData::getPrevious).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal sumNow = dataList.stream().map(HvacElectricityInfoData::getNow).filter(Objects::nonNull)
+                    .reduce(BigDecimal::add).orElse(null);
+            BigDecimal sumPrevious = dataList.stream().map(HvacElectricityInfoData::getPrevious).filter(Objects::nonNull)
+                    .reduce(BigDecimal::add).orElse(null);
             BigDecimal sumRatio = calculateYearOnYearRatio(sumNow, sumPrevious);
 
             // 构造结果对象

@@ -4,7 +4,7 @@ import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.enums.EnergyClassifyEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.EnergyRateChartResVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.EnergyRateChartResVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.enums.standingbook.StandingBookStageEnum;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;

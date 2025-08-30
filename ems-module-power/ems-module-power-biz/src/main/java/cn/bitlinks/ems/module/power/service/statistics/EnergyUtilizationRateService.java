@@ -1,6 +1,6 @@
 package cn.bitlinks.ems.module.power.service.statistics;
 
-import cn.bitlinks.ems.module.power.controller.admin.statistics.EnergyRateChartResVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.EnergyRateChartResVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.EnergyRateInfo;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;

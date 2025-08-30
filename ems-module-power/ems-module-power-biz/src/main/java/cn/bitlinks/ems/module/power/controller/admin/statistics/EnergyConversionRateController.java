@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.EnergyRateChartResVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.EnergyRateInfo;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;

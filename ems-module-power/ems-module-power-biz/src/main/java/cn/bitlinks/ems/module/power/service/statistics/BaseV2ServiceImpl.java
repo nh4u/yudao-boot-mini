@@ -648,6 +648,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                                 list -> {
                                     BigDecimal totalStandardCoal = list.stream()
                                             .map(valueExtractor)
+                                            .filter(Objects::nonNull)
                                             .reduce(BigDecimal::add).orElse(null);
                                     return new TimeAndNumData(list.get(0).getTime(), totalStandardCoal);
                                 }
