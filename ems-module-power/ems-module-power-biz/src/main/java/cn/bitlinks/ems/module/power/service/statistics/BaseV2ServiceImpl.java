@@ -904,7 +904,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                                 if (v2 == null) return v1;
                                 return v1.add(v2);
                             }
-                    ););
+                    );
         }
 
         // 构造 (labelKey -> time -> cost) 的二维映射（上周期）
@@ -918,7 +918,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                                 if (v2 == null) return v1;
                                 return v1.add(v2);
                             }
-                    ););
+                    );
         }
 
         // 构造图表组数据（每个标签一个）
