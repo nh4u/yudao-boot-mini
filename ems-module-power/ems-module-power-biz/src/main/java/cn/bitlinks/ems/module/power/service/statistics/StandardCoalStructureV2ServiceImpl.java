@@ -1315,7 +1315,8 @@ public class StandardCoalStructureV2ServiceImpl implements StandardCoalStructure
      */
     private PieChartVO createPieChart(String title, Map<String, BigDecimal> dataMap) {
         BigDecimal total = dataMap.values().stream()
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal::add).orElse(null);
 
         List<PieItemVO> items = dataMap.entrySet().stream()
                 .map(entry -> {
