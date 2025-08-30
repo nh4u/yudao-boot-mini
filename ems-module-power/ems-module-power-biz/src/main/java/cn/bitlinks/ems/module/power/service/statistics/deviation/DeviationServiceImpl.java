@@ -18,6 +18,7 @@ import cn.bitlinks.ems.module.power.service.voucher.VoucherService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.crypto.SecureUtil;
+import cn.hutool.json.JSONConfig;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.util.ListUtils;
 import com.alibaba.fastjson.JSON;
@@ -79,13 +80,12 @@ public class DeviationServiceImpl implements DeviationService {
         String cacheKey = DEVIATION_CHART + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
-//        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-//            log.info("缓存结果");
-//            // 泛型放缓存避免强转问题
-//            return JSON.parseObject(cacheRes, new TypeReference<DeviationChartResultVO<DeviationChartYInfo>>() {
-//            });
-//
-//        }
+        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
+            log.info("缓存结果");
+            // 泛型放缓存避免强转问题
+            return JSON.parseObject(cacheRes, new TypeReference<DeviationChartResultVO<DeviationChartYInfo>>() {
+            });
+        }
 
         // 3.如果没有则去数据库查询
         // 3.1. 构建返回体
@@ -191,7 +191,7 @@ public class DeviationServiceImpl implements DeviationService {
         resultVO.setDataTime(lastTime);
 
         // 6.结果保存在缓存中
-        String jsonStr = JSONUtil.toJsonStr(resultVO);
+        String jsonStr = JSONUtil.toJsonStr(resultVO, JSONConfig.create().setIgnoreNullValue(false));
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return resultVO;
