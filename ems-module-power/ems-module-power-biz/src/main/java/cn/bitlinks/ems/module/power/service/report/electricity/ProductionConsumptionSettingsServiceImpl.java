@@ -249,7 +249,8 @@ public class ProductionConsumptionSettingsServiceImpl implements ProductionConsu
                     if (CollUtil.isNotEmpty(list)) {
                         sumConsumption = list
                                 .stream()
-                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                .filter(Objects::nonNull)
+                                .reduce(BigDecimal::add).orElse(null);
                     }
 
                     List<ProductionConsumptionStatisticInfoData> dataList = statisticInfoDataList.stream().peek(i -> {

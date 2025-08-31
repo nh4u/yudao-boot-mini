@@ -113,7 +113,7 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
 
         // 过滤出选中标签的数据
         List<StructureInfo> filteredData = new ArrayList<>(dataList);
-        filteredData.removeIf(vo -> vo.getSumNum().compareTo(BigDecimal.ZERO) == 0);
+        filteredData.removeIf(vo -> Objects.isNull(vo.getSumNum()) || vo.getSumNum().compareTo(BigDecimal.ZERO) == 0);
         // 按label1分组，每个分组生成一个饼图
         Map<String, List<StructureInfo>> groupedByLabel1 = filteredData.stream()
                 .collect(Collectors.groupingBy(StructureInfo::getLabel1));
@@ -127,7 +127,14 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
             Map<String, BigDecimal> energyMap = labelData.stream()
                     .collect(Collectors.groupingBy(
                             this::getLabelLowName,
-                            Collectors.reducing(BigDecimal.ZERO, StructureInfo::getSumNum, BigDecimal::add)
+                            Collectors.reducing(null,  // 初始值设为null
+                                    StructureInfo::getSumNum,  // 提取需要累加的值
+                                    (v1, v2) -> {  // 自定义累加器处理null情况
+                                        if (v1 == null && v2 == null) return null;  // 都为null则结果为null
+                                        if (v1 == null) return v2;  // v1为null则取v2
+                                        if (v2 == null) return v1;  // v2为null则取v1
+                                        return v1.add(v2);  // 都非null则正常相加
+                                    })
                     ));
             return createPieChart(label1, energyMap);
         }).collect(Collectors.toList());
@@ -194,7 +201,14 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
                     .filter(vo -> energy.getId().equals(vo.getEnergyId()))
                     .collect(Collectors.groupingBy(
                             StructureInfo::getLabel1, // 关键修改：使用一级标签分组
-                            Collectors.reducing(BigDecimal.ZERO, StructureInfo::getSumNum, BigDecimal::add)
+                            Collectors.reducing(null,  // 初始值设为null
+                                    StructureInfo::getSumNum,  // 提取需要累加的值
+                                    (v1, v2) -> {  // 自定义累加器处理null情况
+                                        if (v1 == null && v2 == null) return null;  // 都为null则结果为null
+                                        if (v1 == null) return v2;  // v1为null则取v2
+                                        if (v2 == null) return v1;  // v2为null则取v1
+                                        return v1.add(v2);  // 都非null则正常相加
+                                    })
                     ));
 
             String energyName = energy.getEnergyName();
@@ -226,7 +240,14 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
         Map<String, BigDecimal> labelMap = dataList.stream()
                 .collect(Collectors.groupingBy(
                         this::getFullLabelPath,
-                        Collectors.reducing(BigDecimal.ZERO, StructureInfo::getSumNum, BigDecimal::add)
+                        Collectors.reducing(null,  // 初始值设为null
+                                StructureInfo::getSumNum,  // 提取需要累加的值
+                                (v1, v2) -> {  // 自定义累加器处理null情况
+                                    if (v1 == null && v2 == null) return null;  // 都为null则结果为null
+                                    if (v1 == null) return v2;  // v1为null则取v2
+                                    if (v2 == null) return v1;  // v2为null则取v1
+                                    return v1.add(v2);  // 都非null则正常相加
+                                })
                 ));
 
         return createPieChart("标签用能结构", labelMap);
@@ -246,7 +267,14 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
                 .filter(vo -> selectedEnergyIds.contains(vo.getEnergyId()))
                 .collect(Collectors.groupingBy(
                         vo -> vo.getEnergyId() + "|" + vo.getEnergyName(),
-                        Collectors.reducing(BigDecimal.ZERO, StructureInfo::getSumNum, BigDecimal::add)
+                        Collectors.reducing(null,  // 初始值设为null
+                                StructureInfo::getSumNum,  // 提取需要累加的值
+                                (v1, v2) -> {  // 自定义累加器处理null情况
+                                    if (v1 == null && v2 == null) return null;  // 都为null则结果为null
+                                    if (v1 == null) return v2;  // v1为null则取v2
+                                    if (v2 == null) return v1;  // v2为null则取v1
+                                    return v1.add(v2);  // 都非null则正常相加
+                                })
                 ));
 
         return createPieChart("能源用能结构", energyMap);
@@ -531,7 +559,8 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
                                         list -> {
                                             BigDecimal totalCost = list.stream()
                                                     .map(UsageCostData::getCurrentTotalUsage)
-                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                    .filter(Objects::nonNull)
+                                                    .reduce(BigDecimal::add).orElse(null);
                                             return new StructureInfoData(list.get(0).getTime(), totalCost, null);
                                         }
                                 )
@@ -539,7 +568,8 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
 
                 BigDecimal totalNum = dataList.stream()
                         .map(StructureInfoData::getNum)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal::add).orElse(null);
 
                 StructureInfo info = new StructureInfo();
                 info.setLabel1(topLabel.getLabelName());
@@ -666,7 +696,8 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
                                     BigDecimal totalCost = list.stream()
 
                                             .map(UsageCostData::getCurrentTotalUsage)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .filter(Objects::nonNull)
+                                            .reduce(BigDecimal::add).orElse(null);
                                     return new StructureInfoData(list.get(0).getTime(), totalCost, null);
                                 }
                         )
@@ -674,7 +705,8 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
 
         BigDecimal totalNum = dataList.stream()
                 .map(StructureInfoData::getNum)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal::add).orElse(null);
 
         StructureInfo info = new StructureInfo();
         if (standingbookIdsByLabel.size() > 0) {
@@ -770,7 +802,8 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
                             list -> {
                                 BigDecimal totalCost = list.stream()
                                         .map(UsageCostData::getCurrentTotalUsage)
-                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                        .filter(Objects::nonNull)
+                                        .reduce(BigDecimal::add).orElse(null);
                                 return new StructureInfoData(list.get(0).getTime(), totalCost, null);
                             }
                     )
@@ -779,7 +812,8 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
             // 用电量数据求和
             BigDecimal totalNum = dataList.stream()
                     .map(StructureInfoData::getNum)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal::add).orElse(null);
 
             StructureInfo info = new StructureInfo();
             info.setEnergyId(energyId);
@@ -892,7 +926,8 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
                                     list -> {
                                         BigDecimal totalCost = list.stream()
                                                 .map(UsageCostData::getCurrentTotalUsage)
-                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                .filter(Objects::nonNull)
+                                                .reduce(BigDecimal::add).orElse(null);
                                         return new StructureInfoData(list.get(0).getTime(), totalCost, null);
                                     }
                             )
@@ -901,7 +936,8 @@ public class ElectricityConsumptionServiceImpl implements ElectricityConsumption
                     // 用电量数据求和
                     BigDecimal totalNum = dataList.stream()
                             .map(StructureInfoData::getNum)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                            .filter(Objects::nonNull)
+                            .reduce(BigDecimal::add).orElse(null);
 
 
                     StructureInfo info = new StructureInfo();

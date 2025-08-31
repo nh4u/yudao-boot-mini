@@ -56,9 +56,6 @@ public interface UsageCostService {
     List<StatisticsHomeChartResultVO> getListOfHome(StatisticsParamV2VO paramV2VO, LocalDateTime startDate,
                                                     LocalDateTime endDate,
                                                     List<Long> energyIdList);
-    StatisticsHomeChartResultVO getAvgListOfHome(  LocalDateTime startDate,
-                                                    LocalDateTime endDate,
-                                                    List<Long> energyIdList);
 
 
     List<UsageCostData> getEnergyAndSbStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);

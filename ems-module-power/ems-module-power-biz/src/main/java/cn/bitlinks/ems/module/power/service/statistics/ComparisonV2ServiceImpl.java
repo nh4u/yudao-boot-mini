@@ -679,7 +679,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                                 list -> {
                                     BigDecimal totalNum = list.stream()
                                             .map(valueExtractor)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .filter(Objects::nonNull)
+                                            .reduce(BigDecimal::add).orElse(null);
                                     return new TimeAndNumData(list.get(0).getTime(), totalNum);
                                 }
                         )
@@ -704,7 +705,8 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                                 list -> {
                                     BigDecimal totalStandardCoal = list.stream()
                                             .map(valueExtractor)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .filter(Objects::nonNull)
+                                            .reduce(BigDecimal::add).orElse(null);
                                     return new TimeAndNumData(list.get(0).getTime(), totalStandardCoal);
                                 }
                         )
@@ -868,12 +870,32 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         Map<Long, Map<String, BigDecimal>> nowMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(
                         UsageCostData::getEnergyId,
-                        Collectors.toMap(UsageCostData::getTime, valueExtractor, BigDecimal::add)));
+                        Collectors.toMap(UsageCostData::getTime,
+                                // 保留原始值（可能为null）
+                                valueExtractor,
+                                // 合并逻辑：处理各种null情况
+                                (v1, v2) -> {
+                                    if (v1 == null) return v2;
+                                    if (v2 == null) return v1;
+                                    return v1.add(v2);
+                                }
+                        )
+                ));
 
         Map<Long, Map<String, BigDecimal>> lastMap = lastUsageCostDataList.stream()
                 .collect(Collectors.groupingBy(
                         UsageCostData::getEnergyId,
-                        Collectors.toMap(UsageCostData::getTime, valueExtractor, BigDecimal::add)));
+                        Collectors.toMap(UsageCostData::getTime,
+                                // 保留原始值（可能为null）
+                                valueExtractor,
+                                // 合并逻辑：处理各种null情况
+                                (v1, v2) -> {
+                                    if (v1 == null) return v2;
+                                    if (v2 == null) return v1;
+                                    return v1.add(v2);
+                                }
+                        )
+                ));
 
         List<ComparisonChartGroupVO> result = new ArrayList<>();
         for (EnergyConfigurationDO energy : energyList) {
@@ -946,7 +968,12 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             String label = standingbookLabelMap.get(data.getStandingbookId());
             if (label == null) continue;
             nowMap.computeIfAbsent(label, k -> new HashMap<>())
-                    .merge(data.getTime(), valueExtractor.apply(data), BigDecimal::add);
+                    .merge(data.getTime(), valueExtractor.apply(data),  (v1, v2) -> {
+                                if (v1 == null) return v2;
+                                if (v2 == null) return v1;
+                                return v1.add(v2);
+                            }
+                    );
         }
 
         // 构造 (labelKey -> time -> cost) 的二维映射（上周期）
@@ -955,7 +982,12 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             String label = standingbookLabelMap.get(data.getStandingbookId());
             if (label == null) continue;
             lastMap.computeIfAbsent(label, k -> new HashMap<>())
-                    .merge(data.getTime(), valueExtractor.apply(data), BigDecimal::add);
+                    .merge(data.getTime(), valueExtractor.apply(data),  (v1, v2) -> {
+                                if (v1 == null) return v2;
+                                if (v2 == null) return v1;
+                                return v1.add(v2);
+                            }
+                    );
         }
 
         // 构造图表组数据（每个标签一个）
@@ -1005,12 +1037,26 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         Map<String, BigDecimal> nowMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getTime,
                         Collectors.mapping(valueExtractor,
-                                Collectors.reducing(BigDecimal.ZERO, BigDecimal::add))));
+                                // 初始值为null，自定义累加逻辑处理null情况
+                                Collectors.reducing(null, (v1, v2) -> {
+                                    if (v1 == null) return v2;
+                                    if (v2 == null) return v1;
+                                    return v1.add(v2);
+                                })
+                        )
+                ));
 
         Map<String, BigDecimal> lastMap = lastUsageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getTime,
                         Collectors.mapping(valueExtractor,
-                                Collectors.reducing(BigDecimal.ZERO, BigDecimal::add))));
+                                // 初始值为null，自定义累加逻辑处理null情况
+                                Collectors.reducing(null, (v1, v2) -> {
+                                    if (v1 == null) return v2;
+                                    if (v2 == null) return v1;
+                                    return v1.add(v2);
+                                })
+                        )
+                ));
 
         List<BigDecimal> nowList = new ArrayList<>();
         List<BigDecimal> lastList = new ArrayList<>();

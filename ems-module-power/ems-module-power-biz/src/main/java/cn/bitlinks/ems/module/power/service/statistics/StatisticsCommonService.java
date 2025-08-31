@@ -214,38 +214,35 @@ public class StatisticsCommonService {
         return standingbookLabelInfoService.getByValuesSelected(childLabels);
     }
 
+//    /**
+//     * 根据筛选条件筛选台账ID
+//     *
+//     * @return
+//     */
+//    public List<StandingbookLabelInfoDO> getStandingbookIdsByLabel(String topLabel, String childLabels) {
+//
+//        if (CharSequenceUtil.isBlank(topLabel)) {
+//            return Collections.emptyList();
+//        } else {
+//            if (CharSequenceUtil.isBlank(childLabels)) {
+//                //只有顶级标签
+//                return standingbookLabelInfoService.getByLabelNames(Collections.singletonList(topLabel));
+//            } else {
+//                // 只有子标签
+//                List<String> childLabelValues = StrSplitter.split(childLabels, "#", 0, true, true);
+//                return standingbookLabelInfoService.getByValues(childLabelValues);
+//            }
+//        }
+//    }
+
     /**
      * 根据筛选条件筛选台账ID
      *
      * @return
      */
     public List<StandingbookLabelInfoDO> getStandingbookIdsByLabel(String topLabel, String childLabels) {
-
-        if (CharSequenceUtil.isBlank(topLabel)) {
-            return Collections.emptyList();
-        } else {
-            if (CharSequenceUtil.isBlank(childLabels)) {
-                //只有顶级标签
-                return standingbookLabelInfoService.getByLabelNames(Collections.singletonList(topLabel));
-            } else {
-                // 只有子标签
-                List<String> childLabelValues = StrSplitter.split(childLabels, "#", 0, true, true);
-                return standingbookLabelInfoService.getByValues(childLabelValues);
-            }
-        }
-    }
-
-    /**
-     * 根据筛选条件筛选台账ID
-     *
-     * @return
-     */
-    public List<StandingbookLabelInfoDO> getStandingbookIdsByLabel(String topLabel, String childLabels, List<Long> standingBookIdList) {
-        if (StrUtil.isBlank(topLabel) && StrUtil.isBlank(childLabels) && CollUtil.isEmpty(standingBookIdList)) {
-            return Collections.emptyList();
-        }
         if (StrUtil.isBlank(topLabel) && StrUtil.isBlank(childLabels)) {
-            return standingbookLabelInfoService.getByStandingBookIds(standingBookIdList);
+            return Collections.emptyList();
         }
 
         //根据标签获取台账
@@ -357,7 +354,7 @@ public class StatisticsCommonService {
 
 
     public static void main(String[] args) {
-     /*   List<StandingbookLabelInfoDO> byLabelNames = new ArrayList<>();
+       List<StandingbookLabelInfoDO> byLabelNames = new ArrayList<>();
         Set<String> childLabelValues = new HashSet<>();
         //childLabelValues.add("2");
         childLabelValues.add("2,897");
@@ -388,7 +385,7 @@ public class StatisticsCommonService {
         byLabelNames.add(infoDO2);
         byLabelNames.add(infoDO3);
         byLabelNames.add(infoDO4);
-       // byLabelNames.add(infoDO5);
+        byLabelNames.add(infoDO5);
         byLabelNames.add(infoDO6);
         byLabelNames.add(infoDO7);
         byLabelNames.add(infoDO8);
@@ -404,58 +401,9 @@ public class StatisticsCommonService {
         List<StandingbookLabelInfoDO> tt = filterStandingbookLabelInfoDO(standingbookLabelInfoList, childLabelValues, CHILD_LABEL_REGEX_ADD);
         tt.forEach(a -> {
             System.out.println(a.getValue());
-        });*/
-
-
-        List<MeasurementAssociationDO> associations = Arrays.asList(
-                new MeasurementAssociationDO(90L, 1L, 2L),
-                new MeasurementAssociationDO(91L, 2L, 3L),
-                new MeasurementAssociationDO(92L, 3L, 4L), // 循环
-                new MeasurementAssociationDO(93L, 4L, 5L),
-                new MeasurementAssociationDO(94L, 6L, 7L),
-                new MeasurementAssociationDO(94L, 7L, 3L)
-        );
-
-        Map<Long, StandingbookEnergyTypeVO> energyMap = new HashMap<>();
-        energyMap.put(1L, new StandingbookEnergyTypeVO(1L, 2L, 100L)); // 电
-        energyMap.put(2L, new StandingbookEnergyTypeVO(2L, 2L, 100L)); // 电
-        energyMap.put(3L, new StandingbookEnergyTypeVO(3L, 2L, 100L)); // 电
-        energyMap.put(4L, new StandingbookEnergyTypeVO(4L, 2L, 200L)); // 水
-        energyMap.put(5L, new StandingbookEnergyTypeVO(5L, 2L, 300L));
-        energyMap.put(6L, new StandingbookEnergyTypeVO(6L, 2L, 400L)); // 能源不同，6 是根节点
-        energyMap.put(7L, new StandingbookEnergyTypeVO(7L, 2L, 100L)); // 能源不同，6 是根节点
-
-        Set<Long> allNodes = new HashSet<>(energyMap.keySet());
-        Map<Long, Set<Long>> memo = new HashMap<>();
-        Set<Long> finalRoots = new HashSet<>();
-
-
-        // 构建下级 -> 上级映射
-        Map<Long, Set<Long>> childToParents = new HashMap<>();
-        for (MeasurementAssociationDO assoc : associations) {
-            childToParents.computeIfAbsent(assoc.getMeasurementId(), k -> new HashSet<>()).add(assoc.getMeasurementInstrumentId());
-        }
-        for (Long node : allNodes) {
-            Set<Long> roots = findRoot(node, childToParents, energyMap, new HashSet<>(), memo);
-            finalRoots.addAll(roots);
-        }
-
-        System.out.println("根节点: " + finalRoots);
-
-
-        Map<Long, Set<Long>> energyToRoots = new HashMap<>(); // 能源ID -> 根节点集合
-        //Map<Long, Set<Long>> memo = new HashMap<>();
-
-        for (Long node : energyMap.keySet()) {
-            Set<Long> roots = findRoot(node, childToParents, energyMap, new HashSet<>(), memo);
-            StandingbookEnergyTypeVO standingbookEnergyTypeVO = energyMap.get(node);
-            energyToRoots.computeIfAbsent(standingbookEnergyTypeVO.getEnergyId(), k -> new HashSet<>()).addAll(roots);
-        }
-
-        // 打印每个能源类型对应的根节点
-        energyToRoots.forEach((energy, roots) -> {
-            System.out.println("能源类型: " + energy + " 根节点: " + roots);
         });
+
+
     }
 
 

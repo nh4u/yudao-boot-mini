@@ -265,10 +265,12 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
                         list -> {
                             BigDecimal totalConsumption = list.stream()
                                     .map(UsageCostData::getCurrentTotalUsage)
-                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                    .filter(Objects::nonNull)
+                                    .reduce(BigDecimal::add).orElse(null);
                             BigDecimal totalCost = list.stream()
                                     .map(UsageCostData::getTotalCost)
-                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                    .filter(Objects::nonNull)
+                                    .reduce(BigDecimal::add).orElse(null);
                             return new ConsumptionStatisticsInfoData(list.get(0).getTime(), totalConsumption, totalCost);
                         }
                 )
@@ -276,10 +278,12 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
         BigDecimal totalConsumption = dataList.stream()
                 .map(ConsumptionStatisticsInfoData::getConsumption)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal::add).orElse(null);
         BigDecimal totalCost = dataList.stream()
                 .map(ConsumptionStatisticsInfoData::getMoney)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal::add).orElse(null);
 
         ConsumptionStatisticsInfo info = new ConsumptionStatisticsInfo();
 
@@ -358,10 +362,12 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
                                         list -> {
                                             BigDecimal totalConsumption = list.stream()
                                                     .map(UsageCostData::getCurrentTotalUsage)
-                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                    .filter(Objects::nonNull)
+                                                    .reduce(BigDecimal::add).orElse(null);
                                             BigDecimal totalCost = list.stream()
                                                     .map(UsageCostData::getTotalCost)
-                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                    .filter(Objects::nonNull)
+                                                    .reduce(BigDecimal::add).orElse(null);
                                             return new ConsumptionStatisticsInfoData(list.get(0).getTime(), totalConsumption, totalCost);
                                         }
                                 )
@@ -369,10 +375,12 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
                 BigDecimal totalConsumption = dataList.stream()
                         .map(ConsumptionStatisticsInfoData::getConsumption)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal::add).orElse(null);
                 BigDecimal totalCost = dataList.stream()
                         .map(ConsumptionStatisticsInfoData::getMoney)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal::add).orElse(null);
 
                 ConsumptionStatisticsInfo info = new ConsumptionStatisticsInfo();
                 info.setLabel1(topLabel.getLabelName());
@@ -446,10 +454,12 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
                                 list -> {
                                     BigDecimal totalConsumption = list.stream()
                                             .map(UsageCostData::getCurrentTotalUsage)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .filter(Objects::nonNull)
+                                            .reduce(BigDecimal::add).orElse(null);
                                     BigDecimal totalCost = list.stream()
                                             .map(UsageCostData::getTotalCost)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .filter(Objects::nonNull)
+                                            .reduce(BigDecimal::add).orElse(null);
                                     return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, totalCost);
                                 }
                         )
@@ -460,7 +470,8 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 //                .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal totalCost = dataList.stream()
                 .map(StatisticInfoDataV2::getMoney)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal::add).orElse(null);
 
         StatisticsInfoV2 info = new StatisticsInfoV2();
 
@@ -543,10 +554,12 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
                                         list -> {
                                             BigDecimal totalConsumption = list.stream()
                                                     .map(UsageCostData::getCurrentTotalUsage)
-                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                    .filter(Objects::nonNull)
+                                                    .reduce(BigDecimal::add).orElse(null);
                                             BigDecimal totalCost = list.stream()
                                                     .map(UsageCostData::getTotalCost)
-                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                                    .filter(Objects::nonNull)
+                                                    .reduce(BigDecimal::add).orElse(null);
                                             return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, totalCost);
                                         }
                                 )
@@ -558,7 +571,8 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 //                        .reduce(BigDecimal.ZERO, BigDecimal::add);
                 BigDecimal totalCost = dataList.stream()
                         .map(StatisticInfoDataV2::getMoney)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal::add).orElse(null);
 
                 StatisticsInfoV2 info = new StatisticsInfoV2();
                 info.setLabel1(topLabel.getLabelName());
@@ -629,8 +643,10 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
                             ))
                             .collect(Collectors.toList());
 
-                    BigDecimal sumEnergyConsumption = infoDataV2List.stream().map(StatisticInfoDataV2::getConsumption).reduce(BigDecimal.ZERO, BigDecimal::add);
-                    BigDecimal sumEnergyMoney = infoDataV2List.stream().map(StatisticInfoDataV2::getMoney).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal sumEnergyConsumption = infoDataV2List.stream().map(StatisticInfoDataV2::getConsumption).filter(Objects::nonNull)
+                            .reduce(BigDecimal::add).orElse(null);
+                    BigDecimal sumEnergyMoney = infoDataV2List.stream().map(StatisticInfoDataV2::getMoney).filter(Objects::nonNull)
+                            .reduce(BigDecimal::add).orElse(null);
 
                     infoDataV2List = infoDataV2List.stream().peek(i -> {
                         i.setMoney(dealBigDecimalScale(i.getMoney(), scale));

@@ -1,6 +1,5 @@
-package cn.bitlinks.ems.module.power.controller.admin.statistics;
+package cn.bitlinks.ems.module.power.controller.admin.statistics.vo;
 
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.EnergyRateChartResultVO;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
