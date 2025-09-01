@@ -1,17 +1,14 @@
 package cn.bitlinks.ems.module.power.controller.admin.standingbook;
 
-import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
-import cn.hutool.core.collection.CollUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,10 +16,8 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.UnsupportedEncodingException;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 
@@ -84,31 +79,7 @@ public class StandingbookController {
     @Operation(summary = "获得台账列表")
     //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")
     public CommonResult<MinitorRespVO> getMinitorList(@Valid @RequestBody Map<String, String> pageReqVO) {
-        List<StandingbookDO> list = standingbookService.getStandingbookList(pageReqVO);
-        //补充能源信息
-        List<StandingbookRespVO> respVOS = BeanUtils.toBean(list, StandingbookRespVO.class);
-        standingbookService.sbOtherField(respVOS);
-
-        MinitorRespVO minitorRespVO = new MinitorRespVO();
-
-        if (CollUtil.isNotEmpty(respVOS)) {
-
-            // 异常的在最前面
-            List<StandingbookRespVO> collect = respVOS
-                    .stream()
-                    .sorted(Comparator.comparing(StandingbookRespVO::getStandingbookStatus).reversed())
-                    .collect(Collectors.toList());
-
-            // 数量处理
-            int total = respVOS.size();
-            int count = (int) respVOS.stream().filter(r -> r.getStandingbookStatus() == 1).count();
-
-            minitorRespVO.setTotal(total);
-            minitorRespVO.setWarning(count);
-            minitorRespVO.setNormal(total - count);
-            minitorRespVO.setStandingbookRespVOList(collect);
-        }
-
+        MinitorRespVO minitorRespVO = standingbookService.getMinitorList(pageReqVO);
         return success(minitorRespVO);
     }
 
