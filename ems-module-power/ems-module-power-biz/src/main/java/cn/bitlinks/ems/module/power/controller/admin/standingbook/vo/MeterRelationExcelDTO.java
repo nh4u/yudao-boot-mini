@@ -14,7 +14,7 @@ public class MeterRelationExcelDTO {
      * 计量器具编号（必填项）
      * 模板列名：必须为“计量器具编号”
      */
-    @ExcelProperty(value = "计量器具编号", index = 0) // index 确保列顺序匹配
+    @ExcelProperty(value = "*计量器具编号", index = 0) // index 确保列顺序匹配
     private String meterCode;
 
     /**
@@ -36,7 +36,7 @@ public class MeterRelationExcelDTO {
      * 模板列名：必须为“环节”
      */
     @ExcelProperty(value = "环节", index = 3)
-    private String link;
+    private String stage;
 
     /**
      * 行号（EasyExcel 解析时自动填充，用于错误提示）

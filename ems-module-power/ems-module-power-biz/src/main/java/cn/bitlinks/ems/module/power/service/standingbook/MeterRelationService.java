@@ -1,24 +1,23 @@
 package cn.bitlinks.ems.module.power.service.standingbook;
 
+import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
+import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.MeterRelationExcelDTO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
 import cn.hutool.core.collection.CollUtil;
-import com.alibaba.excel.EasyExcel;
-import com.baomidou.mybatisplus.core.toolkit.StringPool;
+import cn.hutool.core.text.CharSequenceUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.STAGE;
+import static cn.bitlinks.ems.module.power.enums.RedisKeyConstants.STANDING_BOOK_EXCEL_RELATION;
 
 /**
  * 计量器具关联关系业务服务（实际业务需对接数据库/缓存）
@@ -29,6 +28,8 @@ public class MeterRelationService {
     @Resource
     @Lazy
     private StandingbookService standingbookService;
+    @Resource
+    private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
 
     /**
      * 校验计量器具编号是否在系统中存在
@@ -84,8 +85,9 @@ public class MeterRelationService {
      * 批量暂存合法数据（避免内存溢出，解析完成后统一入库）
      */
     public void batchSaveTemp(List<MeterRelationExcelDTO> validDataList) {
-        // 实际逻辑：存入临时表或Redis缓存（示例仅打印日志） todo
-        log.info("暂存合法数据{}条：{}", validDataList.size(), validDataList);
+        // 实际逻辑：存入Redis缓存
+        byteArrayRedisTemplate.opsForValue().set(STANDING_BOOK_EXCEL_RELATION, StrUtils.compressGzip(JsonUtils.toJsonString(validDataList)));
+        log.info("暂存合法数据{}条", validDataList.size());
     }
 
     /**
@@ -93,69 +95,39 @@ public class MeterRelationService {
      */
     public int batchSaveToDb() {
         // 实际逻辑：从临时表/缓存读取数据，批量插入正式表 todo
+        byte[] compressed = byteArrayRedisTemplate.opsForValue().get(STANDING_BOOK_EXCEL_RELATION);
+
+        // 先判断缓存是否存在，避免空指针
+        if (compressed == null) {
+            return 0;
+        }
+        try {
+            String cacheRes = StrUtils.decompressGzip(compressed);
+            if (CharSequenceUtil.isNotEmpty(cacheRes)) {
+                // 用 Jackson 处理泛型转换
+                List<MeterRelationExcelDTO> serverStandingbookList = JsonUtils.parseArray(cacheRes, MeterRelationExcelDTO.class);
+
+                // 真正入库逻辑
+                List<StandingbookDTO> allStandingbookDTOList = standingbookService.getStandingbookDTOList();
+                Map<String, Long> sbCodeIdMapping = allStandingbookDTOList.stream()
+                        .collect(Collectors.toMap(
+                                StandingbookDTO::getCode,
+                                StandingbookDTO::getStandingbookId
+                        ));
+                // 1. 添加下级计量器具的关联关系，从编码转成对应id
+                // 2. 添加关联设备关联关系，从编码转成对应id
+                // 3. 给所有计量器具添加环节，环节从汉字转成对应的
+
+
+
+                return serverStandingbookList.size();
+            }
+        } catch (Exception e) {
+            log.error("合法数据入库失败", e);
+        }
 
         log.info("合法数据全部入库完成");
         return 100;
     }
 
-    public String importMeterRelation(MultipartFile file) {
-        // 1. 校验文件合法性
-        if (file.isEmpty()) {
-            return "文件不能为空";
-        }
-        String fileName = file.getOriginalFilename();
-        if (!fileName.endsWith(".xlsx") && !fileName.endsWith(".xls")) {
-            return "请上传Excel格式文件（.xlsx/.xls）";
-        }
-        // 2. 初始化解析监听器（注入业务服务）
-        MeterRelationExcelListener listener = new MeterRelationExcelListener(this);
-
-        // return "";
-        try {
-            // 3. 调用EasyExcel解析文件（指定监听、模型、是否忽略标题行）
-            EasyExcel.read(file.getInputStream(), MeterRelationExcelDTO.class, listener)
-                    .sheet() // 读取第一个sheet
-                    .headRowNumber(1) // 第1行为标题行（忽略不解析）
-                    .doRead(); // 开始解析
-
-            // 4. 处理校验结果
-            List<Integer> errorRowNums = listener.getErrorRowNums();
-            if (!errorRowNums.isEmpty()) {
-                // 4.1 错误行号处理：超过50行用“...”代替
-                String errorMsg = buildErrorMsg(errorRowNums);
-                return errorMsg;
-            }
-
-            // 4.2 无错误：执行最终入库
-            int importCount = batchSaveToDb();
-            return "导入成功，共导入" + importCount + "条数据";
-
-        } catch (IOException e) {
-            log.error("Excel文件解析失败", e);
-            return "文件解析失败，请检查文件完整性";
-        } catch (Exception e) {
-            log.error("导入过程异常", e);
-            return "导入异常：" + e.getMessage();
-        }
-    }
-
-    /**
-     * 构建错误提示信息（符合需求：逐行提示，超过50行用“...”）
-     */
-    private String buildErrorMsg(List<Integer> errorRowNums) {
-        int errorCount = errorRowNums.size();
-        if (errorCount == 0) {
-            return StringPool.EMPTY;
-        }
-        String rowStr = errorRowNums.stream()
-                .limit(50)
-                .map(String::valueOf)
-                .collect(Collectors.joining(StringPool.COMMA));
-
-        // 超过50行时补充“...”
-        if (errorRowNums.size() > 50) {
-            rowStr += "...";
-        }
-        return rowStr;
-    }
 }

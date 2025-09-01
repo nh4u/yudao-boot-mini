@@ -84,11 +84,11 @@ public class MeterRelationExcelListener implements ReadListener<MeterRelationExc
         String meterCode = dto.getMeterCode();
         String subMeterCodes = dto.getSubMeterCodes();
         String relatedDevice = dto.getRelatedDevice();
-        String link = dto.getLink();
+        String stage = dto.getStage();
 
         // 校验1：计量器具编号为空，其余字段有数据 → 失败
         if (StringUtils.isEmpty(meterCode)) {
-            if (StringUtils.hasText(subMeterCodes) || StringUtils.hasText(relatedDevice) || StringUtils.hasText(link)) {
+            if (StringUtils.hasText(subMeterCodes) || StringUtils.hasText(relatedDevice) || StringUtils.hasText(stage)) {
                 log.error("第{}行校验失败：计量器具编号为空，但其余字段有数据", rowNum);
                 return false;
             }
@@ -126,8 +126,8 @@ public class MeterRelationExcelListener implements ReadListener<MeterRelationExc
             return false;
         }
         // 3.4 校验环节是否存在（非必填，有值才校验）
-        if (StringUtils.hasText(link) && !meterRelationService.checkLinkExists(link)) {
-            log.error("第{}行校验失败：环节{}在系统中不存在", rowNum, link);
+        if (StringUtils.hasText(stage) && !meterRelationService.checkLinkExists(stage)) {
+            log.error("第{}行校验失败：环节{}在系统中不存在", rowNum, stage);
             return false;
         }
 
