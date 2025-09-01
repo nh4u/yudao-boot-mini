@@ -1383,7 +1383,8 @@ public class StandingbookServiceImpl implements StandingbookService {
             // 列宽
             sheet.setColumnWidth(0, 28 * 256); // 计量器具编号
             sheet.setColumnWidth(1, 36 * 256); // 下级计量器具编号
-            sheet.setColumnWidth(2, 16 * 256); // 环节
+            sheet.setColumnWidth(2, 36 * 256); // 关联设备
+            sheet.setColumnWidth(3, 16 * 256); // 环节
 
             // —— 样式
             // 说明样式
@@ -1424,7 +1425,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             noteCell.setCellValue("说明：\n1、*为必填；\n2、下级计量器具有多个时请以英文“;”隔开。");
             noteCell.setCellStyle(noteStyle);
             sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 2));
-            for (int c = 1; c <= 2; c++) {
+            for (int c = 1; c <= 3; c++) {
                 Cell tmp = noteRow.createCell(c);
                 tmp.setCellStyle(noteStyle);
             }
@@ -1432,7 +1433,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             // —— 表头（第2行）
             Row header = sheet.createRow(1);
             header.setHeightInPoints(20);
-            String[] headers = {"*计量器具编号", "下级计量器具编号", "环节"};
+            String[] headers = {"*计量器具编号", "下级计量器具编号","关联设备", "环节"};
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = header.createCell(i);
                 cell.setCellValue(headers[i]);
@@ -1445,6 +1446,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             String[] demoValues = {
                     "FMCS_051F_BLR01_FT11_PV",
                     "FMCS_051F_BLR01_FT12_PV;5103Fab",
+                    "",
                     "购入存储"
             };
             for (int i = 0; i < demoValues.length; i++) {
