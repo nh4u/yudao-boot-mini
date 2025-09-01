@@ -10,6 +10,7 @@ import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 台账属性 Mapper
@@ -62,4 +63,7 @@ public interface StandingbookAttributeMapper extends BaseMapperX<StandingbookAtt
      * @return
      */
     List<StandingbookDTO> getStandingbookDTO();
+
+    Set<String> getStandingbookCodeDeviceSet();
+    Set<String> getStandingbookCodeMeasurementSet();
 }

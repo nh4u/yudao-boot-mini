@@ -374,6 +374,18 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
     @Override
+    @Cacheable(value = RedisKeyConstants.STANDING_BOOK_DEVICE_CODE_LIST, key = "'all'", unless = "#result == null || #result.isEmpty()")
+    public Set<String> getStandingbookCodeDeviceSet() {
+        return standingbookAttributeMapper.getStandingbookCodeDeviceSet();
+    }
+
+    @Override
+    @Cacheable(value = RedisKeyConstants.STANDING_BOOK_MEASUREMENT_CODE_LIST, key = "'all'", unless = "#result == null || #result.isEmpty()")
+    public Set<String> getStandingbookCodeMeasurementSet() {
+        return standingbookAttributeMapper.getStandingbookCodeMeasurementSet();
+    }
+
+    @Override
     @Cacheable(value = RedisKeyConstants.STANDING_BOOK_LIST, key = "'all'", unless = "#result == null || #result.isEmpty()")
     public List<StandingbookDTO> getStandingbookDTOList() {
         return standingbookAttributeMapper.getStandingbookDTO();
@@ -608,7 +620,9 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_LIST,
+            RedisKeyConstants.STANDING_BOOK_MEASUREMENT_CODE_LIST,
+            RedisKeyConstants.STANDING_BOOK_DEVICE_CODE_LIST}, allEntries = true)
     public Long createStandingbook(Map<String, String> createReqVO) {
         // 插入
         if (!createReqVO.containsKey(ATTR_TYPE_ID)) {
@@ -697,8 +711,9 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
-
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_LIST,
+            RedisKeyConstants.STANDING_BOOK_MEASUREMENT_CODE_LIST,
+            RedisKeyConstants.STANDING_BOOK_DEVICE_CODE_LIST}, allEntries = true)
     public void updateStandingbook(Map<String, String> updateReqVO) {
         // 校验存在
         validateStandingbookExists(Long.valueOf(updateReqVO.get("id")));
@@ -737,7 +752,9 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Transactional
     @Override
-    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_LIST,
+            RedisKeyConstants.STANDING_BOOK_MEASUREMENT_CODE_LIST,
+            RedisKeyConstants.STANDING_BOOK_DEVICE_CODE_LIST}, allEntries = true)
     public void deleteStandingbookBatch(List<Long> ids) {
         if (CollUtil.isEmpty(ids)) {
             return;
@@ -1433,7 +1450,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             // —— 表头（第2行）
             Row header = sheet.createRow(1);
             header.setHeightInPoints(20);
-            String[] headers = {"*计量器具编号", "下级计量器具编号","关联设备", "环节"};
+            String[] headers = {"*计量器具编号", "下级计量器具编号", "关联设备", "环节"};
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = header.createCell(i);
                 cell.setCellValue(headers[i]);

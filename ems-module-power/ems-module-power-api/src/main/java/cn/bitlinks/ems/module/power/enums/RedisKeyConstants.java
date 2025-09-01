@@ -13,6 +13,8 @@ public interface RedisKeyConstants {
     String STANDING_BOOK_TYPE_TREE = "power:standingbook:type:tree";
 
     String STANDING_BOOK_LIST = "power:standingbook:list";
+    String STANDING_BOOK_DEVICE_CODE_LIST = "power:standingbook:device:list";
+    String STANDING_BOOK_MEASUREMENT_CODE_LIST = "power:standingbook:measurement:list";
 
     /**
      * 有效时间默认为1小时，修改成10分钟
