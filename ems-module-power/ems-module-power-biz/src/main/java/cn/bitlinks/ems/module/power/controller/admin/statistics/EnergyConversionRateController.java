@@ -58,7 +58,7 @@ public class EnergyConversionRateController {
     @PostMapping("/export")
     @Operation(summary = "导出")
     @ApiAccessLog(operateType = EXPORT)
-    public void exportCopExcel(@Valid @RequestBody StatisticsParamV2VO paramVO,
+    public void exportCopExcel(@Valid @RequestBody BaseTimeDateParamVO paramVO,
                                HttpServletResponse response) throws IOException {
         StatisticsParamV2VO vo = BeanUtils.toBean(paramVO, StatisticsParamV2VO.class);
         vo.setQueryType(StatisticsQueryType.COMPREHENSIVE_VIEW.getCode());

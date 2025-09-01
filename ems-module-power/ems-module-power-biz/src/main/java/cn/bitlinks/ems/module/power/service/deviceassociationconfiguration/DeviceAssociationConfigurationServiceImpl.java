@@ -10,12 +10,14 @@ import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 /**
  * 设备关联配置 Service 实现类
@@ -32,50 +34,28 @@ public class DeviceAssociationConfigurationServiceImpl implements DeviceAssociat
     private MeasurementAssociationMapper measurementAssociationMapper;
 
     @Override
+    @Transactional
     public void updAssociationMeasurementInstrument(MeasurementAssociationSaveReqVO createReqVO) {
-
-        List<Long> ids = createReqVO.getMeasurementIds();
-
-        List<MeasurementAssociationDO> list = measurementAssociationMapper.selectList(new LambdaQueryWrapper<MeasurementAssociationDO>()
+        // 删除原有关联关系
+        measurementAssociationMapper.delete(new LambdaQueryWrapper<MeasurementAssociationDO>()
                 .eq(MeasurementAssociationDO::getMeasurementInstrumentId, createReqVO.getMeasurementInstrumentId()));
-        if (CollUtil.isEmpty(list)) {
-            ids.forEach(id -> {
-                MeasurementAssociationDO measurementAssociationDO = new MeasurementAssociationDO();
-                measurementAssociationDO.setMeasurementId(id);
-                measurementAssociationDO.setMeasurementInstrumentId(createReqVO.getMeasurementInstrumentId());
-                list.add(measurementAssociationDO);
-            });
-            measurementAssociationMapper.insertBatch(list);
+        List<Long> ids = createReqVO.getMeasurementIds();
+        Set<Long> idsSet = new HashSet<>(ids);
+        if (CollUtil.isEmpty(idsSet)) {
             return;
         }
-        // 1. 找出需要删除的关联
-        List<Long> toDelete = list.stream()
-                .filter(association -> !ids.contains(association.getMeasurementId()))
-                .map(MeasurementAssociationDO::getId)
-                .collect(Collectors.toList());
-        if (CollUtil.isNotEmpty(toDelete)) {
-            measurementAssociationMapper.deleteByIds(toDelete);
-        }
-
-        // 2. 找出需要新增的关联 ID
-        List<Long> toAddIds = ids.stream()
-                .filter(id -> list.stream().noneMatch(association -> association.getMeasurementId().equals(id)))
-                .collect(Collectors.toList());
-        if (CollUtil.isEmpty(toAddIds)) {
-            return;
-        }
-        List<MeasurementAssociationDO> toAddList = new ArrayList<>();
-        toAddIds.forEach(id -> {
+        List<MeasurementAssociationDO> list = new ArrayList<>();
+        idsSet.forEach(id -> {
             MeasurementAssociationDO measurementAssociationDO = new MeasurementAssociationDO();
             measurementAssociationDO.setMeasurementId(id);
             measurementAssociationDO.setMeasurementInstrumentId(createReqVO.getMeasurementInstrumentId());
-            toAddList.add(measurementAssociationDO);
+            list.add(measurementAssociationDO);
         });
-        measurementAssociationMapper.insertBatch(toAddList);
-
+        measurementAssociationMapper.insertBatch(list);
     }
 
     @Override
+    @Transactional
     public void updAssociationDevice(DeviceAssociationSaveReqVO createReqVO) {
         MeasurementDeviceDO existing = measurementDeviceMapper.selectOne(new LambdaQueryWrapper<MeasurementDeviceDO>()
                 .eq(MeasurementDeviceDO::getMeasurementInstrumentId, createReqVO.getMeasurementInstrumentId()));
