@@ -56,7 +56,7 @@ public class StandingbookRespVO {
     private String standingbookTypeName;
 
     @Schema(description = "能耗状态")
-    private Integer standingbookStatus = 0;
+    private Integer standingbookStatus;
 
 
     public void setStandingbookStatus(Integer standingbookStatus) {
