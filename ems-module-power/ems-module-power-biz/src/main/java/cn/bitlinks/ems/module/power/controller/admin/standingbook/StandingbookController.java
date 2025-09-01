@@ -105,7 +105,7 @@ public class StandingbookController {
 
             minitorRespVO.setTotal(total);
             minitorRespVO.setWarning(count);
-            minitorRespVO.setWarning(total - count);
+            minitorRespVO.setNormal(total - count);
             minitorRespVO.setStandingbookRespVOList(collect);
         }
 
