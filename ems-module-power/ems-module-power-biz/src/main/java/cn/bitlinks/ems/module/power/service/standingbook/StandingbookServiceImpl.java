@@ -25,16 +25,7 @@ import org.springframework.validation.annotation.Validated;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -867,9 +858,6 @@ public class StandingbookServiceImpl implements StandingbookService {
         //过滤空条件
         pageReqVO.entrySet().removeIf(entry -> StringUtils.isEmpty(entry.getValue()));
 
-        // 能耗状态
-        String standingbookStatus = pageReqVO.get(SB_STATUS);
-
         // 取出查询条件
         // 能源条件（可能为空）
         String energy = pageReqVO.get(ATTR_ENERGY);
@@ -923,7 +911,6 @@ public class StandingbookServiceImpl implements StandingbookService {
         pageReqVO.remove(ATTR_STAGE);
         pageReqVO.remove(ATTR_TYPE_ID);
         pageReqVO.remove(ATTR_CREATE_TIME);
-        pageReqVO.remove(SB_STATUS);
         Map<String, List<String>> childrenConditions = new HashMap<>();
         Map<String, List<String>> labelInfoConditions = new HashMap<>();
         // 构造标签数组 和 属性表code条件数组
@@ -965,12 +952,141 @@ public class StandingbookServiceImpl implements StandingbookService {
         // 组装每个台账节点结构，可与上合起来优化，暂不敢动
         List<StandingbookDO> result = getByIds(sbIds);
 
+        return result;
+    }
 
+    @Override
+    public MinitorRespVO getMinitorList(Map<String, String> pageReqVO) {
+        //过滤空条件
+        pageReqVO.entrySet().removeIf(entry -> StringUtils.isEmpty(entry.getValue()));
+
+        // 能耗状态
+        String standingbookStatus = pageReqVO.get(SB_STATUS);
+
+        MinitorRespVO minitorRespVO = new MinitorRespVO();
+
+        // 取出查询条件
+        // 能源条件（可能为空）
+        String energy = pageReqVO.get(ATTR_ENERGY);
+        List<Long> energyTypeIds = new ArrayList<>();
+        if (StringUtils.isNotEmpty(energy)) {
+            //逗号分割的数据 转为Long类型列表
+            List<Long> energyIds = Arrays.stream(energy.split(StringPool.COMMA))
+                    .map(Long::valueOf)
+                    .collect(Collectors.toList());
+            energyTypeIds = standingbookTmplDaqAttrMapper.selectSbTypeIdsByEnergyIds(energyIds);
+            if (CollUtil.isEmpty(energyTypeIds)) {
+                return minitorRespVO;
+            }
+        }
+
+        // 分类多选条件(可能为空)
+        List<String> sbTypeIdList = new ArrayList<>();
+        String sbTypeIds = pageReqVO.get(ATTR_SB_TYPE_ID);
+        if (StringUtils.isNotEmpty(sbTypeIds)) {
+            sbTypeIdList = Arrays.stream(sbTypeIds.split(StringPool.HASH))
+                    .map(s -> s.split(StringPool.COMMA))
+                    .map(Arrays::stream)
+                    .map(stream -> stream.reduce((first, second) -> second).orElse(""))
+                    .collect(Collectors.toList());
+        }
+
+        // 根据分类和topType查询台账
+        List<StandingbookTypeDO> sbTypeDOS = standingbookTypeMapper.selectList(new LambdaQueryWrapperX<StandingbookTypeDO>()
+                .inIfPresent(StandingbookTypeDO::getId, sbTypeIdList)
+                .inIfPresent(StandingbookTypeDO::getId, energyTypeIds)
+                .eqIfPresent(StandingbookTypeDO::getTopType, pageReqVO.get(SB_TYPE_ATTR_TOP_TYPE)));
+        if (CollUtil.isEmpty(sbTypeDOS)) {
+            return minitorRespVO;
+        }
+        List<Long> sbTypeIdLongList = sbTypeDOS.stream().map(StandingbookTypeDO::getId).collect(Collectors.toList());
+        // 分类单选条件(可能为空)
+        Long typeId = pageReqVO.get(ATTR_TYPE_ID) != null ? Long.valueOf(pageReqVO.get(ATTR_TYPE_ID)) : null;
+
+
+        // 环节单选条件(可能为空)
+        Integer stage = pageReqVO.get(ATTR_STAGE) != null ? Integer.valueOf(pageReqVO.get(ATTR_STAGE)) : null;
+        // 创建时间条件(可能为空)
+        String createTimes = pageReqVO.get(ATTR_CREATE_TIME);
+        List<String> createTimeArr = new ArrayList<>();
+        if (StringUtils.isNotEmpty(createTimes)) {
+            createTimeArr = Arrays.asList(createTimes.split(StringPool.COMMA));
+        }
+        pageReqVO.remove(ATTR_ENERGY);
+        pageReqVO.remove(SB_TYPE_ATTR_TOP_TYPE);
+        pageReqVO.remove(ATTR_SB_TYPE_ID);
+        pageReqVO.remove(ATTR_STAGE);
+        pageReqVO.remove(ATTR_TYPE_ID);
+        pageReqVO.remove(ATTR_CREATE_TIME);
+        pageReqVO.remove(SB_STATUS);
+        Map<String, List<String>> childrenConditions = new HashMap<>();
+        Map<String, List<String>> labelInfoConditions = new HashMap<>();
+        // 构造标签数组 和 属性表code条件数组
+        pageReqVO.forEach((k, v) -> {
+            if (k.startsWith(ATTR_LABEL_INFO_PREFIX)) {
+                if (v.contains(StringPool.HASH)) {
+                    labelInfoConditions.put(k, Arrays.asList(v.split(StringPool.HASH)));
+                } else {
+                    labelInfoConditions.put(k, Collections.singletonList(v));
+                }
+            } else {
+                if (v.contains(StringPool.COMMA)) {
+                    childrenConditions.put(k, Arrays.asList(v.split(StringPool.COMMA)));
+                } else {
+                    childrenConditions.put(k, Collections.singletonList(v));
+                }
+            }
+        });
+        // 根据台账属性查询台账id
+        List<Long> sbIds = standingbookMapper.selectStandingbookIdByCondition(typeId, sbTypeIdLongList, stage, createTimeArr);
+        if (CollUtil.isEmpty(sbIds)) {
+            return minitorRespVO;
+        }
+        if (CollUtil.isNotEmpty(labelInfoConditions)) {
+            // 根据标签属性查询台账id
+            List<Long> labelSbIds = standingbookLabelInfoMapper.selectStandingbookIdByLabelCondition(labelInfoConditions, sbIds);
+            sbIds.retainAll(labelSbIds);
+            if (CollUtil.isEmpty(sbIds)) {
+                return minitorRespVO;
+            }
+        }
+        // 根据台账id、台账属性条件查询台账属性
+        List<Long> attrSbIds = standingbookAttributeService.getStandingbookIdByCondition(childrenConditions, sbIds);
+
+        sbIds.retainAll(attrSbIds);
+        if (CollUtil.isEmpty(sbIds)) {
+            return minitorRespVO;
+        }
+        // 组装每个台账节点结构，可与上合起来优化，暂不敢动
+        List<StandingbookDO> result = getByIds(sbIds);
+        Integer total = result.size();
+        Integer warning = 0;
         if (StringUtils.isNotBlank(standingbookStatus) && CollUtil.isNotEmpty(result)) {
             result = dealWarningStatus(result, standingbookStatus);
         }
 
-        return result;
+        //补充能源信息
+        List<StandingbookRespVO> respVOS = BeanUtils.toBean(result, StandingbookRespVO.class);
+        sbOtherField(respVOS);
+
+        if (CollUtil.isNotEmpty(respVOS)) {
+
+            // 异常的在最前面
+            List<StandingbookRespVO> collect = respVOS
+                    .stream()
+                    .sorted(Comparator.comparing(StandingbookRespVO::getStandingbookStatus).reversed())
+                    .collect(Collectors.toList());
+
+            // 数量处理
+            warning = (int) respVOS.stream().filter(r -> r.getStandingbookStatus() == 1).count();
+
+            minitorRespVO.setWarning(warning);
+            minitorRespVO.setStandingbookRespVOList(collect);
+        }
+        minitorRespVO.setTotal(total);
+        minitorRespVO.setNormal(total - warning);
+
+        return minitorRespVO;
     }
 
     private List<StandingbookDO> dealWarningStatus(List<StandingbookDO> result, String standingbookStatus) {
