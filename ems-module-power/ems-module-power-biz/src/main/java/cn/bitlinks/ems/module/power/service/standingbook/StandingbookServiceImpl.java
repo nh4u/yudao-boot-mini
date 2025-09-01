@@ -263,6 +263,7 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
     @Override
+    @Transactional
     public void updAssociationMeasurementInstrument(MeasurementVirtualAssociationSaveReqVO createReqVO) {
         List<Long> ids = createReqVO.getMeasurementIds();
 
