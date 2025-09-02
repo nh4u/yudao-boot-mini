@@ -1,16 +1,51 @@
 package cn.bitlinks.ems.module.power.service.standingbook;
 
 import cn.bitlinks.ems.framework.common.util.collection.CollectionUtils;
+import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.AssociationData;
+import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.measurementdevice.MeasurementDeviceDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.measurementvirtualassociation.MeasurementVirtualAssociationDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.acquisition.StandingbookAcquisitionDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
+import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.labelconfig.LabelConfigMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.measurementassociation.MeasurementAssociationMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.measurementdevice.MeasurementDeviceMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.measurementvirtualassociation.MeasurementVirtualAssociationMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookLabelInfoMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.templ.StandingbookTmplDaqAttrMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
+import cn.bitlinks.ems.module.power.enums.CommonConstants;
+import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
 import cn.bitlinks.ems.module.power.enums.RedisKeyConstants;
+import cn.bitlinks.ems.module.power.enums.standingbook.StandingbookTypeTopEnum;
+import cn.bitlinks.ems.module.power.service.doublecarbon.DoubleCarbonService;
+import cn.bitlinks.ems.module.power.service.energyparameters.EnergyParametersService;
+import cn.bitlinks.ems.module.power.service.standingbook.acquisition.StandingbookAcquisitionService;
+import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
+import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
 import cn.bitlinks.ems.module.power.service.warninginfo.WarningInfoService;
+import cn.bitlinks.ems.module.power.service.warningstrategy.WarningStrategyService;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -22,6 +57,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -32,45 +69,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletResponse;
-
-import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.AssociationData;
-import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.measurementdevice.MeasurementDeviceDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.measurementvirtualassociation.MeasurementVirtualAssociationDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.acquisition.StandingbookAcquisitionDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
-import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
-import cn.bitlinks.ems.module.power.dal.mysql.measurementassociation.MeasurementAssociationMapper;
-import cn.bitlinks.ems.module.power.dal.mysql.measurementdevice.MeasurementDeviceMapper;
-import cn.bitlinks.ems.module.power.dal.mysql.measurementvirtualassociation.MeasurementVirtualAssociationMapper;
-import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookLabelInfoMapper;
-import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
-import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
-import cn.bitlinks.ems.module.power.dal.mysql.standingbook.templ.StandingbookTmplDaqAttrMapper;
-import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookTypeMapper;
-import cn.bitlinks.ems.module.power.enums.CommonConstants;
-import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
-import cn.bitlinks.ems.module.power.enums.standingbook.StandingbookTypeTopEnum;
-import cn.bitlinks.ems.module.power.service.energyparameters.EnergyParametersService;
-import cn.bitlinks.ems.module.power.service.standingbook.acquisition.StandingbookAcquisitionService;
-import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
-import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
-import cn.bitlinks.ems.module.power.service.warningstrategy.WarningStrategyService;
-import cn.hutool.core.collection.CollUtil;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.*;
@@ -129,6 +127,9 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Lazy
     private EnergyParametersService energyParametersService;
 
+    @Resource
+    @Lazy
+    private DoubleCarbonService doubleCarbonService;
 
     @Override
     public Long count(Long typeId) {
@@ -373,6 +374,18 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
     @Override
+    @Cacheable(value = RedisKeyConstants.STANDING_BOOK_DEVICE_CODE_LIST, key = "'all'", unless = "#result == null || #result.isEmpty()")
+    public Set<String> getStandingbookCodeDeviceSet() {
+        return standingbookAttributeMapper.getStandingbookCodeDeviceSet();
+    }
+
+    @Override
+    @Cacheable(value = RedisKeyConstants.STANDING_BOOK_MEASUREMENT_CODE_LIST, key = "'all'", unless = "#result == null || #result.isEmpty()")
+    public Set<String> getStandingbookCodeMeasurementSet() {
+        return standingbookAttributeMapper.getStandingbookCodeMeasurementSet();
+    }
+
+    @Override
     @Cacheable(value = RedisKeyConstants.STANDING_BOOK_LIST, key = "'all'", unless = "#result == null || #result.isEmpty()")
     public List<StandingbookDTO> getStandingbookDTOList() {
         return standingbookAttributeMapper.getStandingbookDTO();
@@ -607,7 +620,9 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_LIST,
+            RedisKeyConstants.STANDING_BOOK_MEASUREMENT_CODE_LIST,
+            RedisKeyConstants.STANDING_BOOK_DEVICE_CODE_LIST}, allEntries = true)
     public Long createStandingbook(Map<String, String> createReqVO) {
         // 插入
         if (!createReqVO.containsKey(ATTR_TYPE_ID)) {
@@ -620,13 +635,15 @@ public class StandingbookServiceImpl implements StandingbookService {
             throw exception(ErrorCodeConstants.STANDINGBOOK_TYPE_NOT_EXISTS);
         }
         // 判断设备编号/计量器具编号是否重复
+        String standingbookCode = StringPool.EMPTY;
         if (StandingbookTypeTopEnum.EQUIPMENT.getCode().equals(sb.getTopType())) {
-            String attrEquipmentId = createReqVO.get(ATTR_EQUIPMENT_ID);
-            validateSbCodeUnique(attrEquipmentId);
+            standingbookCode = createReqVO.get(ATTR_EQUIPMENT_ID);
+            validateSbCodeUnique(standingbookCode);
         } else if (StandingbookTypeTopEnum.MEASURING_INSTRUMENT.getCode().equals(sb.getTopType())) {
-            String measuringInstrumentId = createReqVO.get(ATTR_MEASURING_INSTRUMENT_ID);
-            validateSbCodeUnique(measuringInstrumentId);
+            standingbookCode = createReqVO.get(ATTR_MEASURING_INSTRUMENT_ID);
+            validateSbCodeUnique(standingbookCode);
         }
+
         // 新增
         StandingbookDO standingbook = new StandingbookDO();
         standingbook.setTypeId(typeId);
@@ -654,6 +671,10 @@ public class StandingbookServiceImpl implements StandingbookService {
         // 新增台账属性
         standingbookAttributeMapper.insertBatch(children);
 
+        // 新增台账-双碳映射
+        if (StandingbookTypeTopEnum.EQUIPMENT.getCode().equals(sb.getTopType()) || StandingbookTypeTopEnum.MEASURING_INSTRUMENT.getCode().equals(sb.getTopType())) {
+            doubleCarbonService.addMapping(standingbookCode);
+        }
         return standingbook.getId();
     }
 
@@ -690,8 +711,9 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
-
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_LIST,
+            RedisKeyConstants.STANDING_BOOK_MEASUREMENT_CODE_LIST,
+            RedisKeyConstants.STANDING_BOOK_DEVICE_CODE_LIST}, allEntries = true)
     public void updateStandingbook(Map<String, String> updateReqVO) {
         // 校验存在
         validateStandingbookExists(Long.valueOf(updateReqVO.get("id")));
@@ -730,7 +752,9 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Transactional
     @Override
-    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_LIST}, allEntries = true)
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_LIST,
+            RedisKeyConstants.STANDING_BOOK_MEASUREMENT_CODE_LIST,
+            RedisKeyConstants.STANDING_BOOK_DEVICE_CODE_LIST}, allEntries = true)
     public void deleteStandingbookBatch(List<Long> ids) {
         if (CollUtil.isEmpty(ids)) {
             return;
@@ -1237,11 +1261,12 @@ public class StandingbookServiceImpl implements StandingbookService {
 
                     // 查询下级计量器具名称、编码
                     List<StandingbookAttributeDO> attributeDOS = finalMeasurementAttrsMap.get(association.getMeasurementId());
-                    Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream().filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode())).findFirst();
-                    Optional<StandingbookAttributeDO> codeOptional = attributeDOS.stream().filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode())).findFirst();
-
-                    associationData.setStandingbookName(nameOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
-                    associationData.setStandingbookCode(codeOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
+                    if(CollUtil.isNotEmpty(attributeDOS)){
+                        Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream().filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode())).findFirst();
+                        Optional<StandingbookAttributeDO> codeOptional = attributeDOS.stream().filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode())).findFirst();
+                        associationData.setStandingbookName(nameOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
+                        associationData.setStandingbookCode(codeOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
+                    }
                     children.add(associationData);
                 });
                 standingbookWithAssociations.setChildren(children);
@@ -1371,12 +1396,13 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Override
     public void exportMeterTemplate(HttpServletResponse response) {
         try (Workbook wb = new XSSFWorkbook()) {
-            Sheet sheet = wb.createSheet("导入模板");
+            Sheet sheet = wb.createSheet();
 
             // 列宽
             sheet.setColumnWidth(0, 28 * 256); // 计量器具编号
             sheet.setColumnWidth(1, 36 * 256); // 下级计量器具编号
-            sheet.setColumnWidth(2, 16 * 256); // 环节
+            sheet.setColumnWidth(2, 36 * 256); // 关联设备
+            sheet.setColumnWidth(3, 16 * 256); // 环节
 
             // —— 样式
             // 说明样式
@@ -1417,7 +1443,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             noteCell.setCellValue("说明：\n1、*为必填；\n2、下级计量器具有多个时请以英文“;”隔开。");
             noteCell.setCellStyle(noteStyle);
             sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 2));
-            for (int c = 1; c <= 2; c++) {
+            for (int c = 1; c <= 3; c++) {
                 Cell tmp = noteRow.createCell(c);
                 tmp.setCellStyle(noteStyle);
             }
@@ -1425,7 +1451,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             // —— 表头（第2行）
             Row header = sheet.createRow(1);
             header.setHeightInPoints(20);
-            String[] headers = {"*计量器具编号", "下级计量器具编号", "环节"};
+            String[] headers = {"*计量器具编号", "下级计量器具编号", "关联设备", "环节"};
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = header.createCell(i);
                 cell.setCellValue(headers[i]);
@@ -1438,6 +1464,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             String[] demoValues = {
                     "FMCS_051F_BLR01_FT11_PV",
                     "FMCS_051F_BLR01_FT12_PV;5103Fab",
+                    "",
                     "购入存储"
             };
             for (int i = 0; i < demoValues.length; i++) {

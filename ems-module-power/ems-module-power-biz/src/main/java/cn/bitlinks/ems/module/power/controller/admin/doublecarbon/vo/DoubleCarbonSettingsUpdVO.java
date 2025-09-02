@@ -6,7 +6,7 @@ import lombok.Data;
 
 import javax.validation.constraints.NotNull;
 
-@Schema(description = "管理后台 - 双谈接口 设置upd VO")
+@Schema(description = "管理后台 - 双碳接口 设置upd VO")
 @Data
 @ExcelIgnoreUnannotated
 public class DoubleCarbonSettingsUpdVO {

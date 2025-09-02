@@ -13,6 +13,8 @@ public interface RedisKeyConstants {
     String STANDING_BOOK_TYPE_TREE = "power:standingbook:type:tree";
 
     String STANDING_BOOK_LIST = "power:standingbook:list";
+    String STANDING_BOOK_DEVICE_CODE_LIST = "power:standingbook:device:list";
+    String STANDING_BOOK_MEASUREMENT_CODE_LIST = "power:standingbook:measurement:list";
 
     /**
      * 有效时间默认为1小时，修改成10分钟
@@ -30,4 +32,9 @@ public interface RedisKeyConstants {
      * 服务->设备们
      */
     String STANDING_BOOK_SERVER_DEVICE_CONFIG = "power:server_device_config";
+
+    /**
+     * 导入计量器具关联 excel 缓存数据行
+     */
+    String STANDING_BOOK_EXCEL_RELATION = "power:standingbook:excel:relation";
 }

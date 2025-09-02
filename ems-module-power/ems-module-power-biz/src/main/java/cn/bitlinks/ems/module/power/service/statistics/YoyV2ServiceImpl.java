@@ -248,6 +248,29 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         return resultVO;
     }
 
+    private void defaultNullData(StatisticsResultV2VO<YoyItemVO> resultVO) {
+        List<YoyDetailVO> emptyList = new ArrayList<>();
+
+        for (String time : resultVO.getHeader()) {
+            YoyDetailVO data = new YoyDetailVO();
+            data.setDate(time);
+            emptyList.add(data);
+        }
+        List<YoyItemVO> infoList = new ArrayList<>();
+
+        YoyItemVO osInfo1 = new YoyItemVO();
+        osInfo1.setStatisticsRatioDataList(emptyList);
+        osInfo1.setEnergyName(EnergyClassifyEnum.OUTSOURCED.getDetail() + UTILIZATION_RATE_STR);
+
+        YoyItemVO osInfo2 = new YoyItemVO();
+        osInfo2.setStatisticsRatioDataList(emptyList);
+        osInfo2.setEnergyName(EnergyClassifyEnum.PARK.getDetail() + UTILIZATION_RATE_STR);
+
+        infoList.add(osInfo1);
+        infoList.add(osInfo2);
+        resultVO.setStatisticsInfoList(infoList);
+    }
+
 
     /**
      * 按能源维度统计：以 energyId 为主键，构建同比统计数据
@@ -273,7 +296,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
                 return;
             }
             YoyItemVO vo = buildYoyItemVODataList(nowList, lastList, dataTypeEnum, tableHeader, isCrossYear, valueExtractor);
-            if(Objects.isNull(vo)){
+            if (Objects.isNull(vo)) {
                 return;
             }
             vo.setEnergyId(energy.getId());
@@ -325,7 +348,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
 
         List<YoyItemVO> resultList = new ArrayList<>();
         YoyItemVO info = buildYoyItemVODataList(usageCostDataList, lastUsageCostDataList, dateTypeEnum, tableHeader, isCrossYear, valueExtractor);
-        if(Objects.isNull(info)){
+        if (Objects.isNull(info)) {
             return Collections.emptyList();
         }
         // 构造结果对象
@@ -398,7 +421,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
 
                 // 构造结果对象
                 YoyItemVO info = buildYoyItemVODataList(labelUsageListNow, labelUsageListPrevious, dateTypeEnum, tableHeader, isCrossYear, valueExtractor);
-                if(Objects.isNull(info)){
+                if (Objects.isNull(info)) {
                     return;
                 }
                 info.setLabel1(topLabel.getLabelName());
@@ -473,7 +496,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         energyMap.forEach((energyId, energyConfigurationDO) -> {
 
             YoyItemVO info = buildYoyItemVODataList(nowUsageMap.get(energyId), lastUsageMap.get(energyId), dateTypeEnum, tableHeader, isCrossYear, valueExtractor);
-            if(Objects.isNull(info)){
+            if (Objects.isNull(info)) {
                 return;
             }
             // 构造结果对象
@@ -563,7 +586,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
                 energyMap.forEach((energyId, energyConfigurationDO) -> {
                     if (energyConfigurationDO == null) return;
                     YoyItemVO info = buildYoyItemVODataList(finalEnergyUsageCostNowMap.get(energyId), finalEnergyUsageCostPrevMap.get(energyId), dateTypeEnum, tableHeader, isCrossYear, valueExtractor);
-                    if(Objects.isNull(info)){
+                    if (Objects.isNull(info)) {
                         return;
                     }
                     // 构造结果对象
@@ -793,7 +816,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
                                 if (v2 == null) return v1;
                                 return v1.add(v2);
                             }
-                   );
+                    );
         }
 
         // 构造 (labelKey -> time -> cost) 的二维映射（上周期）
@@ -1232,7 +1255,8 @@ public class YoyV2ServiceImpl implements YoyV2Service {
 
         // 无台账数据直接返回
         if (CollUtil.isEmpty(sbIds)) {
-            return defaultNullData(tableHeader);
+            defaultNullData(resultVO);
+            return resultVO;
         }
 
         // 查询外购
@@ -1456,23 +1480,23 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         return info;
     }
 
-    private StatisticsResultV2VO<YoyItemVO> defaultNullData(List<String> tableHeader) {
-        StatisticsResultV2VO<YoyItemVO> resultVO = new StatisticsResultV2VO<>();
-        resultVO.setHeader(tableHeader);
-        List<YoyItemVO> infoList = new ArrayList<>();
-
-        YoyItemVO osInfo = new YoyItemVO();
-        osInfo.setStatisticsRatioDataList(Collections.emptyList());
-        osInfo.setEnergyName(EnergyClassifyEnum.OUTSOURCED.getDetail() + UTILIZATION_RATE_STR);
-
-        YoyItemVO parkInfo = new YoyItemVO();
-        parkInfo.setStatisticsRatioDataList(Collections.emptyList());
-        parkInfo.setEnergyName(EnergyClassifyEnum.PARK.getDetail() + UTILIZATION_RATE_STR);
-        infoList.add(osInfo);
-        infoList.add(parkInfo);
-        resultVO.setStatisticsInfoList(infoList);
-        return resultVO;
-    }
+//    private StatisticsResultV2VO<YoyItemVO> defaultNullData(List<String> tableHeader) {
+//        StatisticsResultV2VO<YoyItemVO> resultVO = new StatisticsResultV2VO<>();
+//        resultVO.setHeader(tableHeader);
+//        List<YoyItemVO> infoList = new ArrayList<>();
+//
+//        YoyItemVO osInfo = new YoyItemVO();
+//        osInfo.setStatisticsRatioDataList(Collections.emptyList());
+//        osInfo.setEnergyName(EnergyClassifyEnum.OUTSOURCED.getDetail() + UTILIZATION_RATE_STR);
+//
+//        YoyItemVO parkInfo = new YoyItemVO();
+//        parkInfo.setStatisticsRatioDataList(Collections.emptyList());
+//        parkInfo.setEnergyName(EnergyClassifyEnum.PARK.getDetail() + UTILIZATION_RATE_STR);
+//        infoList.add(osInfo);
+//        infoList.add(parkInfo);
+//        resultVO.setStatisticsInfoList(infoList);
+//        return resultVO;
+//    }
 
     /**
      * 获取标签名
