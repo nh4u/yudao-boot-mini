@@ -35,4 +35,18 @@
         ORDER BY create_time desc
 
     </select>
+    <update id="batchUpdateStage">
+        UPDATE power_standingbook
+        <set>
+            stage = CASE id
+            <foreach collection="list" item="item">
+                WHEN #{item.id} THEN #{item.stage}
+            </foreach>
+            END
+        </set>
+        WHERE id IN
+        <foreach collection="list" item="item" open="(" separator="," close=")">
+            #{item.id}
+        </foreach>
+    </update>
 </mapper>
