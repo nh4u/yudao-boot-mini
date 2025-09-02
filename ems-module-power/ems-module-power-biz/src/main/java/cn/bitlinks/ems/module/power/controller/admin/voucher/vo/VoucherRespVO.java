@@ -39,10 +39,10 @@ public class VoucherRespVO {
     private String energyName;
 
     @Schema(description = "用量(导出时用)")
-    @ExcelProperty("用量")
     private String usageAndUsage;
 
     @Schema(description = "用量")
+    @ExcelProperty("用量")
     private BigDecimal usage;
 
     @Schema(description = "金额", example = "9217")
@@ -58,7 +58,7 @@ public class VoucherRespVO {
     private LocalDateTime purchaseTime;
 
     @Schema(description = "更新时间", requiredMode = Schema.RequiredMode.REQUIRED)
-    @ExcelProperty("更新时间")
+    @ExcelProperty("上传时间")
     private LocalDateTime updateTime;
 
     @Schema(description = "描述", example = "随便")
