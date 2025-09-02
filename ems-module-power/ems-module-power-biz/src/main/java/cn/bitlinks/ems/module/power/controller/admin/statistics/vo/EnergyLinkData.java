@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.statistics.vo;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -14,6 +15,7 @@ import java.math.BigDecimal;
 
 @Data
 @Schema(description = "能流图link数据")
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class EnergyLinkData {
 
     @Schema(description = "能流link开始")
