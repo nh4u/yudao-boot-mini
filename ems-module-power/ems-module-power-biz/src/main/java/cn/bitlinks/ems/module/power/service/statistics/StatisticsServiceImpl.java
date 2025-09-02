@@ -356,9 +356,12 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 有序set
         LinkedHashSet<String> dataSet = new LinkedHashSet<>();
         // 构建data数据
-        energyList.forEach(e -> {
-            dataSet.add(e.getEnergyName());
-        });
+        energyList.forEach(e -> dataSet.add(e.getEnergyName()));
+
+
+        // TODO: 2025/8/29  能流图处理
+
+
 
 
         // 2.3.能源转换成ids

@@ -35,4 +35,8 @@ public interface DictTypeConstants {
      * 暖通报表-暖通电量统计标签
      */
     String REPORT_HVAC_ELECTRICITY = "report_hvac_electricity";
+    /**
+     * 环节
+     */
+    String STAGE = "stage";
 }

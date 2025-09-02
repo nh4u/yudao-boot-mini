@@ -5,6 +5,8 @@ import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 
+import java.util.List;
+
 /**
  * 告警信息 Service 接口
  *
@@ -46,4 +48,11 @@ public interface WarningInfoService {
      * @param reqVO  更新信息
      */
     void updateWarningInfoStatusBatch(WarningInfoStatusBatchUpdReqVO reqVO);
+
+    /**
+     * 获得告警信息List
+     *
+     * @return 告警信息List
+     */
+    List<WarningInfoDO> getWarningList();
 }

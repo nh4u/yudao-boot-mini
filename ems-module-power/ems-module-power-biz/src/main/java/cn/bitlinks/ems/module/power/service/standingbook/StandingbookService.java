@@ -10,6 +10,7 @@ import javax.validation.Valid;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 台账属性 Service 接口
@@ -55,6 +56,14 @@ public interface StandingbookService {
      * @return 台账列表
      */
     List<StandingbookDO> getStandingbookList(Map<String, String> pageReqVO);
+
+    /**
+     * 条件查询台账（标签、属性、分类ids、分类id、topType、环节、创建时间） 查询监控list
+     *
+     * @param pageReqVO 条件map
+     * @return 台账列表
+     */
+    MinitorRespVO getMinitorList(Map<String, String> pageReqVO);
 
     /**
      * 关联计量器具：根据条件获得台账列表和计量器具联系
@@ -161,5 +170,8 @@ public interface StandingbookService {
      * @param type device|meter
      */
     void exportLedgerTemplate(HttpServletResponse response) throws UnsupportedEncodingException;
+
+    Set<String> getStandingbookCodeDeviceSet();
+    Set<String> getStandingbookCodeMeasurementSet();
 
 }

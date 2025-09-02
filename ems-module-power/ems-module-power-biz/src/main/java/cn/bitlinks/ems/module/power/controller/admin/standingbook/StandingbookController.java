@@ -1,6 +1,5 @@
 package cn.bitlinks.ems.module.power.controller.admin.standingbook;
 
-import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
@@ -10,7 +9,6 @@ import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -75,6 +73,14 @@ public class StandingbookController {
         List<StandingbookRespVO> respVOS = BeanUtils.toBean(list, StandingbookRespVO.class);
         standingbookService.sbOtherField(respVOS);
         return success(respVOS);
+    }
+
+    @PostMapping("/minitorList")
+    @Operation(summary = "获得台账列表")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")
+    public CommonResult<MinitorRespVO> getMinitorList(@Valid @RequestBody Map<String, String> pageReqVO) {
+        MinitorRespVO minitorRespVO = standingbookService.getMinitorList(pageReqVO);
+        return success(minitorRespVO);
     }
 
     @PostMapping("/listSbAllWithAssociations")

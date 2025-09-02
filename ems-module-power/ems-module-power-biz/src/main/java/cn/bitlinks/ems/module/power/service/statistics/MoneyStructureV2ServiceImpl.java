@@ -19,9 +19,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.text.StrPool;
 import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
-import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.util.ListUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
@@ -45,7 +43,6 @@ import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getF
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
-import static cn.bitlinks.ems.module.power.enums.ExportConstants.DEFAULT;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_STRUCTURE_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_COST_STRUCTURE_TABLE;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
@@ -94,7 +91,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         StatisticsResultV2VO<StructureInfo> resultVO = dealMoneyStructureAnalysisTable(paramVO);
 
         // 结果保存在缓存中
-        String jsonStr = JSONUtil.toJsonStr(resultVO);
+        String jsonStr = JSON.toJSONString(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
 
@@ -241,7 +238,8 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
-            return JSONUtil.toBean(cacheRes, StatisticsChartPieResultVO.class);
+            return JSON.parseObject(cacheRes, new TypeReference<StatisticsChartPieResultVO>() {
+            });
         }
 
         // 构建饼图结果
@@ -277,7 +275,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
         }
 
         // 结果保存在缓存中
-        String jsonStr = JSONUtil.toJsonStr(resultVO);
+        String jsonStr = JSON.toJSONString(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
 

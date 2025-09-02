@@ -24,7 +24,6 @@ import cn.hutool.core.text.StrPool;
 import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.crypto.SecureUtil;
-import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.util.ListUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
@@ -238,7 +237,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         resultVO.setDataTime(lastTime);
 
         // 结果保存在缓存中
-        String jsonStr = JSONUtil.toJsonStr(resultVO);
+        String jsonStr = JSON.toJSONString(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return resultVO;
@@ -711,7 +710,8 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
-            return JSONUtil.toBean(cacheRes, ComparisonChartResultVO.class);
+            return JSON.parseObject(cacheRes, new TypeReference<ComparisonChartResultVO>() {
+            });
         }
         ComparisonChartResultVO result = new ComparisonChartResultVO();
 
@@ -777,7 +777,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         result.setList(groupList);
         result.setDataTime(lastTime);
 
-        String jsonStr = JSONUtil.toJsonStr(result);
+        String jsonStr = JSON.toJSONString(result);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return result;
@@ -1405,7 +1405,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                 .orElse(null); // 若全部为null，返回null
         resultVO.setDataTime(latestTime);
         // 结果保存在缓存中
-        String jsonStr = JSONUtil.toJsonStr(resultVO);
+        String jsonStr = JSON.toJSONString(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
 
@@ -1483,7 +1483,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         }
         resVO.setList(resultVOList);
         resVO.setDataTime(tableResult.getDataTime());
-        String jsonStr = JSONUtil.toJsonStr(resultVOList);
+        String jsonStr = JSON.toJSONString(resultVOList);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return resVO;
