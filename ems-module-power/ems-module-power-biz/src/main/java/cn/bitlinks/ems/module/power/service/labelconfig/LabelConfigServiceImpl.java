@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.labelconfig;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigDTO;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
@@ -10,11 +11,13 @@ import cn.bitlinks.ems.module.power.dal.mysql.coalfactorhistory.CoalFactorHistor
 import cn.bitlinks.ems.module.power.dal.mysql.labelconfig.LabelConfigMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookLabelInfoMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.core.lang.tree.TreeNode;
 import cn.hutool.core.lang.tree.TreeUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.stereotype.Service;
@@ -27,6 +30,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_LABEL_INFO_PREFIX;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
 /**
@@ -264,7 +268,7 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     @Override
     public List<LabelConfigDO> getAllLabelConfig() {
         LambdaQueryWrapperX<LabelConfigDO> wrapper = new LambdaQueryWrapperX<>();
-        wrapper.select(LabelConfigDO::getId, LabelConfigDO::getParentId, LabelConfigDO::getLabelName,LabelConfigDO::getCode);
+        wrapper.select(LabelConfigDO::getId, LabelConfigDO::getParentId, LabelConfigDO::getLabelName, LabelConfigDO::getCode);
         return labelConfigMapper.selectList(wrapper);
     }
 
@@ -287,6 +291,63 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         LambdaQueryWrapperX<LabelConfigDO> wrapper = new LambdaQueryWrapperX<>();
         wrapper.in(LabelConfigDO::getCode, codes);
         return labelConfigMapper.selectList(wrapper);
+    }
+
+    @Override
+    public Map<String, LabelConfigDTO> getLabelDTOByLabelCodes(List<String> codes) {
+        return getNodePathMap(codes);
+    }
+
+    /**
+     * 核心方法：根据输入IDs，返回每个ID的完整路径Map
+     *
+     * @param codes 输入的节点ID列表（如["3","2"]）
+     * @return Map<ID, 路径>（如{"3":"1,2,3","2":"1,2"}）
+     */
+    public Map<String, LabelConfigDTO> getNodePathMap(List<String> codes) {
+        List<LabelConfigDO> labelConfigDOS = getAllLabelConfig();
+        List<LabelConfigDO> paramLabelList = getByCodes(codes);
+        Map<String, LabelConfigDO> paramCodeMap = paramLabelList.stream().collect(Collectors.toMap(LabelConfigDO::getCode, Function.identity()));
+
+        if (CollUtil.isEmpty(paramLabelList)) {
+            return Collections.emptyMap();
+        }
+        Map<String, LabelConfigDTO> resultMap = new HashMap<>();
+        if (codes == null || codes.isEmpty()) {
+            return resultMap;
+        }
+
+        // 遍历每个ID，生成路径
+        for (String code : codes) {
+            List<Long> pathList = new ArrayList<>();
+            // 递归追溯父级，收集路径（先加自身，再向上加父级）
+            recursiveGetParent(paramCodeMap.get(code).getId(), pathList, labelConfigDOS);
+            // 反转列表：从「自身→父→根」转为「根→父→自身」，再拼接为字符串
+            List<String> reversedPath = new ArrayList<>();
+            for (int i = pathList.size() - 1; i >= 1; i--) {
+                reversedPath.add(pathList.get(i) + "");
+            }
+            String fullPath = String.join(StringPool.COMMA, reversedPath);
+            LabelConfigDTO labelConfigDTO = new LabelConfigDTO();
+            labelConfigDTO.setCurLabelId(fullPath);
+            labelConfigDTO.setTopLevelLabelId(ATTR_LABEL_INFO_PREFIX + pathList.get(0));
+            resultMap.put(code, labelConfigDTO);
+        }
+        return resultMap;
+    }
+
+    /**
+     * 递归工具方法：根据当前Id，向上追溯父级，存入pathList
+     *
+     * @param curId    当前节点Id
+     * @param pathList 收集路径的列表（顺序：当前ID→父ID→根ID）
+     */
+    private void recursiveGetParent(Long curId, List<Long> pathList, List<LabelConfigDO> labelConfigDOS) {
+        Optional<LabelConfigDO> curLabel = labelConfigDOS.stream().filter(label -> label.getId().equals(curId)).findFirst();
+        pathList.add(curLabel.get().getId());
+        if (curLabel.get().getParentId() != 0) {
+            recursiveGetParent(curLabel.get().getParentId(), pathList, labelConfigDOS);
+        }
     }
 
     /**
