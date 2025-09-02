@@ -19,4 +19,17 @@ public interface StandingbookLabelInfoService {
     List<StandingbookLabelInfoDO> getByStandingBookId(Long standingBookId);
     List<StandingbookLabelInfoDO> getByValuesSelected(List<String> values);
 
+    /**
+     *  根据标签value获取所有关联关系
+     * @param labelValue
+     * @return
+     */
+    List<StandingbookLabelInfoDO> getByLabelValues(String labelValue);
+
+    /**
+     * 根据标签value获取所有下一级关联关系
+     * @param labelValue
+     * @return
+     */
+    List<StandingbookLabelInfoDO> getSubByLabelValues(String labelValue);
 }

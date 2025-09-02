@@ -1,11 +1,16 @@
 package cn.bitlinks.ems.module.power.service.standingbook.label;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.text.StrPool;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
@@ -51,5 +56,48 @@ public class StandingbookLabelInfoServiceImpl implements StandingbookLabelInfoSe
     @Override
     public List<StandingbookLabelInfoDO> getByValuesSelected(List<String> values) {
         return standingbookLabelInfoMapper.getByValuesSelected(values);
+    }
+
+    @Override
+    public List<StandingbookLabelInfoDO> getByLabelValues(String labelValue) {
+        LambdaQueryWrapper<StandingbookLabelInfoDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(StandingbookLabelInfoDO::getValue, labelValue);
+        List<StandingbookLabelInfoDO> list = standingbookLabelInfoMapper.selectList(wrapper);
+        if (CollUtil.isNotEmpty(list)) {
+            // 该标签有绑定台账 则直接返回
+            return list;
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * 取 标签下所有子级的标签绑定信息 该标签没有绑定台账 则取下一级别即可   需求不定 待确认
+     *
+     * @param labelValue
+     * @return
+     */
+    @Override
+    public List<StandingbookLabelInfoDO> getSubByLabelValues(String labelValue) {
+        LambdaQueryWrapper<StandingbookLabelInfoDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(StandingbookLabelInfoDO::getValue, labelValue);
+        List<StandingbookLabelInfoDO> list = standingbookLabelInfoMapper.selectList(wrapper);
+
+        if (CollUtil.isNotEmpty(list)) {
+            // 只取第一级
+            int length = labelValue.split(StrPool.COMMA).length;
+            return list.stream().filter(s -> {
+                String value = s.getValue();
+                if (CharSequenceUtil.isNotEmpty(value)) {
+                    int subValueLength = value.split(StrPool.COMMA).length;
+                    // 长度相等才是直接子级
+                    return length == subValueLength - 1;
+                } else {
+                    return false;
+                }
+            }).collect(Collectors.toList());
+        } else {
+            return Collections.emptyList();
+        }
     }
 }
