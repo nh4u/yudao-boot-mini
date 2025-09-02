@@ -37,7 +37,8 @@ public class MeterRelationExcelListener implements ReadListener<MeterRelationExc
 
     /**
      * 逐行解析 Excel 数据（每行都会触发）
-     * @param dto 解析后的单行数据
+     *
+     * @param dto     解析后的单行数据
      * @param context 解析上下文（包含行号）
      */
     @Override
@@ -70,13 +71,14 @@ public class MeterRelationExcelListener implements ReadListener<MeterRelationExc
         if (!CollectionUtils.isEmpty(validDataList)) {
             meterRelationService.batchSaveTemp(validDataList);
         }
-        log.info("Excel 解析完成，共解析{}行，错误{}行", 
-                 context.readRowHolder().getRowIndex() + 1, errorRowNums.size());
+        log.info("Excel 解析完成，共解析{}行，错误{}行",
+                context.readRowHolder().getRowIndex() + 1, errorRowNums.size());
     }
 
     /**
      * 单行数据校验（核心规则实现）
-     * @param dto 单行数据
+     *
+     * @param dto    单行数据
      * @param rowNum 行号
      * @return true=校验通过，false=校验失败
      */

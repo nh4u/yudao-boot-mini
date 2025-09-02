@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.power.service.standingbook.MeterRelationExcelListe
 import cn.bitlinks.ems.module.power.service.standingbook.MeterRelationService;
 import com.alibaba.excel.EasyExcel;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
@@ -44,6 +45,7 @@ public class MeterRelationImportController {
      * @return 导入结果（成功/失败信息 + 错误行号）
      */
     @PostMapping("/import")
+    @Operation(summary = "计量器具导入")
     public CommonResult<String> importMeterRelation(@RequestParam("file") MultipartFile file) {
         return success(actualImport(file));
     }
@@ -65,7 +67,8 @@ public class MeterRelationImportController {
             // 3. 调用EasyExcel解析文件（指定监听、模型、是否忽略标题行）
             EasyExcel.read(file.getInputStream(), MeterRelationExcelDTO.class, listener)
                     .sheet() // 读取第一个sheet
-                    .headRowNumber(1) // 第1行为标题行（忽略不解析）
+                    .headRowNumber(2) // 第1行为标题行（忽略不解析）
+                    .autoTrim(true) // 自动去除单元格前后空格（4.0.x 新增）
                     .doRead(); // 开始解析
 
             // 4. 处理校验结果
