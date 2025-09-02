@@ -78,7 +78,7 @@ public class EnergyConversionRateController {
 
         EasyExcel.write(response.getOutputStream())
                 //自适应宽度
-                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(15))
+                .registerWriteHandler(new SimpleColumnWidthStyleStrategy(25))
                 // 动态头
                 .head(header)
                 .sheet("数据")

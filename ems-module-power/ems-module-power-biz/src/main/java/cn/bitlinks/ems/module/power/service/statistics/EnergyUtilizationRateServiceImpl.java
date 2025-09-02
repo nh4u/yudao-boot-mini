@@ -45,7 +45,7 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
 
     @Resource
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
-
+    private final String excelName="能源利用率分析报表";
 
     @Override
     public StatisticsResultV2VO<EnergyRateInfo> getTable(StatisticsParamV2VO paramVO) {
@@ -293,9 +293,9 @@ public class EnergyUtilizationRateServiceImpl implements EnergyUtilizationRateSe
         // 月份处理
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
         xdata.forEach(x -> {
-            list.add(Arrays.asList(sheetName, period, x));
+            list.add(Arrays.asList(excelName, period, x));
         });
-        list.add(Arrays.asList(sheetName, period, "周期利用率（%）"));
+        list.add(Arrays.asList(excelName, period, "周期利用率（%）"));
         return list;
     }
 

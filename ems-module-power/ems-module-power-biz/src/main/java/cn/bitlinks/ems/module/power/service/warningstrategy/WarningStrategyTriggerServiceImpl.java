@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.CollectRawDataApi;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.CollectRawDataDTO;
+import cn.bitlinks.ems.module.infra.api.config.ConfigApi;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
@@ -31,6 +32,7 @@ import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -47,7 +49,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static cn.bitlinks.ems.module.power.enums.ApiConstants.SB_MONITOR_DETAIL;
 import static cn.bitlinks.ems.module.power.enums.warninginfo.WarningStrategyConnectorEnum.evaluateCondition;
 import static cn.bitlinks.ems.module.power.enums.warninginfo.WarningTemplateKeyWordEnum.*;
 import static cn.hutool.core.date.DatePattern.NORM_DATETIME_FORMATTER;
@@ -61,6 +62,7 @@ import static cn.hutool.core.date.DatePattern.NORM_DATETIME_FORMATTER;
 @Validated
 @Slf4j
 public class WarningStrategyTriggerServiceImpl implements WarningStrategyTriggerService {
+    static final String INIT_DEVICE_LINK = "power.device.monitor.url";
 
     @Resource
     private WarningStrategyConditionMapper warningStrategyConditionMapper;
@@ -90,6 +92,8 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
     @Resource
     private CollectRawDataApi collectRawDataApi;
 
+    @Resource
+    private ConfigApi configApi;
     private final static String customConnector = "->";
 
     @Override
@@ -275,7 +279,9 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                         // 条件的设备名称不对，需要连续起来，其中可能有分类有台账
                         conditionParamsMap.put(WARNING_DEVICE_CODE.getKeyWord(), sbCode);
                         conditionParamsMap.put(WARNING_STRATEGY_NAME.getKeyWord(), warningStrategyDO.getName());
-                        conditionParamsMap.put(WARNING_DETAIL_LINK.getKeyWord(), String.format(SB_MONITOR_DETAIL,
+                        // 获取api连接配置
+                        String initLink = configApi.getConfigValueByKey(INIT_DEVICE_LINK).getCheckedData();
+                        conditionParamsMap.put(WARNING_DETAIL_LINK.getKeyWord(), String.format(initLink,
                                 collectRawDataDTO.getStandingbookId()));
                         conditionParamsMapList.add(conditionParamsMap);
                         String deviceRel = String.format("%s(%s)", sbName, sbCode);

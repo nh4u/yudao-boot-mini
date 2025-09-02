@@ -61,6 +61,12 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         // 校验父级类型编号的有效性
         validateParentStandingbookType(null, createReqVO.getSuperId());
 
+        // 校验编码唯一性
+        Long existCount = standingbookTypeMapper.selectCount(new LambdaQueryWrapperX<StandingbookTypeDO>()
+                .eq(StandingbookTypeDO::getCode, createReqVO.getCode()));
+        if (existCount > 0) {
+            throw exception(STANDINGBOOK_TYPE_CODE_DUPLICATE);
+        }
         // 校验允许最多五层节点
         validateOnlyFive(createReqVO.getSuperId());
         // 插入
@@ -84,6 +90,16 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
         StandingbookTypeDO standingbookTypeDO = standingbookTypeMapper.selectById(updateReqVO.getId());
         if (Objects.isNull(standingbookTypeDO)) {
             throw exception(STANDINGBOOK_TYPE_NOT_EXISTS);
+        }
+        // 校验编码唯一性
+        // 如果编码被修改，校验新编码是否重复
+        if (!standingbookTypeDO.getCode().equals(updateReqVO.getCode())) {
+            Long existCount = standingbookTypeMapper.selectCount(new LambdaQueryWrapperX<StandingbookTypeDO>()
+                    .eq(StandingbookTypeDO::getCode, updateReqVO.getCode())
+                    .ne(StandingbookTypeDO::getId, updateReqVO.getId())); // 排除自身
+            if (existCount > 0) {
+                throw exception(STANDINGBOOK_TYPE_CODE_DUPLICATE);
+            }
         }
         // 校验父级类型编号的有效性
         validateParentStandingbookType(updateReqVO.getId(), updateReqVO.getSuperId());
