@@ -46,7 +46,7 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
 
     @Resource
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
-
+    private final String excelName="转换率分析报表";
     @Override
     public StatisticsResultV2VO<EnergyRateInfo> getTable(StatisticsParamV2VO paramVO) {
         paramVO.setQueryType(StatisticsQueryType.COMPREHENSIVE_VIEW.getCode());
@@ -257,22 +257,22 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
         return resVO;
     }
 
+
     @Override
     public List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO) {
         statisticsCommonService.validParamConditionDate(paramVO);
 
         List<List<String>> list = ListUtils.newArrayList();
         list.add(Arrays.asList("表单名称", "统计周期", ""));
-        //String sheetName = "转换率";
         // 统计周期
         String period = getFormatTime(paramVO.getRange()[0]) + "~" + getFormatTime(paramVO.getRange()[1]);
 
         // 月份处理
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
         xdata.forEach(x -> {
-            list.add(Arrays.asList(CONVERSION_RATE_STR, period, x));
+            list.add(Arrays.asList(excelName, period, x));
         });
-        list.add(Arrays.asList(CONVERSION_RATE_STR, period, "周期转换率（%）"));
+        list.add(Arrays.asList(excelName, period, "周期转换率（%）"));
         return list;
     }
 
