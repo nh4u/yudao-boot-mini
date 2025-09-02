@@ -4,7 +4,7 @@ import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-@Schema(description = "管理后台 - 双谈接口 Response VO")
+@Schema(description = "管理后台 - 双碳接口 Response VO")
 @Data
 @ExcelIgnoreUnannotated
 public class DoubleCarbonSettingsRespVO {

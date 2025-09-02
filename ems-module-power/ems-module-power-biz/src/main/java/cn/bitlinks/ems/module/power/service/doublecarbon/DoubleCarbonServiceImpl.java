@@ -2,12 +2,14 @@ package cn.bitlinks.ems.module.power.service.doublecarbon;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.doublecarbon.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.doublecarbon.DoubleCarbonMappingDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.doublecarbon.DoubleCarbonSettingsDO;
 import cn.bitlinks.ems.module.power.dal.mysql.doublecarbon.DoubleCarbonMappingMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.doublecarbon.DoubleCarbonSettingsMapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -60,5 +62,24 @@ public class DoubleCarbonServiceImpl implements DoubleCarbonService {
         pageResult.setTotal(page.getTotal());
 
         return pageResult;
+    }
+
+    @Override
+    public void addMapping(String standingbookCode) {
+        if (StringUtils.isEmpty(standingbookCode)) {
+            return;
+        }
+        DoubleCarbonMappingDO mappingDO = new DoubleCarbonMappingDO();
+        mappingDO.setStandingbookCode(standingbookCode);
+        doubleCarbonMappingMapper.insert(mappingDO);
+    }
+
+    @Override
+    public void delMapping(String standingbookCode) {
+        if (StringUtils.isEmpty(standingbookCode)) {
+            return;
+        }
+        doubleCarbonMappingMapper.delete(new LambdaQueryWrapperX<DoubleCarbonMappingDO>()
+                .eq(DoubleCarbonMappingDO::getStandingbookCode, standingbookCode));
     }
 }

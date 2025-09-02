@@ -10,6 +10,7 @@ import javax.validation.Valid;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 台账属性 Service 接口
@@ -170,5 +171,7 @@ public interface StandingbookService {
      */
     void exportLedgerTemplate(HttpServletResponse response) throws UnsupportedEncodingException;
 
+    Set<String> getStandingbookCodeDeviceSet();
+    Set<String> getStandingbookCodeMeasurementSet();
 
 }

@@ -26,4 +26,9 @@ public interface StandingbookMapper extends BaseMapperX<StandingbookDO> {
      * @return sbId
      */
     List<Long> selectStandingbookIdByCondition(@Param("typeId") Long typeId, @Param("typeIds") List<Long> typeIds, @Param("stage") Integer stage, @Param("createTimeArr") List<String> createTimeArr);
+
+    /**
+     * 批量修改 计量器具环节
+     */
+    int batchUpdateStage(@Param("list") List<StandingbookDO> updateList);
 }
