@@ -23,11 +23,16 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.lang.tree.Tree;
+import cn.hutool.core.lang.tree.TreeUtil;
+import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
-import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
+import com.alibaba.nacos.common.utils.CollectionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -93,14 +98,15 @@ public class StatisticsServiceImpl implements StatisticsService {
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (StrUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
-            return JSONUtil.toBean(cacheRes, EnergyFlowResultVO.class);
+            return JSON.parseObject(cacheRes, new TypeReference<EnergyFlowResultVO>() {
+            });
         }
 
         // 获取结果
-        EnergyFlowResultVO resultVO = dealEnergyFlowAnalysis1(paramVO);
+        EnergyFlowResultVO resultVO = dealEnergyFlowAnalysis(paramVO);
 
         // 结果保存在缓存中
-        String jsonStr = JSONUtil.toJsonStr(resultVO);
+        String jsonStr = JSON.toJSONString(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
 
@@ -132,6 +138,9 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         // 能源类型
         Integer energyClassify = paramVO.getEnergyClassify();
+        // 标签信息
+        String topLabel = paramVO.getTopLabel();
+        String childLabels = paramVO.getChildLabels();
         // 构建返回结果数据
         EnergyFlowResultVO resultVO = new EnergyFlowResultVO();
         resultVO.setDataTime(LocalDateTime.now());
@@ -143,15 +152,18 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         // 2.1.能源id处理
         List<EnergyConfigurationDO> energyList = energyConfigurationService
-                .getByEnergyClassify(
+                .getPureByEnergyClassify(
                         CollectionUtil.isNotEmpty(paramVO.getEnergyIds()) ? new HashSet<>(paramVO.getEnergyIds()) : new HashSet<>(),
                         energyClassify);
         // 2.2.没有能源报错
         if (CollectionUtil.isEmpty(energyList)) {
             throw exception(ENERGY_CONFIGURATION_NOT_EXISTS);
         }
-        // 2.3.能源转换成ids
-        List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
+        energyList.forEach(e -> {
+            // 存入点
+            data.add(new EnergyItemData()
+                    .setName(e.getEnergyName()));
+        });
 
         // 2.4.能源list转换成map
         Map<Long, EnergyConfigurationDO> energyMap = energyList
@@ -163,11 +175,11 @@ public class StatisticsServiceImpl implements StatisticsService {
                 .stream()
                 .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
 
-        // 3.1.台账id处理
-        // 3.1.1.根据能源id查询台账
+        // 3.根据能源id查询台账
+        List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
         List<StandingbookDO> standingbooksByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIds);
         // 3.1.2.台账变成ids
-        List<Long> standingBookIds = standingbooksByEnergy
+        List<Long> energysbIds = standingbooksByEnergy
                 .stream()
                 .map(StandingbookDO::getId)
                 .collect(Collectors.toList());
@@ -177,7 +189,14 @@ public class StatisticsServiceImpl implements StatisticsService {
         List<UsageCostData> energyStandardCoalList = usageCostService.getEnergyStandardCoal(
                 rangeOrigin[0],
                 rangeOrigin[1],
-                standingBookIds);
+                energysbIds);
+
+        // 一级标签名称
+        Long topLabelId = Long.valueOf(topLabel.substring(topLabel.indexOf("_") + 1));
+        String topLabelName = labelMap.get(topLabelId).getLabelName();
+        // 存入点
+        data.add(new EnergyItemData()
+                .setName(topLabelName));
 
         // 针对能源Map获取园区能源
         energyStandardCoalList.forEach(usageData -> {
@@ -185,125 +204,131 @@ public class StatisticsServiceImpl implements StatisticsService {
             EnergyConfigurationDO energy = energyMap.get(usageData.getEnergyId());
 
             if (!Objects.isNull(energy)) {
-                // 存入点
-                data.add(new EnergyItemData()
-                        .setName(energy.getEnergyName()));
+
+                String source = energy.getEnergyName();
+                // 存入link
+                links.add(new EnergyLinkData()
+                        .setSource(source)
+                        .setValue(usageData.getTotalStandardCoalEquivalent())
+                        .setTarget(topLabelName));
             }
         });
 
+        // 4.3.台账id处理
+        List<Long> energyLabelIntersectionSbIds = new ArrayList<>();
+        // 4.3.2.根据标签id查询
+        List<StandingbookLabelInfoDO> standingbookLabelInfos = statisticsCommonService
+                .getStandingbookIdsByLabel(topLabel, childLabels);
 
-        // TODO: 2025/5/27  判断外购 还是园区
-        // 1：外购能源；2：园区能源
-        if (1 == energyClassify) {
-            // 1：外购能源；
-            // 循环外购能源 开始逐一遍历 获取下级园区能源参数
-            for (EnergyConfigurationDO energy : energyList) {
-                List<StandingbookDO> standingbooks = statisticsCommonService.getStandingbookIdsByEnergy(
-                        Collections.singletonList(energy.getId()));
+        // 4.3.3.能源台账ids和标签台账ids是否有交集。如果有就取交集，如果没有则取能源台账ids
+        if (CollUtil.isNotEmpty(standingbookLabelInfos)) {
+            List<Long> sids = standingbookLabelInfos
+                    .stream()
+                    .map(StandingbookLabelInfoDO::getStandingbookId)
+                    .collect(Collectors.toList());
 
-                String source = energy.getEnergyName();
+            energyLabelIntersectionSbIds = energysbIds
+                    .stream()
+                    .filter(sids::contains)
+                    .collect(Collectors.toList());
+        }
+        // 4.4.台账id为空直接返回结果
+        if (CollUtil.isEmpty(energyLabelIntersectionSbIds)) {
+            return resultVO;
+        }
 
-                if (CollectionUtil.isNotEmpty(standingbooks)) {
+        // 4.5.根据台账和其他条件从数据库里拿出折标煤数据
+        // 4.5.1.根据台账ID查询用量和折标煤
+        List<UsageCostData> usageCostDataList = usageCostService.getStandingbookStandardCoal(
+                rangeOrigin[0],
+                rangeOrigin[1],
+                energyLabelIntersectionSbIds);
 
-                    // 下级计量器具
-                    Map<Long, List<MeasurementAssociationDO>> subSbs = standingbookService.getSubStandingbookIdsBySbIds(standingBookIds);
+        Map<Long, UsageCostData> usageCostDataMap = usageCostDataList
+                .stream()
+                .collect(Collectors.toMap(UsageCostData::getStandingbookId, Function.identity()));
 
-                    // 计算下级计量器具数据
-                    if (CollUtil.isNotEmpty(subSbs)) {
-                        // 分组 台账id-下级计量器具们
-                        subSbs.forEach((sbId, association) -> {
+        // 根据标签层级开始往下 当某标签无计量时，用下级标签值之和，有计量时，则使用该计量 此时需要重新去获取对应的 折标煤数据
+        List<String> labelValues = new ArrayList<>();
 
-                            List<Long> sbIds = association.stream()
-                                    .map(MeasurementAssociationDO::getMeasurementId)
-                                    .collect(Collectors.toList());
-
-                            List<UsageCostData> energyAndSbList = usageCostService.getEnergyAndSbStandardCoal(
-                                    rangeOrigin[0],
-                                    rangeOrigin[1],
-                                    sbIds);
-
-                            for (UsageCostData usageData : energyAndSbList) {
-
-                                String target = energyMap.get(usageData.getEnergyId()).getEnergyName();
-
-                                // 存入点
-                                data.add(new EnergyItemData()
-                                        .setName(target));
-
-                                // 存入link（source和target的数据不能一样）
-                                if (!source.equals(target)) {
-                                    links.add(new EnergyLinkData()
-                                            .setSource(source)
-                                            .setValue(usageData.getTotalStandardCoalEquivalent())
-                                            .setTarget(target));
-                                }
-
-
-                                // 下级计量器具处理
-                                dealSbLabel(data, links, sbIds, rangeOrigin, target, labelMap);
-                            }
-
-                        });
-
-                    }
-
-                }
-            }
-
-        } else if (2 == energyClassify) {
-            // 2：园区能源
-            // 循环园区能源 开始逐一遍历 获取上级外购能源参数
-            for (EnergyConfigurationDO energy : energyList) {
-                List<StandingbookDO> standingbooks = statisticsCommonService.getStandingbookIdsByEnergy(
-                        Collections.singletonList(energy.getId()));
-
-                String target = energy.getEnergyName();
-
-                if (CollectionUtil.isNotEmpty(standingbooks)) {
-
-                    // 上级计量器具
-                    Map<Long, List<MeasurementAssociationDO>> subSbs = standingbookService.getUpStandingbookIdsBySbIds(standingBookIds);
-
-                    // 计算上级计量器具数据
-                    if (CollUtil.isNotEmpty(subSbs)) {
-                        // 分组 台账id-上级计量器具们
-                        subSbs.forEach((sbId, association) -> {
-
-                            List<Long> sbIds = association.stream()
-                                    .map(MeasurementAssociationDO::getMeasurementInstrumentId)
-                                    .collect(Collectors.toList());
-
-                            List<UsageCostData> energyAndSbList = usageCostService.getEnergyAndSbStandardCoal(
-                                    rangeOrigin[0],
-                                    rangeOrigin[1],
-                                    sbIds);
-
-                            for (UsageCostData usageData : energyAndSbList) {
-
-                                String source = energyMap.get(usageData.getEnergyId()).getEnergyName();
-
-                                // 存入点
-                                data.add(new EnergyItemData()
-                                        .setName(target));
-
-                                // 存入link
-                                if (!source.equals(target)) {
-                                    links.add(new EnergyLinkData()
-                                            .setSource(source)
-                                            .setValue(usageData.getTotalStandardCoalEquivalent())
-                                            .setTarget(target));
-                                }
-
-                                // 下级计量器具处理  standingBookIds现在是园区计量数据
-                                dealSbLabel(data, links, standingBookIds, rangeOrigin, target, labelMap);
-                            }
-                        });
-                    }
-                }
-            }
-
+        if (CharSequenceUtil.isNotEmpty(childLabels)) {
+            List<String> split = StrSplitter.split(childLabels, "#", 0, true, true);
+            labelValues.addAll(split);
         } else {
+            List<Tree<Long>> labelTree = labelConfigService.getLabelTree(false, topLabelId, null);
+            List<String> childLabelValues = getChildLabelValues(labelTree);
+            labelValues.addAll(childLabelValues);
+        }
 
+        if (CollUtil.isNotEmpty(labelValues)) {
+            //根据标签台账list获取对应标签下关联的sbIds,求和 构建 link  如何没有则求下属所有标签ids（startwith）
+            // 根据标签找对应关系 获取该标签的所有绑定台账
+            for (String labelValue : labelValues) {
+                // 存入点
+                String target = dealLabelTarget(labelValue, labelMap);
+                data.add(new EnergyItemData()
+                        .setName(target));
+
+                List<StandingbookLabelInfoDO> standingbookLabelInfoList = statisticsCommonService.getByLabelValues(labelValue);
+
+                if (CollUtil.isNotEmpty(standingbookLabelInfoList)) {
+                    // 自己有绑定台账
+                    BigDecimal sum = standingbookLabelInfoList
+                            .stream()
+                            .map(s -> usageCostDataMap.get(s.getStandingbookId()))
+                            .filter(Objects::nonNull)
+                            .map(UsageCostData::getTotalStandardCoalEquivalent)
+                            .filter(Objects::nonNull)
+                            .reduce(BigDecimal::add).orElse(null);
+
+                    // 构建点线
+                    //  目前取倒数第二个label  有就取 没有就是一级标签
+                    String source = dealLabelUpTarget(labelValue, labelMap);
+                    if (CharSequenceUtil.isEmpty(source)){
+                        source = topLabelName;
+                    }else {
+                        // 存入点
+                        data.add(new EnergyItemData()
+                                .setName(source));
+                    }
+
+                    // 存入link（source和target的数据不能一样）
+                    links.add(new EnergyLinkData()
+                            .setSource(source)
+                            .setValue(sum)
+                            .setTarget(target));
+                } else {
+                    // 自己没绑定台账 取直属子级
+                    List<StandingbookLabelInfoDO> subStandingbookLabelInfoList = statisticsCommonService.getSubByLabelValues(labelValue);
+                    if (CollUtil.isNotEmpty(subStandingbookLabelInfoList)) {
+                        List<Long> subSbIds = subStandingbookLabelInfoList
+                                .stream()
+                                .map(StandingbookLabelInfoDO::getStandingbookId)
+                                .collect(Collectors.toList());
+
+                        BigDecimal sumStandardCoal = usageCostService.getSumStandardCoal(
+                                rangeOrigin[0],
+                                rangeOrigin[1],
+                                subSbIds);
+
+                        //  目前取倒数第二个label  有就取 没有就是一级标签
+                        String source = dealLabelUpTarget(labelValue, labelMap);
+                        if (CharSequenceUtil.isEmpty(source)){
+                            source = topLabelName;
+                        }else {
+                            // 存入点
+                            data.add(new EnergyItemData()
+                                    .setName(source));
+                        }
+
+                        // 存入link（source和target的数据不能一样）
+                        links.add(new EnergyLinkData()
+                                .setSource(source)
+                                .setValue(sumStandardCoal)
+                                .setTarget(target));
+                    }
+                }
+            }
         }
 
         // 获取数据更新时间
@@ -311,13 +336,51 @@ public class StatisticsServiceImpl implements StatisticsService {
                 paramVO,
                 rangeOrigin[0],
                 rangeOrigin[1],
-                standingBookIds);
+                energyLabelIntersectionSbIds);
+
+        // 点去重
+        List<EnergyItemData> collect = new ArrayList<>(data.stream()
+                .collect(Collectors.toMap(
+                        EnergyItemData::getName,
+                        energyItem -> energyItem,
+                        (existing, replacement) -> replacement // 保留后出现的
+                ))
+                .values());
 
         resultVO.setDataTime(lastTime);
-        resultVO.setData(data);
+        resultVO.setData(collect);
         resultVO.setLinks(links);
 
         return resultVO;
+    }
+
+
+    public List<String> getChildLabelValues(List<Tree<Long>> labelTree) {
+        List<String> childLabelValues = new ArrayList<>();
+        for (Tree<Long> label : labelTree) {
+
+            List<Long> parentsIds = TreeUtil.getParentsId(label, true);
+            // 返回的是倒序的 所以要反转一下
+            if (CollUtil.isNotEmpty(parentsIds)) {
+                parentsIds.remove(parentsIds.size() - 1);
+                Collections.reverse(parentsIds);
+                String labelValues = parentsIds.stream()
+                        .map(Objects::toString)
+                        .collect(Collectors.joining(","));
+
+                childLabelValues.add(labelValues);
+            }
+
+            final List<Tree<Long>> children = label.getChildren();
+            if (CollUtil.isNotEmpty(children)) {
+                List<String> node = getChildLabelValues(children);
+                childLabelValues.addAll(node);
+            }
+
+        }
+
+        // 返回结果
+        return childLabelValues;
     }
 
 
@@ -360,8 +423,6 @@ public class StatisticsServiceImpl implements StatisticsService {
 
 
         // TODO: 2025/8/29  能流图处理
-
-
 
 
         // 2.3.能源转换成ids
@@ -753,6 +814,45 @@ public class StatisticsServiceImpl implements StatisticsService {
 
     }
 
+    /**
+     * 去本label的值
+     *
+     * @param value
+     * @param labelMap
+     * @return
+     */
+    private String dealLabelTarget(String value, Map<Long, LabelConfigDO> labelMap) {
+
+        if (CharSequenceUtil.isNotEmpty(value)) {
+            String[] labelIds = value.split(",");
+            LabelConfigDO label = labelMap.get(Long.valueOf(labelIds[labelIds.length - 1]));
+            return label.getLabelName();
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * 去本label上级的值
+     *
+     * @param value
+     * @param labelMap
+     * @return
+     */
+    private String dealLabelUpTarget(String value, Map<Long, LabelConfigDO> labelMap) {
+
+        String labelName = null;
+        if (CharSequenceUtil.isNotEmpty(value)) {
+            String[] labelIds = value.split(",");
+            int length = labelIds.length;
+            if (length > 1) {
+                LabelConfigDO label = labelMap.get(Long.valueOf(labelIds[length - 2]));
+                labelName = label.getLabelName();
+            }
+        }
+        return labelName;
+    }
+
 
     /**
      * 校验时间范围
@@ -898,7 +998,8 @@ public class StatisticsServiceImpl implements StatisticsService {
         return result;
     }
 
-    private List<Map<String, Object>> getMapList(List<EnergyConfigurationDO> energyList, Tree<Long> labelTree, LocalDate[] range) {
+    private List<Map<String, Object>> getMapList
+            (List<EnergyConfigurationDO> energyList, Tree<Long> labelTree, LocalDate[] range) {
 
         List<Map<String, Object>> links = new ArrayList<>();
 
@@ -1148,7 +1249,8 @@ public class StatisticsServiceImpl implements StatisticsService {
      * @param statisticsResultVOList
      * @return
      */
-    private StatisticsStackVO getStackVO(LocalDateTime[] rangeOrigin, Integer dateType, List<StatisticsResultVO> statisticsResultVOList, Integer queryType) {
+    private StatisticsStackVO getStackVO(LocalDateTime[] rangeOrigin, Integer
+            dateType, List<StatisticsResultVO> statisticsResultVOList, Integer queryType) {
 
         //X轴数据
         List<String> XData = getTableHeader(rangeOrigin, dateType);
@@ -1505,7 +1607,9 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
 
-    private List<StatisticsResultVO> getStatisticsResultVOHaveEnergy(Tree<Long> labelTree, List<EnergyConfigurationDO> energyList, LocalDate[] range, Integer dateType, Integer queryType) {
+    private List<StatisticsResultVO> getStatisticsResultVOHaveEnergy
+            (Tree<Long> labelTree, List<EnergyConfigurationDO> energyList, LocalDate[] range, Integer dateType, Integer
+                    queryType) {
 
         List<StatisticsResultVO> list = new ArrayList<>();
 
@@ -1557,7 +1661,8 @@ public class StatisticsServiceImpl implements StatisticsService {
         return list;
     }
 
-    private List<StatisticsResultVO> getStatisticsResultVONotHaveEnergy(Tree<Long> labelTree, LocalDate[] range, Integer dateType, Integer queryType) {
+    private List<StatisticsResultVO> getStatisticsResultVONotHaveEnergy(Tree<Long> labelTree, LocalDate[]
+            range, Integer dateType, Integer queryType) {
 
         List<StatisticsResultVO> list = new ArrayList<>();
 
@@ -1609,7 +1714,9 @@ public class StatisticsServiceImpl implements StatisticsService {
         return list;
     }
 
-    private List<StatisticsResultVO> getEnergyList(StatisticsResultVO statisticsResultVO, List<EnergyConfigurationDO> energyList, LocalDate[] range, Integer dateType, Integer queryType) {
+    private List<StatisticsResultVO> getEnergyList(StatisticsResultVO
+                                                           statisticsResultVO, List<EnergyConfigurationDO> energyList, LocalDate[] range, Integer dateType, Integer
+                                                           queryType) {
 
         List<StatisticsResultVO> list = new ArrayList<>();
         BigDecimal sumLabelConsumption = BigDecimal.ZERO;
@@ -1638,7 +1745,8 @@ public class StatisticsServiceImpl implements StatisticsService {
         return list;
     }
 
-    private List<StatisticsResultVO> getLabelList(StatisticsResultVO statisticsResultVO, LocalDate[] range, Integer dateType, Integer queryType) {
+    private List<StatisticsResultVO> getLabelList(StatisticsResultVO statisticsResultVO, LocalDate[] range, Integer
+            dateType, Integer queryType) {
 
         List<StatisticsResultVO> list = new ArrayList<>();
         StatisticsResultVO vo = BeanUtils.toBean(statisticsResultVO, StatisticsResultVO.class);
@@ -1656,7 +1764,8 @@ public class StatisticsServiceImpl implements StatisticsService {
      * @param range 时间范围
      * @return
      */
-    private StatisticsResultVO getDateData(StatisticsResultVO vo, LocalDate[] range, Integer dateType, Integer queryType) {
+    private StatisticsResultVO getDateData(StatisticsResultVO vo, LocalDate[] range, Integer dateType, Integer
+            queryType) {
 
         List<StatisticsDateData> statisticsDateDataList = new ArrayList<>();
 
@@ -1854,7 +1963,8 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
 
-    private StatisticsDateData getMonthData(Long labelId, Long energyId, LocalDate[] range, Integer year, Integer month, Integer queryType) {
+    private StatisticsDateData getMonthData(Long labelId, Long energyId, LocalDate[] range, Integer year, Integer
+            month, Integer queryType) {
         StatisticsDateData statisticsDateData = new StatisticsDateData();
 
         // TODO: 2024/12/12 调用starrocks数据库获取对应 标签、能源、日期下的数据。  可能没标签或者没能源类型（待完善）
@@ -1870,7 +1980,8 @@ public class StatisticsServiceImpl implements StatisticsService {
         return statisticsDateData;
     }
 
-    private StatisticsDateData getYearData(Long labelId, Long energyId, LocalDate[] range, Integer year, Integer queryType) {
+    private StatisticsDateData getYearData(Long labelId, Long energyId, LocalDate[] range, Integer year, Integer
+            queryType) {
         StatisticsDateData statisticsDateData = new StatisticsDateData();
 
         // TODO: 2024/12/12 调用starrocks数据库获取对应 标签、能源、日期下的数据。  可能没标签或者没能源类型（待完善）

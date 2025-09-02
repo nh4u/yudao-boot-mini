@@ -275,6 +275,27 @@ public class StatisticsCommonService {
 
 
     /**
+     * 根据标签value获取所有关联关系
+     *
+     * @param labelValue 标签label value
+     * @return
+     */
+    public List<StandingbookLabelInfoDO> getByLabelValues(String labelValue) {
+        return standingbookLabelInfoService.getByLabelValues(labelValue);
+    }
+
+    /**
+     * 根据标签value获取所有下一级关联关系
+     *
+     * @param labelValue 标签label value
+     * @return
+     */
+    public List<StandingbookLabelInfoDO> getSubByLabelValues(String labelValue) {
+        return standingbookLabelInfoService.getSubByLabelValues(labelValue);
+    }
+
+
+    /**
      * 获取标签关联的计量器具，当当前标签没有计量器具时则获取下一级所有的计量器具，以此类推
      *
      * @param byLabelNames
@@ -354,7 +375,7 @@ public class StatisticsCommonService {
 
 
     public static void main(String[] args) {
-       List<StandingbookLabelInfoDO> byLabelNames = new ArrayList<>();
+        List<StandingbookLabelInfoDO> byLabelNames = new ArrayList<>();
         Set<String> childLabelValues = new HashSet<>();
         //childLabelValues.add("2");
         childLabelValues.add("2,897");
