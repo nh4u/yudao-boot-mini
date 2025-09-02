@@ -338,8 +338,17 @@ public class StatisticsServiceImpl implements StatisticsService {
                 rangeOrigin[1],
                 energyLabelIntersectionSbIds);
 
+        // 点去重
+        List<EnergyItemData> collect = new ArrayList<>(data.stream()
+                .collect(Collectors.toMap(
+                        EnergyItemData::getName,
+                        energyItem -> energyItem,
+                        (existing, replacement) -> replacement // 保留后出现的
+                ))
+                .values());
+
         resultVO.setDataTime(lastTime);
-        resultVO.setData(data);
+        resultVO.setData(collect);
         resultVO.setLinks(links);
 
         return resultVO;
