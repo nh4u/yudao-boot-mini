@@ -1261,11 +1261,12 @@ public class StandingbookServiceImpl implements StandingbookService {
 
                     // 查询下级计量器具名称、编码
                     List<StandingbookAttributeDO> attributeDOS = finalMeasurementAttrsMap.get(association.getMeasurementId());
-                    Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream().filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode())).findFirst();
-                    Optional<StandingbookAttributeDO> codeOptional = attributeDOS.stream().filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode())).findFirst();
-
-                    associationData.setStandingbookName(nameOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
-                    associationData.setStandingbookCode(codeOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
+                    if(CollUtil.isNotEmpty(attributeDOS)){
+                        Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream().filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode())).findFirst();
+                        Optional<StandingbookAttributeDO> codeOptional = attributeDOS.stream().filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode())).findFirst();
+                        associationData.setStandingbookName(nameOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
+                        associationData.setStandingbookCode(codeOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
+                    }
                     children.add(associationData);
                 });
                 standingbookWithAssociations.setChildren(children);
