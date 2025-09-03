@@ -248,15 +248,18 @@ public class StatisticsCommonService {
         //根据标签获取台账
         //只选择顶级标签
         //标签也可能关联重点设备，需要去除重点设备ID
+        // 查询所有一级标签下的
         List<StandingbookLabelInfoDO> byLabelNames = standingbookLabelInfoService.getByLabelNames(Collections.singletonList(topLabel));
         Set<String> childIds = new HashSet<>();
         if (StrUtil.isNotBlank(topLabel) && StrUtil.isBlank(childLabels)) {
             String topId = topLabel.split("_")[1];
+            // 查询所有的二级标签
             List<LabelConfigDO> childId = labelConfigService.getByParentId(Collections.singletonList(Long.valueOf(topId)));
             Set<String> childIdSet = childId.stream().map(LabelConfigDO::getId).map(String::valueOf).collect(Collectors.toSet());
             childIds.addAll(childIdSet);
             // 顶级跟下级都选择
         } else if (StrUtil.isNotBlank(topLabel) && StrUtil.isNotEmpty(childLabels)) {
+            // 查询所有的标签
             List<String> childLabelValues = StrSplitter.split(childLabels, "#", 0, true, true);
             childIds.addAll(childLabelValues);
         }
@@ -316,12 +319,23 @@ public class StatisticsCommonService {
         childLabelValues.forEach(childLabel -> {
             //包含只取当前
             if (collect.containsKey(childLabel)) {
+
                 result.addAll(collect.get(childLabel));
                 has.add(childLabel);
             } else {
                 collect.forEach((k, v) -> {
                     if (matchesCachedRegex(k, childLabel, add)) {
-                        result.addAll(v);
+                        //result.addAll(v);
+
+                        List<StandingbookLabelInfoDO> newLabelDOList = new ArrayList<>();
+                        v.forEach(standingbookLabelInfoDO -> {
+                            StandingbookLabelInfoDO newLabel = new StandingbookLabelInfoDO();
+                            newLabel.setValue(childLabel);
+                            newLabel.setName(standingbookLabelInfoDO.getName());
+                            newLabel.setStandingbookId(standingbookLabelInfoDO.getStandingbookId());
+                            newLabelDOList.add(newLabel);
+                        });
+                        result.addAll(newLabelDOList);
                         has.add(k);
 
                     }
@@ -379,9 +393,9 @@ public class StatisticsCommonService {
         Set<String> childLabelValues = new HashSet<>();
         //childLabelValues.add("2");
         childLabelValues.add("2,897");
-        childLabelValues.add("2,896");
-
-        childLabelValues.add("3,897");
+//        childLabelValues.add("2,896");
+//
+//        childLabelValues.add("3,897");
 
 
         StandingbookLabelInfoDO infoDO2 = new StandingbookLabelInfoDO();
@@ -406,7 +420,7 @@ public class StatisticsCommonService {
         byLabelNames.add(infoDO2);
         byLabelNames.add(infoDO3);
         byLabelNames.add(infoDO4);
-        byLabelNames.add(infoDO5);
+//        byLabelNames.add(infoDO5);
         byLabelNames.add(infoDO6);
         byLabelNames.add(infoDO7);
         byLabelNames.add(infoDO8);
