@@ -105,6 +105,10 @@ public interface ExportConstants {
    //电量分布
     String CONSUMPTION_DISTRIBUTION = "电量分布报表";
 
+
+    // 数采补录
+
+    String ADDITIONAL_RECORD = "数采补录表";
     /**
      * 缺省表名
      */

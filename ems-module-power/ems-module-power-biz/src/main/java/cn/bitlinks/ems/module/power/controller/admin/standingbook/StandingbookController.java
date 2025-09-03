@@ -76,7 +76,7 @@ public class StandingbookController {
     }
 
     @PostMapping("/minitorList")
-    @Operation(summary = "获得台账列表")
+    @Operation(summary = "获得台账(监控)列表")
     //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")
     public CommonResult<MinitorRespVO> getMinitorList(@Valid @RequestBody Map<String, String> pageReqVO) {
         MinitorRespVO minitorRespVO = standingbookService.getMinitorList(pageReqVO);

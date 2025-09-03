@@ -5,6 +5,7 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.AssociationData;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
@@ -1114,6 +1115,47 @@ public class StandingbookServiceImpl implements StandingbookService {
         return minitorRespVO;
     }
 
+    /**
+     * 只获取指定字段
+     *
+     * @param pageReqVO 条件map
+     * @return
+     */
+    @Override
+    public List<StandingbookRespVO> getSimpleStandingbookList(Map<String, String> pageReqVO) {
+        List<StandingbookRespVO> result = BeanUtils.toBean(getStandingbookList(pageReqVO), StandingbookRespVO.class);
+
+        if (CollUtil.isNotEmpty(result)) {
+            return result.stream().map(r -> {
+                List<StandingbookAttributeRespVO> childrens = r.getChildren();
+                if (CollUtil.isNotEmpty(childrens)) {
+
+                    // 计量器具名称
+                    StandingbookAttributeRespVO measuringInstrumentName = childrens
+                            .stream()
+                            .filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode())).findFirst()
+                            .orElse(null);
+                    if (Objects.nonNull(measuringInstrumentName)) {
+                        r.setStandingbookName(measuringInstrumentName.getValue());
+                    }
+
+                    // 计量器具code
+                    StandingbookAttributeRespVO measuringInstrumentId = childrens
+                            .stream()
+                            .filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode())).findFirst()
+                            .orElse(null);
+                    if (Objects.nonNull(measuringInstrumentId)) {
+                        r.setStandingbookCode(measuringInstrumentId.getValue());
+                    }
+                }
+                return r;
+            }).collect(Collectors.toList());
+        } else {
+            return Collections.emptyList();
+        }
+
+    }
+
     private List<StandingbookDO> dealWarningStatus(List<StandingbookDO> result, String standingbookStatus) {
         try {
             int status = Integer.parseInt(standingbookStatus);
@@ -1261,7 +1303,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
                     // 查询下级计量器具名称、编码
                     List<StandingbookAttributeDO> attributeDOS = finalMeasurementAttrsMap.get(association.getMeasurementId());
-                    if(CollUtil.isNotEmpty(attributeDOS)){
+                    if (CollUtil.isNotEmpty(attributeDOS)) {
                         Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream().filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode())).findFirst();
                         Optional<StandingbookAttributeDO> codeOptional = attributeDOS.stream().filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode())).findFirst();
                         associationData.setStandingbookName(nameOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));

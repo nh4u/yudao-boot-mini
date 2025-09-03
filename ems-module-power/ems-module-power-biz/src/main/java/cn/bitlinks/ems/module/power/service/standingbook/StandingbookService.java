@@ -65,6 +65,7 @@ public interface StandingbookService {
      */
     MinitorRespVO getMinitorList(Map<String, String> pageReqVO);
 
+    List<StandingbookRespVO> getSimpleStandingbookList(Map<String, String> pageReqVO);
     /**
      * 关联计量器具：根据条件获得台账列表和计量器具联系
      * @param pageReqVO 查询条件
