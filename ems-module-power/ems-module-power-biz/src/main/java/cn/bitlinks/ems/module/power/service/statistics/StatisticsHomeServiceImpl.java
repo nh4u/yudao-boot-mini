@@ -96,7 +96,8 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
                         .stream()
                         .collect(Collectors.toMap(UsageCostData::getEnergyId, Function.identity()));
             }
-
+            BigDecimal totalStandardCoalSum = null;
+            BigDecimal totalStandardCostSum = null;
             for (EnergyConfigurationDO e : energyList) {
                 StatisticsOverviewEnergyData data = new StatisticsOverviewEnergyData();
 
@@ -110,24 +111,25 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
                     data.setStandardCoal(dealBigDecimalScale(usageCostData.getTotalStandardCoalEquivalent(), DEFAULT_SCALE));
                     data.setMoney(dealBigDecimalScale10000(usageCostData.getTotalCost(), DEFAULT_SCALE));
                 }
+                BigDecimal coal = usageCostData.getTotalStandardCoalEquivalent();
+                if (coal != null) {
+                    totalStandardCoalSum = (totalStandardCoalSum == null)
+                            ? coal
+                            : totalStandardCoalSum.add(coal);
+                }
+                BigDecimal cost = usageCostData.getTotalCost();
+                if (cost != null) {
+                    totalStandardCostSum = (totalStandardCostSum == null)
+                            ? coal
+                            : totalStandardCostSum.add(coal);
+                }
                 list.add(data);
             }
 
-            // 3.1.2 综合能耗
-            BigDecimal totalMoney = list.stream()
-                    .map(StatisticsOverviewEnergyData::getMoney)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal::add).orElse(null);
-
-            BigDecimal totalStandardCoal = list.stream()
-                    .map(StatisticsOverviewEnergyData::getStandardCoal)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal::add).orElse(null);
-
             StatisticsOverviewEnergyData data = new StatisticsOverviewEnergyData();
             data.setName(OVERVIEW_ENERGY_STR);
-            data.setStandardCoal(totalStandardCoal);
-            data.setMoney(dealBigDecimalScale10000(totalMoney, DEFAULT_SCALE));
+            data.setStandardCoal(dealBigDecimalScale(totalStandardCoalSum, DEFAULT_SCALE));
+            data.setMoney(dealBigDecimalScale10000(totalStandardCostSum, DEFAULT_SCALE));
             list.add(0, data);
             return list;
         } catch (Exception e) {
