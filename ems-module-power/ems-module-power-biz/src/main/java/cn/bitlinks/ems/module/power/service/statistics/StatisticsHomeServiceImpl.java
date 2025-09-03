@@ -32,7 +32,12 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -123,7 +128,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
                                 : totalStandardCostSum.add(cost);
                     }
                 }
-                
+
                 list.add(data);
             }
 
@@ -179,9 +184,10 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         // 查询聚合数据
         StatisticsOverviewStatisticsTableData nowResult = usageCostService.getAggStatisticsByEnergyIds(startTime, endTime, energyIdList); // 当前
         // 上一周期
+        LocalDateTime[] preRange =  getPreviousPeriod(startTime,endTime);
         StatisticsOverviewStatisticsTableData prevResult = usageCostService.getAggStatisticsByEnergyIds(
-                LocalDateTimeUtils.getPreviousRange(rangeOrigin, dataTypeEnum)[0],
-                LocalDateTimeUtils.getPreviousRange(rangeOrigin, dataTypeEnum)[1], energyIdList);
+                preRange[0],
+                preRange[1], energyIdList);
         // 同期
         StatisticsOverviewStatisticsTableData lastResult = usageCostService.getAggStatisticsByEnergyIds(startTime.minusYears(1), endTime.minusYears(1), energyIdList);
 
@@ -200,6 +206,71 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
 
         return statisticsHomeResultVO;
+    }
+
+    public static LocalDateTime[] getPreviousPeriod(LocalDateTime start, LocalDateTime end) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate today = now.toLocalDate();
+
+        // 今日
+        LocalDateTime todayStart = today.atStartOfDay();
+        LocalDateTime todayEnd = today.atTime(LocalTime.MAX).withNano(0);
+        if (start.equals(todayStart) && end.equals(todayEnd)) {
+            LocalDateTime prevStart = today.minusDays(1).atStartOfDay();
+            LocalDateTime prevEnd = today.minusDays(1).atTime(LocalTime.MAX.withNano(0));
+            return new LocalDateTime[]{prevStart, prevEnd};
+        }
+
+        // 本周
+        LocalDate weekStartDate = today.with(DayOfWeek.MONDAY);
+        LocalDate weekEndDate = today.with(DayOfWeek.SUNDAY);
+        LocalDateTime weekStart = weekStartDate.atStartOfDay();
+        LocalDateTime weekEnd = weekEndDate.atTime(LocalTime.MAX).withNano(0);;
+        if (start.equals(weekStart) && end.equals(weekEnd)) {
+            LocalDateTime prevWeekStart = weekStart.minusWeeks(1);
+            LocalDateTime prevWeekEnd = weekEnd.minusWeeks(1);
+            return new LocalDateTime[]{prevWeekStart, prevWeekEnd};
+        }
+
+        // 本月
+        LocalDate monthStartDate = today.withDayOfMonth(1);
+        LocalDate monthEndDate = today.with(TemporalAdjusters.lastDayOfMonth());
+        LocalDateTime monthStart = monthStartDate.atStartOfDay();
+        LocalDateTime monthEnd = monthEndDate.atTime(LocalTime.MAX).withNano(0);;
+        if (start.equals(monthStart) && end.equals(monthEnd)) {
+            LocalDate prevMonthStartDate = monthStartDate.minusMonths(1).withDayOfMonth(1);
+            LocalDate prevMonthEndDate = prevMonthStartDate.with(TemporalAdjusters.lastDayOfMonth());
+            return new LocalDateTime[]{prevMonthStartDate.atStartOfDay(), prevMonthEndDate.atTime(LocalTime.MAX).withNano(0)};
+        }
+
+        // 本季度
+        int currentQuarter = (today.getMonthValue() - 1) / 3 + 1;
+        LocalDate quarterStartDate = LocalDate.of(today.getYear(), (currentQuarter - 1) * 3 + 1, 1);
+        LocalDate quarterEndDate = quarterStartDate.plusMonths(3).minusDays(1);
+        LocalDateTime quarterStart = quarterStartDate.atStartOfDay();
+        LocalDateTime quarterEnd = quarterEndDate.atTime(LocalTime.MAX).withNano(0);;
+        if (start.equals(quarterStart) && end.equals(quarterEnd)) {
+            LocalDate prevQuarterStartDate = quarterStartDate.minusMonths(3);
+            LocalDate prevQuarterEndDate = prevQuarterStartDate.plusMonths(3).minusDays(1);
+            return new LocalDateTime[]{prevQuarterStartDate.atStartOfDay(), prevQuarterEndDate.atTime(LocalTime.MAX).withNano(0)};
+        }
+
+        // 本年度
+        LocalDate yearStartDate = LocalDate.of(today.getYear(), 1, 1);
+        LocalDate yearEndDate = LocalDate.of(today.getYear(), 12, 31);
+        LocalDateTime yearStart = yearStartDate.atStartOfDay();
+        LocalDateTime yearEnd = yearEndDate.atTime(LocalTime.MAX).withNano(0);;
+        if (start.equals(yearStart) && end.equals(yearEnd)) {
+            LocalDate prevYearStartDate = yearStartDate.minusYears(1);
+            LocalDate prevYearEndDate = yearEndDate.minusYears(1);
+            return new LocalDateTime[]{prevYearStartDate.atStartOfDay(), prevYearEndDate.atTime(LocalTime.MAX).withNano(0)};
+        }
+
+        // 其他情况：自定义范围，按天数平移
+        long days = ChronoUnit.DAYS.between(start.toLocalDate(), end.toLocalDate()) + 1;
+        LocalDateTime prevStart = start.minusDays(days);
+        LocalDateTime prevEnd = end.minusDays(days);
+        return new LocalDateTime[]{prevStart, prevEnd};
     }
 
     @Override
