@@ -55,6 +55,12 @@ public class StandingbookRespVO {
     @Schema(description = "计量器具类型名称")
     private String standingbookTypeName;
 
+    @Schema(description = "计量器具编号")
+    private String standingbookCode;
+
+    @Schema(description = "计量器具名称")
+    private String standingbookName;
+
     @Schema(description = "能耗状态  0:正常 1:异常")
     private Integer standingbookStatus;
 

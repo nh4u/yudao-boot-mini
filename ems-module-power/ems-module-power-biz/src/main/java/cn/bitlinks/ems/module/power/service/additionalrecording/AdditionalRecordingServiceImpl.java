@@ -5,22 +5,23 @@ import cn.bitlinks.ems.framework.common.enums.FullIncrementEnum;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.calc.AggSplitUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinutePrevExistNextDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataFiveMinuteApi;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingExistAcqDataRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingManualSaveReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingPageReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AdditionalRecordingSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.*;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.mysql.additionalrecording.AdditionalRecordingMapper;
 import cn.bitlinks.ems.module.power.enums.RecordMethodEnum;
 import cn.bitlinks.ems.module.power.enums.additionalrecording.AdditionalRecordingScene;
+import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.hutool.core.collection.CollUtil;
+import com.alibaba.excel.util.ListUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -32,6 +33,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.security.core.util.SecurityFrameworkUtils.getLoginUserNickname;
@@ -58,6 +61,9 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     private MinuteAggregateDataFiveMinuteApi minuteAggregateDataFiveMinuteApi;
     @Resource
     private SplitTaskDispatcher splitTaskDispatcher;
+
+    @Resource
+    private StandingbookService standingbookService;
 
     @Override
     public void createAdditionalRecording(AdditionalRecordingManualSaveReqVO createReqVO) {
@@ -90,7 +96,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             throw exception(CURRENT_TIME_ERROR);
         }
         // 获取上下业务点的两个全量值两个全量值（valueType == 0）与当前采集点可能相等
-        MinutePrevExistNextDataDTO  minutePrevExistNextDataDTO= minuteAggregateDataApi.getUsagePrevExistNextFullValue(createReqVO.getStandingbookId(), createReqVO.getThisCollectTime());
+        MinutePrevExistNextDataDTO minutePrevExistNextDataDTO = minuteAggregateDataApi.getUsagePrevExistNextFullValue(createReqVO.getStandingbookId(), createReqVO.getThisCollectTime());
         MinuteAggregateDataDTO prev = minutePrevExistNextDataDTO.getPrevFullValue();
         MinuteAggregateDataDTO next = minutePrevExistNextDataDTO.getNextFullValue();
         // 构造基础 DTO
@@ -251,7 +257,7 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
     @Override
     public AdditionalRecordingExistAcqDataRespVO getExistDataRange(Long standingbookId, LocalDateTime currentCollectTime) {
         // 获取上下两个全量值（valueType == 0）与当前采集点可能相等
-        MinutePrevExistNextDataDTO  minutePrevExistNextDataDTO= minuteAggregateDataApi.getUsagePrevExistNextFullValue(standingbookId, currentCollectTime);
+        MinutePrevExistNextDataDTO minutePrevExistNextDataDTO = minuteAggregateDataApi.getUsagePrevExistNextFullValue(standingbookId, currentCollectTime);
         MinuteAggregateDataDTO existFullValue = minutePrevExistNextDataDTO.getExistFullValue();
         MinuteAggregateDataDTO prevFullValue = minutePrevExistNextDataDTO.getPrevFullValue();
         MinuteAggregateDataDTO nextFullValue = minutePrevExistNextDataDTO.getNextFullValue();
@@ -434,6 +440,51 @@ public class AdditionalRecordingServiceImpl implements AdditionalRecordingServic
             queryWrapper.le("enter_time", endEnterTime);
         }
         return additionalRecordingMapper.selectList(queryWrapper);
+    }
+
+    @Override
+    public List<AdditionalRecordingExportRespVO> getAdditionalRecordingList(Map<String, String> pageReqVO) {
+
+        List<AdditionalRecordingExportRespVO> list = ListUtils.newArrayList();
+
+        // 获取台账的 code和name
+        List<StandingbookRespVO> standingbookList = standingbookService.getSimpleStandingbookList(pageReqVO);
+        if (CollUtil.isEmpty(standingbookList)) {
+            return Collections.emptyList();
+        }
+
+        // 获取补录数据的时间和值
+        List<Long> sbIds = standingbookList.stream().map(StandingbookRespVO::getId).collect(Collectors.toList());
+        List<AdditionalRecordingDO> additionalRecordingList = additionalRecordingMapper
+                .selectList(new LambdaQueryWrapperX<AdditionalRecordingDO>()
+                        .in(AdditionalRecordingDO::getStandingbookId, sbIds));
+
+        Map<Long, List<AdditionalRecordingDO>> additionalRecordingMap = additionalRecordingList
+                .stream()
+                .collect(Collectors.groupingBy(AdditionalRecordingDO::getStandingbookId));
+
+        // 组装对应数据
+        standingbookList.forEach(sb -> {
+            List<AdditionalRecordingDO> additionalRecordings = additionalRecordingMap.get(sb.getId());
+            if (CollUtil.isNotEmpty(additionalRecordings)) {
+                additionalRecordings.forEach(a -> {
+                    AdditionalRecordingExportRespVO vo = new AdditionalRecordingExportRespVO();
+                    vo.setStandingbookName(sb.getStandingbookName());
+                    vo.setStandingbookCode(sb.getStandingbookCode());
+                    vo.setThisValue(a.getThisValue());
+                    vo.setThisCollectTime(a.getThisCollectTime());
+
+                    list.add(vo);
+                });
+            } else {
+                AdditionalRecordingExportRespVO vo = new AdditionalRecordingExportRespVO();
+                vo.setStandingbookName(sb.getStandingbookName());
+                vo.setStandingbookCode(sb.getStandingbookCode());
+                list.add(vo);
+            }
+        });
+
+        return list;
     }
 
 
