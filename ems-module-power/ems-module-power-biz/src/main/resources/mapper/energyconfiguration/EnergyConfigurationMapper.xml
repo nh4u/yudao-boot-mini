@@ -36,6 +36,29 @@
             and t.energy_classify = #{energyClassify}
         </if>
     </select>
+    <select id="getByEnergyClassifyUnit"
+            resultType="cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO">
+        SELECT t.id,
+        t.group_id,
+        t.CODE,
+        t.energy_classify,
+        t.energy_icon,
+        t.factor,
+        t.create_time,
+        t.update_time,
+        t.creator,
+        t.updater,
+        t.deleted,
+        t.energy_name,
+        t1.unit
+        FROM ems_energy_configuration t
+        LEFT JOIN ems_energy_parameters t1 ON (t1.energy_id = t.id AND t1.deleted = 0 and t1.`usage` = 1)
+        WHERE t.deleted = 0
+
+        <if test="energyClassify != null">
+            and t.energy_classify = #{energyClassify}
+        </if>
+    </select>
 
     <select id="getEnergyAndUnit"
             resultType="cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO">

@@ -16,6 +16,9 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.Resource;
 import java.util.Collections;
 
+import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DOUBLE_CARBON_CODE_DUPLICATE;
+
 
 @Service
 @Validated
@@ -43,6 +46,19 @@ public class DoubleCarbonServiceImpl implements DoubleCarbonService {
 
     @Override
     public void updMapping(DoubleCarbonMappingUpdVO updVO) {
+        // 校验台账是否存在
+        DoubleCarbonMappingDO doubleCarbonMappingDO = doubleCarbonMappingMapper.selectById(updVO.getId());
+
+        // 校验双碳编码是否存在
+        // 如果编码被修改，校验新编码是否重复
+        if (!doubleCarbonMappingDO.getDoubleCarbonCode().equals(updVO.getDoubleCarbonCode())) {
+            Long existCount = doubleCarbonMappingMapper.selectCount(new LambdaQueryWrapperX<DoubleCarbonMappingDO>()
+                    .eq(DoubleCarbonMappingDO::getDoubleCarbonCode, updVO.getDoubleCarbonCode())
+                    .ne(DoubleCarbonMappingDO::getId, updVO.getId())); // 排除自身
+            if (existCount > 0) {
+                throw exception(DOUBLE_CARBON_CODE_DUPLICATE);
+            }
+        }
         doubleCarbonMappingMapper.update(new LambdaUpdateWrapper<DoubleCarbonMappingDO>()
                 .set(DoubleCarbonMappingDO::getDoubleCarbonCode, updVO.getDoubleCarbonCode())
                 .eq(DoubleCarbonMappingDO::getId, updVO.getId())

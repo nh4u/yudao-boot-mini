@@ -97,15 +97,20 @@ public interface EnergyConfigurationService {
 
     /**
      * 根据能源ID或能源类型查询能源，优先能源ID
+     *
      * @param energyIds
      * @param energyClassify
      * @return
      */
     List<EnergyConfigurationDO> getByEnergyClassify(Set<Long> energyIds, Integer energyClassify);
 
-     EnergyConfigurationDO getEnergyAndUnit(Long energyId);
+    List<EnergyConfigurationDO> getByEnergyClassifyUnit(Integer energyClassify);
+
+    EnergyConfigurationDO getEnergyAndUnit(Long energyId);
+
     /**
      * 获取无单位的能源list
+     *
      * @param energyIds
      * @param energyClassify
      * @return

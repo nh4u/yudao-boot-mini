@@ -22,6 +22,9 @@ public class StatisticsOverviewEnergyData {
     @Schema(description = "名称", example = "天然气")
     private String name;
 
+    @Schema(description = "用量单位", example = "m3")
+    private String unit;
+
     @Schema(description = "用量", example = "0.00")
     private BigDecimal consumption;
 
