@@ -198,7 +198,8 @@ public class EnergyConversionRateServiceImpl implements EnergyConversionRateServ
                                 list -> {
                                     BigDecimal totalStandardCoal = list.stream()
                                             .map(UsageCostData::getTotalStandardCoalEquivalent)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .filter(Objects::nonNull)
+                                            .reduce(BigDecimal::add).orElse(null);
                                     return new TimeAndNumData(list.get(0).getTime(), totalStandardCoal);
                                 }
                         )
