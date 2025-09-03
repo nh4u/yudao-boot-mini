@@ -199,5 +199,7 @@ public interface ErrorCodeConstants {
     ErrorCode UNIT_NOT_EMPTY = new ErrorCode(1_001_103_001, "单位不能为空");
     //======== 个性报表
     ErrorCode DUPLICATE_TRANSFORMER_ID = new ErrorCode(1_001_301_001, "变压器不可重复");
+    // ======双碳接口
+    ErrorCode DOUBLE_CARBON_CODE_DUPLICATE = new ErrorCode(1_001_302_001, "双碳编码已存在");
 
 }
