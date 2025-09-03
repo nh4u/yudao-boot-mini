@@ -108,6 +108,12 @@ public class CommonUtil {
                 .multiply(BigDecimal.valueOf(100));
     }
 
+    public static BigDecimal dealBigDecimalScale10000(BigDecimal num, Integer scale) {
+        if (num != null) {
+            return num.divide(BigDecimal.valueOf(10000L), scale, RoundingMode.HALF_UP);
+        }
+        return null;
+    }
     public static BigDecimal dealBigDecimalScale(BigDecimal num, Integer scale) {
         if (num != null) {
             return num.setScale(scale, RoundingMode.HALF_UP);
@@ -115,7 +121,6 @@ public class CommonUtil {
         }
         return null;
     }
-
     public static Integer getLabelDeep(String childLabels) {
 
         Integer defaultDeep = 1;

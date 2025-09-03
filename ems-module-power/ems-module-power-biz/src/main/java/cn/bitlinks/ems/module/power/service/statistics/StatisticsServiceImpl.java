@@ -32,7 +32,6 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
-import com.alibaba.nacos.common.utils.CollectionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -143,8 +142,6 @@ public class StatisticsServiceImpl implements StatisticsService {
         String childLabels = paramVO.getChildLabels();
         // 构建返回结果数据
         EnergyFlowResultVO resultVO = new EnergyFlowResultVO();
-        resultVO.setDataTime(LocalDateTime.now());
-
         // 存放所有点
         List<EnergyItemData> data = new ArrayList<>();
         // 存放所有线
@@ -191,6 +188,10 @@ public class StatisticsServiceImpl implements StatisticsService {
                 rangeOrigin[1],
                 energysbIds);
 
+        if (CollUtil.isEmpty(energyStandardCoalList)) {
+            return resultVO;
+        }
+
         // 一级标签名称
         Long topLabelId = Long.valueOf(topLabel.substring(topLabel.indexOf("_") + 1));
         String topLabelName = labelMap.get(topLabelId).getLabelName();
@@ -198,20 +199,26 @@ public class StatisticsServiceImpl implements StatisticsService {
         data.add(new EnergyItemData()
                 .setName(topLabelName));
 
+        Map<Long, UsageCostData> energyStandardCoalMap = energyStandardCoalList
+                .stream()
+                .collect(Collectors.toMap(UsageCostData::getEnergyId, Function.identity()));
+
+
         // 针对能源Map获取园区能源
-        energyStandardCoalList.forEach(usageData -> {
+        energyList.forEach(energy -> {
             // 获取能源数据
-            EnergyConfigurationDO energy = energyMap.get(usageData.getEnergyId());
+            UsageCostData energyStandardCoal = energyStandardCoalMap.get(energy.getId());
+            String source = energy.getEnergyName();
 
-            if (!Objects.isNull(energy)) {
-
-                String source = energy.getEnergyName();
-                // 存入link
-                links.add(new EnergyLinkData()
-                        .setSource(source)
-                        .setValue(usageData.getTotalStandardCoalEquivalent())
-                        .setTarget(topLabelName));
+            BigDecimal value = null;
+            if (Objects.nonNull(energyStandardCoal)) {
+                value = energyStandardCoal.getTotalStandardCoalEquivalent();
             }
+            // 存入link
+            links.add(new EnergyLinkData()
+                    .setSource(source)
+                    .setValue(value)
+                    .setTarget(topLabelName));
         });
 
         // 4.3.台账id处理
@@ -284,9 +291,9 @@ public class StatisticsServiceImpl implements StatisticsService {
                     // 构建点线
                     //  目前取倒数第二个label  有就取 没有就是一级标签
                     String source = dealLabelUpTarget(labelValue, labelMap);
-                    if (CharSequenceUtil.isEmpty(source)){
+                    if (CharSequenceUtil.isEmpty(source)) {
                         source = topLabelName;
-                    }else {
+                    } else {
                         // 存入点
                         data.add(new EnergyItemData()
                                 .setName(source));
@@ -313,9 +320,9 @@ public class StatisticsServiceImpl implements StatisticsService {
 
                         //  目前取倒数第二个label  有就取 没有就是一级标签
                         String source = dealLabelUpTarget(labelValue, labelMap);
-                        if (CharSequenceUtil.isEmpty(source)){
+                        if (CharSequenceUtil.isEmpty(source)) {
                             source = topLabelName;
-                        }else {
+                        } else {
                             // 存入点
                             data.add(new EnergyItemData()
                                     .setName(source));
