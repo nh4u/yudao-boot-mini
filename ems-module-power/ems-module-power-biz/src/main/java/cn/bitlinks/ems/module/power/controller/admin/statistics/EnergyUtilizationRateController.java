@@ -39,8 +39,9 @@ public class EnergyUtilizationRateController {
 
     @PostMapping("/table")
     @Operation(summary = "表")
-    public CommonResult<StatisticsResultV2VO<EnergyRateInfo>> getTable(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
+    public CommonResult<StatisticsResultV2VO<EnergyRateInfo>> getTable(@Valid @RequestBody BaseTimeDateChartParamVO paramVO) {
         StatisticsParamV2VO vo = BeanUtils.toBean(paramVO, StatisticsParamV2VO.class);
+        vo.setEnergyClassify(paramVO.getEnergyClassify());
         vo.setQueryType(StatisticsQueryType.COMPREHENSIVE_VIEW.getCode());
         return success(energyUtilizationRateService.getTable(vo));
     }
