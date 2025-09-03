@@ -171,7 +171,7 @@ public interface StandingbookService {
      */
     void exportLedgerTemplate(HttpServletResponse response) throws UnsupportedEncodingException;
 
-    Set<String> getStandingbookCodeDeviceSet();
-    Set<String> getStandingbookCodeMeasurementSet();
+    List<String> getStandingbookCodeDeviceList();
+    List<String> getStandingbookCodeMeasurementList();
 
 }

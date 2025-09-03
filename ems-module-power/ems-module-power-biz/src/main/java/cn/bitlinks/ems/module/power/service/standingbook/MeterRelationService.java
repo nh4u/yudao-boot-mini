@@ -58,7 +58,7 @@ public class MeterRelationService {
      * @return true=存在，false=不存在
      */
     public boolean checkMeterCodeExists(String meterCode) {
-        Set<String> codeList = standingbookService.getStandingbookCodeMeasurementSet();
+        List<String> codeList = standingbookService.getStandingbookCodeMeasurementList();
         if (CollUtil.isEmpty(codeList)) {
             return false;
         }
@@ -71,21 +71,21 @@ public class MeterRelationService {
      * @param subMeterCodes 下级计量器具编号数组
      * @return 不存在的编号集合（空=全部存在）
      */
-    public Set<String> checkSubMeterCodesExists(String[] subMeterCodes) {
-        Set<String> codeList = standingbookService.getStandingbookCodeMeasurementSet();
+    public List<String> checkSubMeterCodesExists(String[] subMeterCodes) {
+        List<String> codeList = standingbookService.getStandingbookCodeMeasurementList();
         if (CollUtil.isEmpty(codeList)) {
-            return new HashSet<>(Arrays.asList(subMeterCodes));
+            return Arrays.asList(subMeterCodes);
         }
         return Arrays.asList(subMeterCodes).stream()
                 .filter(code -> !codeList.contains(code))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toList());
     }
 
     /**
      * 校验关联设备是否存在
      */
     public boolean checkDeviceExists(String device) {
-        Set<String> codeList = standingbookService.getStandingbookCodeDeviceSet();
+        List<String> codeList = standingbookService.getStandingbookCodeDeviceList();
         if (CollUtil.isEmpty(codeList)) {
             return false;
         }

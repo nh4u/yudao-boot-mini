@@ -375,14 +375,14 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     @Cacheable(value = RedisKeyConstants.STANDING_BOOK_DEVICE_CODE_LIST, key = "'all'", unless = "#result == null || #result.isEmpty()")
-    public Set<String> getStandingbookCodeDeviceSet() {
-        return standingbookAttributeMapper.getStandingbookCodeDeviceSet();
+    public List<String> getStandingbookCodeDeviceList() {
+        return standingbookAttributeMapper.getStandingbookCodeDeviceList();
     }
 
     @Override
     @Cacheable(value = RedisKeyConstants.STANDING_BOOK_MEASUREMENT_CODE_LIST, key = "'all'", unless = "#result == null || #result.isEmpty()")
-    public Set<String> getStandingbookCodeMeasurementSet() {
-        return standingbookAttributeMapper.getStandingbookCodeMeasurementSet();
+    public List<String> getStandingbookCodeMeasurementList() {
+        return standingbookAttributeMapper.getStandingbookCodeMeasurementList();
     }
 
     @Override
