@@ -110,19 +110,20 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
                     data.setConsumption(dealBigDecimalScale(usageCostData.getCurrentTotalUsage(), DEFAULT_SCALE));
                     data.setStandardCoal(dealBigDecimalScale(usageCostData.getTotalStandardCoalEquivalent(), DEFAULT_SCALE));
                     data.setMoney(dealBigDecimalScale10000(usageCostData.getTotalCost(), DEFAULT_SCALE));
+                    BigDecimal coal = usageCostData.getTotalStandardCoalEquivalent();
+                    if (coal != null) {
+                        totalStandardCoalSum = (totalStandardCoalSum == null)
+                                ? coal
+                                : totalStandardCoalSum.add(coal);
+                    }
+                    BigDecimal cost = usageCostData.getTotalCost();
+                    if (cost != null) {
+                        totalStandardCostSum = (totalStandardCostSum == null)
+                                ? cost
+                                : totalStandardCostSum.add(cost);
+                    }
                 }
-                BigDecimal coal = usageCostData.getTotalStandardCoalEquivalent();
-                if (coal != null) {
-                    totalStandardCoalSum = (totalStandardCoalSum == null)
-                            ? coal
-                            : totalStandardCoalSum.add(coal);
-                }
-                BigDecimal cost = usageCostData.getTotalCost();
-                if (cost != null) {
-                    totalStandardCostSum = (totalStandardCostSum == null)
-                            ? cost
-                            : totalStandardCostSum.add(cost);
-                }
+                
                 list.add(data);
             }
 
