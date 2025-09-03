@@ -120,8 +120,8 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
                 BigDecimal cost = usageCostData.getTotalCost();
                 if (cost != null) {
                     totalStandardCostSum = (totalStandardCostSum == null)
-                            ? coal
-                            : totalStandardCostSum.add(coal);
+                            ? cost
+                            : totalStandardCostSum.add(cost);
                 }
                 list.add(data);
             }
