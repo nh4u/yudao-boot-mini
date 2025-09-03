@@ -107,8 +107,8 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
                 if (Objects.nonNull(usageCostData)) {
                     data.setConsumption(dealBigDecimalScale(usageCostData.getCurrentTotalUsage(), DEFAULT_SCALE));
-                    data.setStandardCoal(dealBigDecimalScale10000(usageCostData.getTotalStandardCoalEquivalent(), DEFAULT_SCALE));
-                    data.setMoney(dealBigDecimalScale(usageCostData.getTotalCost(), DEFAULT_SCALE));
+                    data.setStandardCoal(dealBigDecimalScale(usageCostData.getTotalStandardCoalEquivalent(), DEFAULT_SCALE));
+                    data.setMoney(dealBigDecimalScale10000(usageCostData.getTotalCost(), DEFAULT_SCALE));
                 }
                 list.add(data);
             }
@@ -127,7 +127,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
             StatisticsOverviewEnergyData data = new StatisticsOverviewEnergyData();
             data.setName(OVERVIEW_ENERGY_STR);
             data.setStandardCoal(totalStandardCoal);
-            data.setMoney(totalMoney);
+            data.setMoney(dealBigDecimalScale10000(totalMoney, DEFAULT_SCALE));
             list.add(0, data);
             return list;
         } catch (Exception e) {
