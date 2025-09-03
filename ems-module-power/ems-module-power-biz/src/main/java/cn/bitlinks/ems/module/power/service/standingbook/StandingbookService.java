@@ -175,4 +175,5 @@ public interface StandingbookService {
     Set<String> getStandingbookCodeDeviceSet();
     Set<String> getStandingbookCodeMeasurementSet();
 
+    StandingbookExportVO getExcelData(Map<String, String> paramVO);
 }

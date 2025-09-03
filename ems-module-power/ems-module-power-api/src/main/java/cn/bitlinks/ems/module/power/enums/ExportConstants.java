@@ -109,6 +109,11 @@ public interface ExportConstants {
     // 数采补录
 
     String ADDITIONAL_RECORD = "数采补录表";
+
+    // 台账列表
+
+    String MEASURING_STANDING_BOOK = "计量器具台账表";
+    String EQUIPMENT_STANDING_BOOK = "重点设备台账表";
     /**
      * 缺省表名
      */
