@@ -214,10 +214,10 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
         // 今日
         LocalDateTime todayStart = today.atStartOfDay();
-        LocalDateTime todayEnd = today.atTime(LocalTime.MAX);
+        LocalDateTime todayEnd = today.atTime(LocalTime.MAX).withNano(0);
         if (start.equals(todayStart) && end.equals(todayEnd)) {
             LocalDateTime prevStart = today.minusDays(1).atStartOfDay();
-            LocalDateTime prevEnd = today.minusDays(1).atTime(LocalTime.MAX);
+            LocalDateTime prevEnd = today.minusDays(1).atTime(LocalTime.MAX.withNano(0));
             return new LocalDateTime[]{prevStart, prevEnd};
         }
 
@@ -225,7 +225,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         LocalDate weekStartDate = today.with(DayOfWeek.MONDAY);
         LocalDate weekEndDate = today.with(DayOfWeek.SUNDAY);
         LocalDateTime weekStart = weekStartDate.atStartOfDay();
-        LocalDateTime weekEnd = weekEndDate.atTime(LocalTime.MAX);
+        LocalDateTime weekEnd = weekEndDate.atTime(LocalTime.MAX).withNano(0);;
         if (start.equals(weekStart) && end.equals(weekEnd)) {
             LocalDateTime prevWeekStart = weekStart.minusWeeks(1);
             LocalDateTime prevWeekEnd = weekEnd.minusWeeks(1);
@@ -236,11 +236,11 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         LocalDate monthStartDate = today.withDayOfMonth(1);
         LocalDate monthEndDate = today.with(TemporalAdjusters.lastDayOfMonth());
         LocalDateTime monthStart = monthStartDate.atStartOfDay();
-        LocalDateTime monthEnd = monthEndDate.atTime(LocalTime.MAX);
+        LocalDateTime monthEnd = monthEndDate.atTime(LocalTime.MAX).withNano(0);;
         if (start.equals(monthStart) && end.equals(monthEnd)) {
             LocalDate prevMonthStartDate = monthStartDate.minusMonths(1).withDayOfMonth(1);
             LocalDate prevMonthEndDate = prevMonthStartDate.with(TemporalAdjusters.lastDayOfMonth());
-            return new LocalDateTime[]{prevMonthStartDate.atStartOfDay(), prevMonthEndDate.atTime(LocalTime.MAX)};
+            return new LocalDateTime[]{prevMonthStartDate.atStartOfDay(), prevMonthEndDate.atTime(LocalTime.MAX).withNano(0)};
         }
 
         // 本季度
@@ -248,22 +248,22 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         LocalDate quarterStartDate = LocalDate.of(today.getYear(), (currentQuarter - 1) * 3 + 1, 1);
         LocalDate quarterEndDate = quarterStartDate.plusMonths(3).minusDays(1);
         LocalDateTime quarterStart = quarterStartDate.atStartOfDay();
-        LocalDateTime quarterEnd = quarterEndDate.atTime(LocalTime.MAX);
+        LocalDateTime quarterEnd = quarterEndDate.atTime(LocalTime.MAX).withNano(0);;
         if (start.equals(quarterStart) && end.equals(quarterEnd)) {
             LocalDate prevQuarterStartDate = quarterStartDate.minusMonths(3);
             LocalDate prevQuarterEndDate = prevQuarterStartDate.plusMonths(3).minusDays(1);
-            return new LocalDateTime[]{prevQuarterStartDate.atStartOfDay(), prevQuarterEndDate.atTime(LocalTime.MAX)};
+            return new LocalDateTime[]{prevQuarterStartDate.atStartOfDay(), prevQuarterEndDate.atTime(LocalTime.MAX).withNano(0)};
         }
 
         // 本年度
         LocalDate yearStartDate = LocalDate.of(today.getYear(), 1, 1);
         LocalDate yearEndDate = LocalDate.of(today.getYear(), 12, 31);
         LocalDateTime yearStart = yearStartDate.atStartOfDay();
-        LocalDateTime yearEnd = yearEndDate.atTime(LocalTime.MAX);
+        LocalDateTime yearEnd = yearEndDate.atTime(LocalTime.MAX).withNano(0);;
         if (start.equals(yearStart) && end.equals(yearEnd)) {
             LocalDate prevYearStartDate = yearStartDate.minusYears(1);
             LocalDate prevYearEndDate = yearEndDate.minusYears(1);
-            return new LocalDateTime[]{prevYearStartDate.atStartOfDay(), prevYearEndDate.atTime(LocalTime.MAX)};
+            return new LocalDateTime[]{prevYearStartDate.atStartOfDay(), prevYearEndDate.atTime(LocalTime.MAX).withNano(0)};
         }
 
         // 其他情况：自定义范围，按天数平移
