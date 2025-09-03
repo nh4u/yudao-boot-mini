@@ -3,7 +3,6 @@ package cn.bitlinks.ems.module.power.service.energyconfiguration;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import cn.bitlinks.ems.framework.mybatis.core.query.MPJLambdaWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
@@ -615,6 +614,12 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
             return Collections.emptyList();
         }
         return energyConfigurationMapper.getByEnergyClassify(energyIds, energyClassify);
+    }
+
+    @Override
+    public List<EnergyConfigurationDO> getByEnergyClassifyUnit(Integer energyClassify) {
+
+        return energyConfigurationMapper.getByEnergyClassifyUnit(energyClassify);
     }
 
     /**
