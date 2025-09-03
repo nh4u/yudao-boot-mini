@@ -67,6 +67,8 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
     String selectUnitByEnergyNameAndChinese(@Param("energyId") Long energyId);
 
 
+    List<EnergyConfigurationDO> getByEnergyClassifyUnit(
+                                                    @Param("energyClassify") Integer energyClassify);
     List<EnergyConfigurationDO> getByEnergyClassify(@Param("energyIds") Set<Long> energyIds,
                                                     @Param("energyClassify") Integer energyClassify);
 
