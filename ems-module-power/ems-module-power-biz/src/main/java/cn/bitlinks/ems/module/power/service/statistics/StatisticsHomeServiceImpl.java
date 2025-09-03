@@ -39,8 +39,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.safeDivide100;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
 /**
  * 统计总览 Service 实现类
@@ -103,11 +102,12 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
                 data.setName(e.getEnergyName());
                 data.setEnergyIcon(e.getEnergyIcon());
+                data.setUnit(e.getUnit());
                 UsageCostData usageCostData = energyStandardCoalMap.get(e.getId());
 
                 if (Objects.nonNull(usageCostData)) {
                     data.setConsumption(dealBigDecimalScale(usageCostData.getCurrentTotalUsage(), DEFAULT_SCALE));
-                    data.setStandardCoal(dealBigDecimalScale(usageCostData.getTotalStandardCoalEquivalent(), DEFAULT_SCALE));
+                    data.setStandardCoal(dealBigDecimalScale10000(usageCostData.getTotalStandardCoalEquivalent(), DEFAULT_SCALE));
                     data.setMoney(dealBigDecimalScale(usageCostData.getTotalCost(), DEFAULT_SCALE));
                 }
                 list.add(data);
@@ -151,7 +151,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
         // 3.能源、折标煤、用能成本展示
         // 能源处理
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(paramVO.getEnergyClassify());
+        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassifyUnit(paramVO.getEnergyClassify());
         if (CollUtil.isEmpty(energyList)) {
             return statisticsHomeResultVO;
         }
