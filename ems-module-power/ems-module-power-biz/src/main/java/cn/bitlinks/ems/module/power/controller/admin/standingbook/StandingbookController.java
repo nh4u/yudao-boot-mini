@@ -89,14 +89,6 @@ public class StandingbookController {
         return success(respVOS);
     }
 
-    @PostMapping("/minitorList")
-    @Operation(summary = "获得台账(监控)列表")
-    //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")
-    public CommonResult<MinitorRespVO> getMinitorList(@Valid @RequestBody Map<String, String> pageReqVO) {
-        MinitorRespVO minitorRespVO = standingbookService.getMinitorList(pageReqVO);
-        return success(minitorRespVO);
-    }
-
     @PostMapping("/listSbAllWithAssociations")
     @Operation(summary = "关联计量器具：关联下级计量器具/关联设备接口（topType=2）或者重点设备（topType=1）")
     //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")

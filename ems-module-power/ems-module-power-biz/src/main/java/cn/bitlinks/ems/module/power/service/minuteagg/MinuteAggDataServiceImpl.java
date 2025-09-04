@@ -1,9 +1,9 @@
 package cn.bitlinks.ems.module.power.service.minuteagg;
 
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
+import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateData;
 import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.SupplyWaterTmpMinuteAggData;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.MinuteAggDataDTO;
-import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO;
 import cn.bitlinks.ems.module.power.dal.mysql.minuteagg.MinuteAggregateDataMapper;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import lombok.extern.slf4j.Slf4j;
@@ -43,4 +43,48 @@ public class MinuteAggDataServiceImpl implements MinuteAggDataService {
         return minuteAggregateDataMapper.getLastTime(standingbookIds, paramCodes, starTime, endTime);
     }
 
+    /**
+     * 根据台账 能源 参数 时间 获取数采数据
+     *
+     * @param standingbookId
+     * @param paramCode
+     * @param dateType
+     * @param energyFlag
+     * @param starTime
+     * @param endTime
+     * @return
+     */
+    @Override
+    public List<MinuteAggregateData> getList(
+            Long standingbookId,
+            String paramCode,
+            Integer dateType,
+            Integer energyFlag,
+            Integer dataFeature,
+            LocalDateTime starTime,
+            LocalDateTime endTime) {
+        return minuteAggregateDataMapper.getList(standingbookId, paramCode, dateType, energyFlag, dataFeature, starTime, endTime);
+    }
+
+    /**
+     * 根据台账 能源 参数 时间 获取实时数采数据
+     *
+     * @param standingbookId
+     * @param paramCode
+     * @param dateType
+     * @param energyFlag
+     * @param starTime
+     * @param endTime
+     * @return
+     */
+    @Override
+    public List<MinuteAggregateData> getRealTimeList(
+            Long standingbookId,
+            String paramCode,
+            Integer dateType,
+            Integer energyFlag,
+            LocalDateTime starTime,
+            LocalDateTime endTime) {
+        return minuteAggregateDataMapper.getRealTimeList(standingbookId, paramCode, dateType, energyFlag, starTime, endTime);
+    }
 }
