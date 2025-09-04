@@ -21,7 +21,7 @@ public enum DataTypeEnum {
     MONTH(1, "月","yyyy-MM"),
     YEAR(2, "年","yyyy"),
     HOUR(3, "时","yyyy-MM-dd HH"),
-
+    MINUTE(4, "分","yyyy-MM-dd HH:mm"),
     ;
     // 假设的静态变量（需要返回的目标值）
     public static final String DAILY_STATISTICS = "每日合计";

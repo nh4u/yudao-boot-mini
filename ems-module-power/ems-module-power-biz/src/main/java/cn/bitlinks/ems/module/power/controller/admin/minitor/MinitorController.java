@@ -1,6 +1,9 @@
 package cn.bitlinks.ems.module.power.controller.admin.minitor;
 
+import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
+import cn.bitlinks.ems.framework.excel.core.util.ExcelUtils;
+import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorDetailData;
 import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorDetailRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorParamReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorRespVO;
@@ -12,10 +15,13 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 
 /**
@@ -52,5 +58,16 @@ public class MinitorController {
     public CommonResult<List<StandingbookTmplDaqAttrRespVO>> getDaqAttrs(@RequestParam("standingbookId") Long standingbookId) {
         return success(minitorService.getDaqAttrs(standingbookId));
 
+    }
+
+    @PostMapping("/exportDetailTable")
+    @Operation(summary = "导出详情表数据")
+    //@PreAuthorize("@ss.hasPermission('power:minitor:export')")
+    @ApiAccessLog(operateType = EXPORT)
+    public void exportDetailTable(@Valid @RequestBody MinitorParamReqVO paramVO,
+                                   HttpServletResponse response) throws IOException {
+        List<MinitorDetailData> list = minitorService.getDetailTable(paramVO);
+        // 导出 Excel
+        ExcelUtils.write(response, "设备监控详情数据表.xlsx", "数据", MinitorDetailData.class,list);
     }
 }
