@@ -174,7 +174,6 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         statisticsHomeResultVO.setStatisticsOverviewEnergyDataList(energyList(startTime, endTime, energyIdList, energyList));
 
         // 3.2 折标煤用量统计
-        DataTypeEnum dataTypeEnum = DataTypeEnum.codeOf(paramVO.getDateType());
         StatisticsParamV2VO param = new StatisticsParamV2VO();
         param.setRange(rangeOrigin);
         param.setQueryType(StatisticsQueryType.COMPREHENSIVE_VIEW.getCode());
@@ -191,6 +190,15 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         // 同期
         StatisticsOverviewStatisticsTableData lastResult = usageCostService.getAggStatisticsByEnergyIds(startTime.minusYears(1), endTime.minusYears(1), energyIdList);
 
+        if(nowResult == null){
+            nowResult = new StatisticsOverviewStatisticsTableData();
+        }
+        if(lastResult == null){
+            lastResult = new StatisticsOverviewStatisticsTableData();
+        }
+        if(prevResult == null){
+            prevResult = new StatisticsOverviewStatisticsTableData();
+        }
         // 折标煤统计 + 折价统计
         buildStatisticsHomeData(nowResult, prevResult, lastResult, statisticsHomeResultVO);
 
