@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.standingbook;
 
+import cn.bitlinks.ems.framework.common.exception.ErrorCode;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookExcelDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
@@ -7,6 +8,7 @@ import cn.bitlinks.ems.module.power.enums.standingbook.ImportTemplateType;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
 import cn.hutool.core.collection.CollUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.context.annotation.Lazy;
@@ -17,11 +19,13 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
 import java.io.InputStream;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
+@Slf4j
 @Service
 public class StandingbookImportService {
 
@@ -44,7 +48,14 @@ public class StandingbookImportService {
 
     private boolean validateHeader(List<String> uploadedHeaders, ImportTemplateType templateType,
                                    List<String> configHeaders) {
-        return uploadedHeaders.equals(templateType.getBaseHeaders().addAll(configHeaders));
+        // 1. Defensive copy of baseHeaders (to avoid modifying the original list)
+        List<String> combinedHeaders = new ArrayList<>(templateType.getBaseHeaders());
+
+        // 2. Add all configHeaders to the copied list
+        combinedHeaders.addAll(configHeaders);
+
+        // 3. Compare uploadedHeaders with the combinedHeaders list
+        return uploadedHeaders.equals(combinedHeaders);
 
     }
 
@@ -74,17 +85,24 @@ public class StandingbookImportService {
         if (CollUtil.isEmpty(standingbookTypeDOS)) {
             throw exception(STANDINGBOOK_IMPORT_SYSTEM_DATA_ERROR);
         }
+
         Map<String, StandingbookTypeDO> typeDOCodeMap = standingbookTypeDOS.stream()
-                .collect(Collectors.toMap(StandingbookTypeDO::getCode, type -> type));
+                .filter(type -> type != null && type.getCode() != null && !type.getCode().trim().isEmpty()) // Filter out null and empty codes
+                .collect(Collectors.toMap(
+                        StandingbookTypeDO::getCode,      // KeyMapper: use the code
+                        Function.identity(),              // ValueMapper: use the object itself
+                        (existing, replacement) -> existing // MergeFunction: if codes are duplicated, keep the existing one (you might want to change this logic)
+                ));
         List<String> typeCodes = standingbookTypeDOS.stream()
                 .map(StandingbookTypeDO::getCode)   // 提取 code 字段
                 .filter(Objects::nonNull)           // 过滤掉 null
                 .distinct()                         // 去重（可选）
                 .collect(Collectors.toList());
 
-        try (InputStream is = file.getInputStream(); Workbook workbook = new XSSFWorkbook(is)) {
+        try (InputStream is = file.getInputStream();
+             Workbook workbook = WorkbookFactory.create(is)) {
             Sheet sheet = workbook.getSheetAt(0);
-            Row titleRow = sheet.getRow(2);
+            Row titleRow = sheet.getRow(1);
             // 解析表头
             List<String> headers = new ArrayList<>();
             for (Cell cell : titleRow) {
@@ -96,12 +114,10 @@ public class StandingbookImportService {
             // 获取最新模板表头
             ImportTemplateType tmplEnum;
             // 重点设备模板
-            if (sheet.getSheetName().equals(ImportTemplateType.EQUIPMENT.name())) {
+            if (!headers.contains("表类型")) {
                 tmplEnum = ImportTemplateType.EQUIPMENT;
-            } else if (sheet.getSheetName().equals(ImportTemplateType.METER.name())) {
-                tmplEnum = ImportTemplateType.METER;
             } else {
-                throw exception(STANDINGBOOK_IMPORT_TMPL_ERROR);
+                tmplEnum = ImportTemplateType.METER;
             }
             boolean isNew = validateHeader(headers, tmplEnum, topLabelNames);
             if (!isNew) {
@@ -175,15 +191,15 @@ public class StandingbookImportService {
 
             // 如果有错误行，则导入失败，返回错误行号提示
             if (!errorRowNums.isEmpty()) {
-                return buildErrorMsg(errorRowNums);
+                throw exception(new ErrorCode(STANDINGBOOK_IMPORT_ALL_ERROR.getCode(), buildErrorMsg(errorRowNums)));
             }
             // 否则最终入库
             int count = standingbookImportActualService.batchSaveToDb(typeDOCodeMap);
             return "导入成功，共导入 " + count + " 条数据";
 
         } catch (Exception e) {
-            e.printStackTrace();
-            return "文件解析失败：" + e.getMessage();
+            log.error("台账文件解析失败", e);
+            throw exception(new ErrorCode(STANDINGBOOK_IMPORT_ALL_ERROR.getCode(), "文件解析失败：" + e.getMessage()));
         }
     }
 
@@ -242,9 +258,10 @@ public class StandingbookImportService {
         // 校验台账编码必须不存在
         if (standingbookImportActualService.checkMeterCodeExists(sbCode)) return false;
         // 校验标签编码必须存在
+        // 校验标签编码必须存在
         Map<String, String> labelMap = dto.getLabelMap();
         if (CollUtil.isNotEmpty(labelMap)) {
-            List<String> labelCodes = (List<String>) labelMap.values();
+            List<String> labelCodes = new ArrayList<>(labelMap.values());
             if (!standingbookImportActualService.checkLabelCodesExists(labelCodes, sysLabelCodes)) {
                 return false;
             }
