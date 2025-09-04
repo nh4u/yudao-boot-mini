@@ -166,11 +166,11 @@
 
     </select>
 
-    <select id="getStandingbookCodeDeviceSet" resultType="java.util.Set">
+    <select id="getStandingbookCodeDeviceList" resultType="java.lang.String">
     select value from power_standingbook_attribute where code='equipmentId'
                                                      and deleted = 0 and value is not null
     </select>
-    <select id="getStandingbookCodeMeasurementSet" resultType="java.util.Set">
+    <select id="getStandingbookCodeMeasurementList" resultType="java.lang.String">
         select value from power_standingbook_attribute where code='measuringInstrumentId'
                                                          and deleted = 0 and value is not null
     </select>

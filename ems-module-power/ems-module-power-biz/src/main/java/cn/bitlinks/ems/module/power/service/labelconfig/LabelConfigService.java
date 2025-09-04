@@ -80,13 +80,6 @@ public interface LabelConfigService {
 
     List<LabelConfigDO> getByCodes(List<String> codes);
 
-    /**
-     * 根据标签编码查询 标签id层级列表
-     *
-     * @param codes
-     * @return
-     */
-    Map<String, LabelConfigDTO> getLabelDTOByLabelCodes(List<String> codes);
 
 
 }

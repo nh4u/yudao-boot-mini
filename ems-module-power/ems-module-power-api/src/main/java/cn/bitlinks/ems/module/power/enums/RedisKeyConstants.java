@@ -37,4 +37,8 @@ public interface RedisKeyConstants {
      * 导入计量器具关联 excel 缓存数据行
      */
     String STANDING_BOOK_EXCEL_RELATION = "power:standingbook:excel:relation";
+    /**
+     * 导入台账标签 excel 缓存数据行
+     */
+    String STANDING_BOOK_EXCEL = "power:standingbook:excel";
 }
