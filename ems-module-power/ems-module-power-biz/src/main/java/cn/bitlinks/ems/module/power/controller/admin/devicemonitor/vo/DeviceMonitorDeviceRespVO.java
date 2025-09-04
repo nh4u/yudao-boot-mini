@@ -12,6 +12,8 @@ import java.util.List;
 @ExcelIgnoreUnannotated
 @JsonInclude(JsonInclude.Include.ALWAYS)
 public class DeviceMonitorDeviceRespVO {
+    @Schema(description = "能耗状态 0 正常 1 异常")
+    private Integer status;
     @Schema(description = "设备id")
     private Long sbId;
     @Schema(description = "设备名称")

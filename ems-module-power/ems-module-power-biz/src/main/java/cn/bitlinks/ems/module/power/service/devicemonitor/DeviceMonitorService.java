@@ -1,10 +1,10 @@
 package cn.bitlinks.ems.module.power.service.devicemonitor;
 
+import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.devicemonitor.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
-import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatisticsRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
@@ -13,14 +13,11 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.Standingboo
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
-import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
 import cn.bitlinks.ems.module.power.service.standingbook.label.StandingbookLabelInfoService;
-import cn.bitlinks.ems.module.power.service.statistics.StatisticsCommonService;
 import cn.bitlinks.ems.module.power.service.warninginfo.WarningInfoService;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
@@ -40,22 +37,22 @@ public class DeviceMonitorService {
     @Resource
     @Lazy
     private StandingbookService standingbookService;
-    @Resource
-    @Lazy
-    private StatisticsCommonService statisticsCommonService;
+
     @Resource
     @Lazy
     private StandingbookLabelInfoService standingbookLabelInfoService;
+    @Resource
+    @Lazy
     private LabelConfigService labelConfigService;
     @Resource
     @Lazy
     private WarningInfoService warningInfoService;
-    @Autowired
-    private StandingbookAttributeService standingbookAttributeService;
+
     @Resource
     private StandingbookAttributeMapper standingbookAttributeMapper;
 
     public DeviceMonitorWarningRespVO getWarningInfo(@Valid DeviceMonitorWarningReqVO reqVO) {
+        DeviceMonitorWarningRespVO respVO = new DeviceMonitorWarningRespVO();
         // 校验时间范围合法性
         LocalDateTime[] rangeOrigin = reqVO.getRange();
         LocalDateTime startTime = rangeOrigin[0];
@@ -66,10 +63,18 @@ public class DeviceMonitorService {
         if (!LocalDateTimeUtils.isWithinDays(startTime, endTime, CommonConstants.YEAR)) {
             throw exception(DATE_RANGE_EXCEED_LIMIT);
         }
-        //
-        standingbookService.getStandingbookCodeDeviceList();
-//        WarningInfoStatisticsRespVO statisticsRespVO = warningInfoService.getWarningInfoStatistics(startTime, endTime);
-//        List<WarningInfoDO> warningInfoDOList = warningInfoService.getMonitorList();
+        // 查询设备信息
+        List<StandingbookDTO> standingbookDTOS = standingbookService.getStandingbookDTOList();
+        StandingbookDTO standingbookDTO = standingbookDTOS.stream()
+                .filter(dto -> dto != null &&
+                        Objects.equals(dto.getStandingbookId(), reqVO.getSbId()))
+                .findFirst()
+                .orElse(null);
+        if (standingbookDTO != null) {
+            List<WarningInfoDO> warningInfoDOList = warningInfoService.getMonitorListBySbCode(standingbookDTO.getCode());
+            respVO.setList(warningInfoDOList);
+        }
+
         return null;
     }
 
@@ -91,6 +96,13 @@ public class DeviceMonitorService {
         respVO.setCode(standingbookDTO.getCode());
         respVO.setName(standingbookDTO.getName());
         respVO.setSbId(standingbookDTO.getStandingbookId());
+        // 查询设备能耗状态
+        long count = warningInfoService.countMonitorBySbCode(standingbookDTO.getCode());
+        if (count > 0) {
+            respVO.setStatus(CommonStatusEnum.DISABLE.getStatus());
+        } else {
+            respVO.setStatus(CommonStatusEnum.ENABLE.getStatus());
+        }
         // 查询设备图片信息
         List<StandingbookAttributeDO> attributeDOS =
                 standingbookAttributeMapper.selectList(new LambdaQueryWrapperX<StandingbookAttributeDO>()
