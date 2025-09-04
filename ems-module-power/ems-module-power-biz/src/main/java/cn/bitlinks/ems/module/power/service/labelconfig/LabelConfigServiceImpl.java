@@ -11,6 +11,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.coalfactorhistory.CoalFactorHistor
 import cn.bitlinks.ems.module.power.dal.mysql.labelconfig.LabelConfigMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookLabelInfoMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
+import cn.bitlinks.ems.module.power.enums.RedisKeyConstants;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.tree.Tree;
@@ -20,6 +21,8 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -52,6 +55,7 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     private StandingbookLabelInfoMapper standingbookLabelInfoMapper;
 
     @Override
+    @CacheEvict(value = {RedisKeyConstants.LABEL_CONFIG_LIST}, allEntries = true)
     public Long createLabelConfig(LabelConfigSaveReqVO createReqVO) {
         // 校验层数限制
         validateLabelLayer(createReqVO.getParentId());
@@ -96,6 +100,7 @@ public class LabelConfigServiceImpl implements LabelConfigService {
 
 
     @Override
+    @CacheEvict(value = {RedisKeyConstants.LABEL_CONFIG_LIST}, allEntries = true)
     public void updateLabelConfig(LabelConfigSaveReqVO updateReqVO) {
         LabelConfigDO currentLabel = labelConfigMapper.selectById(updateReqVO.getId());
         // 校验存在
@@ -115,6 +120,7 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     }
 
     @Override
+    @CacheEvict(value = {RedisKeyConstants.LABEL_CONFIG_LIST}, allEntries = true)
     public void deleteLabelConfig(Long id) {
         // 校验存在
         validateLabelConfigExists(id);
@@ -266,6 +272,7 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     }
 
     @Override
+    @Cacheable(value = RedisKeyConstants.LABEL_CONFIG_LIST, key = "'all'", unless = "#result == null || #result.isEmpty()")
     public List<LabelConfigDO> getAllLabelConfig() {
         LambdaQueryWrapperX<LabelConfigDO> wrapper = new LambdaQueryWrapperX<>();
         wrapper.select(LabelConfigDO::getId, LabelConfigDO::getParentId, LabelConfigDO::getLabelName, LabelConfigDO::getCode);

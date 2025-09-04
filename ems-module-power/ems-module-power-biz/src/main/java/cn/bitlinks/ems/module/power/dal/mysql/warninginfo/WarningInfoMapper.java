@@ -9,6 +9,7 @@ import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoL
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatisticsRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
+import cn.bitlinks.ems.module.power.enums.warninginfo.WarningInfoStatusEnum;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -93,7 +94,7 @@ public interface WarningInfoMapper extends BaseMapperX<WarningInfoDO> {
      */
     default List<WarningInfoDO> getWarningList() {
         return selectList(new LambdaQueryWrapperX<WarningInfoDO>()
-                .ne(WarningInfoDO::getStatus, 2)
+                .ne(WarningInfoDO::getStatus, WarningInfoStatusEnum.PROCESSED.getCode())
                 .orderByDesc(WarningInfoDO::getWarningTime));
     }
 }
