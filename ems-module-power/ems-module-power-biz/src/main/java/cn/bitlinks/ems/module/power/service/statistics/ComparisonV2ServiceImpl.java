@@ -1921,13 +1921,13 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
         // 汇总统计
         // 当期
-        BigDecimal sumDenominator = denominatorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
-        BigDecimal sumNumerator = numeratorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
+        BigDecimal sumDenominator = denominatorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
+        BigDecimal sumNumerator = numeratorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
         BigDecimal nowSumRadio = safeDivide100(sumNumerator, sumDenominator);
 
         // 上期
-        BigDecimal totalSumDenominator = totalDenominatorList.stream().filter(Objects::nonNull).map(UsageCostData::getTotalStandardCoalEquivalent).reduce(BigDecimal::add).orElse(null);
-        BigDecimal totalSumNumerator = totalNumeratorList.stream().filter(Objects::nonNull).map(UsageCostData::getTotalStandardCoalEquivalent).reduce(BigDecimal::add).orElse(null);
+        BigDecimal totalSumDenominator = totalDenominatorList.stream().filter(Objects::nonNull).map(UsageCostData::getTotalStandardCoalEquivalent).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
+        BigDecimal totalSumNumerator = totalNumeratorList.stream().filter(Objects::nonNull).map(UsageCostData::getTotalStandardCoalEquivalent).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
         BigDecimal totalSumRadio = safeDivide100(totalSumNumerator, totalSumDenominator);
 
         BigDecimal ratio = calculateRatio(nowSumRadio, totalSumRadio);
