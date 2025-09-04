@@ -207,4 +207,5 @@ public interface ErrorCodeConstants {
     ErrorCode STANDINGBOOK_IMPORT_SYSTEM_DATA_ERROR = new ErrorCode(1_001_701_002, "系统分类数据不全");
     ErrorCode STANDINGBOOK_IMPORT_FILE_ERROR = new ErrorCode(1_001_701_003, "文件不能为空");
     ErrorCode STANDINGBOOK_IMPORT_EXCEL_ERROR = new ErrorCode(1_001_701_004, "请上传Excel格式文件（.xlsx/.xls）");
+    ErrorCode STANDINGBOOK_IMPORT_ALL_ERROR = new ErrorCode(1_001_701_000, "");
 }

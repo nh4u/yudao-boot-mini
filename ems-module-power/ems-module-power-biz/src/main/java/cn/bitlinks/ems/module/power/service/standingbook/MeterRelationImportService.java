@@ -1,6 +1,8 @@
 package cn.bitlinks.ems.module.power.service.standingbook;
 
+import cn.bitlinks.ems.framework.common.exception.ErrorCode;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.MeterRelationExcelDTO;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
@@ -15,9 +17,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_IMPORT_EXCEL_ERROR;
-import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_IMPORT_FILE_ERROR;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
+@Slf4j
 @Service
 public class MeterRelationImportService {
 
@@ -81,15 +83,15 @@ public class MeterRelationImportService {
 
             // 如果有错误行，则导入失败，返回错误行号提示
             if (!errorRowNums.isEmpty()) {
-                return buildErrorMsg(errorRowNums);
+                throw exception(new ErrorCode(STANDINGBOOK_IMPORT_ALL_ERROR.getCode(), buildErrorMsg(errorRowNums)));
             }
             // 否则最终入库
             int count = meterRelationService.batchSaveToDb();
             return "导入成功，共导入 " + count + " 条数据";
 
         } catch (Exception e) {
-            e.printStackTrace();
-            return "文件解析失败：" + e.getMessage();
+            log.error("计量器具关系文件解析失败", e);
+            throw exception(new ErrorCode(STANDINGBOOK_IMPORT_ALL_ERROR.getCode(), "计量器具关系文件解析失败：" + e.getMessage()));
         }
     }
 
