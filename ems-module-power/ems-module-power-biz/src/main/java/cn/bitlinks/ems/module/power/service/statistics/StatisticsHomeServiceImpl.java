@@ -184,7 +184,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         // 查询聚合数据
         StatisticsOverviewStatisticsTableData nowResult = usageCostService.getAggStatisticsByEnergyIds(startTime, endTime, energyIdList); // 当前
         // 上一周期
-        LocalDateTime[] preRange =  getPreviousPeriod(startTime,endTime);
+        LocalDateTime[] preRange = getPreviousPeriod(startTime, endTime);
         StatisticsOverviewStatisticsTableData prevResult = usageCostService.getAggStatisticsByEnergyIds(
                 preRange[0],
                 preRange[1], energyIdList);
@@ -225,7 +225,8 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         LocalDate weekStartDate = today.with(DayOfWeek.MONDAY);
         LocalDate weekEndDate = today.with(DayOfWeek.SUNDAY);
         LocalDateTime weekStart = weekStartDate.atStartOfDay();
-        LocalDateTime weekEnd = weekEndDate.atTime(LocalTime.MAX).withNano(0);;
+        LocalDateTime weekEnd = weekEndDate.atTime(LocalTime.MAX).withNano(0);
+        ;
         if (start.equals(weekStart) && end.equals(weekEnd)) {
             LocalDateTime prevWeekStart = weekStart.minusWeeks(1);
             LocalDateTime prevWeekEnd = weekEnd.minusWeeks(1);
@@ -236,7 +237,8 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         LocalDate monthStartDate = today.withDayOfMonth(1);
         LocalDate monthEndDate = today.with(TemporalAdjusters.lastDayOfMonth());
         LocalDateTime monthStart = monthStartDate.atStartOfDay();
-        LocalDateTime monthEnd = monthEndDate.atTime(LocalTime.MAX).withNano(0);;
+        LocalDateTime monthEnd = monthEndDate.atTime(LocalTime.MAX).withNano(0);
+        ;
         if (start.equals(monthStart) && end.equals(monthEnd)) {
             LocalDate prevMonthStartDate = monthStartDate.minusMonths(1).withDayOfMonth(1);
             LocalDate prevMonthEndDate = prevMonthStartDate.with(TemporalAdjusters.lastDayOfMonth());
@@ -248,7 +250,8 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         LocalDate quarterStartDate = LocalDate.of(today.getYear(), (currentQuarter - 1) * 3 + 1, 1);
         LocalDate quarterEndDate = quarterStartDate.plusMonths(3).minusDays(1);
         LocalDateTime quarterStart = quarterStartDate.atStartOfDay();
-        LocalDateTime quarterEnd = quarterEndDate.atTime(LocalTime.MAX).withNano(0);;
+        LocalDateTime quarterEnd = quarterEndDate.atTime(LocalTime.MAX).withNano(0);
+        ;
         if (start.equals(quarterStart) && end.equals(quarterEnd)) {
             LocalDate prevQuarterStartDate = quarterStartDate.minusMonths(3);
             LocalDate prevQuarterEndDate = prevQuarterStartDate.plusMonths(3).minusDays(1);
@@ -259,7 +262,8 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         LocalDate yearStartDate = LocalDate.of(today.getYear(), 1, 1);
         LocalDate yearEndDate = LocalDate.of(today.getYear(), 12, 31);
         LocalDateTime yearStart = yearStartDate.atStartOfDay();
-        LocalDateTime yearEnd = yearEndDate.atTime(LocalTime.MAX).withNano(0);;
+        LocalDateTime yearEnd = yearEndDate.atTime(LocalTime.MAX).withNano(0);
+        ;
         if (start.equals(yearStart) && end.equals(yearEnd)) {
             LocalDate prevYearStartDate = yearStartDate.minusYears(1);
             LocalDate prevYearEndDate = yearEndDate.minusYears(1);
@@ -570,7 +574,6 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
         List<BigDecimal> nowList = new ArrayList<>();
         List<String> timeList = new ArrayList<>();
-        BigDecimal sum = BigDecimal.ZERO;
         for (String time : xdata) {
             StatisticsHomeChartResultVO chartResultVO = nowMap.get(time);
             if (Objects.isNull(chartResultVO)) {
@@ -581,13 +584,15 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
             if (value == null) {
                 continue;
             }
-            nowList.add(value);
+            nowList.add(dealBigDecimalScale(value, DEFAULT_SCALE));
             timeList.add(time);
-            sum = sum.add(value);
         }
+        BigDecimal sum = nowList.stream()
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal::add).orElse(null);
         resultVO.setXdata(timeList);
         resultVO.setYdata(nowList);
-        if (!timeList.isEmpty()) {
+        if (!timeList.isEmpty() && sum != null) {
             BigDecimal avg = sum.divide(new BigDecimal(timeList.size()), 2, RoundingMode.HALF_UP);
             resultVO.setAvg(avg);
         }
