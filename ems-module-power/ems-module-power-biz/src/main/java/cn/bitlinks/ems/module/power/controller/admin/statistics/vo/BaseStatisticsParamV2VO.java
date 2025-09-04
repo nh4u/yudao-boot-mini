@@ -20,6 +20,7 @@ import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_M
 public class BaseStatisticsParamV2VO extends StatisticsParamV2VO{
 
     @Schema(description = "基准年限", example = "2025")
+    @NotNull(message = "基准年限不能为空")
     private Integer benchmark;
 
 }
