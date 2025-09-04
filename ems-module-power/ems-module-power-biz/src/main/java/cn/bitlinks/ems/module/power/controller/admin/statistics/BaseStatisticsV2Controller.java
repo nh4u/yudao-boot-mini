@@ -3,7 +3,6 @@ package cn.bitlinks.ems.module.power.controller.admin.statistics;
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.enums.StatisticsQueryType;
 import cn.bitlinks.ems.module.power.service.statistics.BaseV2Service;
@@ -27,7 +26,6 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -36,7 +34,6 @@ import java.util.List;
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
-import static cn.bitlinks.ems.module.power.enums.ExportConstants.XLSX;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.getLabelDeep;
 
 
@@ -245,7 +242,7 @@ public class BaseStatisticsV2Controller {
 
     @PostMapping("/utilizationRateTable")
     @Operation(summary = "利用率表")
-    public CommonResult<StatisticsResultV2VO<BaseItemVO>> getUtilizationRateTable(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
+    public CommonResult<StatisticsResultV2VO<BaseItemVO>> getUtilizationRateTable(@Valid @RequestBody BaseMarkStatisticsParamVO paramVO) {
         BaseStatisticsParamV2VO vo = BeanUtils.toBean(paramVO, BaseStatisticsParamV2VO.class);
         vo.setQueryType(StatisticsQueryType.COMPREHENSIVE_VIEW.getCode());
         return success(baseV2Service.getUtilizationRateTable(vo));
@@ -253,7 +250,7 @@ public class BaseStatisticsV2Controller {
 
     @PostMapping("/utilizationRateChart")
     @Operation(summary = "利用率图")
-    public CommonResult<ComparisonChartResultVO> getUtilizationRateChart(@Valid @RequestBody BaseTimeDateParamVO paramVO) {
+    public CommonResult<ComparisonChartResultVO> getUtilizationRateChart(@Valid @RequestBody BaseMarkStatisticsParamVO paramVO) {
         BaseStatisticsParamV2VO vo = BeanUtils.toBean(paramVO, BaseStatisticsParamV2VO.class);
         vo.setQueryType(StatisticsQueryType.COMPREHENSIVE_VIEW.getCode());
         return success(baseV2Service.getUtilizationRateChart(vo));
@@ -262,8 +259,8 @@ public class BaseStatisticsV2Controller {
     @PostMapping("/exportUtilizationRateTable")
     @Operation(summary = "导出利用率分析表")
     @ApiAccessLog(operateType = EXPORT)
-    public void exportDiscountAnalysisTable(@Valid @RequestBody BaseTimeDateParamVO paramVO,
-                                            HttpServletResponse response) throws IOException {
+    public void exportUtilizationRateTable(@Valid @RequestBody BaseMarkStatisticsParamVO paramVO,
+                                           HttpServletResponse response) throws IOException {
         BaseStatisticsParamV2VO vo = BeanUtils.toBean(paramVO, BaseStatisticsParamV2VO.class);
         vo.setQueryType(StatisticsQueryType.COMPREHENSIVE_VIEW.getCode());
 
