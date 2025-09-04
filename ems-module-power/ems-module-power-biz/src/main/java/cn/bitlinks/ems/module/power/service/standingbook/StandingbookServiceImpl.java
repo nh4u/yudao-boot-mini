@@ -479,35 +479,49 @@ public class StandingbookServiceImpl implements StandingbookService {
 
             // 3.1 固定数据
             List<StandingbookAttributeDO> attributes = standingbookDO.getChildren();
-            Map<String, String> attributeCodeValueMap = attributes
-                    .stream()
-                    .collect(Collectors.toMap(StandingbookAttributeDO::getCode, StandingbookAttributeDO::getValue));
 
-            attributeCodeList.forEach(a -> {
-                String s = attributeCodeValueMap.get(a);
-                data.add(s);
-            });
+            if (CollUtil.isNotEmpty(attributes)) {
+                Map<String, String> attributeCodeValueMap = attributes
+                        .stream()
+                        .collect(Collectors.toMap(StandingbookAttributeDO::getCode, StandingbookAttributeDO::getValue));
+
+                attributeCodeList.forEach(a -> {
+                    String s = attributeCodeValueMap.get(a);
+                    data.add(s);
+                });
+            } else {
+                attributeCodeList.forEach(a -> {
+                    data.add(null);
+                });
+            }
 
             // 3.2 标签数据
             List<StandingbookLabelInfoDO> labelInfo = standingbookDO.getLabelInfo();
-            Map<String, String> labelInfoNameValueMap = labelInfo
-                    .stream()
-                    .collect(Collectors.toMap(StandingbookLabelInfoDO::getName, StandingbookLabelInfoDO::getValue));
 
-            labelIdList.forEach(l -> {
-                // 拼接name
-                String name = ATTR_LABEL_INFO_PREFIX + l;
-                String value = labelInfoNameValueMap.get(name);
-                String labelName = null;
-                if (CharSequenceUtil.isNotBlank(value)) {
-                    String[] labelIds = value.split(StrPool.COMMA);
-                    labelName = Arrays.stream(labelIds)
-                            .map(labelId -> labelMap.get(Long.valueOf(labelId)).getLabelName())
-                            .collect(Collectors.joining(StrPool.COMMA));
-                }
+            if (CollUtil.isNotEmpty(labelInfo)) {
+                Map<String, String> labelInfoNameValueMap = labelInfo
+                        .stream()
+                        .collect(Collectors.toMap(StandingbookLabelInfoDO::getName, StandingbookLabelInfoDO::getValue));
 
-                data.add(labelName);
-            });
+                labelIdList.forEach(l -> {
+                    // 拼接name
+                    String name = ATTR_LABEL_INFO_PREFIX + l;
+                    String value = labelInfoNameValueMap.get(name);
+                    String labelName = null;
+                    if (CharSequenceUtil.isNotBlank(value)) {
+                        String[] labelIds = value.split(StrPool.COMMA);
+                        labelName = Arrays.stream(labelIds)
+                                .map(labelId -> labelMap.get(Long.valueOf(labelId)).getLabelName())
+                                .collect(Collectors.joining(StrPool.COMMA));
+                    }
+
+                    data.add(labelName);
+                });
+            } else {
+                labelIdList.forEach(l -> {
+                    data.add(null);
+                });
+            }
 
             dataList.add(data);
         }
@@ -1656,6 +1670,7 @@ public class StandingbookServiceImpl implements StandingbookService {
                 .filter(s -> s != null && !s.trim().isEmpty())
                 .collect(Collectors.toList());
     }
+
     public List<LabelConfigDO> loadTopLevelLabelNamesList() {
         List<LabelConfigDO> rows = labelConfigMapper.selectList(
                 Wrappers.<LabelConfigDO>lambdaQuery()
