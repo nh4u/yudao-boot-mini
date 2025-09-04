@@ -66,4 +66,25 @@ public class MinuteAggDataServiceImpl implements MinuteAggDataService {
         return minuteAggregateDataMapper.getList(standingbookId, paramCode, dateType, energyFlag, dataFeature, starTime, endTime);
     }
 
+    /**
+     * 根据台账 能源 参数 时间 获取实时数采数据
+     *
+     * @param standingbookId
+     * @param paramCode
+     * @param dateType
+     * @param energyFlag
+     * @param starTime
+     * @param endTime
+     * @return
+     */
+    @Override
+    public List<MinuteAggregateData> getRealTimeList(
+            Long standingbookId,
+            String paramCode,
+            Integer dateType,
+            Integer energyFlag,
+            LocalDateTime starTime,
+            LocalDateTime endTime) {
+        return minuteAggregateDataMapper.getRealTimeList(standingbookId, paramCode, dateType, energyFlag, starTime, endTime);
+    }
 }

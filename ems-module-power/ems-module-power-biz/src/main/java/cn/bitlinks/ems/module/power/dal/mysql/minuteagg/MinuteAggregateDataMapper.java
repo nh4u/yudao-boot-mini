@@ -142,5 +142,24 @@ public interface MinuteAggregateDataMapper {
             @Param("dataFeature") Integer dataFeature,
             @Param("starTime") LocalDateTime starTime,
             @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 根据台账 能源 参数 时间 获取实时数采数据
+     *
+     * @param standingbookId
+     * @param paramCode
+     * @param energyFlag
+     * @param starTime
+     * @param endTime
+     * @return
+     */
+    @TenantIgnore
+    List<MinuteAggregateData> getRealTimeList(
+            @Param("standingbookId") Long standingbookId,
+            @Param("paramCode") String paramCode,
+            @Param("energyFlag") Integer energyFlag,
+            @Param("dataFeature") Integer dataFeature,
+            @Param("starTime") LocalDateTime starTime,
+            @Param("endTime") LocalDateTime endTime);
 }
 

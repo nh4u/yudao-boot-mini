@@ -58,4 +58,21 @@ public interface MinuteAggDataService {
                                       LocalDateTime endTime);
 
 
+    /**
+     * 根据台账 能源 参数 时间 获取实时数采数据
+     *
+     * @param standingbookId
+     * @param paramCode
+     * @param dateType
+     * @param energyFlag
+     * @param starTime
+     * @param endTime
+     * @return
+     */
+    List<MinuteAggregateData> getRealTimeList(Long standingbookId,
+                                      String paramCode,
+                                      Integer dateType,
+                                      Integer energyFlag,
+                                      LocalDateTime starTime,
+                                      LocalDateTime endTime);
 }
