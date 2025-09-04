@@ -1460,11 +1460,11 @@ public class YoyV2ServiceImpl implements YoyV2Service {
             dataList.add(new YoyDetailVO(time, nowRatio, lastRatio, ratio));
         }
         // 汇总统计
-        BigDecimal sumDenominator = denominatorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
-        BigDecimal sumNumerator = numeratorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
+        BigDecimal sumDenominator = denominatorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
+        BigDecimal sumNumerator = numeratorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
         BigDecimal nowSumRadio = safeDivide100(sumNumerator, sumDenominator);
-        BigDecimal lastSumDenominator = lastDenominatorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
-        BigDecimal lastSumNumerator = lastNumeratorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).reduce(BigDecimal::add).orElse(null);
+        BigDecimal lastSumDenominator = lastDenominatorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
+        BigDecimal lastSumNumerator = lastNumeratorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
         BigDecimal lastSumRadio = safeDivide100(lastSumNumerator, lastSumDenominator);
         BigDecimal ratio = calculateYearOnYearRatio(nowSumRadio, lastSumRadio);
         // 构造结果对象
