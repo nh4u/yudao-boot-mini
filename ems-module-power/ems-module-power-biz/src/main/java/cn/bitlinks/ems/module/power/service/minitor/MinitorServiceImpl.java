@@ -242,8 +242,8 @@ public class MinitorServiceImpl implements MinitorService {
             list = minuteAggDataService.getRealTimeList(
                     paramVO.getStandingbookId(),
                     paramVO.getParamCode(),
-                    paramVO.getDateType(),
                     paramVO.getEnergyFlag(),
+                    dataFeature,
                     rangeOrigin[0],
                     rangeOrigin[1]);
 
@@ -303,6 +303,12 @@ public class MinitorServiceImpl implements MinitorService {
     public List<StandingbookTmplDaqAttrRespVO> getDaqAttrs(Long standingbookId) {
         List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS = standingbookTemplAttrService.getDaqAttrsByStandingbookId(standingbookId);
         return BeanUtils.toBean(standingbookTmplDaqAttrDOS, StandingbookTmplDaqAttrRespVO.class);
+    }
+
+    @Override
+    public List<MinitorDetailData> getDetailTable(MinitorParamReqVO paramVO) {
+        MinitorDetailRespVO minitorDetailRespVO = deviceDetail(paramVO);
+        return minitorDetailRespVO.getTable();
     }
 
     private List<StandingbookDO> dealWarningStatus(List<StandingbookDO> result, String standingbookStatus) {

@@ -70,9 +70,9 @@ public interface MinuteAggDataService {
      * @return
      */
     List<MinuteAggregateData> getRealTimeList(Long standingbookId,
-                                      String paramCode,
-                                      Integer dateType,
-                                      Integer energyFlag,
-                                      LocalDateTime starTime,
-                                      LocalDateTime endTime);
+                                              String paramCode,
+                                              Integer dateType,
+                                              Integer energyFlag,
+                                              LocalDateTime starTime,
+                                              LocalDateTime endTime);
 }
