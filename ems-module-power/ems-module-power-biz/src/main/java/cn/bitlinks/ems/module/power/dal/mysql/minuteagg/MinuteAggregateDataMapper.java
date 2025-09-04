@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.dal.mysql.minuteagg;
 
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.MinuteAggDataDTO;
+import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateData;
 import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateDataDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.SupplyWaterTmpMinuteAggData;
 import org.apache.ibatis.annotations.Mapper;
@@ -110,13 +111,36 @@ public interface MinuteAggregateDataMapper {
             @Param("paramCodes") List<String> paramCodes,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime);
+
     @TenantIgnore
     LocalDateTime getLastTime(@Param("standingbookIds") List<Long> standingbookIds,
                               @Param("paramCodes") List<String> paramCodes,
                               @Param("starTime") LocalDateTime starTime,
                               @Param("endTime") LocalDateTime endTime);
+
     @TenantIgnore
-    List<MinuteAggDataDTO> getMaxDataGpByDateType(@Param("standingbookIds")List<Long> standingbookIds, @Param("paramCodes") List<String> paramCodes, @Param("dateType") Integer dateType,
-                                                  @Param("starTime")LocalDateTime starTime, @Param("endTime") LocalDateTime endTime);
+    List<MinuteAggDataDTO> getMaxDataGpByDateType(@Param("standingbookIds") List<Long> standingbookIds, @Param("paramCodes") List<String> paramCodes, @Param("dateType") Integer dateType,
+                                                  @Param("starTime") LocalDateTime starTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 根据台账 能源 参数 时间 获取数采数据
+     *
+     * @param standingbookId
+     * @param paramCode
+     * @param dateType
+     * @param energyFlag
+     * @param starTime
+     * @param endTime
+     * @return
+     */
+    @TenantIgnore
+    List<MinuteAggregateData> getList(
+            @Param("standingbookId") Long standingbookId,
+            @Param("paramCode") String paramCode,
+            @Param("dateType") Integer dateType,
+            @Param("energyFlag") Integer energyFlag,
+            @Param("dataFeature") Integer dataFeature,
+            @Param("starTime") LocalDateTime starTime,
+            @Param("endTime") LocalDateTime endTime);
 }
 

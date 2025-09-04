@@ -265,5 +265,60 @@
             </foreach>
         </if>
     </select>
+
+    <select id="getList"
+            resultType="cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateData">
+        SELECT standingbook_id
+            , param_code
+        <choose>
+            <!-- 根据 dateType 选择聚合字段 -->
+            <when test="dateType == 0">
+                , DATE(aggregate_time) AS time
+            </when>
+            <when test="dateType == 1">
+                , DATE_FORMAT(aggregate_time, '%Y-%m') AS time
+            </when>
+            <when test="dateType == 2">
+                , YEAR(aggregate_time) AS time
+            </when>
+            <when test="dateType == 3">
+                , DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00') AS time
+
+            </when>
+        </choose>
+        <choose>
+            <when test="dataFeature !=null and dataFeature == 1">
+                , SUM(incremental_value) as value
+            </when>
+            <when test="dataFeature !=null and dataFeature == 2">
+                , full_value as value
+            </when>
+        </choose>
+
+        FROM minute_aggregate_data
+        WHERE aggregate_time >= #{starTime}
+            AND aggregate_time &lt; #{endTime}
+            AND energy_flag = #{energyFlag}
+            AND data_feature = #{dataFeature}
+            AND standingbook_id = #{standingbookId}
+            AND param_code = #{paramCode}
+
+        GROUP BY standingbook_id, param_code
+        <choose>
+            <!-- 根据 dateType 选择聚合字段 -->
+            <when test="dateType == 0">
+                , DATE(aggregate_time)
+            </when>
+            <when test="dateType == 1">
+                , DATE_FORMAT(aggregate_time, '%Y-%m')
+            </when>
+            <when test="dateType == 2">
+                , YEAR(aggregate_time)
+            </when>
+            <when test="dateType == 3">
+                , DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00')
+            </when>
+        </choose>
+    </select>
 </mapper>
 
