@@ -69,6 +69,14 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
     public List<StandingbookAttributeDO> getStandingbookAttributeByTypeId(Long typeId) {
         return standingbookAttributeMapper.selectTypeId(typeId);
     }
+    @Override
+    public List<StandingbookAttributeDO> getStandingbookAttributeList() {
+        return standingbookAttributeMapper.selectList(
+                new LambdaQueryWrapper<StandingbookAttributeDO>()
+                        .isNull(StandingbookAttributeDO::getStandingbookId)
+                        .orderByAsc(StandingbookAttributeDO::getSort)
+        );
+    }
 
     @Override
     public List<StandingbookAttributeDO> getPrivateStandingbookAttributeByTypeId(Long typeId) {

@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.standingbook;
 
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
+import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 
@@ -10,7 +11,6 @@ import javax.validation.Valid;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * 台账属性 Service 接口
@@ -171,7 +171,8 @@ public interface StandingbookService {
      * @param type device|meter
      */
     void exportLedgerTemplate(HttpServletResponse response) throws UnsupportedEncodingException;
-
+    List<String> loadTopLevelLabelNames();
+    List<LabelConfigDO> loadTopLevelLabelNamesList();
     List<String> getStandingbookCodeDeviceList();
     List<String> getStandingbookCodeMeasurementList();
 
