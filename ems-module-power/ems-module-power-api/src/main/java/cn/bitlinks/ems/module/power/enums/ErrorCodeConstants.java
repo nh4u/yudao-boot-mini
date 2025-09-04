@@ -199,5 +199,13 @@ public interface ErrorCodeConstants {
     ErrorCode UNIT_NOT_EMPTY = new ErrorCode(1_001_103_001, "单位不能为空");
     //======== 个性报表
     ErrorCode DUPLICATE_TRANSFORMER_ID = new ErrorCode(1_001_301_001, "变压器不可重复");
+    // ======双碳接口
+    ErrorCode DOUBLE_CARBON_CODE_DUPLICATE = new ErrorCode(1_001_302_001, "双碳编码已存在");
 
+    //========== 台账与标签导入  ==========
+    ErrorCode STANDINGBOOK_IMPORT_TMPL_ERROR = new ErrorCode(1_001_701_001, "模板数据与最新模板数据不一致，请重新下载最新模板");
+    ErrorCode STANDINGBOOK_IMPORT_SYSTEM_DATA_ERROR = new ErrorCode(1_001_701_002, "系统分类数据不全");
+    ErrorCode STANDINGBOOK_IMPORT_FILE_ERROR = new ErrorCode(1_001_701_003, "文件不能为空");
+    ErrorCode STANDINGBOOK_IMPORT_EXCEL_ERROR = new ErrorCode(1_001_701_004, "请上传Excel格式文件（.xlsx/.xls）");
+    ErrorCode STANDINGBOOK_IMPORT_ALL_ERROR = new ErrorCode(1_001_701_000, "");
 }

@@ -33,9 +33,13 @@ public class ExcelUtils {
     public static <T> void write(HttpServletResponse response, String filename, String sheetName,
                                  Class<T> head, List<T> data) throws IOException {
         // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
+        // 设置Content-Disposition头，指定文件名为附件下载
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
+        // 设置Content-Type为Excel文件类型
         response.setContentType("application/vnd.ms-excel;charset=UTF-8");
-
+        // 添加跨域访问头，允许前端获取文件名
+        response.addHeader("Access-Control-Expose-Headers", "File-Name");
+        response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
         // 输出 Excel
         EasyExcel.write(response.getOutputStream(), head)
                 .autoCloseStream(false) // 不要自动关闭，交给 Servlet 自己处理

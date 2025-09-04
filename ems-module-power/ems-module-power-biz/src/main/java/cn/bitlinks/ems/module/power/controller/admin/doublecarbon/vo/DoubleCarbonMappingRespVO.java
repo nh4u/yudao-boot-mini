@@ -13,6 +13,6 @@ public class DoubleCarbonMappingRespVO {
     @Schema(description = "台账编码")
     private String standingbookCode;
     @Schema(description = "双碳编码")
-    private Integer doubleCarbonCode;
+    private String doubleCarbonCode;
 
 }
