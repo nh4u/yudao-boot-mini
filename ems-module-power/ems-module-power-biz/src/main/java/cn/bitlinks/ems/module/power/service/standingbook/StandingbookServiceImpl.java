@@ -5,6 +5,7 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.AssociationData;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
@@ -32,17 +33,23 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.type.StandingbookType
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.ErrorCodeConstants;
 import cn.bitlinks.ems.module.power.enums.RedisKeyConstants;
+import cn.bitlinks.ems.module.power.enums.standingbook.AttributeTreeNodeTypeEnum;
 import cn.bitlinks.ems.module.power.enums.standingbook.StandingbookTypeTopEnum;
 import cn.bitlinks.ems.module.power.service.doublecarbon.DoubleCarbonService;
 import cn.bitlinks.ems.module.power.service.energyparameters.EnergyParametersService;
+import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.acquisition.StandingbookAcquisitionService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
 import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
 import cn.bitlinks.ems.module.power.service.warninginfo.WarningInfoService;
 import cn.bitlinks.ems.module.power.service.warningstrategy.WarningStrategyService;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.text.StrPool;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.alibaba.excel.util.ListUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -73,6 +80,9 @@ import java.util.zip.ZipOutputStream;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_NOT_EXISTS;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.XLSX;
+import static cn.bitlinks.ems.module.power.enums.standingbook.AttributeTreeNodeTypeEnum.*;
 
 /**
  * 台账属性 Service 实现类
@@ -93,6 +103,8 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Resource
     private LabelConfigMapper labelConfigMapper;
 
+    @Resource
+    private LabelConfigService labelConfigService;
     @Resource
     private StandingbookTypeMapper standingbookTypeMapper;
     @Resource
@@ -375,14 +387,166 @@ public class StandingbookServiceImpl implements StandingbookService {
 
     @Override
     @Cacheable(value = RedisKeyConstants.STANDING_BOOK_DEVICE_CODE_LIST, key = "'all'", unless = "#result == null || #result.isEmpty()")
-    public Set<String> getStandingbookCodeDeviceSet() {
-        return standingbookAttributeMapper.getStandingbookCodeDeviceSet();
+    public List<String> getStandingbookCodeDeviceList() {
+        return standingbookAttributeMapper.getStandingbookCodeDeviceList();
     }
 
     @Override
     @Cacheable(value = RedisKeyConstants.STANDING_BOOK_MEASUREMENT_CODE_LIST, key = "'all'", unless = "#result == null || #result.isEmpty()")
-    public Set<String> getStandingbookCodeMeasurementSet() {
-        return standingbookAttributeMapper.getStandingbookCodeMeasurementSet();
+    public List<String> getStandingbookCodeMeasurementList() {
+        return standingbookAttributeMapper.getStandingbookCodeMeasurementList();
+    }
+
+    @Override
+    public StandingbookExportVO getExcelData(Map<String, String> paramVO) {
+
+        // 返回结果
+        StandingbookExportVO resultVo = new StandingbookExportVO();
+
+        // 0.校验type
+        String typeId = paramVO.get(ATTR_TYPE_ID);
+        AttributeTreeNodeTypeEnum attributeTreeNodeTypeEnum = validTypeId(typeId);
+        if (Objects.isNull(attributeTreeNodeTypeEnum)) {
+            throw exception(ErrorCodeConstants.STANDINGBOOK_TYPE_NOT_EXISTS);
+        }
+
+        // 1.文件名字处理
+        String filename = null;
+        switch (attributeTreeNodeTypeEnum) {
+            case EQUIPMENT:
+                filename = EQUIPMENT_STANDING_BOOK + XLSX;
+                break;
+            case MEASURING:
+                filename = MEASURING_STANDING_BOOK + XLSX;
+                break;
+            default:
+                filename = DEFAULT + XLSX;
+        }
+        resultVo.setFilename(filename);
+
+        // 2.表头数据处理
+        List<List<String>> headerList = ListUtils.newArrayList();
+        headerList.add(Collections.singletonList(SB_TYPE.getDesc()));
+        // 获取模版下的所有属性
+        List<StandingbookAttributeDO> standingbookAttributeList = standingbookAttributeService.getStandingbookAttributeByTypeId(Long.valueOf(typeId));
+        List<StandingbookAttributeDO> sottedAttributeList = standingbookAttributeList
+                .stream()
+                .filter(s -> {
+                    String isRequired = s.getIsRequired();
+                    return "0".equals(isRequired);
+                })
+                .sorted(Comparator.comparing(StandingbookAttributeDO::getSort))
+                .collect(Collectors.toList());
+
+        List<String> attributeNameList = sottedAttributeList
+                .stream()
+                .map(StandingbookAttributeDO::getName)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        attributeNameList.forEach(a -> headerList.add(Collections.singletonList(a)));
+
+        // 获取所有一级标签
+        List<LabelConfigDO> labelList = labelConfigMapper.selectList(new LambdaQueryWrapperX<LabelConfigDO>()
+                .eq(LabelConfigDO::getParentId, 0L)
+                .orderByAsc(LabelConfigDO::getSort));
+
+        labelList.forEach(l -> headerList.add(Collections.singletonList(l.getLabelName())));
+        resultVo.setHeaderList(headerList);
+
+        // 3.行数据处理
+        List<List<Object>> dataList = ListUtils.newArrayList();
+
+
+        List<String> attributeCodeList = sottedAttributeList
+                .stream()
+                .map(StandingbookAttributeDO::getCode)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        List<Long> labelIdList = labelList
+                .stream()
+                .map(LabelConfigDO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        // 获取台账列表
+        List<StandingbookDO> standingbookDOS = getStandingbookList(paramVO);
+        if (CollUtil.isEmpty(standingbookDOS)) {
+            return resultVo;
+        }
+
+        // 标签list转换成map
+        Map<Long, LabelConfigDO> labelMap = labelConfigService.getAllLabelConfig()
+                .stream()
+                .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
+
+        // 填充返回结果
+        for (StandingbookDO standingbookDO : standingbookDOS) {
+            List<Object> data = ListUtils.newArrayList();
+            data.add(attributeTreeNodeTypeEnum.getDesc());
+
+            // 3.1 固定数据
+            List<StandingbookAttributeDO> attributes = standingbookDO.getChildren();
+            Map<String, String> attributeCodeValueMap = attributes
+                    .stream()
+                    .collect(Collectors.toMap(StandingbookAttributeDO::getCode, StandingbookAttributeDO::getValue));
+
+            attributeCodeList.forEach(a -> {
+                String s = attributeCodeValueMap.get(a);
+                data.add(s);
+            });
+
+            // 3.2 标签数据
+            List<StandingbookLabelInfoDO> labelInfo = standingbookDO.getLabelInfo();
+            Map<String, String> labelInfoNameValueMap = labelInfo
+                    .stream()
+                    .collect(Collectors.toMap(StandingbookLabelInfoDO::getName, StandingbookLabelInfoDO::getValue));
+
+            labelIdList.forEach(l -> {
+                // 拼接name
+                String name = ATTR_LABEL_INFO_PREFIX + l;
+                String value = labelInfoNameValueMap.get(name);
+                String labelName = null;
+                if (CharSequenceUtil.isNotBlank(value)) {
+                    String[] labelIds = value.split(StrPool.COMMA);
+                    labelName = Arrays.stream(labelIds)
+                            .map(labelId -> labelMap.get(Long.valueOf(labelId)).getLabelName())
+                            .collect(Collectors.joining(StrPool.COMMA));
+                }
+
+                data.add(labelName);
+            });
+
+            dataList.add(data);
+        }
+        resultVo.setDataList(dataList);
+        return resultVo;
+    }
+
+    private AttributeTreeNodeTypeEnum validTypeId(String typeIdStr) {
+
+        if (CharSequenceUtil.isNotBlank(typeIdStr)) {
+            Long typeId = Long.valueOf(typeIdStr);
+            StandingbookTypeDO standingbookType = standingbookTypeService.getStandingbookType(typeId);
+
+            if (Objects.nonNull(standingbookType)) {
+                String topType = standingbookType.getTopType();
+                if (CharSequenceUtil.isNotBlank(topType)) {
+
+                    Integer id = Integer.valueOf(topType);
+                    if (EQUIPMENT.getCode().equals(id)) {
+                        return EQUIPMENT;
+                    } else if (MEASURING.getCode().equals(id)) {
+                        return MEASURING;
+                    } else {
+                        return null;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     @Override
@@ -1114,6 +1278,47 @@ public class StandingbookServiceImpl implements StandingbookService {
         return minitorRespVO;
     }
 
+    /**
+     * 只获取指定字段
+     *
+     * @param pageReqVO 条件map
+     * @return
+     */
+    @Override
+    public List<StandingbookRespVO> getSimpleStandingbookList(Map<String, String> pageReqVO) {
+        List<StandingbookRespVO> result = BeanUtils.toBean(getStandingbookList(pageReqVO), StandingbookRespVO.class);
+
+        if (CollUtil.isNotEmpty(result)) {
+            return result.stream().map(r -> {
+                List<StandingbookAttributeRespVO> childrens = r.getChildren();
+                if (CollUtil.isNotEmpty(childrens)) {
+
+                    // 计量器具名称
+                    StandingbookAttributeRespVO measuringInstrumentName = childrens
+                            .stream()
+                            .filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode())).findFirst()
+                            .orElse(null);
+                    if (Objects.nonNull(measuringInstrumentName)) {
+                        r.setStandingbookName(measuringInstrumentName.getValue());
+                    }
+
+                    // 计量器具code
+                    StandingbookAttributeRespVO measuringInstrumentId = childrens
+                            .stream()
+                            .filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode())).findFirst()
+                            .orElse(null);
+                    if (Objects.nonNull(measuringInstrumentId)) {
+                        r.setStandingbookCode(measuringInstrumentId.getValue());
+                    }
+                }
+                return r;
+            }).collect(Collectors.toList());
+        } else {
+            return Collections.emptyList();
+        }
+
+    }
+
     private List<StandingbookDO> dealWarningStatus(List<StandingbookDO> result, String standingbookStatus) {
         try {
             int status = Integer.parseInt(standingbookStatus);
@@ -1261,7 +1466,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
                     // 查询下级计量器具名称、编码
                     List<StandingbookAttributeDO> attributeDOS = finalMeasurementAttrsMap.get(association.getMeasurementId());
-                    if(CollUtil.isNotEmpty(attributeDOS)){
+                    if (CollUtil.isNotEmpty(attributeDOS)) {
                         Optional<StandingbookAttributeDO> nameOptional = attributeDOS.stream().filter(attribute -> ATTR_MEASURING_INSTRUMENT_MAME.equals(attribute.getCode())).findFirst();
                         Optional<StandingbookAttributeDO> codeOptional = attributeDOS.stream().filter(attribute -> ATTR_MEASURING_INSTRUMENT_ID.equals(attribute.getCode())).findFirst();
                         associationData.setStandingbookName(nameOptional.map(StandingbookAttributeDO::getValue).orElse(StringPool.EMPTY));
@@ -1442,7 +1647,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             Cell noteCell = noteRow.createCell(0);
             noteCell.setCellValue("说明：\n1、*为必填；\n2、下级计量器具有多个时请以英文“;”隔开。");
             noteCell.setCellStyle(noteStyle);
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 2));
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 3));
             for (int c = 1; c <= 3; c++) {
                 Cell tmp = noteRow.createCell(c);
                 tmp.setCellStyle(noteStyle);
@@ -1654,7 +1859,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         }
     }
 
-    private List<String> loadTopLevelLabelNames() {
+    public List<String> loadTopLevelLabelNames() {
         List<LabelConfigDO> rows = labelConfigMapper.selectList(
                 Wrappers.<LabelConfigDO>lambdaQuery()
                         .eq(LabelConfigDO::getDeleted, false)
@@ -1665,6 +1870,17 @@ public class StandingbookServiceImpl implements StandingbookService {
                 .map(LabelConfigDO::getLabelName)
                 .filter(s -> s != null && !s.trim().isEmpty())
                 .collect(Collectors.toList());
+    }
+    public List<LabelConfigDO> loadTopLevelLabelNamesList() {
+        List<LabelConfigDO> rows = labelConfigMapper.selectList(
+                Wrappers.<LabelConfigDO>lambdaQuery()
+                        .eq(LabelConfigDO::getDeleted, false)
+                        .and(w -> w.isNull(LabelConfigDO::getParentId).or().eq(LabelConfigDO::getParentId, 0L))
+                        .orderByAsc(LabelConfigDO::getSort, LabelConfigDO::getId)
+        );
+        return rows.stream()
+                .filter(s -> s != null && s.getLabelName() != null && !s.getLabelName().trim().isEmpty()) // Added null check for getLabelName()
+                .collect(Collectors.toList()); // 将过滤后的 Stream 收集回 List
     }
 
     /**

@@ -64,6 +64,6 @@ public interface StandingbookAttributeMapper extends BaseMapperX<StandingbookAtt
      */
     List<StandingbookDTO> getStandingbookDTO();
 
-    Set<String> getStandingbookCodeDeviceSet();
-    Set<String> getStandingbookCodeMeasurementSet();
+    List<String> getStandingbookCodeDeviceList();
+    List<String> getStandingbookCodeMeasurementList();
 }

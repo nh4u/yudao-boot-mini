@@ -2,7 +2,6 @@ package cn.bitlinks.ems.module.power.controller.admin.additionalrecording;
 
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
-import cn.bitlinks.ems.framework.common.pojo.PageParam;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.excel.core.util.ExcelUtils;
@@ -26,12 +25,15 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.error;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.IMPORT_EXCEL_ERROR;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.ADDITIONAL_RECORD;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.XLSX;
 
 @Tag(name = "管理后台 - 补录")
 @RestController
@@ -123,17 +125,17 @@ public class AdditionalRecordingController {
         return success(BeanUtils.toBean(pageResult, AdditionalRecordingRespVO.class));
     }
 
-    @GetMapping("/export-excel")
-    @Operation(summary = "导出补录 Excel")
+    @PostMapping("/exportAdditionalRecord")
+    @Operation(summary = "导出数据补录 Excel")
     //@PreAuthorize("@ss.hasPermission('power:additional-recording:export')")
     @ApiAccessLog(operateType = EXPORT)
-    public void exportAdditionalRecordingExcel(@Valid AdditionalRecordingPageReqVO pageReqVO,
-                                               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
-        List<AdditionalRecordingDO> list = additionalRecordingService.getAdditionalRecordingPage(pageReqVO).getList();
+    public void exportAdditionalRecord(@Valid @RequestBody Map<String, String> pageReqVO,
+                                       HttpServletResponse response) throws IOException {
+        String filename = ADDITIONAL_RECORD + XLSX;
+
+        List<AdditionalRecordingExportRespVO> list = additionalRecordingService.getAdditionalRecordingList(pageReqVO);
         // 导出 Excel
-        ExcelUtils.write(response, "补录.xls", "数据", AdditionalRecordingRespVO.class,
-                BeanUtils.toBean(list, AdditionalRecordingRespVO.class));
+        ExcelUtils.write(response, filename, "数据", AdditionalRecordingExportRespVO.class, list);
     }
 
     @GetMapping("/query")
@@ -165,7 +167,7 @@ public class AdditionalRecordingController {
                                                                   @RequestParam String acqNameStart, @RequestParam String acqNameEnd,
                                                                   @RequestParam String acqTimeStart, @RequestParam String acqTimeEnd) {
         try {
-            return success(excelMeterDataProcessor.process(file.getInputStream(), acqTimeStart, acqTimeEnd,acqNameStart, acqNameEnd));
+            return success(excelMeterDataProcessor.process(file.getInputStream(), acqTimeStart, acqTimeEnd, acqNameStart, acqNameEnd));
         } catch (IOException e) {
             log.error("Excel解析失败{}", e.getMessage(), e);
             return error(IMPORT_EXCEL_ERROR);

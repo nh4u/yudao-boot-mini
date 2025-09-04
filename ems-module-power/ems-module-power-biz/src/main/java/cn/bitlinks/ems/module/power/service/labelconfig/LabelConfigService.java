@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.labelconfig;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
+import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigDTO;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
@@ -9,6 +10,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 配置标签 Service 接口
@@ -77,4 +79,7 @@ public interface LabelConfigService {
     List<LabelConfigDO> getByParentId(List<Long> ids);
 
     List<LabelConfigDO> getByCodes(List<String> codes);
+
+
+
 }

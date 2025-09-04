@@ -90,7 +90,7 @@ public class VoucherController {
         pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
         List<VoucherDO> list = voucherService.getVoucherPage(pageReqVO).getList();
         // 导出 Excel
-        ExcelUtils.write(response, "凭证管理.xls", "数据", VoucherRespVO.class,
+        ExcelUtils.write(response, "凭证管理.xlsx", "数据", VoucherRespVO.class,
                 BeanUtils.toBean(list, VoucherRespVO.class));
     }
 
