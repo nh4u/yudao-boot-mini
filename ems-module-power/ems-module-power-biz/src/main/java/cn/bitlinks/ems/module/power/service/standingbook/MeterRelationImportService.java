@@ -14,6 +14,10 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_IMPORT_EXCEL_ERROR;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_IMPORT_FILE_ERROR;
+
 @Service
 public class MeterRelationImportService {
 
@@ -27,9 +31,13 @@ public class MeterRelationImportService {
     private static final int BATCH_COUNT = 500;
 
     public String importExcel(MultipartFile file) {
-        if (file.isEmpty()) return "文件不能为空";
+        if (file.isEmpty()) {
+            throw exception(STANDINGBOOK_IMPORT_FILE_ERROR);
+        }
         String fileName = file.getOriginalFilename();
-        if (!fileName.endsWith(".xlsx") && !fileName.endsWith(".xls")) return "请上传Excel格式文件（.xlsx/.xls）";
+        if (!fileName.endsWith(".xlsx") && !fileName.endsWith(".xls")) {
+            throw exception(STANDINGBOOK_IMPORT_EXCEL_ERROR);
+        }
 
         List<Integer> errorRowNums = new ArrayList<>();
         List<MeterRelationExcelDTO> batchList = new ArrayList<>(BATCH_COUNT);

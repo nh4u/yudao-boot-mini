@@ -293,10 +293,10 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         return labelConfigMapper.selectList(wrapper);
     }
 
-    @Override
-    public Map<String, LabelConfigDTO> getLabelDTOByLabelCodes(List<String> codes) {
-        return getNodePathMap(codes);
-    }
+//    @Override
+//    public Map<String, LabelConfigDTO> getLabelDTOByLabelCodes(List<String> codes) {
+//        return getNodePathMap(codes);
+//    }
 
     /**
      * 核心方法：根据输入IDs，返回每个ID的完整路径Map

@@ -1647,7 +1647,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             Cell noteCell = noteRow.createCell(0);
             noteCell.setCellValue("说明：\n1、*为必填；\n2、下级计量器具有多个时请以英文“;”隔开。");
             noteCell.setCellStyle(noteStyle);
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 2));
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 3));
             for (int c = 1; c <= 3; c++) {
                 Cell tmp = noteRow.createCell(c);
                 tmp.setCellStyle(noteStyle);
@@ -1859,7 +1859,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         }
     }
 
-    private List<String> loadTopLevelLabelNames() {
+    public List<String> loadTopLevelLabelNames() {
         List<LabelConfigDO> rows = labelConfigMapper.selectList(
                 Wrappers.<LabelConfigDO>lambdaQuery()
                         .eq(LabelConfigDO::getDeleted, false)
@@ -1870,6 +1870,17 @@ public class StandingbookServiceImpl implements StandingbookService {
                 .map(LabelConfigDO::getLabelName)
                 .filter(s -> s != null && !s.trim().isEmpty())
                 .collect(Collectors.toList());
+    }
+    public List<LabelConfigDO> loadTopLevelLabelNamesList() {
+        List<LabelConfigDO> rows = labelConfigMapper.selectList(
+                Wrappers.<LabelConfigDO>lambdaQuery()
+                        .eq(LabelConfigDO::getDeleted, false)
+                        .and(w -> w.isNull(LabelConfigDO::getParentId).or().eq(LabelConfigDO::getParentId, 0L))
+                        .orderByAsc(LabelConfigDO::getSort, LabelConfigDO::getId)
+        );
+        return rows.stream()
+                .filter(s -> s != null && s.getLabelName() != null && !s.getLabelName().trim().isEmpty()) // Added null check for getLabelName()
+                .collect(Collectors.toList()); // 将过滤后的 Stream 收集回 List
     }
 
     /**
