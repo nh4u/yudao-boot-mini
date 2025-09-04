@@ -5,7 +5,9 @@ import java.util.*;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.framework.mybatis.core.mapper.BaseMapperX;
+import cn.bitlinks.ems.framework.mybatis.core.query.MPJLambdaWrapperX;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
 import org.apache.ibatis.annotations.Mapper;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.*;
 import org.apache.ibatis.annotations.Param;
@@ -41,6 +43,18 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
                 .inIfPresent(EnergyConfigurationDO::getId, reqVO.getEnergyIds())
                 .orderByAsc(EnergyConfigurationDO::getId));
     }
+    default List<EnergyConfigurationDO> getByEnergyClassifyUnit(
+            Integer energyClassify){
+        MPJLambdaWrapperX<EnergyConfigurationDO> query = new MPJLambdaWrapperX<EnergyConfigurationDO>()
+                .selectAll(EnergyConfigurationDO.class)
+                .selectAs(EnergyParametersDO::getUnit,"unit")
+                .eq(EnergyParametersDO::getUsage, 1)
+                .eqIfPresent(EnergyConfigurationDO::getEnergyClassify, energyClassify);
+        query.leftJoin(EnergyParametersDO.class,EnergyParametersDO::getEnergyId, EnergyConfigurationDO::getId);
+
+
+        return selectJoinList(EnergyConfigurationDO.class, query);
+    }
 
     @Select("SELECT COUNT(*) FROM ems_energy_configuration " +
             "WHERE code = #{code} " +
@@ -67,8 +81,7 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
     String selectUnitByEnergyNameAndChinese(@Param("energyId") Long energyId);
 
 
-    List<EnergyConfigurationDO> getByEnergyClassifyUnit(
-                                                    @Param("energyClassify") Integer energyClassify);
+
     List<EnergyConfigurationDO> getByEnergyClassify(@Param("energyIds") Set<Long> energyIds,
                                                     @Param("energyClassify") Integer energyClassify);
 
