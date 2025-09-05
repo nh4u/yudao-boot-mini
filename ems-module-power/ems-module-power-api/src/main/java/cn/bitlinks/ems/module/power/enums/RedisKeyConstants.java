@@ -8,6 +8,7 @@ package cn.bitlinks.ems.module.power.enums;
  */
 public interface RedisKeyConstants {
 
+    // -------------基础查询部分
 
     String STANDING_BOOK_TYPE_LIST = "power:standingbook:type:list";
     String STANDING_BOOK_TYPE_TREE = "power:standingbook:type:tree";
@@ -15,11 +16,17 @@ public interface RedisKeyConstants {
     String STANDING_BOOK_LIST = "power:standingbook:list";
     String STANDING_BOOK_DEVICE_CODE_LIST = "power:standingbook:device:list";
     String STANDING_BOOK_MEASUREMENT_CODE_LIST = "power:standingbook:measurement:list";
-
+    String LABEL_CONFIG_LIST = "power:label-config:list";
     /**
      * 有效时间默认为1小时，修改成10分钟
      */
     String STANDING_BOOK_CODE_KEYMAP = "power:standingbook:map#10m";
+
+
+
+
+
+    // -------------数采缓存部分
     /**
      * 台账id->数采配置
      */
@@ -32,7 +39,7 @@ public interface RedisKeyConstants {
      * 服务->设备们
      */
     String STANDING_BOOK_SERVER_DEVICE_CONFIG = "power:server_device_config";
-
+    // -------------excel导入缓冲
     /**
      * 导入计量器具关联 excel 缓存数据行
      */
