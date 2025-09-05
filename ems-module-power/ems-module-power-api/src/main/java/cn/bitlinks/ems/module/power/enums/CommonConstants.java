@@ -146,6 +146,9 @@ public interface CommonConstants {
     String GET = "GET";
     String UTILIZATION_RATE_STR = "利用率";
     String CONVERSION_RATE_STR = "转换率";
+
+    String ANALYSIS = "分析";
+
     /**
      * 随机成功概率
      */
