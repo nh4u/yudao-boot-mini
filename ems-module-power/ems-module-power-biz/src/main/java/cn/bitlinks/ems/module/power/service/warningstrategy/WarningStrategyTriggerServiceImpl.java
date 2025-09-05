@@ -5,17 +5,17 @@ import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.CollectRawDataApi;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.CollectRawDataDTO;
 import cn.bitlinks.ems.module.infra.api.config.ConfigApi;
-import cn.bitlinks.ems.module.power.controller.admin.standingbook.type.vo.StandingbookTypeListReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoUserDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyConditionDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warningstrategy.WarningStrategyDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warningtemplate.WarningTemplateDO;
 import cn.bitlinks.ems.module.power.dal.mysql.warninginfo.WarningInfoMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.warninginfo.WarningInfoUserMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyConditionMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningstrategy.WarningStrategyMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.warningtemplate.WarningTemplateMapper;
@@ -32,7 +32,7 @@ import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -69,6 +69,8 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
     @Resource
     private WarningInfoMapper warningInfoMapper;
     @Resource
+    private WarningInfoUserMapper warningInfoUserMapper;
+    @Resource
     private WarningStrategyMapper warningStrategyMapper;
     @Resource
     private WarningTemplateMapper warningTemplateMapper;
@@ -103,9 +105,11 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
         List<StandingbookTypeDO> typeTreeList = standingbookTypeService.getStandingbookTypeNode();
         List<StandingbookTypeDO> allTypeList = standingbookTypeService.getStandingbookTypeList();
         Map<Long, String> tyepIdNameMap;
+        Map<Long, String> tyepIdTopTypeMap;
 
         if (CollUtil.isEmpty(allTypeList)) {
             tyepIdNameMap = new HashMap<>();
+            tyepIdTopTypeMap = new HashMap<>();
         } else {
             // 映射为id -> name的Map
             tyepIdNameMap = allTypeList.stream()
@@ -113,10 +117,16 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                             StandingbookTypeDO::getId,  // key为id
                             StandingbookTypeDO::getName  // value为name
                     ));
+            // 映射为id -> name的Map
+            tyepIdTopTypeMap = allTypeList.stream()
+                    .collect(Collectors.toMap(
+                            StandingbookTypeDO::getId,  // key为id
+                            StandingbookTypeDO::getTopType  // value为name
+                    ));
         }
         // 获取所有台账的id-DTO 映射
         List<StandingbookDTO> list = standingbookService.getStandingbookDTOList();
-        if(CollUtil.isEmpty(list)){
+        if (CollUtil.isEmpty(list)) {
             return;
         }
         Map<Long, StandingbookDTO> standingbookDTOMap = list.stream().collect(Collectors.toMap(StandingbookDTO::getStandingbookId, Function.identity()));
@@ -141,7 +151,7 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                     continue;
                 }
                 // 关联设备的需要条件中存在的所有设备
-                if(CollUtil.isNotEmpty(deviceScopeIds)){
+                if (CollUtil.isNotEmpty(deviceScopeIds)) {
                     deviceScopeIds.addAll(findConditionSbIds(conditionVOS));
                 }
 
@@ -214,7 +224,6 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                 // 2.2 查询 台账分类id-> 台账分类
 
 
-
                 // 4.!!!!根据实时数据判断条件是否全都被满足
                 Map<WarningStrategyConditionDO, List<CollectRawDataDTO>> matchCollectRawDataMap =
                         filterMatchCollectRawDataDTO(conditionVOS,
@@ -282,7 +291,7 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                         // 获取api连接配置
                         String initLink = configApi.getConfigValueByKey(INIT_DEVICE_LINK).getCheckedData();
                         conditionParamsMap.put(WARNING_DETAIL_LINK.getKeyWord(), String.format(initLink,
-                                collectRawDataDTO.getStandingbookId()));
+                                collectRawDataDTO.getStandingbookId(), tyepIdTopTypeMap.get(standingbookDTO.getTypeId())));
                         conditionParamsMapList.add(conditionParamsMap);
                         String deviceRel = String.format("%s(%s)", sbName, sbCode);
                         deviceRelList.add(deviceRel);
@@ -332,11 +341,11 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
     }
 
     private List<Long> findConditionSbIds(List<WarningStrategyConditionDO> conditionVOS) {
-        if(CollUtil.isEmpty(conditionVOS)) {
+        if (CollUtil.isEmpty(conditionVOS)) {
             return Collections.emptyList();
         }
         List<Long> sbIds = new ArrayList<>();
-        for(WarningStrategyConditionDO warningStrategyConditionDO:conditionVOS){
+        for (WarningStrategyConditionDO warningStrategyConditionDO : conditionVOS) {
             List<String> paramIds = warningStrategyConditionDO.getParamId();
             String sbId = paramIds.get(paramIds.size() - 2);
             sbIds.add(Long.parseLong(sbId));
@@ -487,52 +496,61 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                 return;
             }
             Map<Long, AdminUserRespDTO> mailUserMap = adminUserApi.getUserMap(userIds);
-            List<WarningInfoDO> warningInfoList = new ArrayList<>();
-            userIds.forEach(userId -> {
-                AdminUserRespDTO adminUserRespDTO = mailUserMap.get(userId);
-                String userName = adminUserRespDTO.getNickname();
-                // 处理收件人关键字参数
-                List<Map<String, String>> newConditionParamsMapList = new ArrayList<>(conditionParamsMapList);
-                newConditionParamsMapList.forEach(conditionParamsMap -> conditionParamsMap.put(WARNING_USER_NAME.getKeyWord(), userName));
-                // 每个用户的告警信息构造标题和内容
-                String title = warningTemplateService.buildTitleOrContentByParams(templateDO.getTParams(), templateDO.getTitle(), conditionParamsMapList);
-                if (Objects.isNull(title)) {
-                    // 模板填充参数失败，此策略不进行告警，直接完全退出
-                    log.error("告警模板id{}，解析模板标题失败，告警信息解析异常", templateDO.getId());
-                    return;
-                }
-                String content = warningTemplateService.buildTitleOrContentByParams(templateDO.getParams(), templateDO.getContent(), conditionParamsMapList);
-                if (Objects.isNull(content)) {
-                    // 模板填充参数失败，此策略不进行告警，直接完全退出
-                    log.error("告警模板id{}，解析模板内容失败，告警信息解析异常", templateDO.getId());
-                    return;
-                }
-                if (warningInfoDO == null) {
+            List<WarningInfoUserDO> warningInfoUserList = new ArrayList<>();
+
+            // 邮件的话 ，加收件人信息填充
+            if (warningInfoDO == null) {
+                userIds.forEach(userId -> {
+                    AdminUserRespDTO adminUserRespDTO = mailUserMap.get(userId);
+                    String userName = adminUserRespDTO.getNickname();
+                    // 处理收件人关键字参数
+                    List<Map<String, String>> newConditionParamsMapList = new ArrayList<>(conditionParamsMapList);
+                    newConditionParamsMapList.forEach(conditionParamsMap -> conditionParamsMap.put(WARNING_USER_NAME.getKeyWord(), userName));
+                    // 每个用户的告警信息构造标题和内容
+                    String userTitle = warningTemplateService.buildTitleOrContentByParams(templateDO.getTParams(), templateDO.getTitle(), conditionParamsMapList);
+                    if (Objects.isNull(userTitle)) {
+                        // 模板填充参数失败，此策略不进行告警，直接完全退出
+                        log.error("告警模板id{}，解析模板标题失败，告警信息解析异常", templateDO.getId());
+                        return;
+                    }
+                    String userContent = warningTemplateService.buildTitleOrContentByParams(templateDO.getParams(), templateDO.getContent(), conditionParamsMapList);
+                    if (Objects.isNull(userContent)) {
+                        // 模板填充参数失败，此策略不进行告警，直接完全退出
+                        log.error("告警模板id{}，解析模板内容失败，告警信息解析异常", templateDO.getId());
+                        return;
+                    }
                     // 发送告警邮件，组装邮件参数结构。
                     MailSendSingleToUserCustomReqDTO mailSendSingleToUserCustomReqDTO = new MailSendSingleToUserCustomReqDTO();
                     mailSendSingleToUserCustomReqDTO.setUserId(userId);
                     mailSendSingleToUserCustomReqDTO.setMail(adminUserRespDTO.getEmail());
-                    mailSendSingleToUserCustomReqDTO.setTitle(title);
-                    mailSendSingleToUserCustomReqDTO.setContent(content);
+                    mailSendSingleToUserCustomReqDTO.setTitle(userTitle);
+                    mailSendSingleToUserCustomReqDTO.setContent(userContent);
                     mailSendSingleToUserCustomReqDTO.setTemplateCode(templateDO.getCode());
-
                     mailSendSingleToUserCustomReqDTO.setTemplateId(templateDO.getId());
                     mailSendSingleToUserCustomReqDTO.setTemplateName(templateDO.getName());
                     mailSendApi.sendSingleMailToAdminCustom(mailSendSingleToUserCustomReqDTO);
-                } else {
-                    // 发送告警信息，组装告警信息参数结构
-                    WarningInfoDO warningInfo = new WarningInfoDO();
-                    BeanUtil.copyProperties(warningInfoDO, warningInfo);
-                    warningInfo.setUserId(userId);
-                    warningInfo.setTitle(title);
-                    warningInfo.setContent(content);
-                    warningInfoList.add(warningInfo);
-                }
-            });
-            if (CollUtil.isEmpty(warningInfoList)) {
-                return;
+                });
+            } else {
+                // 站内信的话，不加发送收件人信息
+                WarningInfoDO warningInfo = new WarningInfoDO();
+                BeanUtil.copyProperties(warningInfoDO, warningInfo);
+                Long infoId = IdUtil.getSnowflakeNextId();
+                warningInfo.setId(infoId);
+                String title = warningTemplateService.buildTitleOrContentByParams(templateDO.getTParams(), templateDO.getTitle(), conditionParamsMapList);
+                String content = warningTemplateService.buildTitleOrContentByParams(templateDO.getParams(), templateDO.getContent(), conditionParamsMapList);
+                warningInfo.setTitle(title);
+                warningInfo.setContent(content);
+                warningInfoMapper.insert(warningInfo);
+                userIds.forEach(userId -> {
+                    WarningInfoUserDO warningInfoUserDO = new WarningInfoUserDO();
+                    warningInfoUserDO.setUserId(userId);
+                    warningInfoUserDO.setInfoId(warningInfo.getId());
+                    warningInfoUserList.add(warningInfoUserDO);
+                });
+                warningInfoUserMapper.insertBatch(warningInfoUserList);
             }
-            warningInfoMapper.insertBatch(warningInfoList);
+
+
         } catch (Exception e) {
             log.error("告警模板id{},告警信息发送异常", templateDO.getId(), e);
         }
