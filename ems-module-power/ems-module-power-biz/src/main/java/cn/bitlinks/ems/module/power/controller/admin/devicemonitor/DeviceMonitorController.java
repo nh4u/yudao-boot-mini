@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,13 +30,13 @@ public class DeviceMonitorController {
 
     @PostMapping("/warning")
     @Operation(summary = "查询告警信息")
-    public CommonResult<DeviceMonitorWarningRespVO> getWarningInfo(@Valid DeviceMonitorWarningReqVO reqVO) {
+    public CommonResult<DeviceMonitorWarningRespVO> getWarningInfo(@RequestBody @Valid DeviceMonitorWarningReqVO reqVO) {
         return success(deviceMonitorService.getWarningInfo(reqVO));
     }
 
     @PostMapping("/deviceInfo")
     @Operation(summary = "根据设备id查询设备名片")
-    public CommonResult<DeviceMonitorDeviceRespVO> getDeviceInfo(@Valid DeviceMonitorDeviceReqVO reqVO) {
+    public CommonResult<DeviceMonitorDeviceRespVO> getDeviceInfo(@RequestBody @Valid DeviceMonitorDeviceReqVO reqVO) {
         return success(deviceMonitorService.getDeviceInfo(reqVO));
     }
 }

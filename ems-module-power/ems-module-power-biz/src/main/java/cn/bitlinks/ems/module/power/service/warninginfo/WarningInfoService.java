@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoS
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatusUpdReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -61,7 +62,9 @@ public interface WarningInfoService {
      */
     List<WarningInfoDO> getWarningList();
 
-    List<WarningInfoDO> getMonitorListBySbCode(String sbCode);
+    List<WarningInfoDO> getMonitorListBySbCode(LocalDateTime[] range, String sbCode);
+
     WarningInfoStatisticsRespVO getMonitorStatisticsBySbCode(String sbCode);
+
     long countMonitorBySbCode(String sbCode);
 }

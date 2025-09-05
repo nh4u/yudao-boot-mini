@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.warninginfo;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.framework.mybatis.core.query.MPJLambdaWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatisticsRespVO;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -89,8 +91,9 @@ public class WarningInfoServiceImpl implements WarningInfoService {
     }
 
     @Override
-    public List<WarningInfoDO> getMonitorListBySbCode(String sbCode) {
-        return warningInfoMapper.selectList(new LambdaQueryWrapper<WarningInfoDO>()
+    public List<WarningInfoDO> getMonitorListBySbCode(LocalDateTime[] range, String sbCode) {
+        return warningInfoMapper.selectList(new LambdaQueryWrapperX<WarningInfoDO>()
+                .betweenIfPresent(WarningInfoDO::getWarningTime, range)
                 .like(WarningInfoDO::getDeviceRel, "(" + sbCode + ")")
                 .orderByDesc(WarningInfoDO::getCreateTime)
         );
