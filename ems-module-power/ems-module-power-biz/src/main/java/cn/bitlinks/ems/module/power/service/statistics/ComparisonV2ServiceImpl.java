@@ -1460,6 +1460,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                 totalOutsourceList,
                 totalParkList,
                 totalNumeratorList,
+                dataTypeEnum,
                 isCrossYear,
                 tableHeader);
 
@@ -1584,7 +1585,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         resultVO.setList(resultVOList);
         resultVO.setDataTime(tableResult.getDataTime());
 
-        String jsonStr = JSON.toJSONString(resultVOList);
+        String jsonStr = JSON.toJSONString(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
 
@@ -1821,6 +1822,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                                              List<UsageCostData> totalOutsourceList,
                                              List<UsageCostData> totalParkList,
                                              List<UsageCostData> totalNumeratorList,
+                                             DataTypeEnum dataTypeEnum,
                                              boolean isCrossYear,
                                              List<String> tableHeader) {
         if (CollUtil.isEmpty(outsourceList)) {
@@ -1862,6 +1864,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                 lastNumeratorMap,
                 totalOutsourceList,
                 totalNumeratorList,
+                dataTypeEnum,
                 isCrossYear,
                 tableHeader));
         result.add(getUtilizationRateInfo(
@@ -1872,6 +1875,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                 lastNumeratorMap,
                 totalParkList,
                 totalNumeratorList,
+                dataTypeEnum,
                 isCrossYear,
                 tableHeader));
         return result;
@@ -1885,6 +1889,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
                                                     Map<String, TimeAndNumData> lastNumeratorMap,
                                                     List<UsageCostData> totalDenominatorList,
                                                     List<UsageCostData> totalNumeratorList,
+                                                    DataTypeEnum dataTypeEnum,
                                                     boolean isCrossYear,
                                                     List<String> tableHeader) {
 
@@ -1904,7 +1909,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             BigDecimal nowRatio = safeDivide100(numeratorValue, denominatorValue);
 
             // 上期
-            String previousTime = LocalDateTimeUtils.getPreviousTime(time, DataTypeEnum.DAY);
+            String previousTime = LocalDateTimeUtils.getPreviousTime(time, dataTypeEnum);
             TimeAndNumData lastNumeratorData = lastNumeratorMap.get(previousTime);
             BigDecimal lastNumeratorValue = Optional.ofNullable(lastNumeratorData)
                     .map(TimeAndNumData::getNum)
