@@ -1575,9 +1575,9 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
         });
         if (EnergyClassifyEnum.OUTSOURCED.getCode().equals(paramVO.getEnergyClassify())) {
-            resultVO.setList(Collections.singletonList(resultVOList.get(0)));
+            resultVO.setList(Collections.singletonList(dealName(resultVOList.get(0))));
         } else if (EnergyClassifyEnum.PARK.getCode().equals(paramVO.getEnergyClassify())) {
-            resultVO.setList(Collections.singletonList(resultVOList.get(1)));
+            resultVO.setList(Collections.singletonList(dealName(resultVOList.get(1))));
         } else {
             resultVO.setList(resultVOList);
         }
@@ -1592,6 +1592,13 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         return resultVO;
     }
 
+    private ComparisonChartGroupVO dealName(ComparisonChartGroupVO vo) {
+        if (Objects.nonNull(vo)) {
+            String name = vo.getName();
+            vo.setName(name + RATIO + ANALYSIS);
+        }
+        return vo;
+    }
     @Override
     public List<List<String>> getExcelHeader(StatisticsParamV2VO paramVO) {
         // 1.校验时间范围
@@ -1943,7 +1950,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         // 构造结果对象
         ComparisonItemVO info = new ComparisonItemVO();
         info.setStatisticsRatioDataList(dataList);
-        info.setEnergyName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR + RATIO + ANALYSIS);
+        info.setEnergyName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR);
 
         info.setSumNow(dealBigDecimalScale(nowSumRadio, DEFAULT_SCALE));
         if (!isCrossYear) {

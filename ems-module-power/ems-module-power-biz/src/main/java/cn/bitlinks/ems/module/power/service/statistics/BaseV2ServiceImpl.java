@@ -1485,9 +1485,9 @@ public class BaseV2ServiceImpl implements BaseV2Service {
 
         });
         if (EnergyClassifyEnum.OUTSOURCED.getCode().equals(paramVO.getEnergyClassify())) {
-            resVO.setList(Collections.singletonList(resultVOList.get(0)));
+            resVO.setList(Collections.singletonList(dealName(resultVOList.get(0))));
         } else if (EnergyClassifyEnum.PARK.getCode().equals(paramVO.getEnergyClassify())) {
-            resVO.setList(Collections.singletonList(resultVOList.get(1)));
+            resVO.setList(Collections.singletonList(dealName(resultVOList.get(1))));
         } else {
             resVO.setList(resultVOList);
         }
@@ -1497,6 +1497,14 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return resVO;
+    }
+
+    private ComparisonChartGroupVO dealName(ComparisonChartGroupVO vo) {
+        if (Objects.nonNull(vo)) {
+            String name = vo.getName();
+            vo.setName(name + RATIO + ANALYSIS);
+        }
+        return vo;
     }
 
     @Override
@@ -1835,7 +1843,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         // 构造结果对象
         BaseItemVO info = new BaseItemVO();
         info.setStatisticsRatioDataList(dataList);
-        info.setEnergyName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR + RATIO + ANALYSIS);
+        info.setEnergyName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR);
 
         info.setSumNow(dealBigDecimalScale(nowSumRadio, DEFAULT_SCALE));
         if (!isCrossYear) {
