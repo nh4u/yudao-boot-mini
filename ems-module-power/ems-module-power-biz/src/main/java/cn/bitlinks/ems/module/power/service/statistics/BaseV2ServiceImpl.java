@@ -1835,7 +1835,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         // 构造结果对象
         BaseItemVO info = new BaseItemVO();
         info.setStatisticsRatioDataList(dataList);
-        info.setEnergyName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR);
+        info.setEnergyName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR + RATIO + ANALYSIS);
 
         info.setSumNow(dealBigDecimalScale(nowSumRadio, DEFAULT_SCALE));
         if (!isCrossYear) {
