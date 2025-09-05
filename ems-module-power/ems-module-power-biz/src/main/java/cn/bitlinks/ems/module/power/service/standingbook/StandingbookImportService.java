@@ -244,6 +244,7 @@ public class StandingbookImportService {
         String tableType = dto.getTableType();
 
         if (!StringUtils.hasText(typeCode)) return false;
+        if (!StringUtils.hasText(sbName)) return false;
         if (!StringUtils.hasText(sbCode)) return false;
         if (tmplEnum.equals(ImportTemplateType.METER)) {
             // 表类型必须存在

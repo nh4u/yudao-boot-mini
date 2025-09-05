@@ -3,18 +3,27 @@ package cn.bitlinks.ems.module.power.service.devicemonitor;
 import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.*;
+import cn.bitlinks.ems.module.infra.api.config.ConfigApi;
+import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatisticsRespVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.monitor.DeviceMonitorQrcodeDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
+import cn.bitlinks.ems.module.power.dal.mysql.measurementdevice.MeasurementDeviceMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.monitor.DeviceMonitorQrcodeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.label.StandingbookLabelInfoService;
+import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
+import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
 import cn.bitlinks.ems.module.power.service.warninginfo.WarningInfoService;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
@@ -38,7 +47,9 @@ public class DeviceMonitorService {
     @Resource
     @Lazy
     private StandingbookService standingbookService;
-
+    @Resource
+    @Lazy
+    private StandingbookTypeService standingbookTypeService;
     @Resource
     @Lazy
     private StandingbookLabelInfoService standingbookLabelInfoService;
@@ -51,6 +62,18 @@ public class DeviceMonitorService {
 
     @Resource
     private StandingbookAttributeMapper standingbookAttributeMapper;
+    @Resource
+    @Lazy
+    private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
+
+    @Resource
+    private MeasurementDeviceMapper measurementDeviceMapper;
+    @Resource
+    private DeviceMonitorQrcodeMapper deviceMonitorQrcodeMapper;
+    @Resource
+    private ConfigApi configApi;
+
+    static final String INIT_DEVICE_LINK = "power.device.monitor.url";
 
     public DeviceMonitorWarningRespVO getWarningInfo(@Valid DeviceMonitorWarningReqVO reqVO) {
         DeviceMonitorWarningRespVO respVO = new DeviceMonitorWarningRespVO();
@@ -143,5 +166,39 @@ public class DeviceMonitorService {
         });
         respVO.setLabels(labelList);
         return respVO;
+    }
+
+    public String getQrCode(@Valid DeviceMonitorDeviceReqVO reqVO) {
+        StandingbookDO standingbookDO = standingbookService.getById(reqVO.getSbId());
+        StandingbookTypeDO standingbookTypeDO = standingbookTypeService.getStandingbookType(standingbookDO.getTypeId());
+        // 设备详情跳转链接
+        String initLink = configApi.getConfigValueByKey(INIT_DEVICE_LINK).getCheckedData();
+        String url = String.format(initLink,
+                reqVO.getSbId(), standingbookTypeDO.getTopType());
+        String qrCode = url + "&token=" + UUID.randomUUID();
+        // 拼接token
+        DeviceMonitorQrcodeDO qrcodeDO = new DeviceMonitorQrcodeDO();
+        qrcodeDO.setDeviceId(reqVO.getSbId());
+        qrcodeDO.setQrcode(qrCode);
+
+        // 删除所有的链接信息
+        deviceMonitorQrcodeMapper.delete(new LambdaQueryWrapperX<DeviceMonitorQrcodeDO>().eq(DeviceMonitorQrcodeDO::getDeviceId, reqVO.getSbId()));
+        // 保存新的链接信息
+        deviceMonitorQrcodeMapper.insert(qrcodeDO);
+        return qrCode;
+    }
+
+    public Boolean validQrCode(String code) {
+        DeviceMonitorQrcodeDO exist = deviceMonitorQrcodeMapper.selectOne(new LambdaQueryWrapperX<DeviceMonitorQrcodeDO>().eq(DeviceMonitorQrcodeDO::getQrcode, code));
+        return Objects.nonNull(exist);
+    }
+
+    public List<EnergyConfigurationDO> energyList(Long sbId) {
+//        // 查询设备下关联的计量器具
+//        StandingbookDO standingbookDO = standingbookService.getById(reqVO.getSbId());
+//        StandingbookTypeDO standingbookTypeDO = standingbookTypeService.getStandingbookType(standingbookDO.getTypeId());
+//        energystandingbookTmplDaqAttrService.(sbId);
+        return null;
+
     }
 }

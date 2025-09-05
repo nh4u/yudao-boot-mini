@@ -1,9 +1,9 @@
-package cn.bitlinks.ems.module.power.service.minitor;
+package cn.bitlinks.ems.module.power.service.monitor;
 
-import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorDetailData;
-import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorDetailRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorParamReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.MinitorDetailData;
+import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.MinitorDetailRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.MinitorParamReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.MinitorRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.tmpl.vo.StandingbookTmplDaqAttrRespVO;
 
 import java.util.List;
@@ -14,7 +14,7 @@ import java.util.Map;
  *
  * @author bitlinks
  */
-public interface MinitorService {
+public interface MonitorService {
 
 
     /**
