@@ -1574,6 +1574,13 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             resultVOList.add(group);
 
         });
+
+        // 处理名字
+        resultVOList.forEach(r->{
+            String name = r.getName();
+            r.setName(name + RATIO + ANALYSIS);
+        });
+
         if (EnergyClassifyEnum.OUTSOURCED.getCode().equals(paramVO.getEnergyClassify())) {
             resultVO.setList(Collections.singletonList(resultVOList.get(0)));
         } else if (EnergyClassifyEnum.PARK.getCode().equals(paramVO.getEnergyClassify())) {
@@ -1943,7 +1950,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         // 构造结果对象
         ComparisonItemVO info = new ComparisonItemVO();
         info.setStatisticsRatioDataList(dataList);
-        info.setEnergyName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR + RATIO + ANALYSIS);
+        info.setEnergyName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR);
 
         info.setSumNow(dealBigDecimalScale(nowSumRadio, DEFAULT_SCALE));
         if (!isCrossYear) {
