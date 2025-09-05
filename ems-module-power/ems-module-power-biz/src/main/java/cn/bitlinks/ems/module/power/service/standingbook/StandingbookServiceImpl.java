@@ -76,7 +76,6 @@ import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUt
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_NOT_EXISTS;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
-import static cn.bitlinks.ems.module.power.enums.ExportConstants.XLSX;
 import static cn.bitlinks.ems.module.power.enums.standingbook.AttributeTreeNodeTypeEnum.*;
 
 /**
@@ -990,10 +989,12 @@ public class StandingbookServiceImpl implements StandingbookService {
         standingbookDO.setLabelInfo(standingbookLabelInfoDOList);
         return standingbookDO;
     }
+
     @Override
     public StandingbookDO getById(Long id) {
         return standingbookMapper.selectById(id);
     }
+
     @Override
     public List<StandingbookDO> getByIds(List<Long> ids) {
 
@@ -1587,7 +1588,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         if (type == LedgerType.METER) {
             createCell(header, idx++, "*表类型", headerStyle);
         }
-        createCell(header, idx++, "设备名称", headerStyle);
+        createCell(header, idx++, "*设备名称", headerStyle);
         createCell(header, idx++, "*设备编号", headerStyle);
         for (String label : topLabelNames) {
             createCell(header, idx++, label, headerStyle);
@@ -1599,27 +1600,87 @@ public class StandingbookServiceImpl implements StandingbookService {
     private void buildDictionarySheet(Workbook wb, LedgerType type) {
         Sheet sheet = wb.createSheet("数据字典");
         CellStyle headerStyle = headerStyle(wb);
-
+        // 查询一级标签头
+        List<LabelConfigDO> topLabelRows = labelConfigMapper.selectList(
+                Wrappers.<LabelConfigDO>lambdaQuery()
+                        .eq(LabelConfigDO::getDeleted, false)
+                        .and(w -> w.isNull(LabelConfigDO::getParentId).or().eq(LabelConfigDO::getParentId, 0L))
+                        .orderByAsc(LabelConfigDO::getSort, LabelConfigDO::getId)
+        );
+        List<String> topLabelNames = topLabelRows.stream()
+                .map(LabelConfigDO::getLabelName)
+                .filter(s -> s != null && !s.trim().isEmpty())
+                .collect(Collectors.toList());
+        Map<String, LabelConfigDO> topLabelMap = topLabelRows.stream()
+                .collect(Collectors.toMap(LabelConfigDO::getLabelName, Function.identity()));
         // 列头
         Row head = sheet.createRow(0);
         head.setHeightInPoints(20);
-        sheet.setColumnWidth(0, 22 * 256);
-        sheet.setColumnWidth(1, 22 * 256);
+
+        sheet.setColumnWidth(0, 30 * 256);
+        sheet.setColumnWidth(1, 30 * 256);
         createCell(head, 0, "设备分类", headerStyle);
-        createCell(head, 1, "标签", headerStyle);
+        if (LedgerType.METER.equals(type)) {
+            createCell(head, 1, "表类型", headerStyle);
+        }
+        List<LabelConfigDO> allConfigs = labelConfigService.getAllLabelConfig();
+        LinkedHashMap<String, List<String>> groupByTopType = new LinkedHashMap<>();
+        List<Integer> labelLengthList = new ArrayList<>();
+        int startIndex = LedgerType.METER.equals(type) ? 2 : 1;
+
+        // 列宽计算变量
+        for (int i = 0; i <= topLabelNames.size() - 1; i++) {
+            String name = topLabelNames.get(i);
+            sheet.setColumnWidth(i + startIndex, 30 * 256);
+
+            createCell(head, i + startIndex, name, headerStyle);
+            // 获取动态标签 名称（编号）
+            Long topLabelId = topLabelMap.get(topLabelNames.get(i)).getId();
+
+            List<LabelConfigDO> subLabels = getSubConfigs(allConfigs, topLabelId);
+            if (CollUtil.isEmpty(subLabels)) {
+                groupByTopType.put(name, Collections.emptyList());
+            } else {
+                List<String> subLabelNames = subLabels.stream()
+                        .map(r -> {
+                            String labelName = r.getLabelName() == null ? "" : r.getLabelName().trim();
+                            String code = r.getCode() == null ? "" : r.getCode().trim();
+                            return String.format("%s(%s)", labelName, code);
+                        })
+                        .collect(Collectors.toList());
+                groupByTopType.put(name, subLabelNames);
+                labelLengthList.add(subLabelNames.size());
+
+            }
+
+        }
+
 
         // 数据
         List<String> categories = loadAllStandingbookTypesDisplay();
-        List<String> allTypes = loadAllLabelConfigDisplay();
 
-        int maxRows = Math.max(categories.size(), allTypes.size());
+        int maxLength = labelLengthList.stream().max(Integer::compareTo).orElse(0);
+
+        List<String> tableTyps = Arrays.asList("实体表计", "虚拟表计");
+        int maxRows = Math.max(categories.size(), maxLength);
         for (int i = 0; i < maxRows; i++) {
             Row row = sheet.createRow(i + 1);
             String v1 = (i < categories.size()) ? categories.get(i) : "";
-            String v2 = (i < allTypes.size()) ? allTypes.get(i) : "";
+            String tableTypeValue = (i < tableTyps.size()) ? tableTyps.get(i) : "";
             row.createCell(0).setCellValue(v1);
-            row.createCell(1).setCellValue(v2);
+            // 计量器具
+            if (LedgerType.METER.equals(type)) {
+                row.createCell(1).setCellValue(tableTypeValue);
+            }
+            // 动态标签
+            for (int j = 0; j <= topLabelNames.size() - 1; j++) {
+                List<String> subConfig = groupByTopType.get(topLabelNames.get(j));
+                String subLabelName = (i < subConfig.size()) ? subConfig.get(i) : "";
+                row.createCell(startIndex + j).setCellValue(subLabelName);
+            }
+
         }
+
     }
 
 
@@ -1646,6 +1707,22 @@ public class StandingbookServiceImpl implements StandingbookService {
         cell.setCellStyle(style);
     }
 
+
+    // 辅助递归方法
+    private List<LabelConfigDO> getSubConfigs(List<LabelConfigDO> allConfigs, Long parentId) {
+        List<LabelConfigDO> directChildren = allConfigs.stream()
+                .filter(config -> parentId.equals(config.getParentId()))
+                .collect(Collectors.toList());
+
+        List<LabelConfigDO> allChildren = new ArrayList<>(directChildren);
+
+        // 递归查找每个子项的子项
+        for (LabelConfigDO child : directChildren) {
+            allChildren.addAll(getSubConfigs(allConfigs, child.getId()));
+        }
+
+        return allChildren;
+    }
 
     enum LedgerType {
         DEVICE, METER;
