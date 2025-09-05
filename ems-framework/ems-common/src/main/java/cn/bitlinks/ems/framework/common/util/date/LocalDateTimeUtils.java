@@ -433,6 +433,14 @@ public class LocalDateTimeUtils {
                     current = current.plusHours(1);
                 }
                 break;
+            case MINUTE:
+                // 当时开始
+                current = LocalDateTime.of(current.toLocalDate(), LocalTime.of(current.getHour(), current.getMinute(), 0));
+                while (!current.isAfter(endDateTime)) {
+                    result.add(LocalDateTimeUtil.format(current, "yyyy-MM-dd HH:mm:00"));
+                    current = current.plusHours(1);
+                }
+                break;
             default:
                 throw new IllegalArgumentException("时间类型不存在");
         }

@@ -1890,7 +1890,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
         List<ComparisonDetailVO> dataList = new ArrayList<>();
         for (String time : tableHeader) {
-
+            // 当前
             TimeAndNumData numeratorData = numeratorMap.get(time);
             BigDecimal numeratorValue = Optional.ofNullable(numeratorData)
                     .map(TimeAndNumData::getNum)
@@ -1903,18 +1903,21 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
 
             BigDecimal nowRatio = safeDivide100(numeratorValue, denominatorValue);
 
-            TimeAndNumData lastNumeratorData = lastNumeratorMap.get(time);
+            // 上期
+            String previousTime = LocalDateTimeUtils.getPreviousTime(time, DataTypeEnum.DAY);
+            TimeAndNumData lastNumeratorData = lastNumeratorMap.get(previousTime);
             BigDecimal lastNumeratorValue = Optional.ofNullable(lastNumeratorData)
                     .map(TimeAndNumData::getNum)
                     .orElse(null);
 
-            TimeAndNumData lastDenominatorData = lastDenominatorMap.get(time);
+            TimeAndNumData lastDenominatorData = lastDenominatorMap.get(previousTime);
             BigDecimal lastDenominatorValue = Optional.ofNullable(lastDenominatorData)
                     .map(TimeAndNumData::getNum)
                     .orElse(null);
 
             BigDecimal lastRatio = safeDivide100(lastNumeratorValue, lastDenominatorValue);
 
+            // 环比
             BigDecimal ratio = calculateRatio(nowRatio, lastRatio);
             dataList.add(new ComparisonDetailVO(time, nowRatio, lastRatio, ratio));
         }

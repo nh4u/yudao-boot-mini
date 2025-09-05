@@ -10,10 +10,12 @@ import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorDetailDat
 import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorDetailRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorParamReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.tmpl.vo.StandingbookTmplDaqAttrRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateData;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookLabelInfoMapper;
@@ -25,6 +27,7 @@ import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.service.minuteagg.MinuteAggDataService;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
+import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.bitlinks.ems.module.power.service.warninginfo.WarningInfoService;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
@@ -66,6 +69,9 @@ public class MinitorServiceImpl implements MinitorService {
     private StandingbookTypeMapper standingbookTypeMapper;
     @Resource
     private StandingbookTmplDaqAttrMapper standingbookTmplDaqAttrMapper;
+
+    @Resource
+    private StandingbookTmplDaqAttrService standingbookTemplAttrService;
     @Resource
     private StandingbookAttributeMapper standingbookAttributeMapper;
 
@@ -225,53 +231,59 @@ public class MinitorServiceImpl implements MinitorService {
         // 2.2.校验时间类型
         DataTypeEnum dataTypeEnum = validateDateType(paramVO.getDateType());
 
+        Integer flag = paramVO.getFlag();
+
         Integer dataFeature = paramVO.getDataFeature();
-        List<MinuteAggregateData> list = minuteAggDataService.getList(
-                paramVO.getStandingbookId(),
-                paramVO.getParamCode(),
-                paramVO.getDateType(),
-                paramVO.getEnergyFlag(),
-                dataFeature,
-                rangeOrigin[0],
-                rangeOrigin[1]);
+
+        List<MinuteAggregateData> list = null;
+
+        if (flag == 0 || dataFeature == 2) {
+            // 实时值 or 稳态值
+            list = minuteAggDataService.getRealTimeList(
+                    paramVO.getStandingbookId(),
+                    paramVO.getParamCode(),
+                    paramVO.getEnergyFlag(),
+                    dataFeature,
+                    rangeOrigin[0],
+                    rangeOrigin[1]);
+
+        } else if (flag == 1) {
+            // 累计值
+            list = minuteAggDataService.getList(
+                    paramVO.getStandingbookId(),
+                    paramVO.getParamCode(),
+                    paramVO.getDateType(),
+                    paramVO.getEnergyFlag(),
+                    dataFeature,
+                    rangeOrigin[0],
+                    rangeOrigin[1]);
+        } else {
+            return resultVO;
+        }
 
         if (CollUtil.isEmpty(list)) {
             return resultVO;
         }
 
-        Map<String, BigDecimal> dataMap;
-
-        if (dataFeature == 1) {
-            // 累计值
-            dataMap = list
-                    .stream()
-                    .collect(Collectors.toMap(MinuteAggregateData::getTime, MinuteAggregateData::getValue));
-        } else if (dataFeature == 2) {
-            // 稳态值
-            dataMap = list
-                    .stream()
-                    .collect(Collectors.toMap(MinuteAggregateData::getTime, MinuteAggregateData::getValue));
-        } else {
-
-            return resultVO;
-        }
+        Map<String, BigDecimal> dataMap = list
+                .stream()
+                .collect(Collectors.toMap(MinuteAggregateData::getTime, MinuteAggregateData::getValue));
 
         // 处理 图-x轴
         List<String> x = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], dataTypeEnum);
         resultVO.setChartX(x);
 
         // 处理 表
-        Map<String, BigDecimal> finalDataMap = dataMap;
         List<MinitorDetailData> table = x.stream().map(time -> {
             MinitorDetailData minitorDetailData = new MinitorDetailData();
             minitorDetailData.setTime(time);
-            minitorDetailData.setValue(dealBigDecimalScale(finalDataMap.get(time), DEFAULT_SCALE));
+            minitorDetailData.setValue(dealBigDecimalScale(dataMap.get(time), DEFAULT_SCALE));
             return minitorDetailData;
         }).collect(Collectors.toList());
         resultVO.setTable(table);
 
         // 处理 图-数据
-        List<BigDecimal> chartY = x.stream().map(finalDataMap::get).collect(Collectors.toList());
+        List<BigDecimal> chartY = x.stream().map(dataMap::get).collect(Collectors.toList());
         resultVO.setChartData(chartY);
 
         StatsResult statsResult = CalculateUtil.calculateStats(
@@ -285,6 +297,18 @@ public class MinitorServiceImpl implements MinitorService {
         resultVO.setMin(dealBigDecimalScale(statsResult.getMin(), DEFAULT_SCALE));
 
         return resultVO;
+    }
+
+    @Override
+    public List<StandingbookTmplDaqAttrRespVO> getDaqAttrs(Long standingbookId) {
+        List<StandingbookTmplDaqAttrDO> standingbookTmplDaqAttrDOS = standingbookTemplAttrService.getDaqAttrsByStandingbookId(standingbookId);
+        return BeanUtils.toBean(standingbookTmplDaqAttrDOS, StandingbookTmplDaqAttrRespVO.class);
+    }
+
+    @Override
+    public List<MinitorDetailData> getDetailTable(MinitorParamReqVO paramVO) {
+        MinitorDetailRespVO minitorDetailRespVO = deviceDetail(paramVO);
+        return minitorDetailRespVO.getTable();
     }
 
     private List<StandingbookDO> dealWarningStatus(List<StandingbookDO> result, String standingbookStatus) {

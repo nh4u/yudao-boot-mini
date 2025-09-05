@@ -22,8 +22,7 @@ public class MinitorParamReqVO {
     @Size(min = 2, max = 2, message = "统计周期不能为空")
     private LocalDateTime[] range;
 
-    @Schema(description = "时间类型 0：日；1：月；2：年；3：时。")
-    @NotNull(message = "时间类型不能为空")
+    @Schema(description = "时间类型 0：日；1：月；2：年；3：时；4：分。")
     private Integer dateType;
 
     @Schema(description = "台账")
@@ -41,4 +40,8 @@ public class MinitorParamReqVO {
     @Schema(description = "数据特征 1累计值2稳态值3状态值")
     @NotNull(message = "数据特征不能为空")
     private Integer dataFeature;
+
+    @Schema(description = "0：实时值；1：累计值。")
+    @NotNull(message = "单选标记不能为空")
+    private Integer flag;
 }
