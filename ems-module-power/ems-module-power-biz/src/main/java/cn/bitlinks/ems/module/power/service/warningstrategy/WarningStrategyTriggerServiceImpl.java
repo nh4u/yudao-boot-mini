@@ -488,60 +488,61 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                 return;
             }
             Map<Long, AdminUserRespDTO> mailUserMap = adminUserApi.getUserMap(userIds);
-            List<WarningInfoDO> warningInfoList = new ArrayList<>();
             List<WarningInfoUserDO> warningInfoUserList = new ArrayList<>();
-            userIds.forEach(userId -> {
-                AdminUserRespDTO adminUserRespDTO = mailUserMap.get(userId);
-                String userName = adminUserRespDTO.getNickname();
-                // 处理收件人关键字参数
-                List<Map<String, String>> newConditionParamsMapList = new ArrayList<>(conditionParamsMapList);
-                newConditionParamsMapList.forEach(conditionParamsMap -> conditionParamsMap.put(WARNING_USER_NAME.getKeyWord(), userName));
-                // 每个用户的告警信息构造标题和内容
-                String title = warningTemplateService.buildTitleOrContentByParams(templateDO.getTParams(), templateDO.getTitle(), conditionParamsMapList);
-                if (Objects.isNull(title)) {
-                    // 模板填充参数失败，此策略不进行告警，直接完全退出
-                    log.error("告警模板id{}，解析模板标题失败，告警信息解析异常", templateDO.getId());
-                    return;
-                }
-                String content = warningTemplateService.buildTitleOrContentByParams(templateDO.getParams(), templateDO.getContent(), conditionParamsMapList);
-                if (Objects.isNull(content)) {
-                    // 模板填充参数失败，此策略不进行告警，直接完全退出
-                    log.error("告警模板id{}，解析模板内容失败，告警信息解析异常", templateDO.getId());
-                    return;
-                }
-                if (warningInfoDO == null) {
+
+            // 邮件的话 ，加收件人信息填充
+            if (warningInfoDO == null) {
+                userIds.forEach(userId -> {
+                    AdminUserRespDTO adminUserRespDTO = mailUserMap.get(userId);
+                    String userName = adminUserRespDTO.getNickname();
+                    // 处理收件人关键字参数
+                    List<Map<String, String>> newConditionParamsMapList = new ArrayList<>(conditionParamsMapList);
+                    newConditionParamsMapList.forEach(conditionParamsMap -> conditionParamsMap.put(WARNING_USER_NAME.getKeyWord(), userName));
+                    // 每个用户的告警信息构造标题和内容
+                    String userTitle = warningTemplateService.buildTitleOrContentByParams(templateDO.getTParams(), templateDO.getTitle(), conditionParamsMapList);
+                    if (Objects.isNull(userTitle)) {
+                        // 模板填充参数失败，此策略不进行告警，直接完全退出
+                        log.error("告警模板id{}，解析模板标题失败，告警信息解析异常", templateDO.getId());
+                        return;
+                    }
+                    String userContent = warningTemplateService.buildTitleOrContentByParams(templateDO.getParams(), templateDO.getContent(), conditionParamsMapList);
+                    if (Objects.isNull(userContent)) {
+                        // 模板填充参数失败，此策略不进行告警，直接完全退出
+                        log.error("告警模板id{}，解析模板内容失败，告警信息解析异常", templateDO.getId());
+                        return;
+                    }
                     // 发送告警邮件，组装邮件参数结构。
                     MailSendSingleToUserCustomReqDTO mailSendSingleToUserCustomReqDTO = new MailSendSingleToUserCustomReqDTO();
                     mailSendSingleToUserCustomReqDTO.setUserId(userId);
                     mailSendSingleToUserCustomReqDTO.setMail(adminUserRespDTO.getEmail());
-                    mailSendSingleToUserCustomReqDTO.setTitle(title);
-                    mailSendSingleToUserCustomReqDTO.setContent(content);
+                    mailSendSingleToUserCustomReqDTO.setTitle(userTitle);
+                    mailSendSingleToUserCustomReqDTO.setContent(userContent);
                     mailSendSingleToUserCustomReqDTO.setTemplateCode(templateDO.getCode());
-
                     mailSendSingleToUserCustomReqDTO.setTemplateId(templateDO.getId());
                     mailSendSingleToUserCustomReqDTO.setTemplateName(templateDO.getName());
                     mailSendApi.sendSingleMailToAdminCustom(mailSendSingleToUserCustomReqDTO);
-                } else {
-                    // 发送告警信息，组装告警信息参数结构
-                    WarningInfoDO warningInfo = new WarningInfoDO();
-                    BeanUtil.copyProperties(warningInfoDO, warningInfo);
-                    //warningInfo.setUserId(userId);
-                    Long infoId = IdUtil.getSnowflakeNextId();
-                    warningInfo.setId(infoId);
-                    warningInfo.setTitle(title);
-                    warningInfo.setContent(content);
-                    warningInfoList.add(warningInfo);
+                });
+            } else {
+                // 站内信的话，不加发送收件人信息
+                WarningInfoDO warningInfo = new WarningInfoDO();
+                BeanUtil.copyProperties(warningInfoDO, warningInfo);
+                Long infoId = IdUtil.getSnowflakeNextId();
+                warningInfo.setId(infoId);
+                String title = warningTemplateService.buildTitleOrContentByParams(templateDO.getTParams(), templateDO.getTitle(), conditionParamsMapList);
+                String content = warningTemplateService.buildTitleOrContentByParams(templateDO.getParams(), templateDO.getContent(), conditionParamsMapList);
+                warningInfo.setTitle(title);
+                warningInfo.setContent(content);
+                warningInfoMapper.insert(warningInfo);
+                userIds.forEach(userId -> {
                     WarningInfoUserDO warningInfoUserDO = new WarningInfoUserDO();
                     warningInfoUserDO.setUserId(userId);
                     warningInfoUserDO.setInfoId(warningInfo.getId());
                     warningInfoUserList.add(warningInfoUserDO);
-                }
-            });
-            if (CollUtil.isEmpty(warningInfoList)) {
-                return;
+                });
+                warningInfoUserMapper.insertBatch(warningInfoUserList);
             }
-            warningInfoMapper.insertBatch(warningInfoList);
-            warningInfoUserMapper.insertBatch(warningInfoUserList);
+
+
         } catch (Exception e) {
             log.error("告警模板id{},告警信息发送异常", templateDO.getId(), e);
         }
