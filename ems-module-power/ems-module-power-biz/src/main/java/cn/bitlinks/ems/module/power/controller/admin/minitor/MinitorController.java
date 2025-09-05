@@ -2,12 +2,14 @@ package cn.bitlinks.ems.module.power.controller.admin.minitor;
 
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
+import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.*;
 import cn.bitlinks.ems.framework.excel.core.util.ExcelUtils;
 import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorDetailData;
 import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorDetailRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorParamReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.tmpl.vo.StandingbookTmplDaqAttrRespVO;
+import cn.bitlinks.ems.module.power.service.devicemonitor.DeviceMonitorService;
 import cn.bitlinks.ems.module.power.service.minitor.MinitorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
+import javax.annotation.security.PermitAll;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.util.List;
@@ -34,6 +37,8 @@ import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 public class MinitorController {
     @Resource
     private MinitorService minitorService;
+    @Resource
+    private DeviceMonitorService deviceMonitorService;
 
     @PostMapping("/minitorList")
     @Operation(summary = "获得监控列表")
@@ -51,9 +56,9 @@ public class MinitorController {
         return success(minitorDetailRespVO);
     }
 
-
     @GetMapping("/getDaqAttrs")
     @Operation(summary = "获取台账所有数采参数（能源+自定义）查询启用的")
+    @PermitAll
     //@PreAuthorize("@ss.hasPermission('power:minitor:query')")
     public CommonResult<List<StandingbookTmplDaqAttrRespVO>> getDaqAttrs(@RequestParam("standingbookId") Long standingbookId) {
         return success(minitorService.getDaqAttrs(standingbookId));
@@ -70,4 +75,22 @@ public class MinitorController {
         // 导出 Excel
         ExcelUtils.write(response, "设备监控详情数据表.xlsx", "数据", MinitorDetailData.class,list);
     }
+
+
+    @PostMapping("/warning")
+    @Operation(summary = "查询告警信息")
+    @PermitAll
+    public CommonResult<DeviceMonitorWarningRespVO> getWarningInfo(@RequestBody @Valid DeviceMonitorWarningReqVO reqVO) {
+        return success(deviceMonitorService.getWarningInfo(reqVO));
+    }
+
+    @PostMapping("/deviceInfo")
+    @Operation(summary = "根据设备id查询设备名片")
+    @PermitAll
+    public CommonResult<DeviceMonitorDeviceRespVO> getDeviceInfo(@RequestBody @Valid DeviceMonitorDeviceReqVO reqVO) {
+        return success(deviceMonitorService.getDeviceInfo(reqVO));
+    }
+
+
+
 }

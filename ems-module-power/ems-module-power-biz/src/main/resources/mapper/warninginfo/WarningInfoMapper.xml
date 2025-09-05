@@ -33,9 +33,9 @@
         SET
         status = #{status},
         handle_opinion = #{handleOpinion}
-        WHERE (strategy_id, warning_time) IN
-        <foreach collection="groups" item="g" open="(" separator="," close=")">
-            (#{g.strategyId}, #{g.warningTime})
+        WHERE id IN
+        <foreach collection="groups" item="id" open="(" separator="," close=")">
+            #{id}
         </foreach>
     </update>
 
