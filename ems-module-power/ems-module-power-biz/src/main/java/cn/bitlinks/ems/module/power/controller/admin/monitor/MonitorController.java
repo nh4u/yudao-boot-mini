@@ -5,6 +5,7 @@ import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.excel.core.util.ExcelUtils;
 import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.tmpl.vo.StandingbookTmplDaqAttrRespVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.service.devicemonitor.DeviceMonitorService;
 import cn.bitlinks.ems.module.power.service.monitor.MonitorService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -99,6 +100,14 @@ public class MonitorController {
     @PermitAll
     public CommonResult<Boolean> validQrCode(@RequestParam("code") String code) {
         return success(deviceMonitorService.validQrCode(code));
+    }
+
+
+    @GetMapping("/energyList")
+    @Operation(summary = "重点设备查询能源参数列表")
+    @PermitAll
+    public CommonResult<List<EnergyConfigurationDO>> energyList(@RequestBody @Valid DeviceMonitorDeviceReqVO reqVO) {
+        return success(deviceMonitorService.energyList(reqVO.getSbId()));
     }
 
 

@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.infra.api.config.ConfigApi;
 import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatisticsRespVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.monitor.DeviceMonitorQrcodeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
@@ -14,12 +15,14 @@ import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabe
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
+import cn.bitlinks.ems.module.power.dal.mysql.measurementdevice.MeasurementDeviceMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.monitor.DeviceMonitorQrcodeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.label.StandingbookLabelInfoService;
+import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
 import cn.bitlinks.ems.module.power.service.warninginfo.WarningInfoService;
 import cn.hutool.core.collection.CollUtil;
@@ -59,6 +62,12 @@ public class DeviceMonitorService {
 
     @Resource
     private StandingbookAttributeMapper standingbookAttributeMapper;
+    @Resource
+    @Lazy
+    private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
+
+    @Resource
+    private MeasurementDeviceMapper measurementDeviceMapper;
     @Resource
     private DeviceMonitorQrcodeMapper deviceMonitorQrcodeMapper;
     @Resource
@@ -166,13 +175,14 @@ public class DeviceMonitorService {
         String initLink = configApi.getConfigValueByKey(INIT_DEVICE_LINK).getCheckedData();
         String url = String.format(initLink,
                 reqVO.getSbId(), standingbookTypeDO.getTopType());
-        String qrCode =url+ "&token=" +  UUID.randomUUID();
+        String qrCode = url + "&token=" + UUID.randomUUID();
         // 拼接token
-        DeviceMonitorQrcodeDO qrcodeDO = new DeviceMonitorQrcodeDO();qrcodeDO.setDeviceId(reqVO.getSbId());
+        DeviceMonitorQrcodeDO qrcodeDO = new DeviceMonitorQrcodeDO();
+        qrcodeDO.setDeviceId(reqVO.getSbId());
         qrcodeDO.setQrcode(qrCode);
 
         // 删除所有的链接信息
-        deviceMonitorQrcodeMapper.delete(new LambdaQueryWrapperX<DeviceMonitorQrcodeDO>().eq(DeviceMonitorQrcodeDO::getDeviceId,reqVO.getSbId()));
+        deviceMonitorQrcodeMapper.delete(new LambdaQueryWrapperX<DeviceMonitorQrcodeDO>().eq(DeviceMonitorQrcodeDO::getDeviceId, reqVO.getSbId()));
         // 保存新的链接信息
         deviceMonitorQrcodeMapper.insert(qrcodeDO);
         return qrCode;
@@ -181,5 +191,14 @@ public class DeviceMonitorService {
     public Boolean validQrCode(String code) {
         DeviceMonitorQrcodeDO exist = deviceMonitorQrcodeMapper.selectOne(new LambdaQueryWrapperX<DeviceMonitorQrcodeDO>().eq(DeviceMonitorQrcodeDO::getQrcode, code));
         return Objects.nonNull(exist);
+    }
+
+    public List<EnergyConfigurationDO> energyList(Long sbId) {
+//        // 查询设备下关联的计量器具
+//        StandingbookDO standingbookDO = standingbookService.getById(reqVO.getSbId());
+//        StandingbookTypeDO standingbookTypeDO = standingbookTypeService.getStandingbookType(standingbookDO.getTypeId());
+//        energystandingbookTmplDaqAttrService.(sbId);
+        return null;
+
     }
 }
