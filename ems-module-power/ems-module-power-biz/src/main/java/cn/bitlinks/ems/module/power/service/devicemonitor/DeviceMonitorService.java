@@ -4,7 +4,7 @@ import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.infra.api.config.ConfigApi;
-import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.*;
+import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatisticsRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_RANGE_EXCEED_LIMIT;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.END_TIME_MUST_AFTER_START_TIME;
-import static cn.bitlinks.ems.module.power.enums.warninginfo.WarningTemplateKeyWordEnum.WARNING_DETAIL_LINK;
 
 @Service
 public class DeviceMonitorService {
