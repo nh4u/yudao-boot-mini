@@ -1,4 +1,4 @@
-package cn.bitlinks.ems.module.power.controller.admin.devicemonitor.vo;
+package cn.bitlinks.ems.module.power.controller.admin.minitor.vo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
