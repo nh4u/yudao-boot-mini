@@ -105,15 +105,23 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
         List<StandingbookTypeDO> typeTreeList = standingbookTypeService.getStandingbookTypeNode();
         List<StandingbookTypeDO> allTypeList = standingbookTypeService.getStandingbookTypeList();
         Map<Long, String> tyepIdNameMap;
+        Map<Long, String> tyepIdTopTypeMap;
 
         if (CollUtil.isEmpty(allTypeList)) {
             tyepIdNameMap = new HashMap<>();
+            tyepIdTopTypeMap = new HashMap<>();
         } else {
             // 映射为id -> name的Map
             tyepIdNameMap = allTypeList.stream()
                     .collect(Collectors.toMap(
                             StandingbookTypeDO::getId,  // key为id
                             StandingbookTypeDO::getName  // value为name
+                    ));
+            // 映射为id -> name的Map
+            tyepIdTopTypeMap = allTypeList.stream()
+                    .collect(Collectors.toMap(
+                            StandingbookTypeDO::getId,  // key为id
+                            StandingbookTypeDO::getTopType  // value为name
                     ));
         }
         // 获取所有台账的id-DTO 映射
@@ -283,7 +291,7 @@ public class WarningStrategyTriggerServiceImpl implements WarningStrategyTrigger
                         // 获取api连接配置
                         String initLink = configApi.getConfigValueByKey(INIT_DEVICE_LINK).getCheckedData();
                         conditionParamsMap.put(WARNING_DETAIL_LINK.getKeyWord(), String.format(initLink,
-                                collectRawDataDTO.getStandingbookId()));
+                                collectRawDataDTO.getStandingbookId(), tyepIdTopTypeMap.get(standingbookDTO.getTypeId())));
                         conditionParamsMapList.add(conditionParamsMap);
                         String deviceRel = String.format("%s(%s)", sbName, sbCode);
                         deviceRelList.add(deviceRel);
