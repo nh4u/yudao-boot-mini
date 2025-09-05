@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.service.minitor;
 
+import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorDetailData;
 import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorDetailRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorParamReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorRespVO;
@@ -27,4 +28,6 @@ public interface MinitorService {
     MinitorDetailRespVO deviceDetail(MinitorParamReqVO paramVO);
 
     List<StandingbookTmplDaqAttrRespVO> getDaqAttrs(Long standingbookId);
+
+    List<MinitorDetailData> getDetailTable(MinitorParamReqVO paramVO);
 }
