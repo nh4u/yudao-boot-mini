@@ -1585,7 +1585,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         resultVO.setList(resultVOList);
         resultVO.setDataTime(tableResult.getDataTime());
 
-        String jsonStr = JSON.toJSONString(resultVOList);
+        String jsonStr = JSON.toJSONString(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
 
