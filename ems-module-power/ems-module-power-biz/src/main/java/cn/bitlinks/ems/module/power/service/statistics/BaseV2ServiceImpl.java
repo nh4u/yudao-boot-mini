@@ -1484,6 +1484,13 @@ public class BaseV2ServiceImpl implements BaseV2Service {
             resultVOList.add(group);
 
         });
+
+        // 处理名字
+        resultVOList.forEach(r->{
+            String name = r.getName();
+            r.setName(name + RATIO + ANALYSIS);
+        });
+
         if (EnergyClassifyEnum.OUTSOURCED.getCode().equals(paramVO.getEnergyClassify())) {
             resVO.setList(Collections.singletonList(resultVOList.get(0)));
         } else if (EnergyClassifyEnum.PARK.getCode().equals(paramVO.getEnergyClassify())) {
@@ -1498,6 +1505,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return resVO;
     }
+
 
     @Override
     public List<List<String>> getExcelHeader(BaseStatisticsParamV2VO paramVO) {
@@ -1835,7 +1843,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         // 构造结果对象
         BaseItemVO info = new BaseItemVO();
         info.setStatisticsRatioDataList(dataList);
-        info.setEnergyName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR + RATIO + ANALYSIS);
+        info.setEnergyName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR);
 
         info.setSumNow(dealBigDecimalScale(nowSumRadio, DEFAULT_SCALE));
         if (!isCrossYear) {

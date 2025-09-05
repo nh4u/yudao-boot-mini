@@ -1361,6 +1361,13 @@ public class YoyV2ServiceImpl implements YoyV2Service {
             resultVOList.add(group);
 
         });
+
+        // 处理名字
+        resultVOList.forEach(r->{
+            String name = r.getName();
+            r.setName(name + RATIO + ANALYSIS);
+        });
+
         if (EnergyClassifyEnum.OUTSOURCED.getCode().equals(paramVO.getEnergyClassify())) {
             resVO.setList(Collections.singletonList(resultVOList.get(0)));
         } else if (EnergyClassifyEnum.PARK.getCode().equals(paramVO.getEnergyClassify())) {
@@ -1371,6 +1378,14 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         resVO.setList(resultVOList);
         resVO.setDataTime(tableResult.getDataTime());
         return resVO;
+    }
+
+    private ComparisonChartGroupVO dealName(ComparisonChartGroupVO vo) {
+        if (Objects.nonNull(vo)) {
+            String name = vo.getName();
+            vo.setName(name + RATIO + ANALYSIS);
+        }
+        return vo;
     }
 
     /**
@@ -1460,7 +1475,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         // 构造结果对象
         YoyItemVO info = new YoyItemVO();
         info.setStatisticsRatioDataList(dataList);
-        info.setEnergyName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR + RATIO + ANALYSIS);
+        info.setEnergyName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR);
 
         info.setSumNow(dealBigDecimalScale(nowSumRadio, DEFAULT_SCALE));
         if (!isCrossYear) {
