@@ -968,7 +968,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             String label = standingbookLabelMap.get(data.getStandingbookId());
             if (label == null) continue;
             nowMap.computeIfAbsent(label, k -> new HashMap<>())
-                    .merge(data.getTime(), valueExtractor.apply(data),  (v1, v2) -> {
+                    .merge(data.getTime(), valueExtractor.apply(data), (v1, v2) -> {
                                 if (v1 == null) return v2;
                                 if (v2 == null) return v1;
                                 return v1.add(v2);
@@ -982,7 +982,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             String label = standingbookLabelMap.get(data.getStandingbookId());
             if (label == null) continue;
             lastMap.computeIfAbsent(label, k -> new HashMap<>())
-                    .merge(data.getTime(), valueExtractor.apply(data),  (v1, v2) -> {
+                    .merge(data.getTime(), valueExtractor.apply(data), (v1, v2) -> {
                                 if (v1 == null) return v2;
                                 if (v2 == null) return v1;
                                 return v1.add(v2);
@@ -1943,7 +1943,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         // 构造结果对象
         ComparisonItemVO info = new ComparisonItemVO();
         info.setStatisticsRatioDataList(dataList);
-        info.setEnergyName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR);
+        info.setEnergyName(energyClassifyEnum.getDetail() + UTILIZATION_RATE_STR + RATIO + ANALYSIS);
 
         info.setSumNow(dealBigDecimalScale(nowSumRadio, DEFAULT_SCALE));
         if (!isCrossYear) {
