@@ -1484,10 +1484,17 @@ public class BaseV2ServiceImpl implements BaseV2Service {
             resultVOList.add(group);
 
         });
+
+        // 处理名字
+        resultVOList.forEach(r->{
+            String name = r.getName();
+            r.setName(name + RATIO + ANALYSIS);
+        });
+
         if (EnergyClassifyEnum.OUTSOURCED.getCode().equals(paramVO.getEnergyClassify())) {
-            resVO.setList(Collections.singletonList(dealName(resultVOList.get(0))));
+            resVO.setList(Collections.singletonList(resultVOList.get(0)));
         } else if (EnergyClassifyEnum.PARK.getCode().equals(paramVO.getEnergyClassify())) {
-            resVO.setList(Collections.singletonList(dealName(resultVOList.get(1))));
+            resVO.setList(Collections.singletonList(resultVOList.get(1)));
         } else {
             resVO.setList(resultVOList);
         }
@@ -1499,13 +1506,6 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         return resVO;
     }
 
-    private ComparisonChartGroupVO dealName(ComparisonChartGroupVO vo) {
-        if (Objects.nonNull(vo)) {
-            String name = vo.getName();
-            vo.setName(name + RATIO + ANALYSIS);
-        }
-        return vo;
-    }
 
     @Override
     public List<List<String>> getExcelHeader(BaseStatisticsParamV2VO paramVO) {
