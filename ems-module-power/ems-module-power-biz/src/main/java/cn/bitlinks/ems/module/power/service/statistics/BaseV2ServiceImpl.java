@@ -271,7 +271,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                 return;
             }
             BaseItemVO vo = buildBaseItemVODataList(nowList, lastList, dataTypeEnum, tableHeader, isCrossYear, benchmark, valueExtractor);
-            if(Objects.isNull(vo)){
+            if (Objects.isNull(vo)) {
                 return;
             }
             vo.setEnergyId(energy.getId());
@@ -294,7 +294,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
 
         List<BaseItemVO> resultList = new ArrayList<>();
         BaseItemVO info = buildBaseItemVODataList(usageCostDataList, lastUsageCostDataList, dateTypeEnum, tableHeader, isCrossYear, benchmark, valueExtractor);
-        if(Objects.isNull(info)){
+        if (Objects.isNull(info)) {
             return Collections.emptyList();
         }
         // 构造结果对象
@@ -370,7 +370,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
 
                 // 构造结果对象
                 BaseItemVO info = buildBaseItemVODataList(labelUsageListNow, labelUsageListPrevious, dateTypeEnum, tableHeader, isCrossYear, benchmark, valueExtractor);
-                if(Objects.isNull(info)){
+                if (Objects.isNull(info)) {
                     return;
                 }
                 info.setLabel1(topLabel.getLabelName());
@@ -477,7 +477,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                     benchmark,
                     valueExtractor);
 
-            if(Objects.isNull(info)){
+            if (Objects.isNull(info)) {
                 return;
             }
 
@@ -586,7 +586,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                             benchmark,
                             valueExtractor);
 
-                    if(Objects.isNull(info)){
+                    if (Objects.isNull(info)) {
                         return;
                     }
 
@@ -899,7 +899,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
             String label = standingbookLabelMap.get(data.getStandingbookId());
             if (label == null) continue;
             nowMap.computeIfAbsent(label, k -> new HashMap<>())
-                    .merge(data.getTime(), valueExtractor.apply(data),  (v1, v2) -> {
+                    .merge(data.getTime(), valueExtractor.apply(data), (v1, v2) -> {
                                 if (v1 == null) return v2;
                                 if (v2 == null) return v1;
                                 return v1.add(v2);
@@ -913,7 +913,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
             String label = standingbookLabelMap.get(data.getStandingbookId());
             if (label == null) continue;
             lastMap.computeIfAbsent(label, k -> new HashMap<>())
-                    .merge(data.getTime(), valueExtractor.apply(data),  (v1, v2) -> {
+                    .merge(data.getTime(), valueExtractor.apply(data), (v1, v2) -> {
                                 if (v1 == null) return v2;
                                 if (v2 == null) return v1;
                                 return v1.add(v2);
@@ -1378,7 +1378,17 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         List<UsageCostData> lastNumeratorList = usageCostService.getList(paramVO, lastRange[0], lastRange[1], sbIds);
         boolean isCrossYear = DateUtils.isCrossYear(startTime, endTime);
         // 综合默认查看
-        List<BaseItemVO> statisticsInfoList = queryList(outsourceList, parkList, numeratorList, lastOutsourceList, lastParkList, lastNumeratorList, isCrossYear, tableHeader);
+        List<BaseItemVO> statisticsInfoList = queryList(
+                outsourceList,
+                parkList,
+                numeratorList,
+                lastOutsourceList,
+                lastParkList,
+                lastNumeratorList,
+                dataTypeEnum,
+                benchmark,
+                isCrossYear,
+                tableHeader);
 
 
         // 设置最终返回值
@@ -1483,7 +1493,7 @@ public class BaseV2ServiceImpl implements BaseV2Service {
         }
         resVO.setList(resultVOList);
         resVO.setDataTime(tableResult.getDataTime());
-        String jsonStr = JSON.toJSONString(resultVOList);
+        String jsonStr = JSON.toJSONString(resVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return resVO;
@@ -1713,6 +1723,8 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                                        List<UsageCostData> lastOutsourceList,
                                        List<UsageCostData> lastParkList,
                                        List<UsageCostData> lastNumeratorList,
+                                       DataTypeEnum dataTypeEnum,
+                                       Integer benchmark,
                                        boolean isCrossYear,
                                        List<String> tableHeader) {
         if (CollUtil.isEmpty(outsourceList)) {
@@ -1743,18 +1755,44 @@ public class BaseV2ServiceImpl implements BaseV2Service {
 
         List<BaseItemVO> result = new ArrayList<>();
 
-        result.add(getUtilizationRateInfo(EnergyClassifyEnum.OUTSOURCED, outsourceMap, numeratorMap, lastOutsourceMap, lastNumeratorMap, isCrossYear, tableHeader));
-        result.add(getUtilizationRateInfo(EnergyClassifyEnum.PARK, parkMap, numeratorMap, lastParkMap, lastNumeratorMap, isCrossYear, tableHeader));
+        result.add(getUtilizationRateInfo(
+                EnergyClassifyEnum.OUTSOURCED,
+                outsourceMap,
+                numeratorMap,
+                lastOutsourceMap,
+                lastNumeratorMap,
+                dataTypeEnum,
+                benchmark,
+                isCrossYear,
+                tableHeader));
+        result.add(getUtilizationRateInfo(
+                EnergyClassifyEnum.PARK,
+                parkMap,
+                numeratorMap,
+                lastParkMap,
+                lastNumeratorMap,
+                dataTypeEnum,
+                benchmark,
+                isCrossYear,
+                tableHeader));
         return result;
 
     }
 
-    private BaseItemVO getUtilizationRateInfo(EnergyClassifyEnum energyClassifyEnum, Map<String, TimeAndNumData> denominatorMap, Map<String, TimeAndNumData> numeratorMap,
-                                              Map<String, TimeAndNumData> lastDenominatorMap, Map<String, TimeAndNumData> lastNumeratorMap, boolean isCrossYear, List<String> tableHeader) {
+    private BaseItemVO getUtilizationRateInfo(EnergyClassifyEnum energyClassifyEnum,
+                                              Map<String, TimeAndNumData> denominatorMap,
+                                              Map<String, TimeAndNumData> numeratorMap,
+                                              Map<String, TimeAndNumData> lastDenominatorMap,
+                                              Map<String, TimeAndNumData> lastNumeratorMap,
+                                              DataTypeEnum dataTypeEnum,
+                                              Integer benchmark,
+                                              boolean isCrossYear,
+                                              List<String> tableHeader) {
 
         List<BaseDetailVO> dataList = new ArrayList<>();
         for (String time : tableHeader) {
 
+            // 当前
             TimeAndNumData numeratorData = numeratorMap.get(time);
             BigDecimal numeratorValue = Optional.ofNullable(numeratorData)
                     .map(TimeAndNumData::getNum)
@@ -1766,26 +1804,33 @@ public class BaseV2ServiceImpl implements BaseV2Service {
                     .orElse(null);
             BigDecimal nowRatio = safeDivide100(numeratorValue, denominatorValue);
 
-            TimeAndNumData lastNumeratorData = lastNumeratorMap.get(time);
+            // 上期
+            String previousTime = LocalDateTimeUtils.getBenchmarkTime(time, dataTypeEnum, benchmark);
+            TimeAndNumData lastNumeratorData = lastNumeratorMap.get(previousTime);
             BigDecimal lastNumeratorValue = Optional.ofNullable(lastNumeratorData)
                     .map(TimeAndNumData::getNum)
                     .orElse(null);
 
-            TimeAndNumData lastDenominatorData = lastDenominatorMap.get(time);
+            TimeAndNumData lastDenominatorData = lastDenominatorMap.get(previousTime);
             BigDecimal lastDenominatorValue = Optional.ofNullable(lastDenominatorData)
                     .map(TimeAndNumData::getNum)
                     .orElse(null);
             BigDecimal lastRatio = safeDivide100(lastNumeratorValue, lastDenominatorValue);
+
+            // 定基比
             BigDecimal ratio = calculateYearOnYearRatio(nowRatio, lastRatio);
             dataList.add(new BaseDetailVO(time, nowRatio, lastRatio, ratio));
         }
         // 汇总统计
+        // 当前
         BigDecimal sumDenominator = denominatorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
         BigDecimal sumNumerator = numeratorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
         BigDecimal nowSumRadio = safeDivide100(sumNumerator, sumDenominator);
+        // 上期
         BigDecimal lastSumDenominator = lastDenominatorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
         BigDecimal lastSumNumerator = lastNumeratorMap.values().stream().filter(Objects::nonNull).map(TimeAndNumData::getNum).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null);
         BigDecimal lastSumRadio = safeDivide100(lastSumNumerator, lastSumDenominator);
+        // 定基比
         BigDecimal ratio = calculateYearOnYearRatio(nowSumRadio, lastSumRadio);
         // 构造结果对象
         BaseItemVO info = new BaseItemVO();
