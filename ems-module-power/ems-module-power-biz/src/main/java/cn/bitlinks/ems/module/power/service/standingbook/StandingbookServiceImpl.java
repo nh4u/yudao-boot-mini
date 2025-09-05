@@ -990,7 +990,10 @@ public class StandingbookServiceImpl implements StandingbookService {
         standingbookDO.setLabelInfo(standingbookLabelInfoDOList);
         return standingbookDO;
     }
-
+    @Override
+    public StandingbookDO getById(Long id) {
+        return standingbookMapper.selectById(id);
+    }
     @Override
     public List<StandingbookDO> getByIds(List<Long> ids) {
 

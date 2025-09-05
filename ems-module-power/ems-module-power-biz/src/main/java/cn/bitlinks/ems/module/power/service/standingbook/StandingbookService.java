@@ -48,7 +48,7 @@ public interface StandingbookService {
      * @return 台账属性
      */
     List<StandingbookDO> getByIds(List<Long> ids);
-
+    StandingbookDO getById(Long id);
     /**
      * 条件查询台账（标签、属性、分类ids、分类id、topType、环节、创建时间）
      *

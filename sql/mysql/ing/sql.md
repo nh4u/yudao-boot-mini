@@ -45,3 +45,15 @@ CREATE TABLE `power_warning_info_user` (
 `tenant_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '租户编号',
 PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=1962814526492635139 DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='告警信息-用户关联表';
+CREATE TABLE `power_device_monitor_qrcode` (
+`id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '编号',
+`device_id` bigint(20) NOT NULL COMMENT '用户id',
+`qrcode` varchar(300) NOT NULL COMMENT '二维码内容',
+`creator` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '创建者',
+`create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+`updater` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '更新者',
+`update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+`deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+`tenant_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '租户编号',
+PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=1962814526492635139 DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='设备监控-设备二维码维护';
