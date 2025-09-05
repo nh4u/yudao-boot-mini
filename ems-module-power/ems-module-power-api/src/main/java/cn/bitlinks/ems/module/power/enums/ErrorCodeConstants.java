@@ -126,6 +126,7 @@ public interface ErrorCodeConstants {
     ErrorCode LABEL_CONFIG_CODE_REQUIRED = new ErrorCode(1_001_401_005, "标签编码不能为空");
     ErrorCode LABEL_CONFIG_HAS_DEVICE = new ErrorCode(1006, "该标签存在设备，不可进行删除");
     ErrorCode LABEL_CONFIG_CHILDREN_HAS_DEVICE = new ErrorCode(1006, "该标签子级存在设备，不可进行删除");
+    ErrorCode LABEL_CONFIG_NAME_DUPLICATE = new ErrorCode(1_001_401_008, "一级标签名称已存在，");
 
     // ========== 凭证管理 ==========
     ErrorCode VOUCHER_NOT_EXISTS = new ErrorCode(1_001_501_001, "凭证不存在");

@@ -1,4 +1,4 @@
-package cn.bitlinks.ems.module.power.service.minitor;
+package cn.bitlinks.ems.module.power.service.monitor;
 
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.pojo.StatsResult;
@@ -6,10 +6,10 @@ import cn.bitlinks.ems.framework.common.util.calc.CalculateUtil;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorDetailData;
-import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorDetailRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorParamReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.minitor.vo.MinitorRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.MinitorDetailData;
+import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.MinitorDetailRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.MinitorParamReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.MinitorRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.tmpl.vo.StandingbookTmplDaqAttrRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
@@ -57,7 +57,7 @@ import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
  */
 @Service
 @Validated
-public class MinitorServiceImpl implements MinitorService {
+public class MonitorServiceImpl implements MonitorService {
 
     @Resource
     private StandingbookMapper standingbookMapper;

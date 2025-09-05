@@ -1,4 +1,4 @@
-package cn.bitlinks.ems.module.power.controller.admin.minitor.vo;
+package cn.bitlinks.ems.module.power.controller.admin.monitor.vo;
 
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatisticsRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
