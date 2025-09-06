@@ -5,7 +5,7 @@ import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.*;
 import cn.bitlinks.ems.module.power.dal.mysql.copsettings.CopHourAggDataMapper;
-import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DatePattern;
 import com.alibaba.excel.util.ListUtils;
 import com.baomidou.dynamic.datasource.annotation.DS;
@@ -83,7 +83,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
                         LocalDateTime currentTime = LocalDateTime.of(year, monthValue, i, j, 0, 0);
                         List<CopHourAggData> copHourAggDatas = copHourAggDataMap.get(currentTime.format(formatter));
 
-                        if (CollectionUtil.isNotEmpty(copHourAggDatas)) {
+                        if (CollUtil.isNotEmpty(copHourAggDatas)) {
 
                             if (copHourAggDatas.size() == copTypes.size()) {
                                 // 相等
@@ -185,7 +185,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
                         LocalDateTime currentTime = LocalDateTime.of(year, monthValue, i, j, 0, 0);
                         List<CopHourAggData> copHourAggDatas = copHourAggDataMap.get(currentTime.format(formatter));
 
-                        if (CollectionUtil.isNotEmpty(copHourAggDatas)) {
+                        if (CollUtil.isNotEmpty(copHourAggDatas)) {
 
                             if (copHourAggDatas.size() == copTypes.size()) {
                                 // 相等
@@ -349,35 +349,101 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
         CopChartYData copChartYData = new CopChartYData();
 
         // LTC
-        if (CollectionUtil.isNotEmpty(ltcNow)) {
+        if (CollUtil.isNotEmpty(ltcNow)) {
             copChartYData.setLtcNow(ltcNow);
         }
-        if (CollectionUtil.isNotEmpty(ltcPre)) {
+        if (CollUtil.isNotEmpty(ltcPre)) {
             copChartYData.setLtcPre(ltcPre);
         }
 
         // LTS
-        if (CollectionUtil.isNotEmpty(ltsNow)) {
+        if (CollUtil.isNotEmpty(ltsNow)) {
             copChartYData.setLtsNow(ltsNow);
         }
-        if (CollectionUtil.isNotEmpty(ltsPre)) {
+        if (CollUtil.isNotEmpty(ltsPre)) {
             copChartYData.setLtsPre(ltsPre);
         }
 
         // MTC
-        if (CollectionUtil.isNotEmpty(mtcNow)) {
+        if (CollUtil.isNotEmpty(mtcNow)) {
             copChartYData.setMtcNow(mtcNow);
         }
-        if (CollectionUtil.isNotEmpty(mtcPre)) {
+        if (CollUtil.isNotEmpty(mtcPre)) {
             copChartYData.setMtcPre(mtcPre);
         }
 
         // MTS
-        if (CollectionUtil.isNotEmpty(mtsNow)) {
+        if (CollUtil.isNotEmpty(mtsNow)) {
             copChartYData.setMtsNow(mtsNow);
         }
-        if (CollectionUtil.isNotEmpty(mtsPre)) {
+        if (CollUtil.isNotEmpty(mtsPre)) {
             copChartYData.setMtsPre(mtsPre);
+        }
+
+        resultVO.setYdata(copChartYData);
+        return resultVO;
+    }
+
+    @Override
+    public CopChartResultVO copChartForBigScreen(ReportParamVO paramVO) {
+
+        // 1.校验时间范围
+        LocalDateTime[] range = validateRange(paramVO.getRange());
+
+        LocalDateTime startTime = range[0];
+        LocalDateTime endTime = range[1];
+        // 2. 检验查询时间类型
+        Integer dateType = paramVO.getDateType();
+        DataTypeEnum dataTypeEnum = validateDateType(dateType);
+
+        List<String> copyTypeList = paramVO.getCopType();
+
+        CopChartResultVO resultVO = new CopChartResultVO();
+
+        // 处理x轴
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, dataTypeEnum);
+        resultVO.setXdata(xdata);
+
+        // 3.字段拼接
+        // 当下cop数据
+        List<CopHourAggData> nowCopAggDataList;
+        if (dataTypeEnum.equals(DataTypeEnum.DAY)) {
+            nowCopAggDataList = copHourAggDataMapper.getCopDayAggDataList(startTime, endTime, copyTypeList);
+        } else {
+            nowCopAggDataList = copHourAggDataMapper.getCopHourAggDataList(startTime, endTime, copyTypeList);
+        }
+        Map<String, List<CopHourAggData>> nowCopAggDataMap = nowCopAggDataList.stream().collect(Collectors.groupingBy(CopHourAggData::getTime));
+
+        List<String> copTypes = dealSystemType(copyTypeList);
+
+        List<BigDecimal> ltcNow = new ArrayList<>();
+        List<BigDecimal> ltsNow = new ArrayList<>();
+        List<BigDecimal> mtcNow = new ArrayList<>();
+        List<BigDecimal> mtsNow = new ArrayList<>();
+
+        xdata.forEach(x -> {
+            List<CopHourAggData> nowCopAggDatas = nowCopAggDataMap.get(x);
+            // 当前
+            dealYList(nowCopAggDatas, copTypes, ltcNow, ltsNow, mtcNow, mtsNow);
+        });
+
+        CopChartYData copChartYData = new CopChartYData();
+
+        // LTC
+        if (CollUtil.isNotEmpty(ltcNow)) {
+            copChartYData.setLtcNow(ltcNow);
+        }
+        // LTS
+        if (CollUtil.isNotEmpty(ltsNow)) {
+            copChartYData.setLtsNow(ltsNow);
+        }
+        // MTC
+        if (CollUtil.isNotEmpty(mtcNow)) {
+            copChartYData.setMtcNow(mtcNow);
+        }
+        // MTS
+        if (CollUtil.isNotEmpty(mtsNow)) {
+            copChartYData.setMtsNow(mtsNow);
         }
 
         resultVO.setYdata(copChartYData);
@@ -401,7 +467,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
                            List<BigDecimal> mtcNow,
                            List<BigDecimal> mtsNow) {
 
-        if (CollectionUtil.isNotEmpty(nowCopAggDatas)) {
+        if (CollUtil.isNotEmpty(nowCopAggDatas)) {
             Map<String, CopHourAggData> map = nowCopAggDatas.stream()
                     .collect(Collectors.toMap(CopHourAggData::getCopType, Function.identity()));
             for (String copType : copTypes) {
@@ -476,14 +542,14 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
     }
 
     /**
-     * 校验时间类型
+     * 校验系统类型
      *
      * @param systemType
      */
     private List<String> dealSystemType(List<String> systemType) {
 
         // 时间类型不存在
-        if (CollectionUtil.isEmpty(systemType)) {
+        if (CollUtil.isEmpty(systemType)) {
 
             // 获取全系统类型
             systemType = DictFrameworkUtils.getDictDataLabelList(SYSTEM_TYPE);

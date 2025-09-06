@@ -53,4 +53,5 @@ public interface ProductionService {
 
     ProductionDO getHomeProduction(ProductionPageReqVO pageReqVO);
 
+    ProductionDO getLastProduction(Integer size);
 }

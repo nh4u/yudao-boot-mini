@@ -87,32 +87,21 @@ public class ProductionServiceImpl implements ProductionService {
     @Override
     public ProductionDO getHomeProduction(ProductionPageReqVO pageReqVO) {
 
-        // 单位时间内第一条
-        ProductionDO start = productionMapper.selectOne(new LambdaQueryWrapper<ProductionDO>()
-                .between(ProductionDO::getTime, pageReqVO.getRange()[0], pageReqVO.getRange()[1])
-                .eq(ProductionDO::getSize, pageReqVO.getSize())
-                .orderByAsc(ProductionDO::getTime)
-                .last("limit 1"));
+        ProductionDO result = productionMapper.getHomeProduction(pageReqVO);
+        ProductionDO lastProduction = getLastProduction(pageReqVO.getSize());
+        if (Objects.nonNull(lastProduction)) {
+            result.setTime(lastProduction.getTime());
+        }
+        return result;
+    }
 
-        // 单位时间内最后一条
-        ProductionDO last = productionMapper.selectOne(new LambdaQueryWrapper<ProductionDO>()
-                .between(ProductionDO::getTime, pageReqVO.getRange()[0], pageReqVO.getRange()[1])
-                .eq(ProductionDO::getSize, pageReqVO.getSize())
+    @Override
+    public ProductionDO getLastProduction(Integer size) {
+        // 最后一条
+        return productionMapper.selectOne(new LambdaQueryWrapper<ProductionDO>()
+                .eq(ProductionDO::getSize, size)
                 .orderByDesc(ProductionDO::getTime)
                 .last("limit 1"));
-
-
-        ProductionDO result = new ProductionDO();
-
-        if (!Objects.isNull(start) && !Objects.isNull(last)) {
-
-            result.setLot(last.getLot().subtract(start.getLot()));
-            result.setTime(last.getTime());
-
-        }
-
-
-        return result;
     }
 
 

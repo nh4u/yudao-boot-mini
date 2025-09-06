@@ -20,4 +20,6 @@ public interface CopHourAggDataService {
     List<List<String>>  getExcelHeader(ReportParamVO paramVO);
 
     CopChartResultVO copChart(ReportParamVO paramVO);
+
+    CopChartResultVO copChartForBigScreen(ReportParamVO paramVO);
 }
