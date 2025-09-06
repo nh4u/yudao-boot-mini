@@ -86,4 +86,6 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
                                                     @Param("energyClassify") Integer energyClassify);
 
     EnergyConfigurationDO getEnergyAndUnit(@Param("energyId")Long energyId);
+
+    List<Long> getEnergyIdByCode(@Param("energyCodes")List<String> energyCodes);
 }

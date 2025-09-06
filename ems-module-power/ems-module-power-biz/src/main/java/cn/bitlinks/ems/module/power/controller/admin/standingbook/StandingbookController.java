@@ -134,7 +134,12 @@ public class StandingbookController {
         return success(standingbookService.treeDeviceWithParam(standingbookParamReqVO));
     }
 
-
+    @PostMapping("/treeWithEnergyCode")
+    @Operation(summary = "根据能源编码查询所有的实体计量器具，分类->计量器具名称（编号）")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")
+    public CommonResult<List<StandingBookTypeTreeRespVO>> treeWithEnergyCode(@RequestBody StandingbookEnergyReqVO standingbookEnergyReqVO) {
+        return success(standingbookService.treeWithEnergyCode(standingbookEnergyReqVO));
+    }
     @GetMapping("/export-meter-template")
     @Operation(summary = "下载计量器具导入模板")
     // @PreAuthorize("@ss.hasPermission('power:standingbook:export')")

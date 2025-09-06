@@ -57,4 +57,18 @@
         WHERE t.deleted = 0
           and t.id = #{energyId}
     </select>
+
+    <select id="getEnergyIdByCode" resultType="java.lang.Long">
+        SELECT
+            id
+        FROM
+            ems_energy_configuration
+        WHERE
+            deleted = 0
+          AND CODE IN
+        <foreach collection="energyCodes" item="energyCode" separator="," close=")" open="(">
+            #{energyCode}
+        </foreach>
+
+    </select>
 </mapper>
