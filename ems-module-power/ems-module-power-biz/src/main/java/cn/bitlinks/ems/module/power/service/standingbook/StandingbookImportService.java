@@ -114,7 +114,7 @@ public class StandingbookImportService {
             // 获取最新模板表头
             ImportTemplateType tmplEnum;
             // 重点设备模板
-            if (!headers.contains("表类型")) {
+            if (!headers.contains("*表类型")) {
                 tmplEnum = ImportTemplateType.EQUIPMENT;
             } else {
                 tmplEnum = ImportTemplateType.METER;
