@@ -1482,7 +1482,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             }
 
             // —— 输出响应
-            String fileName = URLEncoder.encode("计量器具导入模板.xlsx", StandardCharsets.UTF_8.name())
+            String fileName = URLEncoder.encode("计量器具关联关系导入模板.xlsx", StandardCharsets.UTF_8.name())
                     .replaceAll("\\+", "%20");
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             response.setCharacterEncoding(StandardCharsets.UTF_8.name());
