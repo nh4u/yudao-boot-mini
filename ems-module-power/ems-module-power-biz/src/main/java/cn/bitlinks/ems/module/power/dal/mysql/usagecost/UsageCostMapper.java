@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.dal.mysql.usagecost;
 
+import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.DeviceMonitorAggData;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsHomeChartResultVO;
@@ -121,4 +122,8 @@ public interface UsageCostMapper {
     LocalDateTime getLastTimeByEnergyIds(@Param("startDate") LocalDateTime startDate,
                                          @Param("endDate") LocalDateTime endDate,
                                          @Param("energyIds") List<Long> energyIds);
+
+    DeviceMonitorAggData getAggStatisticsBySbIds(@Param("startDate") LocalDateTime startDate,
+                                                 @Param("endDate") LocalDateTime endDate,
+                                                 @Param("sbIds") List<Long> sbIds);
 }

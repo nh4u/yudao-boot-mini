@@ -679,6 +679,12 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         Integer queryType = paramVO.getQueryType();
         List<ComparisonChartGroupVO> groupList;
 
+        if(CollUtil.isEmpty(usageCostDataList)){
+            usageCostDataList = Collections.emptyList();
+        }
+        if(CollUtil.isEmpty(lastUsageCostDataList)){
+            lastUsageCostDataList = Collections.emptyList();
+        }
         if (QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)) {
             groupList = buildChartByEnergy(energyList, usageCostDataList, lastUsageCostDataList, xdata, DataTypeEnum.codeOf(paramVO.getDateType()), valueExtractor);
         } else if (QueryDimensionEnum.LABEL_REVIEW.getCode().equals(queryType)) {
