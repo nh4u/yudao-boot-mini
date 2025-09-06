@@ -385,7 +385,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
     }
 
     @Override
-    public CopChartResultVO copChartForBigScreen(ReportParamVO paramVO) {
+    public BigScreenCopChartData copChartForBigScreen(ReportParamVO paramVO) {
 
         // 1.校验时间范围
         LocalDateTime[] range = validateRange(paramVO.getRange());
@@ -398,7 +398,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
 
         List<String> copyTypeList = paramVO.getCopType();
 
-        CopChartResultVO resultVO = new CopChartResultVO();
+        BigScreenCopChartData resultVO = new BigScreenCopChartData();
 
         // 处理x轴
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, dataTypeEnum);
@@ -427,26 +427,23 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
             dealYList(nowCopAggDatas, copTypes, ltcNow, ltsNow, mtcNow, mtsNow);
         });
 
-        CopChartYData copChartYData = new CopChartYData();
-
         // LTC
         if (CollUtil.isNotEmpty(ltcNow)) {
-            copChartYData.setLtcNow(ltcNow);
+            resultVO.setLtcNow(ltcNow);
         }
         // LTS
         if (CollUtil.isNotEmpty(ltsNow)) {
-            copChartYData.setLtsNow(ltsNow);
+            resultVO.setLtsNow(ltsNow);
         }
         // MTC
         if (CollUtil.isNotEmpty(mtcNow)) {
-            copChartYData.setMtcNow(mtcNow);
+            resultVO.setMtcNow(mtcNow);
         }
         // MTS
         if (CollUtil.isNotEmpty(mtsNow)) {
-            copChartYData.setMtsNow(mtsNow);
+            resultVO.setMtsNow(mtsNow);
         }
 
-        resultVO.setYdata(copChartYData);
         return resultVO;
     }
 

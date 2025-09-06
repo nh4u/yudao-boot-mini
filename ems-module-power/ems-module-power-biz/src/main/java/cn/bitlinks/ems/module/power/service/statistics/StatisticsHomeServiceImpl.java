@@ -360,8 +360,8 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
             BigDecimal sum = null;
             // 单位产品能耗（8英寸）
             if (Objects.nonNull(eight)) {
-                sum = eight.getLot();
-                BigDecimal value8 = CommonUtil.divideWithScale(eight.getLot(), energySumStandardCoal, 2);
+                sum = eight.getValue();
+                BigDecimal value8 = CommonUtil.divideWithScale(eight.getValue(), energySumStandardCoal, 2);
                 product8.setValue(value8);
                 product8.setDataUpdateTime(eight.getTime());
                 statisticsHomeResultVO.setProductEnergyConsumption8(product8);
@@ -369,8 +369,8 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
 
             // 单位产品能耗（12英寸）
             if (Objects.nonNull(eight)) {
-                sum = Objects.isNull(sum) ? twelve.getLot() : sum.add(twelve.getLot());
-                BigDecimal value12 = CommonUtil.divideWithScale(twelve.getLot(), energySumStandardCoal, 2);
+                sum = Objects.isNull(sum) ? twelve.getValue() : sum.add(twelve.getValue());
+                BigDecimal value12 = CommonUtil.divideWithScale(twelve.getValue(), energySumStandardCoal, 2);
                 product12.setValue(value12);
                 product12.setDataUpdateTime(eight.getTime());
                 statisticsHomeResultVO.setProductEnergyConsumption12(product12);
