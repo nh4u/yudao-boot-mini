@@ -6,10 +6,10 @@ import cn.bitlinks.ems.framework.common.util.calc.CalculateUtil;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.MinitorDetailData;
-import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.MinitorDetailRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.MinitorParamReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.MinitorRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.MonitorDetailData;
+import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.MonitorDetailRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.MonitorParamReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.MonitorRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.tmpl.vo.StandingbookTmplDaqAttrRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
@@ -87,14 +87,14 @@ public class MonitorServiceImpl implements MonitorService {
     private MinuteAggDataService minuteAggDataService;
 
     @Override
-    public MinitorRespVO getMinitorList(Map<String, String> pageReqVO) {
+    public MonitorRespVO getMinitorList(Map<String, String> pageReqVO) {
         //过滤空条件
         pageReqVO.entrySet().removeIf(entry -> StringUtils.isEmpty(entry.getValue()));
 
         // 能耗状态
         String standingbookStatus = pageReqVO.get(SB_STATUS);
 
-        MinitorRespVO minitorRespVO = new MinitorRespVO();
+        MonitorRespVO minitorRespVO = new MonitorRespVO();
 
         // 取出查询条件
         // 能源条件（可能为空）
@@ -221,10 +221,10 @@ public class MonitorServiceImpl implements MonitorService {
     }
 
     @Override
-    public MinitorDetailRespVO deviceDetail(MinitorParamReqVO paramVO) {
+    public MonitorDetailRespVO deviceDetail(MonitorParamReqVO paramVO) {
 
         // 返回结果
-        MinitorDetailRespVO resultVO = new MinitorDetailRespVO();
+        MonitorDetailRespVO resultVO = new MonitorDetailRespVO();
 
         // 1.校验时间范围
         LocalDateTime[] rangeOrigin = validateRange(paramVO.getRange());
@@ -274,8 +274,8 @@ public class MonitorServiceImpl implements MonitorService {
         resultVO.setChartX(x);
 
         // 处理 表
-        List<MinitorDetailData> table = x.stream().map(time -> {
-            MinitorDetailData minitorDetailData = new MinitorDetailData();
+        List<MonitorDetailData> table = x.stream().map(time -> {
+            MonitorDetailData minitorDetailData = new MonitorDetailData();
             minitorDetailData.setTime(time);
             minitorDetailData.setValue(dealBigDecimalScale(dataMap.get(time), DEFAULT_SCALE));
             return minitorDetailData;
@@ -306,8 +306,8 @@ public class MonitorServiceImpl implements MonitorService {
     }
 
     @Override
-    public List<MinitorDetailData> getDetailTable(MinitorParamReqVO paramVO) {
-        MinitorDetailRespVO minitorDetailRespVO = deviceDetail(paramVO);
+    public List<MonitorDetailData> getDetailTable(MonitorParamReqVO paramVO) {
+        MonitorDetailRespVO minitorDetailRespVO = deviceDetail(paramVO);
         return minitorDetailRespVO.getTable();
     }
 

@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.usagecost;
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
 import cn.bitlinks.ems.module.acquisition.api.starrocks.StreamLoadApi;
 import cn.bitlinks.ems.module.acquisition.api.starrocks.dto.StreamLoadDTO;
+import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.DeviceMonitorAggData;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsHomeChartResultVO;
@@ -156,6 +157,11 @@ public class UsageCostServiceImpl implements UsageCostService {
     @TenantIgnore
     public StatisticsOverviewStatisticsTableData getAggStatisticsByEnergyIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds) {
         return usageCostMapper.getAggStatisticsByEnergyIds(startDate, endDate, energyIds);
+    }
+    @Override
+    @TenantIgnore
+    public DeviceMonitorAggData getAggStatisticsBySbIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> sbIds) {
+        return usageCostMapper.getAggStatisticsBySbIds(startDate, endDate, sbIds);
     }
 
     @Override
