@@ -13,10 +13,10 @@ import java.util.List;
 @Schema(description = "管理后台 - 台账属性 Response VO")
 @Data
 @JsonInclude(JsonInclude.Include.ALWAYS)
-public class MinitorDetailRespVO {
+public class MonitorDetailRespVO {
 
     @Schema(description = "表-数据")
-    List<MinitorDetailData> table;
+    List<MonitorDetailData> table;
 
     @Schema(description = "图-数据")
     List<BigDecimal> chartData;

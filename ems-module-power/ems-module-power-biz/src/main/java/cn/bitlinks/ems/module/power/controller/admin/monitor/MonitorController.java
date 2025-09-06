@@ -5,7 +5,6 @@ import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.excel.core.util.ExcelUtils;
 import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.tmpl.vo.StandingbookTmplDaqAttrRespVO;
-import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.service.devicemonitor.DeviceMonitorService;
 import cn.bitlinks.ems.module.power.service.monitor.MonitorService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,17 +39,15 @@ public class MonitorController {
     @PostMapping("/monitorList")
     @Operation(summary = "获得监控列表")
     //@PreAuthorize("@ss.hasPermission('power:minitor:query')")
-    public CommonResult<MinitorRespVO> getMinitorList(@Valid @RequestBody Map<String, String> pageReqVO) {
-        MinitorRespVO minitorRespVO = monitorService.getMinitorList(pageReqVO);
-        return success(minitorRespVO);
+    public CommonResult<MonitorRespVO> getMinitorList(@Valid @RequestBody Map<String, String> pageReqVO) {
+        return success(monitorService.getMinitorList(pageReqVO));
     }
 
     @PostMapping("/deviceDetail")
     @Operation(summary = "监控详情")
     //@PreAuthorize("@ss.hasPermission('power:minitor:query')")
-    public CommonResult<MinitorDetailRespVO> deviceDetail(@Valid @RequestBody MinitorParamReqVO paramVO) {
-        MinitorDetailRespVO minitorDetailRespVO = monitorService.deviceDetail(paramVO);
-        return success(minitorDetailRespVO);
+    public CommonResult<MonitorDetailRespVO> deviceDetail(@Valid @RequestBody MonitorParamReqVO paramVO) {
+        return success(monitorService.deviceDetail(paramVO));
     }
 
     @GetMapping("/getDaqAttrs")
@@ -66,11 +63,11 @@ public class MonitorController {
     @Operation(summary = "导出详情表数据")
     //@PreAuthorize("@ss.hasPermission('power:minitor:export')")
     @ApiAccessLog(operateType = EXPORT)
-    public void exportDetailTable(@Valid @RequestBody MinitorParamReqVO paramVO,
+    public void exportDetailTable(@Valid @RequestBody MonitorParamReqVO paramVO,
                                   HttpServletResponse response) throws IOException {
-        List<MinitorDetailData> list = monitorService.getDetailTable(paramVO);
+        List<MonitorDetailData> list = monitorService.getDetailTable(paramVO);
         // 导出 Excel
-        ExcelUtils.write(response, "设备监控详情数据表.xlsx", "数据", MinitorDetailData.class, list);
+        ExcelUtils.write(response, "设备监控详情数据表.xlsx", "数据", MonitorDetailData.class, list);
     }
 
 
@@ -106,8 +103,16 @@ public class MonitorController {
     @GetMapping("/energyList")
     @Operation(summary = "重点设备查询能源参数列表")
     @PermitAll
-    public CommonResult<List<EnergyConfigurationDO>> energyList(@RequestBody @Valid DeviceMonitorDeviceReqVO reqVO) {
+    public CommonResult<List<DeviceMonitorDeviceEnergyRespVO>> energyList(@RequestBody @Valid DeviceMonitorDeviceReqVO reqVO) {
         return success(deviceMonitorService.energyList(reqVO.getSbId()));
+    }
+
+
+
+    @PostMapping("/deviceTableAndChart")
+    @Operation(summary = "重点设备查询图表")
+    public CommonResult<DeviceMonitorDetailRespVO> deviceTableAndChart(@Valid @RequestBody DeviceMonitorParamReqVO paramVO) {
+        return success(deviceMonitorService.deviceTableAndChart(paramVO));
     }
 
 
