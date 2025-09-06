@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
+import com.alibaba.excel.annotation.write.style.ColumnWidth;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 @Schema(description = "管理后台 - 补录导出 Response VO")
 @Data
 @ExcelIgnoreUnannotated
+@ColumnWidth(20)
 public class AdditionalRecordingExportRespVO {
 
     @Schema(description = "计量器具id", example = "21597")

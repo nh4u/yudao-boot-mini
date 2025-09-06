@@ -510,7 +510,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             if (CollUtil.isNotEmpty(attributes)) {
                 Map<String, String> attributeCodeValueMap = attributes
                         .stream()
-                        .collect(Collectors.toMap(StandingbookAttributeDO::getCode, StandingbookAttributeDO::getValue));
+                        .collect(Collectors.toMap(StandingbookAttributeDO::getCode, a->Optional.ofNullable(a.getValue()).orElse("")));
 
                 attributeCodeList.forEach(a -> {
                     String s = attributeCodeValueMap.get(a);
@@ -528,7 +528,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             if (CollUtil.isNotEmpty(labelInfo)) {
                 Map<String, String> labelInfoNameValueMap = labelInfo
                         .stream()
-                        .collect(Collectors.toMap(StandingbookLabelInfoDO::getName, StandingbookLabelInfoDO::getValue));
+                        .collect(Collectors.toMap(StandingbookLabelInfoDO::getName, l->Optional.ofNullable(l.getValue()).orElse("")));
 
                 labelIdList.forEach(l -> {
                     // 拼接name
