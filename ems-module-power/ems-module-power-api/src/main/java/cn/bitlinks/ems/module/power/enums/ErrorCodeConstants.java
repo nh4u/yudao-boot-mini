@@ -208,4 +208,6 @@ public interface ErrorCodeConstants {
     ErrorCode STANDINGBOOK_IMPORT_FILE_ERROR = new ErrorCode(1_001_701_003, "文件不能为空");
     ErrorCode STANDINGBOOK_IMPORT_EXCEL_ERROR = new ErrorCode(1_001_701_004, "请上传Excel格式文件（.xlsx/.xls）");
     ErrorCode STANDINGBOOK_IMPORT_ALL_ERROR = new ErrorCode(1_001_701_000, "");
+
+    ErrorCode PURE_WASTE_GAS_SETTINGS_LIST_NOT_EXISTS = new ErrorCode(1_001_801_000, "list不存在");
 }
