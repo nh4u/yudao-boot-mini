@@ -1,4 +1,4 @@
-package cn.bitlinks.ems.module.power.controller.admin.minitor.vo;
+package cn.bitlinks.ems.module.power.controller.admin.monitor.vo;
 
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookRespVO;
 import com.fasterxml.jackson.annotation.JsonInclude;

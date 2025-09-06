@@ -1,4 +1,4 @@
-package cn.bitlinks.ems.module.power.controller.admin.minitor.vo;
+package cn.bitlinks.ems.module.power.controller.admin.monitor.vo;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.fasterxml.jackson.annotation.JsonInclude;

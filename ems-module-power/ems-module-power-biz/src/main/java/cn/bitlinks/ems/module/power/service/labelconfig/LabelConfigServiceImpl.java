@@ -71,6 +71,16 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         if (existCount > 0) {
             throw exception(LABEL_CONFIG_CODE_DUPLICATE);
         }
+        // 一级标签名称不能重复
+        if (createReqVO.getParentId().equals(CommonConstants.LABEL_TREE_ROOT_ID)) {
+            Long nameCount = labelConfigMapper.selectCount(new LambdaQueryWrapperX<LabelConfigDO>()
+                    .eq(LabelConfigDO::getLabelName, createReqVO.getLabelName())
+                    .eq(LabelConfigDO::getParentId, CommonConstants.LABEL_TREE_ROOT_ID)
+            );
+            if (nameCount > 0) {
+                throw exception(LABEL_CONFIG_NAME_DUPLICATE);
+            }
+        }
 
         // 插入
         LabelConfigDO labelConfig = BeanUtils.toBean(createReqVO, LabelConfigDO.class);
@@ -112,6 +122,18 @@ public class LabelConfigServiceImpl implements LabelConfigService {
                     .ne(LabelConfigDO::getId, updateReqVO.getId())); // 排除自身
             if (existCount > 0) {
                 throw exception(LABEL_CONFIG_CODE_DUPLICATE);
+            }
+        }
+        if (!currentLabel.getLabelName().equals(updateReqVO.getLabelName())) {
+            // 一级标签名称不能重复
+            if (updateReqVO.getParentId().equals(CommonConstants.LABEL_TREE_ROOT_ID)) {
+                Long nameCount = labelConfigMapper.selectCount(new LambdaQueryWrapperX<LabelConfigDO>()
+                        .eq(LabelConfigDO::getLabelName, updateReqVO.getLabelName())
+                        .eq(LabelConfigDO::getParentId, CommonConstants.LABEL_TREE_ROOT_ID)
+                );
+                if (nameCount > 0) {
+                    throw exception(LABEL_CONFIG_NAME_DUPLICATE);
+                }
             }
         }
         // 更新
