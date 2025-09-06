@@ -24,5 +24,10 @@ public class DeviceMonitorDeviceRespVO {
     private String image;
     @Schema(description = "动态标签列表")
     private List<DeviceMonitorDeviceLabel> labels;
+//    @Schema(description = "上一个台账id")
+//    private Long prevSbId;
+//
+//    @Schema(description = "下一个台账id")
+//    private Long nextSbId;
 }
 

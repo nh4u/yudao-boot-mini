@@ -13,7 +13,7 @@ import java.util.List;
 @Schema(description = "管理后台 - 台账属性 Response VO")
 @Data
 @JsonInclude(JsonInclude.Include.ALWAYS)
-public class MinitorRespVO {
+public class MonitorRespVO {
 
     @Schema(description = "台账list")
     List<StandingbookRespVO> standingbookRespVOList;

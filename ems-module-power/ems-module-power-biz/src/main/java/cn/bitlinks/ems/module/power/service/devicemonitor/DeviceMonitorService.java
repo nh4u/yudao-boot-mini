@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.devicemonitor;
 
 import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
+import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.infra.api.config.ConfigApi;
 import cn.bitlinks.ems.module.power.controller.admin.monitor.vo.*;
@@ -9,16 +10,19 @@ import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.Standingboo
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatisticsRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.measurementdevice.MeasurementDeviceDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.monitor.DeviceMonitorQrcodeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.attribute.StandingbookAttributeDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.type.StandingbookTypeDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
 import cn.bitlinks.ems.module.power.dal.mysql.measurementdevice.MeasurementDeviceMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.monitor.DeviceMonitorQrcodeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
+import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.label.StandingbookLabelInfoService;
@@ -28,6 +32,7 @@ import cn.bitlinks.ems.module.power.service.warninginfo.WarningInfoService;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
@@ -74,6 +79,8 @@ public class DeviceMonitorService {
     private ConfigApi configApi;
 
     static final String INIT_DEVICE_LINK = "power.device.monitor.url";
+    @Autowired
+    private EnergyConfigurationService energyConfigurationService;
 
     public DeviceMonitorWarningRespVO getWarningInfo(@Valid DeviceMonitorWarningReqVO reqVO) {
         DeviceMonitorWarningRespVO respVO = new DeviceMonitorWarningRespVO();
@@ -193,12 +200,33 @@ public class DeviceMonitorService {
         return Objects.nonNull(exist);
     }
 
-    public List<EnergyConfigurationDO> energyList(Long sbId) {
-//        // 查询设备下关联的计量器具
-//        StandingbookDO standingbookDO = standingbookService.getById(reqVO.getSbId());
-//        StandingbookTypeDO standingbookTypeDO = standingbookTypeService.getStandingbookType(standingbookDO.getTypeId());
-//        energystandingbookTmplDaqAttrService.(sbId);
-        return null;
+    public List<DeviceMonitorDeviceEnergyRespVO> energyList(Long sbId) {
+        // 1.查询重点设备下关联的计量器具
+        List<MeasurementDeviceDO> measurementDeviceDOS = measurementDeviceMapper.selectList(new LambdaQueryWrapperX<MeasurementDeviceDO>().eq(MeasurementDeviceDO::getDeviceId, sbId));
+        if (CollUtil.isEmpty(measurementDeviceDOS)) {
+            return Collections.emptyList();
+        }
+        // 筛选出关联的计量器具ids
+        List<Long> subSbIds = measurementDeviceDOS.stream()
+                .map(MeasurementDeviceDO::getMeasurementInstrumentId)
+                .distinct()  // 去重，确保每个 ID 只出现一次
+                .collect(Collectors.toList());
+        // 2.查询计量器具们关联的能源列表
+        Map<Long, List<StandingbookTmplDaqAttrDO>> allSbEnergyAttrs = standingbookTmplDaqAttrService.getEnergyDaqAttrsBySbIds(subSbIds);
+        if (CollUtil.isEmpty(allSbEnergyAttrs) || CollUtil.isEmpty(allSbEnergyAttrs.values())) {
+            return Collections.emptyList();
+        }
+        // 提取出energyId Set
+        Set<Long> energyIds = allSbEnergyAttrs.values().stream()
+                .flatMap(List::stream)
+                .map(StandingbookTmplDaqAttrDO::getEnergyId)
+                .collect(Collectors.toSet());
+        if (CollUtil.isEmpty(energyIds)) {
+            return Collections.emptyList();
+        }
+        // 3.查询计量器具的能源配置
+        List<EnergyConfigurationDO> energyConfigurationDOS = energyConfigurationService.getByEnergyClassify(energyIds, null);
+        return BeanUtils.toBean(energyConfigurationDOS, DeviceMonitorDeviceEnergyRespVO.class);
 
     }
 }

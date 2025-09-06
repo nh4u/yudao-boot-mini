@@ -17,7 +17,7 @@ import java.math.BigDecimal;
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @ExcelIgnoreUnannotated
 @ColumnWidth(25)
-public class MinitorDetailData {
+public class MonitorDetailData {
 
     @Schema(description = "时间")
     @ExcelProperty("时间")
