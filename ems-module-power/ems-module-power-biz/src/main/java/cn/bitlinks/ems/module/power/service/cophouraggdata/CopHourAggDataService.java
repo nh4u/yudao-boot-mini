@@ -1,11 +1,11 @@
 package cn.bitlinks.ems.module.power.service.cophouraggdata;
 
+import cn.bitlinks.ems.module.power.controller.admin.report.vo.BigScreenCopChartData;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopChartResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopTableResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.ReportParamVO;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author liumingqiang
@@ -21,5 +21,5 @@ public interface CopHourAggDataService {
 
     CopChartResultVO copChart(ReportParamVO paramVO);
 
-    CopChartResultVO copChartForBigScreen(ReportParamVO paramVO);
+    BigScreenCopChartData copChartForBigScreen(ReportParamVO paramVO);
 }

@@ -155,6 +155,36 @@ public interface CommonConstants {
      * 30%HCL（盐酸）
      */
     String HCL = "HCL";
+
+    /**
+     * 风向
+     */
+    String WIND_DIRECTION_IO = "PLC220.PLC.QxzData.FX";
+    /**
+     * 风速
+     */
+    String WIND_SPEED_IO = "PLC220.PLC.QxzData.FS";
+    /**
+     * 温度
+     */
+    String TEMPERATURE_IO = "PLC220.PLC.QxzData.WD";
+    /**
+     * 湿度
+     */
+    String HUMIDITY_IO = "PLC220.PLC.QxzData.SD";
+    /**
+     * 露点
+     */
+    String DEW_POINT_IO = "PLC220.PLC.QxzData.LD";
+    /**
+     * 气压
+     */
+    String ATMOSPHERIC_PRESSURE_IO = "PLC220.PLC.QxzData.QY";
+    /**
+     * 噪音
+     */
+    String NOISE_IO = "PLC220.PLC.QxzData.ZY";
+
     String SYSTEM = "系统";
 
     String VOUCHER = "凭证";
