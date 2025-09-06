@@ -334,7 +334,19 @@
             </when>
         </choose>
         ,
-        SUM(current_usage) AS currentTotalUsage
+        SUM(
+        CASE
+        WHEN cost &lt; 0 THEN NULL
+        ELSE cost
+        END
+        ) AS totalCost,
+        SUM(current_usage) AS currentTotalUsage,
+        SUM(
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS totalStandardCoalEquivalent
         FROM
         usage_cost
         WHERE
@@ -505,6 +517,32 @@
             </foreach>
         </if>
 
+    </select>
+
+    <select id="getAggStatisticsBySbIds"
+            resultType="cn.bitlinks.ems.module.power.controller.admin.monitor.vo.DeviceMonitorAggData">
+        SELECT
+        SUM(
+        CASE
+        WHEN cost &lt; 0 THEN NULL
+        ELSE cost
+        END
+        ) AS accCost,
+
+        SUM(
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS accCoal,
+        SUM(current_usage)            AS accUsage
+        FROM usage_cost
+        WHERE aggregate_time &gt;= #{startDate}
+        AND aggregate_time &lt;= #{endDate}
+        AND standingbook_id IN
+        <foreach collection="sbIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
     </select>
     <select id="getAggStatisticsByEnergyIds"
             resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsOverviewStatisticsTableData">

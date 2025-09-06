@@ -109,11 +109,11 @@ public class MonitorController {
 
 
 
-//    @PostMapping("/deviceTableAndChart")
-//    @Operation(summary = "重点设备查询图表")
-//    public CommonResult<MonitorDetailRespVO> deviceTableAndChart(@Valid @RequestBody MonitorParamReqVO paramVO) {
-//        return success(deviceMonitorService.deviceTableAndChart(paramVO));
-//    }
+    @PostMapping("/deviceTableAndChart")
+    @Operation(summary = "重点设备查询图表")
+    public CommonResult<DeviceMonitorDetailRespVO> deviceTableAndChart(@Valid @RequestBody DeviceMonitorParamReqVO paramVO) {
+        return success(deviceMonitorService.deviceTableAndChart(paramVO));
+    }
 
 
 }

@@ -82,4 +82,6 @@ public class StatisticsCacheConstants {
      */
     public static final String WATER_TABLE = "report:usage:water:table:";
     public static final String WATER_CHART = "report:usage:water:chart:";
+
+    public static final String DEVICE_MONITOR_DEVICE_DATA = "device-monitor:device:";
 }
