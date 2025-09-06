@@ -5,6 +5,7 @@ import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.tenant.core.job.TenantJob;
 import cn.bitlinks.ems.module.power.controller.admin.externalapi.vo.ProductYieldMeta;
 import cn.bitlinks.ems.module.power.controller.admin.externalapi.vo.ProductionSaveReqVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.production.ProductionDO;
 import cn.bitlinks.ems.module.power.service.externalapi.ExternalApiService;
 import cn.bitlinks.ems.module.power.service.production.ProductionService;
 import cn.hutool.core.collection.CollUtil;
@@ -20,6 +21,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -169,7 +171,13 @@ public class ProductionTask {
                 .withSecond(0)   // 秒设置为 0
                 .withNano(0);    // 纳秒也清零（可选，通常建议加上）
 
-        vo.setTime(time);
+        // 当前取的数据是上一小时的值
+        vo.setTime(time.minusHours(1));
+
+        // 计算差值
+        ProductionDO last  = productionService.getLastProduction(size);
+        BigDecimal value = vo.getLot().subtract(last.getLot());
+        vo.setValue(value);
 
         productionService.createProduction(vo);
     }

@@ -968,7 +968,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             String label = standingbookLabelMap.get(data.getStandingbookId());
             if (label == null) continue;
             nowMap.computeIfAbsent(label, k -> new HashMap<>())
-                    .merge(data.getTime(), valueExtractor.apply(data),  (v1, v2) -> {
+                    .merge(data.getTime(), valueExtractor.apply(data), (v1, v2) -> {
                                 if (v1 == null) return v2;
                                 if (v2 == null) return v1;
                                 return v1.add(v2);
@@ -982,7 +982,7 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             String label = standingbookLabelMap.get(data.getStandingbookId());
             if (label == null) continue;
             lastMap.computeIfAbsent(label, k -> new HashMap<>())
-                    .merge(data.getTime(), valueExtractor.apply(data),  (v1, v2) -> {
+                    .merge(data.getTime(), valueExtractor.apply(data), (v1, v2) -> {
                                 if (v1 == null) return v2;
                                 if (v2 == null) return v1;
                                 return v1.add(v2);
@@ -1574,6 +1574,13 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
             resultVOList.add(group);
 
         });
+
+        // 处理名字
+        resultVOList.forEach(r->{
+            String name = r.getName();
+            r.setName(name + RATIO + ANALYSIS);
+        });
+
         if (EnergyClassifyEnum.OUTSOURCED.getCode().equals(paramVO.getEnergyClassify())) {
             resultVO.setList(Collections.singletonList(resultVOList.get(0)));
         } else if (EnergyClassifyEnum.PARK.getCode().equals(paramVO.getEnergyClassify())) {

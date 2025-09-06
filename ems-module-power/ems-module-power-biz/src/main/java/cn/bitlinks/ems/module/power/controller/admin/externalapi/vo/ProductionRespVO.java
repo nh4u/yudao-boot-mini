@@ -31,6 +31,9 @@ public class ProductionRespVO {
     @Schema(description = "实际产量")
     private BigDecimal lot;
 
+    @Schema(description = "间隔产量数")
+    private BigDecimal value;
+
     @Schema(description = "尺寸", example = "8")
     private Integer size;
 }

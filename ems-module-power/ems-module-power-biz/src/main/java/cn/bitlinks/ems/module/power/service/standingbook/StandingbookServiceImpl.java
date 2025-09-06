@@ -376,6 +376,34 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
     @Override
+    public List<StandingBookTypeTreeRespVO> treeWithEnergyCode(StandingbookEnergyReqVO standingbookEnergyReqVO) {
+        // 根据能源参数筛选出能源然后筛选出台账分类，
+        List<Long> energyIds = energyConfigurationMapper.getEnergyIdByCode(standingbookEnergyReqVO.getEnergyCodes());
+        if (CollUtil.isEmpty(energyIds)) {
+            return Collections.emptyList();
+        }
+        // 再筛选一遍能源挂在哪个台账分类下，
+        List<Long> energyTypeIds = standingbookTmplDaqAttrMapper.selectSbTypeIdsByEnergyIds(energyIds);
+        if (CollUtil.isEmpty(energyTypeIds)) {
+            return Collections.emptyList();
+        }
+        // 根据台账分类查询台账
+        List<Long> sbIds = standingbookMapper.selectStandingbookIdByCondition(null, energyTypeIds, null, null);
+        if (CollUtil.isEmpty(sbIds)) {
+            return Collections.emptyList();
+        }
+        // 根据台账名称和台账编码模糊搜出台账
+        List<StandingBookTypeTreeRespVO> sbNodes = standingbookAttributeService.getStandingbookByCodeAndName(standingbookEnergyReqVO.getSbCode(), standingbookEnergyReqVO.getSbName(), sbIds);
+        if (CollUtil.isEmpty(sbNodes)) {
+            return Collections.emptyList();
+        }
+
+        // 台账分类属性结构
+        List<StandingbookTypeDO> standingbookTypeDOTree = standingbookTypeService.getStandingbookTypeIdList(energyTypeIds);
+        return buildTreeWithDevices(standingbookTypeDOTree, sbNodes);
+    }
+
+    @Override
     @Cacheable(value = RedisKeyConstants.STANDING_BOOK_DEVICE_CODE_LIST, key = "'all'", unless = "#result == null || #result.isEmpty()")
     public List<String> getStandingbookCodeDeviceList() {
         return standingbookAttributeMapper.getStandingbookCodeDeviceList();
@@ -482,7 +510,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             if (CollUtil.isNotEmpty(attributes)) {
                 Map<String, String> attributeCodeValueMap = attributes
                         .stream()
-                        .collect(Collectors.toMap(StandingbookAttributeDO::getCode, StandingbookAttributeDO::getValue));
+                        .collect(Collectors.toMap(StandingbookAttributeDO::getCode, a->Optional.ofNullable(a.getValue()).orElse("")));
 
                 attributeCodeList.forEach(a -> {
                     String s = attributeCodeValueMap.get(a);
@@ -500,7 +528,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             if (CollUtil.isNotEmpty(labelInfo)) {
                 Map<String, String> labelInfoNameValueMap = labelInfo
                         .stream()
-                        .collect(Collectors.toMap(StandingbookLabelInfoDO::getName, StandingbookLabelInfoDO::getValue));
+                        .collect(Collectors.toMap(StandingbookLabelInfoDO::getName, l->Optional.ofNullable(l.getValue()).orElse("")));
 
                 labelIdList.forEach(l -> {
                     // 拼接name

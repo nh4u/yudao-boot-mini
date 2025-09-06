@@ -1283,7 +1283,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         List<UsageCostData> lastNumeratorList = usageCostService.getList(paramVO, paramVO.getRange()[0].minusYears(1), paramVO.getRange()[1].minusYears(1), sbIds);
         boolean isCrossYear = DateUtils.isCrossYear(paramVO.getRange()[0], paramVO.getRange()[1]);
         // 综合默认查看
-        List<YoyItemVO> statisticsInfoList = queryList(outsourceList, parkList, numeratorList, lastOutsourceList, lastParkList, lastNumeratorList, isCrossYear, tableHeader,DataTypeEnum.codeOf(paramVO.getDateType()));
+        List<YoyItemVO> statisticsInfoList = queryList(outsourceList, parkList, numeratorList, lastOutsourceList, lastParkList, lastNumeratorList, isCrossYear, tableHeader, DataTypeEnum.codeOf(paramVO.getDateType()));
 
 
         // 设置最终返回值
@@ -1367,6 +1367,13 @@ public class YoyV2ServiceImpl implements YoyV2Service {
             resultVOList.add(group);
 
         });
+
+        // 处理名字
+        resultVOList.forEach(r->{
+            String name = r.getName();
+            r.setName(name + RATIO + ANALYSIS);
+        });
+
         if (EnergyClassifyEnum.OUTSOURCED.getCode().equals(paramVO.getEnergyClassify())) {
             resVO.setList(Collections.singletonList(resultVOList.get(0)));
         } else if (EnergyClassifyEnum.PARK.getCode().equals(paramVO.getEnergyClassify())) {
@@ -1377,6 +1384,14 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         resVO.setList(resultVOList);
         resVO.setDataTime(tableResult.getDataTime());
         return resVO;
+    }
+
+    private ComparisonChartGroupVO dealName(ComparisonChartGroupVO vo) {
+        if (Objects.nonNull(vo)) {
+            String name = vo.getName();
+            vo.setName(name + RATIO + ANALYSIS);
+        }
+        return vo;
     }
 
     /**
@@ -1419,14 +1434,14 @@ public class YoyV2ServiceImpl implements YoyV2Service {
 
         List<YoyItemVO> result = new ArrayList<>();
 
-        result.add(getUtilizationRateInfo(EnergyClassifyEnum.OUTSOURCED, outsourceMap, numeratorMap, lastOutsourceMap, lastNumeratorMap, isCrossYear, tableHeader,dataTypeEnum));
-        result.add(getUtilizationRateInfo(EnergyClassifyEnum.PARK, parkMap, numeratorMap, lastParkMap, lastNumeratorMap, isCrossYear, tableHeader,dataTypeEnum));
+        result.add(getUtilizationRateInfo(EnergyClassifyEnum.OUTSOURCED, outsourceMap, numeratorMap, lastOutsourceMap, lastNumeratorMap, isCrossYear, tableHeader, dataTypeEnum));
+        result.add(getUtilizationRateInfo(EnergyClassifyEnum.PARK, parkMap, numeratorMap, lastParkMap, lastNumeratorMap, isCrossYear, tableHeader, dataTypeEnum));
         return result;
 
     }
 
     private YoyItemVO getUtilizationRateInfo(EnergyClassifyEnum energyClassifyEnum, Map<String, TimeAndNumData> denominatorMap, Map<String, TimeAndNumData> numeratorMap,
-                                             Map<String, TimeAndNumData> lastDenominatorMap, Map<String, TimeAndNumData> lastNumeratorMap, boolean isCrossYear, List<String> tableHeader,DataTypeEnum dataTypeEnum) {
+                                             Map<String, TimeAndNumData> lastDenominatorMap, Map<String, TimeAndNumData> lastNumeratorMap, boolean isCrossYear, List<String> tableHeader, DataTypeEnum dataTypeEnum) {
 
         List<YoyDetailVO> dataList = new ArrayList<>();
         for (String time : tableHeader) {

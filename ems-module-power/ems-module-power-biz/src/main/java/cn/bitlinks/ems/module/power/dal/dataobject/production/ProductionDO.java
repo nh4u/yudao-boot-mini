@@ -48,5 +48,9 @@ public class ProductionDO extends BaseDO {
      * 尺寸
      */
     private Integer size;
+    /**
+     * 间隔产量数
+     */
+    private Integer value;
 
 }
