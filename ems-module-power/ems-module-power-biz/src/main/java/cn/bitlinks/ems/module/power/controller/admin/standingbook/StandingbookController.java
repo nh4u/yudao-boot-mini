@@ -10,6 +10,7 @@ import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.write.metadata.style.WriteCellStyle;
 import com.alibaba.excel.write.style.HorizontalCellStyleStrategy;
+import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
 import com.alibaba.excel.write.style.column.SimpleColumnWidthStyleStrategy;
 import com.alibaba.excel.write.style.row.SimpleRowHeightStyleStrategy;
 import io.swagger.v3.oas.annotations.Operation;
@@ -134,7 +135,12 @@ public class StandingbookController {
         return success(standingbookService.treeDeviceWithParam(standingbookParamReqVO));
     }
 
-
+    @PostMapping("/treeWithEnergyCode")
+    @Operation(summary = "根据能源编码查询所有的实体计量器具，分类->计量器具名称（编号）")
+    //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")
+    public CommonResult<List<StandingBookTypeTreeRespVO>> treeWithEnergyCode(@RequestBody StandingbookEnergyReqVO standingbookEnergyReqVO) {
+        return success(standingbookService.treeWithEnergyCode(standingbookEnergyReqVO));
+    }
     @GetMapping("/export-meter-template")
     @Operation(summary = "下载计量器具导入模板")
     // @PreAuthorize("@ss.hasPermission('power:standingbook:export')")
@@ -203,7 +209,7 @@ public class StandingbookController {
         try (OutputStream outputStream = response.getOutputStream()) {
             EasyExcelFactory.write(outputStream)
                     .head(header)
-                    .registerWriteHandler(new SimpleColumnWidthStyleStrategy(35))
+                    .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
                     .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
                     // 设置表头行高 30，内容行高 20
                     .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))

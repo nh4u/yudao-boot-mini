@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.controller.admin.voucher.vo;
 import cn.hutool.core.date.DatePattern;
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
+import com.alibaba.excel.annotation.write.style.ColumnWidth;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -16,6 +17,7 @@ import java.util.Objects;
 @Schema(description = "管理后台 - 凭证管理 Response VO")
 @Data
 @ExcelIgnoreUnannotated
+@ColumnWidth(20)
 public class VoucherRespVO {
 
     @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "3687")

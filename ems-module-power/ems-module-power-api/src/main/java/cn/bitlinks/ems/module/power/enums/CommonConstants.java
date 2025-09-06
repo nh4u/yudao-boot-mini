@@ -135,7 +135,26 @@ public interface CommonConstants {
 
     String DAY = "日";
 
-
+    /**
+     * 纯水
+     */
+    String PURE = "PURE";
+    /**
+     * 废水
+     */
+    String WASTE = "WASTE";
+    /**
+     * 压缩空气
+     */
+    String GAS = "GAS";
+    /**
+     * 30%NAOH（氢氧化钠）
+     */
+    String NAOH = "NAOH";
+    /**
+     * 30%HCL（盐酸）
+     */
+    String HCL = "HCL";
     String SYSTEM = "系统";
 
     String VOUCHER = "凭证";
