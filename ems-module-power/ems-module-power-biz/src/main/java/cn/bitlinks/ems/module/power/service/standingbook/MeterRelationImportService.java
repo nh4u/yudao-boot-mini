@@ -27,7 +27,8 @@ public class MeterRelationImportService {
     private MeterRelationService meterRelationService;
 
     // 下级计量器具分隔符校验
-    private static final Pattern SEMICOLON_PATTERN = Pattern.compile("^[\\w\\-]+(;[\\w\\-]+)*$");
+//    private static final Pattern SEMICOLON_PATTERN = Pattern.compile("^[\\w\\-\\u4e00-\\u9fa5]+(;[\\w\\-\\u4e00-\\u9fa5]+)*$");
+    private static final Pattern SEMICOLON_PATTERN = Pattern.compile("^([^;]+(;[^;]+)*)*$");
 
     // 单次缓存批量大小
     private static final int BATCH_COUNT = 500;
@@ -91,21 +92,27 @@ public class MeterRelationImportService {
 
         } catch (Exception e) {
             log.error("计量器具关系文件解析失败", e);
-            throw exception(new ErrorCode(STANDINGBOOK_IMPORT_ALL_ERROR.getCode(), "计量器具关系文件解析失败：" + e.getMessage()));
+            throw exception(new ErrorCode(STANDINGBOOK_IMPORT_ALL_ERROR.getCode(), e.getMessage()));
         }
     }
 
     // 构建错误提示信息
     private String buildErrorMsg(List<Integer> errorRowNums) {
+        String errorMsg = "第%s行数据有误";
         String msg;
         int displayCount = Math.min(errorRowNums.size(), 50);
+
+        // 拼接错误信息，每行一个
         msg = errorRowNums.subList(0, displayCount).stream()
-                .map(String::valueOf)
-                .collect(Collectors.joining(","));
+                .map(rowNum -> String.format(errorMsg, rowNum))
+                .collect(Collectors.joining("\n"));
+
+        // 如果超过 50 条，加上省略号
         if (errorRowNums.size() > 50) {
-            msg += "...";
+            msg += "\n...";
         }
-        return "第" + msg + "行数据有误";
+
+        return msg;
     }
 
     private String getCellValue(Cell cell) {
