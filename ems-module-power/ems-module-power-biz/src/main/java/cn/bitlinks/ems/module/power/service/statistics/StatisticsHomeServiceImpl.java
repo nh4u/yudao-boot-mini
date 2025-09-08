@@ -357,8 +357,8 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
             // 外购总能耗
             BigDecimal energySumStandardCoal = usageCostService.getEnergySumStandardCoal(startTime, endTime, energyIdList);
 
-            BigDecimal eightValue = Optional.ofNullable(eight.getValue()).orElse(BigDecimal.ZERO);
-            BigDecimal twelveValue = Optional.ofNullable(twelve.getValue()).orElse(BigDecimal.ZERO);
+            BigDecimal eightValue = Optional.ofNullable(eight).map(ProductionDO::getValue).orElse(BigDecimal.ZERO);
+            BigDecimal twelveValue = Optional.ofNullable(twelve).map(ProductionDO::getValue).orElse(BigDecimal.ZERO);
 
             BigDecimal sum = eightValue.add(twelveValue);
             // 单位产品能耗（8英寸）
@@ -371,19 +371,19 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
             }
 
             // 单位产品能耗（12英寸）
-            if (Objects.nonNull(eight)) {
+            if (Objects.nonNull(twelve)) {
                 BigDecimal twelveEnergyStandardCoal = dealProductionConsumption(twelveValue, sum, energySumStandardCoal);
                 BigDecimal value12 = CommonUtil.divideWithScale(twelveValue, twelveEnergyStandardCoal, 2);
                 product12.setValue(value12);
-                product12.setDataUpdateTime(eight.getTime());
+                product12.setDataUpdateTime(twelve.getTime());
                 statisticsHomeResultVO.setProductEnergyConsumption12(product12);
             }
 
-            // 单位产值能耗 综合能耗÷总产值
-            BigDecimal sumValue = CommonUtil.divideWithScale(sum, energySumStandardCoal, 2);
-            total.setValue(sumValue);
-            total.setDataUpdateTime(product8.getDataUpdateTime().compareTo(product12.getDataUpdateTime()) < 0 ? product8.getDataUpdateTime() : product12.getDataUpdateTime());
-            statisticsHomeResultVO.setOutputValueEnergyConsumption(total);
+            // 单位产值能耗 综合能耗÷总产值 目前总产值无数据 不做计算
+//            BigDecimal sumValue = CommonUtil.divideWithScale(sum, energySumStandardCoal, 2);
+//            total.setValue(sumValue);
+//            total.setDataUpdateTime(product8.getDataUpdateTime().compareTo(product12.getDataUpdateTime()) < 0 ? product8.getDataUpdateTime() : product12.getDataUpdateTime());
+//            statisticsHomeResultVO.setOutputValueEnergyConsumption(total);
 
             return statisticsHomeResultVO;
         } catch (Exception e) {
@@ -396,7 +396,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
     }
 
     private BigDecimal dealProductionConsumption(BigDecimal value, BigDecimal sum, BigDecimal energySumStandardCoal) {
-        BigDecimal divide = value.divide(sum,15,RoundingMode.HALF_UP);
+        BigDecimal divide = value.divide(sum, 15, RoundingMode.HALF_UP);
         return energySumStandardCoal.multiply(divide);
     }
 

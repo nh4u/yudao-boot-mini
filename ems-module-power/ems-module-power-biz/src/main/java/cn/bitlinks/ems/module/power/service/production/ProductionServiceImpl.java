@@ -88,10 +88,13 @@ public class ProductionServiceImpl implements ProductionService {
     public ProductionDO getHomeProduction(ProductionPageReqVO pageReqVO) {
 
         ProductionDO result = productionMapper.getHomeProduction(pageReqVO);
-        ProductionDO lastProduction = getLastProduction(pageReqVO.getSize());
-        if (Objects.nonNull(lastProduction)) {
-            result.setTime(lastProduction.getTime());
+        if (Objects.nonNull(result)) {
+            ProductionDO lastProduction = getLastProduction(pageReqVO.getSize());
+            if (Objects.nonNull(lastProduction)) {
+                result.setTime(lastProduction.getTime());
+            }
         }
+
         return result;
     }
 
