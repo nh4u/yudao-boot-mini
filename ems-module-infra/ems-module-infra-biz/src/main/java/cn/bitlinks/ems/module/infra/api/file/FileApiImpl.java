@@ -5,6 +5,7 @@ import cn.bitlinks.ems.module.infra.api.file.dto.FileCreateReqDTO;
 import cn.bitlinks.ems.module.infra.framework.file.core.client.FileClient;
 import cn.bitlinks.ems.module.infra.service.file.FileConfigService;
 import cn.bitlinks.ems.module.infra.service.file.FileService;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,8 +18,10 @@ import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 public class FileApiImpl implements FileApi {
 
     @Resource
+    @Lazy
     private FileService fileService;
     @Resource
+    @Lazy
     private FileConfigService fileConfigService;
 
     @Override
