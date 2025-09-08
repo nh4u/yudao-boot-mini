@@ -451,7 +451,8 @@ public class StandingbookServiceImpl implements StandingbookService {
                 .stream()
                 .filter(s -> {
                     String isRequired = s.getIsRequired();
-                    return "0".equals(isRequired);
+                    String displayFlag = s.getDisplayFlag();
+                    return "0".equals(isRequired) && "0".equals(displayFlag);
                 })
                 .sorted(Comparator.comparing(StandingbookAttributeDO::getSort))
                 .collect(Collectors.toList());
