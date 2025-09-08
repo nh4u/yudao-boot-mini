@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.standingbook;
 import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
+import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookExcelDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.doublecarbon.DoubleCarbonMappingDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
@@ -22,10 +23,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Lazy;
@@ -85,7 +83,7 @@ public class StandingbookImportActualService {
     /**
      * 校验多个标签编码是否都在系统中存在
      *
-     * @param labelCodes 待校验的标签编码集合
+     * @param labelCodes       待校验的标签编码集合
      * @param systemLabelCodes 系统已有的标签编码集合
      * @return true=全部存在，false=存在缺失
      */
@@ -98,6 +96,7 @@ public class StandingbookImportActualService {
         }
         return new HashSet<>(systemLabelCodes).containsAll(labelCodes);
     }
+
     /**
      * 校验台账类型编码是否在系统中存在
      *
@@ -111,13 +110,22 @@ public class StandingbookImportActualService {
         return typeCodes.contains(typeCode);
     }
 
-    public boolean checkMeterCodeExists(String meterCode) {
-        List<String> codeList = standingbookService.getStandingbookCodeMeasurementList();
-        if (CollUtil.isEmpty(codeList)) {
+    public boolean checkMeterCodeExists(String meterCode, ImportTemplateType tmplEnum) {
+        List<StandingbookDTO> allStandingbookDTOList = standingbookService.getStandingbookDTOList();
+        if (CollUtil.isEmpty(allStandingbookDTOList)) {
             return false;
         }
-        return codeList.contains(meterCode);
+        List<String> codes = allStandingbookDTOList.stream()
+                .map(StandingbookDTO::getCode)
+                .collect(Collectors.toList());
+
+
+        if (CollUtil.isEmpty(codes)) {
+            return false;
+        }
+        return codes.contains(meterCode);
     }
+
     /**
      * 最终入库（Excel解析完成且无错误时调用）
      */
@@ -151,7 +159,7 @@ public class StandingbookImportActualService {
             List<StandingbookAttributeDO> allTypeAttrList = standingbookAttributeService.getStandingbookAttributeList();
             Map<Long, List<StandingbookAttributeDO>> allTypeAttrMap = allTypeAttrList.stream()
                     .collect(Collectors.groupingBy(StandingbookAttributeDO::getTypeId));
-            List<LabelConfigDO> labelConfigDOS= labelConfigService.getAllLabelConfig();
+            List<LabelConfigDO> labelConfigDOS = labelConfigService.getAllLabelConfig();
             Map<Long, LabelConfigDO> labelIdMap = labelConfigDOS.stream()
                     .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
             Map<String, LabelConfigDO> labelCodeMap = labelConfigDOS.stream()
@@ -209,13 +217,13 @@ public class StandingbookImportActualService {
                                 .findFirst();
                         Long topLabelId = matchingLabelOpt.get().getId();
 
-                        String labelFullPathId = getLabelFullIdPathById(labelId,labelIdMap);
-                        if(labelFullPathId == null){
+                        String labelFullPathId = getLabelFullIdPathById(labelId, labelIdMap);
+                        if (labelFullPathId == null) {
                             continue;
                         }
                         StandingbookLabelInfoDO label = new StandingbookLabelInfoDO();
                         label.setStandingbookId(sbId);
-                        label.setName(ATTR_LABEL_INFO_PREFIX+topLabelId);
+                        label.setName(ATTR_LABEL_INFO_PREFIX + topLabelId);
                         label.setValue(labelFullPathId);
                         labels.add(label);
                     }
@@ -252,6 +260,7 @@ public class StandingbookImportActualService {
         }
 
     }
+
     /**
      * 根据标签ID获取其层级全路径 (显示ID)
      *

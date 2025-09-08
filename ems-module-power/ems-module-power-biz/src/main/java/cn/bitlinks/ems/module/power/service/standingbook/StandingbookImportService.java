@@ -170,7 +170,7 @@ public class StandingbookImportService {
 
 
                 // 校验单行数据+ 校验列表中是否已存在了设备编号，如果存在，则加入errorRowNums
-                if (!validateSingleRow(dto, tmplEnum, typeCodes, sysLabelCodes) && existCode.contains(dto.getSbCode())) {
+                if (!validateSingleRow(dto, tmplEnum, typeCodes, sysLabelCodes) || existCode.contains(dto.getSbCode())) {
                     errorRowNums.add(rowNum);
                     continue;
                 }
@@ -264,7 +264,7 @@ public class StandingbookImportService {
         // 校验台账类型编码必须存在
         if (!standingbookImportActualService.checkTypeCodeExists(typeCode, typeCodes)) return false;
         // 校验台账编码必须不存在
-        if (standingbookImportActualService.checkMeterCodeExists(sbCode)) return false;
+        if (standingbookImportActualService.checkMeterCodeExists(sbCode,tmplEnum)) return false;
         // 校验标签编码必须存在
         // 校验标签编码必须存在
         Map<String, String> labelMap = dto.getLabelMap();
