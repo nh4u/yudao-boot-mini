@@ -5,6 +5,7 @@ import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.excel.core.util.ExcelUtils;
+import cn.bitlinks.ems.module.infra.api.file.FileApi;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.additionalrecording.AdditionalRecordingDO;
 import cn.bitlinks.ems.module.power.service.additionalrecording.AdditionalRecordingService;
@@ -16,12 +17,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -46,6 +48,9 @@ public class AdditionalRecordingController {
     private AdditionalRecordingService additionalRecordingService;
     @Resource
     private ExcelMeterDataProcessor excelMeterDataProcessor;
+
+    @Resource
+    private FileApi fileApi;
 
     @PostMapping("/create")
     @Operation(summary = "手动补录")
@@ -163,14 +168,17 @@ public class AdditionalRecordingController {
      */
     @Operation(summary = "批量导入")
     @PostMapping("/importExcelData")
-    public CommonResult<AcqDataExcelListResultVO> importExcelData(@RequestParam(value = "file") MultipartFile file,
+    public CommonResult<AcqDataExcelListResultVO> importExcelData(@RequestParam(value = "file") String file,
                                                                   @RequestParam String acqNameStart, @RequestParam String acqNameEnd,
                                                                   @RequestParam String acqTimeStart, @RequestParam String acqTimeEnd) {
         try {
-            return success(excelMeterDataProcessor.process(file.getInputStream(), acqTimeStart, acqTimeEnd, acqNameStart, acqNameEnd));
+            InputStream inputStream = new ByteArrayInputStream(fileApi.getMasterFileContent(file).getData());
+            return success(excelMeterDataProcessor.process(inputStream, acqTimeStart, acqTimeEnd, acqNameStart, acqNameEnd));
         } catch (IOException e) {
             log.error("Excel解析失败{}", e.getMessage(), e);
             return error(IMPORT_EXCEL_ERROR);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
     }
