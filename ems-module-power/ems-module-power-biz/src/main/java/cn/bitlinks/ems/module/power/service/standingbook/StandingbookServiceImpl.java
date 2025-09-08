@@ -1510,7 +1510,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             }
 
             // —— 输出响应
-            String fileName = URLEncoder.encode("计量器具导入模板.xlsx", StandardCharsets.UTF_8.name())
+            String fileName = URLEncoder.encode("计量器具关联关系导入模板.xlsx", StandardCharsets.UTF_8.name())
                     .replaceAll("\\+", "%20");
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             response.setCharacterEncoding(StandardCharsets.UTF_8.name());
@@ -1648,8 +1648,10 @@ public class StandingbookServiceImpl implements StandingbookService {
         sheet.setColumnWidth(0, 30 * 256);
         sheet.setColumnWidth(1, 30 * 256);
         createCell(head, 0, "设备分类", headerStyle);
+        String topType = StandingbookTypeTopEnum.EQUIPMENT.getCode();
         if (LedgerType.METER.equals(type)) {
             createCell(head, 1, "表类型", headerStyle);
+            topType = StandingbookTypeTopEnum.MEASURING_INSTRUMENT.getCode();
         }
         List<LabelConfigDO> allConfigs = labelConfigService.getAllLabelConfig();
         LinkedHashMap<String, List<String>> groupByTopType = new LinkedHashMap<>();
@@ -1685,7 +1687,8 @@ public class StandingbookServiceImpl implements StandingbookService {
 
 
         // 数据
-        List<String> categories = loadAllStandingbookTypesDisplay();
+
+        List<String> categories = loadAllStandingbookTypesDisplay(topType);
 
         int maxLength = labelLengthList.stream().max(Integer::compareTo).orElse(0);
 
@@ -1812,10 +1815,11 @@ public class StandingbookServiceImpl implements StandingbookService {
     /**
      * 字典页第2列：power_standingbook_type 全部未删除 → name（code）
      */
-    private List<String> loadAllStandingbookTypesDisplay() {
+    private List<String> loadAllStandingbookTypesDisplay(String topType) {
         List<StandingbookTypeDO> rows = standingbookTypeMapper.selectList(
                 Wrappers.<StandingbookTypeDO>lambdaQuery()
                         .eq(StandingbookTypeDO::getDeleted, false)
+                        .eq(StandingbookTypeDO::getTopType, topType)
                         .orderByAsc(StandingbookTypeDO::getSort, StandingbookTypeDO::getId)
         );
         return rows.stream()

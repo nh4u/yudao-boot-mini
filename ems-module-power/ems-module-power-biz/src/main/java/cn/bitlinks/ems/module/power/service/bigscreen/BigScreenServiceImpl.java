@@ -3,14 +3,26 @@ package cn.bitlinks.ems.module.power.service.bigscreen;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.bigscreen.vo.BigScreenParamReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.bigscreen.vo.BigScreenRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.vo.CopChartResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.bigscreen.vo.OutsideEnvData;
+import cn.bitlinks.ems.module.power.controller.admin.report.vo.BigScreenCopChartData;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.ReportParamVO;
+import cn.bitlinks.ems.module.power.dal.dataobject.collectrawdata.CollectRawDataDO;
 import cn.bitlinks.ems.module.power.dal.mysql.bigscreen.PowerPureWasteWaterGasSettingsMapper;
+import cn.bitlinks.ems.module.power.service.collectrawdata.CollectRawDataService;
 import cn.bitlinks.ems.module.power.service.cophouraggdata.CopHourAggDataService;
+import cn.hutool.core.collection.CollUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 
 /**
  * 台账属性 Service 实现类
@@ -23,6 +35,9 @@ public class BigScreenServiceImpl implements BigScreenService {
 
     @Resource
     private CopHourAggDataService copHourAggDataService;
+
+    @Resource
+    private CollectRawDataService collectRawDataService;
 
     @Resource
     private PowerPureWasteWaterGasSettingsMapper powerPureWasteWaterGasSettingsMapper;
@@ -41,11 +56,28 @@ public class BigScreenServiceImpl implements BigScreenService {
 
         // 2. 右部
         // 2.1. 右1 室外工况
+        OutsideEnvData outsideEnvData = new OutsideEnvData();
+        List<String> dataSites = Arrays.asList(WIND_DIRECTION_IO, WIND_SPEED_IO, TEMPERATURE_IO, HUMIDITY_IO, DEW_POINT_IO, ATMOSPHERIC_PRESSURE_IO, NOISE_IO);
+        List<CollectRawDataDO> outsideDataList = collectRawDataService.getOutsideDataByDataSite(dataSites);
+        if (CollUtil.isNotEmpty(outsideDataList)) {
+            Map<String, CollectRawDataDO> outsideDataMap = outsideDataList
+                    .stream()
+                    .collect(Collectors.toMap(CollectRawDataDO::getDataSite, Function.identity()));
+
+            outsideEnvData.setWindDirection(outsideDataMap.get(WIND_DIRECTION_IO).getRawValue());
+            outsideEnvData.setWindSpeed((new BigDecimal(outsideDataMap.get(WIND_SPEED_IO).getRawValue())));
+            outsideEnvData.setTemperature(new BigDecimal(outsideDataMap.get(TEMPERATURE_IO).getRawValue()));
+            outsideEnvData.setHumidity(new BigDecimal(outsideDataMap.get(HUMIDITY_IO).getRawValue()));
+            outsideEnvData.setDewPoint(new BigDecimal(outsideDataMap.get(DEW_POINT_IO).getRawValue()));
+            outsideEnvData.setAtmosphericPressure(new BigDecimal(outsideDataMap.get(ATMOSPHERIC_PRESSURE_IO).getRawValue()));
+            outsideEnvData.setNoise(new BigDecimal(outsideDataMap.get(NOISE_IO).getRawValue()));
+
+        }
 
         // 2.2. 右2 获取cop数据
         ReportParamVO reportParamVO = BeanUtils.toBean(paramVO, ReportParamVO.class);
-        CopChartResultVO copChart = copHourAggDataService.copChartForBigScreen(reportParamVO);
-        resultVO.setCopChart(copChart);
+        BigScreenCopChartData copChart = copHourAggDataService.copChartForBigScreen(reportParamVO);
+        resultVO.setCop(copChart);
 
         // 2.3. 右3 纯废水单价
 

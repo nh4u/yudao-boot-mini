@@ -51,6 +51,6 @@ public class ProductionDO extends BaseDO {
     /**
      * 间隔产量数
      */
-    private Integer value;
+    private BigDecimal value;
 
 }
