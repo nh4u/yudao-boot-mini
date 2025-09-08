@@ -10,7 +10,6 @@ import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeSe
 import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -124,6 +123,7 @@ public class StandingbookImportService {
                 throw exception(STANDINGBOOK_IMPORT_TMPL_ERROR);
             }
 
+            Set<String> existCode = new HashSet<>();
             // 解析数据
             for (int i = 2; i <= sheet.getLastRowNum(); i++) { // 从第3行开始
                 Row row = sheet.getRow(i);
@@ -169,11 +169,12 @@ public class StandingbookImportService {
                 dto.setLabelMap(extAttrs);
 
 
-                if (!validateSingleRow(dto, tmplEnum, typeCodes, sysLabelCodes)) {
+                // 校验单行数据+ 校验列表中是否已存在了设备编号，如果存在，则加入errorRowNums
+                if (!validateSingleRow(dto, tmplEnum, typeCodes, sysLabelCodes) && existCode.contains(dto.getSbCode())) {
                     errorRowNums.add(rowNum);
                     continue;
                 }
-
+                existCode.add(dto.getSbCode());
                 batchList.add(dto);
 
                 // 批量达到阈值，暂存一次
@@ -199,7 +200,7 @@ public class StandingbookImportService {
 
         } catch (Exception e) {
             log.error("台账文件解析失败", e);
-            throw exception(new ErrorCode(STANDINGBOOK_IMPORT_ALL_ERROR.getCode(), "文件解析失败：" + e.getMessage()));
+            throw exception(new ErrorCode(STANDINGBOOK_IMPORT_ALL_ERROR.getCode(), e.getMessage()));
         }
     }
 
@@ -218,15 +219,21 @@ public class StandingbookImportService {
 
     // 构建错误提示信息
     private String buildErrorMsg(List<Integer> errorRowNums) {
+        String errorMsg = "第%s行数据有误";
         String msg;
         int displayCount = Math.min(errorRowNums.size(), 50);
+
+        // 拼接错误信息，每行一个
         msg = errorRowNums.subList(0, displayCount).stream()
-                .map(String::valueOf)
-                .collect(Collectors.joining(","));
+                .map(rowNum -> String.format(errorMsg, rowNum))
+                .collect(Collectors.joining("\n"));
+
+        // 如果超过 50 条，加上省略号
         if (errorRowNums.size() > 50) {
-            msg += "...";
+            msg += "\n...";
         }
-        return "第" + msg + "行数据有误";
+
+        return msg;
     }
 
     private String getCellValue(Cell cell) {
