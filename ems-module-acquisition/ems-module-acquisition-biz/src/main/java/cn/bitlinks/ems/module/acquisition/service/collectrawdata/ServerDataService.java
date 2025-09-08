@@ -1,10 +1,12 @@
 package cn.bitlinks.ems.module.acquisition.service.collectrawdata;
 
 import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
+import cn.bitlinks.ems.framework.common.util.modbus.ModbusUtils;
 import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
 import cn.bitlinks.ems.framework.common.util.opcda.OpcDaUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.module.power.dto.ServerParamsCacheDTO;
+import cn.bitlinks.ems.module.power.enums.ProtocolEnum;
 import cn.hutool.core.text.CharSequenceUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,18 +57,32 @@ public class ServerDataService {
                     // 解析serverKey获取连接信息
                     String[] serverInfo = serverKey.split("\\|");
 
-                    //String serverType = serverInfo[0];
-                    String host = serverInfo[1];
-                    String user = serverInfo[2];
-                    String password = serverInfo[3];
-                    String clsid = serverInfo[4];
-                    // 执行OPC数据采集
-                    Map<String, ItemStatus> result = OpcDaUtils.readOnly(
-                            host, user, password, clsid, ioAddresses
-                    );
-
-                    // 处理采集结果（存储到Redis）
-                    saveResultToRedis(serverKey, result, timestampStr);
+                    String serverType = serverInfo[0];
+                    if((ProtocolEnum.OPC_DA.getCode()+"").equals(serverType)){
+                        String host = serverInfo[1];
+                        String user = serverInfo[2];
+                        String password = serverInfo[3];
+                        String clsid = serverInfo[4];
+                        // 执行OPC数据采集
+                        Map<String, ItemStatus> result = OpcDaUtils.readOnly(
+                                host, user, password, clsid, ioAddresses
+                        );
+                        // 处理采集结果（存储到Redis）
+                        saveResultToRedis(serverKey, result, timestampStr);
+                    }else if((ProtocolEnum.MODBUS_TCP.getCode()+"").equals(serverType)){
+                        String host = serverInfo[1];
+                        String port = serverInfo[2];
+                        String registerType = serverInfo[3];
+                        String salveAddr = serverInfo[4];
+                        // 执行OPC数据采集
+                        Map<String, ItemStatus> result = ModbusUtils.readOnly(//todo
+                                host, port, registerType, salveAddr, ioAddresses
+                        );
+                        // 处理采集结果（存储到Redis）
+                        saveResultToRedis(serverKey, result, timestampStr);
+                    }else{
+                        log.error("不支持的协议类型：{}", serverType);
+                    }
 
                 } catch (Exception e) {
                     // 单个任务异常不影响其他任务

@@ -2,11 +2,13 @@ package cn.bitlinks.ems.module.power.service.standingbook.acquisition;
 
 import cn.bitlinks.ems.framework.common.core.ParameterKey;
 import cn.bitlinks.ems.framework.common.core.StandingbookAcquisitionDetailDTO;
+import cn.bitlinks.ems.framework.common.enums.CommonStatusEnum;
 import cn.bitlinks.ems.framework.common.enums.FrequencyUnitEnum;
 import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.util.calc.AcquisitionFormulaUtils;
 import cn.bitlinks.ems.framework.common.util.calc.FormulaUtil;
 import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
+import cn.bitlinks.ems.framework.common.util.modbus.ModbusConnectionTester;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
 import cn.bitlinks.ems.framework.common.util.opcda.OpcConnectionTester;
@@ -24,6 +26,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.Standingb
 import cn.bitlinks.ems.module.power.dto.DeviceCollectCacheDTO;
 import cn.bitlinks.ems.module.power.dto.ServerParamsCacheDTO;
 import cn.bitlinks.ems.module.power.dto.ServerStandingbookCacheDTO;
+import cn.bitlinks.ems.module.power.enums.ProtocolEnum;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.hutool.core.collection.CollUtil;
@@ -454,6 +457,8 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             // 2.要么有io要么有公式, 获取真实公式,可能为空
             String actualFormula = currentFormulaDetail.getActualFormula();
             List<String> dataSites;
+
+            Map<String,List<String>> dataSiteMap = new HashMap<>();
             if (StringUtils.isNotEmpty(actualFormula)) {
                 // 2.1 需要找到当前的参数设置的真实公式，然后找到依赖的参数，获取他们的dataSite，
                 Set<ParameterKey> parameterKeys = FormulaUtil.getDependencies(currentFormulaDetail.getActualFormula());
@@ -478,10 +483,21 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             if (env.equals(SPRING_PROFILES_ACTIVE_LOCAL) || env.equals(SPRING_PROFILES_ACTIVE_DEV)) {
                 itemStatusMap = mockItemStatus(dataSites);
             } else {
-                itemStatusMap = OpcConnectionTester.testLink(serviceSettingsDO.getIpAddress(),
-                        serviceSettingsDO.getUsername(),
-                        serviceSettingsDO.getPassword(),
-                        serviceSettingsDO.getClsid(), dataSites);
+                if(ProtocolEnum.OPC_DA.getCode().equals(serviceSettingsDO.getProtocol())){
+                    itemStatusMap = OpcConnectionTester.testLink(serviceSettingsDO.getIpAddress(),
+                            serviceSettingsDO.getUsername(),
+                            serviceSettingsDO.getPassword(),
+                            serviceSettingsDO.getClsid(), dataSites);
+                }else if(ProtocolEnum.MODBUS_TCP.getCode().equals(serviceSettingsDO.getProtocol())){
+                    // currentDetailDTO当前参数按照寄存器从地址和寄存器类型拆分
+                    List<String> key = new ArrayList<>();
+                    itemStatusMap = ModbusConnectionTester.testLink(serviceSettingsDO.getIpAddress(),
+                            serviceSettingsDO.getPort(),
+                            serviceSettingsDO.getPassword(),
+                            serviceSettingsDO.getClsid(), dataSites);
+                }else{
+                    throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+                }
             }
             if (CollUtil.isEmpty(itemStatusMap)) {
                 throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
