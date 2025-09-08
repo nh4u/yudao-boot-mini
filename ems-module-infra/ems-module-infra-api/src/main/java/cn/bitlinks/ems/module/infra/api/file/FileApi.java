@@ -66,6 +66,9 @@ public interface FileApi {
     @PostMapping(PREFIX + "/getFileContent")
     @Operation(summary = "返回文件内容")
     CommonResult<byte[]> getFileContent(  @RequestBody FileCreateReqDTO createReqDTO) throws Exception;
+    @GetMapping(PREFIX + "/getMasterFileContent")
+    @Operation(summary = "返回文件内容")
+    CommonResult<byte[]> getMasterFileContent(@RequestParam String path) throws Exception;
     default  CommonResult<byte[]> getFileContent(Long id,String path) throws Exception {
          FileCreateReqDTO createReqDTO=new FileCreateReqDTO();
          createReqDTO.setConfigId(id);
