@@ -1610,16 +1610,29 @@ public class StandingbookServiceImpl implements StandingbookService {
         // ② 表头（索引 1）
         CellStyle headerStyle = headerStyle(wb);
         Row header = sheet.createRow(1);
+        Row demo = sheet.createRow(2);
+        demo.setHeightInPoints(18);
         header.setHeightInPoints(20);
 
         int idx = 0;
+        Cell typeCell = demo.createCell(idx);
+        typeCell.setCellValue("电(energy)");
         createCell(header, idx++, "*设备分类", headerStyle);
+
         if (type == LedgerType.METER) {
+            Cell cell = demo.createCell(idx);
+            cell.setCellValue("实体表计");
             createCell(header, idx++, "*表类型", headerStyle);
         }
+        Cell nameCell = demo.createCell(idx);
+        nameCell.setCellValue("电表A");
         createCell(header, idx++, "*设备名称", headerStyle);
+        Cell codeCell = demo.createCell(idx);
+        codeCell.setCellValue("energyA");
         createCell(header, idx++, "*设备编号", headerStyle);
         for (String label : topLabelNames) {
+            Cell labelCell = demo.createCell(idx);
+            labelCell.setCellValue("标签名称(标签编码)");
             createCell(header, idx++, label, headerStyle);
         }
 
