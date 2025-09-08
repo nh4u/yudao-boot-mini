@@ -1,5 +1,6 @@
-package cn.bitlinks.ems.module.power.controller.admin.statistics.vo;
+package cn.bitlinks.ems.module.power.excelstyle;
 
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.AbstractMergeStrategy;
 import cn.hutool.core.collection.CollUtil;
 import com.alibaba.excel.metadata.Head;
 import com.alibaba.excel.metadata.data.WriteCellData;

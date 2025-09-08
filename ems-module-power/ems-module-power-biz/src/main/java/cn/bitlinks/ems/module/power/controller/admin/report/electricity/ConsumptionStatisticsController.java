@@ -7,7 +7,7 @@ import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.Consu
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsInfo;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsResultVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.FullCellMergeStrategy;
+import cn.bitlinks.ems.module.power.excelstyle.FullCellMergeStrategy;
 import cn.bitlinks.ems.module.power.service.report.electricity.ConsumptionStatisticsService;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.write.metadata.style.WriteCellStyle;
@@ -35,7 +35,6 @@ import java.util.List;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
-import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.XLSX;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.getLabelDeep;
 
