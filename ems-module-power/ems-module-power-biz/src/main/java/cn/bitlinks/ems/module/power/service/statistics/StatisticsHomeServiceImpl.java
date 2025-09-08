@@ -396,7 +396,8 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
     }
 
     private BigDecimal dealProductionConsumption(BigDecimal value, BigDecimal sum, BigDecimal energySumStandardCoal) {
-        return energySumStandardCoal.multiply(value.divide(sum, RoundingMode.HALF_UP));
+        BigDecimal divide = value.divide(sum,15,RoundingMode.HALF_UP);
+        return energySumStandardCoal.multiply(divide);
     }
 
 
