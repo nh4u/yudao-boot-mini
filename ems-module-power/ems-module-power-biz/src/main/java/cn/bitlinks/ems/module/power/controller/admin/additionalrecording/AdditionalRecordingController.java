@@ -172,7 +172,9 @@ public class AdditionalRecordingController {
                                                                   @RequestParam String acqNameStart, @RequestParam String acqNameEnd,
                                                                   @RequestParam String acqTimeStart, @RequestParam String acqTimeEnd) {
         try {
-            InputStream inputStream = new ByteArrayInputStream(fileApi.getMasterFileContent(file).getData());
+            // 截取相对路径
+            String fileName = file.substring(file.lastIndexOf("/") + 1);
+            InputStream inputStream = new ByteArrayInputStream(fileApi.getMasterFileContent(fileName).getData());
             return success(excelMeterDataProcessor.process(inputStream, acqTimeStart, acqTimeEnd, acqNameStart, acqNameEnd));
         } catch (IOException e) {
             log.error("Excel解析失败{}", e.getMessage(), e);
