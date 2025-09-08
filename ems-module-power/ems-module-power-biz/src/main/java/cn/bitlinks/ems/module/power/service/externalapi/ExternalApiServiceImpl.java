@@ -20,6 +20,7 @@ import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.GET;
@@ -340,25 +341,37 @@ public class ExternalApiServiceImpl implements ExternalApiService {
         return top;
     }
 
-    private JSONObject postResponse(String url, Map<String, String> header, String body) {
+    private Object postResponse(String url, Map<String, String> header, String body) {
+        String response = "";
         try {
-            String response = HttpUtils.post(url, header, body);
-            return JSON.parseObject(response);
+            response = HttpUtils.post(url, header, body);
+            JSONObject jsonObject = JSON.parseObject(response);
+            if (Objects.nonNull(jsonObject)) {
+                return jsonObject;
+            } else {
+                return body;
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
+            return response;
         }
     }
 
-    private JSONObject getResponse(String url, Map<String, String> header) {
+    private Object getResponse(String url, Map<String, String> header) {
+        String body = "";
         try {
-            String response = HttpUtils.get(url, header);
-            return JSON.parseObject(response);
+            body = HttpUtils.get(url, header);
+            JSONObject jsonObject = JSON.parseObject(body);
+            if (Objects.nonNull(jsonObject)) {
+                return jsonObject;
+            } else {
+                return body;
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
+            return body;
         }
     }
 
