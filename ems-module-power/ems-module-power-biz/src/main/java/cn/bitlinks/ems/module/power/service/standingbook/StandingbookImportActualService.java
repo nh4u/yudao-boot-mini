@@ -14,6 +14,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.doublecarbon.DoubleCarbonMappingMa
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookLabelInfoMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
+import cn.bitlinks.ems.module.power.enums.RedisKeyConstants;
 import cn.bitlinks.ems.module.power.enums.standingbook.ImportTemplateType;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookAttributeService;
@@ -26,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -120,6 +122,9 @@ public class StandingbookImportActualService {
      * 最终入库（Excel解析完成且无错误时调用）
      */
     @Transactional
+    @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_LIST,
+            RedisKeyConstants.STANDING_BOOK_MEASUREMENT_CODE_LIST,
+            RedisKeyConstants.STANDING_BOOK_DEVICE_CODE_LIST}, allEntries = true)
     public int batchSaveToDb(Map<String, StandingbookTypeDO> sysTypeMap) {
         // 1. 从 Redis 读取缓存数据
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(STANDING_BOOK_EXCEL);
@@ -130,7 +135,6 @@ public class StandingbookImportActualService {
 
         List<StandingbookExcelDTO> serverStandingbookList = null;
         try {
-            List<String> attrCodes = Arrays.asList("tableType", "measuringInstrumentId", "measuringInstrumentName", "equipmentId", "equipmentName");
             // 2. 解压并解析缓存数据
             String cacheRes = StrUtils.decompressGzip(compressed);
             if (CharSequenceUtil.isEmpty(cacheRes)) {
