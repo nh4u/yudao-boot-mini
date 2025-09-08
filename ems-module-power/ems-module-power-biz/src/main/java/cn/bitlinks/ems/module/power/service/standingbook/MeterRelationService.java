@@ -216,10 +216,11 @@ public class MeterRelationService {
             List<StandingbookDO> updateStageDTOList = serverStandingbookList.stream()
                     // 过滤条件：1.环节名称非空；2.计量器具ID存在；3.环节值有效
                     .filter(dto -> {
-                        String linkName = dto.getStage().trim();
+                        String linkName = dto.getStage();
                         Long sbId = sbCodeIdMapping.get(dto.getMeterCode()); // 计量器具ID（前文已构建）
 
-                        return StringUtils.hasText(linkName)
+                        return dto.getStage() != null
+                                && StringUtils.hasText(linkName.trim())
                                 && sbId != null
                                 && DictFrameworkUtils.getDictDataLabelList(STAGE).contains(linkName);
                     })
