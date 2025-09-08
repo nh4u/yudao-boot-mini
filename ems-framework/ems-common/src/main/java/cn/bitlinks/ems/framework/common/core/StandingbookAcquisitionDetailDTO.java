@@ -45,6 +45,14 @@ public class StandingbookAcquisitionDetailDTO implements Serializable {
      **/
     @NotNull
     private Boolean energyFlag;
+    /**
+     * modbus从地址
+     */
+    private String modbusSalve;
+    /**
+     * modbus寄存器地址
+     */
+    private String modbusRegisterType;
 
     /* 参数部分START */
     /**
