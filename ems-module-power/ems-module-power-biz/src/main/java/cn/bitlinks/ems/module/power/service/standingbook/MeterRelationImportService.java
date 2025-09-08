@@ -140,6 +140,7 @@ public class MeterRelationImportService {
         String relatedDevice = dto.getRelatedDevice();
         String stage = dto.getStage();
 
+
         if (!StringUtils.hasText(meterCode)) return false;
         if (StringUtils.hasText(subMeterCodes) && !SEMICOLON_PATTERN.matcher(subMeterCodes).matches()) return false;
         if (!meterRelationService.checkMeterCodeExists(meterCode)) return false;
@@ -147,6 +148,11 @@ public class MeterRelationImportService {
             return false;
         if (StringUtils.hasText(relatedDevice) && !meterRelationService.checkDeviceExists(relatedDevice)) return false;
         if (StringUtils.hasText(stage) && !meterRelationService.checkLinkExists(stage)) return false;
+
+        // 下级计量器具中不能出现自己。
+        if(StringUtils.hasText(subMeterCodes) && subMeterCodes.contains(meterCode)) {
+            return false;
+        }
 
         return true;
     }
