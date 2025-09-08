@@ -32,7 +32,7 @@ public interface FileApi {
     /**
      * 保存文件，并返回文件的访问路径
      *
-     * @param path 文件路径
+     * @param path    文件路径
      * @param content 文件内容
      * @return 文件路径
      */
@@ -43,8 +43,8 @@ public interface FileApi {
     /**
      * 保存文件，并返回文件的访问路径
      *
-     * @param name 原文件名称
-     * @param path 文件路径
+     * @param name    原文件名称
+     * @param path    文件路径
      * @param content 文件内容
      * @return 文件路径
      */
@@ -57,19 +57,27 @@ public interface FileApi {
     @PostMapping(PREFIX + "/create")
     @Operation(summary = "保存文件，并返回文件的访问路径")
     CommonResult<String> createFile(@Valid @RequestBody FileCreateReqDTO createReqDTO);
+
     @PostMapping(PREFIX + "/createFile")
     @Operation(summary = "保存文件，并返回文件的ID")
     CommonResult<Long> createFileReturnId(@Valid @RequestBody FileCreateReqDTO createReqDTO);
+
     @GetMapping(PREFIX + "/getFile")
     @Operation(summary = "返回文件数据库对象")
-    CommonResult getFile(@RequestParam("id")  Long id);
+    CommonResult getFile(@RequestParam("id") Long id);
+
     @PostMapping(PREFIX + "/getFileContent")
     @Operation(summary = "返回文件内容")
-    CommonResult<byte[]> getFileContent(  @RequestBody FileCreateReqDTO createReqDTO) throws Exception;
-    default  CommonResult<byte[]> getFileContent(Long id,String path) throws Exception {
-         FileCreateReqDTO createReqDTO=new FileCreateReqDTO();
-         createReqDTO.setConfigId(id);
-         createReqDTO.setPath(path);
+    CommonResult<byte[]> getFileContent(@RequestBody FileCreateReqDTO createReqDTO) throws Exception;
+
+    @GetMapping(PREFIX + "/getMasterFileContent")
+    @Operation(summary = "返回文件内容")
+    CommonResult<byte[]> getMasterFileContent(@RequestParam("path") String path) throws Exception;
+
+    default CommonResult<byte[]> getFileContent(Long id, String path) throws Exception {
+        FileCreateReqDTO createReqDTO = new FileCreateReqDTO();
+        createReqDTO.setConfigId(id);
+        createReqDTO.setPath(path);
         return getFileContent(createReqDTO);
     }
 }

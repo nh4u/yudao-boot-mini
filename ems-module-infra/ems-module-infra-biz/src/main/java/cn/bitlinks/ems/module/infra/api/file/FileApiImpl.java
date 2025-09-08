@@ -2,7 +2,10 @@ package cn.bitlinks.ems.module.infra.api.file;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.infra.api.file.dto.FileCreateReqDTO;
+import cn.bitlinks.ems.module.infra.framework.file.core.client.FileClient;
+import cn.bitlinks.ems.module.infra.service.file.FileConfigService;
 import cn.bitlinks.ems.module.infra.service.file.FileService;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,7 +18,11 @@ import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 public class FileApiImpl implements FileApi {
 
     @Resource
+    @Lazy
     private FileService fileService;
+    @Resource
+    @Lazy
+    private FileConfigService fileConfigService;
 
     @Override
     public CommonResult<String> createFile(FileCreateReqDTO createReqDTO) {
@@ -37,6 +44,12 @@ public class FileApiImpl implements FileApi {
     @Override
     public CommonResult<byte[]> getFileContent( FileCreateReqDTO createReqDTO) throws Exception {
         return success(fileService.getFileContent(createReqDTO.getConfigId(), createReqDTO.getPath()));
+    }
+
+    @Override
+    public CommonResult<byte[]> getMasterFileContent(String path) throws Exception {
+        FileClient fileClient = fileConfigService.getMasterFileClient();
+        return success(fileService.getFileContent(fileClient.getId(), path));
     }
 
 }
