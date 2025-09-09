@@ -49,9 +49,11 @@ public class DoubleCarbonServiceImpl implements DoubleCarbonService {
         // 校验台账是否存在
         DoubleCarbonMappingDO doubleCarbonMappingDO = doubleCarbonMappingMapper.selectById(updVO.getId());
 
-        // 校验双碳编码是否存在
+        if(StringUtils.isEmpty(updVO.getDoubleCarbonCode())){
+            return;
+        }
         // 如果编码被修改，校验新编码是否重复
-        if (StringUtils.isNotEmpty(doubleCarbonMappingDO.getDoubleCarbonCode()) && !doubleCarbonMappingDO.getDoubleCarbonCode().equals(updVO.getDoubleCarbonCode())) {
+        if (!updVO.getDoubleCarbonCode().equals(doubleCarbonMappingDO.getDoubleCarbonCode())) {
             Long existCount = doubleCarbonMappingMapper.selectCount(new LambdaQueryWrapperX<DoubleCarbonMappingDO>()
                     .eq(DoubleCarbonMappingDO::getDoubleCarbonCode, updVO.getDoubleCarbonCode())
                     .ne(DoubleCarbonMappingDO::getId, updVO.getId())); // 排除自身
