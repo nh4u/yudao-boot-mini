@@ -13,7 +13,6 @@ import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.Standingboo
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoMonitorStatisticsRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatisticsRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementdevice.MeasurementDeviceDO;
@@ -123,16 +122,18 @@ public class DeviceMonitorService {
                         Objects.equals(dto.getStandingbookId(), reqVO.getSbId()))
                 .findFirst()
                 .orElse(null);
-        if (standingbookDTO != null) {
+        if (standingbookDTO == null) {
+            respVO.setList(Collections.emptyList());
+        } else {
             List<WarningInfoDO> warningInfoDOList = warningInfoService.getMonitorListBySbCode(reqVO.getRange(), standingbookDTO.getCode());
             if (CollUtil.isEmpty(warningInfoDOList)) {
                 respVO.setList(Collections.emptyList());
             } else {
                 respVO.setList(BeanUtils.toBean(warningInfoDOList, WarningInfoRespVO.class));
             }
-            WarningInfoMonitorStatisticsRespVO statisticsRespVO = warningInfoService.getMonitorStatisticsBySbCode(standingbookDTO.getCode());
-            respVO.setStatistics(statisticsRespVO);
         }
+        WarningInfoMonitorStatisticsRespVO statisticsRespVO = warningInfoService.getMonitorStatisticsBySbCode(standingbookDTO == null ? StringPool.EMPTY : standingbookDTO.getCode());
+        respVO.setStatistics(statisticsRespVO);
 
         return respVO;
     }
