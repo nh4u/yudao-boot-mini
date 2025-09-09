@@ -298,6 +298,72 @@ public class StatisticsCommonService {
     }
 
 
+    public List<StandingbookLabelInfoDO> getStandingbookLabelInfoByLabel(String childLabels) {
+        if (StrUtil.isBlank(childLabels)) {
+            return Collections.emptyList();
+        }
+        List<StandingbookLabelInfoDO> standingbookLabelInfoList = standingbookLabelInfoService.getAllSubByLabelValues(childLabels);
+        return filterStandingbookLabelInfoDO(standingbookLabelInfoList, childLabels, CHILD_LABEL_REGEX_ADD);
+    }
+
+    /**
+     * 获取标签关联的计量器具，当当前标签没有计量器具时则获取下一级所有标签， 下一级如果还没计量器具 就继续寻找下下一级，直到有计量器具或者到没有下一级为止
+     *
+     * @param byLabelNames
+     * @param values
+     * @param add
+     * @return
+     */
+    private static List<StandingbookLabelInfoDO> filterStandingbookLabelInfoDO(List<StandingbookLabelInfoDO> byLabelNames, String values, String add) {
+
+        List<StandingbookLabelInfoDO> result = new ArrayList<>();
+        if (CollUtil.isEmpty(byLabelNames) || CharSequenceUtil.isEmpty(values) || add.length() > MAX_DEPTH * CHILD_LABEL_REGEX_ADD.length()) {
+            return result;
+        }
+
+        Map<String, List<StandingbookLabelInfoDO>> collect = byLabelNames.stream().collect(Collectors.groupingBy(StandingbookLabelInfoDO::getValue));
+        List<StandingbookLabelInfoDO> next = new ArrayList<>();
+        Set<String> has = new HashSet<>();
+
+        //包含只取当前
+        if (collect.containsKey(values)) {
+
+            result.addAll(collect.get(values));
+            has.add(values);
+        } else {
+            collect.forEach((k, v) -> {
+                if (matchesCachedRegex(k, values, add)) {
+                    //result.addAll(v);
+                    List<StandingbookLabelInfoDO> newLabelDOList = new ArrayList<>();
+                    v.forEach(standingbookLabelInfoDO -> {
+                        StandingbookLabelInfoDO newLabel = new StandingbookLabelInfoDO();
+                        newLabel.setValue(values);
+                        newLabel.setName(standingbookLabelInfoDO.getName());
+                        newLabel.setStandingbookId(standingbookLabelInfoDO.getStandingbookId());
+                        newLabelDOList.add(newLabel);
+                    });
+                    result.addAll(newLabelDOList);
+                    has.add(k);
+                }
+            });
+        }
+
+        if (CollUtil.isEmpty(has) && CollUtil.isEmpty(result)) {
+            next.addAll(byLabelNames);
+        } else {
+            List<StandingbookLabelInfoDO> nextList = collect.entrySet()
+                    .stream()
+                    .filter(entry -> has.stream().noneMatch(prefix -> entry.getKey().startsWith(prefix)))
+                    .flatMap(entry -> entry.getValue().stream())
+                    .collect(Collectors.toList());
+            next.addAll(nextList);
+        }
+
+        result.addAll(filterStandingbookLabelInfoDO(next, values, add + CHILD_LABEL_REGEX_ADD));
+        return result;
+    }
+
+
     /**
      * 获取标签关联的计量器具，当当前标签没有计量器具时则获取下一级所有的计量器具，以此类推
      *
