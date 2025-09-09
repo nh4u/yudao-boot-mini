@@ -32,6 +32,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -48,10 +49,13 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_STANDARD_COAL_ENERGY_FLOW_CHART;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
 
 /**
  * 用能分析 Service 实现类
@@ -95,14 +99,14 @@ public class StatisticsServiceImpl implements StatisticsService {
         String cacheKey = USAGE_STANDARD_COAL_ENERGY_FLOW_CHART + SecureUtil.md5(paramVO.toString());
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
-        if (StrUtil.isNotEmpty(cacheRes)) {
+        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
             log.info("缓存结果");
             return JSON.parseObject(cacheRes, new TypeReference<EnergyFlowResultVO>() {
             });
         }
 
         // 获取结果
-        EnergyFlowResultVO resultVO = dealEnergyFlowAnalysis(paramVO);
+        EnergyFlowResultVO resultVO = dealEnergyFlowAnalysisNew(paramVO);
 
         // 结果保存在缓存中
         String jsonStr = JSON.toJSONString(resultVO);
@@ -259,7 +263,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         List<String> labelValues = new ArrayList<>();
 
         if (CharSequenceUtil.isNotEmpty(childLabels)) {
-            List<String> split = StrSplitter.split(childLabels, "#", 0, true, true);
+            List<String> split = StrSplitter.split(childLabels, StringPool.HASH, 0, true, true);
             labelValues.addAll(split);
         } else {
             List<Tree<Long>> labelTree = labelConfigService.getLabelTree(false, topLabelId, null);
@@ -362,6 +366,236 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
 
+    /**
+     * 方式new
+     * 能源流动 根据关联关系获取
+     *
+     * @param paramVO
+     * @return
+     */
+    private EnergyFlowResultVO dealEnergyFlowAnalysisNew(StatisticsParamV2VO paramVO) {
+        // 1. 校验时间范围
+        LocalDateTime[] rangeOrigin = validateRange(paramVO.getRange());
+
+        // 能源类型
+        Integer energyClassify = paramVO.getEnergyClassify();
+        // 标签信息
+        String topLabel = paramVO.getTopLabel();
+        String childLabels = paramVO.getChildLabels();
+        // 构建返回结果数据
+        EnergyFlowResultVO resultVO = new EnergyFlowResultVO();
+        // 存放所有点
+        List<EnergyItemData> data = new ArrayList<>();
+        // 存放所有线
+        List<EnergyLinkData> links = new ArrayList<>();
+
+        // 2.1. 能源id处理
+        List<EnergyConfigurationDO> energyList = energyConfigurationService
+                .getPureByEnergyClassify(
+                        CollUtil.isNotEmpty(paramVO.getEnergyIds()) ? new HashSet<>(paramVO.getEnergyIds()) : new HashSet<>(),
+                        energyClassify);
+        // 2.2. 没有能源报错
+        if (CollUtil.isEmpty(energyList)) {
+            throw exception(ENERGY_CONFIGURATION_NOT_EXISTS);
+        }
+
+        // 2.3. 根据能源id查询台账
+        List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
+        List<StandingbookDO> standingbooksByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIds);
+        // 2.4.能源台账变成ids
+        List<Long> energySbIds = standingbooksByEnergy
+                .stream()
+                .map(StandingbookDO::getId)
+                .collect(Collectors.toList());
+
+        // 3. 获取能源标签台账id交集
+        List<Long> energyLabelIntersectionSbIds = new ArrayList<>();
+
+        // 3.1. 如果有子级标签则进行特殊处理
+        if (CharSequenceUtil.isNotBlank(childLabels)) {
+            // 只有一级标签时  一级标记没有绑定计量器  所以取所有下级标签数据
+            // 当选有子级标签时 需要处理一下自己标签，即 把所有直系路径的标签都需要处理一下
+            childLabels = dealLabelSet(childLabels);
+        }
+
+        // 3.2. 获取标签台账关联关系
+        List<StandingbookLabelInfoDO> standingbookLabelInfos = statisticsCommonService
+                .getStandingbookIdsByLabel(topLabel, childLabels);
+
+        // 3.3. 能源台账ids和标签台账ids是否有交集。如果有就取交集，如果没有则取能源台账ids
+        if (CollUtil.isNotEmpty(standingbookLabelInfos)) {
+            List<Long> sids = standingbookLabelInfos
+                    .stream()
+                    .map(StandingbookLabelInfoDO::getStandingbookId)
+                    .collect(Collectors.toList());
+
+            energyLabelIntersectionSbIds = energySbIds
+                    .stream()
+                    .filter(sids::contains)
+                    .collect(Collectors.toList());
+        }
+        // 3.4. 台账id为空直接返回结果
+        if (CollUtil.isEmpty(energyLabelIntersectionSbIds)) {
+            return resultVO;
+        }
+
+        // 4. 根据交集台账ID获取折标煤
+        List<UsageCostData> usageCostDataList = usageCostService.getStandingbookStandardCoal(
+                rangeOrigin[0],
+                rangeOrigin[1],
+                energyLabelIntersectionSbIds);
+
+        // 4.1. 折标煤为空直接返回结果
+        if (CollUtil.isEmpty(usageCostDataList)) {
+            return resultVO;
+        }
+        // 4.2. 按台账id进行分组
+        Map<Long, UsageCostData> usageCostDataMap = usageCostDataList
+                .stream()
+                .collect(Collectors.toMap(UsageCostData::getStandingbookId, Function.identity()));
+        // 4.3. 获取数据更新时间
+        LocalDateTime lastTime = usageCostService.getLastTime(
+                paramVO,
+                rangeOrigin[0],
+                rangeOrigin[1],
+                energyLabelIntersectionSbIds);
+
+        // 5. 获取所有标签
+        Map<Long, LabelConfigDO> labelMap = labelConfigService.getAllLabelConfig()
+                .stream()
+                .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
+
+        // 6. 组装能流数据点线
+        //6.1. 存入能源点
+        energyList.forEach(e -> data.add(new EnergyItemData().setName(e.getEnergyName())));
+        // 6.2. 存入一级标签点
+        Long topLabelId = Long.valueOf(topLabel.substring(topLabel.indexOf("_") + 1));
+        String topLabelName = labelMap.get(topLabelId).getLabelName();
+        data.add(new EnergyItemData().setName(topLabelName));
+        // 6.3. 获取一级标签的值
+        BigDecimal total = usageCostDataList
+                .stream()
+                .map(UsageCostData::getTotalStandardCoalEquivalent)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal::add)
+                .orElse(null);
+        // 6.4. 构建一级标签的线
+        energyList.forEach(energy -> {
+            // 获取能源数据
+            String source = energy.getEnergyName();
+            // 存入link
+            links.add(new EnergyLinkData()
+                    .setSource(source)
+                    .setValue(dealBigDecimalScale(total, DEFAULT_SCALE))
+                    .setTarget(topLabelName));
+        });
+
+        // 6.5. 只有一级标签时
+        if (CharSequenceUtil.isNotBlank(topLabel) && CharSequenceUtil.isBlank(childLabels)) {
+            // 如果只有一级标签  则直接返回
+            resultVO.setDataTime(lastTime);
+            resultVO.setData(data);
+            resultVO.setLinks(links);
+            return resultVO;
+        }
+
+        // 6.6. 有子级标签时
+        // 根据标签层级开始往下 当某标签无计量时，用下级标签值之和，有计量时，则使用该计量 此时需要重新去获取对应的 折标煤数据
+        List<String> labelValues = StrSplitter.split(childLabels, StringPool.HASH, 0, true, true);
+
+        if (CollUtil.isNotEmpty(labelValues)) {
+            //根据标签台账list获取对应标签下关联的sbIds,求和 构建 link  如何没有则求下属所有标签ids（startwith）
+            // 根据标签找对应关系 获取该标签的所有绑定台账
+            for (String labelValue : labelValues) {
+                // 直系路径的值都要存在
+                dealLabelDataAndLink(topLabelName, labelValue, labelMap, usageCostDataMap, data, links);
+            }
+        }
+        // 8. 点去重
+        List<EnergyItemData> collect = new ArrayList<>(data.stream()
+                .collect(Collectors.toMap(
+                        EnergyItemData::getName,
+                        energyItem -> energyItem,
+                        (existing, replacement) -> replacement // 保留后出现的
+                ))
+                .values());
+
+        resultVO.setDataTime(lastTime);
+        resultVO.setData(collect);
+        resultVO.setLinks(links);
+
+        return resultVO;
+    }
+
+    private void dealLabelDataAndLink(String topLabelName,
+                                      String labelValue,
+                                      Map<Long, LabelConfigDO> labelMap,
+                                      Map<Long, UsageCostData> usageCostDataMap,
+                                      List<EnergyItemData> data,
+                                      List<EnergyLinkData> links) {
+
+        List<StandingbookLabelInfoDO> standingbookLabelInfoList = statisticsCommonService.getByLabelValues(labelValue);
+        // 计算标签折标煤值
+        BigDecimal value = null;
+        if (CollUtil.isNotEmpty(standingbookLabelInfoList)) {
+            value = standingbookLabelInfoList
+                    .stream()
+                    .map(s -> usageCostDataMap.get(s.getStandingbookId()))
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .map(UsageCostData::getTotalStandardCoalEquivalent)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal::add).orElse(null);
+        }
+        // 构建点线
+        //  目前取倒数第二个label  有就取 没有就是一级标签
+        String source = dealLabelUpTarget(labelValue, labelMap);
+        if (CharSequenceUtil.isEmpty(source)) {
+            source = topLabelName;
+        } else {
+            // 存入点
+            data.add(new EnergyItemData().setName(source));
+        }
+
+        // 存入点
+        String target = dealLabelTarget(labelValue, labelMap);
+        data.add(new EnergyItemData().setName(target));
+        // 存入link（source和target的数据不能一样）
+        links.add(new EnergyLinkData()
+                .setSource(source)
+                .setValue(dealBigDecimalScale(value, DEFAULT_SCALE))
+                .setTarget(target));
+    }
+
+    /**
+     * 补全 所有标签
+     * 319#318,320,322#318,320,323#318,321,325#318,321,324 => 319#318#318,320#318,320,322#318,320,323#318,321#318,321,325#318,321,324
+     *
+     * @param childLabels
+     * @return
+     */
+    private String dealLabelSet(String childLabels) {
+
+        List<String> childLabelValues = StrSplitter.split(childLabels, StringPool.HASH, 0, true, true);
+        return childLabelValues
+                .stream()
+                .map(s -> {
+                    List<String> split = StrSplitter.split(s, StringPool.COMMA, 0, true, true);
+                    return IntStream.range(0, split.size())
+                            .mapToObj(i -> String.join(",", split.subList(0, i + 1)))
+                            .collect(Collectors.toList());
+                })
+                .flatMap(List::stream)
+                .distinct()
+                .collect(Collectors.joining(StringPool.HASH));
+    }
+
+    /**
+     * 把labelTree 转换成对应的 319#318#318,320#318,320,322#318,320,323#318,321#318,321,325#318,321,324
+     *
+     * @param labelTree
+     * @return
+     */
     public List<String> getChildLabelValues(List<Tree<Long>> labelTree) {
         List<String> childLabelValues = new ArrayList<>();
         for (Tree<Long> label : labelTree) {
