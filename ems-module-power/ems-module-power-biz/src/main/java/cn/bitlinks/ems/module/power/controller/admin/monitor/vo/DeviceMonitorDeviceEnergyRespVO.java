@@ -11,7 +11,7 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.ALWAYS)
 public class DeviceMonitorDeviceEnergyRespVO {
     @Schema(description = "能源id")
-    private Long energyId;
+    private Long id;
     @Schema(description = "能源名称")
     private String energyName;
 }
