@@ -10,6 +10,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.warninginfo.WarningInfoMapper;
 import cn.bitlinks.ems.module.power.enums.warninginfo.WarningInfoLevelEnum;
 import cn.bitlinks.ems.module.power.enums.warninginfo.WarningInfoStatusEnum;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -91,6 +92,7 @@ public class WarningInfoServiceImpl implements WarningInfoService {
 
     @Override
     public List<WarningInfoDO> getMonitorListBySbCode(LocalDateTime[] range, String sbCode) {
+
         return warningInfoMapper.selectList(new LambdaQueryWrapperX<WarningInfoDO>()
                 .betweenIfPresent(WarningInfoDO::getWarningTime, range)
                 .like(WarningInfoDO::getDeviceRel, "(" + sbCode + ")")
@@ -100,7 +102,15 @@ public class WarningInfoServiceImpl implements WarningInfoService {
 
     @Override
     public WarningInfoMonitorStatisticsRespVO getMonitorStatisticsBySbCode(String sbCode) {
-        WarningInfoStatisticsRespVO resp = warningInfoMapper.getMonitorStatisticsBySbCode(sbCode);
+        WarningInfoStatisticsRespVO resp;
+        if (StringUtils.isEmpty(sbCode)) {
+            resp = warningInfoMapper.getMonitorStatisticsBySbCode(sbCode);
+            if (resp == null) {
+                resp = new WarningInfoStatisticsRespVO();
+            }
+        } else {
+            resp = new WarningInfoStatisticsRespVO();
+        }
         WarningInfoMonitorStatisticsRespVO respVO = new WarningInfoMonitorStatisticsRespVO();
         respVO.setTotal(resp.getTotal());
         List<WarningInfoStatisticsDetailRespVO> list = new ArrayList<>();

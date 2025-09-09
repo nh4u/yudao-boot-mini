@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,6 +10,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class WarningInfoStatisticsDetailRespVO {
     @Schema(description = "告警等级", requiredMode = Schema.RequiredMode.REQUIRED, example = "29279")
     private String name;
