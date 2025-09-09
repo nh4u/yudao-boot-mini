@@ -316,9 +316,9 @@ public class DeviceMonitorService {
         // 2.查询表格
         // 获取表格表头
         List<String> tableHeaders = new ArrayList<>();
-        tableHeaders.add("时间");
-        subSbIds.forEach(sbId -> tableHeaders.add(sbNameMapping.get(sbId)));
-        tableHeaders.add("汇总值");
+        if(CollUtil.isNotEmpty(sbNameMapping)){
+            subSbIds.forEach(sbId -> tableHeaders.add(sbNameMapping.get(sbId)));
+        }
         resultVO.setTableHeaders(tableHeaders);
 
 
