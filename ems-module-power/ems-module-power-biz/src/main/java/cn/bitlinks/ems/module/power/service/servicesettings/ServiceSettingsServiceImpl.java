@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.servicesettings;
 
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
+import cn.bitlinks.ems.framework.common.util.modbus.ModbusConnectionTester;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.opcda.OpcConnectionTester;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
@@ -13,6 +14,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.servicesettings.ServiceSettin
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.acquisition.StandingbookAcquisitionDO;
 import cn.bitlinks.ems.module.power.dal.mysql.servicesettings.ServiceSettingsMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.StandingbookAcquisitionMapper;
+import cn.bitlinks.ems.module.power.enums.ProtocolEnum;
 import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -155,7 +157,13 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
         if (env.equals(SPRING_PROFILES_ACTIVE_LOCAL) || env.equals(SPRING_PROFILES_ACTIVE_DEV)) {
             return mockTestLink();
         } else {
-            return OpcConnectionTester.testLink(createReqVO.getIpAddress(), createReqVO.getUsername(), createReqVO.getPassword(), createReqVO.getClsid(), createReqVO.getRetryCount());
+            if (ProtocolEnum.OPC_DA.getCode().equals(createReqVO.getProtocol())) {
+                return OpcConnectionTester.testLink(createReqVO.getIpAddress(), createReqVO.getUsername(), createReqVO.getPassword(), createReqVO.getClsid(), createReqVO.getRetryCount());
+            } else if (ProtocolEnum.MODBUS_TCP.getCode().equals(createReqVO.getProtocol())) {
+                return ModbusConnectionTester.testLink(createReqVO.getIpAddress(), createReqVO.getPort(), createReqVO.getRetryCount());
+            } else {
+                throw exception(SERVICE_SETTINGS_PROTOCOL_NOT_EXISTS);
+            }
         }
     }
 

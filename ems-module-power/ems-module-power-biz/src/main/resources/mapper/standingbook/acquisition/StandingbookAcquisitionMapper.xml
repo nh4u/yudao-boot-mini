@@ -13,17 +13,23 @@
     <select id="selectServerDataSiteMapping"
             resultType="cn.bitlinks.ems.module.power.dto.ServerParamsCacheDTO">
         SELECT
-            distinct
-            CONCAT_WS('|', ss.protocol,ss.ip_address, ss.username, ss.`password`, ss.clsid) AS server_key,
+            DISTINCT
+            CASE
+                WHEN ss.protocol = 0 THEN CONCAT_WS('|', ss.protocol, ss.ip_address, ss.username, ss.password, ss.clsid)
+                WHEN ss.protocol = 1 THEN CONCAT_WS('|', ss.protocol, ss.ip_address, ss.port,acqd.modbus_register_type,acqd.modbus_salve)
+                ELSE NULL
+                END AS server_key,
             acqd.data_site
         FROM power_standingbook_acquisition acq
                  JOIN power_standingbook_acquisition_detail acqd
                       ON acq.id = acqd.acquisition_id
                  JOIN power_service_settings ss
                       ON acq.service_settings_id = ss.id
-        WHERE acq.status = 1 and acq.deleted= 0
-          AND acqd.status = 1 and acqd.deleted=0
-          and acqd.data_site is not null;
+        WHERE acq.status = 1
+          AND acq.deleted = 0
+          AND acqd.status = 1
+          AND acqd.deleted = 0
+          AND acqd.data_site IS NOT NULL and ss.protocol in(0,1);
     </select>
     <select id="selectServerStandingbookMapping"
             resultType="cn.bitlinks.ems.module.power.dto.ServerStandingbookCacheDTO">

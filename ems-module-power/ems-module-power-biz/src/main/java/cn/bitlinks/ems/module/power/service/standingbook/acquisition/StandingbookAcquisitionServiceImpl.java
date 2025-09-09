@@ -7,6 +7,7 @@ import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.util.calc.AcquisitionFormulaUtils;
 import cn.bitlinks.ems.framework.common.util.calc.FormulaUtil;
 import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
+import cn.bitlinks.ems.framework.common.util.modbus.ModbusConnectionTester;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
 import cn.bitlinks.ems.framework.common.util.opcda.OpcConnectionTester;
@@ -24,10 +25,12 @@ import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.Standingb
 import cn.bitlinks.ems.module.power.dto.DeviceCollectCacheDTO;
 import cn.bitlinks.ems.module.power.dto.ServerParamsCacheDTO;
 import cn.bitlinks.ems.module.power.dto.ServerStandingbookCacheDTO;
+import cn.bitlinks.ems.module.power.enums.ProtocolEnum;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -192,14 +195,15 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         // 同步刷新
         refreshServerDataSiteMapping();
     }
+
     @Override
-    public void initAcqRedisConfig(){
-        Map<Long,StandingbookAcquisitionVO> acquisitionMap = getAllAcquisitions();
-        if(CollUtil.isEmpty(acquisitionMap)){
+    public void initAcqRedisConfig() {
+        Map<Long, StandingbookAcquisitionVO> acquisitionMap = getAllAcquisitions();
+        if (CollUtil.isEmpty(acquisitionMap)) {
             refreshServerDataSiteMapping();
             return;
         }
-        acquisitionMap.forEach((sbId,acquisitionVO)->{
+        acquisitionMap.forEach((sbId, acquisitionVO) -> {
             DeviceCollectCacheDTO deviceCollectCacheDTO = new DeviceCollectCacheDTO();
             deviceCollectCacheDTO.setStandingbookId(sbId);
             deviceCollectCacheDTO.setJobStartTime(acquisitionVO.getStartTime());
@@ -219,73 +223,74 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
         refreshServerDataSiteMapping();
     }
 
-    private Map<Long,StandingbookAcquisitionVO> getAllAcquisitions(){
+    private Map<Long, StandingbookAcquisitionVO> getAllAcquisitions() {
 
 
-            // 1. 查询所有台账的采集设置
-            List<StandingbookAcquisitionDO> acquisitionDOList =
-                    standingbookAcquisitionMapper.selectList(StandingbookAcquisitionDO::getStatus,true);
-            if(CollUtil.isEmpty(acquisitionDOList)){
-                return null;
+        // 1. 查询所有台账的采集设置
+        List<StandingbookAcquisitionDO> acquisitionDOList =
+                standingbookAcquisitionMapper.selectList(StandingbookAcquisitionDO::getStatus, true);
+        if (CollUtil.isEmpty(acquisitionDOList)) {
+            return null;
+        }
+        Map<Long, StandingbookAcquisitionDO> acquisitionMap = acquisitionDOList.stream()
+                .collect(Collectors.toMap(StandingbookAcquisitionDO::getStandingbookId, Function.identity()));
+        List<Long> standingbookIds = new ArrayList<>(acquisitionMap.keySet());
+        // 2. 查询所有台账的采集属性（已启用）
+        Map<Long, List<StandingbookTmplDaqAttrDO>> tmplAttrMap = standingbookTmplDaqAttrService.getDaqAttrsBySbIds(standingbookIds);
+        if (CollUtil.isEmpty(tmplAttrMap)) {
+            return null;
+        }
+
+        // 3. 查询所有数采参数详情（按 AcquisitionId 分组）
+
+        List<StandingbookAcquisitionDetailDO> allDetailDOs =
+                standingbookAcquisitionDetailMapper.selectList(StandingbookAcquisitionDetailDO::getStatus, true);
+        Map<Long, List<StandingbookAcquisitionDetailDO>> detailMap =
+                allDetailDOs.stream().collect(Collectors.groupingBy(StandingbookAcquisitionDetailDO::getAcquisitionId));
+
+        // 4. 拼接每个台账的 VO
+        Map<Long, StandingbookAcquisitionVO> result = new HashMap<>();
+
+        for (Long standingbookId : standingbookIds) {
+            StandingbookAcquisitionDO acquisitionDO = acquisitionMap.get(standingbookId);
+            if (acquisitionDO == null) {
+                continue; // 没有采集设置，跳过
             }
-            Map<Long, StandingbookAcquisitionDO> acquisitionMap = acquisitionDOList.stream()
-                    .collect(Collectors.toMap(StandingbookAcquisitionDO::getStandingbookId, Function.identity()));
-            List<Long> standingbookIds = new ArrayList<>(acquisitionMap.keySet());
-            // 2. 查询所有台账的采集属性（已启用）
-            Map<Long, List<StandingbookTmplDaqAttrDO>> tmplAttrMap = standingbookTmplDaqAttrService.getDaqAttrsBySbIds(standingbookIds);
-            if(CollUtil.isEmpty(tmplAttrMap)){
-                return null;
-            }
 
-            // 3. 查询所有数采参数详情（按 AcquisitionId 分组）
+            StandingbookAcquisitionVO vo = BeanUtils.toBean(acquisitionDO, StandingbookAcquisitionVO.class);
 
-            List<StandingbookAcquisitionDetailDO> allDetailDOs =
-                    standingbookAcquisitionDetailMapper.selectList(StandingbookAcquisitionDetailDO::getStatus,true);
-            Map<Long, List<StandingbookAcquisitionDetailDO>> detailMap =
-                    allDetailDOs.stream().collect(Collectors.groupingBy(StandingbookAcquisitionDetailDO::getAcquisitionId));
+            List<StandingbookTmplDaqAttrDO> tmplAttrList = tmplAttrMap.getOrDefault(standingbookId, Collections.emptyList());
+            List<StandingbookAcquisitionDetailDO> detailDOs = detailMap.getOrDefault(acquisitionDO.getId(), Collections.emptyList());
 
-            // 4. 拼接每个台账的 VO
-        Map<Long,StandingbookAcquisitionVO> result = new HashMap<>();
+            List<StandingbookAcquisitionDetailVO> detailVOs = new ArrayList<>();
 
-            for (Long standingbookId : standingbookIds) {
-                StandingbookAcquisitionDO acquisitionDO = acquisitionMap.get(standingbookId);
-                if (acquisitionDO == null) {
-                    continue; // 没有采集设置，跳过
+            for (StandingbookTmplDaqAttrDO tmplAttr : tmplAttrList) {
+                StandingbookAcquisitionDetailVO detailVO = new StandingbookAcquisitionDetailVO();
+
+                // 查找已有的采集参数
+                Optional<StandingbookAcquisitionDetailDO> matched = detailDOs.stream()
+                        .filter(detail -> detail.getCode().equals(tmplAttr.getCode())
+                                && detail.getEnergyFlag().equals(tmplAttr.getEnergyFlag()))
+                        .findFirst();
+
+                if (matched.isPresent()) {
+                    detailVO = BeanUtils.toBean(matched.get(), StandingbookAcquisitionDetailVO.class);
                 }
 
-                StandingbookAcquisitionVO vo = BeanUtils.toBean(acquisitionDO, StandingbookAcquisitionVO.class);
+                // 补全其他属性
+                StandingbookAcquisitionDetailAttrDTO attrDTO = BeanUtils.toBean(tmplAttr, StandingbookAcquisitionDetailAttrDTO.class);
+                BeanUtils.copyProperties(attrDTO, detailVO);
 
-                List<StandingbookTmplDaqAttrDO> tmplAttrList = tmplAttrMap.getOrDefault(standingbookId, Collections.emptyList());
-                List<StandingbookAcquisitionDetailDO> detailDOs = detailMap.getOrDefault(acquisitionDO.getId(), Collections.emptyList());
-
-                List<StandingbookAcquisitionDetailVO> detailVOs = new ArrayList<>();
-
-                for (StandingbookTmplDaqAttrDO tmplAttr : tmplAttrList) {
-                    StandingbookAcquisitionDetailVO detailVO = new StandingbookAcquisitionDetailVO();
-
-                    // 查找已有的采集参数
-                    Optional<StandingbookAcquisitionDetailDO> matched = detailDOs.stream()
-                            .filter(detail -> detail.getCode().equals(tmplAttr.getCode())
-                                    && detail.getEnergyFlag().equals(tmplAttr.getEnergyFlag()))
-                            .findFirst();
-
-                    if (matched.isPresent()) {
-                        detailVO = BeanUtils.toBean(matched.get(), StandingbookAcquisitionDetailVO.class);
-                    }
-
-                    // 补全其他属性
-                    StandingbookAcquisitionDetailAttrDTO attrDTO = BeanUtils.toBean(tmplAttr, StandingbookAcquisitionDetailAttrDTO.class);
-                    BeanUtils.copyProperties(attrDTO, detailVO);
-
-                    detailVOs.add(detailVO);
-                }
-
-                vo.setDetails(detailVOs);
-                result.put(standingbookId,vo);
+                detailVOs.add(detailVO);
             }
 
-            return result;
+            vo.setDetails(detailVOs);
+            result.put(standingbookId, vo);
+        }
+
+        return result;
     }
+
     @Override
     public List<StandingbookAcquisitionRespVO> getStandingbookAcquisitionList(Map<String, String> queryReqVO) {
         List<StandingbookDO> standingbookDOS = standingbookService.getStandingbookList(queryReqVO);
@@ -454,6 +459,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             // 2.要么有io要么有公式, 获取真实公式,可能为空
             String actualFormula = currentFormulaDetail.getActualFormula();
             List<String> dataSites;
+            Map<String, List<String>> modbusTcpDataSites = new HashMap<>();
             if (StringUtils.isNotEmpty(actualFormula)) {
                 // 2.1 需要找到当前的参数设置的真实公式，然后找到依赖的参数，获取他们的dataSite，
                 Set<ParameterKey> parameterKeys = FormulaUtil.getDependencies(currentFormulaDetail.getActualFormula());
@@ -469,8 +475,23 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                     throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
                 }
                 dataSites = relyParamMap.values().stream().map(StandingbookAcquisitionDetailVO::getDataSite).collect(Collectors.toList());
+                // 存储modbus信息
+                // 按寄存器类型 + 从站分组
+                Map<String, List<String>> groupedMap = relyParamMap.values().stream()
+                        .collect(Collectors.groupingBy(
+                                v -> v.getModbusRegisterType() + "|" + v.getModbusSalve(),
+                                Collectors.mapping(StandingbookAcquisitionDetailVO::getDataSite, Collectors.toList())
+                        ));
+
+                // 存储到 modbusTcpDataSites
+                modbusTcpDataSites.putAll(groupedMap);
             } else {
                 dataSites = Collections.singletonList(dataSite);
+                // 存储modbus信息
+                modbusTcpDataSites.put(currentDetail.getModbusRegisterType() + "|" + currentDetail.getModbusSalve(), dataSites);
+            }
+            if (CollUtil.isEmpty(dataSites)) {
+                throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
             }
 
             // 2.2 采集这些参数，
@@ -478,10 +499,23 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             if (env.equals(SPRING_PROFILES_ACTIVE_LOCAL) || env.equals(SPRING_PROFILES_ACTIVE_DEV)) {
                 itemStatusMap = mockItemStatus(dataSites);
             } else {
-                itemStatusMap = OpcConnectionTester.testLink(serviceSettingsDO.getIpAddress(),
-                        serviceSettingsDO.getUsername(),
-                        serviceSettingsDO.getPassword(),
-                        serviceSettingsDO.getClsid(), dataSites);
+                if (ProtocolEnum.OPC_DA.getCode().equals(serviceSettingsDO.getProtocol())) {
+                    itemStatusMap = OpcConnectionTester.testLink(serviceSettingsDO.getIpAddress(),
+                            serviceSettingsDO.getUsername(),
+                            serviceSettingsDO.getPassword(),
+                            serviceSettingsDO.getClsid(), dataSites);
+                } else if (ProtocolEnum.MODBUS_TCP.getCode().equals(serviceSettingsDO.getProtocol())) {
+                    itemStatusMap = new HashMap<>();
+                    modbusTcpDataSites.forEach((k,v)->{
+                        Map<String, ItemStatus> partItemStatusMap = ModbusConnectionTester.testLink(serviceSettingsDO.getIpAddress(),
+                                serviceSettingsDO.getPort(),k.split(StringPool.PIPE)[0],
+                                k.split(StringPool.PIPE)[1], v);
+                        itemStatusMap.putAll(partItemStatusMap);
+                    });
+
+                } else {
+                    throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+                }
             }
             if (CollUtil.isEmpty(itemStatusMap)) {
                 throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
