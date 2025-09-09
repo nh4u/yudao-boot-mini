@@ -52,7 +52,7 @@ public interface ExportConstants {
 
     // 环比-利用率
 
-    String USAGE_RATE_MOM_ALL = "利用率环比分析明细报表（综合）";
+    String USAGE_RATE_MOM_ALL = "利用率环比分析明细报表";
     String USAGE_RATE_MOM_ENERGY = "利用率环比分析明细报表（按能源）";
     String USAGE_RATE_MOM_LABEL = "利用率环比分析明细报表（按标签）";
 
@@ -71,7 +71,7 @@ public interface ExportConstants {
 
     // 定基比-利用率
 
-    String USAGE_RATE_BENCHMARK_ALL = "利用率定基比分析明细报表（综合）";
+    String USAGE_RATE_BENCHMARK_ALL = "利用率定基比分析明细报表";
     String USAGE_RATE_BENCHMARK_ENERGY = "利用率定基比分析明细报表（按能源）";
     String USAGE_RATE_BENCHMARK_LABEL = "利用率定基比分析明细报表（按标签）";
 
