@@ -454,7 +454,9 @@ public class DeviceMonitorService {
         }
         summaryData.setDataList(sumDataList); // 汇总数据只有一个数据点
         // 转换后的结果列表
-        return new ArrayList<>(deviceChartDataMap.values());
+        List<DeviceMonitorChartData> result =  new ArrayList<>(deviceChartDataMap.values());
+        result.add(summaryData);
+        return result;
     }
 
 }
