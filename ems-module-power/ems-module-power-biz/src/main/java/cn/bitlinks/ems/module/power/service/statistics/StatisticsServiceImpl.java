@@ -413,6 +413,24 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         // 3. 获取能源标签台账id交集
         List<Long> energyLabelIntersectionSbIds = new ArrayList<>();
+        List<Long> energyLabelIntersectionOriginSbIds = new ArrayList<>();
+        // 3.2. 获取标签台账关联关系
+        List<StandingbookLabelInfoDO> standingbookLabelInfosOrigin = statisticsCommonService
+                .getStandingbookIdsByLabel(topLabel, childLabels);
+
+        // 3.3. 能源台账ids和标签台账ids是否有交集。如果有就取交集，如果没有则取能源台账ids
+        if (CollUtil.isNotEmpty(standingbookLabelInfosOrigin)) {
+            List<Long> sids = standingbookLabelInfosOrigin
+                    .stream()
+                    .map(StandingbookLabelInfoDO::getStandingbookId)
+                    .collect(Collectors.toList());
+
+            energyLabelIntersectionOriginSbIds = energySbIds
+                    .stream()
+                    .filter(sids::contains)
+                    .collect(Collectors.toList());
+
+        }
 
         // 3.1. 如果有子级标签则进行特殊处理
         if (CharSequenceUtil.isNotBlank(childLabels)) {
@@ -473,7 +491,11 @@ public class StatisticsServiceImpl implements StatisticsService {
         ));
 
         // 4.3 按能源id进行分组
-        Map<Long, BigDecimal> usageCostDataEnergyMap = usageCostDataList.stream().collect(Collectors.groupingBy(
+        List<Long> originIntersectionSbIds = energyLabelIntersectionOriginSbIds;
+        Map<Long, BigDecimal> usageCostDataEnergyMap = usageCostDataList
+                .stream()
+                .filter(u-> originIntersectionSbIds.contains(u.getStandingbookId()))
+                .collect(Collectors.groupingBy(
                 UsageCostData::getEnergyId,
                 Collectors.collectingAndThen(
                         Collectors.toList(),
