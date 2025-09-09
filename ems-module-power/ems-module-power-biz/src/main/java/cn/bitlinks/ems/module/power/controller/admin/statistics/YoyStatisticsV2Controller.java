@@ -6,6 +6,7 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.BaseTimeDateParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.enums.StatisticsQueryType;
+import cn.bitlinks.ems.module.power.excelstyle.FullCellMergeStrategy;
 import cn.bitlinks.ems.module.power.service.statistics.YoyV2Service;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.EasyExcelFactory;

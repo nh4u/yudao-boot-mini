@@ -190,13 +190,13 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
         // 同期
         StatisticsOverviewStatisticsTableData lastResult = usageCostService.getAggStatisticsByEnergyIds(startTime.minusYears(1), endTime.minusYears(1), energyIdList);
 
-        if(nowResult == null){
+        if (nowResult == null) {
             nowResult = new StatisticsOverviewStatisticsTableData();
         }
-        if(lastResult == null){
+        if (lastResult == null) {
             lastResult = new StatisticsOverviewStatisticsTableData();
         }
-        if(prevResult == null){
+        if (prevResult == null) {
             prevResult = new StatisticsOverviewStatisticsTableData();
         }
         // 折标煤统计 + 折价统计
@@ -354,33 +354,36 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
             LocalDateTime startTime = rangeOrigin[0];
             LocalDateTime endTime = rangeOrigin[1];
 
-            // 3.1能源展示
+            // 外购总能耗
             BigDecimal energySumStandardCoal = usageCostService.getEnergySumStandardCoal(startTime, endTime, energyIdList);
 
-            BigDecimal sum = null;
+            BigDecimal eightValue = Optional.ofNullable(eight).map(ProductionDO::getValue).orElse(BigDecimal.ZERO);
+            BigDecimal twelveValue = Optional.ofNullable(twelve).map(ProductionDO::getValue).orElse(BigDecimal.ZERO);
+
+            BigDecimal sum = eightValue.add(twelveValue);
             // 单位产品能耗（8英寸）
             if (Objects.nonNull(eight)) {
-                sum = eight.getValue();
-                BigDecimal value8 = CommonUtil.divideWithScale(eight.getValue(), energySumStandardCoal, 2);
+                BigDecimal eightEnergyStandardCoal = dealProductionConsumption(eightValue, sum, energySumStandardCoal);
+                BigDecimal value8 = CommonUtil.divideWithScale(eightValue, eightEnergyStandardCoal, 2);
                 product8.setValue(value8);
                 product8.setDataUpdateTime(eight.getTime());
                 statisticsHomeResultVO.setProductEnergyConsumption8(product8);
             }
 
             // 单位产品能耗（12英寸）
-            if (Objects.nonNull(eight)) {
-                sum = Objects.isNull(sum) ? twelve.getValue() : sum.add(twelve.getValue());
-                BigDecimal value12 = CommonUtil.divideWithScale(twelve.getValue(), energySumStandardCoal, 2);
+            if (Objects.nonNull(twelve)) {
+                BigDecimal twelveEnergyStandardCoal = dealProductionConsumption(twelveValue, sum, energySumStandardCoal);
+                BigDecimal value12 = CommonUtil.divideWithScale(twelveValue, twelveEnergyStandardCoal, 2);
                 product12.setValue(value12);
-                product12.setDataUpdateTime(eight.getTime());
+                product12.setDataUpdateTime(twelve.getTime());
                 statisticsHomeResultVO.setProductEnergyConsumption12(product12);
             }
 
-            // 单位产值能耗 综合能耗÷总产值
-            BigDecimal sumValue = CommonUtil.divideWithScale(sum, energySumStandardCoal, 2);
-            total.setValue(sumValue);
-            total.setDataUpdateTime(product8.getDataUpdateTime().compareTo(product12.getDataUpdateTime()) < 0 ? product8.getDataUpdateTime() : product12.getDataUpdateTime());
-            statisticsHomeResultVO.setOutputValueEnergyConsumption(total);
+            // 单位产值能耗 综合能耗÷总产值 目前总产值无数据 不做计算
+//            BigDecimal sumValue = CommonUtil.divideWithScale(sum, energySumStandardCoal, 2);
+//            total.setValue(sumValue);
+//            total.setDataUpdateTime(product8.getDataUpdateTime().compareTo(product12.getDataUpdateTime()) < 0 ? product8.getDataUpdateTime() : product12.getDataUpdateTime());
+//            statisticsHomeResultVO.setOutputValueEnergyConsumption(total);
 
             return statisticsHomeResultVO;
         } catch (Exception e) {
@@ -391,6 +394,12 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
             return statisticsHomeResultVO;
         }
     }
+
+    private BigDecimal dealProductionConsumption(BigDecimal value, BigDecimal sum, BigDecimal energySumStandardCoal) {
+        BigDecimal divide = value.divide(sum, 15, RoundingMode.HALF_UP);
+        return energySumStandardCoal.multiply(divide);
+    }
+
 
     /**
      * 能源转换率

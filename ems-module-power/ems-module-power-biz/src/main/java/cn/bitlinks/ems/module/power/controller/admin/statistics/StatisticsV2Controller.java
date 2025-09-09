@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.controller.admin.statistics;
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
+import cn.bitlinks.ems.module.power.excelstyle.FullCellMergeStrategy;
 import cn.bitlinks.ems.module.power.service.statistics.StatisticsV2Service;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.write.metadata.style.WriteCellStyle;

@@ -3,21 +3,21 @@ package cn.bitlinks.ems.module.power.service.warninginfo;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.framework.mybatis.core.query.MPJLambdaWrapperX;
-import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoPageReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatisticsRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatusBatchUpdReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatusUpdReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.warninginfo.WarningInfoUserDO;
 import cn.bitlinks.ems.module.power.dal.mysql.warninginfo.WarningInfoMapper;
+import cn.bitlinks.ems.module.power.enums.warninginfo.WarningInfoLevelEnum;
 import cn.bitlinks.ems.module.power.enums.warninginfo.WarningInfoStatusEnum;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -92,6 +92,7 @@ public class WarningInfoServiceImpl implements WarningInfoService {
 
     @Override
     public List<WarningInfoDO> getMonitorListBySbCode(LocalDateTime[] range, String sbCode) {
+
         return warningInfoMapper.selectList(new LambdaQueryWrapperX<WarningInfoDO>()
                 .betweenIfPresent(WarningInfoDO::getWarningTime, range)
                 .like(WarningInfoDO::getDeviceRel, "(" + sbCode + ")")
@@ -100,8 +101,27 @@ public class WarningInfoServiceImpl implements WarningInfoService {
     }
 
     @Override
-    public WarningInfoStatisticsRespVO getMonitorStatisticsBySbCode(String sbCode) {
-        return warningInfoMapper.getMonitorStatisticsBySbCode(sbCode);
+    public WarningInfoMonitorStatisticsRespVO getMonitorStatisticsBySbCode(String sbCode) {
+        WarningInfoStatisticsRespVO resp;
+        if (StringUtils.isEmpty(sbCode)) {
+            resp = warningInfoMapper.getMonitorStatisticsBySbCode(sbCode);
+            if (resp == null) {
+                resp = new WarningInfoStatisticsRespVO();
+            }
+        } else {
+            resp = new WarningInfoStatisticsRespVO();
+        }
+        WarningInfoMonitorStatisticsRespVO respVO = new WarningInfoMonitorStatisticsRespVO();
+        respVO.setTotal(resp.getTotal());
+        List<WarningInfoStatisticsDetailRespVO> list = new ArrayList<>();
+        list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.TIP.getDesc(), resp.getCount0()));
+        list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.WARNING.getDesc(), resp.getCount1()));
+        list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.MINOR.getDesc(), resp.getCount2()));
+        list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.IMPORTANT.getDesc(), resp.getCount3()));
+        list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.URGENT.getDesc(), resp.getCount4()));
+
+        respVO.setList(list);
+        return respVO;
     }
 
     @Override
