@@ -399,6 +399,9 @@ public class StatisticsServiceImpl implements StatisticsService {
             throw exception(ENERGY_CONFIGURATION_NOT_EXISTS);
         }
 
+        Map<Long, EnergyConfigurationDO> energyMap = energyList.stream()
+                .collect(Collectors.toMap(EnergyConfigurationDO::getId, Function.identity()));
+
         // 2.3. 根据能源id查询台账
         List<Long> energyIds = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
         List<StandingbookDO> standingbooksByEnergy = statisticsCommonService.getStandingbookIdsByEnergy(energyIds);
@@ -440,7 +443,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
 
         // 4. 根据交集台账ID获取折标煤
-        List<UsageCostData> usageCostDataList = usageCostService.getStandingbookStandardCoal(
+        List<UsageCostData> usageCostDataList = usageCostService.getEnergyAndSbStandardCoal(
                 rangeOrigin[0],
                 rangeOrigin[1],
                 energyLabelIntersectionSbIds);
@@ -450,9 +453,37 @@ public class StatisticsServiceImpl implements StatisticsService {
             return resultVO;
         }
         // 4.2. 按台账id进行分组
-        Map<Long, UsageCostData> usageCostDataMap = usageCostDataList
-                .stream()
-                .collect(Collectors.toMap(UsageCostData::getStandingbookId, Function.identity()));
+        Map<Long, UsageCostData> usageCostDataMap = usageCostDataList.stream().collect(Collectors.groupingBy(
+                UsageCostData::getStandingbookId,
+                Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        list -> {
+                            BigDecimal totalStandardCoal = list.stream()
+                                    .map(UsageCostData::getTotalStandardCoalEquivalent)
+                                    .filter(Objects::nonNull)
+                                    .reduce(BigDecimal::add).orElse(null);
+
+                            UsageCostData usageCostData = new UsageCostData();
+                            usageCostData.setStandingbookId(list.get(0).getStandingbookId());
+                            usageCostData.setTotalStandardCoalEquivalent(totalStandardCoal);
+
+                            return usageCostData;
+                        }
+                )
+        ));
+
+        // 4.3 按能源id进行分组
+        Map<Long, BigDecimal> usageCostDataEnergyMap = usageCostDataList.stream().collect(Collectors.groupingBy(
+                UsageCostData::getEnergyId,
+                Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        list -> list.stream()
+                                .map(UsageCostData::getTotalStandardCoalEquivalent)
+                                .filter(Objects::nonNull)
+                                .reduce(BigDecimal::add).orElse(null)
+                )
+        ));
+
         // 4.3. 获取数据更新时间
         LocalDateTime lastTime = usageCostService.getLastTime(
                 paramVO,
@@ -466,31 +497,23 @@ public class StatisticsServiceImpl implements StatisticsService {
                 .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
 
         // 6. 组装能流数据点线
-        //6.1. 存入能源点
-        energyList.forEach(e -> data.add(new EnergyItemData().setName(e.getEnergyName())));
-        // 6.2. 存入一级标签点
+        // 6.1. 存入一级标签点
         Long topLabelId = Long.valueOf(topLabel.substring(topLabel.indexOf("_") + 1));
         String topLabelName = labelMap.get(topLabelId).getLabelName();
         data.add(new EnergyItemData().setName(topLabelName));
-        // 6.3. 获取一级标签的值
-        BigDecimal total = usageCostDataList
-                .stream()
-                .map(UsageCostData::getTotalStandardCoalEquivalent)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal::add)
-                .orElse(null);
-        // 6.4. 构建一级标签的线
-        energyList.forEach(energy -> {
-            // 获取能源数据
-            String source = energy.getEnergyName();
-            // 存入link
+        // 6.2. 构建一级标签的线
+        usageCostDataEnergyMap.forEach((k, v) -> {
+            String energyName = energyMap.get(k).getEnergyName();
+            // 6.2.1. 存入能源点
+            data.add(new EnergyItemData().setName(energyName));
+            // 6.2.2. 存入link
             links.add(new EnergyLinkData()
-                    .setSource(source)
-                    .setValue(dealBigDecimalScale(total, DEFAULT_SCALE))
+                    .setSource(energyName)
+                    .setValue(dealBigDecimalScale(v, DEFAULT_SCALE))
                     .setTarget(topLabelName));
         });
 
-        // 6.5. 只有一级标签时
+        // 6.3. 只有一级标签时
         if (CharSequenceUtil.isNotBlank(topLabel) && CharSequenceUtil.isBlank(childLabels)) {
             // 如果只有一级标签  则直接返回
             resultVO.setDataTime(lastTime);
@@ -499,7 +522,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             return resultVO;
         }
 
-        // 6.6. 有子级标签时
+        // 6.4. 有子级标签时
         // 根据标签层级开始往下 当某标签无计量时，用下级标签值之和，有计量时，则使用该计量 此时需要重新去获取对应的 折标煤数据
         List<String> labelValues = StrSplitter.split(childLabels, StringPool.HASH, 0, true, true);
 
@@ -534,15 +557,16 @@ public class StatisticsServiceImpl implements StatisticsService {
                                       List<EnergyItemData> data,
                                       List<EnergyLinkData> links) {
 
-        List<StandingbookLabelInfoDO> standingbookLabelInfoList = statisticsCommonService.getByLabelValues(labelValue);
+        List<StandingbookLabelInfoDO> standingbookLabelInfoList = statisticsCommonService.getStandingbookLabelInfoByLabel(labelValue);
         // 计算标签折标煤值
         BigDecimal value = null;
         if (CollUtil.isNotEmpty(standingbookLabelInfoList)) {
             value = standingbookLabelInfoList
                     .stream()
-                    .map(s -> usageCostDataMap.get(s.getStandingbookId()))
-                    .filter(Objects::nonNull)
+                    .map(StandingbookLabelInfoDO::getStandingbookId)
                     .distinct()
+                    .map(usageCostDataMap::get)
+                    .filter(Objects::nonNull)
                     .map(UsageCostData::getTotalStandardCoalEquivalent)
                     .filter(Objects::nonNull)
                     .reduce(BigDecimal::add).orElse(null);
