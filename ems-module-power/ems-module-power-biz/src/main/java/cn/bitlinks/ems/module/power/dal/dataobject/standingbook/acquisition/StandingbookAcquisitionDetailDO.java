@@ -63,6 +63,14 @@ public class StandingbookAcquisitionDetailDO extends BaseDO {
      * 是否能源数采参数 0自定义数采 1能源数采
      */
     private Boolean energyFlag;
+    /**
+     * modbus从地址
+     */
+    private String modbusSalve;
+    /**
+     * modbus寄存器地址
+     */
+    private String modbusRegisterType;
 
 
 }
