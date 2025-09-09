@@ -309,9 +309,9 @@ public class DeviceMonitorService {
                 ));
         // 1.查询左上聚合数据，用量、折标煤、成本
         DeviceMonitorAggData aggData = usageCostService.getAggStatisticsBySbIds(paramVO.getRange()[0], paramVO.getRange()[1], subSbIds);
-        resultVO.setSumCoal(aggData.getAccCoal());
-        resultVO.setSumUsage(aggData.getAccUsage());
-        resultVO.setSumCost(aggData.getAccCost());
+        resultVO.setSumCoal(aggData == null ? null : dealBigDecimalScale(aggData.getAccCoal(), DEFAULT_SCALE));
+        resultVO.setSumUsage(aggData == null ? null : dealBigDecimalScale(aggData.getAccUsage(), DEFAULT_SCALE));
+        resultVO.setSumCost(aggData == null ? null : dealBigDecimalScale(aggData.getAccCost(), DEFAULT_SCALE));
 
         // 2.查询表格
         // 获取表格表头
@@ -368,19 +368,18 @@ public class DeviceMonitorService {
                 // 获取 UsageCostData 并判空
                 UsageCostData usageCostData = standingbookIdTimeCostMap.get(sbId) != null ?
                         standingbookIdTimeCostMap.get(sbId).get(time) : null;
+                coalRowData.setName(sbNameMapping.get(sbId));
+                coalRowData.setSbId(sbId);
+                costRowData.setName(sbNameMapping.get(sbId));
+                costRowData.setSbId(sbId);
+                usageRowData.setName(sbNameMapping.get(sbId));
+                usageRowData.setSbId(sbId);
                 // 判断 usageCostData 是否为 null
                 if (usageCostData != null) {
                     // 添加到对应的数据列表中
                     coalRowData.setValue(dealBigDecimalScale(usageCostData.getTotalStandardCoalEquivalent(), DEFAULT_SCALE));
-                    coalRowData.setName(sbNameMapping.get(sbId));
-                    coalRowData.setSbId(sbId);
                     costRowData.setValue(dealBigDecimalScale(usageCostData.getTotalCost(), DEFAULT_SCALE));
-                    costRowData.setName(sbNameMapping.get(sbId));
-                    costRowData.setSbId(sbId);
                     usageRowData.setValue(dealBigDecimalScale(usageCostData.getCurrentTotalUsage(), DEFAULT_SCALE));
-                    usageRowData.setName(sbNameMapping.get(sbId));
-                    usageRowData.setSbId(sbId);
-
                     // 累加计算
                     if (usageCostData.getTotalStandardCoalEquivalent() != null) {
                         sumCoal = (sumCoal == null) ? usageCostData.getTotalStandardCoalEquivalent() : sumCoal.add(usageCostData.getTotalStandardCoalEquivalent());
@@ -393,11 +392,10 @@ public class DeviceMonitorService {
                     if (usageCostData.getCurrentTotalUsage() != null) {
                         sumUsage = (sumUsage == null) ? usageCostData.getCurrentTotalUsage() : sumUsage.add(usageCostData.getCurrentTotalUsage());
                     }
-                } else {
-                    coalDataList.add(null);
-                    costDataList.add(null);
-                    usageDataList.add(null);
                 }
+                coalDataList.add(coalRowData);
+                costDataList.add(costRowData);
+                usageDataList.add(usageRowData);
             }
             // 汇总值
             usageTableRowData.setSum(sumUsage);
