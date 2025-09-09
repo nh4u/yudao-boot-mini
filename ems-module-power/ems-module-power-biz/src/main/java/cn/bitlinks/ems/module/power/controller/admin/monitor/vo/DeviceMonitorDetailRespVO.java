@@ -31,6 +31,14 @@ public class DeviceMonitorDetailRespVO {
     List<DeviceMonitorRowData> costData;
 
 
+    @Schema(description = "动态图数据-用量")
+    List<DeviceMonitorChartData> usageChart;
+    @Schema(description = "动态图数据-折标煤")
+    List<DeviceMonitorChartData> coalChart;
+    @Schema(description = "动态图数据-成本")
+    List<DeviceMonitorChartData> costChart;
+
+
     @Schema(description = "图-x轴")
     List<String> xdata;
 

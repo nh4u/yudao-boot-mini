@@ -73,5 +73,5 @@ INSERT INTO `system_dict_data` ( `sort`, `label`, `value`, `dict_type`, `status`
 ALTER TABLE power_standingbook_acquisition_detail
     ADD COLUMN `modbus_salve` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '从地址';
 ALTER TABLE power_standingbook_acquisition_detail
-    ADD COLUMN `modbus_register_type` varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '寄存器地址'；
+    ADD COLUMN `modbus_register_type` varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '寄存器地址';
 ```
