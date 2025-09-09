@@ -30,6 +30,7 @@ import cn.bitlinks.ems.module.power.service.standingbook.attribute.StandingbookA
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
 import cn.bitlinks.ems.module.power.service.warninginfo.WarningInfoService;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.springframework.context.annotation.Lazy;
@@ -93,6 +94,9 @@ public class MonitorServiceImpl implements MonitorService {
 
         // 能耗状态
         String standingbookStatus = pageReqVO.get(SB_STATUS);
+        if (CharSequenceUtil.isBlank(standingbookStatus)) {
+            standingbookStatus = "-1";
+        }
 
         MonitorRespVO minitorRespVO = new MonitorRespVO();
 
@@ -192,7 +196,7 @@ public class MonitorServiceImpl implements MonitorService {
         List<StandingbookDO> result = standingbookService.getByIds(sbIds);
         Integer total = result.size();
         Integer warning = 0;
-        if (StringUtils.isNotBlank(standingbookStatus) && CollUtil.isNotEmpty(result)) {
+        if (CollUtil.isNotEmpty(result)) {
             result = dealWarningStatus(result, standingbookStatus);
         }
 
@@ -211,11 +215,11 @@ public class MonitorServiceImpl implements MonitorService {
             // 数量处理
             warning = (int) respVOS.stream().filter(r -> r.getStandingbookStatus() == 1).count();
 
-            minitorRespVO.setWarning(warning);
+            minitorRespVO.setWarning("0".equals(standingbookStatus) ? total - respVOS.size() : warning);
             minitorRespVO.setStandingbookRespVOList(collect);
         }
         minitorRespVO.setTotal(total);
-        minitorRespVO.setNormal(total - warning);
+        minitorRespVO.setNormal("0".equals(standingbookStatus) ? respVOS.size() : total - warning);
 
         return minitorRespVO;
     }
@@ -354,7 +358,7 @@ public class MonitorServiceImpl implements MonitorService {
             switch (status) {
                 case 0:
                     // 正常
-                    if (CollUtil.isEmpty(sbIds)) {
+                    if (CollUtil.isEmpty(finalSbIds)) {
                         return result;
                     } else {
                         return result
@@ -365,16 +369,27 @@ public class MonitorServiceImpl implements MonitorService {
 
                 case 1:
                     // 异常
-                    if (CollUtil.isEmpty(sbIds)) {
+                    if (CollUtil.isEmpty(finalSbIds)) {
                         return Collections.emptyList();
                     } else {
                         return result
                                 .stream()
                                 .filter(r -> finalSbIds.contains(r.getId()))
+                                .map(r -> r.setStandingbookStatus(1))
                                 .collect(Collectors.toList());
                     }
                 default:
-                    return result;
+                    if (CollUtil.isEmpty(finalSbIds)) {
+                        return result;
+                    } else {
+                        result.forEach(r -> {
+                            if (finalSbIds.contains(r.getId())) {
+                                r.setStandingbookStatus(1);
+                            }
+                        });
+                        return result;
+                    }
+
             }
 
         } catch (Exception e) {
