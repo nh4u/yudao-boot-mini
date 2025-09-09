@@ -1,22 +1,18 @@
 package cn.bitlinks.ems.module.power.service.standingbook.label;
 
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
+import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookLabelInfoMapper;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.text.StrPool;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import javax.annotation.Resource;
-
-import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
-import cn.bitlinks.ems.module.power.dal.mysql.standingbook.StandingbookLabelInfoMapper;
 
 /**
  * @author wangl
@@ -58,8 +54,14 @@ public class StandingbookLabelInfoServiceImpl implements StandingbookLabelInfoSe
         return standingbookLabelInfoMapper.getByValuesSelected(values);
     }
 
+    /**
+     * 获取该标签绑定的台账
+     *
+     * @param labelValue
+     * @return
+     */
     @Override
-    public List<StandingbookLabelInfoDO> getByLabelValues(String labelValue) {
+    public List<StandingbookLabelInfoDO> getSelfByLabelValues(String labelValue) {
         LambdaQueryWrapper<StandingbookLabelInfoDO> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(StandingbookLabelInfoDO::getValue, labelValue);
         List<StandingbookLabelInfoDO> list = standingbookLabelInfoMapper.selectList(wrapper);
@@ -72,7 +74,7 @@ public class StandingbookLabelInfoServiceImpl implements StandingbookLabelInfoSe
     }
 
     /**
-     * 取 标签下所有子级的标签绑定信息 该标签没有绑定台账 则取下一级别即可   需求不定 待确认
+     * 取该标签下一级的标签绑定信息
      *
      * @param labelValue
      * @return
@@ -100,4 +102,32 @@ public class StandingbookLabelInfoServiceImpl implements StandingbookLabelInfoSe
             return Collections.emptyList();
         }
     }
+
+    /**
+     * 取该标签下所有子级的标签绑定信息
+     *
+     * @param labelValue
+     * @return
+     */
+    @Override
+    public List<StandingbookLabelInfoDO> getAllSubByLabelValues(String labelValue) {
+        LambdaQueryWrapper<StandingbookLabelInfoDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(StandingbookLabelInfoDO::getValue, labelValue);
+
+        // 方式一 取该标签下所有子级
+        return standingbookLabelInfoMapper.selectList(wrapper);
+    }
+
+    @Override
+    public List<StandingbookLabelInfoDO> getByLabelValues(String labelValue) {
+        List<StandingbookLabelInfoDO> selfLabelInfoList = getSelfByLabelValues(labelValue);
+        if (CollUtil.isNotEmpty(selfLabelInfoList)) {
+            // 自己有 取自己的
+            return selfLabelInfoList;
+        }
+        // 自己没有 取所有下级的
+        return getAllSubByLabelValues(labelValue);
+    }
+
+
 }
