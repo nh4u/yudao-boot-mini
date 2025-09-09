@@ -14,6 +14,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static cn.bitlinks.ems.framework.common.util.modbus.ModbusConnectionManager.createModbusRequest;
+import static cn.bitlinks.ems.framework.common.util.modbus.ModbusConnectionManager.parseResponse;
+
 /**
  * 测试modbus连接
  */
@@ -82,19 +85,11 @@ public class ModbusConnectionTester {
                 int registerAddress = Integer.parseInt(item); // 转换 item 为寄存器地址
 
                 // 创建 Modbus 请求，根据寄存器类型选择请求类型
-                ModbusRequest request = null;
+                ModbusRequest request = createModbusRequest(RegisterTypeEnum.codeOf(registerType), registerAddress);
 
-                if (RegisterTypeEnum.COILS.getCode().equals(registerType)) {
-                    request = new ReadCoilsRequest(registerAddress, 1);
-                } else if (RegisterTypeEnum.INPUT_REGISTERS.getCode().equals(registerType)) {
-                    request = new ReadInputDiscretesRequest(registerAddress, 1);
-                } else if (RegisterTypeEnum.HOLDING_REGISTERS.getCode().equals(registerType)) {
-                    request = new ReadMultipleRegistersRequest(registerAddress, 1);
-                } else if (RegisterTypeEnum.DISCRETE_INPUTS.getCode().equals(registerType)) {
-                    request = new ReadInputRegistersRequest(registerAddress, 1);
-                } else {
+                if (request == null) {
                     log.error("无效的寄存器类型: {}", registerType);
-                    continue;  // 跳过此 item
+                    continue;  // 如果寄存器类型无效，跳过该项
                 }
 
                 // 设置 UnitID（设备地址）
@@ -115,16 +110,8 @@ public class ModbusConnectionTester {
                 // 获取响应数据
                 ModbusResponse response = transaction.getResponse();
 
-                // 读取寄存器值
-                int registerValue = -1; // 默认无效值
-                if (response instanceof ReadMultipleRegistersResponse) {
-                    registerValue = ((ReadMultipleRegistersResponse) response).getRegisterValue(0);
-                }
-
-                // 创建 ItemStatus 并设置寄存器值
-                ItemStatus itemStatus = new ItemStatus();
-                itemStatus.setItemId(item);
-                itemStatus.setValue(String.valueOf(registerValue));
+                // 读取寄存器值并构造 ItemStatus
+                ItemStatus itemStatus = parseResponse(response, item);
 
                 // 将 itemStatus 放入 resultMap，使用 item 为 key
                 resultMap.put(item, itemStatus);
@@ -134,8 +121,7 @@ public class ModbusConnectionTester {
 
             } catch (Exception e) {
                 // 捕获每个 item 的异常并记录错误
-                log.error("读取寄存器 {} 时出错: {}", item, registerType);
-                e.printStackTrace();
+                log.error("读取寄存器 {} 时出错", item, e);
             }
         }
 

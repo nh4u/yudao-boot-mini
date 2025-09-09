@@ -5,6 +5,7 @@ import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
 import com.ghgande.j2mod.modbus.io.ModbusTCPTransaction;
 import com.ghgande.j2mod.modbus.msg.*;
 import com.ghgande.j2mod.modbus.net.TCPMasterConnection;
+import com.ghgande.j2mod.modbus.util.BitVector;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetAddress;
@@ -116,24 +117,15 @@ public class ModbusConnectionManager {
                 // 获取响应数据
                 ModbusResponse response = transaction.getResponse();
 
-                // 读取寄存器值
-                int registerValue = -1; // 默认无效值
-                if (response instanceof ReadMultipleRegistersResponse) {
-                    registerValue = ((ReadMultipleRegistersResponse) response).getRegisterValue(0);
-                }
+                // 读取寄存器值并构造 ItemStatus
+                ItemStatus itemStatus = parseResponse(response, item);
 
-                // 创建 ItemStatus 并设置寄存器值
-                ItemStatus itemStatus = new ItemStatus();
-                itemStatus.setItemId(item);
-                itemStatus.setValue(String.valueOf(registerValue));
-
-                // 将 itemStatus 放入 resultMap，使用 item 为 key
+                // 存储结果到 map
                 resultMap.put(item, itemStatus);
 
             } catch (Exception e) {
                 // 捕获每个 item 的异常并记录错误
-                log.error("读取寄存器 {} 时出错: {}", item, registerType);
-                e.printStackTrace();
+                log.error("读取寄存器 {} 时出错: {}", item, registerType, e);
             }
         }
 
@@ -153,5 +145,52 @@ public class ModbusConnectionManager {
             }
         });
         cache.clear();
+    }
+
+    /**
+     * 根据寄存器类型和地址创建 Modbus 请求
+     */
+    static ModbusRequest createModbusRequest(RegisterTypeEnum registerType, int registerAddress) {
+        switch (registerType) {
+            case COILS:
+                return new ReadCoilsRequest(registerAddress, 1); // 读取线圈
+            case INPUT_REGISTERS:
+                return new ReadInputDiscretesRequest(registerAddress, 1); // 读取输入离散
+            case HOLDING_REGISTERS:
+                return new ReadMultipleRegistersRequest(registerAddress, 1); // 读取保持寄存器
+            case DISCRETE_INPUTS:
+                return new ReadInputRegistersRequest(registerAddress, 1); // 读取离散输入
+            default:
+                return null; // 无效的寄存器类型
+        }
+    }
+
+    /**
+     * 根据响应解析寄存器值，并构建 ItemStatus
+     */
+    static ItemStatus parseResponse(ModbusResponse response, String item) {
+        ItemStatus itemStatus = new ItemStatus();
+        itemStatus.setItemId(item);
+
+        if (response instanceof ReadMultipleRegistersResponse) {
+            ReadMultipleRegistersResponse regResponse = (ReadMultipleRegistersResponse) response;
+            int registerValue = regResponse.getRegisterValue(0); // 获取第一个寄存器值
+            itemStatus.setValue(String.valueOf(registerValue));
+        } else if (response instanceof ReadCoilsResponse) {
+            ReadCoilsResponse coilResponse = (ReadCoilsResponse) response;
+            BitVector coils = coilResponse.getCoils();
+            boolean coilValue = coils.getBit(0); // 获取第一个线圈值
+            itemStatus.setValue(String.valueOf(coilValue));
+        } else if (response instanceof ReadInputRegistersResponse) {
+            ReadInputRegistersResponse inputResponse = (ReadInputRegistersResponse) response;
+            int registerValue = inputResponse.getRegisterValue(0); // 获取第一个输入寄存器值
+            itemStatus.setValue(String.valueOf(registerValue));
+        } else if (response instanceof ReadInputDiscretesResponse) {
+            ReadInputDiscretesResponse inputDiscreteResponse = (ReadInputDiscretesResponse) response;
+            boolean discreteValue = inputDiscreteResponse.getDiscreteStatus(0); // 获取第一个离散输入值
+            itemStatus.setValue(String.valueOf(discreteValue));
+        }
+
+        return itemStatus;
     }
 }

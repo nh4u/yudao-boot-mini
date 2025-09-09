@@ -75,8 +75,8 @@ public class ServerDataService {
                         String registerType = serverInfo[3];
                         String salveAddr = serverInfo[4];
                         // 执行OPC数据采集
-                        Map<String, ItemStatus> result = ModbusUtils.readOnly(//todo
-                                host, port, registerType, salveAddr, ioAddresses
+                        Map<String, ItemStatus> result = ModbusUtils.readOnly(
+                                host, Integer.parseInt(port), registerType, salveAddr, ioAddresses
                         );
                         // 处理采集结果（存储到Redis）
                         saveResultToRedis(serverKey, result, timestampStr);
