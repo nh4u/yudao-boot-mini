@@ -100,7 +100,7 @@ public class MonitorController {
     }
 
 
-    @GetMapping("/energyList")
+    @PostMapping("/energyList")
     @Operation(summary = "重点设备查询能源参数列表")
     @PermitAll
     public CommonResult<List<DeviceMonitorDeviceEnergyRespVO>> energyList(@RequestBody @Valid DeviceMonitorDeviceReqVO reqVO) {
