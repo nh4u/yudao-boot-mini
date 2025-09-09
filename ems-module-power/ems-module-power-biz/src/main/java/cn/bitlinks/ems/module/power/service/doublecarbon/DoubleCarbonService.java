@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.module.power.controller.admin.doublecarbon.vo.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 public interface DoubleCarbonService {
     DoubleCarbonSettingsRespVO getSettings();
@@ -15,5 +16,5 @@ public interface DoubleCarbonService {
     PageResult<DoubleCarbonMappingRespVO> getMappingPage(@Valid DoubleCarbonMappingPageReqVO pageReqVO);
 
     void addMapping(String standingbookCode);
-    void delMapping(String standingbookCode);
+    void delMapping(List<String> standingbookCodes);
 }
