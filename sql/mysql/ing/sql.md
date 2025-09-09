@@ -33,6 +33,7 @@ PRIMARY KEY (`id`)
 INSERT INTO `power_double_carbon_settings` (`id`, `name`, `url`, `update_frequency`, `update_frequency_unit`,  `tenant_id`) VALUES (1, '双碳系统', 'http://www.baidu.com', 10, 2, 1);
 insert into infra_config (id, category, type, name, config_key, value, visible, remark, creator, create_time, updater, update_time, deleted) values (2, 'biz', 1, '设备详情跳转连接', 'power.device.monitor.url', '<a href="/aa/aa?id=%s">查看详情</a>', false, '设备详情跳转连接', 'admin', '2025-08-31 18:47:02', '1', '2025-09-02 18:01:29', false);
 ```
+ALTER TABLE power_warning_info DROP COLUMN user_id;
 CREATE TABLE `power_warning_info_user` (
 `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '编号',
 `user_id` bigint(20) NOT NULL COMMENT '用户id',
@@ -74,4 +75,10 @@ ALTER TABLE power_standingbook_acquisition_detail
     ADD COLUMN `modbus_salve` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '从地址';
 ALTER TABLE power_standingbook_acquisition_detail
     ADD COLUMN `modbus_register_type` varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '寄存器地址';
+```
+
+```sql
+-- 初始化 双碳编号映射，同步所有本系统计量器具编码
+INSERT INTO power_double_carbon_mapping (standingbook_code,tenant_id)
+select value,1 from power_standingbook_attribute where code='measuringInstrumentId' and deleted =0 and standingbook_id is not null;
 ```
