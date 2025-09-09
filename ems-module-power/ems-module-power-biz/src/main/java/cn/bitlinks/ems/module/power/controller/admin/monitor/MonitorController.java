@@ -45,6 +45,7 @@ public class MonitorController {
 
     @PostMapping("/deviceDetail")
     @Operation(summary = "监控详情")
+    @PermitAll
     //@PreAuthorize("@ss.hasPermission('power:minitor:query')")
     public CommonResult<MonitorDetailRespVO> deviceDetail(@Valid @RequestBody MonitorParamReqVO paramVO) {
         return success(monitorService.deviceDetail(paramVO));
@@ -111,6 +112,7 @@ public class MonitorController {
 
     @PostMapping("/deviceTableAndChart")
     @Operation(summary = "重点设备查询图表")
+    @PermitAll
     public CommonResult<DeviceMonitorDetailRespVO> deviceTableAndChart(@Valid @RequestBody DeviceMonitorParamReqVO paramVO) {
         return success(deviceMonitorService.deviceTableAndChart(paramVO));
     }
