@@ -17,19 +17,39 @@ public interface StandingbookLabelInfoService {
     List<StandingbookLabelInfoDO> getByStandingBookIds(List<Long> standingBookIdList);
 
     List<StandingbookLabelInfoDO> getByStandingBookId(Long standingBookId);
+
     List<StandingbookLabelInfoDO> getByValuesSelected(List<String> values);
 
     /**
-     *  根据标签value获取所有关联关系
+     * 获取该标签绑定的台账
+     *
+     * @param labelValue
+     * @return
+     */
+    List<StandingbookLabelInfoDO> getSelfByLabelValues(String labelValue);
+
+    /**
+     * 取该标签下一级的标签绑定信息
+     *
+     * @param labelValue
+     * @return
+     */
+    List<StandingbookLabelInfoDO> getSubByLabelValues(String labelValue);
+
+    /**
+     * 取该标签下所有子级的标签绑定信息
+     *
+     * @param labelValue
+     * @return
+     */
+    List<StandingbookLabelInfoDO> getAllSubByLabelValues(String labelValue);
+
+    /**
+     * 获取该标签绑定的台账 如果没有则获取该标签下所有子级的标签绑定信息
+     *
      * @param labelValue
      * @return
      */
     List<StandingbookLabelInfoDO> getByLabelValues(String labelValue);
 
-    /**
-     * 根据标签value获取所有下一级关联关系
-     * @param labelValue
-     * @return
-     */
-    List<StandingbookLabelInfoDO> getSubByLabelValues(String labelValue);
 }
