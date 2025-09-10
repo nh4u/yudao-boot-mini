@@ -8,6 +8,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.doublecarbon.DoubleCarbonMapp
 import cn.bitlinks.ems.module.power.dal.dataobject.doublecarbon.DoubleCarbonSettingsDO;
 import cn.bitlinks.ems.module.power.dal.mysql.doublecarbon.DoubleCarbonMappingMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.doublecarbon.DoubleCarbonSettingsMapper;
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.util.Collections;
+import java.util.List;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DOUBLE_CARBON_CODE_DUPLICATE;
@@ -49,9 +51,11 @@ public class DoubleCarbonServiceImpl implements DoubleCarbonService {
         // 校验台账是否存在
         DoubleCarbonMappingDO doubleCarbonMappingDO = doubleCarbonMappingMapper.selectById(updVO.getId());
 
-        // 校验双碳编码是否存在
+        if(StringUtils.isEmpty(updVO.getDoubleCarbonCode())){
+            return;
+        }
         // 如果编码被修改，校验新编码是否重复
-        if (StringUtils.isNotEmpty(doubleCarbonMappingDO.getDoubleCarbonCode()) && !doubleCarbonMappingDO.getDoubleCarbonCode().equals(updVO.getDoubleCarbonCode())) {
+        if (!updVO.getDoubleCarbonCode().equals(doubleCarbonMappingDO.getDoubleCarbonCode())) {
             Long existCount = doubleCarbonMappingMapper.selectCount(new LambdaQueryWrapperX<DoubleCarbonMappingDO>()
                     .eq(DoubleCarbonMappingDO::getDoubleCarbonCode, updVO.getDoubleCarbonCode())
                     .ne(DoubleCarbonMappingDO::getId, updVO.getId())); // 排除自身
@@ -91,11 +95,11 @@ public class DoubleCarbonServiceImpl implements DoubleCarbonService {
     }
 
     @Override
-    public void delMapping(String standingbookCode) {
-        if (StringUtils.isEmpty(standingbookCode)) {
+    public void delMapping(List<String> standingbookCodes) {
+        if (CollUtil.isEmpty(standingbookCodes)) {
             return;
         }
         doubleCarbonMappingMapper.delete(new LambdaQueryWrapperX<DoubleCarbonMappingDO>()
-                .eq(DoubleCarbonMappingDO::getStandingbookCode, standingbookCode));
+                .in(DoubleCarbonMappingDO::getStandingbookCode, standingbookCodes));
     }
 }

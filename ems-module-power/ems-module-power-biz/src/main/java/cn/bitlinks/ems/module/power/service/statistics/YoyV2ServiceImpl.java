@@ -97,7 +97,7 @@ public class YoyV2ServiceImpl implements YoyV2Service {
 
         List<List<String>> list = ListUtils.newArrayList();
         list.add(Arrays.asList("表单名称", "统计周期", "", ""));
-        String sheetName = "利用率";
+        String sheetName = "利用率同比分析明细报表";
         // 统计周期
         String period = getFormatTime(paramVO.getRange()[0]) + "~" + getFormatTime(paramVO.getRange()[1]);
 

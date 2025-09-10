@@ -511,7 +511,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             if (CollUtil.isNotEmpty(attributes)) {
                 Map<String, String> attributeCodeValueMap = attributes
                         .stream()
-                        .collect(Collectors.toMap(StandingbookAttributeDO::getCode, a->Optional.ofNullable(a.getValue()).orElse("")));
+                        .collect(Collectors.toMap(StandingbookAttributeDO::getCode, a -> Optional.ofNullable(a.getValue()).orElse("")));
 
                 attributeCodeList.forEach(a -> {
                     String s = attributeCodeValueMap.get(a);
@@ -529,7 +529,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             if (CollUtil.isNotEmpty(labelInfo)) {
                 Map<String, String> labelInfoNameValueMap = labelInfo
                         .stream()
-                        .collect(Collectors.toMap(StandingbookLabelInfoDO::getName, l->Optional.ofNullable(l.getValue()).orElse("")));
+                        .collect(Collectors.toMap(StandingbookLabelInfoDO::getName, l -> Optional.ofNullable(l.getValue()).orElse("")));
 
                 labelIdList.forEach(l -> {
                     // 拼接name
@@ -869,7 +869,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         standingbookAttributeMapper.insertBatch(children);
 
         // 新增台账-双碳映射
-        if (StandingbookTypeTopEnum.EQUIPMENT.getCode().equals(sb.getTopType()) || StandingbookTypeTopEnum.MEASURING_INSTRUMENT.getCode().equals(sb.getTopType())) {
+        if (StandingbookTypeTopEnum.MEASURING_INSTRUMENT.getCode().equals(sb.getTopType())) {
             doubleCarbonService.addMapping(standingbookCode);
         }
         return standingbook.getId();
@@ -993,6 +993,17 @@ public class StandingbookServiceImpl implements StandingbookService {
         standingbookAcquisitionService.deleteByStandingbookIds(ids);
         // 删除数采配置redis缓存与台账对应的io地址缓存
         standingbookAcquisitionService.deleteRedisAcqConfigByStandingbookIds(ids);
+        // 如果是计量器具的话，删除指定的编码
+        List<StandingbookDTO> standingbookDTOList = getStandingbookDTOList();
+        // 过滤出在 ids 集合中的台账
+        List<String> codes = standingbookDTOList.stream()
+                .filter(standingbookDTO -> ids.contains(standingbookDTO.getStandingbookId()))
+                .map(StandingbookDTO::getCode) // 假设 StandingbookDTO 里有 code 字段
+                .collect(Collectors.toList());
+
+        // 删除双碳映射
+        doubleCarbonService.delMapping(codes);
+
     }
 
     private void validateStandingbookExists(Long id) {
