@@ -103,6 +103,14 @@ public interface EnergyConfigurationService {
      * @return
      */
     List<EnergyConfigurationDO> getByEnergyClassify(Set<Long> energyIds, Integer energyClassify);
+    /**
+     * 根据能源ID或能源类型查询能源，优先能源ID 拆分出单位
+     *
+     * @param energyIds
+     * @param energyClassify
+     * @return
+     */
+    List<EnergyConfigurationDO> getHasUnitByEnergyClassify(Set<Long> energyIds, Integer energyClassify);
 
     List<EnergyConfigurationDO> getByEnergyClassifyUnit(Integer energyClassify);
 
