@@ -398,9 +398,9 @@ public class DeviceMonitorService {
                 usageDataList.add(usageRowData);
             }
             // 汇总值
-            usageTableRowData.setSum(sumUsage);
-            coalTableRowData.setSum(sumCoal);
-            costTableRowData.setSum(sumCost);
+            usageTableRowData.setSum(dealBigDecimalScale(sumUsage, DEFAULT_SCALE));
+            coalTableRowData.setSum(dealBigDecimalScale(sumCoal, DEFAULT_SCALE));
+            costTableRowData.setSum(dealBigDecimalScale(sumCost, DEFAULT_SCALE));
             // 构造列表
             coalTableRowData.setDataList(coalDataList);
             costTableRowData.setDataList(costDataList);
@@ -450,7 +450,7 @@ public class DeviceMonitorService {
                 // 将当前时间点的数据添加到设备的 dataList 中
                 chartData.getDataList().add(timeRowData.getValue());
             }
-            sumDataList.add(rowData.getSum()); // 汇总所有设备的 sum
+            sumDataList.add(dealBigDecimalScale(rowData.getSum(), DEFAULT_SCALE)); // 汇总所有设备的 sum
         }
         summaryData.setDataList(sumDataList); // 汇总数据只有一个数据点
         // 转换后的结果列表
