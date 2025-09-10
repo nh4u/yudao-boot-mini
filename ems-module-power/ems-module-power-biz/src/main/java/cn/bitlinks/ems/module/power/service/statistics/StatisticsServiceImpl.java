@@ -414,11 +414,11 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 3. 获取能源标签台账id交集
         List<Long> energyLabelIntersectionSbIds = new ArrayList<>();
         List<Long> energyLabelIntersectionOriginSbIds = new ArrayList<>();
-        // 3.2. 获取标签台账关联关系
+        // 3.1. 获取标签台账关联关系(只取1级)
         List<StandingbookLabelInfoDO> standingbookLabelInfosOrigin = statisticsCommonService
-                .getStandingbookIdsByLabel(topLabel, childLabels);
+                .getStandingbookIdsByLabel(topLabel, null);
 
-        // 3.3. 能源台账ids和标签台账ids是否有交集。如果有就取交集，如果没有则取能源台账ids
+        // 3.2. 能源台账ids和标签台账ids是否有交集。如果有就取交集，如果没有则取能源台账ids
         if (CollUtil.isNotEmpty(standingbookLabelInfosOrigin)) {
             List<Long> sids = standingbookLabelInfosOrigin
                     .stream()
@@ -432,18 +432,22 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         }
 
-        // 3.1. 如果有子级标签则进行特殊处理
+        // 3.3. 如果有子级标签则进行特殊处理
         if (CharSequenceUtil.isNotBlank(childLabels)) {
             // 只有一级标签时  一级标记没有绑定计量器  所以取所有下级标签数据
             // 当选有子级标签时 需要处理一下自己标签，即 把所有直系路径的标签都需要处理一下
             childLabels = dealLabelSet(childLabels);
         }
 
-        // 3.2. 获取标签台账关联关系
+        // 3.4. 获取该一级标签下所有标签台账关联关系 获取总折标煤数据
+        Long topLabelId = Long.valueOf(topLabel.substring(topLabel.indexOf("_") + 1));
+        List<Tree<Long>> labelTree = labelConfigService.getLabelTree(false, topLabelId, null);
+        List<String> childLabelValues = getChildLabelValues(labelTree);
+        String allChildLabelValues = String.join(StringPool.HASH, childLabelValues);
         List<StandingbookLabelInfoDO> standingbookLabelInfos = statisticsCommonService
-                .getStandingbookIdsByLabel(topLabel, childLabels);
+                .getStandingbookIdsByLabel(topLabel, allChildLabelValues);
 
-        // 3.3. 能源台账ids和标签台账ids是否有交集。如果有就取交集，如果没有则取能源台账ids
+        // 3.5. 能源台账ids和标签台账ids是否有交集。如果有就取交集，如果没有则取能源台账ids
         if (CollUtil.isNotEmpty(standingbookLabelInfos)) {
             List<Long> sids = standingbookLabelInfos
                     .stream()
@@ -455,7 +459,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                     .filter(sids::contains)
                     .collect(Collectors.toList());
         }
-        // 3.4. 台账id为空直接返回结果
+        // 3.6. 台账id为空直接返回结果
         if (CollUtil.isEmpty(energyLabelIntersectionSbIds)) {
             return resultVO;
         }
@@ -520,7 +524,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         // 6. 组装能流数据点线
         // 6.1. 存入一级标签点
-        Long topLabelId = Long.valueOf(topLabel.substring(topLabel.indexOf("_") + 1));
+//        Long topLabelId = Long.valueOf(topLabel.substring(topLabel.indexOf("_") + 1));
         String topLabelName = labelMap.get(topLabelId).getLabelName();
         data.add(new EnergyItemData().setName(topLabelName));
         // 6.2. 构建一级标签的线

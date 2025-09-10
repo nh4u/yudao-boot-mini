@@ -616,6 +616,15 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         return energyConfigurationMapper.getByEnergyClassify(energyIds, energyClassify);
     }
 
+
+    @Override
+    public List<EnergyConfigurationDO> getHasUnitByEnergyClassify(Set<Long> energyIds, Integer energyClassify) {
+        if (CollectionUtil.isEmpty(energyIds) && Objects.isNull(energyClassify)) {
+            return Collections.emptyList();
+        }
+        return energyConfigurationMapper.getHasUnitByEnergyClassify(energyIds, energyClassify);
+    }
+
     @Override
     public List<EnergyConfigurationDO> getByEnergyClassifyUnit(Integer energyClassify) {
 
