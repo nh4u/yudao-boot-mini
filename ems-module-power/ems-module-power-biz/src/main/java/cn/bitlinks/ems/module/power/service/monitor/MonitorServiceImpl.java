@@ -293,7 +293,7 @@ public class MonitorServiceImpl implements MonitorService {
         resultVO.setTable(table);
 
         // 处理 图-数据
-        List<BigDecimal> chartY = x.stream().map(dataMap::get).collect(Collectors.toList());
+        List<BigDecimal> chartY = x.stream().map(time -> dealBigDecimalScale(dataMap.get(time), DEFAULT_SCALE)).collect(Collectors.toList());
         resultVO.setChartData(chartY);
 
         StatsResult statsResult = CalculateUtil.calculateStats(
