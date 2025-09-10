@@ -153,6 +153,9 @@ public class DeviceMonitorService {
                         Objects.equals(dto.getStandingbookId(), reqVO.getSbId()))
                 .findFirst()
                 .orElse(null);
+        if (Objects.isNull(standingbookDTO)) {
+            throw exception(STANDINGBOOK_NOT_EXISTS);
+        }
         respVO.setCode(standingbookDTO.getCode());
         respVO.setName(standingbookDTO.getName());
         respVO.setSbId(standingbookDTO.getStandingbookId());
@@ -316,7 +319,7 @@ public class DeviceMonitorService {
         // 2.查询表格
         // 获取表格表头
         List<String> tableHeaders = new ArrayList<>();
-        if(CollUtil.isNotEmpty(sbNameMapping)){
+        if (CollUtil.isNotEmpty(sbNameMapping)) {
             subSbIds.forEach(sbId -> tableHeaders.add(sbNameMapping.get(sbId)));
         }
         resultVO.setTableHeaders(tableHeaders);
@@ -426,11 +429,13 @@ public class DeviceMonitorService {
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return resultVO;
     }
+
     // 转换 DeviceMonitorRowData 到 DeviceMonitorChartData
     private List<DeviceMonitorChartData> transformData(List<DeviceMonitorRowData> rowDataList) {
         Map<Long, DeviceMonitorChartData> deviceChartDataMap = new HashMap<>();
         DeviceMonitorChartData summaryData = new DeviceMonitorChartData();
-        summaryData.setName("汇总值"); summaryData.setSbId(null);
+        summaryData.setName("汇总值");
+        summaryData.setSbId(null);
         summaryData.setType("line"); // 设置为 bar 或 line，根据需求
         // 遍历所有时间点的数据
         List<BigDecimal> sumDataList = new ArrayList<>();
@@ -454,7 +459,7 @@ public class DeviceMonitorService {
         }
         summaryData.setDataList(sumDataList); // 汇总数据只有一个数据点
         // 转换后的结果列表
-        List<DeviceMonitorChartData> result =  new ArrayList<>(deviceChartDataMap.values());
+        List<DeviceMonitorChartData> result = new ArrayList<>(deviceChartDataMap.values());
         result.add(summaryData);
         return result;
     }

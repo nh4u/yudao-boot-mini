@@ -125,6 +125,17 @@ public class BigScreenServiceImpl implements BigScreenService {
         // 3.1. 单位产品综合能耗
 
 
+        // 4. 顶部
+        // 4.1. 今日能耗 本月能耗
+
+        // 5. 左部
+        // 5.1. 电力   近7日能耗
+        // 5.2. 天然气   近7日能耗
+        // 5.3. 自来水   近7日能耗
+        // 5.4. 高品质再生水   近7日能耗
+        // 5.5. 热力   近7日能耗
+
+
         return resultVO;
     }
 }
