@@ -217,6 +217,12 @@ public class MonitorServiceImpl implements MonitorService {
 
             minitorRespVO.setWarning("0".equals(standingbookStatus) ? total - respVOS.size() : warning);
             minitorRespVO.setStandingbookRespVOList(collect);
+            List<Long> monitorIds = collect
+                    .stream()
+                    .map(StandingbookRespVO::getId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+            minitorRespVO.setMonitorIds(monitorIds);
         }
         minitorRespVO.setTotal(total);
         minitorRespVO.setNormal("0".equals(standingbookStatus) ? respVOS.size() : total - warning);

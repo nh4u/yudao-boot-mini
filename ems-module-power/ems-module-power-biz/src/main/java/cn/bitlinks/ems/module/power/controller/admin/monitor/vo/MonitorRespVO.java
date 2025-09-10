@@ -27,4 +27,6 @@ public class MonitorRespVO {
     @Schema(description = "能耗异常")
     private Integer warning;
 
+    @Schema(description = "能耗异常")
+    private List<Long> monitorIds;
 }

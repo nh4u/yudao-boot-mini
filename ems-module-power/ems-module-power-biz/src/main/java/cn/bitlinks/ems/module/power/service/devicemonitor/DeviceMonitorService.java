@@ -252,7 +252,7 @@ public class DeviceMonitorService {
             return Collections.emptyList();
         }
         // 3.查询计量器具的能源配置
-        List<EnergyConfigurationDO> energyConfigurationDOS = energyConfigurationService.getByEnergyClassify(energyIds, null);
+        List<EnergyConfigurationDO> energyConfigurationDOS = energyConfigurationService.getHasUnitByEnergyClassify(energyIds, null);
         return BeanUtils.toBean(energyConfigurationDOS, DeviceMonitorDeviceEnergyRespVO.class);
 
     }

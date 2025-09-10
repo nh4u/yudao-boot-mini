@@ -14,5 +14,8 @@ public class DeviceMonitorDeviceEnergyRespVO {
     private Long id;
     @Schema(description = "能源名称")
     private String energyName;
+    @Schema(description = "能源单位")
+    private String unit;
+
 }
 
