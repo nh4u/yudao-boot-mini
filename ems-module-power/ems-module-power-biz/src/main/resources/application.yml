@@ -123,6 +123,7 @@ ems:
     ignore-urls:
       - /admin-api/power/test/get
       - /admin-api/power/externalApi/getAllOut
+      - /admin-api/power/monitor/*
     ignore-tables:
       - crashdata
       - weatherdata
