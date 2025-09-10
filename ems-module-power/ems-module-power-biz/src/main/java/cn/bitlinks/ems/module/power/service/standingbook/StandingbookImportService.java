@@ -195,7 +195,7 @@ public class StandingbookImportService {
                 throw exception(new ErrorCode(STANDINGBOOK_IMPORT_ALL_ERROR.getCode(), buildErrorMsg(errorRowNums)));
             }
             // 否则最终入库
-            int count = standingbookImportActualService.batchSaveToDb(typeDOCodeMap);
+            int count = standingbookImportActualService.batchSaveToDb(typeDOCodeMap,tmplEnum);
             return "导入成功，共导入 " + count + " 条数据";
 
         } catch (Exception e) {

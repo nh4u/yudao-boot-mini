@@ -133,7 +133,7 @@ public class StandingbookImportActualService {
     @CacheEvict(value = {RedisKeyConstants.STANDING_BOOK_LIST,
             RedisKeyConstants.STANDING_BOOK_MEASUREMENT_CODE_LIST,
             RedisKeyConstants.STANDING_BOOK_DEVICE_CODE_LIST}, allEntries = true)
-    public int batchSaveToDb(Map<String, StandingbookTypeDO> sysTypeMap) {
+    public int batchSaveToDb(Map<String, StandingbookTypeDO> sysTypeMap,ImportTemplateType tmplEnum) {
         // 1. 从 Redis 读取缓存数据
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(STANDING_BOOK_EXCEL);
         if (compressed == null) {
@@ -235,7 +235,9 @@ public class StandingbookImportActualService {
             standingbookMapper.insertBatch(standingbooks);
             standingbookAttributeMapper.insertBatch(attributes);
             standingbookLabelMapper.insertBatch(labels);
-            doubleCarbonMappingMapper.insertBatch(doubleCarbonMappings);
+            if(ImportTemplateType.METER.equals(tmplEnum)) {
+                doubleCarbonMappingMapper.insertBatch(doubleCarbonMappings);
+            }
 
             // 4. 注册事务同步：事务提交后删除缓存（关键！避免事务回滚导致的不一致）
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {

@@ -316,9 +316,9 @@ public class DeviceMonitorService {
         // 2.查询表格
         // 获取表格表头
         List<String> tableHeaders = new ArrayList<>();
-        tableHeaders.add("时间");
-        subSbIds.forEach(sbId -> tableHeaders.add(sbNameMapping.get(sbId)));
-        tableHeaders.add("汇总值");
+        if(CollUtil.isNotEmpty(sbNameMapping)){
+            subSbIds.forEach(sbId -> tableHeaders.add(sbNameMapping.get(sbId)));
+        }
         resultVO.setTableHeaders(tableHeaders);
 
 
@@ -414,10 +414,49 @@ public class DeviceMonitorService {
         resultVO.setUsageData(usageTableDataList);
         resultVO.setCostData(costTableDataList);
         resultVO.setCoalData(coalTableDataList);
+        // 图数据
+
+        resultVO.setUsageChart(transformData(usageTableDataList));
+        resultVO.setCostChart(transformData(costTableDataList));
+        resultVO.setCoalChart(transformData(coalTableDataList));
+
         // 结果保存在缓存中
         String jsonStr = JSONUtil.toJsonStr(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return resultVO;
     }
+    // 转换 DeviceMonitorRowData 到 DeviceMonitorChartData
+    private List<DeviceMonitorChartData> transformData(List<DeviceMonitorRowData> rowDataList) {
+        Map<Long, DeviceMonitorChartData> deviceChartDataMap = new HashMap<>();
+        DeviceMonitorChartData summaryData = new DeviceMonitorChartData();
+        summaryData.setName("汇总值"); summaryData.setSbId(null);
+        summaryData.setType("line"); // 设置为 bar 或 line，根据需求
+        // 遍历所有时间点的数据
+        List<BigDecimal> sumDataList = new ArrayList<>();
+        for (DeviceMonitorRowData rowData : rowDataList) {
+            // 遍历当前时间点的所有设备数据
+            for (DeviceMonitorTimeRowData timeRowData : rowData.getDataList()) {
+                // 获取设备ID，若设备不存在，创建新条目
+                DeviceMonitorChartData chartData = deviceChartDataMap.computeIfAbsent(timeRowData.getSbId(), id -> {
+                    DeviceMonitorChartData newChartData = new DeviceMonitorChartData();
+                    newChartData.setName(timeRowData.getName()); // 设备名称
+                    newChartData.setSbId(id); // 设备ID
+                    newChartData.setDataList(new ArrayList<>()); // 初始化时间数据列表
+                    newChartData.setType("bar"); // 设为 bar 类型
+                    return newChartData;
+                });
+
+                // 将当前时间点的数据添加到设备的 dataList 中
+                chartData.getDataList().add(timeRowData.getValue());
+            }
+            sumDataList.add(rowData.getSum()); // 汇总所有设备的 sum
+        }
+        summaryData.setDataList(sumDataList); // 汇总数据只有一个数据点
+        // 转换后的结果列表
+        List<DeviceMonitorChartData> result =  new ArrayList<>(deviceChartDataMap.values());
+        result.add(summaryData);
+        return result;
+    }
+
 }

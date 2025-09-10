@@ -104,12 +104,12 @@ public class WarningInfoServiceImpl implements WarningInfoService {
     public WarningInfoMonitorStatisticsRespVO getMonitorStatisticsBySbCode(String sbCode) {
         WarningInfoStatisticsRespVO resp;
         if (StringUtils.isEmpty(sbCode)) {
+            resp = new WarningInfoStatisticsRespVO();
+        } else {
             resp = warningInfoMapper.getMonitorStatisticsBySbCode(sbCode);
             if (resp == null) {
                 resp = new WarningInfoStatisticsRespVO();
             }
-        } else {
-            resp = new WarningInfoStatisticsRespVO();
         }
         WarningInfoMonitorStatisticsRespVO respVO = new WarningInfoMonitorStatisticsRespVO();
         respVO.setTotal(resp.getTotal());
