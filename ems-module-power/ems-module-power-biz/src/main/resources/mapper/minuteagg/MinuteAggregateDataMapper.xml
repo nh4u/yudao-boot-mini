@@ -268,8 +268,7 @@
 
     <select id="getList"
             resultType="cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateData">
-        SELECT standingbook_id
-            , param_code
+        SELECT 1
         <choose>
             <!-- 根据 dateType 选择聚合字段 -->
             <when test="dateType == 0">
