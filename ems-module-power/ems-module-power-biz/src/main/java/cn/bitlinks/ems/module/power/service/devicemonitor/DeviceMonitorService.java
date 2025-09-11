@@ -13,6 +13,7 @@ import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.Standingboo
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoMonitorStatisticsRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.warninginfo.vo.WarningInfoStatisticsDetailRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementdevice.MeasurementDeviceDO;
@@ -27,6 +28,7 @@ import cn.bitlinks.ems.module.power.dal.mysql.measurementdevice.MeasurementDevic
 import cn.bitlinks.ems.module.power.dal.mysql.monitor.DeviceMonitorQrcodeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.enums.CommonConstants;
+import cn.bitlinks.ems.module.power.enums.warninginfo.WarningInfoLevelEnum;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
 import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
@@ -128,6 +130,19 @@ public class DeviceMonitorService {
             List<WarningInfoDO> warningInfoDOList = warningInfoService.getMonitorListBySbCode(reqVO.getRange(), standingbookDTO.getCode());
             if (CollUtil.isEmpty(warningInfoDOList)) {
                 respVO.setList(Collections.emptyList());
+
+                WarningInfoMonitorStatisticsRespVO warningInfo = new WarningInfoMonitorStatisticsRespVO();
+                warningInfo.setTotal(0L);
+                List<WarningInfoStatisticsDetailRespVO> list = new ArrayList<>();
+                list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.TIP.getDesc(), 0L));
+                list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.WARNING.getDesc(), 0L));
+                list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.MINOR.getDesc(), 0L));
+                list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.IMPORTANT.getDesc(), 0L));
+                list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.URGENT.getDesc(), 0L));
+                warningInfo.setList(list);
+                respVO.setStatistics(warningInfo);
+                return respVO;
+
             } else {
                 respVO.setList(BeanUtils.toBean(warningInfoDOList, WarningInfoRespVO.class));
             }
@@ -279,6 +294,10 @@ public class DeviceMonitorService {
                 throw exception(DATE_TYPE_NOT_EXISTS);
             }
         }
+        Long energyId = paramVO.getEnergyId();
+        if (energyId == null) {
+            throw exception(ENERGY_ID_NOT_EXISTS);
+        }
 
         // 添加缓存
         String cacheKey = DEVICE_MONITOR_DEVICE_DATA + SecureUtil.md5(paramVO.toString());
@@ -299,10 +318,26 @@ public class DeviceMonitorService {
             return resultVO;
         }
         // 筛选出关联的计量器具ids
-        List<Long> subSbIds = measurementDeviceDOS.stream()
+        List<Long> subSbIdsAll = measurementDeviceDOS.stream()
                 .map(MeasurementDeviceDO::getMeasurementInstrumentId)
                 .distinct()  // 去重，确保每个 ID 只出现一次
                 .collect(Collectors.toList());
+
+        // 能源关联的计量器具求交接
+        List<StandingbookTmplDaqAttrDO> tmplList = standingbookTmplDaqAttrService.getByEnergyIds(Collections.singletonList(energyId));
+        //分类ID列表
+        List<Long> typeIds = tmplList.stream().map(StandingbookTmplDaqAttrDO::getTypeId).collect(Collectors.toList());
+        //根据分类ID获取台账
+        List<StandingbookDO> byTypeIds = standingbookService.getByTypeIds(typeIds);
+        List<Long> standingBookIdList = byTypeIds
+                .stream()
+                .map(StandingbookDO::getId)
+                .distinct()
+                .collect(Collectors.toList());
+        List<Long> subSbIds = standingBookIdList.stream()
+                .filter(subSbIdsAll::contains)
+                .collect(Collectors.toList());
+
         List<StandingbookDTO> allStandingbookDTOList = standingbookService.getStandingbookDTOList();
         Map<Long, String> sbNameMapping = allStandingbookDTOList.stream()
                 .filter(dto -> subSbIds.contains(dto.getStandingbookId()))
@@ -327,7 +362,17 @@ public class DeviceMonitorService {
 
         // 图，x轴处理
         List<String> timeRangeList = LocalDateTimeUtils.getTimeRangeList(paramVO.getRange()[0], paramVO.getRange()[1], DataTypeEnum.codeOf(paramVO.getDateType()));
-        resultVO.setXdata(timeRangeList);
+
+        if (paramVO.getFlag() == 0) {
+            // 实时值
+            List<String> newTimeRangeList = timeRangeList
+                    .stream()
+                    .map(time -> time.substring(11, 16))
+                    .collect(Collectors.toList());
+            resultVO.setXdata(newTimeRangeList);
+        } else {
+            resultVO.setXdata(timeRangeList);
+        }
 
 
         // 查询图标依赖的数据。
@@ -414,6 +459,14 @@ public class DeviceMonitorService {
             costTableDataList.add(costTableRowData);
         }
         // 表格数据
+
+        if (paramVO.getFlag() == 0) {
+            // 实时值
+            dealTableDataList(usageTableDataList);
+            dealTableDataList(costTableDataList);
+            dealTableDataList(coalTableDataList);
+        }
+
         resultVO.setUsageData(usageTableDataList);
         resultVO.setCostData(costTableDataList);
         resultVO.setCoalData(coalTableDataList);
@@ -429,6 +482,15 @@ public class DeviceMonitorService {
         byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return resultVO;
     }
+
+    private void dealTableDataList(List<DeviceMonitorRowData> usageTableDataList) {
+        usageTableDataList.forEach(u -> {
+            String time = u.getTime();
+            u.setTime(time.substring(0, time.length() - 3));
+        });
+
+    }
+
 
     // 转换 DeviceMonitorRowData 到 DeviceMonitorChartData
     private List<DeviceMonitorChartData> transformData(List<DeviceMonitorRowData> rowDataList) {
