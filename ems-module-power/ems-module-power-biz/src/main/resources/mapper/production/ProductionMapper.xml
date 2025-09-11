@@ -12,12 +12,26 @@
         select sum(value) as value
         from power_production
         <where>
-            deleted =0
-            and time &gt;= #{pageReqVO.range[0]}
-            AND time &lt;= #{pageReqVO.range[1]}
+            deleted = 0
+              and time &gt;= #{pageReqVO.range[0]}
+              AND time &lt;= #{pageReqVO.range[1]}
             <if test="pageReqVO.size != null">
                 and size = #{pageReqVO.size}
             </if>
         </where>
+    </select>
+
+    <select id="getBigScreenProduction"
+            resultType="cn.bitlinks.ems.module.power.dal.dataobject.production.ProductionDO">
+        select DATE(time) AS strTime,
+               sum(value) as value,
+               size
+        from power_production
+        <where>
+            deleted = 0
+              and time &gt;= #{startDate}
+              AND time &lt;= #{endDate}
+        </where>
+        GROUP BY size, DATE(time)
     </select>
 </mapper>

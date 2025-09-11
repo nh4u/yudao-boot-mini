@@ -87,7 +87,7 @@
           and t.id = #{energyId}
     </select>
 
-    <select id="getEnergyIdByCode" resultType="java.lang.Long">
+    <select id="getIdsByEnergyCodes" resultType="java.lang.Long">
         SELECT id
         FROM ems_energy_configuration
         WHERE deleted = 0

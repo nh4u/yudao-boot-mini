@@ -13,6 +13,8 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -96,6 +98,11 @@ public class ProductionServiceImpl implements ProductionService {
         }
 
         return result;
+    }
+
+    @Override
+    public List<ProductionDO> getBigScreenProduction(LocalDateTime startDate, LocalDateTime endDate) {
+        return productionMapper.getBigScreenProduction(startDate, endDate);
     }
 
     @Override

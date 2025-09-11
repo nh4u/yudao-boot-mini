@@ -689,5 +689,20 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         return energyConfigurationMapper.selectList(new LambdaQueryWrapper<EnergyConfigurationDO>()
                 .eq(EnergyConfigurationDO::getGroupId, energyGroup.getId()));
     }
+
+    @Override
+    public List<EnergyConfigurationDO> getByEnergyCodes(List<String> energyCodes) {
+        LambdaQueryWrapper<EnergyConfigurationDO> wrapper = new LambdaQueryWrapper<>();
+        if (CollUtil.isNotEmpty(energyCodes)) {
+            wrapper.in(EnergyConfigurationDO::getCode, energyCodes);
+        }
+        return energyConfigurationMapper.selectList(wrapper);
+    }
+
+    @Override
+    public List<Long> getIdsByEnergyCodes(List<String> energyCodes) {
+        return energyConfigurationMapper.getIdsByEnergyCodes(energyCodes);
+
+    }
 }
 
