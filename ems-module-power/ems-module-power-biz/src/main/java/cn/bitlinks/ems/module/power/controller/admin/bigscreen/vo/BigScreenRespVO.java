@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * @author liumingqiang
  */
@@ -48,4 +50,15 @@ public class BigScreenRespVO {
 
     @Schema(description = "1#生产厂房")
     private OriginMiddleData factory1;
+
+    // 顶部
+
+    @Schema(description = "banner")
+    BannerResultVO bannerResultVO;
+
+    // 左部
+
+    @Schema(description = "近7日能源数据")
+    private List<RecentSevenDayResultVO> recentSevenDayList;
+
 }

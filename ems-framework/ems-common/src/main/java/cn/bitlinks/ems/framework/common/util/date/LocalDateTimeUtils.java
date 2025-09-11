@@ -180,6 +180,49 @@ public class LocalDateTimeUtils {
     public static LocalDateTime endOfMonth(LocalDateTime date) {
         return date.with(TemporalAdjusters.lastDayOfMonth()).with(LocalTime.MAX);
     }
+
+    /**
+     * 获取指定日期开始时间
+     * 例如：2023-09-30 00:00:00,000
+     *
+     * @param date 日期
+     * @return 月份的开始时间
+     */
+    public static LocalDateTime beginOfDay(LocalDateTime date) {
+        return date.with(LocalTime.MIN);
+    }
+
+
+    /**
+     * 获取指定日期结束时间
+     * 例如：2023-09-30 23:59:59,999
+     *
+     * @param date 日期
+     * @return 月份的结束时间
+     */
+    public static LocalDateTime endOfDay(LocalDateTime date) {
+        return date.with(LocalTime.MAX);
+    }
+
+    /**
+     * 最近7天开始时间
+     *
+     * @return
+     */
+    public static LocalDateTime lastNDaysStartTime(Long day) {
+        return LocalDateTime.of(LocalDate.now().minus(day, ChronoUnit.DAYS), LocalTime.MIN);
+    }
+
+    /**
+     * 最近7天结束时间
+     *
+     * @return
+     */
+    public static LocalDateTime lastNDaysEndTime() {
+        return LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
+    }
+
+
     /**
      * 指定年份月份获取当月开始时间
      * @param year
@@ -386,6 +429,64 @@ public class LocalDateTimeUtils {
 
         long daysBetween = ChronoUnit.DAYS.between(start, end);
         return Math.abs(daysBetween) <= maxDays;
+    }
+    /**
+     * 生成时间范围列表 开始时间必须小于结束时间
+     *
+     * @param startDateTime 开始时间
+     * @param endDateTime   结束时间
+     * @return 时间范围字符串列表
+     */
+    public static List<String> getBigScreenTimeRangeList(LocalDateTime startDateTime, LocalDateTime endDateTime, DataTypeEnum dataTypeEnum) {
+        List<String> result = new ArrayList<>();
+        LocalDateTime current = startDateTime;
+        // 1. 找到枚举
+        switch (dataTypeEnum) {
+            case DAY:
+                // 当天开始
+                current = LocalDateTime.of(current.toLocalDate(), LocalTime.MIN);
+                while (!current.isAfter(endDateTime)) {
+                    result.add(LocalDateTimeUtil.format(current, "MM-dd"));
+                    current = current.plusDays(1);
+                }
+                break;
+            case MONTH:
+                // 当月开始
+                current = beginOfMonth(current);
+                while (!current.isAfter(endDateTime)) {
+                    result.add(LocalDateTimeUtil.format(current, DatePattern.NORM_MONTH_PATTERN));
+                    current = current.plusMonths(1);
+                }
+                break;
+            case YEAR:
+                // 当年开始
+                current = beginOfYear(current);
+                while (!current.isAfter(endDateTime)) {
+                    result.add(LocalDateTimeUtil.format(current, DatePattern.NORM_YEAR_PATTERN));
+                    current = current.plusYears(1);
+                }
+                break;
+            case HOUR:
+                // 当时开始
+                current = LocalDateTime.of(current.toLocalDate(), LocalTime.of(current.getHour(), 0, 0));
+                while (!current.isAfter(endDateTime)) {
+                    result.add(LocalDateTimeUtil.format(current, "HH:00"));
+                    current = current.plusHours(1);
+                }
+                break;
+            case MINUTE:
+                // 当时开始
+                current = LocalDateTime.of(current.toLocalDate(), LocalTime.of(current.getHour(), current.getMinute(), 0));
+                while (!current.isAfter(endDateTime)) {
+                    result.add(LocalDateTimeUtil.format(current, "HH:mm"));
+                    current = current.plusMinutes(1);
+                }
+                break;
+            default:
+                throw new IllegalArgumentException("时间类型不存在");
+        }
+
+        return result;
     }
 
 

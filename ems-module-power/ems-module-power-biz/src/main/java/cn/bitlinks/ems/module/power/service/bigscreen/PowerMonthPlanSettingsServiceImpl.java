@@ -48,4 +48,9 @@ public class PowerMonthPlanSettingsServiceImpl implements PowerMonthPlanSettings
         return powerMonthPlanSettingsMapper.selectList();
     }
 
+    @Override
+    public List<PowerMonthPlanSettingsDO> selectList() {
+        return powerMonthPlanSettingsMapper.selectList();
+    }
+
 }

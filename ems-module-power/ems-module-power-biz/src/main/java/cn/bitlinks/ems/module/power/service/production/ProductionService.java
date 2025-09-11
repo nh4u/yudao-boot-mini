@@ -6,6 +6,8 @@ import cn.bitlinks.ems.module.power.controller.admin.externalapi.vo.ProductionSa
 import cn.bitlinks.ems.module.power.dal.dataobject.production.ProductionDO;
 
 import javax.validation.Valid;
+import java.time.LocalDateTime;
+import java.util.List;
 
 
 /**
@@ -52,6 +54,8 @@ public interface ProductionService {
     PageResult<ProductionDO> getProductionPage(ProductionPageReqVO pageReqVO);
 
     ProductionDO getHomeProduction(ProductionPageReqVO pageReqVO);
+
+    List<ProductionDO> getBigScreenProduction(LocalDateTime startDate, LocalDateTime endDate);
 
     ProductionDO getLastProduction(Integer size);
 }

@@ -9,6 +9,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 
 /**
  * @author liumingqiang
@@ -24,4 +27,7 @@ public interface ProductionMapper extends BaseMapperX<ProductionDO> {
     }
 
     ProductionDO getHomeProduction(@Param("pageReqVO") ProductionPageReqVO pageReqVO);
+
+    List<ProductionDO> getBigScreenProduction(@Param("startDate") LocalDateTime startDate,
+                                              @Param("endDate") LocalDateTime endDate);
 }
