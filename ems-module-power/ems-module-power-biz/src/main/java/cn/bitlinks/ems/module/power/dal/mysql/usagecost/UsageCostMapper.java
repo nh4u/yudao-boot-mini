@@ -109,6 +109,34 @@ public interface UsageCostMapper {
                                        @Param("standingBookIds") List<Long> standingBookIds);
 
     /**
+     * 获取能源用量
+     *
+     * @param dateType
+     * @param startDate
+     * @param endDate
+     * @param energyIds
+     * @return
+     */
+    List<UsageCostData> getEnergyTimeUsageEnergyIds(@Param("dateType") Integer dateType,
+                                          @Param("startDate") LocalDateTime startDate,
+                                          @Param("endDate") LocalDateTime endDate,
+                                          @Param("energyIds") List<Long> energyIds);
+
+    /**
+     * 获取能源用量
+     *
+     * @param dateType
+     * @param startDate
+     * @param endDate
+     * @param energyIds
+     * @return
+     */
+    List<UsageCostData> getEnergyUsageByEnergyIds(@Param("dateType") Integer dateType,
+                                                  @Param("startDate") LocalDateTime startDate,
+                                                  @Param("endDate") LocalDateTime endDate,
+                                                  @Param("energyIds") List<Long> energyIds);
+
+    /**
      * 获取折标煤总量
      */
     BigDecimal getSumStandardCoal(@Param("startDate") LocalDateTime startDate,

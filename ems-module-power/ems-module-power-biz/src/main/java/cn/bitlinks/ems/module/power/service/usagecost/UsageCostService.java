@@ -97,6 +97,8 @@ public interface UsageCostService {
     BigDecimal getSumStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
 
     List<UsageCostData> getEnergyUsage(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
+    List<UsageCostData> getEnergyTimeUsageEnergyIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds);
+    List<UsageCostData> getEnergyUsageByEnergyIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds);
 
     /**
      * 台账分组计算用量

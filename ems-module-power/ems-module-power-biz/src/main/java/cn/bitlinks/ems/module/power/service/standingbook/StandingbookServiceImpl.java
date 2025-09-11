@@ -378,7 +378,7 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Override
     public List<StandingBookTypeTreeRespVO> treeWithEnergyCode(StandingbookEnergyReqVO standingbookEnergyReqVO) {
         // 根据能源参数筛选出能源然后筛选出台账分类，
-        List<Long> energyIds = energyConfigurationMapper.getEnergyIdByCode(standingbookEnergyReqVO.getEnergyCodes());
+        List<Long> energyIds = energyConfigurationMapper.getIdsByEnergyCodes(standingbookEnergyReqVO.getEnergyCodes());
         if (CollUtil.isEmpty(energyIds)) {
             return Collections.emptyList();
         }

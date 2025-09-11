@@ -15,4 +15,6 @@ public interface PowerMonthPlanSettingsService {
     void updateBatch(List<PowerMonthPlanSettingsSaveReqVO> powerMonthPlanSettingsList);
 
     List<PowerMonthPlanSettingsDO> getPowerMonthPlanSettingsList(PowerMonthPlanSettingsPageReqVO pageReqVO);
+
+    List<PowerMonthPlanSettingsDO> selectList();
 }

@@ -43,14 +43,15 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
                 .inIfPresent(EnergyConfigurationDO::getId, reqVO.getEnergyIds())
                 .orderByAsc(EnergyConfigurationDO::getId));
     }
+
     default List<EnergyConfigurationDO> getByEnergyClassifyUnit(
-            Integer energyClassify){
+            Integer energyClassify) {
         MPJLambdaWrapperX<EnergyConfigurationDO> query = new MPJLambdaWrapperX<EnergyConfigurationDO>()
                 .selectAll(EnergyConfigurationDO.class)
-                .selectAs(EnergyParametersDO::getUnit,"unit")
+                .selectAs(EnergyParametersDO::getUnit, "unit")
                 .eq(EnergyParametersDO::getUsage, 1)
                 .eqIfPresent(EnergyConfigurationDO::getEnergyClassify, energyClassify);
-        query.leftJoin(EnergyParametersDO.class,EnergyParametersDO::getEnergyId, EnergyConfigurationDO::getId);
+        query.leftJoin(EnergyParametersDO.class, EnergyParametersDO::getEnergyId, EnergyConfigurationDO::getId);
 
 
         return selectJoinList(EnergyConfigurationDO.class, query);
@@ -81,15 +82,14 @@ public interface EnergyConfigurationMapper extends BaseMapperX<EnergyConfigurati
     String selectUnitByEnergyNameAndChinese(@Param("energyId") Long energyId);
 
 
-
     List<EnergyConfigurationDO> getByEnergyClassify(@Param("energyIds") Set<Long> energyIds,
                                                     @Param("energyClassify") Integer energyClassify);
 
     List<EnergyConfigurationDO> getHasUnitByEnergyClassify(@Param("energyIds") Set<Long> energyIds,
-                                                    @Param("energyClassify") Integer energyClassify);
+                                                           @Param("energyClassify") Integer energyClassify);
 
 
-    EnergyConfigurationDO getEnergyAndUnit(@Param("energyId")Long energyId);
+    EnergyConfigurationDO getEnergyAndUnit(@Param("energyId") Long energyId);
 
-    List<Long> getEnergyIdByCode(@Param("energyCodes")List<String> energyCodes);
+    List<Long> getIdsByEnergyCodes(@Param("energyCodes") List<String> energyCodes);
 }

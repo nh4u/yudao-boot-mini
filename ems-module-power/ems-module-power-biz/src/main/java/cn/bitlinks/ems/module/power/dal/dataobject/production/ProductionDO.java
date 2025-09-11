@@ -1,10 +1,7 @@
 package cn.bitlinks.ems.module.power.dal.dataobject.production;
 
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.KeySequence;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -32,6 +29,11 @@ public class ProductionDO extends BaseDO {
      * 获取时间
      */
     private LocalDateTime time;
+    /**
+     * 获取时间str
+     */
+    @TableField(exist = false)
+    private String strTime;
     /**
      * 原始时间
      */

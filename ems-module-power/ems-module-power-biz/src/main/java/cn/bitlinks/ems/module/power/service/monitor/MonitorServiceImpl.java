@@ -281,15 +281,36 @@ public class MonitorServiceImpl implements MonitorService {
 
         // 处理 图-x轴
         List<String> x = LocalDateTimeUtils.getTimeRangeList(rangeOrigin[0], rangeOrigin[1], dataTypeEnum);
-        resultVO.setChartX(x);
+
+        List<MonitorDetailData> table;
+        if (flag == 0 || dataFeature == 2) {
+            // 实时值 or 稳态值
+
+            List<String> newX = x
+                    .stream()
+                    .map(time -> time.substring(11, 16))
+                    .collect(Collectors.toList());
+            resultVO.setChartX(newX);
+
+            table = x.stream().map(time -> {
+                MonitorDetailData minitorDetailData = new MonitorDetailData();
+                minitorDetailData.setTime(time.substring(0, time.length() - 3));
+                minitorDetailData.setValue(dealBigDecimalScale(dataMap.get(time), DEFAULT_SCALE));
+                return minitorDetailData;
+            }).collect(Collectors.toList());
+        } else {
+
+            resultVO.setChartX(x);
+
+            table = x.stream().map(time -> {
+                MonitorDetailData minitorDetailData = new MonitorDetailData();
+                minitorDetailData.setTime(time);
+                minitorDetailData.setValue(dealBigDecimalScale(dataMap.get(time), DEFAULT_SCALE));
+                return minitorDetailData;
+            }).collect(Collectors.toList());
+        }
 
         // 处理 表
-        List<MonitorDetailData> table = x.stream().map(time -> {
-            MonitorDetailData minitorDetailData = new MonitorDetailData();
-            minitorDetailData.setTime(time);
-            minitorDetailData.setValue(dealBigDecimalScale(dataMap.get(time), DEFAULT_SCALE));
-            return minitorDetailData;
-        }).collect(Collectors.toList());
         resultVO.setTable(table);
 
         // 处理 图-数据
