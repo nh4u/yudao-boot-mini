@@ -438,7 +438,7 @@ public class LocalDateTimeUtils {
                 current = LocalDateTime.of(current.toLocalDate(), LocalTime.of(current.getHour(), current.getMinute(), 0));
                 while (!current.isAfter(endDateTime)) {
                     result.add(LocalDateTimeUtil.format(current, "yyyy-MM-dd HH:mm:00"));
-                    current = current.plusHours(1);
+                    current = current.plusMinutes(1);
                 }
                 break;
             default:
