@@ -16,7 +16,6 @@ public class DeviceMonitorDeviceReqVO {
     private Long sbId;
 
     @Schema(description = "刷新标识")
-    @NotNull(message = "刷新标识不能为空")
     private Integer refresh;
 
 }

@@ -251,7 +251,7 @@ public class DeviceMonitorService {
     public String getQrCode(@Valid DeviceMonitorDeviceReqVO reqVO) {
         Integer refresh = reqVO.getRefresh();
         Long sbId = reqVO.getSbId();
-        if (refresh == 0) {
+        if (Objects.isNull(refresh) || refresh == 0) {
             // 不刷新 取原来的数据即可
             DeviceMonitorQrcodeDO deviceMonitorQrcodeDO = deviceMonitorQrcodeMapper
                     .selectOne(new LambdaQueryWrapperX<DeviceMonitorQrcodeDO>()
