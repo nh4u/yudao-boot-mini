@@ -50,12 +50,12 @@ public class ChemicalsTask {
         // 30%NAOH（氢氧化钠）
         PowerChemicalsSettingsDO naoh = new PowerChemicalsSettingsDO();
         naoh.setTime(time);
-        naoh.setSystem(NAOH);
+        naoh.setCode(NAOH);
 
         // 30%HCL（盐酸）
         PowerChemicalsSettingsDO hcl = new PowerChemicalsSettingsDO();
         hcl.setTime(time);
-        hcl.setSystem(HCL);
+        hcl.setCode(HCL);
 
         powerChemicalsSettingsMapper.insert(naoh);
         powerChemicalsSettingsMapper.insert(hcl);

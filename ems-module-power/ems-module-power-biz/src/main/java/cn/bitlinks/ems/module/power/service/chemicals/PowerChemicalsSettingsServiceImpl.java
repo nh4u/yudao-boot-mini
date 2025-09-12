@@ -1,6 +1,5 @@
 package cn.bitlinks.ems.module.power.service.chemicals;
 
-import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.chemicals.vo.PowerChemicalsSettingsPageReqVO;
@@ -66,7 +65,7 @@ public class PowerChemicalsSettingsServiceImpl implements PowerChemicalsSettings
 
         return powerChemicalsSettingsMapper.selectList((new LambdaQueryWrapperX<PowerChemicalsSettingsDO>()
                 .between(PowerChemicalsSettingsDO::getTime, time.minusDays(6), time)
-                .orderByAsc(PowerChemicalsSettingsDO::getSystem,PowerChemicalsSettingsDO::getTime)));
+                .orderByAsc(PowerChemicalsSettingsDO::getCode,PowerChemicalsSettingsDO::getTime)));
     }
 
     /**
@@ -78,12 +77,12 @@ public class PowerChemicalsSettingsServiceImpl implements PowerChemicalsSettings
         // 30%NAOH（氢氧化钠）
         PowerChemicalsSettingsDO naoh = new PowerChemicalsSettingsDO();
         naoh.setTime(time);
-        naoh.setSystem(NAOH);
+        naoh.setCode(NAOH);
 
         // 30%HCL（盐酸）
         PowerChemicalsSettingsDO hcl = new PowerChemicalsSettingsDO();
         hcl.setTime(time);
-        hcl.setSystem(HCL);
+        hcl.setCode(HCL);
 
         powerChemicalsSettingsMapper.insert(naoh);
         powerChemicalsSettingsMapper.insert(hcl);

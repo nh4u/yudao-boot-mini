@@ -32,7 +32,7 @@ public class BigScreenRespVO {
     // 底部分
 
     @Schema(description = "单位产品综合能耗")
-    private BigScreenChartData productConsumption;
+    private ProductionFifteenDayResultVO productConsumption;
 
     // 中间部分
 

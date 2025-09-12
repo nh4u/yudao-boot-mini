@@ -34,6 +34,10 @@ public class PowerPureWasteWaterGasSettingsDO extends BaseDO {
      */
     private String system;
     /**
+     * 编码
+     */
+    private String code;
+    /**
      * 名称
      */
     private String name;
