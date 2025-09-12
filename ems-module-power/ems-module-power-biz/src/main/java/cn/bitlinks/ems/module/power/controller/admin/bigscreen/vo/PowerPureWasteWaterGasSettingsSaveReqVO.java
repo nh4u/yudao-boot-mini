@@ -25,6 +25,10 @@ public class PowerPureWasteWaterGasSettingsSaveReqVO {
     @NotBlank(message = "编号不能为空")
     private String code;
 
+    @Schema(description = "能源codes", example = "随便")
+    @NotBlank(message = "能源codes不能为空")
+    private String energyCodes;
+
     @Schema(description = "名称", example = "王五")
     @NotBlank(message = "名称不能为空")
     private String name;

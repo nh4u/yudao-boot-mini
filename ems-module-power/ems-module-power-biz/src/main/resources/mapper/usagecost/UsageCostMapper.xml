@@ -725,5 +725,61 @@
             #{item}
         </foreach>
     </select>
+
+    <select id="getTimeSbCostList" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData">
+        <!-- 参数说明：
+          - dateType (聚合类型，0: 按日, 1: 按月, 2: 按年, 3: 按时)
+          - startDate (起始日期)
+          - endDate (结束日期)
+        -->
+        SELECT
+        standingbook_id,
+        <choose>
+            <!-- 根据 dateType 选择聚合字段 -->
+            <when test="dateType == 0">
+                DATE(aggregate_time) AS time
+            </when>
+            <when test="dateType == 1">
+                DATE_FORMAT(aggregate_time, '%Y-%m') AS time
+            </when>
+            <when test="dateType == 2">
+                YEAR(aggregate_time) AS time
+            </when>
+            <when test="dateType == 3">
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00') AS time
+            </when>
+        </choose>
+        ,
+        SUM(
+        CASE
+        WHEN cost &lt; 0 THEN NULL
+        ELSE cost
+        END
+        ) AS totalCost
+
+        FROM usage_cost
+        WHERE aggregate_time &gt;= #{startDate}
+        AND aggregate_time &lt;= #{endDate}
+        AND standingbook_id IN
+        <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        GROUP BY standingbook_id,
+        <choose>
+            <!-- 根据 dateType 选择聚合字段 -->
+            <when test="dateType == 0">
+                DATE(aggregate_time)
+            </when>
+            <when test="dateType == 1">
+                DATE_FORMAT(aggregate_time, '%Y-%m')
+            </when>
+            <when test="dateType == 2">
+                YEAR(aggregate_time)
+            </when>
+            <when test="dateType == 3">
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00')
+            </when>
+        </choose>
+    </select>
 </mapper>
 

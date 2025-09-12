@@ -62,6 +62,20 @@ public class UsageCostServiceImpl implements UsageCostService {
         return usageCostMapper.getTimeDataList(dateType, startDate, endDate, standingBookIds);
     }
 
+    /**
+     * 获取 台账 时间 成本数据
+     * @param dateType
+     * @param startDate
+     * @param endDate
+     * @param standingBookIds
+     * @return
+     */
+    @Override
+    @TenantIgnore
+    public List<UsageCostData> getTimeSbCostList(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getTimeSbCostList(dateType, startDate, endDate, standingBookIds);
+    }
+
     @Override
     @TenantIgnore
     public List<UsageCostData> getList(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
@@ -158,6 +172,7 @@ public class UsageCostServiceImpl implements UsageCostService {
     public StatisticsOverviewStatisticsTableData getAggStatisticsByEnergyIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds) {
         return usageCostMapper.getAggStatisticsByEnergyIds(startDate, endDate, energyIds);
     }
+
     @Override
     @TenantIgnore
     public DeviceMonitorAggData getAggStatisticsBySbIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> sbIds) {
@@ -204,6 +219,7 @@ public class UsageCostServiceImpl implements UsageCostService {
     public List<UsageCostData> getEnergyUsage(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
         return usageCostMapper.getEnergyUsage(dateType, startDate, endDate, standingBookIds);
     }
+
     /**
      * 获取能源用量
      *
@@ -218,6 +234,7 @@ public class UsageCostServiceImpl implements UsageCostService {
     public List<UsageCostData> getEnergyTimeUsageEnergyIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds) {
         return usageCostMapper.getEnergyTimeUsageEnergyIds(dateType, startDate, endDate, energyIds);
     }
+
     /**
      * 获取能源用量
      *

@@ -154,4 +154,18 @@ public interface UsageCostMapper {
     DeviceMonitorAggData getAggStatisticsBySbIds(@Param("startDate") LocalDateTime startDate,
                                                  @Param("endDate") LocalDateTime endDate,
                                                  @Param("sbIds") List<Long> sbIds);
+
+    /**
+     * 获取 台账 时间 成本数据
+     * @param dateType
+     * @param startDate
+     * @param endDate
+     * @param standingBookIds
+     * @return
+     */
+    List<UsageCostData> getTimeSbCostList(@Param("dateType") Integer dateType,
+                                        @Param("startDate") LocalDateTime startDate,
+                                        @Param("endDate") LocalDateTime endDate,
+                                        @Param("standingBookIds") List<Long> standingBookIds);
+
 }

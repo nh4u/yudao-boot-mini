@@ -15,6 +15,7 @@ public interface ErrorCodeConstants {
     ErrorCode TIME_CONFLICT = new ErrorCode(1_001_301_004, "与已有单价时间重叠");
     ErrorCode INVALID_PRICE_TYPE = new ErrorCode(1_001_301_010, "无效的价格类型");
     ErrorCode INVALID_TIME_TYPE = new ErrorCode(1_001_301_011, "无效的时间类型");
+    ErrorCode ENERGY_CODE_NOT_EXISTS = new ErrorCode(1_001_301_005, "能源编码不存在");
     ErrorCode ENERGY_CODE_DUPLICATE = new ErrorCode(1_001_301_006, "能源编码重复");
     ErrorCode ENERGY_NAME_DUPLICATE = new ErrorCode(1_001_301_007, "能源名称重复");
     ErrorCode ENERGY_CONFIGURATION_STANDINGBOOK_EXISTS = new ErrorCode(1_001_301_008, "该能源关联计量器具，不可进行删除");
