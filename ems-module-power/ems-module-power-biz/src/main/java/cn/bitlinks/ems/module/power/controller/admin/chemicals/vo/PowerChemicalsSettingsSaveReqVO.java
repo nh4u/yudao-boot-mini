@@ -24,7 +24,7 @@ public class PowerChemicalsSettingsSaveReqVO {
     private String code;
 
     @Schema(description = "日期")
-    @NotBlank(message = "日期不能为空")
+    @NotNull(message = "日期不能为空")
     private LocalDateTime time;
 
     @Schema(description = "金额")

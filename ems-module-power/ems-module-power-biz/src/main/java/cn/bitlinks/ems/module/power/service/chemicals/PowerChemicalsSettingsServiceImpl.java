@@ -65,7 +65,8 @@ public class PowerChemicalsSettingsServiceImpl implements PowerChemicalsSettings
 
         return powerChemicalsSettingsMapper.selectList((new LambdaQueryWrapperX<PowerChemicalsSettingsDO>()
                 .between(PowerChemicalsSettingsDO::getTime, time.minusDays(6), time)
-                .orderByAsc(PowerChemicalsSettingsDO::getCode,PowerChemicalsSettingsDO::getTime)));
+                .eq(PowerChemicalsSettingsDO::getCode, pageReqVO.getCode())
+                .orderByAsc(PowerChemicalsSettingsDO::getCode, PowerChemicalsSettingsDO::getTime)));
     }
 
     /**
