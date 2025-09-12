@@ -249,20 +249,33 @@ public class DeviceMonitorService {
     }
 
     public String getQrCode(@Valid DeviceMonitorDeviceReqVO reqVO) {
-        StandingbookDO standingbookDO = standingbookService.getById(reqVO.getSbId());
+        Integer refresh = reqVO.getRefresh();
+        Long sbId = reqVO.getSbId();
+        if (refresh == 0) {
+            // 不刷新 取原来的数据即可
+            DeviceMonitorQrcodeDO deviceMonitorQrcodeDO = deviceMonitorQrcodeMapper
+                    .selectOne(new LambdaQueryWrapperX<DeviceMonitorQrcodeDO>()
+                            .eq(DeviceMonitorQrcodeDO::getDeviceId, sbId)
+                            .orderByDesc(DeviceMonitorQrcodeDO::getCreateTime)
+                            .last("limit 1"));
+
+            return Objects.isNull(deviceMonitorQrcodeDO) ? "" : deviceMonitorQrcodeDO.getQrcode();
+        }
+
+        StandingbookDO standingbookDO = standingbookService.getById(sbId);
         StandingbookTypeDO standingbookTypeDO = standingbookTypeService.getStandingbookType(standingbookDO.getTypeId());
         // 设备详情跳转链接
         String initLink = configApi.getConfigValueByKey(INIT_DEVICE_LINK).getCheckedData();
         String url = String.format(initLink,
-                reqVO.getSbId(), standingbookTypeDO.getTopType());
+                sbId, standingbookTypeDO.getTopType());
         String qrCode = url + "&token=" + UUID.randomUUID();
         // 拼接token
         DeviceMonitorQrcodeDO qrcodeDO = new DeviceMonitorQrcodeDO();
-        qrcodeDO.setDeviceId(reqVO.getSbId());
+        qrcodeDO.setDeviceId(sbId);
         qrcodeDO.setQrcode(qrCode);
 
         // 删除所有的链接信息
-        deviceMonitorQrcodeMapper.delete(new LambdaQueryWrapperX<DeviceMonitorQrcodeDO>().eq(DeviceMonitorQrcodeDO::getDeviceId, reqVO.getSbId()));
+        deviceMonitorQrcodeMapper.delete(new LambdaQueryWrapperX<DeviceMonitorQrcodeDO>().eq(DeviceMonitorQrcodeDO::getDeviceId, sbId));
         // 保存新的链接信息
         deviceMonitorQrcodeMapper.insert(qrcodeDO);
         return qrCode;
