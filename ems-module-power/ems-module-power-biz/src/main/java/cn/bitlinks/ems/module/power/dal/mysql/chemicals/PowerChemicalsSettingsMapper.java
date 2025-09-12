@@ -15,7 +15,7 @@ public interface PowerChemicalsSettingsMapper extends BaseMapperX<PowerChemicals
 
     default PageResult<PowerChemicalsSettingsDO> selectPage(PowerChemicalsSettingsPageReqVO reqVO) {
         return selectPage(reqVO, new LambdaQueryWrapperX<PowerChemicalsSettingsDO>()
-                .eqIfPresent(PowerChemicalsSettingsDO::getSystem, reqVO.getSystem())
+                .eqIfPresent(PowerChemicalsSettingsDO::getCode, reqVO.getCode())
                 .betweenIfPresent(PowerChemicalsSettingsDO::getTime, reqVO.getRange())
                 .orderByAsc(PowerChemicalsSettingsDO::getId));
     }

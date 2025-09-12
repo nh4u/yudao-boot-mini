@@ -7,7 +7,6 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 /**
  * @author liumingqiang
@@ -17,7 +16,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = false)
 @ToString(callSuper = true)
 @JsonInclude(JsonInclude.Include.ALWAYS)
-public class ProductionFifteenDayResultVO {
+public class ProductionFifteenDayResultVO extends BigScreenChartData {
 
     @Schema(description = "今日（8吋）")
     private BigDecimal today8;
@@ -26,13 +25,13 @@ public class ProductionFifteenDayResultVO {
     private BigDecimal today12;
 
 
-    @Schema(description = "X轴")
-    private List<String> x;
-
-    @Schema(description = "8吋")
-    private List<BigDecimal> production8;
-
-    @Schema(description = "12吋")
-    private List<BigDecimal> production12;
+//    @Schema(description = "X轴")
+//    private List<String> x;
+//
+//    @Schema(description = "8吋")
+//    private List<BigDecimal> production8;
+//
+//    @Schema(description = "12吋")
+//    private List<BigDecimal> production12;
 
 }

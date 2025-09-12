@@ -18,7 +18,10 @@ import java.util.List;
 public class PowerPureWasteWaterGasSettingsPageReqVO extends PageParam {
 
     @Schema(description = "类型")
-    private List<String> systems;
+    private String system;
+
+    @Schema(description = "编号")
+    private String code;
 
     @Schema(description = "名称", example = "王五")
     private String name;

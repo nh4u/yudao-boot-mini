@@ -33,7 +33,7 @@ public class PowerChemicalsSettingsDO extends BaseDO {
     /**
      * 类型
      */
-    private String system;
+    private String code;
     /**
      * 日期
      */

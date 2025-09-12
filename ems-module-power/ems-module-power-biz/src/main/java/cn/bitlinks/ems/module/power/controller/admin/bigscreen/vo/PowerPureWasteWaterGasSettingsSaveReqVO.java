@@ -21,6 +21,10 @@ public class PowerPureWasteWaterGasSettingsSaveReqVO {
     @NotBlank(message = "类型不能为空")
     private String system;
 
+    @Schema(description = "编号", example = "随便")
+    @NotBlank(message = "编号不能为空")
+    private String code;
+
     @Schema(description = "名称", example = "王五")
     @NotBlank(message = "名称不能为空")
     private String name;

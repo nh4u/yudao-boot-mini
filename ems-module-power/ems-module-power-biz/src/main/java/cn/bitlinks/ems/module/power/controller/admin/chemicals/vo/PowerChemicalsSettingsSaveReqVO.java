@@ -21,7 +21,7 @@ public class PowerChemicalsSettingsSaveReqVO {
 
     @Schema(description = "类型", example = "随便")
     @NotBlank(message = "类型不能为空")
-    private String system;
+    private String code;
 
     @Schema(description = "日期")
     @NotBlank(message = "日期不能为空")

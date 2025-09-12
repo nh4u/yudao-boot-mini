@@ -5,10 +5,8 @@ import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.bigscreen.vo.*;
-import cn.bitlinks.ems.module.power.controller.admin.externalapi.vo.ProductionPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.BigScreenCopChartData;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.ReportParamVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsHomeTop2Data;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
 import cn.bitlinks.ems.module.power.dal.dataobject.bigscreen.PowerMonthPlanSettingsDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.bigscreen.PowerPureWasteWaterGasSettingsDO;
@@ -31,7 +29,10 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -86,38 +87,12 @@ public class BigScreenServiceImpl implements BigScreenService {
         resultVO.setOutside(outsideEnvData);
 
         // 2.2. 右2 获取cop数据
-        ReportParamVO reportParamVO = BeanUtils.toBean(paramVO, ReportParamVO.class);
-        BigScreenCopChartData copChart = copHourAggDataService.copChartForBigScreen(reportParamVO);
+        BigScreenCopChartData copChart = getCopChartData(paramVO);
         resultVO.setCop(copChart);
 
         // 2.3. 右3 纯废水单价
-        List<String> system = Arrays.asList(PURE, WASTE);
-        List<PowerPureWasteWaterGasSettingsDO> pureWasteWaterList = powerPureWasteWaterGasSettingsMapper.selectList(new LambdaQueryWrapperX<PowerPureWasteWaterGasSettingsDO>()
-                .in(PowerPureWasteWaterGasSettingsDO::getSystem, system));
-
-        if (CollUtil.isNotEmpty(pureWasteWaterList)) {
-            List<Long> sbList = pureWasteWaterList
-                    .stream()
-                    .map(PowerPureWasteWaterGasSettingsDO::getStandingbookIds)
-                    .filter(Objects::nonNull)
-                    .map(s -> {
-                        String[] split = s.split(",");
-                        return Arrays.stream(split).map(Long::valueOf).collect(Collectors.toList());
-                    })
-                    .flatMap(List::stream)
-                    .collect(Collectors.toList());
-
-
-            // 按台账和日分组求成本和
-            List<UsageCostData> list = usageCostService.getList(
-                    paramVO.getRange()[0],
-                    paramVO.getRange()[1],
-                    sbList);
-
-            // 加上化学品的成本
-
-            // 查找用量
-        }
+        BigScreenChartData pureWasteWaterChart = getPureWasteWaterChart(paramVO);
+        resultVO.setPureWasteWater(pureWasteWaterChart);
 
 
         // 2.4. 右4 压缩空气单价
@@ -125,7 +100,8 @@ public class BigScreenServiceImpl implements BigScreenService {
 
         // 3. 底部
         // 3.1. 单位产品综合能耗
-
+        ProductionFifteenDayResultVO recentFifteenDayProduction = getRecentFifteenDayProduction(paramVO);
+        resultVO.setProductConsumption(recentFifteenDayProduction);
 
         // 4. 顶部
         // 4.1. 今日能耗 本月能耗
@@ -455,12 +431,116 @@ public class BigScreenServiceImpl implements BigScreenService {
             BigDecimal value12 = CommonUtil.divideWithScale(twelveValue, twelveEnergyStandardCoal, 2);
             production12.add(value12);
         });
-        resultVO.setProduction8(production8);
-        resultVO.setProduction12(production12);
-        resultVO.setX(xdata);
+        resultVO.setY1(production8);
+        resultVO.setY2(production12);
+        resultVO.setXdata(xdata);
         resultVO.setToday8(production8.get(production8.size() - 1));
         resultVO.setToday12(production12.get(production12.size() - 1));
         return resultVO;
+    }
+
+    /**
+     * 获取COP
+     *
+     * @param paramVO
+     * @return
+     */
+    @Override
+    public BigScreenCopChartData getCopChartData(BigScreenParamReqVO paramVO) {
+
+        ReportParamVO reportParamVO = BeanUtils.toBean(paramVO, ReportParamVO.class);
+        // 最近七天
+        LocalDateTime startTime = LocalDateTimeUtils.lastNDaysStartTime(6L);
+        LocalDateTime endTime = LocalDateTimeUtils.lastNDaysEndTime();
+        LocalDateTime[] range = new LocalDateTime[]{startTime, endTime};
+        reportParamVO.setRange(range);
+        return copHourAggDataService.copChartForBigScreen(reportParamVO);
+    }
+
+    /**
+     * 获取纯废水单价
+     *
+     * @param paramVO
+     * @return
+     */
+    @Override
+    public BigScreenChartData getPureWasteWaterChart(BigScreenParamReqVO paramVO) {
+
+        BigScreenChartData resultVO = new BigScreenChartData();
+        List<String> system = Arrays.asList(PURE, WASTE);
+        List<PowerPureWasteWaterGasSettingsDO> pureWasteWaterList = powerPureWasteWaterGasSettingsMapper.selectList(new LambdaQueryWrapperX<PowerPureWasteWaterGasSettingsDO>()
+                .in(PowerPureWasteWaterGasSettingsDO::getSystem, system));
+        if (CollUtil.isNotEmpty(pureWasteWaterList)) {
+            List<Long> sbList = pureWasteWaterList
+                    .stream()
+                    .map(PowerPureWasteWaterGasSettingsDO::getStandingbookIds)
+                    .filter(Objects::nonNull)
+                    .map(s -> {
+                        String[] split = s.split(",");
+                        return Arrays.stream(split).map(Long::valueOf).collect(Collectors.toList());
+                    })
+                    .flatMap(List::stream)
+                    .collect(Collectors.toList());
+
+
+            // 按台账和日分组求成本和
+            List<UsageCostData> list = usageCostService.getList(
+                    paramVO.getRange()[0],
+                    paramVO.getRange()[1],
+                    sbList);
+
+            // 加上化学品的成本
+
+
+
+
+
+            // 查找用量
+        }
+        return resultVO;
+    }
+
+    /**
+     * 获取压缩空气单价
+     *
+     * @param paramVO
+     * @return
+     */
+    @Override
+    public BigScreenChartData getCompressedGasChart(BigScreenParamReqVO paramVO) {
+        BigScreenChartData resultVO = new BigScreenChartData();
+        List<String> system = Arrays.asList(GAS);
+        List<PowerPureWasteWaterGasSettingsDO> pureWasteWaterList = powerPureWasteWaterGasSettingsMapper.selectList(new LambdaQueryWrapperX<PowerPureWasteWaterGasSettingsDO>()
+                .in(PowerPureWasteWaterGasSettingsDO::getSystem, system));
+        if (CollUtil.isNotEmpty(pureWasteWaterList)) {
+            List<Long> sbList = pureWasteWaterList
+                    .stream()
+                    .map(PowerPureWasteWaterGasSettingsDO::getStandingbookIds)
+                    .filter(Objects::nonNull)
+                    .map(s -> {
+                        String[] split = s.split(",");
+                        return Arrays.stream(split).map(Long::valueOf).collect(Collectors.toList());
+                    })
+                    .flatMap(List::stream)
+                    .collect(Collectors.toList());
+
+
+            // 按台账和日分组求成本和
+            List<UsageCostData> list = usageCostService.getList(
+                    paramVO.getRange()[0],
+                    paramVO.getRange()[1],
+                    sbList);
+
+            // 加上化学品的成本
+
+            // 查找用量
+        }
+        return resultVO;
+    }
+
+    @Override
+    public OriginMiddleData getMiddleData(BigScreenParamReqVO paramVO) {
+        return null;
     }
 
     private BigDecimal dealProductionConsumption(BigDecimal value, BigDecimal sum, BigDecimal energySumStandardCoal) {

@@ -47,7 +47,8 @@ public class PowerPureWasteWaterGasSettingsServiceImpl implements PowerPureWaste
     @Override
     public List<PowerPureWasteWaterGasSettingsDO> getPowerPureWasteWaterGasSettingsList(PowerPureWasteWaterGasSettingsPageReqVO pageReqVO) {
         return powerPureWasteWaterGasSettingsMapper.selectList((new LambdaQueryWrapperX<PowerPureWasteWaterGasSettingsDO>()
-                .in(PowerPureWasteWaterGasSettingsDO::getSystem, pageReqVO.getSystems())
+                .eqIfPresent(PowerPureWasteWaterGasSettingsDO::getSystem, pageReqVO.getSystem())
+                .eqIfPresent(PowerPureWasteWaterGasSettingsDO::getCode, pageReqVO.getCode())
                 .orderByAsc(PowerPureWasteWaterGasSettingsDO::getId)));
     }
 
