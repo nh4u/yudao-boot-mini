@@ -332,6 +332,9 @@
             <when test="queryParam.dateType == 3">
                 DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00') AS time
             </when>
+            <when test="queryParam.dateType == 4">
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:%i:%s') AS time
+            </when>
         </choose>
         ,
         SUM(
@@ -371,6 +374,9 @@
             </when>
             <when test="queryParam.dateType == 3">
                , DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00')
+            </when>
+            <when test="queryParam.dateType == 4">
+               , DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:%i:%s')
             </when>
         </choose>
 

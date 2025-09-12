@@ -130,28 +130,56 @@ public class DeviceMonitorService {
             List<WarningInfoDO> warningInfoDOList = warningInfoService.getMonitorListBySbCode(reqVO.getRange(), standingbookDTO.getCode());
             if (CollUtil.isEmpty(warningInfoDOList)) {
                 respVO.setList(Collections.emptyList());
-
-                WarningInfoMonitorStatisticsRespVO warningInfo = new WarningInfoMonitorStatisticsRespVO();
-                warningInfo.setTotal(0L);
-                List<WarningInfoStatisticsDetailRespVO> list = new ArrayList<>();
-                list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.TIP.getDesc(), 0L));
-                list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.WARNING.getDesc(), 0L));
-                list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.MINOR.getDesc(), 0L));
-                list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.IMPORTANT.getDesc(), 0L));
-                list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.URGENT.getDesc(), 0L));
-                warningInfo.setList(list);
-                respVO.setStatistics(warningInfo);
-                return respVO;
-
             } else {
                 respVO.setList(BeanUtils.toBean(warningInfoDOList, WarningInfoRespVO.class));
             }
         }
-        WarningInfoMonitorStatisticsRespVO statisticsRespVO = warningInfoService.getMonitorStatisticsBySbCode(standingbookDTO == null ? StringPool.EMPTY : standingbookDTO.getCode());
+        WarningInfoMonitorStatisticsRespVO statisticsRespVO = dealWarningInfo(respVO.getList());
+        //设备总预警 和时间无关
+//        WarningInfoMonitorStatisticsRespVO statisticsRespVO = warningInfoService.getMonitorStatisticsBySbCode(standingbookDTO == null ? StringPool.EMPTY : standingbookDTO.getCode());
         respVO.setStatistics(statisticsRespVO);
 
         return respVO;
     }
+
+    private WarningInfoMonitorStatisticsRespVO dealWarningInfo(List<WarningInfoRespVO> warningInfoList) {
+        WarningInfoMonitorStatisticsRespVO statisticsRespVO = new WarningInfoMonitorStatisticsRespVO();
+        List<WarningInfoStatisticsDetailRespVO> list = new ArrayList<>();
+        statisticsRespVO.setTotal(0L);
+        if (CollUtil.isEmpty(warningInfoList)) {
+            list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.TIP.getDesc(), 0L));
+            list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.WARNING.getDesc(), 0L));
+            list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.MINOR.getDesc(), 0L));
+            list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.IMPORTANT.getDesc(), 0L));
+            list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.URGENT.getDesc(), 0L));
+
+        } else {
+            statisticsRespVO.setTotal((long) warningInfoList.size());
+            Map<Integer, Long> levelCountMap = warningInfoList
+                    .stream()
+                    .collect(Collectors.groupingBy(WarningInfoRespVO::getLevel, Collectors.counting()));
+
+            Long tip = levelCountMap.get(WarningInfoLevelEnum.TIP.getCode());
+            list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.TIP.getDesc(), Objects.nonNull(tip) ? tip : 0L));
+
+            Long warning = levelCountMap.get(WarningInfoLevelEnum.WARNING.getCode());
+            list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.WARNING.getDesc(), Objects.nonNull(warning) ? warning : 0L));
+
+            Long minor = levelCountMap.get(WarningInfoLevelEnum.MINOR.getCode());
+            list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.MINOR.getDesc(), Objects.nonNull(minor) ? minor : 0L));
+
+            Long important = levelCountMap.get(WarningInfoLevelEnum.IMPORTANT.getCode());
+            list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.IMPORTANT.getDesc(), Objects.nonNull(important) ? important : 0L));
+
+            Long urgent = levelCountMap.get(WarningInfoLevelEnum.URGENT.getCode());
+            list.add(new WarningInfoStatisticsDetailRespVO(WarningInfoLevelEnum.URGENT.getDesc(), Objects.nonNull(urgent) ? urgent : 0L));
+
+        }
+        statisticsRespVO.setList(list);
+        return statisticsRespVO;
+
+    }
+
 
     /**
      * 获取设备信息
