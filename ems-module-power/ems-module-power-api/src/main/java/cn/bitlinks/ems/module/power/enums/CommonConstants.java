@@ -155,6 +155,26 @@ public interface CommonConstants {
      * 30%HCL（盐酸）
      */
     String HCL = "HCL";
+    /**
+     * 自来水 W_Tap Water
+     */
+    String TW = "TW";
+    /**
+     * 高品质再生水 W_Reclaimed Water
+     */
+    String RW = "RW";
+    /**
+     * 电力
+     */
+    String DL = "DL";
+    /**
+     * 纯水供水量
+     */
+    String PW = "PW";
+    /**
+     * 废水量 ACW_FL505
+     */
+    String FL = "FL";
 
     /**
      * 风向

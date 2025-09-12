@@ -21,6 +21,9 @@ public class PowerPureWasteWaterGasSettingsRespVO {
     @Schema(description = "编号", example = "随便")
     private String code;
 
+    @Schema(description = "能源codes", example = "随便")
+    private String energyCodes;
+
     @Schema(description = "名称", example = "王五")
     private String name;
 
