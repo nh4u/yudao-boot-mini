@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.bigscreen;
 
 import cn.bitlinks.ems.module.power.controller.admin.bigscreen.vo.*;
+import cn.bitlinks.ems.module.power.controller.admin.report.vo.BigScreenCopChartData;
 
 import java.util.List;
 
@@ -20,4 +21,12 @@ public interface BigScreenService {
     List<RecentSevenDayResultVO> getRecentSevenDay(BigScreenParamReqVO paramVO);
 
     ProductionFifteenDayResultVO getRecentFifteenDayProduction(BigScreenParamReqVO paramVO);
+
+    BigScreenCopChartData getCopChartData(BigScreenParamReqVO paramVO);
+
+    BigScreenChartData getPureWasteWaterChart(BigScreenParamReqVO paramVO);
+
+    BigScreenChartData getCompressedGasChart(BigScreenParamReqVO paramVO);
+
+    OriginMiddleData getMiddleData(BigScreenParamReqVO paramVO);
 }

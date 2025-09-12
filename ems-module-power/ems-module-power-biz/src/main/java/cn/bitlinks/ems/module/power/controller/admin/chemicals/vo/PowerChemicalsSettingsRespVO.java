@@ -22,7 +22,7 @@ public class PowerChemicalsSettingsRespVO {
     private Long id;
 
     @Schema(description = "类型", example = "随便")
-    private String system;
+    private String code;
 
     @Schema(description = "日期")
     private LocalDateTime time;

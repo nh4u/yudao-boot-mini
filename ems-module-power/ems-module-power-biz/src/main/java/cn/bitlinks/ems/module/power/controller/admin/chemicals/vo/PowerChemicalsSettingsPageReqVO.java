@@ -23,7 +23,7 @@ import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_M
 public class PowerChemicalsSettingsPageReqVO extends PageParam {
 
     @Schema(description = "类型")
-    private String system;
+    private String code;
 
     @Schema(description = "统计周期,最长不超1年", example = "[\"2025-06-23 10:17:00\", \"2025-06-29 10:17:00\" ]")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
