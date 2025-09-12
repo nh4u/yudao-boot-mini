@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.controller.admin.bigscreen.vo;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -10,6 +11,7 @@ import lombok.Data;
 @Schema(description = "管理后台 - 纯废水压缩空气设置 Response VO")
 @Data
 @ExcelIgnoreUnannotated
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class PowerPureWasteWaterGasSettingsRespVO {
 
     @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "3687")
