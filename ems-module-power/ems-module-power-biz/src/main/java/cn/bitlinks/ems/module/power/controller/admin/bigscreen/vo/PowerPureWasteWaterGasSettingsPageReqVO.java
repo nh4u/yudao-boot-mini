@@ -26,6 +26,7 @@ public class PowerPureWasteWaterGasSettingsPageReqVO extends PageParam {
     @Schema(description = "名称", example = "王五")
     private String name;
 
-
+    @Schema(description = "类型s")
+    private List<String> systems;
 
 }

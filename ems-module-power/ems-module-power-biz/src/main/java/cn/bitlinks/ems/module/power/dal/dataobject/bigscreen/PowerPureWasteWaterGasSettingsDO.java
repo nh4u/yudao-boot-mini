@@ -15,7 +15,8 @@ import java.math.BigDecimal;
  * @author bitlinks
  */
 @TableName("power_pure_waste_water_gas_settings")
-@KeySequence("power_pure_waste_water_gas_settings_seq") // 用于 Oracle、PostgreSQL、Kingbase、DB2、H2 数据库的主键自增。如果是 MySQL 等数据库，可不写。
+@KeySequence("power_pure_waste_water_gas_settings_seq")
+// 用于 Oracle、PostgreSQL、Kingbase、DB2、H2 数据库的主键自增。如果是 MySQL 等数据库，可不写。
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
@@ -41,6 +42,10 @@ public class PowerPureWasteWaterGasSettingsDO extends BaseDO {
      * 名称
      */
     private String name;
+    /**
+     * 能源codes
+     */
+    private String energyCodes;
     /**
      * 台账ids
      */

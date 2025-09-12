@@ -44,6 +44,7 @@ import cn.bitlinks.ems.module.power.service.warningstrategy.WarningStrategyServi
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.text.StrPool;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.util.ListUtils;
@@ -74,6 +75,7 @@ import java.util.zip.ZipOutputStream;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.ENERGY_CODE_NOT_EXISTS;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.STANDINGBOOK_NOT_EXISTS;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.*;
 import static cn.bitlinks.ems.module.power.enums.standingbook.AttributeTreeNodeTypeEnum.*;
@@ -378,7 +380,11 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Override
     public List<StandingBookTypeTreeRespVO> treeWithEnergyCode(StandingbookEnergyReqVO standingbookEnergyReqVO) {
         // 根据能源参数筛选出能源然后筛选出台账分类，
-        List<Long> energyIds = energyConfigurationMapper.getIdsByEnergyCodes(standingbookEnergyReqVO.getEnergyCodes());
+        List<String> energyCodes = standingbookEnergyReqVO.getEnergyCodes();
+        if (CollUtil.isEmpty(energyCodes)) {
+            throw exception(ENERGY_CODE_NOT_EXISTS);
+        }
+        List<Long> energyIds = energyConfigurationMapper.getIdsByEnergyCodes(energyCodes);
         if (CollUtil.isEmpty(energyIds)) {
             return Collections.emptyList();
         }

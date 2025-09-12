@@ -33,6 +33,11 @@ public interface UsageCostService {
                                 LocalDateTime endDate,
                                 List<Long> standingBookIds);
 
+    List<UsageCostData> getTimeSbCostList(Integer dateType,
+                                LocalDateTime startDate,
+                                LocalDateTime endDate,
+                                List<Long> standingBookIds);
+
     List<UsageCostData> getList(LocalDateTime startDate,
                                 LocalDateTime endDate,
                                 List<Long> standingBookIds);

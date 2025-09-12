@@ -7,6 +7,7 @@ import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.bigscreen.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.BigScreenCopChartData;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.ReportParamVO;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StructureInfoData;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
 import cn.bitlinks.ems.module.power.dal.dataobject.bigscreen.PowerMonthPlanSettingsDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.bigscreen.PowerPureWasteWaterGasSettingsDO;
@@ -21,6 +22,8 @@ import cn.bitlinks.ems.module.power.service.production.ProductionService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.bitlinks.ems.module.power.utils.CommonUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.excel.util.ListUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -29,10 +32,7 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -467,38 +467,73 @@ public class BigScreenServiceImpl implements BigScreenService {
     public BigScreenChartData getPureWasteWaterChart(BigScreenParamReqVO paramVO) {
 
         BigScreenChartData resultVO = new BigScreenChartData();
-        List<String> system = Arrays.asList(PURE, WASTE);
+        resultVO = deal(PURE);
+
+        return resultVO;
+    }
+
+
+    private BigScreenChartData deal(String system) {
         List<PowerPureWasteWaterGasSettingsDO> pureWasteWaterList = powerPureWasteWaterGasSettingsMapper.selectList(new LambdaQueryWrapperX<PowerPureWasteWaterGasSettingsDO>()
-                .in(PowerPureWasteWaterGasSettingsDO::getSystem, system));
+                .eq(PowerPureWasteWaterGasSettingsDO::getSystem, system));
         if (CollUtil.isNotEmpty(pureWasteWaterList)) {
-            List<Long> sbList = pureWasteWaterList
+
+            Map<String, List<Long>> codeSbIdList = pureWasteWaterList
                     .stream()
-                    .map(PowerPureWasteWaterGasSettingsDO::getStandingbookIds)
-                    .filter(Objects::nonNull)
-                    .map(s -> {
-                        String[] split = s.split(",");
-                        return Arrays.stream(split).map(Long::valueOf).collect(Collectors.toList());
-                    })
-                    .flatMap(List::stream)
+                    .collect(Collectors.toMap(
+                            PowerPureWasteWaterGasSettingsDO::getCode,
+                            p -> {
+                                String standingbookIds = p.getStandingbookIds();
+                                if (CharSequenceUtil.isNotBlank(standingbookIds)) {
+                                    String[] split = standingbookIds.split(",");
+                                    return Arrays.stream(split).map(Long::valueOf).collect(Collectors.toList());
+                                } else {
+                                    return ListUtils.newArrayList();
+                                }
+                            }));
+
+            List<Long> sbIdList = codeSbIdList.values().stream().flatMap(List::stream)
                     .collect(Collectors.toList());
 
 
             // 按台账和日分组求成本和
-            List<UsageCostData> list = usageCostService.getList(
-                    paramVO.getRange()[0],
-                    paramVO.getRange()[1],
-                    sbList);
+            // 最近七天
+            LocalDateTime startTime = LocalDateTimeUtils.lastNDaysStartTime(6L);
+            LocalDateTime endTime = LocalDateTimeUtils.lastNDaysEndTime();
+
+            List<UsageCostData> usageCostDataList = usageCostService.getTimeSbCostList(
+                    DataTypeEnum.DAY.getCode(),
+                    startTime,
+                    endTime,
+                    sbIdList);
+
+            Map<Long, List<UsageCostData>> sbCostDataMap = usageCostDataList.stream().collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
+
+
+//            codeSbIdList.forEach();
+
+
+            Map<String, BigDecimal> collect1 = usageCostDataList.stream().collect(Collectors.groupingBy(
+                    UsageCostData::getTime,
+                    Collectors.collectingAndThen(
+                            Collectors.toList(),
+                            list -> list.stream()
+                                    .map(UsageCostData::getTotalCost)
+                                    .filter(Objects::nonNull)
+                                    .reduce(BigDecimal::add).orElse(null)
+                    )
+            ));
+
 
             // 加上化学品的成本
 
 
-
-
-
             // 查找用量
         }
-        return resultVO;
+
+        return null;
     }
+
 
     /**
      * 获取压缩空气单价
