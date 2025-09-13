@@ -118,9 +118,9 @@ public interface UsageCostMapper {
      * @return
      */
     List<UsageCostData> getEnergyTimeUsageEnergyIds(@Param("dateType") Integer dateType,
-                                          @Param("startDate") LocalDateTime startDate,
-                                          @Param("endDate") LocalDateTime endDate,
-                                          @Param("energyIds") List<Long> energyIds);
+                                                    @Param("startDate") LocalDateTime startDate,
+                                                    @Param("endDate") LocalDateTime endDate,
+                                                    @Param("energyIds") List<Long> energyIds);
 
     /**
      * 获取能源用量
@@ -143,6 +143,34 @@ public interface UsageCostMapper {
                                   @Param("endDate") LocalDateTime endDate,
                                   @Param("standingBookIds") List<Long> standingBookIds);
 
+    /**
+     * 根据台账ids获取时间分组折标煤
+     *
+     * @param dateType
+     * @param startDate
+     * @param endDate
+     * @param standingBookIds
+     * @return
+     */
+    List<UsageCostData> getTimeUsageByStandardIds(@Param("dateType") Integer dateType,
+                                                  @Param("startDate") LocalDateTime startDate,
+                                                  @Param("endDate") LocalDateTime endDate,
+                                                  @Param("standingBookIds") List<Long> standingBookIds);
+
+    /**
+     * 根据台账ids获取时间分组成本
+     *
+     * @param dateType
+     * @param startDate
+     * @param endDate
+     * @param standingBookIds
+     * @return
+     */
+    List<UsageCostData> getTimeCostByStandardIds(@Param("dateType") Integer dateType,
+                                                 @Param("startDate") LocalDateTime startDate,
+                                                 @Param("endDate") LocalDateTime endDate,
+                                                 @Param("standingBookIds") List<Long> standingBookIds);
+
     StatisticsOverviewStatisticsTableData getAggStatisticsByEnergyIds(@Param("startDate") LocalDateTime startDate,
                                                                       @Param("endDate") LocalDateTime endDate,
                                                                       @Param("energyIds") List<Long> energyIds);
@@ -157,6 +185,7 @@ public interface UsageCostMapper {
 
     /**
      * 获取 台账 时间 成本数据
+     *
      * @param dateType
      * @param startDate
      * @param endDate
@@ -164,8 +193,8 @@ public interface UsageCostMapper {
      * @return
      */
     List<UsageCostData> getTimeSbCostList(@Param("dateType") Integer dateType,
-                                        @Param("startDate") LocalDateTime startDate,
-                                        @Param("endDate") LocalDateTime endDate,
-                                        @Param("standingBookIds") List<Long> standingBookIds);
+                                          @Param("startDate") LocalDateTime startDate,
+                                          @Param("endDate") LocalDateTime endDate,
+                                          @Param("standingBookIds") List<Long> standingBookIds);
 
 }

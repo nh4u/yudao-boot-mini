@@ -206,6 +206,35 @@ public class UsageCostServiceImpl implements UsageCostService {
     }
 
     /**
+     * 根据台账ids获取时间分组折标煤
+     *
+     * @param dateType
+     * @param startDate
+     * @param endDate
+     * @param standingBookIds
+     * @return
+     */
+    @Override
+    @TenantIgnore
+    public List<UsageCostData> getTimeUsageByStandardIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getTimeUsageByStandardIds(dateType, startDate, endDate, standingBookIds);
+    }
+
+    /**
+     * 根据台账ids获取时间分组成本
+     *
+     * @param dateType
+     * @param startDate
+     * @param endDate
+     * @param standingBookIds
+     * @return
+     */
+    @Override
+    @TenantIgnore
+    public List<UsageCostData> getTimeCostByStandardIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getTimeCostByStandardIds(dateType, startDate, endDate, standingBookIds);
+    }
+    /**
      * 获取能源用量
      *
      * @param dateType
