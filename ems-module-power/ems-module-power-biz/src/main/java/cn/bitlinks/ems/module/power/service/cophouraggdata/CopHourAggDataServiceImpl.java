@@ -396,8 +396,8 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
         Integer dateType = paramVO.getDateType();
         DataTypeEnum dataTypeEnum = validateDateType(dateType);
 
-        List<String> copyTypeList = paramVO.getCopType();
-
+//        List<String> copyTypeList = paramVO.getCopType();
+        List<String> copyTypeList = Arrays.asList("LTC", "LTS", "MTC", "MTS");
         BigScreenCopChartData resultVO = new BigScreenCopChartData();
 
         // 处理x轴
@@ -487,19 +487,18 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
             }
         } else {
             for (String copType : copTypes) {
-                BigDecimal value = BigDecimal.ZERO;
                 switch (copType) {
                     case "LTC":
-                        ltcNow.add(value);
+                        ltcNow.add(null);
                         break;
                     case "LTS":
-                        ltsNow.add(value);
+                        ltsNow.add(null);
                         break;
                     case "MTC":
-                        mtcNow.add(value);
+                        mtcNow.add(null);
                         break;
                     case "MTS":
-                        mtsNow.add(value);
+                        mtsNow.add(null);
                         break;
                     default:
                 }
