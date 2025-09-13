@@ -28,5 +28,5 @@ public interface BigScreenService {
 
     BigScreenChartData getCompressedGasChart(BigScreenParamReqVO paramVO);
 
-    OriginMiddleData getMiddleData(BigScreenParamReqVO paramVO);
+    MiddleData getMiddleData(BigScreenParamReqVO paramVO);
 }

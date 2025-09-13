@@ -37,19 +37,19 @@ public class BigScreenRespVO {
     // 中间部分
 
     @Schema(description = "4#宿舍楼")
-    private OriginMiddleData dormitory4;
+    private MiddleData dormitory4;
 
     @Schema(description = "2#生产厂房")
-    private OriginMiddleData factory2;
+    private MiddleData factory2;
 
     @Schema(description = "3#办公楼")
-    private OriginMiddleData office3;
+    private MiddleData office3;
 
     @Schema(description = "5#CUB")
-    private OriginMiddleData cub5;
+    private MiddleData cub5;
 
     @Schema(description = "1#生产厂房")
-    private OriginMiddleData factory1;
+    private MiddleData factory1;
 
     // 顶部
 
