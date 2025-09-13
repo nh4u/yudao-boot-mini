@@ -177,9 +177,25 @@ public interface CommonConstants {
     String FL = "FL";
 
     /**
-     * 风向
+     * 风向值
      */
-    String WIND_DIRECTION_IO = "PLC220.PLC.QxzData.FX";
+    String WIND_DIRECTION_VALUE_IO = "PLC220.PLC.QxzData.FX";
+    /**
+     * 风向 东北IO地址
+     */
+    String WIND_DIRECTION_NE_IO = "PLC220.PLC.QxzDataFX_NE";
+    /**
+     * 风向 西北IO地址
+     */
+    String WIND_DIRECTION_NW_IO = "PLC220.PLC.QxzDataFX_NW";
+    /**
+     * 风向 东南IO地址
+     */
+    String WIND_DIRECTION_SE_IO = "PLC220.PLC.QxzDataFX_SE";
+    /**
+     * 风向 西南IO地址
+     */
+    String WIND_DIRECTION_SW_IO = "PLC220.PLC.QxzDataFX_SW";
     /**
      * 风速
      */
