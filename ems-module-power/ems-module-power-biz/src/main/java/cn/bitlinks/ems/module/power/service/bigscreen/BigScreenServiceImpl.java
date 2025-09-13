@@ -35,6 +35,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
@@ -125,25 +126,72 @@ public class BigScreenServiceImpl implements BigScreenService {
     @Override
     public OutsideEnvData getOutsideEnvData(BigScreenParamReqVO paramVO) {
         OutsideEnvData outsideEnvData = new OutsideEnvData();
-        List<String> dataSites = Arrays.asList(WIND_DIRECTION_IO, WIND_SPEED_IO, TEMPERATURE_IO, HUMIDITY_IO, DEW_POINT_IO, ATMOSPHERIC_PRESSURE_IO, NOISE_IO);
+        List<String> dataSites = Arrays.asList(
+                WIND_DIRECTION_VALUE_IO,
+                WIND_DIRECTION_NE_IO,
+                WIND_DIRECTION_NW_IO,
+                WIND_DIRECTION_SE_IO,
+                WIND_DIRECTION_SW_IO,
+                WIND_SPEED_IO, TEMPERATURE_IO,
+                HUMIDITY_IO,
+                DEW_POINT_IO,
+                ATMOSPHERIC_PRESSURE_IO,
+                NOISE_IO);
         List<CollectRawDataDO> outsideDataList = collectRawDataService.getOutsideDataByDataSite(dataSites);
         if (CollUtil.isNotEmpty(outsideDataList)) {
             Map<String, CollectRawDataDO> outsideDataMap = outsideDataList
                     .stream()
                     .collect(Collectors.toMap(CollectRawDataDO::getDataSite, Function.identity()));
 
-//          todo   outsideEnvData.setWindDirection();
-            outsideEnvData.setWindDirectionValue(new BigDecimal(outsideDataMap.get(WIND_DIRECTION_IO).getRawValue()));
-            outsideEnvData.setWindSpeed((new BigDecimal(outsideDataMap.get(WIND_SPEED_IO).getRawValue())));
-            outsideEnvData.setTemperature(new BigDecimal(outsideDataMap.get(TEMPERATURE_IO).getRawValue()));
-            outsideEnvData.setHumidity(new BigDecimal(outsideDataMap.get(HUMIDITY_IO).getRawValue()));
-            outsideEnvData.setDewPoint(new BigDecimal(outsideDataMap.get(DEW_POINT_IO).getRawValue()));
-            outsideEnvData.setAtmosphericPressure(new BigDecimal(outsideDataMap.get(ATMOSPHERIC_PRESSURE_IO).getRawValue()));
-            outsideEnvData.setNoise(new BigDecimal(outsideDataMap.get(NOISE_IO).getRawValue()));
+            outsideEnvData.setWindDirection(dealWindDirection(outsideDataMap));
+
+            CollectRawDataDO windDirection = outsideDataMap.get(WIND_DIRECTION_VALUE_IO);
+            outsideEnvData.setWindDirectionValue(Objects.nonNull(windDirection) ? new BigDecimal(windDirection.getRawValue()) : null);
+
+            CollectRawDataDO windSpeed = outsideDataMap.get(WIND_SPEED_IO);
+            outsideEnvData.setWindSpeed(Objects.nonNull(windSpeed) ? new BigDecimal(windSpeed.getRawValue()) : null);
+
+            CollectRawDataDO temperature = outsideDataMap.get(TEMPERATURE_IO);
+            outsideEnvData.setTemperature(Objects.nonNull(temperature) ? new BigDecimal(temperature.getRawValue()) : null);
+
+            CollectRawDataDO humidity = outsideDataMap.get(HUMIDITY_IO);
+            outsideEnvData.setHumidity(Objects.nonNull(humidity) ? new BigDecimal(humidity.getRawValue()) : null);
+
+            CollectRawDataDO dewPoint = outsideDataMap.get(DEW_POINT_IO);
+            outsideEnvData.setDewPoint(Objects.nonNull(dewPoint) ? new BigDecimal(dewPoint.getRawValue()) : null);
+
+            CollectRawDataDO atmosphericPressure = outsideDataMap.get(ATMOSPHERIC_PRESSURE_IO);
+            outsideEnvData.setAtmosphericPressure(Objects.nonNull(atmosphericPressure) ? new BigDecimal(atmosphericPressure.getRawValue()) : null);
+
+            CollectRawDataDO noise = outsideDataMap.get(NOISE_IO);
+            outsideEnvData.setNoise(Objects.nonNull(noise) ? new BigDecimal(noise.getRawValue()) : null);
 
         }
         return outsideEnvData;
     }
+
+    private String dealWindDirection(Map<String, CollectRawDataDO> outsideDataMap) {
+
+        String windDirection = null;
+
+        CollectRawDataDO ne = outsideDataMap.get(WIND_DIRECTION_NE_IO);
+        CollectRawDataDO nw = outsideDataMap.get(WIND_DIRECTION_NW_IO);
+        CollectRawDataDO se = outsideDataMap.get(WIND_DIRECTION_SE_IO);
+        CollectRawDataDO sw = outsideDataMap.get(WIND_DIRECTION_SW_IO);
+
+        if (Objects.nonNull(ne)) {
+            windDirection = ne.getRawValue();
+        } else if (Objects.nonNull(nw)) {
+            windDirection = nw.getRawValue();
+        } else if (Objects.nonNull(se)) {
+            windDirection = se.getRawValue();
+        } else if (Objects.nonNull(sw)) {
+            windDirection = sw.getRawValue();
+        }
+
+        return windDirection;
+    }
+
 
     /**
      * 获取banner
@@ -389,12 +437,18 @@ public class BigScreenServiceImpl implements BigScreenService {
                 .stream()
                 .collect(Collectors.groupingBy(ProductionDO::getSize));
 
-        List<ProductionDO> eightList = productionSizeMap.get(8);
+        List<ProductionDO> eightList = ListUtils.newArrayList();
+        if (CollUtil.isNotEmpty(productionSizeMap.get(8))) {
+            eightList = productionSizeMap.get(8);
+        }
         Map<String, BigDecimal> eightTimeMap = eightList
                 .stream()
                 .collect(Collectors.toMap(ProductionDO::getStrTime, ProductionDO::getValue));
 
-        List<ProductionDO> twelveList = productionSizeMap.get(12);
+        List<ProductionDO> twelveList = ListUtils.newArrayList();
+        if (CollUtil.isNotEmpty(productionSizeMap.get(12))) {
+            twelveList = productionSizeMap.get(12);
+        }
         Map<String, BigDecimal> twelveTimeMap = twelveList
                 .stream()
                 .collect(Collectors.toMap(ProductionDO::getStrTime, ProductionDO::getValue));
@@ -409,7 +463,9 @@ public class BigScreenServiceImpl implements BigScreenService {
 
         // 外购总能耗
         List<UsageCostData> usageCostDataList = usageCostService.getEnergyTimeUsageEnergyIds(DataTypeEnum.DAY.getCode(), startTime, endTime, energyIdList);
-
+        if (CollUtil.isEmpty(energyList)) {
+            return resultVO;
+        }
         Map<String, BigDecimal> usageCostDataMap = usageCostDataList.stream()
                 .collect(Collectors.toMap(UsageCostData::getTime, UsageCostData::getTotalStandardCoalEquivalent));
 
@@ -417,9 +473,11 @@ public class BigScreenServiceImpl implements BigScreenService {
         List<BigDecimal> production12 = ListUtils.newArrayList();
 
         tempXData.forEach(time -> {
+
+            BigDecimal sum = null;
             BigDecimal eightValue = eightTimeMap.get(time);
             BigDecimal twelveValue = twelveTimeMap.get(time);
-            BigDecimal sum = eightValue.add(twelveValue);
+            sum = CommonUtil.addBigDecimal(eightValue, twelveValue);
 
             BigDecimal energySumStandardCoal = usageCostDataMap.get(time);
 
@@ -467,18 +525,57 @@ public class BigScreenServiceImpl implements BigScreenService {
     public BigScreenChartData getPureWasteWaterChart(BigScreenParamReqVO paramVO) {
 
         BigScreenChartData resultVO = new BigScreenChartData();
-        resultVO = deal(PURE);
+        List<Long> pureSbIds = dealSbIds(PURE);
+        List<Long> wasteSbIds = dealSbIds(WASTE);
+
+        List<Long> sbIdList = Stream
+                .concat(pureSbIds.stream(), wasteSbIds.stream())
+                .distinct()
+                .collect(Collectors.toList());
+        // 按台账和日分组求成本和
+        // 最近七天
+        LocalDateTime startTime = LocalDateTimeUtils.lastNDaysStartTime(6L);
+        LocalDateTime endTime = LocalDateTimeUtils.lastNDaysEndTime();
+        List<UsageCostData> usageCostDataList = usageCostService.getTimeSbCostList(
+                DataTypeEnum.DAY.getCode(),
+                startTime,
+                endTime,
+                sbIdList);
+
+        Map<Long, List<UsageCostData>> sbCostDataMap = usageCostDataList
+                .stream()
+                .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
+
+//        // 自来水
+//        List<Long> twSbIds = codeSbIdMap.get(TW);
+//        Map<String, BigDecimal> twTimeCostMap = dealTimeCostMap(twSbIds, sbCostDataMap);
+//        // 高品质再生水
+//        List<Long> rwSbIds = codeSbIdMap.get(RW);
+//        Map<String, BigDecimal> rwTimeCostMap = dealTimeCostMap(rwSbIds, sbCostDataMap);
+//        // 电力
+//        List<Long> rwSbIds = codeSbIdMap.get(RW);
+//        Map<String, BigDecimal> rwTimeCostMap = dealTimeCostMap(rwSbIds, sbCostDataMap);
+//        // 纯水供水量
+//        List<Long> rwSbIds = codeSbIdMap.get(RW);
+//        Map<String, BigDecimal> rwTimeCostMap = dealTimeCostMap(rwSbIds, sbCostDataMap);
+//        // 废水量
+//        Map<String, BigDecimal> timeCostMap = dealTimeCostMap();
+//        // 加上化学品的成本
+
+
+        // 查找用量
+
 
         return resultVO;
     }
 
 
-    private BigScreenChartData deal(String system) {
+    private List<Long> dealSbIds(String system) {
         List<PowerPureWasteWaterGasSettingsDO> pureWasteWaterList = powerPureWasteWaterGasSettingsMapper.selectList(new LambdaQueryWrapperX<PowerPureWasteWaterGasSettingsDO>()
                 .eq(PowerPureWasteWaterGasSettingsDO::getSystem, system));
         if (CollUtil.isNotEmpty(pureWasteWaterList)) {
 
-            Map<String, List<Long>> codeSbIdList = pureWasteWaterList
+            Map<String, List<Long>> codeSbIdMap = pureWasteWaterList
                     .stream()
                     .collect(Collectors.toMap(
                             PowerPureWasteWaterGasSettingsDO::getCode,
@@ -492,48 +589,39 @@ public class BigScreenServiceImpl implements BigScreenService {
                                 }
                             }));
 
-            List<Long> sbIdList = codeSbIdList.values().stream().flatMap(List::stream)
+            return codeSbIdMap.values().stream().flatMap(List::stream)
                     .collect(Collectors.toList());
-
-
-            // 按台账和日分组求成本和
-            // 最近七天
-            LocalDateTime startTime = LocalDateTimeUtils.lastNDaysStartTime(6L);
-            LocalDateTime endTime = LocalDateTimeUtils.lastNDaysEndTime();
-
-            List<UsageCostData> usageCostDataList = usageCostService.getTimeSbCostList(
-                    DataTypeEnum.DAY.getCode(),
-                    startTime,
-                    endTime,
-                    sbIdList);
-
-            Map<Long, List<UsageCostData>> sbCostDataMap = usageCostDataList.stream().collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
-
-
-//            codeSbIdList.forEach();
-
-
-            Map<String, BigDecimal> collect1 = usageCostDataList.stream().collect(Collectors.groupingBy(
-                    UsageCostData::getTime,
-                    Collectors.collectingAndThen(
-                            Collectors.toList(),
-                            list -> list.stream()
-                                    .map(UsageCostData::getTotalCost)
-                                    .filter(Objects::nonNull)
-                                    .reduce(BigDecimal::add).orElse(null)
-                    )
-            ));
-
-
-            // 加上化学品的成本
-
-
-            // 查找用量
         }
 
-        return null;
+        return Collections.emptyList();
     }
 
+//    private deal() {
+//
+//    }
+
+
+    private Map<String, BigDecimal> dealTimeCostMap(List<Long> sbIds, Map<Long, List<UsageCostData>> sbCostDataMap) {
+
+        // 根据sbIds获取对应数采
+        List<UsageCostData> usageCostDataList = sbIds
+                .stream()
+                .map(sbCostDataMap::get)
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+
+        // 把数采数据换成 时间 sum
+        return usageCostDataList
+                .stream()
+                .collect(Collectors.groupingBy(
+                        UsageCostData::getTime,
+                        Collectors.collectingAndThen(
+                                Collectors.toList(),
+                                list -> list.stream()
+                                        .map(UsageCostData::getTotalCost)
+                                        .filter(Objects::nonNull)
+                                        .reduce(BigDecimal::add).orElse(null))));
+    }
 
     /**
      * 获取压缩空气单价
@@ -579,6 +667,10 @@ public class BigScreenServiceImpl implements BigScreenService {
     }
 
     private BigDecimal dealProductionConsumption(BigDecimal value, BigDecimal sum, BigDecimal energySumStandardCoal) {
+        if (Objects.isNull(value) || Objects.isNull(sum) || Objects.isNull(energySumStandardCoal)) {
+            return null;
+        }
+
         BigDecimal divide = value.divide(sum, 15, RoundingMode.HALF_UP);
         return energySumStandardCoal.multiply(divide);
     }
