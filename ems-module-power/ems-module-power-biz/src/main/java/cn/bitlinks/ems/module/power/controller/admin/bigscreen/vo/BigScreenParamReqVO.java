@@ -22,4 +22,7 @@ public class BigScreenParamReqVO {
 
     @Schema(description = "时间类型 0：日；1：月；2：年；3：时；4：分。")
     private Integer dateType;
+
+    @Schema(description = "区域类型 1#FAB1生产厂房；2#FAB2生产厂房；3#生产测试楼；4#员工宿舍楼；5#CUB动力中心")
+    private Integer parkFlag;
 }
