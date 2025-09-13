@@ -5,14 +5,12 @@ import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.bigscreen.vo.*;
-import cn.bitlinks.ems.module.power.controller.admin.chemicals.vo.PowerChemicalsSettingsPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.chemicals.vo.PowerChemicalsSettingsRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.BigScreenCopChartData;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.ReportParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
 import cn.bitlinks.ems.module.power.dal.dataobject.bigscreen.PowerMonthPlanSettingsDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.bigscreen.PowerPureWasteWaterGasSettingsDO;
-import cn.bitlinks.ems.module.power.dal.dataobject.chemicals.PowerChemicalsSettingsDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.collectrawdata.CollectRawDataDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.production.ProductionDO;
@@ -820,8 +818,20 @@ public class BigScreenServiceImpl implements BigScreenService {
     }
 
     @Override
-    public OriginMiddleData getMiddleData(BigScreenParamReqVO paramVO) {
-        return null;
+    public MiddleData getMiddleData(BigScreenParamReqVO paramVO) {
+        MiddleData middleData = new MiddleData();
+        middleData.setTodayConsumption(new MiddleItemData());
+        middleData.setPower(new MiddleItemData());
+        middleData.setRoWater(new MiddleItemData());
+        middleData.setUpw(new MiddleItemData());
+        middleData.setDiw(new MiddleItemData());
+        middleData.setNitrogen(new MiddleItemData());
+        middleData.setHelium(new MiddleItemData());
+        middleData.setHydrogen(new MiddleItemData());
+        middleData.setOxygen(new MiddleItemData());
+        middleData.setArgon(new MiddleItemData());
+        middleData.setTrendChart(new BigScreenChartData());
+        return middleData;
     }
 
     private BigDecimal dealProductionConsumption(BigDecimal value, BigDecimal sum, BigDecimal energySumStandardCoal) {
