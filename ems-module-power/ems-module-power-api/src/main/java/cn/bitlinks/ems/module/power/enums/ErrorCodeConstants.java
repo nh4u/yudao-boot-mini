@@ -214,4 +214,7 @@ public interface ErrorCodeConstants {
     ErrorCode STANDINGBOOK_IMPORT_ALL_ERROR = new ErrorCode(1_001_701_000, "");
     ErrorCode DEVICE_MONITOR_EXPORT_FLAG_ERROR = new ErrorCode(1_001_711_000, "用量、折标煤、成本不能为空");
     ErrorCode PURE_WASTE_GAS_SETTINGS_LIST_NOT_EXISTS = new ErrorCode(1_001_801_000, "list不存在");
+
+
+    ErrorCode PARK_FLAG_NOT_EXISTS = new ErrorCode(1_001_901_000, "区域标签不存在");
 }

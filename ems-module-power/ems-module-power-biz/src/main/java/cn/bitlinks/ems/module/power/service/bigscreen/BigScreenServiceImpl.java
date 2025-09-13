@@ -40,7 +40,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.PARK_FLAG_NOT_EXISTS;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
 /**
@@ -819,6 +821,11 @@ public class BigScreenServiceImpl implements BigScreenService {
 
     @Override
     public MiddleData getMiddleData(BigScreenParamReqVO paramVO) {
+        Integer parkFlag = paramVO.getParkFlag();
+        if (Objects.isNull(parkFlag)) {
+            throw exception(PARK_FLAG_NOT_EXISTS);
+        }
+
         MiddleData middleData = new MiddleData();
         middleData.setTodayConsumption(new MiddleItemData());
         middleData.setPower(new MiddleItemData());
