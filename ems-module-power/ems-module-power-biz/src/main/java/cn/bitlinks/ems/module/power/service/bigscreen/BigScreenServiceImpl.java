@@ -5,16 +5,19 @@ import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.bigscreen.vo.*;
+import cn.bitlinks.ems.module.power.controller.admin.chemicals.vo.PowerChemicalsSettingsPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.chemicals.vo.PowerChemicalsSettingsRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.BigScreenCopChartData;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.ReportParamVO;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StructureInfoData;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
 import cn.bitlinks.ems.module.power.dal.dataobject.bigscreen.PowerMonthPlanSettingsDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.bigscreen.PowerPureWasteWaterGasSettingsDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.chemicals.PowerChemicalsSettingsDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.collectrawdata.CollectRawDataDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.production.ProductionDO;
 import cn.bitlinks.ems.module.power.dal.mysql.bigscreen.PowerPureWasteWaterGasSettingsMapper;
+import cn.bitlinks.ems.module.power.service.chemicals.PowerChemicalsSettingsService;
 import cn.bitlinks.ems.module.power.service.collectrawdata.CollectRawDataService;
 import cn.bitlinks.ems.module.power.service.cophouraggdata.CopHourAggDataService;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
@@ -23,15 +26,17 @@ import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.bitlinks.ems.module.power.utils.CommonUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
 import com.alibaba.excel.util.ListUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,10 +70,14 @@ public class BigScreenServiceImpl implements BigScreenService {
     private PowerMonthPlanSettingsService powerMonthPlanSettingsService;
 
     @Resource
-    private EnergyConfigurationService energyConfigurationService;
+    private ProductionService productionService;
 
     @Resource
-    private ProductionService productionService;
+    private PowerChemicalsSettingsService powerChemicalsSettingsService;
+
+    @Resource
+    private EnergyConfigurationService energyConfigurationService;
+
 
     @Override
     public BigScreenRespVO getBigScreenDetails(BigScreenParamReqVO paramVO) {
@@ -97,7 +106,8 @@ public class BigScreenServiceImpl implements BigScreenService {
 
 
         // 2.4. 右4 压缩空气单价
-
+        BigScreenChartData compressedGasChart = getCompressedGasChart(paramVO);
+        resultVO.setGas(compressedGasChart);
 
         // 3. 底部
         // 3.1. 单位产品综合能耗
@@ -525,52 +535,90 @@ public class BigScreenServiceImpl implements BigScreenService {
     public BigScreenChartData getPureWasteWaterChart(BigScreenParamReqVO paramVO) {
 
         BigScreenChartData resultVO = new BigScreenChartData();
-        List<Long> pureSbIds = dealSbIds(PURE);
-        List<Long> wasteSbIds = dealSbIds(WASTE);
+        // 纯水台账
+        List<Long> pureSbIds = Collections.emptyList();
+        Map<String, List<Long>> pureCodeSbIdMap = Collections.emptyMap();
+        ImmutablePair<List<Long>, Map<String, List<Long>>> purePair = dealSbIds(PURE);
+        if (Objects.nonNull(purePair)) {
+            pureSbIds = purePair.getLeft();
+            pureCodeSbIdMap = purePair.getRight();
+        }
 
+
+        // 废水台账
+        List<Long> wasteSbIds = Collections.emptyList();
+        Map<String, List<Long>> wasteCodeSbIdMap = Collections.emptyMap();
+        ImmutablePair<List<Long>, Map<String, List<Long>>> wastePair = dealSbIds(WASTE);
+        if (Objects.nonNull(wastePair)) {
+            wasteSbIds = wastePair.getLeft();
+            wasteCodeSbIdMap = wastePair.getRight();
+        }
+
+        // 台账ids合并
         List<Long> sbIdList = Stream
                 .concat(pureSbIds.stream(), wasteSbIds.stream())
                 .distinct()
                 .collect(Collectors.toList());
-        // 按台账和日分组求成本和
+        if (CollUtil.isEmpty(sbIdList)) {
+            return resultVO;
+        }
+
+
         // 最近七天
         LocalDateTime startTime = LocalDateTimeUtils.lastNDaysStartTime(6L);
         LocalDateTime endTime = LocalDateTimeUtils.lastNDaysEndTime();
+        // 根据台账ids获取按台账和时间分组的成本和数据
         List<UsageCostData> usageCostDataList = usageCostService.getTimeSbCostList(
                 DataTypeEnum.DAY.getCode(),
                 startTime,
                 endTime,
                 sbIdList);
 
-        Map<Long, List<UsageCostData>> sbCostDataMap = usageCostDataList
+//        if (CollUtil.isEmpty(usageCostDataList)) {
+//            return resultVO;
+//        }
+
+        // 按台账分组
+        Map<Long, List<UsageCostData>> sbCostUsageDataMap = usageCostDataList
                 .stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
 
-//        // 自来水
-//        List<Long> twSbIds = codeSbIdMap.get(TW);
-//        Map<String, BigDecimal> twTimeCostMap = dealTimeCostMap(twSbIds, sbCostDataMap);
-//        // 高品质再生水
-//        List<Long> rwSbIds = codeSbIdMap.get(RW);
-//        Map<String, BigDecimal> rwTimeCostMap = dealTimeCostMap(rwSbIds, sbCostDataMap);
-//        // 电力
-//        List<Long> rwSbIds = codeSbIdMap.get(RW);
-//        Map<String, BigDecimal> rwTimeCostMap = dealTimeCostMap(rwSbIds, sbCostDataMap);
-//        // 纯水供水量
-//        List<Long> rwSbIds = codeSbIdMap.get(RW);
-//        Map<String, BigDecimal> rwTimeCostMap = dealTimeCostMap(rwSbIds, sbCostDataMap);
-//        // 废水量
-//        Map<String, BigDecimal> timeCostMap = dealTimeCostMap();
-//        // 加上化学品的成本
+        // 自来水
+        List<Long> twSbIds = pureCodeSbIdMap.get(TW);
+        Map<String, BigDecimal> twTimeCostMap = CollUtil.isNotEmpty(twSbIds) ? dealTimeCostMap(twSbIds, sbCostUsageDataMap, UsageCostData::getTotalCost) : Collections.emptyMap();
+        // 高品质再生水
+        List<Long> rwSbIds = pureCodeSbIdMap.get(RW);
+        Map<String, BigDecimal> rwTimeCostMap = CollUtil.isNotEmpty(rwSbIds) ? dealTimeCostMap(rwSbIds, sbCostUsageDataMap, UsageCostData::getTotalCost) : Collections.emptyMap();
+        // 电力
+        List<Long> dlSbIds = pureCodeSbIdMap.get(DL);
+        Map<String, BigDecimal> dlTimeCostMap = CollUtil.isNotEmpty(dlSbIds) ? dealTimeCostMap(dlSbIds, sbCostUsageDataMap, UsageCostData::getTotalCost) : Collections.emptyMap();
+        // 纯水供水量
+        List<Long> pwSbIds = pureCodeSbIdMap.get(PW);
+        Map<String, BigDecimal> pwTimeUsageMap = CollUtil.isNotEmpty(pwSbIds) ? dealTimeCostMap(pwSbIds, sbCostUsageDataMap, UsageCostData::getCurrentTotalUsage) : Collections.emptyMap();
 
+        // 电力
+        List<Long> wasteDlSbIds = wasteCodeSbIdMap.get(DL);
+        Map<String, BigDecimal> wasteDlTimeCostMap = CollUtil.isNotEmpty(wasteDlSbIds) ? dealTimeCostMap(wasteDlSbIds, sbCostUsageDataMap, UsageCostData::getTotalCost) : Collections.emptyMap();
+        // 废水量
+        List<Long> flSbIds = wasteCodeSbIdMap.get(FL);
+        Map<String, BigDecimal> flTimeUsageMap = CollUtil.isNotEmpty(flSbIds) ? dealTimeCostMap(flSbIds, sbCostUsageDataMap, UsageCostData::getCurrentTotalUsage) : Collections.emptyMap();
 
-        // 查找用量
+        // 加上化学品的成本
+        Map<String, BigDecimal> chemicalsTimeCostMap = dealChemicals(startTime, endTime);
 
+        // X轴
+        List<String> x = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, DataTypeEnum.DAY);
+        List<BigDecimal> pureYData = dealPureYData(x, twTimeCostMap, rwTimeCostMap, dlTimeCostMap, chemicalsTimeCostMap, pwTimeUsageMap);
+        List<BigDecimal> wasteYData = dealWasteYData(x, wasteDlTimeCostMap, chemicalsTimeCostMap, flTimeUsageMap);
 
+        resultVO.setXdata(x);
+        resultVO.setY1(pureYData);
+        resultVO.setY2(wasteYData);
         return resultVO;
     }
 
 
-    private List<Long> dealSbIds(String system) {
+    private ImmutablePair<List<Long>, Map<String, List<Long>>> dealSbIds(String system) {
         List<PowerPureWasteWaterGasSettingsDO> pureWasteWaterList = powerPureWasteWaterGasSettingsMapper.selectList(new LambdaQueryWrapperX<PowerPureWasteWaterGasSettingsDO>()
                 .eq(PowerPureWasteWaterGasSettingsDO::getSystem, system));
         if (CollUtil.isNotEmpty(pureWasteWaterList)) {
@@ -588,25 +636,41 @@ public class BigScreenServiceImpl implements BigScreenService {
                                     return ListUtils.newArrayList();
                                 }
                             }));
-
-            return codeSbIdMap.values().stream().flatMap(List::stream)
+            List<Long> sbIds = codeSbIdMap.values()
+                    .stream()
+                    .flatMap(List::stream)
                     .collect(Collectors.toList());
+            return ImmutablePair.of(sbIds, codeSbIdMap);
         }
 
-        return Collections.emptyList();
+        return null;
     }
 
-//    private deal() {
-//
-//    }
+    private Map<String, BigDecimal> dealChemicals(LocalDateTime startTime, LocalDateTime endTime) {
+        List<PowerChemicalsSettingsRespVO> chemicalsCostList = powerChemicalsSettingsService.getList(startTime, endTime);
+
+        if (CollUtil.isNotEmpty(chemicalsCostList)) {
+
+            return chemicalsCostList.stream()
+                    .filter(c -> Objects.nonNull(c.getPrice()))
+                    .collect(Collectors.toMap(PowerChemicalsSettingsRespVO::getStrTime, PowerChemicalsSettingsRespVO::getPrice));
+        }
+
+        return Collections.emptyMap();
+
+    }
 
 
-    private Map<String, BigDecimal> dealTimeCostMap(List<Long> sbIds, Map<Long, List<UsageCostData>> sbCostDataMap) {
+    private Map<String, BigDecimal> dealTimeCostMap(
+            List<Long> sbIds,
+            Map<Long, List<UsageCostData>> sbCostUsageDataMap,
+            Function<UsageCostData, BigDecimal> valueExtractor) {
 
         // 根据sbIds获取对应数采
         List<UsageCostData> usageCostDataList = sbIds
                 .stream()
-                .map(sbCostDataMap::get)
+                .map(sbCostUsageDataMap::get)
+                .filter(Objects::nonNull)
                 .flatMap(List::stream)
                 .collect(Collectors.toList());
 
@@ -618,9 +682,61 @@ public class BigScreenServiceImpl implements BigScreenService {
                         Collectors.collectingAndThen(
                                 Collectors.toList(),
                                 list -> list.stream()
-                                        .map(UsageCostData::getTotalCost)
+                                        .map(valueExtractor)
                                         .filter(Objects::nonNull)
                                         .reduce(BigDecimal::add).orElse(null))));
+    }
+
+    private List<BigDecimal> dealPureYData(
+            List<String> xdata,
+            Map<String, BigDecimal> twTimeCostMap,
+            Map<String, BigDecimal> rwTimeCostMap,
+            Map<String, BigDecimal> dlTimeCostMap,
+            Map<String, BigDecimal> chemicalsTimeCostMap,
+            Map<String, BigDecimal> pwTimeUsageMap) {
+
+
+        return xdata.stream().map(x -> {
+            BigDecimal purePrice;
+            BigDecimal sumCost;
+
+            BigDecimal twCost = twTimeCostMap.get(x);
+            BigDecimal rwCost = rwTimeCostMap.get(x);
+            sumCost = addBigDecimal(twCost, rwCost);
+
+            BigDecimal dlCost = dlTimeCostMap.get(x);
+            sumCost = addBigDecimal(sumCost, dlCost);
+
+            BigDecimal chemicalsCost = chemicalsTimeCostMap.get(x);
+            sumCost = addBigDecimal(sumCost, chemicalsCost);
+
+            BigDecimal pwUsage = pwTimeUsageMap.get(x);
+
+            purePrice = divideWithScale(pwUsage, sumCost, 2);
+
+            return purePrice;
+        }).collect(Collectors.toList());
+    }
+
+    private List<BigDecimal> dealWasteYData(
+            List<String> xdata,
+            Map<String, BigDecimal> wasteDlTimeCostMap,
+            Map<String, BigDecimal> chemicalsTimeCostMap,
+            Map<String, BigDecimal> flTimeUsageMap) {
+
+        return xdata.stream().map(x -> {
+
+            BigDecimal wastePrice;
+            BigDecimal dlCost = wasteDlTimeCostMap.get(x);
+            BigDecimal chemicalsCost = chemicalsTimeCostMap.get(x);
+            BigDecimal sumCost = addBigDecimal(dlCost, chemicalsCost);
+
+            BigDecimal flUsage = flTimeUsageMap.get(x);
+            wastePrice = divideWithScale(flUsage, sumCost, 2);
+            return wastePrice;
+
+        }).collect(Collectors.toList());
+
     }
 
     /**
@@ -632,32 +748,74 @@ public class BigScreenServiceImpl implements BigScreenService {
     @Override
     public BigScreenChartData getCompressedGasChart(BigScreenParamReqVO paramVO) {
         BigScreenChartData resultVO = new BigScreenChartData();
-        List<String> system = Arrays.asList(GAS);
-        List<PowerPureWasteWaterGasSettingsDO> pureWasteWaterList = powerPureWasteWaterGasSettingsMapper.selectList(new LambdaQueryWrapperX<PowerPureWasteWaterGasSettingsDO>()
-                .in(PowerPureWasteWaterGasSettingsDO::getSystem, system));
-        if (CollUtil.isNotEmpty(pureWasteWaterList)) {
-            List<Long> sbList = pureWasteWaterList
-                    .stream()
-                    .map(PowerPureWasteWaterGasSettingsDO::getStandingbookIds)
-                    .filter(Objects::nonNull)
-                    .map(s -> {
-                        String[] split = s.split(",");
-                        return Arrays.stream(split).map(Long::valueOf).collect(Collectors.toList());
-                    })
-                    .flatMap(List::stream)
-                    .collect(Collectors.toList());
+        // 纯水台账
+        List<Long> gasSbIds = Collections.emptyList();
 
-
-            // 按台账和日分组求成本和
-            List<UsageCostData> list = usageCostService.getList(
-                    paramVO.getRange()[0],
-                    paramVO.getRange()[1],
-                    sbList);
-
-            // 加上化学品的成本
-
-            // 查找用量
+        ImmutablePair<List<Long>, Map<String, List<Long>>> gasPair = dealSbIds(GAS);
+        if (Objects.nonNull(gasPair)) {
+            gasSbIds = gasPair.getLeft();
         }
+        if (CollUtil.isEmpty(gasSbIds)) {
+            return resultVO;
+        }
+
+        // 最近七天
+        LocalDateTime startTime = LocalDateTimeUtils.lastNDaysStartTime(6L);
+        LocalDateTime endTime = LocalDateTimeUtils.lastNDaysEndTime();
+        // 本期 按台账和日分组求成本和
+        List<UsageCostData> usageCostDataList = usageCostService.getTimeCostByStandardIds(
+                DataTypeEnum.DAY.getCode(),
+                startTime,
+                endTime,
+                gasSbIds);
+
+        // 上月同期 按台账和日分组求成本和
+        List<UsageCostData> lastUsageCostDataList = usageCostService.getTimeCostByStandardIds(
+                DataTypeEnum.DAY.getCode(),
+                startTime.minusMonths(1),
+                endTime.minusMonths(1),
+                gasSbIds);
+
+//        if (CollUtil.isEmpty(usageCostDataList)) {
+//            return resultVO;
+//        }
+
+        // 本期 按台账分组
+        Map<String, BigDecimal> gasDlTimeCostMap = usageCostDataList
+                .stream()
+                .filter(u -> Objects.nonNull(u.getTotalCost()))
+                .collect(Collectors.toMap(UsageCostData::getTime, UsageCostData::getTotalCost));
+
+        // 上月同期 按台账分组
+        Map<String, BigDecimal> lastGasDlTimeCostMap = lastUsageCostDataList
+                .stream()
+                .filter(u -> Objects.nonNull(u.getTotalCost()))
+                .collect(Collectors.toMap(UsageCostData::getTime, UsageCostData::getTotalCost));
+
+        // X轴
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, DataTypeEnum.DAY);
+
+        // 本期
+        List<BigDecimal> ydata = xdata.stream().map(x -> {
+            BigDecimal dlCost = gasDlTimeCostMap.get(x);
+            BigDecimal gasDeliverAbility = BigDecimal.valueOf(187200);
+            return divideWithScale(gasDeliverAbility, dlCost, 2);
+        }).collect(Collectors.toList());
+
+        // 上月同期
+        List<BigDecimal> lastYdata = xdata.stream().map(x -> {
+
+            LocalDate date = LocalDate.parse(x, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            String lastTime = date.minusMonths(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            BigDecimal dlCost = lastGasDlTimeCostMap.get(lastTime);
+            BigDecimal gasDeliverAbility = BigDecimal.valueOf(187200);
+            return divideWithScale(gasDeliverAbility, dlCost, 2);
+        }).collect(Collectors.toList());
+
+        resultVO.setXdata(xdata);
+        resultVO.setY1(ydata);
+        resultVO.setY2(lastYdata);
+
         return resultVO;
     }
 

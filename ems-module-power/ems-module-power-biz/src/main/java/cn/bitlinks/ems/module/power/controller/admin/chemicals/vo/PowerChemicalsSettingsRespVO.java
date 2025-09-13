@@ -27,6 +27,9 @@ public class PowerChemicalsSettingsRespVO {
     @Schema(description = "日期")
     private LocalDateTime time;
 
+    @Schema(description = "日期")
+    private String strTime;
+
     @Schema(description = "金额")
     private BigDecimal price;
 }

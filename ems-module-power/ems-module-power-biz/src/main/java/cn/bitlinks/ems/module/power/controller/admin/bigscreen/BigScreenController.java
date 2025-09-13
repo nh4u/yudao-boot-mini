@@ -96,7 +96,7 @@ public class BigScreenController {
     }
 
     @PostMapping("/getMiddleData")
-    @Operation(summary = "获取压缩空气单价")
+    @Operation(summary = "获取中间数据")
     //@PreAuthorize("@ss.hasPermission('power:bigScreen:query')")
     public CommonResult<OriginMiddleData> getMiddleData(@Valid @RequestBody BigScreenParamReqVO paramVO) {
         OriginMiddleData resultVO = bigScreenService.getMiddleData(paramVO);

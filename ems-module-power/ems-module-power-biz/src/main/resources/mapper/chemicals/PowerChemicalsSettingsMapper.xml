@@ -7,4 +7,16 @@
         代码生成器暂时只生成 Mapper XML 文件本身，更多推荐 MybatisX 快速开发插件来生成查询。
         文档可见：https://www.bitlinks.cn/MyBatis/x-plugins/
      -->
+
+    <select id="getList"
+            resultType="cn.bitlinks.ems.module.power.controller.admin.chemicals.vo.PowerChemicalsSettingsRespVO">
+        select DATE(time) AS strTime,
+               sum(price) as price
+        from power_chemicals_settings
+
+        WHERE deleted = 0
+          and time &gt;= #{startTime}
+          AND time &lt;= #{endTime}
+        GROUP BY DATE(time)
+    </select>
 </mapper>

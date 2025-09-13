@@ -4,8 +4,13 @@ import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.mybatis.core.mapper.BaseMapperX;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.chemicals.vo.PowerChemicalsSettingsPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.chemicals.vo.PowerChemicalsSettingsRespVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.chemicals.PowerChemicalsSettingsDO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * @author liumingqiang
@@ -20,4 +25,6 @@ public interface PowerChemicalsSettingsMapper extends BaseMapperX<PowerChemicals
                 .orderByAsc(PowerChemicalsSettingsDO::getId));
     }
 
+    List<PowerChemicalsSettingsRespVO> getList(@Param("startTime") LocalDateTime startTime,
+                                               @Param("endTime") LocalDateTime endTime);
 }

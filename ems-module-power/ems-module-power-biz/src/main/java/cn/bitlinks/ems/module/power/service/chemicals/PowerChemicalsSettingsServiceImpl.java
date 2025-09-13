@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.chemicals;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.chemicals.vo.PowerChemicalsSettingsPageReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.chemicals.vo.PowerChemicalsSettingsRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.chemicals.vo.PowerChemicalsSettingsSaveReqVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.chemicals.PowerChemicalsSettingsDO;
 import cn.bitlinks.ems.module.power.dal.mysql.chemicals.PowerChemicalsSettingsMapper;
@@ -67,6 +68,13 @@ public class PowerChemicalsSettingsServiceImpl implements PowerChemicalsSettings
                 .between(PowerChemicalsSettingsDO::getTime, time.minusDays(6), time)
                 .eq(PowerChemicalsSettingsDO::getCode, pageReqVO.getCode())
                 .orderByAsc(PowerChemicalsSettingsDO::getCode, PowerChemicalsSettingsDO::getTime)));
+    }
+
+
+    @Override
+    public List<PowerChemicalsSettingsRespVO> getList(LocalDateTime startTime, LocalDateTime endTime) {
+        return powerChemicalsSettingsMapper.getList(startTime, endTime);
+
     }
 
     /**
