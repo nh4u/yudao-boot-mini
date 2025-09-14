@@ -81,6 +81,11 @@ public interface UsageCostMapper {
             @Param("endDate") LocalDateTime endDate,
             @Param("standingBookIds") List<Long> standingBookIds);
 
+    List<UsageCostData> getSbIdCostStandardCoal(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("standingBookIds") List<Long> standingBookIds);
+
     List<UsageCostData> getEnergyStandardCoalByEnergyIds(@Param("startDate") LocalDateTime startDate,
                                                          @Param("endDate") LocalDateTime endDate,
                                                          @Param("energyIds") List<Long> energyIds);
@@ -152,7 +157,7 @@ public interface UsageCostMapper {
      * @param standingBookIds
      * @return
      */
-    List<UsageCostData> getTimeUsageByStandardIds(@Param("dateType") Integer dateType,
+    List<UsageCostData> getTimeStandardCoalByStandardIds(@Param("dateType") Integer dateType,
                                                   @Param("startDate") LocalDateTime startDate,
                                                   @Param("endDate") LocalDateTime endDate,
                                                   @Param("standingBookIds") List<Long> standingBookIds);

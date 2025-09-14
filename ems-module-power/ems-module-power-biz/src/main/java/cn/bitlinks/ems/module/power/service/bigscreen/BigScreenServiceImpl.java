@@ -6,6 +6,7 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.bigscreen.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.chemicals.vo.PowerChemicalsSettingsRespVO;
+import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigDTO;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.BigScreenCopChartData;
 import cn.bitlinks.ems.module.power.controller.admin.report.vo.ReportParamVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
@@ -14,12 +15,16 @@ import cn.bitlinks.ems.module.power.dal.dataobject.bigscreen.PowerPureWasteWater
 import cn.bitlinks.ems.module.power.dal.dataobject.collectrawdata.CollectRawDataDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.production.ProductionDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import cn.bitlinks.ems.module.power.dal.mysql.bigscreen.PowerPureWasteWaterGasSettingsMapper;
 import cn.bitlinks.ems.module.power.service.chemicals.PowerChemicalsSettingsService;
 import cn.bitlinks.ems.module.power.service.collectrawdata.CollectRawDataService;
 import cn.bitlinks.ems.module.power.service.cophouraggdata.CopHourAggDataService;
 import cn.bitlinks.ems.module.power.service.energyconfiguration.EnergyConfigurationService;
+import cn.bitlinks.ems.module.power.service.labelconfig.LabelConfigService;
 import cn.bitlinks.ems.module.power.service.production.ProductionService;
+import cn.bitlinks.ems.module.power.service.statistics.StatisticsCommonService;
 import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.bitlinks.ems.module.power.utils.CommonUtil;
 import cn.hutool.core.collection.CollUtil;
@@ -77,6 +82,12 @@ public class BigScreenServiceImpl implements BigScreenService {
 
     @Resource
     private EnergyConfigurationService energyConfigurationService;
+
+    @Resource
+    private LabelConfigService labelConfigService;
+
+    @Resource
+    private StatisticsCommonService statisticsCommonService;
 
 
     @Override
@@ -142,7 +153,8 @@ public class BigScreenServiceImpl implements BigScreenService {
                 WIND_DIRECTION_NW_IO,
                 WIND_DIRECTION_SE_IO,
                 WIND_DIRECTION_SW_IO,
-                WIND_SPEED_IO, TEMPERATURE_IO,
+                WIND_SPEED_IO,
+                TEMPERATURE_IO,
                 HUMIDITY_IO,
                 DEW_POINT_IO,
                 ATMOSPHERIC_PRESSURE_IO,
@@ -826,19 +838,238 @@ public class BigScreenServiceImpl implements BigScreenService {
             throw exception(PARK_FLAG_NOT_EXISTS);
         }
 
-        MiddleData middleData = new MiddleData();
-        middleData.setTodayConsumption(new MiddleItemData());
-        middleData.setPower(new MiddleItemData());
-        middleData.setRoWater(new MiddleItemData());
-        middleData.setUpw(new MiddleItemData());
-        middleData.setDiw(new MiddleItemData());
-        middleData.setNitrogen(new MiddleItemData());
-        middleData.setHelium(new MiddleItemData());
-        middleData.setHydrogen(new MiddleItemData());
-        middleData.setOxygen(new MiddleItemData());
-        middleData.setArgon(new MiddleItemData());
-        middleData.setTrendChart(new BigScreenChartData());
-        return middleData;
+        MiddleData resultVO = new MiddleData();
+
+        // 获取标签id
+        List<String> labelCodes = getLabelCodeByParkFlag(parkFlag);
+        Map<String, LabelConfigDTO> nodePathMap = labelConfigService.getLabelFullPathMap(labelCodes);
+
+        // 标签关联的台账id
+        List<Long> sbIdsByLabel = dealStandingbookIdsByLabel(nodePathMap);
+
+        if (CollUtil.isEmpty(sbIdsByLabel)) {
+            return resultVO;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startTime = LocalDateTimeUtils.beginOfDay(now);
+        LocalDateTime endTime = LocalDateTimeUtils.endOfDay(now);
+
+        List<UsageCostData> todayUsageCostDataList = usageCostService.getSbIdCostStandardCoal(
+                startTime,
+                endTime,
+                sbIdsByLabel);
+
+        if (CollUtil.isEmpty(todayUsageCostDataList)) {
+            return resultVO;
+        }
+
+        BigDecimal sumCost = todayUsageCostDataList
+                .stream()
+                .map(UsageCostData::getTotalCost)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal::add)
+                .orElse(null);
+
+        BigDecimal sumStandardCoal = todayUsageCostDataList
+                .stream()
+                .map(UsageCostData::getTotalStandardCoalEquivalent)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal::add)
+                .orElse(null);
+
+        MiddleItemData todayConsumption = new MiddleItemData();
+        todayConsumption.setCost(dealBigDecimalScale10000(sumCost, DEFAULT_SCALE));
+        todayConsumption.setStandardCoal(dealBigDecimalScale(sumStandardCoal, DEFAULT_SCALE));
+        resultVO.setTodayConsumption(todayConsumption);
+
+        if (parkFlag == 1 || parkFlag == 2) {
+            dealMiddleDetailData(resultVO, todayUsageCostDataList, sbIdsByLabel);
+        }
+
+        return resultVO;
+    }
+
+    private void dealMiddleDetailData(MiddleData resultVO,
+                                      List<UsageCostData> todayUsageCostDataList,
+                                      List<Long> sbIdsByLabel) {
+        // 统一获取能源
+        List<String> energyCodes = Arrays.asList(
+                "W_Dl_10KV",
+                "RO_water",
+                "UPW",
+                "DIW",
+                "W_N2",
+                "W_H2",
+                "W_O2",
+                "W_AR",
+                "W_HE");
+
+        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyCodes(energyCodes);
+
+        // 能源关联的台账id
+        Map<String, List<Long>> energyCodeSbIdMap = dealEnergySbIds(energyList);
+        Map<Long, UsageCostData> todayUsageCostDataMap = todayUsageCostDataList
+                .stream()
+                .collect(Collectors.toMap(UsageCostData::getStandingbookId, Function.identity()));
+
+
+        energyCodeSbIdMap.forEach((k, v) -> {
+            MiddleItemData middleItemData = new MiddleItemData();
+            List<UsageCostData> energyUsageCostDataList = v
+                    .stream()
+                    .map(todayUsageCostDataMap::get)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            BigDecimal sumCost = energyUsageCostDataList
+                    .stream()
+                    .map(UsageCostData::getTotalCost)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal::add)
+                    .orElse(null);
+
+            BigDecimal sumStandardCoal = energyUsageCostDataList
+                    .stream()
+                    .map(UsageCostData::getTotalStandardCoalEquivalent)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal::add)
+                    .orElse(null);
+
+            middleItemData.setCost(dealBigDecimalScale10000(sumCost, DEFAULT_SCALE));
+            middleItemData.setStandardCoal(dealBigDecimalScale(sumStandardCoal, DEFAULT_SCALE));
+
+            dealDetailItem(resultVO, middleItemData, k);
+
+        });
+
+
+        BigScreenChartData bigScreenChartData = new BigScreenChartData();
+        // 最近七天
+        LocalDateTime startTime = LocalDateTimeUtils.lastNDaysStartTime(6L);
+        LocalDateTime endTime = LocalDateTimeUtils.lastNDaysEndTime();
+        List<UsageCostData> sevenUsageCostDataList = usageCostService.getTimeStandardCoalByStandardIds(
+                DataTypeEnum.DAY.getCode(),
+                startTime,
+                endTime,
+                sbIdsByLabel);
+
+        // 上月同期 按台账和日分组求成本和
+        List<UsageCostData> lastSevenUsageCostDataList = usageCostService.getTimeStandardCoalByStandardIds(
+                DataTypeEnum.DAY.getCode(),
+                startTime.minusMonths(1),
+                endTime.minusMonths(1),
+                sbIdsByLabel);
+
+        // 本期 按台账分组
+        Map<String, BigDecimal> timeStandardCoalMap = sevenUsageCostDataList
+                .stream()
+                .filter(u -> Objects.nonNull(u.getTotalStandardCoalEquivalent()))
+                .collect(Collectors.toMap(UsageCostData::getTime, UsageCostData::getTotalStandardCoalEquivalent));
+
+        // 上月同期 按台账分组
+        Map<String, BigDecimal> lastTimeStandardCoalMap = lastSevenUsageCostDataList
+                .stream()
+                .filter(u -> Objects.nonNull(u.getTotalStandardCoalEquivalent()))
+                .collect(Collectors.toMap(UsageCostData::getTime, UsageCostData::getTotalStandardCoalEquivalent));
+
+        // X轴
+        List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, DataTypeEnum.DAY);
+
+        // 本期
+        List<BigDecimal> ydata = xdata.stream().map(x -> {
+            BigDecimal standardCoal = timeStandardCoalMap.get(x);
+            return dealBigDecimalScale(standardCoal, DEFAULT_SCALE);
+        }).collect(Collectors.toList());
+
+        // 上月同期
+        List<BigDecimal> lastYdata = xdata.stream().map(x -> {
+
+            LocalDate date = LocalDate.parse(x, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            String lastTime = date.minusMonths(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            BigDecimal standardCoal = lastTimeStandardCoalMap.get(lastTime);
+            return dealBigDecimalScale(standardCoal, DEFAULT_SCALE);
+        }).collect(Collectors.toList());
+
+        bigScreenChartData.setXdata(xdata);
+        bigScreenChartData.setY1(ydata);
+        bigScreenChartData.setY2(lastYdata);
+        resultVO.setTrendChart(bigScreenChartData);
+
+    }
+
+
+    private void dealDetailItem(MiddleData resultVO, MiddleItemData middleItemData, String code) {
+
+        switch (code) {
+            case "W_Dl_10KV":
+                resultVO.setPower(middleItemData);
+                break;
+            case "RO_water":
+                resultVO.setRoWater(middleItemData);
+                break;
+            case "UPW":
+                resultVO.setUpw(middleItemData);
+                break;
+            case "DIW":
+                resultVO.setDiw(middleItemData);
+                break;
+            case "W_N2":
+                resultVO.setNitrogen(middleItemData);
+                break;
+            case "W_H2":
+                resultVO.setHydrogen(middleItemData);
+                break;
+            case "W_O2":
+                resultVO.setOxygen(middleItemData);
+                break;
+            case "W_AR":
+                resultVO.setArgon(middleItemData);
+                break;
+            case "W_HE":
+                resultVO.setHelium(middleItemData);
+                break;
+            default:
+        }
+    }
+
+    List<Long> dealStandingbookIdsByLabel(Map<String, LabelConfigDTO> nodePathMap) {
+
+        List<Long> sbIdsByLabel = new ArrayList<>();
+
+        nodePathMap.forEach((k, v) -> {
+            List<StandingbookLabelInfoDO> sbLabelInfo = statisticsCommonService.getStandingbookIdsByLabel(v.getTopLevelLabelId(), v.getCurLabelId());
+            if (CollUtil.isNotEmpty(sbLabelInfo)) {
+                List<Long> sbs = sbLabelInfo
+                        .stream()
+                        .map(StandingbookLabelInfoDO::getStandingbookId)
+                        .collect(Collectors.toList());
+                sbIdsByLabel.addAll(sbs);
+            }
+        });
+
+        return sbIdsByLabel
+                .stream()
+                .distinct()
+                .collect(Collectors.toList());
+
+    }
+
+    private Map<String, List<Long>> dealEnergySbIds(List<EnergyConfigurationDO> energyList) {
+
+        Map<String, List<Long>> energySbIdsMap = new HashMap<>();
+
+        if (CollUtil.isEmpty(energyList)) {
+            energyList.forEach(e -> {
+                List<StandingbookDO> standingbookList = statisticsCommonService.getStandingbookIdsByEnergy(Collections.singletonList(e.getId()));
+                if (CollUtil.isEmpty(standingbookList)) {
+                    List<Long> sbIds = standingbookList.stream().map(StandingbookDO::getId).collect(Collectors.toList());
+                    energySbIdsMap.put(e.getCode(), sbIds);
+                }
+            });
+        }
+
+        return energySbIdsMap;
     }
 
     private BigDecimal dealProductionConsumption(BigDecimal value, BigDecimal sum, BigDecimal energySumStandardCoal) {
