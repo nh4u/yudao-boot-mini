@@ -350,7 +350,11 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         for (String code : codes) {
             List<Long> pathList = new ArrayList<>();
             // 递归追溯父级，收集路径（先加自身，再向上加父级）
-            recursiveGetParent(paramCodeMap.get(code).getId(), pathList, labelConfigDOS);
+            LabelConfigDO labelConfigDO = paramCodeMap.get(code);
+            if (Objects.isNull(paramCodeMap.get(code))) {
+                continue;
+            }
+            recursiveGetParent(labelConfigDO.getId(), pathList, labelConfigDOS);
             // 反转列表：从「自身→父→根」转为「根→父→自身」，再拼接为字符串
             List<String> reversedPath = new ArrayList<>();
             for (int i = pathList.size() - 1; i >= 1; i--) {
@@ -360,6 +364,50 @@ public class LabelConfigServiceImpl implements LabelConfigService {
             LabelConfigDTO labelConfigDTO = new LabelConfigDTO();
             labelConfigDTO.setCurLabelId(fullPath);
             labelConfigDTO.setTopLevelLabelId(ATTR_LABEL_INFO_PREFIX + pathList.get(0));
+            resultMap.put(code, labelConfigDTO);
+        }
+        return resultMap;
+    }
+
+    /**
+     * 核心方法：根据输入codes，返回每个codes的完整路径Map
+     *
+     * @param codes 输入的节点codes列表（如["FAB1","2"]）
+     * @return Map<code, LabelConfigDTO>（如{"FAB1":{"curLabelId":"276,284,286,292","topLevelLabelId":"label_275"}}）
+     */
+    @Override
+    public Map<String, LabelConfigDTO> getLabelFullPathMap(List<String> codes) {
+        Map<String, LabelConfigDTO> resultMap = new HashMap<>();
+        if (codes == null || codes.isEmpty()) {
+            return resultMap;
+        }
+
+        List<LabelConfigDO> labelConfigList = getAllLabelConfig();
+        List<LabelConfigDO> paramLabelList = getByCodes(codes);
+        if (CollUtil.isEmpty(paramLabelList)) {
+            return resultMap;
+        }
+
+        Map<String, LabelConfigDO> paramCodeMap = paramLabelList
+                .stream()
+                .collect(Collectors.toMap(LabelConfigDO::getCode, Function.identity()));
+
+        // 遍历每个ID，生成路径
+        for (String code : codes) {
+            List<Long> pathList = new ArrayList<>();
+            // 递归追溯父级，收集路径（先加自身，再向上加父级）
+            LabelConfigDO labelConfigDO = paramCodeMap.get(code);
+            if (Objects.isNull(paramCodeMap.get(code))) {
+                continue;
+            }
+            recursiveGetParent(labelConfigDO.getId(), pathList, labelConfigList);
+            // 反转列表：从「自身→父→根」转为「根→父→自身」，再拼接为字符串
+            Collections.reverse(pathList);
+            Long topId = pathList.remove(0);
+            String fullPath = pathList.stream().map(String::valueOf).collect(Collectors.joining(StringPool.COMMA));
+            LabelConfigDTO labelConfigDTO = new LabelConfigDTO();
+            labelConfigDTO.setCurLabelId(fullPath);
+            labelConfigDTO.setTopLevelLabelId(ATTR_LABEL_INFO_PREFIX + topId);
             resultMap.put(code, labelConfigDTO);
         }
         return resultMap;

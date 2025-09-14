@@ -114,6 +114,7 @@ public class CommonUtil {
         }
         return null;
     }
+
     public static BigDecimal dealBigDecimalScale(BigDecimal num, Integer scale) {
         if (num != null) {
             return num.setScale(scale, RoundingMode.HALF_UP);
@@ -121,6 +122,7 @@ public class CommonUtil {
         }
         return null;
     }
+
     public static Integer getLabelDeep(String childLabels) {
 
         Integer defaultDeep = 1;
@@ -272,6 +274,7 @@ public class CommonUtil {
         }
         return null;
     }
+
     public static BigDecimal safeDivide100(BigDecimal numerator, BigDecimal denominator) {
 
         // 检查值是否为null
@@ -307,4 +310,30 @@ public class CommonUtil {
 
         return sum.divide(num, scale, RoundingMode.HALF_UP);
     }
+
+
+    /**
+     * 根据区域标识获取对应的标签code
+     *
+     * @param parkFlag
+     * @return
+     */
+    public static List<String> getLabelCodeByParkFlag(Integer parkFlag) {
+        switch (parkFlag) {
+            case 1:
+                return Arrays.asList("FAB1", "FAB2", "sccsl", "ygssl", "cubdlzx");
+            case 2:
+                return Collections.singletonList("FAB2");
+            case 3:
+                return Collections.singletonList("sccsl");
+            case 4:
+                return Collections.singletonList("ygssl");
+            case 5:
+                return Collections.singletonList("cubdlzx");
+            default:
+                return Collections.emptyList();
+        }
+    }
+
+
 }
