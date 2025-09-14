@@ -90,6 +90,7 @@ public interface UsageCostService {
                               List<Long> energyIdList);
 
     List<UsageCostData> getStandingbookStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
+    List<UsageCostData> getSbIdCostStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
 
     /**
      * 获取合计折标煤用量
@@ -100,7 +101,7 @@ public interface UsageCostService {
      * @return 总用量
      */
     BigDecimal getSumStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
-    List<UsageCostData> getTimeUsageByStandardIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
+    List<UsageCostData> getTimeStandardCoalByStandardIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
     List<UsageCostData> getTimeCostByStandardIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
     List<UsageCostData> getEnergyUsage(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
     List<UsageCostData> getEnergyTimeUsageEnergyIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds);

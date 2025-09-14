@@ -63,6 +63,8 @@ public interface LabelConfigService {
 
     List<Tree<Long>> getLabelTreeByParam(List<Long> labelIdList);
 
+    Map<String, LabelConfigDTO> getLabelFullPathMap(List<String> codes);
+
     ImmutablePair<List<LabelConfigDO>, List<Tree<Long>>> getLabelPairByParam(List<Long> labelIdList);
 
 

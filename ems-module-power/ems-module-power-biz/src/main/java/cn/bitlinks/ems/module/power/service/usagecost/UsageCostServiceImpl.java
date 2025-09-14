@@ -186,7 +186,7 @@ public class UsageCostServiceImpl implements UsageCostService {
     }
 
     /**
-     * 按台账分组
+     * 按台账分组 台账id  折标煤
      *
      * @param startDate
      * @param endDate
@@ -198,6 +198,20 @@ public class UsageCostServiceImpl implements UsageCostService {
     public List<UsageCostData> getStandingbookStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
         return usageCostMapper.getStandingbookStandardCoal(startDate, endDate, standingBookIds);
     }
+    /**
+     * 按台账分组 获取 台账id cost  折标煤
+     *
+     * @param startDate
+     * @param endDate
+     * @param standingBookIds
+     * @return
+     */
+    @Override
+    @TenantIgnore
+    public List<UsageCostData> getSbIdCostStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getSbIdCostStandardCoal(startDate, endDate, standingBookIds);
+    }
+
 
     @Override
     @TenantIgnore
@@ -216,8 +230,8 @@ public class UsageCostServiceImpl implements UsageCostService {
      */
     @Override
     @TenantIgnore
-    public List<UsageCostData> getTimeUsageByStandardIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
-        return usageCostMapper.getTimeUsageByStandardIds(dateType, startDate, endDate, standingBookIds);
+    public List<UsageCostData> getTimeStandardCoalByStandardIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getTimeStandardCoalByStandardIds(dateType, startDate, endDate, standingBookIds);
     }
 
     /**
