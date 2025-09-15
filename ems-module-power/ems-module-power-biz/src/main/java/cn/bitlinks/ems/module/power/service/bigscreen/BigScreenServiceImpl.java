@@ -201,16 +201,26 @@ public class BigScreenServiceImpl implements BigScreenService {
         CollectRawDataDO se = outsideDataMap.get(WIND_DIRECTION_SE_IO);
         CollectRawDataDO sw = outsideDataMap.get(WIND_DIRECTION_SW_IO);
 
-        if (Objects.nonNull(ne)) {
-            windDirection = ne.getRawValue();
-        } else if (Objects.nonNull(nw)) {
-            windDirection = nw.getRawValue();
-        } else if (Objects.nonNull(se)) {
-            windDirection = se.getRawValue();
-        } else if (Objects.nonNull(sw)) {
-            windDirection = sw.getRawValue();
-        }
+        List<CollectRawDataDO> list = new ArrayList<>();
 
+        if (Objects.nonNull(ne)) {
+            list.add(ne);
+        }
+        if (Objects.nonNull(nw)) {
+            list.add(nw);
+        }
+        if (Objects.nonNull(se)) {
+            list.add(se);
+        }
+        if (Objects.nonNull(sw)) {
+            list.add(sw);
+        }
+        CollectRawDataDO collectRawDataDO = list
+                .stream()
+                .max(Comparator.comparing(CollectRawDataDO::getSyncTime))
+                .orElse(null);
+
+        windDirection = Objects.nonNull(collectRawDataDO) ? collectRawDataDO.getRawValue() : null;
         return windDirection;
     }
 
