@@ -960,14 +960,14 @@ public class BigScreenServiceImpl implements BigScreenService {
         // 最近七天
         LocalDateTime startTime = LocalDateTimeUtils.lastNDaysStartTime(6L);
         LocalDateTime endTime = LocalDateTimeUtils.lastNDaysEndTime();
-        List<UsageCostData> sevenUsageCostDataList = usageCostService.getTimeStandardCoalByStandardIds(
+        List<UsageCostData> sevenUsageCostDataList = usageCostService.getTimeCostByStandardIds(
                 DataTypeEnum.DAY.getCode(),
                 startTime,
                 endTime,
                 sbIdsByLabel);
 
         // 上月同期 按台账和日分组求成本和
-        List<UsageCostData> lastSevenUsageCostDataList = usageCostService.getTimeStandardCoalByStandardIds(
+        List<UsageCostData> lastSevenUsageCostDataList = usageCostService.getTimeCostByStandardIds(
                 DataTypeEnum.DAY.getCode(),
                 startTime.minusMonths(1),
                 endTime.minusMonths(1),
@@ -976,14 +976,14 @@ public class BigScreenServiceImpl implements BigScreenService {
         // 本期 按台账分组
         Map<String, BigDecimal> timeStandardCoalMap = sevenUsageCostDataList
                 .stream()
-                .filter(u -> Objects.nonNull(u.getTotalStandardCoalEquivalent()))
-                .collect(Collectors.toMap(UsageCostData::getTime, UsageCostData::getTotalStandardCoalEquivalent));
+                .filter(u -> Objects.nonNull(u.getTotalCost()))
+                .collect(Collectors.toMap(UsageCostData::getTime, UsageCostData::getTotalCost));
 
         // 上月同期 按台账分组
         Map<String, BigDecimal> lastTimeStandardCoalMap = lastSevenUsageCostDataList
                 .stream()
-                .filter(u -> Objects.nonNull(u.getTotalStandardCoalEquivalent()))
-                .collect(Collectors.toMap(UsageCostData::getTime, UsageCostData::getTotalStandardCoalEquivalent));
+                .filter(u -> Objects.nonNull(u.getTotalCost()))
+                .collect(Collectors.toMap(UsageCostData::getTime, UsageCostData::getTotalCost));
 
         // X轴
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, DataTypeEnum.DAY);
@@ -991,8 +991,8 @@ public class BigScreenServiceImpl implements BigScreenService {
 
         // 本期
         List<BigDecimal> ydata = xdata.stream().map(x -> {
-            BigDecimal standardCoal = timeStandardCoalMap.get(x);
-            return dealBigDecimalScale(standardCoal, DEFAULT_SCALE);
+            BigDecimal cost = timeStandardCoalMap.get(x);
+            return dealBigDecimalScale(cost, DEFAULT_SCALE);
         }).collect(Collectors.toList());
 
         // 上月同期
@@ -1000,8 +1000,8 @@ public class BigScreenServiceImpl implements BigScreenService {
 
             LocalDate date = LocalDate.parse(x, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             String lastTime = date.minusMonths(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-            BigDecimal standardCoal = lastTimeStandardCoalMap.get(lastTime);
-            return dealBigDecimalScale(standardCoal, DEFAULT_SCALE);
+            BigDecimal cost = lastTimeStandardCoalMap.get(lastTime);
+            return dealBigDecimalScale(cost, DEFAULT_SCALE);
         }).collect(Collectors.toList());
 
         bigScreenChartData.setXdata(xdataDisplay);

@@ -1,10 +1,7 @@
 package cn.bitlinks.ems.module.power.dal.dataobject.bigscreen;
 
 import cn.bitlinks.ems.framework.mybatis.core.dataobject.BaseDO;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.KeySequence;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -50,5 +47,8 @@ public class PowerPureWasteWaterGasSettingsDO extends BaseDO {
      * 台账ids
      */
     private String standingbookIds;
+
+    @TableField(exist = false)
+    private String wasteWaterName;
 
 }
