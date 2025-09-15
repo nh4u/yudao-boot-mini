@@ -321,7 +321,7 @@ public class CommonUtil {
     public static List<String> getLabelCodeByParkFlag(Integer parkFlag) {
         switch (parkFlag) {
             case 1:
-                return Arrays.asList("FAB1", "FAB2", "sccsl", "ygssl", "cubdlzx");
+                return Collections.singletonList("FAB1");
             case 2:
                 return Collections.singletonList("FAB2");
             case 3:

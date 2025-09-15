@@ -175,6 +175,11 @@ public interface CommonConstants {
      * 废水量 ACW_FL505
      */
     String FL = "FL";
+    /**
+     * 废水量计量器具编号
+     */
+    String WASTE_WATER_STANDING_BOOK_CODE = "ACW_FL505";
+
 
     /**
      * 风向值
