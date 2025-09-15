@@ -117,7 +117,7 @@ public interface ErrorCodeConstants {
     ErrorCode STANDINGBOOK_EXIST_NOT_SUPPORT_CREATE = new ErrorCode(1_001_202_017, "该分类或其子分类下存在设备，不可选择能源！");
 
     ErrorCode STANDINGBOOK_REL_STRATEGY = new ErrorCode(1_001_202_018,"已配置告警策略，请先删除告警策略");
-
+    ErrorCode BIG_SCREEN_STANDINGBOOK_REPEAT = new ErrorCode(1_001_202_019, "关联台账重复");
 
     // ========== 标签配置 ==========
     ErrorCode LABEL_CONFIG_NOT_EXISTS = new ErrorCode(1_001_401_001, "配置标签不存在");

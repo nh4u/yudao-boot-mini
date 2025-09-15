@@ -10,9 +10,10 @@ import lombok.Data;
 public class DoubleCarbonMappingRespVO {
     @Schema(description = "映射id")
     private Long id;
+
     @Schema(description = "台账编码")
     private String standingbookCode;
+
     @Schema(description = "双碳编码")
     private String doubleCarbonCode;
-
 }

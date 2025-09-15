@@ -5,9 +5,12 @@ import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.module.power.controller.admin.doublecarbon.vo.*;
 import cn.bitlinks.ems.module.power.service.doublecarbon.DoubleCarbonService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
@@ -49,4 +52,13 @@ public class DoubleCarbonController {
         doubleCarbonService.updMapping(updVO);
         return success(true);
     }
+
+
+    @PostMapping("/import")
+    @Operation(summary = "导入双系统编码对应关系")
+    @Parameter(name = "file", description = "Excel 文件", required = true)
+    public CommonResult<DoubleCarbonMappingImportRespVO> importExcel(@RequestParam("file") MultipartFile file) {
+        return success(doubleCarbonService.importExcel(file));
+    }
+
 }
