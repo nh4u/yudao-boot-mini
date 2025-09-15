@@ -630,10 +630,12 @@ public class BigScreenServiceImpl implements BigScreenService {
 
         // X轴
         List<String> x = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, DataTypeEnum.DAY);
+        List<String> xdataDisplay = LocalDateTimeUtils.getBigScreenTimeRangeList(startTime, endTime, DataTypeEnum.DAY);
+
         List<BigDecimal> pureYData = dealPureYData(x, twTimeCostMap, rwTimeCostMap, dlTimeCostMap, chemicalsTimeCostMap, pwTimeUsageMap);
         List<BigDecimal> wasteYData = dealWasteYData(x, wasteDlTimeCostMap, chemicalsTimeCostMap, flTimeUsageMap);
 
-        resultVO.setXdata(x);
+        resultVO.setXdata(xdataDisplay);
         resultVO.setY1(pureYData);
         resultVO.setY2(wasteYData);
         return resultVO;
@@ -816,7 +818,7 @@ public class BigScreenServiceImpl implements BigScreenService {
 
         // X轴
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, DataTypeEnum.DAY);
-
+        List<String> xdataDisplay = LocalDateTimeUtils.getBigScreenTimeRangeList(startTime, endTime, DataTypeEnum.DAY);
         // 本期
         List<BigDecimal> ydata = xdata.stream().map(x -> {
             BigDecimal dlCost = gasDlTimeCostMap.get(x);
@@ -834,7 +836,7 @@ public class BigScreenServiceImpl implements BigScreenService {
             return divideWithScale(gasDeliverAbility, dlCost, 2);
         }).collect(Collectors.toList());
 
-        resultVO.setXdata(xdata);
+        resultVO.setXdata(xdataDisplay);
         resultVO.setY1(ydata);
         resultVO.setY2(lastYdata);
 
@@ -985,6 +987,7 @@ public class BigScreenServiceImpl implements BigScreenService {
 
         // X轴
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, DataTypeEnum.DAY);
+        List<String> xdataDisplay = LocalDateTimeUtils.getBigScreenTimeRangeList(startTime, endTime, DataTypeEnum.DAY);
 
         // 本期
         List<BigDecimal> ydata = xdata.stream().map(x -> {
@@ -1001,7 +1004,7 @@ public class BigScreenServiceImpl implements BigScreenService {
             return dealBigDecimalScale(standardCoal, DEFAULT_SCALE);
         }).collect(Collectors.toList());
 
-        bigScreenChartData.setXdata(xdata);
+        bigScreenChartData.setXdata(xdataDisplay);
         bigScreenChartData.setY1(ydata);
         bigScreenChartData.setY2(lastYdata);
         resultVO.setTrendChart(bigScreenChartData);
