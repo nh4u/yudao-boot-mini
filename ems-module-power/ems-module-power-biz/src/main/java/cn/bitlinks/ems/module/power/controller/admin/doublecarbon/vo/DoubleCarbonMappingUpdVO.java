@@ -11,7 +11,10 @@ public class DoubleCarbonMappingUpdVO {
 
     @Schema(description = "映射id")
     private Long id;
+
     @Schema(description = "双碳编码")
     private String doubleCarbonCode;
 
+    @Schema(description = "能管编码")
+    private String standingbookCode;
 }
