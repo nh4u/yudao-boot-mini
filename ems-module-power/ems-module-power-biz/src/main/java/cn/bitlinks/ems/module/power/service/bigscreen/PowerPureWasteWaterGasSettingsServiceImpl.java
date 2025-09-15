@@ -7,15 +7,20 @@ import cn.bitlinks.ems.module.power.controller.admin.bigscreen.vo.PowerPureWaste
 import cn.bitlinks.ems.module.power.dal.dataobject.bigscreen.PowerPureWasteWaterGasSettingsDO;
 import cn.bitlinks.ems.module.power.dal.mysql.bigscreen.PowerPureWasteWaterGasSettingsMapper;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.text.StrPool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.BIG_SCREEN_STANDINGBOOK_REPEAT;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.PURE_WASTE_GAS_SETTINGS_LIST_NOT_EXISTS;
 
 /**
@@ -39,6 +44,26 @@ public class PowerPureWasteWaterGasSettingsServiceImpl implements PowerPureWaste
         if (CollUtil.isEmpty(powerPureWasteWaterGasSettingsList)) {
             throw exception(PURE_WASTE_GAS_SETTINGS_LIST_NOT_EXISTS);
         }
+
+        // 不能重复
+        powerPureWasteWaterGasSettingsList.forEach(p -> {
+
+            String standingbookIds = p.getStandingbookIds();
+
+            if (CharSequenceUtil.isNotBlank(standingbookIds))
+            {
+                String[] split = standingbookIds.split(StrPool.COMMA);
+                List<String> list = Arrays.stream(split).collect(Collectors.toList());
+
+                List<String> collect = list.stream()
+                        .distinct()
+                        .collect(Collectors.toList());
+                if (collect.size() != list.size()) {
+                    throw exception(BIG_SCREEN_STANDINGBOOK_REPEAT);
+                }
+            }
+        });
+
         // 统一保存
         List<PowerPureWasteWaterGasSettingsDO> list = BeanUtils.toBean(powerPureWasteWaterGasSettingsList, PowerPureWasteWaterGasSettingsDO.class);
         powerPureWasteWaterGasSettingsMapper.updateBatch(list);
