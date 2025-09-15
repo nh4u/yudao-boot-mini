@@ -31,4 +31,7 @@ public class PowerPureWasteWaterGasSettingsRespVO {
 
     @Schema(description = "台账ids")
     private String standingbookIds;
+
+    @Schema(description = "废水量台账名称")
+    private String wasteWaterName;
 }
