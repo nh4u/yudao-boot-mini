@@ -12,6 +12,7 @@ import org.apache.ibatis.annotations.Mapper;
 public interface DoubleCarbonMappingMapper extends BaseMapperX<DoubleCarbonMappingDO> {
     default PageResult<DoubleCarbonMappingDO> selectPage(DoubleCarbonMappingPageReqVO reqVO) {
         return selectPage(reqVO, new LambdaQueryWrapperX<DoubleCarbonMappingDO>()
+                .likeIfPresent(DoubleCarbonMappingDO::getDoubleCarbonCode, reqVO.getStandingbookCode())
                 .likeIfPresent(DoubleCarbonMappingDO::getStandingbookCode, reqVO.getStandingbookCode()));
     }
 
