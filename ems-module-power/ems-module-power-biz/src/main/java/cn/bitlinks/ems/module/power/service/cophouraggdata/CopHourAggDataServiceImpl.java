@@ -402,7 +402,8 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
 
         // 处理x轴
         List<String> xdata = LocalDateTimeUtils.getTimeRangeList(startTime, endTime, dataTypeEnum);
-        resultVO.setXdata(xdata);
+        List<String> xdataDisplay = LocalDateTimeUtils.getBigScreenTimeRangeList(startTime, endTime, dataTypeEnum);
+        resultVO.setXdata(xdataDisplay);
 
         // 3.字段拼接
         // 当下cop数据
