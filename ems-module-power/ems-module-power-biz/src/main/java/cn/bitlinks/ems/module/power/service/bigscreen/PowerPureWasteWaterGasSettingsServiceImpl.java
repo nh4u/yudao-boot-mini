@@ -24,7 +24,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.WASTE_WATER_STANDING_BOOK_CODE;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 
 /**
@@ -52,20 +52,25 @@ public class PowerPureWasteWaterGasSettingsServiceImpl implements PowerPureWaste
             throw exception(PURE_WASTE_GAS_SETTINGS_LIST_NOT_EXISTS);
         }
 
-        // 不能重复
+        // 不能重复   除了 NAOH HCL外都需要有计量器
         powerPureWasteWaterGasSettingsList.forEach(p -> {
 
-            String standingbookIds = p.getStandingbookIds();
+            if (!Objects.equals(p.getCode(), HCL) && !Objects.equals(p.getCode(), NAOH)) {
 
-            if (CharSequenceUtil.isNotBlank(standingbookIds)) {
-                String[] split = standingbookIds.split(StrPool.COMMA);
-                List<String> list = Arrays.stream(split).collect(Collectors.toList());
+                String standingbookIds = p.getStandingbookIds();
 
-                List<String> collect = list.stream()
-                        .distinct()
-                        .collect(Collectors.toList());
-                if (collect.size() != list.size()) {
-                    throw exception(BIG_SCREEN_STANDINGBOOK_REPEAT);
+                if (CharSequenceUtil.isNotBlank(standingbookIds)) {
+                    String[] split = standingbookIds.split(StrPool.COMMA);
+                    List<String> list = Arrays.stream(split).collect(Collectors.toList());
+
+                    List<String> collect = list.stream()
+                            .distinct()
+                            .collect(Collectors.toList());
+                    if (collect.size() != list.size()) {
+                        throw exception(BIG_SCREEN_STANDINGBOOK_REPEAT);
+                    }
+                } else {
+                    throw exception(STANDINGBOOK_NOT_EXISTS);
                 }
             }
         });
