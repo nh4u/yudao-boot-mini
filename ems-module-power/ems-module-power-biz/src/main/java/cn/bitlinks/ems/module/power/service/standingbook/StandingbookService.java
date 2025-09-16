@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.standingbook;
 
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
+import cn.bitlinks.ems.module.power.controller.admin.doublecarbon.vo.DoubleCarbonMappingRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.labelconfig.LabelConfigDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.measurementassociation.MeasurementAssociationDO;
@@ -176,4 +177,7 @@ public interface StandingbookService {
     List<String> getStandingbookCodeMeasurementList();
 
     StandingbookExportVO getExcelData(Map<String, String> paramVO);
+
+    List<DoubleCarbonMappingRespVO> getEffectiveSbIds();
+
 }

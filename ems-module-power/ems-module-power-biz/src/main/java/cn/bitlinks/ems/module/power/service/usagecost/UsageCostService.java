@@ -33,10 +33,15 @@ public interface UsageCostService {
                                 LocalDateTime endDate,
                                 List<Long> standingBookIds);
 
+    List<UsageCostData> getTimeSbUsageList(Integer dateType,
+                                        LocalDateTime startDate,
+                                        LocalDateTime endDate,
+                                        List<Long> standingBookIds);
+
     List<UsageCostData> getTimeSbCostList(Integer dateType,
-                                LocalDateTime startDate,
-                                LocalDateTime endDate,
-                                List<Long> standingBookIds);
+                                          LocalDateTime startDate,
+                                          LocalDateTime endDate,
+                                          List<Long> standingBookIds);
 
     List<UsageCostData> getList(LocalDateTime startDate,
                                 LocalDateTime endDate,
@@ -69,12 +74,14 @@ public interface UsageCostService {
     List<UsageCostData> getEnergyStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
 
     List<UsageCostData> getEnergyStandardCoalByEnergyIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds);
+
     BigDecimal getEnergySumStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds);
 
     /**
      * 统计总览查询能源汇总数据
      */
     StatisticsOverviewStatisticsTableData getAggStatisticsByEnergyIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds);
+
     DeviceMonitorAggData getAggStatisticsBySbIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> sbIds);
 
     /**
@@ -90,6 +97,7 @@ public interface UsageCostService {
                               List<Long> energyIdList);
 
     List<UsageCostData> getStandingbookStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
+
     List<UsageCostData> getSbIdCostStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
 
     /**
@@ -101,10 +109,15 @@ public interface UsageCostService {
      * @return 总用量
      */
     BigDecimal getSumStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
+
     List<UsageCostData> getTimeStandardCoalByStandardIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
+
     List<UsageCostData> getTimeCostByStandardIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
+
     List<UsageCostData> getEnergyUsage(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds);
+
     List<UsageCostData> getEnergyTimeUsageEnergyIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds);
+
     List<UsageCostData> getEnergyUsageByEnergyIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds);
 
     /**
