@@ -26,7 +26,7 @@ public class PowerPureWasteWaterGasSettingsSaveReqVO {
     private String code;
 
     @Schema(description = "能源codes", example = "随便")
-    @NotBlank(message = "能源codes不能为空")
+    @NotNull(message = "能源codes不能为空")
     private String energyCodes;
 
     @Schema(description = "名称", example = "王五")
@@ -34,6 +34,6 @@ public class PowerPureWasteWaterGasSettingsSaveReqVO {
     private String name;
 
     @Schema(description = "计量器具ids")
-    @NotBlank(message = "计量器具不能为空")
+    @NotNull(message = "计量器具不能为空")
     private String standingbookIds;
 }
