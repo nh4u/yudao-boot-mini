@@ -407,12 +407,8 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
 
         // 3.字段拼接
         // 当下cop数据
-        List<CopHourAggData> nowCopAggDataList;
-        if (dataTypeEnum.equals(DataTypeEnum.DAY)) {
-            nowCopAggDataList = copHourAggDataMapper.getCopDayAggDataList(startTime, endTime, copyTypeList);
-        } else {
-            nowCopAggDataList = copHourAggDataMapper.getCopHourAggDataList(startTime, endTime, copyTypeList);
-        }
+        List<CopHourAggData> nowCopAggDataList = copHourAggDataMapper.getBigScreenCopDayDataList(startTime, endTime, copyTypeList);
+
         Map<String, List<CopHourAggData>> nowCopAggDataMap = nowCopAggDataList.stream().collect(Collectors.groupingBy(CopHourAggData::getTime));
 
         List<String> copTypes = dealSystemType(copyTypeList);

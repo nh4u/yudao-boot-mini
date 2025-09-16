@@ -46,4 +46,16 @@ public interface CopHourAggDataMapper extends BaseMapperX<CopHourAggDataDO> {
                               @Param("endDate") LocalDateTime endDate,
                               @Param("systemType") List<String> systemType);
 
+    /**
+     * 大屏cop 获取数据， 获取每一天0点的数据最为当天的数据
+     *
+     * @param startDate
+     * @param endDate
+     * @param systemType
+     * @return
+     */
+    @TenantIgnore
+    List<CopHourAggData> getBigScreenCopDayDataList(@Param("startDate") LocalDateTime startDate,
+                                                    @Param("endDate") LocalDateTime endDate,
+                                                    @Param("systemType") List<String> systemType);
 }
