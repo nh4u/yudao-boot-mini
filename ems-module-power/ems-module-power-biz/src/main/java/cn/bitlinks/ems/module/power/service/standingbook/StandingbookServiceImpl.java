@@ -5,6 +5,7 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.AssociationData;
 import cn.bitlinks.ems.module.power.controller.admin.deviceassociationconfiguration.vo.StandingbookWithAssociations;
+import cn.bitlinks.ems.module.power.controller.admin.doublecarbon.vo.DoubleCarbonMappingRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.attribute.vo.StandingbookAttributeSaveReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.*;
@@ -44,7 +45,6 @@ import cn.bitlinks.ems.module.power.service.warningstrategy.WarningStrategyServi
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.text.StrPool;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.util.ListUtils;
@@ -561,6 +561,23 @@ public class StandingbookServiceImpl implements StandingbookService {
         }
         resultVo.setDataList(dataList);
         return resultVo;
+    }
+
+    @Override
+    public List<DoubleCarbonMappingRespVO> getEffectiveSbIds() {
+
+        List<DoubleCarbonMappingRespVO> effectiveMappings = doubleCarbonService.getEffectiveMappings();
+        List<StandingbookDTO> standingbookDTOList = getStandingbookDTOList();
+
+        Map<String, StandingbookDTO> sbCodeMap = standingbookDTOList
+                .stream()
+                .collect(Collectors.toMap(StandingbookDTO::getCode, Function.identity()));
+
+        effectiveMappings.forEach(e -> {
+            StandingbookDTO standingbookDTO = sbCodeMap.get(e.getStandingbookCode());
+            e.setStandingbookId(Objects.nonNull(standingbookDTO) ? standingbookDTO.getStandingbookId() : null);
+        });
+        return effectiveMappings;
     }
 
     private AttributeTreeNodeTypeEnum validTypeId(String typeIdStr) {

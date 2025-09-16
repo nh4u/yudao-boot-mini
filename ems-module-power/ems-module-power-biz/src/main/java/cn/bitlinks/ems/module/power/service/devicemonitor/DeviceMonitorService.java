@@ -259,7 +259,10 @@ public class DeviceMonitorService {
                             .orderByDesc(DeviceMonitorQrcodeDO::getCreateTime)
                             .last("limit 1"));
 
-            return Objects.isNull(deviceMonitorQrcodeDO) ? "" : deviceMonitorQrcodeDO.getQrcode();
+            // 如果存在则返回 不存在则新建
+            if (Objects.nonNull(deviceMonitorQrcodeDO)) {
+                return deviceMonitorQrcodeDO.getQrcode();
+            }
         }
 
         StandingbookDO standingbookDO = standingbookService.getById(sbId);

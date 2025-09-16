@@ -111,6 +111,14 @@ public class DoubleCarbonServiceImpl implements DoubleCarbonService {
     }
 
     @Override
+    public List<DoubleCarbonMappingRespVO> getEffectiveMappings() {
+        List<DoubleCarbonMappingDO> list = doubleCarbonMappingMapper.selectList(new LambdaQueryWrapperX<DoubleCarbonMappingDO>()
+                .isNotNull(DoubleCarbonMappingDO::getDoubleCarbonCode));
+        return BeanUtils.toBean(list, DoubleCarbonMappingRespVO.class);
+
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class) // 添加事务，异常则回滚所有导入
     public DoubleCarbonMappingImportRespVO importExcel(MultipartFile file) {
         // 1.1 参数校验

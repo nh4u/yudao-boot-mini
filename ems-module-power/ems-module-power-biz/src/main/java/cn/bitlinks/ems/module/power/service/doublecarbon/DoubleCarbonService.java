@@ -19,5 +19,7 @@ public interface DoubleCarbonService {
     void addMapping(String standingbookCode);
     void delMapping(List<String> standingbookCodes);
 
+    List<DoubleCarbonMappingRespVO> getEffectiveMappings();
+
     DoubleCarbonMappingImportRespVO importExcel(MultipartFile file);
 }

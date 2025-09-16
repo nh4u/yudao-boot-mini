@@ -32,10 +32,10 @@ public interface UsageCostMapper {
                                 @Param("endDate") LocalDateTime endDate,
                                 @Param("standingBookIds") List<Long> standingBookIds);
 
-    List<UsageCostData> getTimeDataList(@Param("dateType") Integer dateType,
-                                        @Param("startDate") LocalDateTime startDate,
-                                        @Param("endDate") LocalDateTime endDate,
-                                        @Param("standingBookIds") List<Long> standingBookIds);
+    List<UsageCostData> getTimeSbUsageList(@Param("dateType") Integer dateType,
+                                               @Param("startDate") LocalDateTime startDate,
+                                               @Param("endDate") LocalDateTime endDate,
+                                               @Param("standingBookIds") List<Long> standingBookIds);
 
     LocalDateTime getLastTime(@Param("dateType") Integer dateType,
                               @Param("startDate") LocalDateTime startDate,
@@ -158,9 +158,9 @@ public interface UsageCostMapper {
      * @return
      */
     List<UsageCostData> getTimeStandardCoalByStandardIds(@Param("dateType") Integer dateType,
-                                                  @Param("startDate") LocalDateTime startDate,
-                                                  @Param("endDate") LocalDateTime endDate,
-                                                  @Param("standingBookIds") List<Long> standingBookIds);
+                                                         @Param("startDate") LocalDateTime startDate,
+                                                         @Param("endDate") LocalDateTime endDate,
+                                                         @Param("standingBookIds") List<Long> standingBookIds);
 
     /**
      * 根据台账ids获取时间分组成本
