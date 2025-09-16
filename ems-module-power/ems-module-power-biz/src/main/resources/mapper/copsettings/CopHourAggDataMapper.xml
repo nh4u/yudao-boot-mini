@@ -62,4 +62,31 @@
         </where>
         group by time, copType
     </select>
+
+    <select id="getBigScreenCopDayDataList"
+            resultType="cn.bitlinks.ems.module.power.controller.admin.report.vo.CopHourAggData">
+        SELECT cop_type,
+               DATE(aggregate_time) as time,
+               cop_value
+        FROM (SELECT *,
+                     ROW_NUMBER() OVER (
+                         PARTITION BY cop_type, DATE(aggregate_time)
+                         ORDER BY aggregate_time
+                         ) AS rn
+              FROM cop_hour_aggregate_data
+        <where>
+            aggregate_time &gt;= #{startDate}
+              AND aggregate_time &lt;= #{endDate}
+            <if test="systemType != null and systemType.size() != 0">
+                AND cop_type IN
+                <foreach collection="systemType" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        ) t
+        WHERE rn = 1
+
+        ORDER BY cop_type, aggregate_time
+    </select>
 </mapper>

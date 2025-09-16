@@ -216,7 +216,7 @@ public interface CommonConstants {
     /**
      * 露点
      */
-    String DEW_POINT_IO = "PLC220.PLC.QxzData.LD";
+    String DEW_POINT_IO = "PLC220.PLC.DEWPOINT_OUTSIDE.PV";
     /**
      * 气压
      */

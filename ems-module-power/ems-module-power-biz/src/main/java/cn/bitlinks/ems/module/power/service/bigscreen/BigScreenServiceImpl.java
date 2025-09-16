@@ -544,6 +544,7 @@ public class BigScreenServiceImpl implements BigScreenService {
         LocalDateTime endTime = LocalDateTimeUtils.lastNDaysEndTime();
         LocalDateTime[] range = new LocalDateTime[]{startTime, endTime};
         reportParamVO.setRange(range);
+        reportParamVO.setDateType(DataTypeEnum.DAY.getCode());
         return copHourAggDataService.copChartForBigScreen(reportParamVO);
     }
 
@@ -992,7 +993,7 @@ public class BigScreenServiceImpl implements BigScreenService {
         // 本期
         List<BigDecimal> ydata = xdata.stream().map(x -> {
             BigDecimal cost = timeStandardCoalMap.get(x);
-            return dealBigDecimalScale(cost, DEFAULT_SCALE);
+            return dealBigDecimalScale10000(cost, DEFAULT_SCALE);
         }).collect(Collectors.toList());
 
         // 上月同期
@@ -1001,7 +1002,7 @@ public class BigScreenServiceImpl implements BigScreenService {
             LocalDate date = LocalDate.parse(x, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             String lastTime = date.minusMonths(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             BigDecimal cost = lastTimeStandardCoalMap.get(lastTime);
-            return dealBigDecimalScale(cost, DEFAULT_SCALE);
+            return dealBigDecimalScale10000(cost, DEFAULT_SCALE);
         }).collect(Collectors.toList());
 
         bigScreenChartData.setXdata(xdataDisplay);
@@ -1072,10 +1073,10 @@ public class BigScreenServiceImpl implements BigScreenService {
 
         Map<String, List<Long>> energySbIdsMap = new HashMap<>();
 
-        if (CollUtil.isEmpty(energyList)) {
+        if (CollUtil.isNotEmpty(energyList)) {
             energyList.forEach(e -> {
                 List<StandingbookDO> standingbookList = statisticsCommonService.getStandingbookIdsByEnergy(Collections.singletonList(e.getId()));
-                if (CollUtil.isEmpty(standingbookList)) {
+                if (CollUtil.isNotEmpty(standingbookList)) {
                     List<Long> sbIds = standingbookList.stream().map(StandingbookDO::getId).collect(Collectors.toList());
                     energySbIdsMap.put(e.getCode(), sbIds);
                 }
