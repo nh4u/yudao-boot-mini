@@ -4,20 +4,22 @@ import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
+/**
+ * @author liumingqiang
+ */
 @Schema(description = "管理后台 - 双碳接口 Response VO")
 @Data
 @ExcelIgnoreUnannotated
-public class DoubleCarbonMappingRespVO {
-    @Schema(description = "映射id")
-    private Long id;
-
-    @Schema(description = "台账编码")
-    private String standingbookCode;
+public class SyncDoubleCarbonData {
 
     @Schema(description = "双碳编码")
     private String doubleCarbonCode;
 
-    @Schema(description = "台账id")
-    private Long standingbookId;
+    @Schema(description = "同步数采数据")
+    private BigDecimal usage;
 
+    @Schema(description = "采集时间")
+    private Long acqTimeLong;
 }

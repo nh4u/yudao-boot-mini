@@ -59,11 +59,18 @@ public class UsageCostServiceImpl implements UsageCostService {
     @Override
     @TenantIgnore
     public List<UsageCostData> getList(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
-        return usageCostMapper.getTimeDataList(dateType, startDate, endDate, standingBookIds);
+        return usageCostMapper.getTimeSbUsageList(dateType, startDate, endDate, standingBookIds);
+    }
+
+    @Override
+    @TenantIgnore
+    public List<UsageCostData> getTimeSbUsageList(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getTimeSbUsageList(dateType, startDate, endDate, standingBookIds);
     }
 
     /**
      * 获取 台账 时间 成本数据
+     *
      * @param dateType
      * @param startDate
      * @param endDate
@@ -198,6 +205,7 @@ public class UsageCostServiceImpl implements UsageCostService {
     public List<UsageCostData> getStandingbookStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
         return usageCostMapper.getStandingbookStandardCoal(startDate, endDate, standingBookIds);
     }
+
     /**
      * 按台账分组 获取 台账id cost  折标煤
      *
@@ -248,6 +256,7 @@ public class UsageCostServiceImpl implements UsageCostService {
     public List<UsageCostData> getTimeCostByStandardIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
         return usageCostMapper.getTimeCostByStandardIds(dateType, startDate, endDate, standingBookIds);
     }
+
     /**
      * 获取能源用量
      *
