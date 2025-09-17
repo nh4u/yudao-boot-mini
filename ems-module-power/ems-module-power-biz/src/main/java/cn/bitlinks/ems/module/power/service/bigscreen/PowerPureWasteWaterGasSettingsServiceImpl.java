@@ -104,7 +104,7 @@ public class PowerPureWasteWaterGasSettingsServiceImpl implements PowerPureWaste
         if (Objects.nonNull(standingbookDTO)) {
             for (PowerPureWasteWaterGasSettingsDO p : powerPureWasteWaterGasSettingsDOS) {
                 if (Objects.equals(p.getEnergyCodes(), WASTE_WATER_STANDING_BOOK_CODE)) {
-                    p.setWasteWaterName(standingbookDTO.getName() + "(" + p.getCode() + ")");
+                    p.setWasteWaterName(standingbookDTO.getName() + "(" + standingbookDTO.getCode() + ")");
                     p.setStandingbookIds(standingbookDTO.getStandingbookId().toString());
                     break;
                 }
