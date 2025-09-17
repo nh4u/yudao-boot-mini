@@ -571,7 +571,7 @@ public class StandingbookServiceImpl implements StandingbookService {
 
         Map<String, StandingbookDTO> sbCodeMap = standingbookDTOList
                 .stream()
-                .collect(Collectors.toMap(StandingbookDTO::getCode, Function.identity()));
+                .collect(Collectors.toMap(StandingbookDTO::getCode, Function.identity(),(existing, replacement) -> existing));
 
         effectiveMappings.forEach(e -> {
             StandingbookDTO standingbookDTO = sbCodeMap.get(e.getStandingbookCode());

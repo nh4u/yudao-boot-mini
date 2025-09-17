@@ -84,10 +84,11 @@ public class PowerPureWasteWaterGasSettingsServiceImpl implements PowerPureWaste
     public List<PowerPureWasteWaterGasSettingsDO> getPowerPureWasteWaterGasSettingsList(PowerPureWasteWaterGasSettingsPageReqVO pageReqVO) {
 
 
-        List<PowerPureWasteWaterGasSettingsDO> powerPureWasteWaterGasSettingsDOS = powerPureWasteWaterGasSettingsMapper.selectList((new LambdaQueryWrapperX<PowerPureWasteWaterGasSettingsDO>()
-                .eqIfPresent(PowerPureWasteWaterGasSettingsDO::getSystem, pageReqVO.getSystem())
-                .eqIfPresent(PowerPureWasteWaterGasSettingsDO::getCode, pageReqVO.getCode())
-                .orderByAsc(PowerPureWasteWaterGasSettingsDO::getId)));
+        List<PowerPureWasteWaterGasSettingsDO> powerPureWasteWaterGasSettingsDOS = powerPureWasteWaterGasSettingsMapper
+                .selectList((new LambdaQueryWrapperX<PowerPureWasteWaterGasSettingsDO>()
+                        .eqIfPresent(PowerPureWasteWaterGasSettingsDO::getSystem, pageReqVO.getSystem())
+                        .eqIfPresent(PowerPureWasteWaterGasSettingsDO::getCode, pageReqVO.getCode())
+                        .orderByAsc(PowerPureWasteWaterGasSettingsDO::getId)));
 
 
         // 根据计量器具code获取名称和id
@@ -103,7 +104,7 @@ public class PowerPureWasteWaterGasSettingsServiceImpl implements PowerPureWaste
         if (Objects.nonNull(standingbookDTO)) {
             for (PowerPureWasteWaterGasSettingsDO p : powerPureWasteWaterGasSettingsDOS) {
                 if (Objects.equals(p.getEnergyCodes(), WASTE_WATER_STANDING_BOOK_CODE)) {
-                    p.setWasteWaterName(standingbookDTO.getName());
+                    p.setWasteWaterName(standingbookDTO.getName() + "(" + p.getCode() + ")");
                     p.setStandingbookIds(standingbookDTO.getStandingbookId().toString());
                     break;
                 }
