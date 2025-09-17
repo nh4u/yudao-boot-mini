@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import javax.validation.constraints.NotNull;
+import java.time.LocalDateTime;
 
 @Schema(description = "管理后台 - 双碳接口 设置upd VO")
 @Data
@@ -16,7 +17,10 @@ public class DoubleCarbonSettingsUpdVO {
 
     @Schema(description = "更新频率")
     private Integer updateFrequency;
+
     @Schema(description = "更新频率单位")
     private Integer updateFrequencyUnit;
 
+    @Schema(description = "上次执行时间")
+    private LocalDateTime lastSyncTime;
 }

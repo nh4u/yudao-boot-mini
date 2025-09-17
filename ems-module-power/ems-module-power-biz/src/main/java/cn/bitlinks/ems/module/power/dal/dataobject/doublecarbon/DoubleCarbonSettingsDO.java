@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 
 @TableName(value = "power_double_carbon_settings", autoResultMap = true)
 @KeySequence("power_double_carbon_settings_seq") // 用于 Oracle、PostgreSQL、Kingbase、DB2、H2 数据库的主键自增。如果是 MySQL 等数据库，可不写。
@@ -34,5 +36,9 @@ public class DoubleCarbonSettingsDO extends BaseDO {
      * 更新频率 单位
      */
     private Integer updateFrequencyUnit;
+    /**
+     * 上次执行时间
+     */
+    private LocalDateTime lastSyncTime;
 
 }

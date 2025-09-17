@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.sync;
 
 import cn.bitlinks.ems.module.power.controller.admin.doublecarbon.vo.SyncDoubleCarbonData;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -10,6 +11,6 @@ import java.util.List;
 public interface SyncDoubleCarbonService {
 
 
-    List<SyncDoubleCarbonData> getSyncDoubleCarbonData();
+    List<SyncDoubleCarbonData> getSyncDoubleCarbonData(LocalDateTime startTime, LocalDateTime endTime);
 
 }

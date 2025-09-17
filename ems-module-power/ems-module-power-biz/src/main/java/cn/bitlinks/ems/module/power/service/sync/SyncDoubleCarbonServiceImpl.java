@@ -37,7 +37,7 @@ public class SyncDoubleCarbonServiceImpl implements SyncDoubleCarbonService {
 
 
     @Override
-    public List<SyncDoubleCarbonData> getSyncDoubleCarbonData() {
+    public List<SyncDoubleCarbonData> getSyncDoubleCarbonData(LocalDateTime startTime, LocalDateTime endTime) {
 
         List<SyncDoubleCarbonData> resultList = new ArrayList<>();
 
@@ -48,12 +48,6 @@ public class SyncDoubleCarbonServiceImpl implements SyncDoubleCarbonService {
                 .map(DoubleCarbonMappingRespVO::getStandingbookId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-
-        // TODO: 2025/9/16  定时任务传入对应的时间
-
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startTime = LocalDateTimeUtils.beginOfDay(now);
-        LocalDateTime endTime = LocalDateTimeUtils.endOfDay(now);
 
         List<UsageCostData> timeSbUsageList = usageCostService.getTimeSbUsageList(
                 DataTypeEnum.DAY.getCode(),

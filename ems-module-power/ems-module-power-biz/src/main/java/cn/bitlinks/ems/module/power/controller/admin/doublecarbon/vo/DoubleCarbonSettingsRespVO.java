@@ -4,6 +4,8 @@ import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Schema(description = "管理后台 - 双碳接口 Response VO")
 @Data
 @ExcelIgnoreUnannotated
@@ -18,5 +20,8 @@ public class DoubleCarbonSettingsRespVO {
     private Integer updateFrequency;
     @Schema(description = "更新频率单位")
     private Integer updateFrequencyUnit;
+
+    @Schema(description = "上次执行时间")
+    private LocalDateTime lastSyncTime;
 
 }
