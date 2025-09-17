@@ -11,6 +11,7 @@ public interface DoubleCarbonService {
     DoubleCarbonSettingsRespVO getSettings();
 
     void updSettings(DoubleCarbonSettingsUpdVO updVO);
+    void updLastSyncTime(DoubleCarbonSettingsUpdVO updVO);
 
     void updMapping(DoubleCarbonMappingUpdVO updVO);
 

@@ -54,6 +54,14 @@ public class DoubleCarbonServiceImpl implements DoubleCarbonService {
     }
 
     @Override
+    public void updLastSyncTime(DoubleCarbonSettingsUpdVO updVO) {
+        doubleCarbonSettingsMapper.update(new LambdaUpdateWrapper<DoubleCarbonSettingsDO>()
+                .set(DoubleCarbonSettingsDO::getLastSyncTime, updVO.getLastSyncTime())
+                .eq(DoubleCarbonSettingsDO::getId, updVO.getId())
+        );
+    }
+
+    @Override
     public void updMapping(DoubleCarbonMappingUpdVO updVO) {
         // 校验台账是否存在
         DoubleCarbonMappingDO doubleCarbonMappingDO = doubleCarbonMappingMapper.selectById(updVO.getId());

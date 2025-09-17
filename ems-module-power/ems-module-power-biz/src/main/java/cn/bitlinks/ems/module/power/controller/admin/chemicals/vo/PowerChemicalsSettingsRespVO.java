@@ -1,13 +1,16 @@
 package cn.bitlinks.ems.module.power.controller.admin.chemicals.vo;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
+import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY;
 
 /**
  * @author liumingqiang
@@ -25,6 +28,7 @@ public class PowerChemicalsSettingsRespVO {
     private String code;
 
     @Schema(description = "日期")
+    @JsonFormat(pattern = FORMAT_YEAR_MONTH_DAY)
     private LocalDateTime time;
 
     @Schema(description = "日期")
