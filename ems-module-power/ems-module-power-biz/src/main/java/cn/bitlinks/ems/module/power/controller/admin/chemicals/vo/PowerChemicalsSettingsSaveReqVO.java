@@ -1,12 +1,18 @@
 package cn.bitlinks.ems.module.power.controller.admin.chemicals.vo;
 
+import cn.bitlinks.ems.module.power.config.LocalDateToLocalDateTimeDeserializer;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
+import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY;
 
 /**
  * @author liumingqiang
@@ -25,6 +31,7 @@ public class PowerChemicalsSettingsSaveReqVO {
 
     @Schema(description = "日期")
     @NotNull(message = "日期不能为空")
+    @JsonDeserialize(using = LocalDateToLocalDateTimeDeserializer.class)
     private LocalDateTime time;
 
     @Schema(description = "金额")

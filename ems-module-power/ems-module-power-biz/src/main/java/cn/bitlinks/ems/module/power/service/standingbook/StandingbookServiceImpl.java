@@ -567,11 +567,11 @@ public class StandingbookServiceImpl implements StandingbookService {
     public List<DoubleCarbonMappingRespVO> getEffectiveSbIds() {
 
         List<DoubleCarbonMappingRespVO> effectiveMappings = doubleCarbonService.getEffectiveMappings();
-        List<StandingbookDTO> standingbookDTOList = getStandingbookDTOList();
+        List<StandingbookDTO> standingbookDTOList = getMeasuringInstrumentStandingbookDTOList();
 
         Map<String, StandingbookDTO> sbCodeMap = standingbookDTOList
                 .stream()
-                .collect(Collectors.toMap(StandingbookDTO::getCode, Function.identity(),(existing, replacement) -> existing));
+                .collect(Collectors.toMap(StandingbookDTO::getCode, Function.identity(), (existing, replacement) -> existing));
 
         effectiveMappings.forEach(e -> {
             StandingbookDTO standingbookDTO = sbCodeMap.get(e.getStandingbookCode());
@@ -611,6 +611,15 @@ public class StandingbookServiceImpl implements StandingbookService {
         return standingbookAttributeMapper.getStandingbookDTO();
     }
 
+    @Override
+    public List<StandingbookDTO> getDeviceStandingbookDTOList() {
+        return standingbookAttributeMapper.getDeviceStandingbookDTO();
+    }
+
+    @Override
+    public List<StandingbookDTO> getMeasuringInstrumentStandingbookDTOList() {
+        return standingbookAttributeMapper.getMeasuringInstrumentStandingbookDTO();
+    }
 
     @Cacheable(value = RedisKeyConstants.STANDING_BOOK_CODE_KEYMAP, key = "'codeKeyAll'", unless = "#result == null || #result.isEmpty()")
     public Map<String, StandingBookHeaderDTO> getStandingBookCodeKeyMap() {
@@ -868,8 +877,9 @@ public class StandingbookServiceImpl implements StandingbookService {
         StandingbookDO standingbook = new StandingbookDO();
         standingbook.setTypeId(typeId);
         standingbookMapper.insert(standingbook);
+        Long standingbookId = standingbook.getId();
         // 新增标签信息
-        createLabelInfoList(createReqVO.get(ATTR_LABEL_INFO), standingbook.getId());
+        createLabelInfoList(createReqVO.get(ATTR_LABEL_INFO), standingbookId);
 
         createReqVO.remove(ATTR_TYPE_ID);
         createReqVO.remove(ATTR_LABEL_INFO);
@@ -881,7 +891,7 @@ public class StandingbookServiceImpl implements StandingbookService {
             StandingbookAttributeDO attribute = BeanUtils.toBean(standingbookAttributeDO, StandingbookAttributeDO.class);
             //根据code查询分类属性，
             attribute.setValue(createReqVO.get(attribute.getCode()));
-            attribute.setStandingbookId(standingbook.getId());
+            attribute.setStandingbookId(standingbookId);
             attribute.setId(null);
             attribute.setCreateTime(null);
             attribute.setUpdateTime(null);
@@ -893,9 +903,9 @@ public class StandingbookServiceImpl implements StandingbookService {
 
         // 新增台账-双碳映射
         if (StandingbookTypeTopEnum.MEASURING_INSTRUMENT.getCode().equals(sb.getTopType())) {
-            doubleCarbonService.addMapping(standingbookCode);
+            doubleCarbonService.addMapping(standingbookId, standingbookCode);
         }
-        return standingbook.getId();
+        return standingbookId;
     }
 
     /**
