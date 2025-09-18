@@ -17,7 +17,7 @@ public interface DoubleCarbonService {
 
     PageResult<DoubleCarbonMappingRespVO> getMappingPage(@Valid DoubleCarbonMappingPageReqVO pageReqVO);
 
-    void addMapping(String standingbookCode);
+    void addMapping(Long standingbookId, String standingbookCode);
     void delMapping(List<String> standingbookCodes);
 
     List<DoubleCarbonMappingRespVO> getEffectiveMappings();

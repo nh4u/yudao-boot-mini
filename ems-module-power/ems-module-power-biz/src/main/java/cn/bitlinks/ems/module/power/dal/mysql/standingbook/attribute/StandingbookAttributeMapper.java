@@ -59,10 +59,24 @@ public interface StandingbookAttributeMapper extends BaseMapperX<StandingbookAtt
     List<StandingBookTypeTreeRespVO> selectDeviceNodeByCodeAndName(@Param("sbCode")String sbCode, @Param("sbName")String sbName,@Param("sbIds") List<Long> sbIds);
     
     /**
-     * 查询全部台账的id、name、code
+     * 查询全部台账（计量器具+设备）的id、name、code
      * @return
      */
     List<StandingbookDTO> getStandingbookDTO();
+
+    /**
+     * 查询台账（设备）的id、name、code
+     * @return
+     */
+    List<StandingbookDTO> getDeviceStandingbookDTO();
+
+
+    /**
+     * 查询台账（计量器具）的id、name、code
+     * @return
+     */
+    List<StandingbookDTO> getMeasuringInstrumentStandingbookDTO();
+
 
     List<String> getStandingbookCodeDeviceList();
     List<String> getStandingbookCodeMeasurementList();
