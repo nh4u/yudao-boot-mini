@@ -149,7 +149,16 @@ public interface StandingbookService {
      * @return
      */
     List<StandingbookDTO> getStandingbookDTOList();
-
+    /**
+     * id-name-code 设备
+     * @return
+     */
+    List<StandingbookDTO> getDeviceStandingbookDTOList();
+    /**
+     * id-name-code 计量器具
+     * @return
+     */
+    List<StandingbookDTO> getMeasuringInstrumentStandingbookDTOList();
 
     List<StandingBookHeaderDTO> getStandingBookHeadersByHeaders(List<String> headList);
     /**

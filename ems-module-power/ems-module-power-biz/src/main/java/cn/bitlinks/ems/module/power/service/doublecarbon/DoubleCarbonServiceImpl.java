@@ -100,7 +100,7 @@ public class DoubleCarbonServiceImpl implements DoubleCarbonService {
     }
 
     @Override
-    public void addMapping(String standingbookCode) {
+    public void addMapping(Long standingbookId, String standingbookCode) {
         if (StringUtils.isEmpty(standingbookCode)) {
             return;
         }
