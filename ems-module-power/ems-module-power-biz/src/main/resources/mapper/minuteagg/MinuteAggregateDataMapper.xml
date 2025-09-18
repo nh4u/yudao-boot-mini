@@ -341,5 +341,35 @@
         AND standingbook_id = #{standingbookId}
         AND param_code = #{paramCode}
     </select>
+
+    <select id="getTimeSbFullUsageList"
+            resultType="cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateData">
+        WITH ranked_data AS (
+        SELECT *,
+        ROW_NUMBER() OVER (
+        PARTITION BY standingbook_id
+        ORDER BY aggregate_time DESC
+        ) AS rn
+        FROM minute_aggregate_data
+        WHERE
+        aggregate_time >= #{starTime}
+        AND aggregate_time &lt;= #{endTime}
+        AND `usage` = 1
+        <if test="standingbookIds != null and standingbookIds.size() != 0">
+            AND standingbook_id IN
+            <foreach collection="standingbookIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>)
+        SELECT
+        standingbook_id as standingbookId,
+        full_value as value,
+        DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:%i:%s') AS time
+        FROM ranked_data
+        WHERE rn = 1
+        ORDER BY standingbook_id, time;
+
+    </select>
+
 </mapper>
 

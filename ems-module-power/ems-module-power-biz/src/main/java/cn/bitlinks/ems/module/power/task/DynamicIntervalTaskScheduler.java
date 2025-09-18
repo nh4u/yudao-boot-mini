@@ -54,7 +54,8 @@ public class DynamicIntervalTaskScheduler implements SchedulingConfigurer {
                     LocalDateTime endTime = LocalDateTime.now();
                     LocalDateTime lastSyncTime = config.getLastSyncTime();
                     LocalDateTime startTime = Objects.isNull(lastSyncTime) ? endTime : lastSyncTime;
-                    List<SyncDoubleCarbonData> list = syncDoubleCarbonService.getSyncDoubleCarbonData(startTime, endTime);
+                    // 【startTime-1h,当前时间】
+                    List<SyncDoubleCarbonData> list = syncDoubleCarbonService.getSyncDoubleCarbonData(startTime.minusHours(1), endTime);
                     try {
                         // 构建POST请求 发送请求并获取响应
                         HttpResponse response = HttpRequest.post(config.getUrl())

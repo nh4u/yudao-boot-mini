@@ -1,9 +1,9 @@
 package cn.bitlinks.ems.module.power.service.minuteagg;
 
 import cn.bitlinks.ems.framework.tenant.core.aop.TenantIgnore;
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.MinuteAggDataDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateData;
 import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.SupplyWaterTmpMinuteAggData;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.MinuteAggDataDTO;
 import cn.bitlinks.ems.module.power.dal.mysql.minuteagg.MinuteAggregateDataMapper;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import lombok.extern.slf4j.Slf4j;
@@ -86,5 +86,18 @@ public class MinuteAggDataServiceImpl implements MinuteAggDataService {
             LocalDateTime starTime,
             LocalDateTime endTime) {
         return minuteAggregateDataMapper.getRealTimeList(standingbookId, paramCode, dateType, energyFlag, starTime, endTime);
+    }
+
+    /**
+     * 获取时间段内 最后一条 数据 全量值
+     *
+     * @param startTime
+     * @param endTime
+     * @param sbIds
+     * @return
+     */
+    @Override
+    public List<MinuteAggregateData> getTimeSbFullUsageList(LocalDateTime startTime, LocalDateTime endTime, List<Long> sbIds) {
+        return minuteAggregateDataMapper.getTimeSbFullUsageList(startTime, endTime, sbIds);
     }
 }

@@ -161,5 +161,9 @@ public interface MinuteAggregateDataMapper {
             @Param("dataFeature") Integer dataFeature,
             @Param("starTime") LocalDateTime starTime,
             @Param("endTime") LocalDateTime endTime);
+
+    List<MinuteAggregateData> getTimeSbFullUsageList(@Param("starTime") LocalDateTime starTime,
+                                               @Param("endTime") LocalDateTime endTime,
+                                               @Param("standingbookIds") List<Long> standingbookIds);
 }
 
