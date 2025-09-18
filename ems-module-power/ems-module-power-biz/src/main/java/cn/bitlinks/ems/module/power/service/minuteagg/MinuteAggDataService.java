@@ -75,4 +75,6 @@ public interface MinuteAggDataService {
                                               Integer energyFlag,
                                               LocalDateTime starTime,
                                               LocalDateTime endTime);
+
+    List<MinuteAggregateData> getTimeSbFullUsageList( LocalDateTime startTime, LocalDateTime endTime, List<Long> sbIds);
 }
