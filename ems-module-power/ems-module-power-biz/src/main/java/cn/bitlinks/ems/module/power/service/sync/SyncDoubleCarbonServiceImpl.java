@@ -1,12 +1,10 @@
 package cn.bitlinks.ems.module.power.service.sync;
 
-import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
-import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.module.power.controller.admin.doublecarbon.vo.DoubleCarbonMappingRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.doublecarbon.vo.SyncDoubleCarbonData;
-import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData;
+import cn.bitlinks.ems.module.power.dal.dataobject.minuteagg.MinuteAggregateData;
+import cn.bitlinks.ems.module.power.service.minuteagg.MinuteAggDataService;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
-import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,7 +31,7 @@ public class SyncDoubleCarbonServiceImpl implements SyncDoubleCarbonService {
     @Resource
     private StandingbookService standingbookService;
     @Resource
-    private UsageCostService usageCostService;
+    private MinuteAggDataService minuteAggDataService;
 
 
     @Override
@@ -49,23 +47,23 @@ public class SyncDoubleCarbonServiceImpl implements SyncDoubleCarbonService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        List<UsageCostData> timeSbUsageList = usageCostService.getTimeSbUsageList(
-                DataTypeEnum.DAY.getCode(),
+        List<MinuteAggregateData> timeSbUsageList = minuteAggDataService.getTimeSbFullUsageList(
                 startTime,
                 endTime,
                 sbIds);
-        Map<Long, List<UsageCostData>> sbTimeUsageMap = timeSbUsageList
+
+        Map<Long, List<MinuteAggregateData>> sbTimeUsageMap = timeSbUsageList
                 .stream()
-                .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
+                .collect(Collectors.groupingBy(MinuteAggregateData::getStandingbookId));
         effectiveSbIds.forEach(
                 e -> {
                     Long standingBookId = e.getStandingbookId();
-                    List<UsageCostData> usageCostDataList = sbTimeUsageMap.get(standingBookId);
+                    List<MinuteAggregateData> usageCostDataList = sbTimeUsageMap.get(standingBookId);
                     if (CollUtil.isNotEmpty(usageCostDataList)) {
                         usageCostDataList.forEach(u -> {
                             SyncDoubleCarbonData data = new SyncDoubleCarbonData();
                             data.setDoubleCarbonCode(e.getDoubleCarbonCode());
-                            data.setUsage(u.getCurrentTotalUsage());
+                            data.setUsage(u.getValue());
                             data.setAcqTimeLong(dealAcqTimeLong(u.getTime()));
                             resultList.add(data);
                         });
