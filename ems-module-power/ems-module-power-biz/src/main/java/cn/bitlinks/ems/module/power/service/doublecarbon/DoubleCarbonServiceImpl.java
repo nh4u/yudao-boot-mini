@@ -66,18 +66,18 @@ public class DoubleCarbonServiceImpl implements DoubleCarbonService {
         // 校验台账是否存在
         DoubleCarbonMappingDO doubleCarbonMappingDO = doubleCarbonMappingMapper.selectById(updVO.getId());
 
-        if (StringUtils.isEmpty(updVO.getDoubleCarbonCode())) {
-            return;
-        }
-        // 如果编码被修改，校验新编码是否重复
-        if (!updVO.getDoubleCarbonCode().equals(doubleCarbonMappingDO.getDoubleCarbonCode())) {
-            Long existCount = doubleCarbonMappingMapper.selectCount(new LambdaQueryWrapperX<DoubleCarbonMappingDO>()
-                    .eq(DoubleCarbonMappingDO::getDoubleCarbonCode, updVO.getDoubleCarbonCode())
-                    .ne(DoubleCarbonMappingDO::getId, updVO.getId())); // 排除自身
-            if (existCount > 0) {
-                throw exception(DOUBLE_CARBON_CODE_DUPLICATE);
+        if (StringUtils.isNotEmpty(updVO.getDoubleCarbonCode())) {
+            // 如果编码被修改，校验新编码是否重复
+            if (!updVO.getDoubleCarbonCode().equals(doubleCarbonMappingDO.getDoubleCarbonCode())) {
+                Long existCount = doubleCarbonMappingMapper.selectCount(new LambdaQueryWrapperX<DoubleCarbonMappingDO>()
+                        .eq(DoubleCarbonMappingDO::getDoubleCarbonCode, updVO.getDoubleCarbonCode())
+                        .ne(DoubleCarbonMappingDO::getId, updVO.getId())); // 排除自身
+                if (existCount > 0) {
+                    throw exception(DOUBLE_CARBON_CODE_DUPLICATE);
+                }
             }
         }
+
         doubleCarbonMappingMapper.update(new LambdaUpdateWrapper<DoubleCarbonMappingDO>()
                 .set(DoubleCarbonMappingDO::getDoubleCarbonCode, updVO.getDoubleCarbonCode())
                 .eq(DoubleCarbonMappingDO::getId, updVO.getId())
