@@ -14,6 +14,7 @@ import javax.annotation.Resource;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -75,8 +76,9 @@ public class SyncDoubleCarbonServiceImpl implements SyncDoubleCarbonService {
     }
 
     private Long dealAcqTimeLong(String time) {
-        return LocalDate.parse(time)
-                .atStartOfDay(ZoneId.systemDefault())
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        return LocalDateTime.parse(time, formatter)
+                .atZone(ZoneId.systemDefault())
                 .toInstant()
                 .toEpochMilli();
 
