@@ -91,13 +91,12 @@ public class MinuteAggDataServiceImpl implements MinuteAggDataService {
     /**
      * 获取时间段内 最后一条 数据 全量值
      *
-     * @param startTime
      * @param endTime
      * @param sbIds
      * @return
      */
     @Override
-    public List<MinuteAggregateData> getTimeSbFullUsageList(LocalDateTime startTime, LocalDateTime endTime, List<Long> sbIds) {
-        return minuteAggregateDataMapper.getTimeSbFullUsageList(startTime, endTime, sbIds);
+    public List<MinuteAggregateData> getTimeSbFullUsageList(LocalDateTime endTime, List<Long> sbIds) {
+        return minuteAggregateDataMapper.getTimeSbFullUsageList(endTime, sbIds);
     }
 }

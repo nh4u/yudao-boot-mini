@@ -352,8 +352,7 @@
         ) AS rn
         FROM minute_aggregate_data
         WHERE
-        aggregate_time >= #{starTime}
-        AND aggregate_time &lt;= #{endTime}
+        aggregate_time &lt;= #{endTime}
         AND `usage` = 1
         <if test="standingbookIds != null and standingbookIds.size() != 0">
             AND standingbook_id IN

@@ -36,7 +36,7 @@ public class SyncDoubleCarbonServiceImpl implements SyncDoubleCarbonService {
 
 
     @Override
-    public List<SyncDoubleCarbonData> getSyncDoubleCarbonData(LocalDateTime startTime, LocalDateTime endTime) {
+    public List<SyncDoubleCarbonData> getSyncDoubleCarbonData(LocalDateTime endTime) {
 
         List<SyncDoubleCarbonData> resultList = new ArrayList<>();
 
@@ -49,7 +49,6 @@ public class SyncDoubleCarbonServiceImpl implements SyncDoubleCarbonService {
                 .collect(Collectors.toList());
 
         List<MinuteAggregateData> timeSbUsageList = minuteAggDataService.getTimeSbFullUsageList(
-                startTime,
                 endTime,
                 sbIds);
 
