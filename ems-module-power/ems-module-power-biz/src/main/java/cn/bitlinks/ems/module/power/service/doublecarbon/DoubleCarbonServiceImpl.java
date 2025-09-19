@@ -76,6 +76,8 @@ public class DoubleCarbonServiceImpl implements DoubleCarbonService {
                     throw exception(DOUBLE_CARBON_CODE_DUPLICATE);
                 }
             }
+        } else {
+            updVO.setDoubleCarbonCode(null);
         }
 
         doubleCarbonMappingMapper.update(new LambdaUpdateWrapper<DoubleCarbonMappingDO>()
