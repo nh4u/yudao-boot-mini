@@ -76,5 +76,5 @@ public interface MinuteAggDataService {
                                               LocalDateTime starTime,
                                               LocalDateTime endTime);
 
-    List<MinuteAggregateData> getTimeSbFullUsageList( LocalDateTime startTime, LocalDateTime endTime, List<Long> sbIds);
+    List<MinuteAggregateData> getTimeSbFullUsageList(LocalDateTime endTime, List<Long> sbIds);
 }
