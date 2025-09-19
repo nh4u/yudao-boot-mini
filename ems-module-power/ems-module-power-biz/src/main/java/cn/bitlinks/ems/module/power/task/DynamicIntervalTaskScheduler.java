@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
@@ -32,7 +33,7 @@ import java.util.concurrent.Executors;
  * @Date 2025/09/17 16:36
  **/
 
-@Configuration
+@Component
 @EnableScheduling
 @Slf4j
 public class DynamicIntervalTaskScheduler implements SchedulingConfigurer {
