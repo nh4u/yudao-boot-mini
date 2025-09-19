@@ -163,8 +163,7 @@ public interface MinuteAggregateDataMapper {
             @Param("endTime") LocalDateTime endTime);
 
     @TenantIgnore
-    List<MinuteAggregateData> getTimeSbFullUsageList(@Param("starTime") LocalDateTime starTime,
-                                               @Param("endTime") LocalDateTime endTime,
+    List<MinuteAggregateData> getTimeSbFullUsageList(@Param("endTime") LocalDateTime endTime,
                                                @Param("standingbookIds") List<Long> standingbookIds);
 }
 

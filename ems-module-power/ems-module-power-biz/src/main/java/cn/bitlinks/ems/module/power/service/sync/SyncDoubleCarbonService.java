@@ -11,6 +11,6 @@ import java.util.List;
 public interface SyncDoubleCarbonService {
 
 
-    List<SyncDoubleCarbonData> getSyncDoubleCarbonData(LocalDateTime startTime, LocalDateTime endTime);
+    List<SyncDoubleCarbonData> getSyncDoubleCarbonData(LocalDateTime endTime);
 
 }
