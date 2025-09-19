@@ -31,5 +31,9 @@ public class DoubleCarbonMappingDO extends BaseDO {
      * 双碳编码
      */
     private String doubleCarbonCode;
+    /**
+     * 台账id
+     */
+    private  Long  standingbookId;
 
 }

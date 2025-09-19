@@ -17,4 +17,7 @@ public class DoubleCarbonMappingUpdVO {
 
     @Schema(description = "能管编码")
     private String standingbookCode;
+
+    @Schema(description = "台账id")
+    private Long standingbookId;
 }

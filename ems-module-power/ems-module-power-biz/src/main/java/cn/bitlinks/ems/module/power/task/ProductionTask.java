@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
  * @author liumingqiang
  */
 @Slf4j
-//@Component
+@Component
 public class ProductionTask {
 
     @Resource
@@ -47,7 +47,7 @@ public class ProductionTask {
     /**
      * 执行定时任务  同步产量数据到数据表中 （每隔10分钟同步一次）每整小时获取一次数据
      */
-    @Scheduled(cron = "0 0/1 * * * ?")
+    @Scheduled(cron = "0 0/10 * * * ?")
     @TenantJob
     public void execute() {
 
