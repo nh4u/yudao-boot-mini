@@ -36,7 +36,8 @@ public class ProductionServiceImpl implements ProductionService {
 
         ProductionDO old = productionMapper.selectOne(new LambdaQueryWrapperX<ProductionDO>()
                 .eq(ProductionDO::getSize, createReqVO.getSize())
-                .eq(ProductionDO::getTime, createReqVO.getTime()).last("limit 1"));
+                .eq(ProductionDO::getTime, createReqVO.getTime())
+                .last("limit 1"));
 
         if (Objects.isNull(old)) {
             // 转换请求对象到数据对象

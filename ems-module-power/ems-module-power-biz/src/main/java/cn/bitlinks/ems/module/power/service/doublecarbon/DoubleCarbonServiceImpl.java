@@ -106,6 +106,7 @@ public class DoubleCarbonServiceImpl implements DoubleCarbonService {
         }
         DoubleCarbonMappingDO mappingDO = new DoubleCarbonMappingDO();
         mappingDO.setStandingbookCode(standingbookCode);
+        mappingDO.setStandingbookId(standingbookId);
         doubleCarbonMappingMapper.insert(mappingDO);
     }
 
