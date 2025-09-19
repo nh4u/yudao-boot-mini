@@ -1,5 +1,6 @@
 package cn.bitlinks.ems.module.power.task;
 
+import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
 import cn.bitlinks.ems.framework.tenant.core.context.TenantContextHolder;
 import cn.bitlinks.ems.module.power.controller.admin.doublecarbon.vo.DoubleCarbonSettingsRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.doublecarbon.vo.DoubleCarbonSettingsUpdVO;
@@ -9,6 +10,7 @@ import cn.bitlinks.ems.module.power.service.sync.SyncDoubleCarbonService;
 import cn.hutool.http.Header;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
+import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -62,7 +64,7 @@ public class DynamicIntervalTaskScheduler implements SchedulingConfigurer {
                                 .header(Header.CONTENT_TYPE, "application/json;charset=UTF-8")
                                 // 超时，毫秒
                                 .timeout(20000)
-                                .body(list.toString())
+                                .body(JsonUtils.toJsonString(list)) // JSONUtil.toJsonStr(body)
                                 .execute();
 
                         log.info("定时同步双碳服务请求状态" + response.getStatus());
