@@ -652,26 +652,89 @@ public class StandingbookServiceImpl implements StandingbookService {
             header = header.trim();
             String s = header.split(" ")[0];
             s = s.trim();
-            for (String value : standingBookHeaderMap.keySet()) {
-                // 编码完全匹配0 编码前部匹配1 编码后部匹配2
-                if (s.equals(value) || value.startsWith(s) || value.endsWith(s)) {
-                    StandingBookHeaderDTO standingBookHeader = standingBookHeaderMap.get(value);
-                    standingBookHeader.setHeader(header);
-                    standingBookHeaderDTOList.add(standingBookHeader);
-                    break;
-                }
-
-                // 如果code包含了-D- 才会做去-操作
-                if (s.contains("-D-")) {
-
-                    String s1 = s.replaceAll("-(?![\\s\\S]*-)", "");
-
-                    // 与清洗后的s 编码完全匹配5 编码前部匹配6 编码后部匹配7
-                    if (s1.equals(value) || value.startsWith(s1) || value.endsWith(s1)) {
+            // 定义一个flag  如果已经匹配完成 则直接break 无需再匹配 否则就继续匹配4
+            Boolean flag = false;
+            // 0.完全匹配0
+            if (Boolean.FALSE.equals(flag)) {
+                for (String value : standingBookHeaderMap.keySet()) {
+                    // 编码完全匹配0 编码前部匹配1 编码后部匹配2
+                    if (s.equals(value)) {
                         StandingBookHeaderDTO standingBookHeader = standingBookHeaderMap.get(value);
                         standingBookHeader.setHeader(header);
                         standingBookHeaderDTOList.add(standingBookHeader);
+                        flag = true;
                         break;
+                    }
+                }
+            }
+
+            // 1.编码前部匹配1
+            if (Boolean.FALSE.equals(flag)) {
+                for (String value : standingBookHeaderMap.keySet()) {
+                    // 编码完全匹配0 编码前部匹配1 编码后部匹配2
+                    if (value.startsWith(s)) {
+                        StandingBookHeaderDTO standingBookHeader = standingBookHeaderMap.get(value);
+                        standingBookHeader.setHeader(header);
+                        standingBookHeaderDTOList.add(standingBookHeader);
+                        flag = true;
+                        break;
+                    }
+                }
+            }
+
+            // 2.编码后部匹配2
+            if (Boolean.FALSE.equals(flag)) {
+                for (String value : standingBookHeaderMap.keySet()) {
+                    // 编码完全匹配0 编码前部匹配1 编码后部匹配2
+                    if (value.endsWith(s)) {
+                        StandingBookHeaderDTO standingBookHeader = standingBookHeaderMap.get(value);
+                        standingBookHeader.setHeader(header);
+                        standingBookHeaderDTOList.add(standingBookHeader);
+                        flag = true;
+                        break;
+                    }
+                }
+            }
+
+            // 如果code包含了-D- 才会做去-操作
+            if (Boolean.FALSE.equals(flag) && s.contains("-D-")) {
+
+                String s1 = s.replaceAll("-(?![\\s\\S]*-)", "");
+                // 5.编码完全匹配5
+                if (Boolean.FALSE.equals(flag)) {
+                    for (String value : standingBookHeaderMap.keySet()) {
+                        // 编码完全匹配0 编码前部匹配1 编码后部匹配2
+                        if (s1.equals(value)) {
+                            StandingBookHeaderDTO standingBookHeader = standingBookHeaderMap.get(value);
+                            standingBookHeader.setHeader(header);
+                            standingBookHeaderDTOList.add(standingBookHeader);
+                            flag = true;
+                            break;
+                        }
+                    }
+                }
+                // 6.编码前部匹配6
+                if (Boolean.FALSE.equals(flag)) {
+                    for (String value : standingBookHeaderMap.keySet()) {
+                        if (value.startsWith(s1)) {
+                            StandingBookHeaderDTO standingBookHeader = standingBookHeaderMap.get(value);
+                            standingBookHeader.setHeader(header);
+                            standingBookHeaderDTOList.add(standingBookHeader);
+                            flag = true;
+                            break;
+                        }
+                    }
+                }
+                // 7.编码后部匹配7
+                if (Boolean.FALSE.equals(flag)) {
+                    for (String value : standingBookHeaderMap.keySet()) {
+                        if (value.endsWith(s1)) {
+                            StandingBookHeaderDTO standingBookHeader = standingBookHeaderMap.get(value);
+                            standingBookHeader.setHeader(header);
+                            standingBookHeaderDTOList.add(standingBookHeader);
+                            flag = true;
+                            break;
+                        }
                     }
                 }
             }
