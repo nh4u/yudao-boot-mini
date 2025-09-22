@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.energyconfiguration;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.energyconfiguration.vo.EnergyConfigurationSaveReqVO;
@@ -12,11 +13,13 @@ import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyCon
 import cn.bitlinks.ems.module.power.dal.dataobject.energygroup.EnergyGroupDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyparameters.EnergyParametersDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.unitpriceconfiguration.UnitPriceConfigurationDO;
+import cn.bitlinks.ems.module.power.dal.dataobject.voucher.VoucherDO;
 import cn.bitlinks.ems.module.power.dal.mysql.daparamformula.DaParamFormulaMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.energyconfiguration.EnergyConfigurationMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.energyparameters.EnergyParametersMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.attribute.StandingbookAttributeMapper;
 import cn.bitlinks.ems.module.power.dal.mysql.unitpriceconfiguration.UnitPriceConfigurationMapper;
+import cn.bitlinks.ems.module.power.dal.mysql.voucher.VoucherMapper;
 import cn.bitlinks.ems.module.power.service.energygroup.EnergyGroupService;
 import cn.bitlinks.ems.module.power.service.energyparameters.EnergyParametersService;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
@@ -25,11 +28,13 @@ import cn.bitlinks.ems.module.system.api.user.AdminUserApi;
 import cn.bitlinks.ems.module.system.api.user.dto.AdminUserRespDTO;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.alibaba.nacos.common.utils.StringUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -80,6 +85,9 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
     private EnergyGroupService energyGroupService;
     @Resource
     private StandingbookTmplDaqAttrService standingbookTmplDaqAttrService;
+
+    @Resource
+    private VoucherMapper voucherMapper;
 
     @Override
     public Long createEnergyConfiguration(EnergyConfigurationSaveReqVO createReqVO) {
@@ -154,6 +162,18 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
 
         // 5. 处理子表参数（核心逻辑）
         handleEnergyParameters(energyId, newParameters);
+
+        String energyName = updateReqVO.getEnergyName();
+        if (CharSequenceUtil.isNotBlank(energyName)){
+            updateVoucherEnergyName(energyId, energyName);
+        }
+    }
+
+
+    private void updateVoucherEnergyName(Long id ,String name){
+        voucherMapper.update(new LambdaUpdateWrapper<VoucherDO>()
+                .set(VoucherDO::getEnergyName,name)
+                .eq(VoucherDO::getEnergyId,id));
     }
 
     private void checkEnergyParameterCodeDuplicate(List<EnergyParametersSaveReqVO> params) {
@@ -352,6 +372,12 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
             throw exception(ENERGY_CONFIGURATION_TEMPLATE_ASSOCIATED);
         }
 
+        // 校验凭证管理
+        Long count = voucherMapper.selectCount(new LambdaQueryWrapperX<VoucherDO>().eq(VoucherDO::getEnergyId, id));
+        if (count > 0) {
+            throw exception(ENERGY_CONFIGURATION_VOUCHER);
+        }
+
         // 3. 先删除子表（能源参数）
         energyParametersMapper.deleteByEnergyId(id); // 需要新增的Mapper方法
 
@@ -373,6 +399,13 @@ public class EnergyConfigurationServiceImpl implements EnergyConfigurationServic
         if (CollUtil.isNotEmpty(invalidIds)) {
             throw exception(ENERGY_CONFIGURATION_TEMPLATE_ASSOCIATED, invalidIds.get(0));
         }
+
+        Long count = voucherMapper.selectCount(new LambdaQueryWrapperX<VoucherDO>().in(VoucherDO::getEnergyId, ids));
+        if (count > 0) {
+            throw exception(ENERGY_CONFIGURATION_VOUCHER);
+        }
+
+
         // 删除
         energyParametersMapper.deleteByEnergyIds(ids);
         energyConfigurationMapper.deleteByIds(ids);
