@@ -7,6 +7,7 @@ CREATE TABLE `power_double_carbon_settings` (
 `url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '接口地址',
 `update_frequency` int(11) NOT NULL COMMENT '更新频率',
 `update_frequency_unit` tinyint(4) NOT NULL COMMENT '更新频率单位',
+`last_sync_time` datetime DEFAULT NULL COMMENT '上次同步时间',
 `creator` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '创建者',
 `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
 `updater` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '更新者',
@@ -17,6 +18,7 @@ PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1956238533871136770 DEFAULT CHARSET=utf8mb4 COMMENT='双碳对接设置';
 CREATE TABLE `power_double_carbon_mapping` (
 `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '编号',
+`standingbook_id` bigint(20) NOT NULL COMMENT '台账id',
 `standingbook_code` varchar(400) NOT NULL COMMENT '台账编码',
 `double_carbon_code` varchar(400) DEFAULT NULL COMMENT '双碳编码',
 `creator` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '创建者',
@@ -25,13 +27,15 @@ CREATE TABLE `power_double_carbon_mapping` (
 `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
 `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
 `tenant_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '租户编号',
-PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1956238533871136770 DEFAULT CHARSET=utf8mb4 COMMENT='双碳对接 映射';
+PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=1968948134542438403 DEFAULT CHARSET=utf8mb4 COMMENT='双碳对接 映射';
 
 ## 注意插入字段配置
 ```sql
 INSERT INTO `power_double_carbon_settings` (`id`, `name`, `url`, `update_frequency`, `update_frequency_unit`,  `tenant_id`) VALUES (1, '双碳系统', 'http://www.baidu.com', 10, 2, 1);
-insert into infra_config (id, category, type, name, config_key, value, visible, remark, creator, create_time, updater, update_time, deleted) values (2, 'biz', 1, '设备详情跳转连接', 'power.device.monitor.url', '<a href="/aa/aa?id=%s">查看详情</a>', false, '设备详情跳转连接', 'admin', '2025-08-31 18:47:02', '1', '2025-09-02 18:01:29', false);
+INSERT INTO `ydme_ems`.`infra_config` (`id`, `category`, `type`, `name`, `config_key`, `value`, `visible`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (13, 'biz', 1, '设备详情跳转连接', 'power.device.monitor.url', '<a href=\"http://82.157.40.213:8170/monitor/equipment?id=%s&type=%s\">查看详情</a>', b'0', '设备详情跳转连接', 'admin', '2025-08-31 18:47:02', '1', '2025-09-10 15:22:18', b'0');
+INSERT INTO `ydme_ems`.`infra_config` (`id`, `category`, `type`, `name`, `config_key`, `value`, `visible`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (14, 'biz', 1, '二维码', 'power.device.monitor.qrcode.url', 'http://82.157.40.213:8170/monitor/equipment?id=%s&type=%s', b'0', '二维码', 'admin', '2025-08-31 18:47:02', '1', '2025-09-10 15:22:05', b'0');
+
 ```
 ALTER TABLE power_warning_info DROP COLUMN user_id;
 CREATE TABLE `power_warning_info_user` (
@@ -79,6 +83,148 @@ ALTER TABLE power_standingbook_acquisition_detail
 
 ```sql
 -- 初始化 双碳编号映射，同步所有本系统计量器具编码
-INSERT INTO power_double_carbon_mapping (standingbook_code,tenant_id)
-select value,1 from power_standingbook_attribute where code='measuringInstrumentId' and deleted =0 and standingbook_id is not null;
+INSERT INTO power_double_carbon_mapping (standingbook_code,standingbook_id,tenant_id)
+select value, standingbook_id,1 from power_standingbook_attribute where code='measuringInstrumentId' and deleted =0 and standingbook_id is not null;
+```
+
+
+```sql
+-- 凭证表添加字段
+ALTER TABLE ems_voucher
+    ADD COLUMN `month` date DEFAULT NULL COMMENT '月份';
+```
+
+```sql
+-- 化学品数据设置表
+CREATE TABLE `power_chemicals_settings` (
+                                            `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '编号',
+                                            `code` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '类型',
+                                            `time` datetime NOT NULL COMMENT '日期',
+                                            `price` decimal(15,2) DEFAULT NULL COMMENT '金额',
+                                            `creator` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '创建者',
+                                            `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                            `updater` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '更新者',
+                                            `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                            `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+                                            `tenant_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '租户编号',
+                                            PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=1969936006635446275 DEFAULT CHARSET=utf8mb4 COMMENT='化学品数据设置表';
+
+-- 初始值
+INSERT INTO `ydme_ems`.`power_chemicals_settings` (`id`, `code`, `time`, `price`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1969936006635446274, 'HCL', '2025-09-22 00:00:00', NULL, NULL, '2025-09-22 09:25:18', NULL, '2025-09-22 09:25:18', b'0', 1);
+INSERT INTO `ydme_ems`.`power_chemicals_settings` (`id`, `code`, `time`, `price`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1969936006119546881, 'NAOH', '2025-09-22 00:00:00', NULL, NULL, '2025-09-22 09:25:18', NULL, '2025-09-22 09:25:18', b'0', 1);
+INSERT INTO `ydme_ems`.`power_chemicals_settings` (`id`, `code`, `time`, `price`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1969808842981240834, 'HCL', '2025-09-22 00:00:00', NULL, NULL, '2025-09-22 01:00:00', NULL, '2025-09-22 01:00:00', b'0', 1);
+INSERT INTO `ydme_ems`.`power_chemicals_settings` (`id`, `code`, `time`, `price`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1969808842628919297, 'NAOH', '2025-09-22 00:00:00', NULL, NULL, '2025-09-22 01:00:00', NULL, '2025-09-22 01:00:00', b'0', 1);
+INSERT INTO `ydme_ems`.`power_chemicals_settings` (`id`, `code`, `time`, `price`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1969446499080335362, 'HCL', '2025-09-21 00:00:00', NULL, NULL, '2025-09-21 01:00:11', NULL, '2025-09-21 01:00:11', b'0', 1);
+INSERT INTO `ydme_ems`.`power_chemicals_settings` (`id`, `code`, `time`, `price`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1969446498686070786, 'NAOH', '2025-09-21 00:00:00', NULL, NULL, '2025-09-21 01:00:10', NULL, '2025-09-21 01:00:10', b'0', 1);
+INSERT INTO `ydme_ems`.`power_chemicals_settings` (`id`, `code`, `time`, `price`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1969084067241652226, 'HCL', '2025-09-20 00:00:00', NULL, NULL, '2025-09-20 01:00:00', NULL, '2025-09-20 01:00:00', b'0', 1);
+INSERT INTO `ydme_ems`.`power_chemicals_settings` (`id`, `code`, `time`, `price`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1969084066885136386, 'NAOH', '2025-09-20 00:00:00', NULL, NULL, '2025-09-20 01:00:00', NULL, '2025-09-20 01:00:00', b'0', 1);
+INSERT INTO `ydme_ems`.`power_chemicals_settings` (`id`, `code`, `time`, `price`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1968721680542068738, 'NAOH', '2025-09-19 00:00:00', NULL, NULL, '2025-09-19 01:00:00', NULL, '2025-09-19 01:00:00', b'0', 1);
+INSERT INTO `ydme_ems`.`power_chemicals_settings` (`id`, `code`, `time`, `price`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1968721680927944706, 'HCL', '2025-09-19 00:00:00', NULL, NULL, '2025-09-19 01:00:00', NULL, '2025-09-19 01:00:00', b'0', 1);
+INSERT INTO `ydme_ems`.`power_chemicals_settings` (`id`, `code`, `time`, `price`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1968359293213339649, 'HCL', '2025-09-18 00:00:00', NULL, NULL, '2025-09-18 01:00:01', '1', '2025-09-18 14:38:34', b'0', 1);
+INSERT INTO `ydme_ems`.`power_chemicals_settings` (`id`, `code`, `time`, `price`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1968359292781326337, 'NAOH', '2025-09-18 00:00:00', NULL, NULL, '2025-09-18 01:00:00', '1', '2025-09-18 14:38:34', b'0', 1);
+INSERT INTO `ydme_ems`.`power_chemicals_settings` (`id`, `code`, `time`, `price`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1967996905096081410, 'HCL', '2025-09-17 00:00:00', NULL, NULL, '2025-09-17 01:00:00', '1', '2025-09-18 14:38:34', b'0', 1);
+INSERT INTO `ydme_ems`.`power_chemicals_settings` (`id`, `code`, `time`, `price`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1967996904722788354, 'NAOH', '2025-09-17 00:00:00', NULL, NULL, '2025-09-17 01:00:00', '1', '2025-09-18 14:38:34', b'0', 1);
+INSERT INTO `ydme_ems`.`power_chemicals_settings` (`id`, `code`, `time`, `price`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1967634528953561089, 'HCL', '2025-09-16 00:00:00', NULL, NULL, '2025-09-16 01:00:03', '1', '2025-09-18 14:38:34', b'0', 1);
+INSERT INTO `ydme_ems`.`power_chemicals_settings` (`id`, `code`, `time`, `price`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1967634528567685121, 'NAOH', '2025-09-16 00:00:00', NULL, NULL, '2025-09-16 01:00:03', '1', '2025-09-18 14:38:34', b'0', 1);
+
+```
+
+```sql
+-- 外部接口表
+CREATE TABLE `power_external_api` (
+                                      `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '编号',
+                                      `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '接口名称',
+                                      `code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '接口编码',
+                                      `url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '接口地址',
+                                      `method` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '请求方式',
+                                      `body` text COMMENT 'body',
+                                      `creator` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '创建者',
+                                      `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                      `updater` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '更新者',
+                                      `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                      `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+                                      `tenant_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '租户编号',
+                                      PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=1965315048739041282 DEFAULT CHARSET=utf8mb4 COMMENT='外部接口表';
+
+INSERT INTO `ydme_ems`.`power_external_api` (`id`, `name`, `code`, `url`, `method`, `body`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1, '产量接口', 'chanliang', 'http://82.157.40.213:8107/admin-api/power/externalApi/getAllOut', 'POST', '', '1', '2025-08-28 10:37:32', '1', '2025-08-28 15:21:47', b'0', 1);
+
+```
+
+```sql
+-- 本月计划设置表
+CREATE TABLE `power_month_plan_settings` (
+                                             `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '编号',
+                                             `energy_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '能源名称',
+                                             `energy_code` varchar(255) NOT NULL COMMENT '能源编号',
+                                             `energy_unit` varchar(40) DEFAULT NULL COMMENT '能源单位',
+                                             `plan` decimal(22,2) DEFAULT NULL COMMENT '计划用量',
+                                             `creator` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '创建者',
+                                             `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                             `updater` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '更新者',
+                                             `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                             `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+                                             `tenant_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '租户编号',
+                                             PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COMMENT='本月计划设置表';
+
+INSERT INTO `ydme_ems`.`power_month_plan_settings` (`id`, `energy_name`, `energy_code`, `energy_unit`, `plan`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1, '电力', 'W_Dl_10KV', 'kwh', 0.00, '1', '2025-09-10 17:48:14', '140', '2025-09-16 18:14:04', b'0', 1);
+INSERT INTO `ydme_ems`.`power_month_plan_settings` (`id`, `energy_name`, `energy_code`, `energy_unit`, `plan`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (2, '天然气', 'W_gas', 'm³', 0.00, '1', '2025-09-10 17:48:14', '140', '2025-09-16 18:14:04', b'0', 1);
+INSERT INTO `ydme_ems`.`power_month_plan_settings` (`id`, `energy_name`, `energy_code`, `energy_unit`, `plan`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (3, '自来水', 'W_Tap Water', 'm³', 0.00, '1', '2025-09-10 17:48:14', '140', '2025-09-16 18:14:04', b'0', 1);
+INSERT INTO `ydme_ems`.`power_month_plan_settings` (`id`, `energy_name`, `energy_code`, `energy_unit`, `plan`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (4, '高品质再生水', 'W_Reclaimed Water', 'm³', 0.00, '1', '2025-09-10 17:48:14', '140', '2025-09-16 18:14:04', b'0', 1);
+INSERT INTO `ydme_ems`.`power_month_plan_settings` (`id`, `energy_name`, `energy_code`, `energy_unit`, `plan`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (5, '热力', 'W_heat', 'GJ', 0.00, '1', '2025-09-10 17:48:14', '140', '2025-09-16 18:14:04', b'0', 1);
+
+```
+
+```sql
+-- 纯废水压缩空气设置表
+CREATE TABLE `power_pure_waste_water_gas_settings` (
+                                                       `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '编号',
+                                                       `system` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '类型',
+                                                       `code` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '编码',
+                                                       `name` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '名称',
+                                                       `energy_codes` varchar(255) DEFAULT NULL COMMENT '能源codes',
+                                                       `standingbook_ids` text COMMENT '台账ids',
+                                                       `creator` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '创建者',
+                                                       `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                                       `updater` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '更新者',
+                                                       `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                                       `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+                                                       `tenant_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '租户编号',
+                                                       PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COMMENT='纯废水压缩空气设置表';
+
+INSERT INTO `ydme_ems`.`power_pure_waste_water_gas_settings` (`id`, `system`, `code`, `name`, `energy_codes`, `standingbook_ids`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1, 'PURE', 'NAOH', '30%NAOH', '', '', '1', '2025-09-05 18:33:23', '1', '2025-09-17 16:01:09', b'0', 1);
+INSERT INTO `ydme_ems`.`power_pure_waste_water_gas_settings` (`id`, `system`, `code`, `name`, `energy_codes`, `standingbook_ids`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (2, 'PURE', 'HCL', '30%HCL', '', '', '1', '2025-09-05 18:33:23', '1', '2025-09-17 16:01:09', b'0', 1);
+INSERT INTO `ydme_ems`.`power_pure_waste_water_gas_settings` (`id`, `system`, `code`, `name`, `energy_codes`, `standingbook_ids`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (3, 'PURE', 'TW', '自来水', 'W_Tap Water', null, '1', '2025-09-05 18:33:23', '1', '2025-09-17 16:01:09', b'0', 1);
+INSERT INTO `ydme_ems`.`power_pure_waste_water_gas_settings` (`id`, `system`, `code`, `name`, `energy_codes`, `standingbook_ids`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (4, 'PURE', 'RW', '高品质再生水', 'W_Reclaimed Water', null, '1', '2025-09-05 18:33:23', '1', '2025-09-17 16:01:09', b'0', 1);
+INSERT INTO `ydme_ems`.`power_pure_waste_water_gas_settings` (`id`, `system`, `code`, `name`, `energy_codes`, `standingbook_ids`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (5, 'PURE', 'DL', '电力', 'W_Dl_10KV,Dl_400V,Dl_215V,Dl_480V', null, '1', '2025-09-05 18:33:23', '1', '2025-09-17 16:01:09', b'0', 1);
+INSERT INTO `ydme_ems`.`power_pure_waste_water_gas_settings` (`id`, `system`, `code`, `name`, `energy_codes`, `standingbook_ids`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (6, 'PURE', 'PW', '纯水供水量', 'RO_water,DIW,UPW', null, '1', '2025-09-05 18:33:23', '1', '2025-09-17 16:01:09', b'0', 1);
+INSERT INTO `ydme_ems`.`power_pure_waste_water_gas_settings` (`id`, `system`, `code`, `name`, `energy_codes`, `standingbook_ids`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (7, 'WASTE', 'NAOH', '30%NAOH', '', '', '1', '2025-09-05 18:33:23', '1', '2025-09-17 15:58:32', b'0', 1);
+INSERT INTO `ydme_ems`.`power_pure_waste_water_gas_settings` (`id`, `system`, `code`, `name`, `energy_codes`, `standingbook_ids`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (8, 'WASTE', 'HCL', '30%HCL', '', '', '1', '2025-09-05 18:33:23', '1', '2025-09-17 15:58:32', b'0', 1);
+INSERT INTO `ydme_ems`.`power_pure_waste_water_gas_settings` (`id`, `system`, `code`, `name`, `energy_codes`, `standingbook_ids`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (9, 'WASTE', 'DL', '电力', 'W_Dl_10KV,Dl_400V,Dl_215V,Dl_480V', null, '1', '2025-09-05 18:33:23', '1', '2025-09-17 15:58:32', b'0', 1);
+INSERT INTO `ydme_ems`.`power_pure_waste_water_gas_settings` (`id`, `system`, `code`, `name`, `energy_codes`, `standingbook_ids`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (10, 'WASTE', 'FL', '废水量', 'ACW_FL505', null, '1', '2025-09-05 18:33:23', '1', '2025-09-17 15:58:32', b'0', 1);
+INSERT INTO `ydme_ems`.`power_pure_waste_water_gas_settings` (`id`, `system`, `code`, `name`, `energy_codes`, `standingbook_ids`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (11, 'GAS', 'DL', '电力', 'W_Dl_10KV,Dl_400V,Dl_215V,Dl_480V', null, '1', '2025-09-05 18:33:23', '1', '2025-09-17 11:48:50', b'0', 1);
+
+```
+
+```sql
+-- 产品产量同步统计表
+CREATE TABLE `power_production` (
+                                    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '编号',
+                                    `time` datetime NOT NULL COMMENT '获取时间',
+                                    `origin_time` varchar(40) DEFAULT NULL COMMENT '原始时间',
+                                    `plan` decimal(15,2) DEFAULT NULL COMMENT '计划产量',
+                                    `lot` decimal(15,2) DEFAULT NULL COMMENT '实际产量',
+                                    `size` int(11) NOT NULL COMMENT '产量尺寸',
+                                    `value` decimal(15,2) DEFAULT NULL COMMENT '间隔产量数',
+                                    `creator` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '创建者',
+                                    `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                    `updater` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '更新者',
+                                    `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                    `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+                                    `tenant_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '租户编号',
+                                    PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=1969944740413693954 DEFAULT CHARSET=utf8mb4;
 ```
