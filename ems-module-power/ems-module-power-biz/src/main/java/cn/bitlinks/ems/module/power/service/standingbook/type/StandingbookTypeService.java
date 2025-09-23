@@ -104,4 +104,6 @@ public interface StandingbookTypeService {
     List<StandingbookTypeDO> getStandingbookTypeList();
 
     List<StandingbookTypeDO> getStandingbookTypeByTopType(Integer topType);
+
+    List<Long> getSubIdsByTypeId(Long typeId);
 }

@@ -340,6 +340,13 @@ public class StandingbookTypeServiceImpl implements StandingbookTypeService {
                 .collect(Collectors.toMap(StandingbookTypeDO::getId, type -> type));
     }
 
+
+    @Override
+    public List<Long> getSubIdsByTypeId(Long typeId) {
+        // 查询所有台账分类
+        List<StandingbookTypeDO> typeList = getStandingbookTypeNode();
+        return getSubtreeIds(typeList, typeId);
+    }
     /**
      * 继承数采属性
      *

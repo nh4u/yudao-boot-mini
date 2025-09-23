@@ -114,6 +114,8 @@ public interface ExportConstants {
 
     String MEASURING_STANDING_BOOK = "计量器具台账表";
     String EQUIPMENT_STANDING_BOOK = "重点设备台账表";
+
+    String ADDITIONAL_RECORD_TEMPLATE = "数据补录表模版";
     /**
      * 缺省表名
      */

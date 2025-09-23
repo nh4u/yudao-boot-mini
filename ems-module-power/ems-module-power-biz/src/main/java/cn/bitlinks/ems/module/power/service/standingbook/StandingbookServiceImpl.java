@@ -312,7 +312,7 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
     /**
-     * 其他补充属性
+     * 其他补充属性(能源信息)
      *
      * @param respVOS
      */
@@ -564,6 +564,57 @@ public class StandingbookServiceImpl implements StandingbookService {
     }
 
     @Override
+    public StandingbookExportVO getImportTemplateExcelData(Map<String, String> paramVO) {
+        // 返回结果
+        StandingbookExportVO resultVo = new StandingbookExportVO();
+        // 0.校验type
+        String typeId = paramVO.get(ATTR_TYPE_ID);
+        AttributeTreeNodeTypeEnum attributeTreeNodeTypeEnum = validTypeId(typeId);
+        if (Objects.isNull(attributeTreeNodeTypeEnum)) {
+            throw exception(ErrorCodeConstants.STANDINGBOOK_TYPE_NOT_EXISTS);
+        }
+
+        Map<String, List<String>> childrenConditions = new HashMap<>();
+        // 构造属性表code条件数组
+        paramVO.remove(ATTR_ENERGY);
+        paramVO.remove(SB_TYPE_ATTR_TOP_TYPE);
+        paramVO.remove(ATTR_SB_TYPE_ID);
+        paramVO.remove(ATTR_STAGE);
+        paramVO.remove(ATTR_TYPE_ID);
+        paramVO.remove(ATTR_CREATE_TIME);
+        paramVO.forEach((k, v) -> childrenConditions.put(k, Collections.singletonList(v)));
+
+        // 1.文件名字处理
+        String filename = ADDITIONAL_RECORD_TEMPLATE + XLSX;
+        resultVo.setFilename(filename);
+        // 2.表头数据处理
+        List<List<String>> headerList = ListUtils.newArrayList();
+        headerList.add(Collections.singletonList("时间/数据"));
+
+        List<Long> typeIds = standingbookTypeService.getSubIdsByTypeId(Long.valueOf(typeId));
+
+        // 根据台账属性查询台账id
+        List<Long> sbIds = standingbookMapper.selectStandingbookIdByCondition(null, typeIds, null, null);
+
+        // 根据台账id、台账属性条件查询台账属性
+        List<Long> attrSbIds = standingbookAttributeService.getStandingbookIdByCondition(childrenConditions, sbIds);
+        sbIds.retainAll(attrSbIds);
+        if (CollUtil.isEmpty(sbIds)) {
+            return resultVo;
+        }
+
+        List<StandingbookDTO> standingbookDTOList = getMeasuringInstrumentStandingbookDTOList(attrSbIds);
+        // 处理成header
+        if (CollUtil.isNotEmpty(standingbookDTOList)) {
+            standingbookDTOList.forEach(s -> headerList.add(Collections.singletonList(s.getCode())));
+        }
+        resultVo.setHeaderList(headerList);
+
+        return resultVo;
+    }
+
+
+    @Override
     public List<DoubleCarbonMappingRespVO> getEffectiveSbIds() {
 
         List<DoubleCarbonMappingRespVO> effectiveMappings = doubleCarbonService.getEffectiveMappings();
@@ -619,6 +670,11 @@ public class StandingbookServiceImpl implements StandingbookService {
     @Override
     public List<StandingbookDTO> getMeasuringInstrumentStandingbookDTOList() {
         return standingbookAttributeMapper.getMeasuringInstrumentStandingbookDTO();
+    }
+
+    @Override
+    public List<StandingbookDTO> getMeasuringInstrumentStandingbookDTOList(List<Long> sbIds) {
+        return standingbookAttributeMapper.getMeasuringInstrumentStandingbookDTOBySbIds(sbIds);
     }
 
     @Cacheable(value = RedisKeyConstants.STANDING_BOOK_CODE_KEYMAP, key = "'codeKeyAll'", unless = "#result == null || #result.isEmpty()")
