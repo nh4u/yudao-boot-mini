@@ -265,10 +265,18 @@ public class StatisticsCommonService {
         }
 
 
+        if (CollUtil.isEmpty(childIds)) {
+            return Collections.emptyList();
+        }
+
         List<StandingbookLabelInfoDO> standingbookLabelInfoList = byLabelNames.stream()
                 .filter(standingbook -> {
                     String value = standingbook.getValue();
-                    return childIds.stream().anyMatch(value::startsWith);
+                    if (Objects.isNull(value)) {
+                        return false;
+                    } else {
+                        return childIds.stream().anyMatch(value::startsWith);
+                    }
                 })
                 .collect(Collectors.toList());
         List<StandingbookLabelInfoDO> standingbookLabelInfoDOS = filterStandingbookLabelInfoDO(standingbookLabelInfoList, childIds, CHILD_LABEL_REGEX_ADD);
