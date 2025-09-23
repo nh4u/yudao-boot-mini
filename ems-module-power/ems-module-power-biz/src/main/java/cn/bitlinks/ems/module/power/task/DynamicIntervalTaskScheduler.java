@@ -53,13 +53,16 @@ public class DynamicIntervalTaskScheduler implements SchedulingConfigurer {
         taskRegistrar.addTriggerTask(
                 // 任务逻辑
                 () -> {
+                    log.info("定时同步双碳服务-开始");
                     DoubleCarbonSettingsRespVO config = doubleCarbonService.getSettings();
                     LocalDateTime endTime = LocalDateTime.now();
                     LocalDateTime lastSyncTime = config.getLastSyncTime();
                     LocalDateTime startTime = Objects.isNull(lastSyncTime) ? endTime : lastSyncTime;
                     // 【startTime-1h,当前时间】
                     List<SyncDoubleCarbonData> list = syncDoubleCarbonService.getSyncDoubleCarbonData(endTime);
+                    log.info("定时同步双碳服务-获取数据");
                     try {
+                        log.info("定时同步双碳服务-发送请求");
                         // 构建POST请求 发送请求并获取响应
                         HttpResponse response = HttpRequest.post(config.getUrl())
                                 .header(Header.CONTENT_TYPE, "application/json;charset=UTF-8")
@@ -85,6 +88,7 @@ public class DynamicIntervalTaskScheduler implements SchedulingConfigurer {
                         doubleCarbonSettingsUpdVO.setLastSyncTime(lastSyncTime);
                         doubleCarbonService.updLastSyncTime(doubleCarbonSettingsUpdVO);
                     }
+                    log.info("定时同步双碳服务-结束");
                 },
                 // Trigger：你实现的核心，用于动态计算下一次执行时间
                 triggerContext -> {
