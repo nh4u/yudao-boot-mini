@@ -160,6 +160,8 @@ public interface StandingbookService {
      */
     List<StandingbookDTO> getMeasuringInstrumentStandingbookDTOList();
 
+    List<StandingbookDTO> getMeasuringInstrumentStandingbookDTOList(List<Long> sbIds);
+
     List<StandingBookHeaderDTO> getStandingBookHeadersByHeaders(List<String> headList);
     /**
      * 根据能源参数查询重点设备
@@ -189,4 +191,5 @@ public interface StandingbookService {
 
     List<DoubleCarbonMappingRespVO> getEffectiveSbIds();
 
+    StandingbookExportVO getImportTemplateExcelData(Map<String, String> paramVO);
 }

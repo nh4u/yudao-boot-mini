@@ -11,6 +11,7 @@ import cn.bitlinks.ems.module.power.service.standingbook.StandingbookService;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.write.metadata.style.WriteCellStyle;
 import com.alibaba.excel.write.style.HorizontalCellStyleStrategy;
+import com.alibaba.excel.write.style.column.SimpleColumnWidthStyleStrategy;
 import com.alibaba.excel.write.style.row.SimpleRowHeightStyleStrategy;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -83,8 +84,8 @@ public class StandingbookController {
     //@PreAuthorize("@ss.hasPermission('power:standingbook:query')")
     public CommonResult<List<StandingbookRespVO>> getStandingbookPage(@Valid @RequestBody Map<String, String> pageReqVO) {
         List<StandingbookDO> list = standingbookService.getStandingbookList(pageReqVO);
-        //补充能源信息
         List<StandingbookRespVO> respVOS = BeanUtils.toBean(list, StandingbookRespVO.class);
+        //补充能源信息
         standingbookService.sbOtherField(respVOS);
         return success(respVOS);
     }
@@ -212,6 +213,74 @@ public class StandingbookController {
                     .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
                     // 设置表头行高 30，内容行高 20
                     .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))
+                    // 自适应表头宽度
+//                .registerWriteHandler(new MatchTitleWidthStyleStrategy())
+                    // 由于column索引从0开始 返回来的labelDeep是从1开始，又由于有个能源列，所以合并索引 正好相抵，直接使用labelDeep即可
+//                    .registerWriteHandler(new FullCellMergeStrategy(0, null, 0, mergeIndex))
+                    .sheet("数据").doWrite(dataList);
+        } catch (Exception e) {
+            e.printStackTrace(); // 或者没打印
+        }// try-with-resources 会自动关闭 outputStream
+    }
+
+    @PostMapping("/exportSbImportTemplate")
+    @Operation(summary = "导出数据补录导入模版")
+    @ApiAccessLog(operateType = EXPORT)
+    public void exportSbImportTemplate(@Valid @RequestBody Map<String, String> paramVO,
+                                       HttpServletResponse response) throws IOException {
+        Integer mergeIndex = 0;
+        // 获取导出数据
+        StandingbookExportVO vo = standingbookService.getImportTemplateExcelData(paramVO);
+        // 文件名字处理
+        String filename = vo.getFilename();
+        // 表头
+        List<List<String>> header = vo.getHeaderList();
+        // 行数据
+        List<List<Object>> dataList = vo.getDataList();
+
+        // 放在 write前配置response才会生效，放在后面不生效
+        // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
+        response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
+        response.addHeader("Access-Control-Expose-Headers", "File-Name");
+        response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
+        response.setContentType("application/vnd.ms-excel;charset=UTF-8");
+
+        WriteCellStyle headerStyle = new WriteCellStyle();
+        // 设置水平居中对齐
+        headerStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+        // 设置垂直居中对齐
+        headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        // 设置背景色
+//        headerStyle.setFillBackgroundColor(IndexedColors.ROYAL_BLUE.getIndex());
+        // 设置字体
+//        WriteFont headerFont = new WriteFont();
+//        headerFont.setFontHeightInPoints((short) 8);
+//        headerFont.setColor(IndexedColors.WHITE.getIndex());
+//        headerStyle.setWriteFont(headerFont);
+
+
+        // 创建一个新的 WriteCellStyle 对象
+        WriteCellStyle contentStyle = new WriteCellStyle();
+
+        // 设置水平居中对齐
+        contentStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+
+        // 设置垂直居中对齐
+        contentStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+
+        // 设置边框
+        contentStyle.setBorderLeft(BorderStyle.THIN);
+        contentStyle.setBorderTop(BorderStyle.THIN);
+        contentStyle.setBorderRight(BorderStyle.THIN);
+        contentStyle.setBorderBottom(BorderStyle.THIN);
+
+        try (OutputStream outputStream = response.getOutputStream()) {
+            EasyExcelFactory.write(outputStream)
+                    .head(header)
+                    .registerWriteHandler(new SimpleColumnWidthStyleStrategy(25))
+                    .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
+                    // 设置表头行高 30，内容行高 20
+                    .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 20, (short) 17))
                     // 自适应表头宽度
 //                .registerWriteHandler(new MatchTitleWidthStyleStrategy())
                     // 由于column索引从0开始 返回来的labelDeep是从1开始，又由于有个能源列，所以合并索引 正好相抵，直接使用labelDeep即可

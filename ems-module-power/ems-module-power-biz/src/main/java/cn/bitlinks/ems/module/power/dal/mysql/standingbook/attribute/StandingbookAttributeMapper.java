@@ -76,7 +76,11 @@ public interface StandingbookAttributeMapper extends BaseMapperX<StandingbookAtt
      * @return
      */
     List<StandingbookDTO> getMeasuringInstrumentStandingbookDTO();
-
+    /**
+     * 查询台账（计量器具）的id、name、code
+     * @return
+     */
+    List<StandingbookDTO> getMeasuringInstrumentStandingbookDTOBySbIds(@Param("sbIds") List<Long> sbIds);
 
     List<String> getStandingbookCodeDeviceList();
     List<String> getStandingbookCodeMeasurementList();
