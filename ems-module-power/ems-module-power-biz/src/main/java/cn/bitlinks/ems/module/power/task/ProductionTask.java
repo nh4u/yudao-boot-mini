@@ -86,6 +86,7 @@ public class ProductionTask {
     private Map<String, List<ProductYieldMeta>> getProductYield() {
         try {
             String url = externalApiService.getProductYieldUrl();
+            log.info("处理产品产量数据-发送请求" + url);
             HttpResponse response = HttpRequest.post(url)
                     .header(Header.CONTENT_TYPE, "application/json;charset=UTF-8")
                     // 超时，毫秒
@@ -97,7 +98,7 @@ public class ProductionTask {
             if (statusCode == HttpStatus.HTTP_OK) {
 
                 JSONObject jsonObject = JSON.parseObject(response.body());
-
+                log.info("处理产品产量数据-数据处理");
                 // 不转换一下 会报错 com.alibaba.fastjson.JSONObject cannot be cast to cn.bitilinks.doublecarbon.controlplatform.vo.result.monitor.bigscreen.ProductYieldMeta
                 List<ProductYieldMeta> eightListTemp = (List<ProductYieldMeta>) JSONPath.eval(jsonObject, "$.8吋");
                 List<ProductYieldMeta> eightList = JSON.parseArray(JSON.toJSONString(eightListTemp), ProductYieldMeta.class);
@@ -175,7 +176,7 @@ public class ProductionTask {
         vo.setTime(time.minusHours(1));
 
         // 计算差值
-        ProductionDO last  = productionService.getLastProduction(size);
+        ProductionDO last = productionService.getLastProduction(size);
         BigDecimal value = vo.getLot().subtract(last.getLot());
         vo.setValue(value);
 

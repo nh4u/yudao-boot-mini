@@ -33,7 +33,7 @@ PRIMARY KEY (`id`) USING BTREE
 ## 注意插入字段配置
 ```sql
 INSERT INTO `power_double_carbon_settings` (`id`, `name`, `url`, `update_frequency`, `update_frequency_unit`,  `tenant_id`) VALUES (1, '双碳系统', 'http://www.baidu.com', 10, 2, 1);
-INSERT INTO `ydme_ems`.`infra_config` (`id`, `category`, `type`, `name`, `config_key`, `value`, `visible`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (13, 'biz', 1, '设备详情跳转连接', 'power.device.monitor.url', '<a href=\"http://82.157.40.213:8170/monitor/equipment?id=%s&type=%s\">查看详情</a>', b'0', '设备详情跳转连接', 'admin', '2025-08-31 18:47:02', '1', '2025-09-10 15:22:18', b'0');
+INSERT INTO `ydme_ems`.`infra_config` (`id`, `category`, `type`, `name`, `config_key`, `value`, `visible`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (13, 'biz', 1, '设备详情跳转连接', 'power.device.monitor.url', '<a href=\"http://82.157.40.213:8170/monitor/detail?id=%s&topType=%s\">查看详情</a>', b'0', '设备详情跳转连接', 'admin', '2025-08-31 18:47:02', '1', '2025-09-22 14:42:00', b'0');
 INSERT INTO `ydme_ems`.`infra_config` (`id`, `category`, `type`, `name`, `config_key`, `value`, `visible`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (14, 'biz', 1, '二维码', 'power.device.monitor.qrcode.url', 'http://82.157.40.213:8170/monitor/equipment?id=%s&type=%s', b'0', '二维码', 'admin', '2025-08-31 18:47:02', '1', '2025-09-10 15:22:05', b'0');
 
 ```

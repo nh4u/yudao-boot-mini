@@ -200,6 +200,30 @@
             attr.type_id
     </select>
 
+    <select id="getMeasuringInstrumentStandingbookDTOBySbIds"
+            resultType="cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO">
+        SELECT
+            attr.standingbook_id,
+            attr.type_id,
+            MAX(CASE WHEN attr.code = 'measuringInstrumentId' THEN attr.value END) AS code,
+            MAX(CASE WHEN attr.code = 'measuringInstrumentName' THEN attr.value END) AS name
+        FROM
+            power_standingbook_attribute attr
+        <where>
+            attr.code IN ('measuringInstrumentId', 'measuringInstrumentName')
+            and attr.standingbook_id is not null
+            and attr.deleted=0
+            <if test="sbIds != null and sbIds.size() != 0">
+                AND standingbook_id in
+                <foreach collection="sbIds" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        GROUP BY
+            attr.standingbook_id,
+            attr.type_id
+    </select>
 
     <select id="getStandingbookCodeDeviceList" resultType="java.lang.String">
     select value from power_standingbook_attribute where code='equipmentId'
