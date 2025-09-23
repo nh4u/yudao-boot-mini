@@ -974,8 +974,10 @@ public class ComparisonV2ServiceImpl implements ComparisonV2Service {
         for (UsageCostData data : usageCostDataList) {
             String label = standingbookLabelMap.get(data.getStandingbookId());
             if (label == null) continue;
+
+            BigDecimal value = valueExtractor.apply(data);
             nowMap.computeIfAbsent(label, k -> new HashMap<>())
-                    .merge(data.getTime(), valueExtractor.apply(data), (v1, v2) -> {
+                    .merge(data.getTime(), value, (v1, v2) -> {
                                 if (v1 == null) return v2;
                                 if (v2 == null) return v1;
                                 return v1.add(v2);
