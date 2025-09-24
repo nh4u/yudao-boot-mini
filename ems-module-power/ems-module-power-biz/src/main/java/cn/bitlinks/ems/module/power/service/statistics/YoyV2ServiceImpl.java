@@ -726,26 +726,35 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         Map<Long, Map<String, BigDecimal>> nowMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(
                         UsageCostData::getEnergyId,
-                        Collectors.toMap(UsageCostData::getTime,
-                                // 保留原始值（可能为null）
-                                valueExtractor,
-                                // 合并逻辑：处理各种null情况
-                                (v1, v2) -> {
-                                    if (v1 == null) return v2;
-                                    if (v2 == null) return v1;
-                                    return v1.add(v2);
-                                }
+                        Collectors.groupingBy(
+                                UsageCostData::getTime,
+                                Collectors.mapping(
+                                        // 保留原始值（可能为null）
+                                        valueExtractor,
+                                        // 合并逻辑：处理各种null情况
+                                        Collectors.reducing(null, (v1, v2) -> {
+                                            if (v1 == null) return v2;
+                                            if (v2 == null) return v1;
+                                            return v1.add(v2);
+                                        })
+                                )
                         )
                 ));
         Map<Long, Map<String, BigDecimal>> lastMap = lastUsageCostDataList.stream()
                 .collect(Collectors.groupingBy(
                         UsageCostData::getEnergyId,
-                        Collectors.toMap(UsageCostData::getTime, valueExtractor, // 合并逻辑：处理各种null情况
-                                (v1, v2) -> {
-                                    if (v1 == null) return v2;
-                                    if (v2 == null) return v1;
-                                    return v1.add(v2);
-                                }
+                        Collectors.groupingBy(
+                                UsageCostData::getTime,
+                                Collectors.mapping(
+                                        // 保留原始值（可能为null）
+                                        valueExtractor,
+                                        // 合并逻辑：处理各种null情况
+                                        Collectors.reducing(null, (v1, v2) -> {
+                                            if (v1 == null) return v2;
+                                            if (v2 == null) return v1;
+                                            return v1.add(v2);
+                                        })
+                                )
                         )
                 ));
         List<ComparisonChartGroupVO> result = new ArrayList<>();
@@ -809,33 +818,11 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         Map<String, LabelConfigDO> labelMap = labelConfigService.getByIds(labelIds).stream()
                 .collect(Collectors.toMap(l -> "label_" + l.getId(), Function.identity()));
 
-        // 构造 (labelKey -> time -> cost) 的二维映射（当前周期）
-        Map<String, Map<String, BigDecimal>> nowMap = new HashMap<>();
-        for (UsageCostData data : usageCostDataList) {
-            String label = standingbookLabelMap.get(data.getStandingbookId());
-            if (label == null) continue;
-            nowMap.computeIfAbsent(label, k -> new HashMap<>())
-                    .merge(data.getTime(), valueExtractor.apply(data), // 合并逻辑：处理各种null情况
-                            (v1, v2) -> {
-                                if (v1 == null) return v2;
-                                if (v2 == null) return v1;
-                                return v1.add(v2);
-                            }
-                    );
-        }
+        // 构造 (labelKey -> time -> cost) 的二维映射（当前周期） （解决null 报错问题）
+        Map<String, Map<String, BigDecimal>> nowMap = dealMap(usageCostDataList, valueExtractor, standingbookLabelMap);
 
         // 构造 (labelKey -> time -> cost) 的二维映射（上周期）
-        Map<String, Map<String, BigDecimal>> lastMap = new HashMap<>();
-        for (UsageCostData data : lastUsageCostDataList) {
-            String label = standingbookLabelMap.get(data.getStandingbookId());
-            if (label == null) continue;
-            lastMap.computeIfAbsent(label, k -> new HashMap<>())
-                    .merge(data.getTime(), valueExtractor.apply(data), (v1, v2) -> {
-                        if (v1 == null) return v2;
-                        if (v2 == null) return v1;
-                        return v1.add(v2);
-                    });
-        }
+        Map<String, Map<String, BigDecimal>> lastMap = dealMap(lastUsageCostDataList, valueExtractor, standingbookLabelMap);
 
         // 构造图表组数据（每个标签一个）
         List<ComparisonChartGroupVO> result = new ArrayList<>();
@@ -870,6 +857,44 @@ public class YoyV2ServiceImpl implements YoyV2Service {
         }
         return result;
     }
+
+    /**
+     *  处理
+     * @param usageCostDataList
+     * @param valueExtractor
+     * @param standingbookLabelMap
+     * @return
+     */
+    private Map<String, Map<String, BigDecimal>> dealMap(List<UsageCostData> usageCostDataList,
+                                                         Function<UsageCostData, BigDecimal> valueExtractor,
+                                                         Map<Long, String> standingbookLabelMap) {
+        Map<String, Map<String, BigDecimal>> map = new HashMap<>();
+        for (UsageCostData data : usageCostDataList) {
+            String label = standingbookLabelMap.get(data.getStandingbookId());
+            if (label == null) {
+                continue;
+            }
+            BigDecimal value = valueExtractor.apply(data);
+            String time = data.getTime();
+            Map<String, BigDecimal> subMap = map.get(label);
+            if (CollUtil.isNotEmpty(subMap)) {
+                BigDecimal oldValue = subMap.get(time);
+                if (Objects.nonNull(oldValue)) {
+                    oldValue = Objects.isNull(value) ? oldValue : oldValue.add(value);
+                } else {
+                    oldValue = Objects.isNull(value) ? null : value;
+                }
+                subMap.put(time, oldValue);
+            } else {
+                subMap = new HashMap<>();
+                subMap.put(time, value);
+            }
+
+            map.put(label, subMap);
+        }
+        return map;
+    }
+
 
     /**
      * 构建图表数据 - 默认（综合）维度聚合，仅返回一个图表组，名称为“总”
