@@ -101,6 +101,7 @@ public class DynamicIntervalTaskScheduler implements SchedulingConfigurer {
 
     private Date dealNextTime(DoubleCarbonSettingsRespVO config) {
 
+        log.info("定时同步双碳服务-时间处理"+config);
         Integer updateFrequency = config.getUpdateFrequency();
         Integer updateFrequencyUnit = config.getUpdateFrequencyUnit();
 
@@ -120,7 +121,9 @@ public class DynamicIntervalTaskScheduler implements SchedulingConfigurer {
                 nextTime = now;
         }
 
-        return Date.from(nextTime.atZone(ZoneId.systemDefault()).toInstant());
+        Date from = Date.from(nextTime.atZone(ZoneId.systemDefault()).toInstant());
+        log.info("定时同步双碳服务-时间处理【"+nextTime +"】【"+from);
+        return from;
     }
 
 
