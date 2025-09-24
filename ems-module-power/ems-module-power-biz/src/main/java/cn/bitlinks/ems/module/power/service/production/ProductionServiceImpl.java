@@ -115,6 +115,15 @@ public class ProductionServiceImpl implements ProductionService {
                 .last("limit 1"));
     }
 
+    @Override
+    public ProductionDO getProductionBySizeTime(Integer size, LocalDateTime time) {
+        // 最后一条
+        return productionMapper.selectOne(new LambdaQueryWrapper<ProductionDO>()
+                .eq(ProductionDO::getSize, size)
+                .eq(ProductionDO::getTime, time)
+                .last("limit 1"));
+    }
+
 
     private void validateProductionExists(Long id) {
         if (productionMapper.selectById(id) == null) {

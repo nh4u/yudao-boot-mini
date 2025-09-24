@@ -23,10 +23,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -45,9 +42,9 @@ public class ProductionTask {
     private ProductionService productionService;
 
     /**
-     * 执行定时任务  同步产量数据到数据表中 （每隔10分钟同步一次）每整小时获取一次数据
+     * 执行定时任务  同步产量数据到数据表中 （每隔10分钟同步一次）每整小时(0 0 0/1 * * ?)获取一次数据
      */
-    @Scheduled(cron = "0 0/10 * * * ?")
+    @Scheduled(cron = "0 0 0/1 * * ?")
     @TenantJob
     public void execute() {
 
@@ -177,9 +174,12 @@ public class ProductionTask {
 
         // 计算差值
         ProductionDO last = productionService.getLastProduction(size);
-        BigDecimal value = vo.getLot().subtract(last.getLot());
-        vo.setValue(value);
+        if (Objects.nonNull(last)) {
+            BigDecimal value = vo.getLot().subtract(last.getLot());
+            vo.setValue(value);
+        }
 
+        log.info("处理产品产量数据-保存" + vo);
         productionService.createProduction(vo);
     }
 }
