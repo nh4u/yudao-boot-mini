@@ -271,6 +271,14 @@ public interface CommonConstants {
      * cop重算任务，锁
      */
     String COP_HOUR_AGG_RECALC_TASK_LOCK_KEY = "cop-hour-agg-recalc-task:%s";
+    /**
+     * 化学品录入任务，锁
+     */
+    String CHEMICALS_ADD_TASK_LOCK_KEY = "chemicals-add-task:%s";
+    /**
+     * 产量外部接口任务，锁
+     */
+    String PRODUCTION_SYNC_TASK_LOCK_KEY = "production-sync-task:%s";
 
     String COP_HOUR_AGG_TABLE_NAME = "cop_hour_aggregate_data";
     /**

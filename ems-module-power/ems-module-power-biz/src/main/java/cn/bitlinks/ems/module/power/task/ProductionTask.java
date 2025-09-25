@@ -17,6 +17,9 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +27,10 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.PRODUCTION_SYNC_TASK_LOCK_KEY;
 
 /**
  * 产量外部接口 定时任务
@@ -34,6 +40,12 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 public class ProductionTask {
+
+    @Value("${spring.profiles.active}")
+    private String env;
+
+    @Resource
+    private RedissonClient redissonClient;
 
     @Resource
     private ExternalApiService externalApiService;
@@ -48,10 +60,25 @@ public class ProductionTask {
     @TenantJob
     public void execute() {
 
-        log.info("处理产品产量数据-开始");
-        dealProductYield();
-        log.info("处理产品产量数据-结束");
+        String LOCK_KEY = String.format(PRODUCTION_SYNC_TASK_LOCK_KEY, env);
 
+        RLock lock = redissonClient.getLock(LOCK_KEY);
+        try {
+            if (!lock.tryLock(5000L, TimeUnit.MILLISECONDS)) {
+                log.info("产量外部接口Task 已由其他节点执行");
+                return;
+            }
+            try {
+                log.info("处理产品产量数据-开始");
+                dealProductYield();
+                log.info("处理产品产量数据-结束");
+            } finally {
+                lock.unlock();
+            }
+
+        } catch (Exception e) {
+            log.error("产量外部接口Task 执行失败", e);
+        }
     }
 
     /**
