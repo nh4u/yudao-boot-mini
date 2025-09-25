@@ -2,6 +2,8 @@ package cn.bitlinks.ems.module.power.service.standingbook;
 
 import cn.bitlinks.ems.framework.common.exception.ErrorCode;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.MeterRelationExcelDTO;
+import cn.hutool.core.text.CharSequenceUtil;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -28,7 +30,10 @@ public class MeterRelationImportService {
 
     // 下级计量器具分隔符校验
 //    private static final Pattern SEMICOLON_PATTERN = Pattern.compile("^[\\w\\-\\u4e00-\\u9fa5]+(;[\\w\\-\\u4e00-\\u9fa5]+)*$");
-    private static final Pattern SEMICOLON_PATTERN = Pattern.compile("^([^;]+(;[^;]+)*)*$");
+    // 存在多层嵌套的可选分组与重复量词 (*套 *) 它让 Java 的正则引擎（基于回溯算法）在面对某些输入时，会尝试巨量的匹配路径，导致指数级的时间复杂度，进而卡死。
+//    private static final Pattern SEMICOLON_PATTERN = Pattern.compile("^([^;]+(;[^;]+)*)*$");
+    //  改用 更简单、无嵌套量词、无重复分组正则
+    private static final Pattern SEMICOLON_PATTERN = Pattern.compile("^[^;]+(?:;[^;]+)*$");
 
     // 单次缓存批量大小
     private static final int BATCH_COUNT = 500;
@@ -142,9 +147,9 @@ public class MeterRelationImportService {
 
 
         if (!StringUtils.hasText(meterCode)) return false;
-        if (StringUtils.hasText(subMeterCodes) && !SEMICOLON_PATTERN.matcher(subMeterCodes).matches()) return false;
+        if (StringUtils.hasText(subMeterCodes) && !SEMICOLON_PATTERN.matcher(CharSequenceUtil.strip(subMeterCodes, StringPool.SEMICOLON)).matches()) return false;
         if (!meterRelationService.checkMeterCodeExists(meterCode)) return false;
-        if (StringUtils.hasText(subMeterCodes) && !meterRelationService.checkSubMeterCodesExists(subMeterCodes.split(";")).isEmpty())
+        if (StringUtils.hasText(subMeterCodes) && !meterRelationService.checkSubMeterCodesExists(subMeterCodes.split(StringPool.SEMICOLON)).isEmpty())
             return false;
         if (StringUtils.hasText(relatedDevice) && !meterRelationService.checkDeviceExists(relatedDevice)) return false;
         if (StringUtils.hasText(stage) && !meterRelationService.checkLinkExists(stage)) return false;
