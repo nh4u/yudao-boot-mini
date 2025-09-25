@@ -21,7 +21,7 @@ public interface ProductionService {
      * @param createReqVO 创建信息
      * @return ProductionDO
      */
-    ProductionDO createProduction (@Valid ProductionSaveReqVO createReqVO);
+    ProductionDO createProduction(@Valid ProductionSaveReqVO createReqVO);
 
     /**
      * 更新外部接口
@@ -58,4 +58,6 @@ public interface ProductionService {
     List<ProductionDO> getBigScreenProduction(LocalDateTime startDate, LocalDateTime endDate);
 
     ProductionDO getLastProduction(Integer size);
+
+    ProductionDO getProductionBySizeTime(Integer size, LocalDateTime time);
 }
