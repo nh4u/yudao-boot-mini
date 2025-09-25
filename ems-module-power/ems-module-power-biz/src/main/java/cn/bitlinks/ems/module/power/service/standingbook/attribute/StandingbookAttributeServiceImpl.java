@@ -415,7 +415,8 @@ public class StandingbookAttributeServiceImpl implements StandingbookAttributeSe
                         .inIfPresent(StandingbookAttributeDO::getStandingbookId, sbIds));
 
         if (CollUtil.isEmpty(attrs)) {
-            throw exception(STANDINGBOOK_NO_ATTR);
+            return Collections.emptyMap();
+//            throw exception(STANDINGBOOK_NO_ATTR);
         }
 
         return attrs.stream()
