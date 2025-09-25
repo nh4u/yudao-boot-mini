@@ -1087,7 +1087,7 @@ public class BigScreenServiceImpl implements BigScreenService {
     }
 
     private BigDecimal dealProductionConsumption(BigDecimal value, BigDecimal sum, BigDecimal energySumStandardCoal) {
-        if (Objects.isNull(value) || Objects.isNull(sum) || Objects.isNull(energySumStandardCoal)) {
+        if (Objects.isNull(value) || Objects.isNull(sum) || sum.compareTo(BigDecimal.ZERO) == 0 || Objects.isNull(energySumStandardCoal)) {
             return null;
         }
 

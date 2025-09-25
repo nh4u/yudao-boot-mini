@@ -1270,7 +1270,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
                     return new PieItemVO(
                             name,
                             entry.getValue(),
-                            calculateProportion(entry.getValue(), total)
+                            getProportion(entry.getValue(), total)
                     );
                 })
                 .collect(Collectors.toList());
