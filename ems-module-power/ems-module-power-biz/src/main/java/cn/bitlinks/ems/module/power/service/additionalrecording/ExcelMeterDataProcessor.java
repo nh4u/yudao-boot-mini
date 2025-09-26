@@ -115,21 +115,129 @@ public class ExcelMeterDataProcessor {
     public AcqDataExcelCoordinate getExcelImportCoordinate(InputStream file) throws IOException {
 
         AcqDataExcelCoordinate acqDataExcelCoordinate = new AcqDataExcelCoordinate();
-        acqDataExcelCoordinate.setAcqNameStart("A1");
-        acqDataExcelCoordinate.setAcqNameEnd("K1");
-        acqDataExcelCoordinate.setAcqTimeStart("A3");
-        acqDataExcelCoordinate.setAcqTimeEnd("A10");
 
         try (Workbook workbook = WorkbookFactory.create(file)) {
             //只判断一个sheet页的数据
             Sheet sheet = workbook.getSheetAt(0);
+            if (sheet == null) {
+                throw exception(IMPORT_EXCEL_SHEET_NOT_EXIST);
+            }
 
+            Cell cell = sheet.getRow(0).getCell(0);
+            String stringCellValue = cell.getStringCellValue();
+            if (!stringCellValue.equals("时间/数据")) {
+                throw exception(IMPORT_EXCEL_FORMAT_ERROR);
+            }
+
+            // ===== 1. 获取第一行（row 0）最后一个非空单元格的列索引 =====
+            int lastColIndex = getLastNonEmptyCellColumnIndex(sheet.getRow(0));
+            // ===== 2. 获取第一列（column 0）最后一个非空单元格的行索引 =====
+            int lastRowIndex = getLastNonEmptyCellRowIndex(sheet, 0);
+
+            // 如果你想返回 Excel 风格的坐标，比如 "K26"，可以进一步转换：
+            String acqNameStart = getExcelCoordinate(0, 1);
+            acqDataExcelCoordinate.setAcqNameStart(acqNameStart);
+
+            String acqNameEnd = getExcelCoordinate(0, lastColIndex);
+            acqDataExcelCoordinate.setAcqNameEnd(acqNameEnd);
+
+            String acqTimeStart = getExcelCoordinate(1, 0);
+            acqDataExcelCoordinate.setAcqTimeStart(acqTimeStart);
+
+            String acqTimeEnd = getExcelCoordinate(lastRowIndex,0);
+            acqDataExcelCoordinate.setAcqTimeEnd(acqTimeEnd);
 
         } catch (ServiceException e) {
             ErrorCode errorCode = new ErrorCode(1_001_000_000, e.getMessage());
             throw exception(errorCode);
         }
         return acqDataExcelCoordinate;
+    }
+
+    /**
+     * 获取某一行（Row）中，最后一个非空单元格的 列索引（从0开始）
+     */
+    private int getLastNonEmptyCellColumnIndex(Row row) {
+        if (row == null) {
+            return -1;
+        }
+
+        int lastColIndex = -1;
+        for (int i = 0; i < row.getLastCellNum(); i++) {
+            Cell cell = row.getCell(i);
+            if (isCellNonEmpty(cell)) {
+                lastColIndex = i;
+            }
+        }
+        return lastColIndex;
+    }
+
+    /**
+     * 获取某一列（Column）中，最后一个非空单元格的 行索引（从0开始）
+     */
+    private int getLastNonEmptyCellRowIndex(Sheet sheet, int columnIndex) {
+        if (sheet == null) {
+            return -1;
+        }
+
+        int lastRowIndex = -1;
+        for (int rowNum = 0; rowNum <= sheet.getLastRowNum(); rowNum++) {
+            Row row = sheet.getRow(rowNum);
+            if (row != null) {
+                Cell cell = row.getCell(columnIndex);
+                if (isCellNonEmpty(cell)) {
+                    lastRowIndex = rowNum;
+                }
+            }
+        }
+        return lastRowIndex;
+    }
+
+    /**
+     * 判断单元格是否非空：非null，且内容有值（非空字符串/数字等）
+     */
+    private boolean isCellNonEmpty(Cell cell) {
+        if (cell == null) {
+            return false;
+        }
+        switch (cell.getCellType()) {
+            case BLANK:
+                return false;
+            case STRING:
+                return !cell.getStringCellValue().trim().isEmpty();
+            case NUMERIC:
+            case BOOLEAN:
+            case FORMULA:
+                return true; // 公式、数字、布尔值都算非空
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * 根据行号和列号（从 0 开始的数字索引）生成 Excel 风格的坐标，如 A1, B2, AA26
+     *
+     * @param row    行号，从 0 开始（比如 0 表示第 1 行）
+     * @param column 列号，从 0 开始（比如 0 表示第 1 列/A）
+     * @return Excel 格式的坐标，如 "A1", "K26"
+     */
+    private String getExcelCoordinate(int row, int column) {
+        String colLetter = indexToExcelColumn(column); // 如 0 -> A
+        int excelRowNumber = row + 1; // 如 0 -> 1
+        return colLetter + excelRowNumber;
+    }
+
+    /**
+     * 可选：将列的数字索引转换为 Excel 列字母，如 0 -> A, 1 -> B, ..., 10 -> K
+     */
+    private String indexToExcelColumn(int columnIndex) {
+        StringBuilder sb = new StringBuilder();
+        while (columnIndex >= 0) {
+            int rem = columnIndex % 26;
+            sb.append((char) ('A' + rem));
+            columnIndex = (columnIndex / 26) - 1;
+        }
+        return sb.reverse().toString();
     }
 
     /**
