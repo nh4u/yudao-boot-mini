@@ -40,25 +40,30 @@ public class ProductionServiceImpl implements ProductionService {
                 .last("limit 1"));
 
         if (Objects.isNull(old)) {
-            // 转换请求对象到数据对象
-            ProductionDO productionDO = BeanUtils.toBean(createReqVO, ProductionDO.class);
-            // 插入数据库
-            productionMapper.insert(productionDO);
-
-            return productionDO;
+            return insertProduction(createReqVO);
         } else {
 
             old.setPlan(createReqVO.getPlan());
             old.setLot(createReqVO.getLot());
-            old.setSize(createReqVO.getSize());
+            old.setValue(createReqVO.getValue());
 
             productionMapper.updateById(old);
 
             // 返回记录
             return old;
         }
-
     }
+
+    @Override
+    public ProductionDO insertProduction(ProductionSaveReqVO createReqVO) {
+        // 转换请求对象到数据对象
+        ProductionDO productionDO = BeanUtils.toBean(createReqVO, ProductionDO.class);
+        // 插入数据库
+        productionMapper.insert(productionDO);
+
+        return productionDO;
+    }
+
 
     @Override
     public void updateProduction(ProductionSaveReqVO updateReqVO) {
