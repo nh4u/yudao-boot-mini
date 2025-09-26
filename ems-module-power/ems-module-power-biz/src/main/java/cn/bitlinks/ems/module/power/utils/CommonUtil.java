@@ -168,6 +168,27 @@ public class CommonUtil {
     }
 
     /**
+     * 两个数据相减
+     *
+     * @param first  1
+     * @param second 2
+     * @return add
+     */
+    public static BigDecimal subtractBigDecimal(BigDecimal first, BigDecimal second) {
+
+        if (Objects.isNull(first)) {
+            first = BigDecimal.ZERO;
+        }
+
+        if (Objects.isNull(second)) {
+            second = BigDecimal.ZERO;
+        }
+
+        return first.subtract(second);
+
+    }
+
+    /**
      * 根据数据返回对应数据 or /
      *
      * @param num 对应list
