@@ -2,6 +2,8 @@ package cn.bitlinks.ems.module.power.service.additionalrecording;
 
 import cn.bitlinks.ems.framework.common.enums.AcqFlagEnum;
 import cn.bitlinks.ems.framework.common.enums.FullIncrementEnum;
+import cn.bitlinks.ems.framework.common.exception.ErrorCode;
+import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.util.calc.AggSplitUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
@@ -10,6 +12,7 @@ import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregate
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataFiveMinuteApi;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
+import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelCoordinate;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelListResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingBookHeaderDTO;
@@ -91,18 +94,42 @@ public class ExcelMeterDataProcessor {
             }
             boolean timeError;
             if (timeVertical && meterHorizontal) {
-                timeError = timeStart[0] + times.size()-1 != timeEnd[0];
+                timeError = timeStart[0] + times.size() - 1 != timeEnd[0];
             } else {
-                timeError = timeStart[1] + times.size()-1 != timeEnd[1];
+                timeError = timeStart[1] + times.size() - 1 != timeEnd[1];
             }
-            if(timeError){
+            if (timeError) {
                 throw exception(IMPORT_TIMES_ERROR);
             }
-            if(CollUtil.isEmpty(meterValuesMap)){
+            if (CollUtil.isEmpty(meterValuesMap)) {
                 throw exception(IMPORT_NO_METER);
             }
             return calculateMinuteDataParallel(meterValuesMap, times, meterNames);
+        } catch (ServiceException e) {
+            ErrorCode errorCode = new ErrorCode(1_001_000_000, e.getMessage());
+            throw exception(errorCode);
         }
+    }
+
+
+    public AcqDataExcelCoordinate getExcelImportCoordinate(InputStream file) throws IOException {
+
+        AcqDataExcelCoordinate acqDataExcelCoordinate = new AcqDataExcelCoordinate();
+        acqDataExcelCoordinate.setAcqNameStart("A1");
+        acqDataExcelCoordinate.setAcqNameEnd("K1");
+        acqDataExcelCoordinate.setAcqTimeStart("A3");
+        acqDataExcelCoordinate.setAcqTimeEnd("A10");
+
+        try (Workbook workbook = WorkbookFactory.create(file)) {
+            //只判断一个sheet页的数据
+            Sheet sheet = workbook.getSheetAt(0);
+
+
+        } catch (ServiceException e) {
+            ErrorCode errorCode = new ErrorCode(1_001_000_000, e.getMessage());
+            throw exception(errorCode);
+        }
+        return acqDataExcelCoordinate;
     }
 
     /**
