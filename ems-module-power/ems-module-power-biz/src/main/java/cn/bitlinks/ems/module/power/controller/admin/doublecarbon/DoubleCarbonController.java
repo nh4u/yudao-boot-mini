@@ -57,7 +57,9 @@ public class DoubleCarbonController {
     @PostMapping("/import")
     @Operation(summary = "导入双系统编码对应关系")
     public CommonResult<DoubleCarbonMappingImportRespVO> importExcel(
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file")
+            @Parameter(name = "file", description = "Excel 文件", required = true)
+            MultipartFile file) {
         return success(doubleCarbonService.importExcel(file));
     }
 
