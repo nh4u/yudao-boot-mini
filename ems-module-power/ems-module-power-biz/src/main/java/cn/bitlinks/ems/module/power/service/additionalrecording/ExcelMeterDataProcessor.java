@@ -145,12 +145,14 @@ public class ExcelMeterDataProcessor {
             String acqNameStart = getExcelCoordinate(0, 1);
             acqDataExcelCoordinate.setAcqNameStart(acqNameStart);
 
+            lastColIndex = lastColIndex > 0 ? lastColIndex : 1;
             String acqNameEnd = getExcelCoordinate(0, lastColIndex);
             acqDataExcelCoordinate.setAcqNameEnd(acqNameEnd);
 
             String acqTimeStart = getExcelCoordinate(1, 0);
             acqDataExcelCoordinate.setAcqTimeStart(acqTimeStart);
 
+            lastRowIndex = lastRowIndex > 0 ? lastRowIndex : 1;
             String acqTimeEnd = getExcelCoordinate(lastRowIndex, 0);
             acqDataExcelCoordinate.setAcqTimeEnd(acqTimeEnd);
 
