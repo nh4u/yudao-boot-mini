@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.controller.admin.additionalrecording;
 
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
+import cn.bitlinks.ems.framework.common.exception.ErrorCode;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
+import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.error;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
@@ -180,9 +182,34 @@ public class AdditionalRecordingController {
             log.error("Excel解析失败{}", e.getMessage(), e);
             return error(IMPORT_EXCEL_ERROR);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            ErrorCode errorCode = new ErrorCode(1_001_000_000, e.getMessage());
+            throw exception(errorCode);
         }
 
+    }
+
+
+    /**
+     * 获取导入excel起始坐标
+     *
+     * @param file
+     * @return
+     */
+    @Operation(summary = "获取导入excel起始坐标")
+    @PostMapping("/getExcelImportCoordinate")
+    public CommonResult<AcqDataExcelCoordinate> getExcelImportCoordinate(@RequestParam(value = "file") String file) {
+        try {
+            // 截取相对路径
+            String fileName = file.substring(file.lastIndexOf("/") + 1);
+            InputStream inputStream = new ByteArrayInputStream(fileApi.getMasterFileContent(fileName).getData());
+            return success(excelMeterDataProcessor.getExcelImportCoordinate(inputStream));
+        } catch (IOException e) {
+            log.error("Excel解析失败{}", e.getMessage(), e);
+            return error(IMPORT_EXCEL_ERROR);
+        } catch (Exception e) {
+            ErrorCode errorCode = new ErrorCode(1_001_000_000, e.getMessage());
+            throw exception(errorCode);
+        }
     }
 
 
