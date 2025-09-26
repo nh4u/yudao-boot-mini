@@ -87,7 +87,7 @@ public interface ErrorCodeConstants {
     ErrorCode IMPORT_TIMES_ERROR = new ErrorCode(1_001_301_229,"时间选择有误，存在非时间数据");
     ErrorCode IMPORT_NO_METER = new ErrorCode(1_001_301_230,"采集点选择有误，读取不到有效数据");
     ErrorCode IMPORT_EXCEL_SHEET_NOT_EXIST = new ErrorCode(1_001_301_231,"Excel文件中没有找到 Sheet");
-    ErrorCode IMPORT_EXCEL_FORMAT_ERROR = new ErrorCode(1_001_301_232,"模版格式不对，请把采集点code放在第一列，时间放在第一行。例如：code为[B1,B10]；时间为[A2,A10]。");
+    ErrorCode IMPORT_EXCEL_FORMAT_ERROR = new ErrorCode(1_001_301_232,"模版格式不对，请把采集点code放在第一行，时间放在第一列。例如：A1值为：时间/数据；code为[B1,B10]；时间为[A2,A10]。");
 
     // ========== 外部接口 ==========
     ErrorCode EXTERNAL_API_NOT_EXISTS = new ErrorCode(1_001_301_240,"外部接口不存在");

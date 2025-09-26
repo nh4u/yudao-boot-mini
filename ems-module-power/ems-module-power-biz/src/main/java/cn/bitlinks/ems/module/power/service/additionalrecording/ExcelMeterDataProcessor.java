@@ -123,14 +123,21 @@ public class ExcelMeterDataProcessor {
                 throw exception(IMPORT_EXCEL_SHEET_NOT_EXIST);
             }
 
-            Cell cell = sheet.getRow(0).getCell(0);
+            Row row = sheet.getRow(0);
+            if (Objects.isNull(row)) {
+                throw exception(IMPORT_EXCEL_FORMAT_ERROR);
+            }
+            Cell cell = row.getCell(0);
+            if (Objects.isNull(cell)) {
+                throw exception(IMPORT_EXCEL_FORMAT_ERROR);
+            }
             String stringCellValue = cell.getStringCellValue();
             if (!stringCellValue.equals("时间/数据")) {
                 throw exception(IMPORT_EXCEL_FORMAT_ERROR);
             }
 
             // ===== 1. 获取第一行（row 0）最后一个非空单元格的列索引 =====
-            int lastColIndex = getLastNonEmptyCellColumnIndex(sheet.getRow(0));
+            int lastColIndex = getLastNonEmptyCellColumnIndex(row);
             // ===== 2. 获取第一列（column 0）最后一个非空单元格的行索引 =====
             int lastRowIndex = getLastNonEmptyCellRowIndex(sheet, 0);
 
@@ -144,7 +151,7 @@ public class ExcelMeterDataProcessor {
             String acqTimeStart = getExcelCoordinate(1, 0);
             acqDataExcelCoordinate.setAcqTimeStart(acqTimeStart);
 
-            String acqTimeEnd = getExcelCoordinate(lastRowIndex,0);
+            String acqTimeEnd = getExcelCoordinate(lastRowIndex, 0);
             acqDataExcelCoordinate.setAcqTimeEnd(acqTimeEnd);
 
         } catch (ServiceException e) {
