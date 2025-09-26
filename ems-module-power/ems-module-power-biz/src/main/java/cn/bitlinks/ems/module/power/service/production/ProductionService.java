@@ -23,6 +23,7 @@ public interface ProductionService {
      */
     ProductionDO createProduction(@Valid ProductionSaveReqVO createReqVO);
 
+    ProductionDO insertProduction(@Valid ProductionSaveReqVO createReqVO);
     /**
      * 更新外部接口
      *

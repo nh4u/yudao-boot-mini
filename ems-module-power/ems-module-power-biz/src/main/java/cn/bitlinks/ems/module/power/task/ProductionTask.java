@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.PRODUCTION_SYNC_TASK_LOCK_KEY;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.subtractBigDecimal;
 
 /**
  * 产量外部接口 定时任务
@@ -175,14 +176,14 @@ public class ProductionTask {
                     .collect(Collectors.toList());
 
             if (CollUtil.isNotEmpty(collect)) {
-                saveProductionData(size, collect.get(0));
+                saveProductionData(size, collect.get(0), collect.get(1));
             }
         } else {
             log.info("尺寸：【{}吋】，产量数据为空", size);
         }
     }
 
-    private void saveProductionData(Integer size, ProductYieldMeta productYieldMeta) {
+    private void saveProductionData(Integer size, ProductYieldMeta productYieldMeta, ProductYieldMeta lastMonthData) {
 
         ProductionSaveReqVO vo = new ProductionSaveReqVO();
         vo.setOriginTime(productYieldMeta.getFABOUTTIME());
@@ -202,8 +203,35 @@ public class ProductionTask {
         // 计算差值
         ProductionDO last = productionService.getLastProduction(size);
         if (Objects.nonNull(last)) {
-            BigDecimal value = vo.getLot().subtract(last.getLot());
-            vo.setValue(value);
+
+            // 判断是否同月份 如果不同月份还需要新增一条数据
+            LocalDateTime lastTime = last.getTime();
+            int lastMonthValue = lastTime.getMonthValue();
+            int monthValue = productYieldMeta.getTime().getMonthValue();
+            if (lastMonthValue != monthValue) {
+                // 最新一条和当前取的最新一条月份不等，则原来数据
+                // 上月数据处理
+                vo.setOriginTime(lastMonthData.getFABOUTTIME());
+                vo.setPlan(lastMonthData.getPLAN_QTY());
+                vo.setLot(lastMonthData.getLOT_QTY());
+                BigDecimal value = subtractBigDecimal(vo.getLot(), last.getLot());
+                vo.setValue(value);
+
+                // 本月新数据
+                ProductionSaveReqVO nowVo = new ProductionSaveReqVO();
+                nowVo.setOriginTime(productYieldMeta.getFABOUTTIME());
+                nowVo.setPlan(productYieldMeta.getPLAN_QTY());
+                nowVo.setLot(productYieldMeta.getLOT_QTY());
+                nowVo.setSize(size);
+                // 当月第一条数据的value就是lot
+                nowVo.setValue(productYieldMeta.getLOT_QTY());
+                nowVo.setTime(time);
+                productionService.insertProduction(nowVo);
+
+            } else {
+                BigDecimal value = subtractBigDecimal(vo.getLot(), last.getLot());
+                vo.setValue(value);
+            }
         }
 
         log.info("处理产品产量数据-保存" + vo);
