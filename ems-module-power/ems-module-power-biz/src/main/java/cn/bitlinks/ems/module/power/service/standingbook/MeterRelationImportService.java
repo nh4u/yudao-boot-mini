@@ -2,6 +2,7 @@ package cn.bitlinks.ems.module.power.service.standingbook;
 
 import cn.bitlinks.ems.framework.common.exception.ErrorCode;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.MeterRelationExcelDTO;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -47,7 +49,7 @@ public class MeterRelationImportService {
             throw exception(STANDINGBOOK_IMPORT_EXCEL_ERROR);
         }
 
-        List<Integer> errorRowNums = new ArrayList<>();
+        List<String> errorRowNums = new ArrayList<>();
         List<MeterRelationExcelDTO> batchList = new ArrayList<>(BATCH_COUNT);
 
         try (InputStream is = file.getInputStream(); Workbook workbook = new XSSFWorkbook(is)) {
@@ -67,8 +69,9 @@ public class MeterRelationImportService {
                         meterCode, subMeterCodes, relatedDevice, stage, rowNum
                 );
 
-                if (!validateSingleRow(dto)) {
-                    errorRowNums.add(rowNum);
+                String msg = validateSingleRow(dto);
+                if (!"true".equals(msg)) {
+                    errorRowNums.add("【" + rowNum + msg);
                     continue;
                 }
 
@@ -102,15 +105,13 @@ public class MeterRelationImportService {
     }
 
     // 构建错误提示信息
-    private String buildErrorMsg(List<Integer> errorRowNums) {
-        String errorMsg = "第%s行数据有误";
+    private String buildErrorMsg(List<String> errorRowNums) {
+
         String msg;
         int displayCount = Math.min(errorRowNums.size(), 50);
 
         // 拼接错误信息，每行一个
-        msg = errorRowNums.subList(0, displayCount).stream()
-                .map(rowNum -> String.format(errorMsg, rowNum))
-                .collect(Collectors.joining("\n"));
+        msg = String.join("\n", errorRowNums.subList(0, displayCount));
 
         // 如果超过 50 条，加上省略号
         if (errorRowNums.size() > 50) {
@@ -139,26 +140,52 @@ public class MeterRelationImportService {
         }
     }
 
-    private boolean validateSingleRow(MeterRelationExcelDTO dto) {
+    private String validateSingleRow(MeterRelationExcelDTO dto) {
         String meterCode = dto.getMeterCode();
         String subMeterCodes = dto.getSubMeterCodes();
         String relatedDevice = dto.getRelatedDevice();
         String stage = dto.getStage();
 
 
-        if (!StringUtils.hasText(meterCode)) return false;
-        if (StringUtils.hasText(subMeterCodes) && !SEMICOLON_PATTERN.matcher(CharSequenceUtil.strip(subMeterCodes, StringPool.SEMICOLON)).matches()) return false;
-        if (!meterRelationService.checkMeterCodeExists(meterCode)) return false;
-        if (StringUtils.hasText(subMeterCodes) && !meterRelationService.checkSubMeterCodesExists(subMeterCodes.split(StringPool.SEMICOLON)).isEmpty())
-            return false;
-        if (StringUtils.hasText(relatedDevice) && !meterRelationService.checkDeviceExists(relatedDevice)) return false;
-        if (StringUtils.hasText(stage) && !meterRelationService.checkLinkExists(stage)) return false;
-
-        // 下级计量器具中不能出现自己。
-        if(StringUtils.hasText(subMeterCodes) && subMeterCodes.contains(meterCode)) {
-            return false;
+        if (!StringUtils.hasText(meterCode)) {
+            // 计量器具编号没有值
+            return "行】计量器具编号没有值";
+        }
+        if (StringUtils.hasText(subMeterCodes) && !SEMICOLON_PATTERN.matcher(CharSequenceUtil.strip(subMeterCodes, StringPool.SEMICOLON)).matches()) {
+            // 下级计量器具编号空或者不符合分号分割格式
+            return "行】下级计量器具编号空或者不符合分号分割格式";
+        }
+        if (!meterRelationService.checkMeterCodeExists(meterCode)) {
+            // 计量器具编号不存在
+            return "行】计量器具编号不存在";
         }
 
-        return true;
+        if (StringUtils.hasText(subMeterCodes)){
+            List<String> strings = meterRelationService.checkSubMeterCodesExists(subMeterCodes.replace("\n","").split(StringPool.SEMICOLON));
+            if (!strings.isEmpty()) {
+                // 下级计量器具编号空或者不存在
+                if (CollUtil.isNotEmpty(strings)) {
+                    return "行】下级计量器具编号[" + String.join(",", strings) + "]不存在";
+                }
+                return "行】下级计量器具编号空或者不存在";
+            }
+        }
+
+        if (StringUtils.hasText(relatedDevice) && !meterRelationService.checkDeviceExists(relatedDevice)) {
+            //  关联设备不存在
+            return "行】关联设备不存在";
+        }
+        boolean b1 = meterRelationService.checkLinkExists(stage);
+        if (StringUtils.hasText(stage) && !b1) {
+            //  环节不存在
+            return "行】环节不存在";
+        }
+        // 下级计量器具中不能出现自己。应该先拆分然后再包含，不能直接用string来包含
+        if (StringUtils.hasText(subMeterCodes) && Arrays.asList(subMeterCodes.split(StringPool.SEMICOLON)).contains(meterCode)) {
+            // 下级计量器具包含自己
+            return "行】下级计量器具包含自己";
+        }
+
+        return "true";
     }
 }
