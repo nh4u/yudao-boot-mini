@@ -195,7 +195,7 @@ public class AdditionalRecordingController {
      * @param file
      * @return
      */
-//    @Operation(summary = "获取导入excel起始坐标")
+    @Operation(summary = "获取导入excel起始坐标")
     @PostMapping("/getExcelImportCoordinate")
     public CommonResult<AcqDataExcelCoordinate> getExcelImportCoordinate(@RequestParam(value = "file") String file) {
         try {
