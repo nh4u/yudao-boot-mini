@@ -69,6 +69,7 @@ public class ServerDataService {
                         );
                         // 处理采集结果（存储到Redis）
                         saveResultToRedis(serverKey, result, timestampStr);
+                        log.info("数采结果】】】】"+result);
                     }else if((ProtocolEnum.MODBUS_TCP.getCode()+"").equals(serverType)){
                         String host = serverInfo[1];
                         String port = serverInfo[2];
