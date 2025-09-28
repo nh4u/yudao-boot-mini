@@ -41,7 +41,7 @@ public class SplitTaskDispatcher {
         for (MinuteAggDataSplitDTO task : dailyTasks) {
             ZonedDateTime zoned = LocalDateTime.now().atZone(ZoneId.systemDefault());
             double score = zoned.toEpochSecond();
-            log.info("拆分任务入redis：{}",task.getStartDataDO().getDataSite());
+//            log.info("拆分任务入redis：{}",task.getStartDataDO().getDataSite());
             redisTemplate.opsForZSet().add(SPLIT_TASK_QUEUE_REDIS_KEY, JsonUtils.toJsonString(task), score);
         }
     }
