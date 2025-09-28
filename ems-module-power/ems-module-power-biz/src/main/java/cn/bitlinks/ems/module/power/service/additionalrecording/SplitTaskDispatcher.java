@@ -41,12 +41,13 @@ public class SplitTaskDispatcher {
         for (MinuteAggDataSplitDTO task : dailyTasks) {
             ZonedDateTime zoned = LocalDateTime.now().atZone(ZoneId.systemDefault());
             double score = zoned.toEpochSecond();
+            log.info("拆分任务入redis：{}",task.getStartDataDO().getDataSite());
             redisTemplate.opsForZSet().add(SPLIT_TASK_QUEUE_REDIS_KEY, JsonUtils.toJsonString(task), score);
         }
     }
 
     /**
-     * 异步批量处理多个拆分任务
+     * 异步批量处理多个拆分任务 方法调用顺序dispatchSplitTaskBatch->dispatchSplitTask->splitIntoDailyTasks
      */
     public void dispatchSplitTaskBatch(List<MinuteAggDataSplitDTO> inputList) {
         log.info("批量拆分任务开始，任务数量：{}", inputList.size());

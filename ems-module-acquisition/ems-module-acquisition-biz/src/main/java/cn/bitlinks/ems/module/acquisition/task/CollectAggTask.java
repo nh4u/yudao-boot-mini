@@ -65,7 +65,10 @@ public class CollectAggTask {
     private RedissonClient redissonClient;
     private static final ForkJoinPool forkJoinPool = new ForkJoinPool(8); // 线程数可配置
 
-    // 每秒执行一次
+
+    /**
+     * 根据 数采服务器与io映射关系 使用opc 或者modbus获取数采数据 每秒执行一次 每秒都采数据
+     */
     @Scheduled(fixedRate = 1000) // fixedRate表示以上一次任务开始时间为基准，间隔1秒
     public void collectData() {
 
@@ -92,6 +95,10 @@ public class CollectAggTask {
 
 
     //每秒扫描全部设备匹配时间
+
+    /**
+     *  根据 数采服务器与台账id映射关系 从上面collectData方法处理后保存在redis力的结果（collector:agg:realtime:）获取数采数据
+     */
     @Scheduled(fixedRate = 1000)
     public void scheduledScanAllDevices() {
 
@@ -116,6 +123,12 @@ public class CollectAggTask {
         }
     }
 
+    /**
+     *  从collector:agg:realtime:获取的实时数采数据，和系统设置的数采条件作（采集频率）比对 符合则送给mq  不符合则舍弃。
+     * @param deviceId
+     * @param entryMap
+     * @param jobTime
+     */
     private void processSingleDevice(Long deviceId, Map<String, ItemStatus> entryMap, LocalDateTime jobTime) {
         // 查询redis中设备id对应的数采配置
         String sbConfigKey = String.format(STANDING_BOOK_ACQ_CONFIG_PREFIX, deviceId);
@@ -157,7 +170,7 @@ public class CollectAggTask {
             // 队列满，消息没能入队
             log.error("【AcquisitionMessageSender】消息入队失败，需要额外处理, topic:{}, 消息内容: {}", topicName, JSONUtil.toJsonStr(acquisitionMessage));
         }
-        //log.info("【AcquisitionMessageSender】消息成功，设备id[{}] ", deviceId);
+        log.info("【AcquisitionMessageSender】消息成功，设备id[{}] dataSites:{}", deviceId,filteredMap);
     }
     public static ItemStatus fastParse(String json) {
         ObjectReader<ItemStatus> reader = JSONFactory
