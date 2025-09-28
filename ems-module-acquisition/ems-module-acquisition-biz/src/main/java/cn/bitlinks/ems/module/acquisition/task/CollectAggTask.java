@@ -132,7 +132,7 @@ public class CollectAggTask {
      */
     private void processSingleDevice(Long deviceId, Map<String, ItemStatus> entryMap, LocalDateTime jobTime) {
 
-        log.info("】】】】】",entryMap.get(TEMPERATURE_IO));
+//        log.info("】】】】】{}",entryMap.get(TEMPERATURE_IO));
         // 查询redis中设备id对应的数采配置
         String sbConfigKey = String.format(STANDING_BOOK_ACQ_CONFIG_PREFIX, deviceId);
         String deviceAcqConfigStr = redisTemplate.opsForValue().get(sbConfigKey);
@@ -173,9 +173,7 @@ public class CollectAggTask {
             // 队列满，消息没能入队
             log.error("【AcquisitionMessageSender】消息入队失败，需要额外处理, topic:{}, 消息内容: {}", topicName, JSONUtil.toJsonStr(acquisitionMessage));
         }
-        if (deviceId == 1970397074458537986L){
-            log.info("【AcquisitionMessageSender】消息成功，缓存key：{}，设备id[{}]， dataSites:{}", sbConfigKey,deviceId,filteredMap);
-        }
+//            log.info("【AcquisitionMessageSender】消息成功，缓存key：{}，设备id[{}]， dataSites:{}", sbConfigKey,deviceId,filteredMap);
     }
     public static ItemStatus fastParse(String json) {
         ObjectReader<ItemStatus> reader = JSONFactory
