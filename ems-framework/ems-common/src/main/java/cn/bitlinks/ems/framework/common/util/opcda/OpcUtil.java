@@ -35,24 +35,7 @@ public class OpcUtil {
     private OpcUtil() {
     }
 
-    /**
-     * 读单个值
-     */
-    public static String readValue(Item item) {
-        if (item == null) {
-            logger.warn("读取单个值失败：Item为null");
-            return null;
-        }
 
-        try {
-            ItemState state = item.read(true);
-            return getValue(state.getValue());
-        } catch (JIException e) {
-            logger.error("读取单个点位[{}]失败", item.getId(), e);
-            handleFailedTag(item.getId());
-        }
-        return null;
-    }
 
     /**
      * 读一组值，对于读取异常的点位会被过滤或熔断
@@ -218,7 +201,7 @@ public class OpcUtil {
     /**
      * 转换JIVariant值为字符串
      */
-    private static String getValue(JIVariant variant) {
+    public static String getValue(JIVariant variant) {
         if (variant == null) {
             return null;
         }
