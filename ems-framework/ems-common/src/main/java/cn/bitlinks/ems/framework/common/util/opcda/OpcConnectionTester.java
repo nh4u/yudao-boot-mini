@@ -106,7 +106,6 @@ public class OpcConnectionTester {
             // 等待 OPC Server 处理完 group 初始化（某些厂商需要）
             Thread.sleep(50);
 
-            group.addItems(items);
             return OpcUtil.readValues(group, itemList);
 
         } catch (Exception e) {
