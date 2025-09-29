@@ -29,7 +29,7 @@
           AND acq.deleted = 0
           AND acqd.status = 1
           AND acqd.deleted = 0
-          AND acqd.data_site IS NOT NULL and ss.protocol in(0,1);
+          AND acqd.data_site IS NOT NULL and trim(acqd.data_site != '') and ss.protocol in(0,1);
     </select>
     <select id="selectServerStandingbookMapping"
             resultType="cn.bitlinks.ems.module.power.dto.ServerStandingbookCacheDTO">
