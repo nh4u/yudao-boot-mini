@@ -70,18 +70,18 @@ public class StarRocksStreamLoadService {
             // 1. 开启事务
             Map<String, String> beginHeaders = buildBaseHeaders(label, tableName, authHeader);
             String beginResult = sendPost(API_BEGIN, beginHeaders, null);
-            log.info("[StarRocks] 开启事务 label={}，table={}, 结果={}", label, tableName, beginResult);
+            log.info("[StarRocks] 开启事务 label={}，table={}", label, tableName);
 
             // 2. 加载数据
             beginHeaders.put(HEADER_FORMAT, VALUE_FORMAT_JSON);
             beginHeaders.put(HEADER_STRIP_OUTER_ARRAY, VALUE_STRIP_TRUE);
             String loadResult = sendPut(API_LOAD, beginHeaders, FileUtil.readBytes(tempFile.toFile()));
-            log.info("[StarRocks] 加载数据 label={}，table={}, 结果={}", label, tableName, loadResult);
+            log.info("[StarRocks] 加载数据 label={}，table={}", label, tableName);
 
             // 3. 提交事务
             Map<String, String> commitHeaders = buildControlHeaders(label, authHeader);
             String commitResult = sendPost(API_COMMIT, commitHeaders, null);
-            log.info("[StarRocks] 提交事务 label={}，table={}, 结果={}", label, tableName, commitResult);
+            log.info("[StarRocks] 提交事务 label={}，table={}", label, tableName);
 
         } catch (Exception e) {
             log.error("[StarRocks] Stream Load 失败 label={}，table={}, 异常：{}", label, tableName, e.getMessage(), e);
@@ -92,7 +92,6 @@ public class StarRocksStreamLoadService {
             if (tempFile != null) {
                 Files.deleteIfExists(tempFile);
             }
-            log.debug("[StarRocks] 删除临时文件: {}", tempFile);
         }
     }
 
