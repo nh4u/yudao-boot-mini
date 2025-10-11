@@ -589,7 +589,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         resultVo.setFilename(filename);
         // 2.表头数据处理
         List<List<String>> headerList = ListUtils.newArrayList();
-        headerList.add(Collections.singletonList("时间/数据"));
+        headerList.add(Collections.singletonList("时间\\数据"));
 
         List<Long> typeIds = standingbookTypeService.getSubIdsByTypeId(Long.valueOf(typeId));
 
