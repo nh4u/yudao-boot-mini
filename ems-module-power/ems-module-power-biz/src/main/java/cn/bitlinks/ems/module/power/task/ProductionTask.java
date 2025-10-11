@@ -55,9 +55,9 @@ public class ProductionTask {
     private ProductionService productionService;
 
     /**
-     * 执行定时任务  同步产量数据到数据表中 （每隔10分钟同步一次）每整小时(0 0 0/1 * * ?)获取一次数据
+     * 执行定时任务  同步产量数据到数据表中 每隔10分钟同步一次（0 0/10 * * * ?）每整小时(0 0 0/1 * * ?)获取一次数据
      */
-    @Scheduled(cron = "0 0 0/1 * * ?")
+    @Scheduled(cron = "0 0/10 * * * ?")
     @TenantJob
     public void execute() {
 
@@ -167,9 +167,7 @@ public class ProductionTask {
                     .stream()
                     .peek(p -> {
                         String fabOutTime = p.getFABOUTTIME();
-                        int year = Integer.parseInt(fabOutTime.substring(0, 4));
-                        int month = Integer.parseInt(fabOutTime.substring(4, 6));
-                        LocalDateTime startTime = LocalDateTimeUtils.startOfMonth(year, month);
+                        LocalDateTime startTime = dealOriginTime(fabOutTime);
                         p.setTime(startTime);
                     })
                     .sorted(Comparator.comparing(ProductYieldMeta::getTime).reversed())
@@ -193,19 +191,18 @@ public class ProductionTask {
 
         // 2. 去掉分和秒：保留 年、月、日、时，分和秒设置为 0
         LocalDateTime time = LocalDateTime.now()
-                .withMinute(0)   // 分钟设置为 0
                 .withSecond(0)   // 秒设置为 0
                 .withNano(0);    // 纳秒也清零（可选，通常建议加上）
 
         // 当前取的数据是上一小时的值
-        vo.setTime(time.minusHours(1));
+        vo.setTime(time.minusMinutes(10));
 
         // 计算差值
         ProductionDO last = productionService.getLastProduction(size);
         if (Objects.nonNull(last)) {
 
             // 判断是否同月份 如果不同月份还需要新增一条数据
-            LocalDateTime lastTime = last.getTime();
+            LocalDateTime lastTime = dealOriginTime(last.getOriginTime());
             int lastMonthValue = lastTime.getMonthValue();
             int monthValue = productYieldMeta.getTime().getMonthValue();
             if (lastMonthValue != monthValue) {
@@ -216,6 +213,13 @@ public class ProductionTask {
                 vo.setLot(lastMonthData.getLOT_QTY());
                 BigDecimal value = subtractBigDecimal(vo.getLot(), last.getLot());
                 vo.setValue(value);
+
+                if (BigDecimal.ZERO.compareTo(value) != 0) {
+                    // 如果有差值就补一个  如果没差值就不补了
+                    vo.setTime(time.minusMinutes(1));
+                } else {
+                    vo.setTime(time.minusMinutes(1));
+                }
 
                 // 本月新数据
                 ProductionSaveReqVO nowVo = new ProductionSaveReqVO();
@@ -236,5 +240,11 @@ public class ProductionTask {
 
         log.info("处理产品产量数据-保存" + vo);
         productionService.createProduction(vo);
+    }
+
+    private LocalDateTime dealOriginTime(String originTime) {
+        int year = Integer.parseInt(originTime.substring(0, 4));
+        int month = Integer.parseInt(originTime.substring(4, 6));
+        return LocalDateTimeUtils.startOfMonth(year, month);
     }
 }
