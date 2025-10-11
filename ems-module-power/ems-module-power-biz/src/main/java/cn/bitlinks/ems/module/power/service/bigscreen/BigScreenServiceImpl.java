@@ -2,7 +2,10 @@ package cn.bitlinks.ems.module.power.service.bigscreen;
 
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
+import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
+import cn.bitlinks.ems.framework.common.util.opcda.OpcDaUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.bigscreen.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.chemicals.vo.PowerChemicalsSettingsRespVO;
@@ -29,6 +32,7 @@ import cn.bitlinks.ems.module.power.service.usagecost.UsageCostService;
 import cn.bitlinks.ems.module.power.utils.CommonUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.excel.util.ListUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.stereotype.Service;
@@ -139,6 +143,92 @@ public class BigScreenServiceImpl implements BigScreenService {
 
 
     /**
+     * 获取实时室外工况数据
+     *
+     * @param paramVO
+     * @return
+     */
+    @Override
+    public OutsideEnvData getRealOutsideEnvData(BigScreenParamReqVO paramVO) {
+        OutsideEnvData outsideEnvData = new OutsideEnvData();
+        List<String> ioAddresses = Arrays.asList(
+                WIND_DIRECTION_VALUE_IO,
+                WIND_DIRECTION_NE_IO,
+                WIND_DIRECTION_NW_IO,
+                WIND_DIRECTION_SE_IO,
+                WIND_DIRECTION_SW_IO,
+                WIND_SPEED_IO,
+                TEMPERATURE_IO,
+                HUMIDITY_IO,
+                DEW_POINT_IO,
+                ATMOSPHERIC_PRESSURE_IO,
+                NOISE_IO);
+
+        String host = "172.16.150.34";
+        String user = "Administrator";
+        String password = "12345678";
+        String clsid = "7BC0CC8E-482C-47CA-ABDC-0FE7F9C6E729";
+        // 执行OPC数据采集
+        Map<String, ItemStatus> result = OpcDaUtils.readOnly(host, user, password, clsid, ioAddresses);
+        if (CollUtil.isEmpty(result)) {
+            return outsideEnvData;
+        }
+
+        for (Map.Entry<String, ItemStatus> entry : result.entrySet()) {
+            String dataSite = entry.getKey();
+            String value = entry.getValue().getValue();
+            if (CharSequenceUtil.isNotBlank(value)) {
+                switch (dataSite) {
+                    case WIND_DIRECTION_VALUE_IO:
+                        outsideEnvData.setWindDirectionValue(new BigDecimal(value));
+                        break;
+                    case WIND_DIRECTION_NE_IO:
+                        if ("true".equals(value)) {
+                            outsideEnvData.setWindDirection("东北");
+                        }
+                        break;
+                    case WIND_DIRECTION_NW_IO:
+                        if ("true".equals(value)) {
+                            outsideEnvData.setWindDirection("西北");
+                        }
+                        break;
+                    case WIND_DIRECTION_SE_IO:
+                        if ("true".equals(value)) {
+                            outsideEnvData.setWindDirection("东南");
+                        }
+                        break;
+                    case WIND_DIRECTION_SW_IO:
+                        if ("true".equals(value)) {
+                            outsideEnvData.setWindDirection("西南");
+                        }
+                        break;
+                    case WIND_SPEED_IO:
+                        outsideEnvData.setWindSpeed(new BigDecimal(value));
+                        break;
+                    case TEMPERATURE_IO:
+                        outsideEnvData.setTemperature(new BigDecimal(value));
+                        break;
+                    case HUMIDITY_IO:
+                        outsideEnvData.setHumidity(new BigDecimal(value));
+                        break;
+                    case DEW_POINT_IO:
+                        outsideEnvData.setDewPoint(new BigDecimal(value));
+                        break;
+                    case ATMOSPHERIC_PRESSURE_IO:
+                        outsideEnvData.setAtmosphericPressure(new BigDecimal(value));
+                        break;
+                    case NOISE_IO:
+                        outsideEnvData.setNoise(new BigDecimal(value));
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        return outsideEnvData;
+    }
+
+    /**
      * 获取室外工况
      *
      * @param paramVO
@@ -163,7 +253,7 @@ public class BigScreenServiceImpl implements BigScreenService {
         if (CollUtil.isNotEmpty(outsideDataList)) {
             Map<String, CollectRawDataDO> outsideDataMap = outsideDataList
                     .stream()
-                    .collect(Collectors.toMap(CollectRawDataDO::getDataSite, Function.identity()));
+                    .collect(Collectors.toMap(CollectRawDataDO::getDataSite, Function.identity(), (existing, replacement) -> existing));
 
             outsideEnvData.setWindDirection(dealWindDirection(outsideDataMap));
 

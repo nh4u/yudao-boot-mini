@@ -67,7 +67,8 @@ public class BigScreenController {
     @Operation(summary = "获取室外工况")
     //@PreAuthorize("@ss.hasPermission('power:bigScreen:query')")
     public CommonResult<OutsideEnvData> getOutsideEnvData(@Valid @RequestBody BigScreenParamReqVO paramVO) {
-        OutsideEnvData resultVO = bigScreenService.getOutsideEnvData(paramVO);
+//        OutsideEnvData resultVO = bigScreenService.getOutsideEnvData(paramVO);
+        OutsideEnvData resultVO = bigScreenService.getRealOutsideEnvData(paramVO);
         return success(resultVO);
     }
 
