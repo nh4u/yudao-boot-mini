@@ -37,6 +37,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.excel.util.ListUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -51,6 +52,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static cn.bitlinks.ems.framework.common.enums.CommonConstants.*;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.PARK_FLAG_NOT_EXISTS;
@@ -94,6 +96,9 @@ public class BigScreenServiceImpl implements BigScreenService {
 
     @Resource
     private StatisticsCommonService statisticsCommonService;
+
+    @Value("${spring.profiles.active}")
+    private String env;
 
 
     @Override
@@ -165,6 +170,11 @@ public class BigScreenServiceImpl implements BigScreenService {
                 DEW_POINT_IO,
                 ATMOSPHERIC_PRESSURE_IO,
                 NOISE_IO);
+
+
+        if (env.equals(SPRING_PROFILES_ACTIVE_LOCAL) || env.equals(SPRING_PROFILES_ACTIVE_DEV) || env.equals(SPRING_PROFILES_ACTIVE_TEST)) {
+            return outsideEnvData;
+        }
 
         String host = "172.16.150.34";
         String user = "Administrator";
@@ -534,7 +544,6 @@ public class BigScreenServiceImpl implements BigScreenService {
                 stageSbIds.addAll(sbIds);
             }
         }
-
 
 
         // 最近七天
