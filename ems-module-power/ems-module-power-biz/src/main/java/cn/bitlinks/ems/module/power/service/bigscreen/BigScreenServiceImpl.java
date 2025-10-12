@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.bigscreen;
 
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
+import cn.bitlinks.ems.framework.common.enums.EnergyClassifyEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
@@ -21,6 +22,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.production.ProductionDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.StandingbookLabelInfoDO;
 import cn.bitlinks.ems.module.power.dal.mysql.bigscreen.PowerPureWasteWaterGasSettingsMapper;
+import cn.bitlinks.ems.module.power.enums.standingbook.StandingBookStageEnum;
 import cn.bitlinks.ems.module.power.service.chemicals.PowerChemicalsSettingsService;
 import cn.bitlinks.ems.module.power.service.collectrawdata.CollectRawDataService;
 import cn.bitlinks.ems.module.power.service.cophouraggdata.CopHourAggDataService;
@@ -352,38 +354,61 @@ public class BigScreenServiceImpl implements BigScreenService {
                 .stream()
                 .collect(Collectors.toMap(EnergyConfigurationDO::getCode, Function.identity()));
 
+
+        List<Long> stageSbIds = new ArrayList<>();
+
+        for (EnergyConfigurationDO energy : energyList) {
+
+            String code = energy.getCode();
+            if ("W_Reclaimed Water".equals(code)) {
+                // 园区
+                List<Long> sbIds = statisticsCommonService.getStageEnergySbIdsByEnergyIds(
+                        StandingBookStageEnum.PROCESSING_CONVERSION.getCode(),
+                        false,
+                        Collections.singletonList(energy.getId()));
+                stageSbIds.addAll(sbIds);
+            } else {
+                // 外购
+                List<Long> sbIds = statisticsCommonService.getStageEnergySbIdsByEnergyIds(
+                        StandingBookStageEnum.PROCUREMENT_STORAGE.getCode(),
+                        false,
+                        Collections.singletonList(energy.getId()));
+                stageSbIds.addAll(sbIds);
+            }
+        }
+
         // 当期
         // 今日
         LocalDateTime now = LocalDateTime.now();
 
         LocalDateTime beginOfDay = LocalDateTimeUtils.beginOfDay(now);
         LocalDateTime endOfDay = LocalDateTimeUtils.endOfDay(now);
-        List<UsageCostData> todayData = usageCostService.getEnergyStandardCoalByEnergyIds(
+        List<UsageCostData> todayData = usageCostService.getEnergyStandardCoalCostBySbIds(
                 beginOfDay,
                 endOfDay,
-                energyIds);
+                stageSbIds);
 
 
         // 本月
         LocalDateTime beginOfMonth = LocalDateTimeUtils.beginOfMonth(now);
         LocalDateTime endOfMonth = LocalDateTimeUtils.endOfMonth(now);
-        List<UsageCostData> monthData = usageCostService.getEnergyStandardCoalByEnergyIds(
+        List<UsageCostData> monthData = usageCostService.getEnergyStandardCoalCostBySbIds(
                 beginOfMonth,
                 endOfMonth,
-                energyIds);
+                stageSbIds);
 
         // 上期
         // 上日
-        List<UsageCostData> yesterdayData = usageCostService.getEnergyStandardCoalByEnergyIds(
+        List<UsageCostData> yesterdayData = usageCostService.getEnergyStandardCoalCostBySbIds(
                 beginOfDay.minusDays(1),
                 endOfDay.minusDays(1),
-                energyIds);
+                stageSbIds);
 
         // 上月
-        List<UsageCostData> lastMonthData = usageCostService.getEnergyStandardCoalByEnergyIds(
+        List<UsageCostData> lastMonthData = usageCostService.getEnergyStandardCoalCostBySbIds(
                 beginOfMonth.minusMonths(1),
                 endOfMonth.minusMonths(1),
-                energyIds);
+                stageSbIds);
 
 
         Map<Long, UsageCostData> todayDataMap = dealUsageCostDataMap(todayData);
@@ -488,6 +513,30 @@ public class BigScreenServiceImpl implements BigScreenService {
                 .stream()
                 .collect(Collectors.toMap(EnergyConfigurationDO::getCode, Function.identity()));
 
+        List<Long> stageSbIds = new ArrayList<>();
+
+        for (EnergyConfigurationDO energy : energyList) {
+
+            String code = energy.getCode();
+            if ("W_Reclaimed Water".equals(code)) {
+                // 园区
+                List<Long> sbIds = statisticsCommonService.getStageEnergySbIdsByEnergyIds(
+                        StandingBookStageEnum.PROCESSING_CONVERSION.getCode(),
+                        false,
+                        Collections.singletonList(energy.getId()));
+                stageSbIds.addAll(sbIds);
+            } else {
+                // 外购
+                List<Long> sbIds = statisticsCommonService.getStageEnergySbIdsByEnergyIds(
+                        StandingBookStageEnum.PROCUREMENT_STORAGE.getCode(),
+                        false,
+                        Collections.singletonList(energy.getId()));
+                stageSbIds.addAll(sbIds);
+            }
+        }
+
+
+
         // 最近七天
         LocalDateTime startTime = LocalDateTimeUtils.lastNDaysStartTime(6L);
         LocalDateTime endTime = LocalDateTimeUtils.lastNDaysEndTime();
@@ -497,11 +546,11 @@ public class BigScreenServiceImpl implements BigScreenService {
 
         List<String> xdata = LocalDateTimeUtils.getBigScreenTimeRangeList(startTime, endTime, DataTypeEnum.DAY);
 
-        List<UsageCostData> usageCostDataList = usageCostService.getEnergyUsageByEnergyIds(
+        List<UsageCostData> usageCostDataList = usageCostService.getEnergyUsageBySbIds(
                 DataTypeEnum.DAY.getCode(),
                 startTime,
                 endTime,
-                energyIds);
+                stageSbIds);
 
         Map<Long, List<UsageCostData>> energyTimeUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(
@@ -577,15 +626,23 @@ public class BigScreenServiceImpl implements BigScreenService {
 
         // 综合能耗
         // 能源处理 外购
-        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(1);
-        if (CollUtil.isEmpty(energyList)) {
-            return resultVO;
-        }
-        List<Long> energyIdList = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
+
+        List<Long> stageSbIds = statisticsCommonService.getStageEnergySbIds(
+                StandingBookStageEnum.PROCUREMENT_STORAGE.getCode(),
+                false,
+                EnergyClassifyEnum.OUTSOURCED);
+
+
+//        List<EnergyConfigurationDO> energyList = energyConfigurationService.getByEnergyClassify(1);
+//        if (CollUtil.isEmpty(energyList)) {
+//            return resultVO;
+//        }
+//        List<Long> energyIdList = energyList.stream().map(EnergyConfigurationDO::getId).collect(Collectors.toList());
+
 
         // 外购总能耗
-        List<UsageCostData> usageCostDataList = usageCostService.getEnergyTimeUsageEnergyIds(DataTypeEnum.DAY.getCode(), startTime, endTime, energyIdList);
-        if (CollUtil.isEmpty(energyList)) {
+        List<UsageCostData> usageCostDataList = usageCostService.getTimeStandardCoalByStandardIds(DataTypeEnum.DAY.getCode(), startTime, endTime, stageSbIds);
+        if (CollUtil.isEmpty(stageSbIds)) {
             return resultVO;
         }
         Map<String, BigDecimal> usageCostDataMap = usageCostDataList.stream()

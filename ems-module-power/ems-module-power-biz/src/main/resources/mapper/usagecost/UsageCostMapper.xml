@@ -201,7 +201,63 @@
         </choose>
 
     </select>
+    <select id="getListOfHomeBySbIds" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsHomeChartResultVO">
+        SELECT
+        <choose>
+            <!-- 根据 dateType 选择聚合字段 -->
+            <when test="queryParam.dateType == 0">
+                DATE(aggregate_time) AS time
+            </when>
+            <when test="queryParam.dateType == 1">
+                DATE_FORMAT(aggregate_time, '%Y-%m') AS time
+            </when>
+            <when test="queryParam.dateType == 2">
+                YEAR(aggregate_time) AS time
+            </when>
+            <when test="queryParam.dateType == 3">
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00') AS time
+            </when>
+        </choose>
+        ,
+        SUM(
+        CASE
+        WHEN cost &lt; 0 THEN NULL
+        ELSE cost
+        END
+        ) AS accCost,
+        SUM(
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS accCoal
+        FROM
+        usage_cost
+        WHERE
+        aggregate_time &gt;= #{startDate}
+        AND aggregate_time &lt;= #{endDate}
+        AND standingbook_id IN
+        <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        GROUP BY
+        <choose>
+            <!-- 根据 dateType 选择聚合字段 -->
+            <when test="queryParam.dateType == 0">
+                DATE(aggregate_time)
+            </when>
+            <when test="queryParam.dateType == 1">
+                DATE_FORMAT(aggregate_time, '%Y-%m')
+            </when>
+            <when test="queryParam.dateType == 2">
+                YEAR(aggregate_time)
+            </when>
+            <when test="queryParam.dateType == 3">
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00')
+            </when>
+        </choose>
 
+    </select>
     <select id="getEnergyAndSbStandardCoal" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData">
         SELECT
         energy_id,
@@ -226,17 +282,22 @@
 
   </select>
 
-    <select id="getEnergyStandardCoal" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData">
-        SELECT
-        energy_id,
+    <select id="getEnergyStandardCoalCostBySbIds" resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.UsageCostData">
+        SELECT energy_id,
         SUM(
-            CASE
-                WHEN standard_coal_equivalent &lt; 0 THEN NULL
-            ELSE standard_coal_equivalent
-            END
+        CASE
+        WHEN cost &lt; 0 THEN NULL
+        ELSE cost
+        END
+        ) AS totalCost,
+        SUM(current_usage) AS currentTotalUsage,
+        SUM(
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
         ) AS totalStandardCoalEquivalent
-        FROM
-        usage_cost
+        FROM usage_cost
         WHERE
         aggregate_time &gt;= #{startDate}
         AND aggregate_time &lt;= #{endDate}
@@ -247,7 +308,7 @@
         group by energy_id
 
     </select>
-    <select id="getEnergyStandardCoalByEnergyIds" resultMap="UsageCostDataResultMap">
+    <select id="getEnergyStandardCoalCostByEnergyIds" resultMap="UsageCostDataResultMap">
         SELECT energy_id,
         SUM(
         CASE
@@ -502,7 +563,7 @@
             </when>
         </choose>
     </select>
-    <select id="getEnergyTimeUsageEnergyIds" resultMap="UsageCostDataResultMap">
+    <select id="getTimeStandardCoalByEnergyIds" resultMap="UsageCostDataResultMap">
         <!-- 参数说明：
       - dateType (聚合类型，0: 按日, 1: 按月, 2: 按年, 3: 按时)
       - startDate (起始日期)
@@ -607,6 +668,58 @@
             </when>
         </choose>
     </select>
+    <select id="getEnergyUsageBySbIds" resultMap="UsageCostDataResultMap">
+        <!-- 参数说明：
+      - dateType (聚合类型，0: 按日, 1: 按月, 2: 按年, 3: 按时)
+      - startDate (起始日期)
+      - endDate (结束日期)
+    -->
+        SELECT
+        energy_id,
+        <choose>
+            <!-- 根据 dateType 选择聚合字段 -->
+            <when test="dateType == 0">
+                DATE(aggregate_time) AS time
+            </when>
+            <when test="dateType == 1">
+                DATE_FORMAT(aggregate_time, '%Y-%m') AS time
+            </when>
+            <when test="dateType == 2">
+                YEAR(aggregate_time) AS time
+            </when>
+            <when test="dateType == 3">
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00') AS time
+            </when>
+        </choose>
+        ,
+        SUM(current_usage)            AS currentTotalUsage
+
+        FROM usage_cost
+        WHERE aggregate_time &gt;= #{startDate}
+        AND aggregate_time &lt;= #{endDate}
+        AND standingbook_id IN
+        <foreach collection="standingBookIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        GROUP BY
+        energy_id,
+        <choose>
+            <!-- 根据 dateType 选择聚合字段 -->
+            <when test="dateType == 0">
+                DATE(aggregate_time)
+            </when>
+            <when test="dateType == 1">
+                DATE_FORMAT(aggregate_time, '%Y-%m')
+            </when>
+            <when test="dateType == 2">
+                YEAR(aggregate_time)
+            </when>
+            <when test="dateType == 3">
+                DATE_FORMAT(aggregate_time, '%Y-%m-%d %H:00:00')
+            </when>
+        </choose>
+    </select>
+
     <select id="getSumStandardCoal"
             resultType="java.math.BigDecimal">
         SELECT
@@ -818,6 +931,66 @@
         AND aggregate_time &lt;= #{endDate}
         AND energy_id IN
         <foreach collection="energyIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+
+    <select id="getAggStatisticsByStadingbookIds"
+            resultType="cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsOverviewStatisticsTableData">
+        SELECT
+        SUM(
+        CASE
+        WHEN cost &lt; 0 THEN NULL
+        ELSE cost
+        END
+        ) AS accCost,
+        MAX(
+        CASE
+        WHEN cost &lt; 0 THEN NULL
+        ELSE cost
+        END
+        ) AS maxCost,
+        MIN(
+        CASE
+        WHEN cost &lt; 0 THEN NULL
+        ELSE cost
+        END
+        ) AS minCost,
+        AVG(
+        CASE
+        WHEN cost &lt; 0 THEN NULL
+        ELSE cost
+        END
+        ) AS avgCost,
+        SUM(
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS accCoal,
+        MAX(
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS maxCoal,
+        MIN(
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS minCoal,
+        AVG(
+        CASE
+        WHEN standard_coal_equivalent &lt; 0 THEN NULL
+        ELSE standard_coal_equivalent
+        END
+        ) AS avgCoal
+        FROM usage_cost
+        WHERE aggregate_time &gt;= #{startDate}
+        AND aggregate_time &lt;= #{endDate}
+        AND standingbook_id IN
+        <foreach collection="sbIds" item="item" open="(" separator="," close=")">
             #{item}
         </foreach>
     </select>

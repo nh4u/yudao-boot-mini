@@ -64,18 +64,24 @@ public interface UsageCostMapper {
     List<StatisticsHomeChartResultVO> getListOfHome(@Param("queryParam") StatisticsParamV2VO paramVO, @Param("startDate") LocalDateTime startDate,
                                                     @Param("endDate") LocalDateTime endDate,
                                                     @Param("energyIds") List<Long> energyIdList);
-
+    List<StatisticsHomeChartResultVO> getListOfHomeBySbIds(@Param("queryParam") StatisticsParamV2VO paramVO,
+                                                           @Param("startDate") LocalDateTime startDate,
+                                                           @Param("endDate") LocalDateTime endDate,
+                                                           @Param("standingBookIds") List<Long> energyIdList);
 
     List<UsageCostData> getEnergyAndSbStandardCoal(
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate,
             @Param("standingBookIds") List<Long> standingBookIds);
 
-    List<UsageCostData> getEnergyStandardCoal(
+    List<UsageCostData> getEnergyStandardCoalCostBySbIds(
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate,
             @Param("standingBookIds") List<Long> standingBookIds);
 
+    List<UsageCostData> getEnergyStandardCoalCostByEnergyIds(@Param("startDate") LocalDateTime startDate,
+                                                         @Param("endDate") LocalDateTime endDate,
+                                                         @Param("energyIds") List<Long> energyIds);
     List<UsageCostData> getStandingbookStandardCoal(
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate,
@@ -85,10 +91,6 @@ public interface UsageCostMapper {
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate,
             @Param("standingBookIds") List<Long> standingBookIds);
-
-    List<UsageCostData> getEnergyStandardCoalByEnergyIds(@Param("startDate") LocalDateTime startDate,
-                                                         @Param("endDate") LocalDateTime endDate,
-                                                         @Param("energyIds") List<Long> energyIds);
 
     BigDecimal getEnergySumStandardCoal(@Param("startDate") LocalDateTime startDate,
                                         @Param("endDate") LocalDateTime endDate,
@@ -122,7 +124,7 @@ public interface UsageCostMapper {
      * @param energyIds
      * @return
      */
-    List<UsageCostData> getEnergyTimeUsageEnergyIds(@Param("dateType") Integer dateType,
+    List<UsageCostData> getTimeStandardCoalByEnergyIds(@Param("dateType") Integer dateType,
                                                     @Param("startDate") LocalDateTime startDate,
                                                     @Param("endDate") LocalDateTime endDate,
                                                     @Param("energyIds") List<Long> energyIds);
@@ -140,6 +142,20 @@ public interface UsageCostMapper {
                                                   @Param("startDate") LocalDateTime startDate,
                                                   @Param("endDate") LocalDateTime endDate,
                                                   @Param("energyIds") List<Long> energyIds);
+
+    /**
+     * 获取能源用量
+     *
+     * @param dateType
+     * @param startDate
+     * @param endDate
+     * @param standingBookIds
+     * @return
+     */
+    List<UsageCostData> getEnergyUsageBySbIds(@Param("dateType") Integer dateType,
+                                                  @Param("startDate") LocalDateTime startDate,
+                                                  @Param("endDate") LocalDateTime endDate,
+                                                  @Param("standingBookIds") List<Long> standingBookIds);
 
     /**
      * 获取折标煤总量
@@ -179,7 +195,9 @@ public interface UsageCostMapper {
     StatisticsOverviewStatisticsTableData getAggStatisticsByEnergyIds(@Param("startDate") LocalDateTime startDate,
                                                                       @Param("endDate") LocalDateTime endDate,
                                                                       @Param("energyIds") List<Long> energyIds);
-
+    StatisticsOverviewStatisticsTableData getAggStatisticsByStadingbookIds(@Param("startDate") LocalDateTime startDate,
+                                                                      @Param("endDate") LocalDateTime endDate,
+                                                                           @Param("sbIds") List<Long> sbIds);
     LocalDateTime getLastTimeByEnergyIds(@Param("startDate") LocalDateTime startDate,
                                          @Param("endDate") LocalDateTime endDate,
                                          @Param("energyIds") List<Long> energyIds);
