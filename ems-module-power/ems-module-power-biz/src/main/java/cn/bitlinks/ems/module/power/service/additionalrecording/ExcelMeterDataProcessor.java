@@ -132,7 +132,7 @@ public class ExcelMeterDataProcessor {
                 throw exception(IMPORT_EXCEL_FORMAT_ERROR);
             }
             String stringCellValue = cell.getStringCellValue();
-            if (!stringCellValue.equals("时间/数据")) {
+            if (!"时间\\数据".equals(stringCellValue)) {
                 throw exception(IMPORT_EXCEL_FORMAT_ERROR);
             }
 

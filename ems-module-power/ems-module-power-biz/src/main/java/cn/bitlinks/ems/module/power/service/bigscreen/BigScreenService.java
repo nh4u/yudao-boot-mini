@@ -16,6 +16,8 @@ public interface BigScreenService {
 
     OutsideEnvData getOutsideEnvData(BigScreenParamReqVO paramVO);
 
+    OutsideEnvData getRealOutsideEnvData(BigScreenParamReqVO paramVO);
+
     BannerResultVO getBannerData(BigScreenParamReqVO paramVO);
 
     List<RecentSevenDayResultVO> getRecentSevenDay(BigScreenParamReqVO paramVO);

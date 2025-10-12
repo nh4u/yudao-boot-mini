@@ -129,9 +129,53 @@ public class StatisticsCommonService {
     }
 
     /**
+     * 查询指定阶段的最底层叶子节点的计量器具ids
+     */
+    public List<Long> getStageEnergySbIdsByEnergyIds(Integer stage, boolean toppest, List<Long> energyIds) {
+
+        // 查询终端使用的最底层叶子节点的计量器具
+        List<Long> stageSbIds = standingbookService.getStandingBookIdsByStage(stage);
+        if (CollUtil.isEmpty(stageSbIds)) {
+            return Collections.emptyList();
+        }
+        List<Long> measurementIds;
+        if (toppest) {
+            measurementIds = measurementAssociationMapper.getNotToppestMeasurementId(stageSbIds);
+        } else {
+            measurementIds = measurementAssociationMapper.getNotLeafMeasurementId(stageSbIds);
+        }
+
+        Set<Long> measurementSet = new HashSet<>(measurementIds);
+        // 先过滤掉null
+        stageSbIds = stageSbIds.stream()
+                // 先过滤掉null
+                .filter(Objects::nonNull)
+                .filter(id -> !measurementSet.contains(id))
+                .collect(Collectors.toList());
+        if (CollUtil.isEmpty(stageSbIds)) {
+            return Collections.emptyList();
+        }
+        if (CollUtil.isNotEmpty(energyIds)) {
+            // 查询外购能源 计量器具ids
+            List<Long> energySbIds = getSbIdsByEnergy(energyIds);
+            if (CollUtil.isEmpty(energySbIds)) {
+                return Collections.emptyList();
+            }
+            // 取外购能源计量器具与环节最底层节点交集
+            stageSbIds.retainAll(new HashSet<>(energySbIds));
+            return stageSbIds;
+        }
+        return stageSbIds;
+    }
+
+    /**
      * 查询终端使用的最底层叶子节点的计量器具
      */
     public List<Long> getStageEnergySbIds(Integer stage, boolean toppest, EnergyClassifyEnum energyClassifyEnum) {
+
+
+        // TODO: 2025/10/12 新去球改动就在此处观察
+
         // 查询终端使用的最底层叶子节点的计量器具
         List<Long> stageSbIds = standingbookService.getStandingBookIdsByStage(stage);
         if (CollUtil.isEmpty(stageSbIds)) {
