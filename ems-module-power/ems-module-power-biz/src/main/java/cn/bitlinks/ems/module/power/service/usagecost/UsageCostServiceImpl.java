@@ -124,7 +124,11 @@ public class UsageCostServiceImpl implements UsageCostService {
     public List<StatisticsHomeChartResultVO> getListOfHome(StatisticsParamV2VO paramV2VO, LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIdList) {
         return usageCostMapper.getListOfHome(paramV2VO, startDate, endDate, energyIdList);
     }
-
+    @Override
+    @TenantIgnore
+    public List<StatisticsHomeChartResultVO> getListOfHomeBySbIds(StatisticsParamV2VO paramV2VO, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getListOfHomeBySbIds(paramV2VO, startDate, endDate, standingBookIds);
+    }
 
     /**
      * 按能源和台账分组
@@ -150,8 +154,8 @@ public class UsageCostServiceImpl implements UsageCostService {
      */
     @Override
     @TenantIgnore
-    public List<UsageCostData> getEnergyStandardCoal(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
-        return usageCostMapper.getEnergyStandardCoal(startDate, endDate, standingBookIds);
+    public List<UsageCostData> getEnergyStandardCoalCostBySbIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getEnergyStandardCoalCostBySbIds(startDate, endDate, standingBookIds);
     }
 
     /**
@@ -164,8 +168,8 @@ public class UsageCostServiceImpl implements UsageCostService {
      */
     @Override
     @TenantIgnore
-    public List<UsageCostData> getEnergyStandardCoalByEnergyIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds) {
-        return usageCostMapper.getEnergyStandardCoalByEnergyIds(startDate, endDate, energyIds);
+    public List<UsageCostData> getEnergyStandardCoalCostByEnergyIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds) {
+        return usageCostMapper.getEnergyStandardCoalCostByEnergyIds(startDate, endDate, energyIds);
     }
 
     @Override
@@ -179,7 +183,11 @@ public class UsageCostServiceImpl implements UsageCostService {
     public StatisticsOverviewStatisticsTableData getAggStatisticsByEnergyIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds) {
         return usageCostMapper.getAggStatisticsByEnergyIds(startDate, endDate, energyIds);
     }
-
+    @Override
+    @TenantIgnore
+    public StatisticsOverviewStatisticsTableData getAggStatisticsByStadingbookIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> sbIds) {
+        return usageCostMapper.getAggStatisticsByStadingbookIds(startDate, endDate, sbIds);
+    }
     @Override
     @TenantIgnore
     public DeviceMonitorAggData getAggStatisticsBySbIds(LocalDateTime startDate, LocalDateTime endDate, List<Long> sbIds) {
@@ -283,8 +291,8 @@ public class UsageCostServiceImpl implements UsageCostService {
      */
     @Override
     @TenantIgnore
-    public List<UsageCostData> getEnergyTimeUsageEnergyIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds) {
-        return usageCostMapper.getEnergyTimeUsageEnergyIds(dateType, startDate, endDate, energyIds);
+    public List<UsageCostData> getTimeStandardCoalByEnergyIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds) {
+        return usageCostMapper.getTimeStandardCoalByEnergyIds(dateType, startDate, endDate, energyIds);
     }
 
     /**
@@ -300,6 +308,21 @@ public class UsageCostServiceImpl implements UsageCostService {
     @TenantIgnore
     public List<UsageCostData> getEnergyUsageByEnergyIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> energyIds) {
         return usageCostMapper.getEnergyUsageByEnergyIds(dateType, startDate, endDate, energyIds);
+    }
+
+    /**
+     * 获取能源用量
+     *
+     * @param dateType
+     * @param startDate
+     * @param endDate
+     * @param standingBookIds
+     * @return
+     */
+    @Override
+    @TenantIgnore
+    public List<UsageCostData> getEnergyUsageBySbIds(Integer dateType, LocalDateTime startDate, LocalDateTime endDate, List<Long> standingBookIds) {
+        return usageCostMapper.getEnergyUsageBySbIds(dateType, startDate, endDate, standingBookIds);
     }
 
     /**

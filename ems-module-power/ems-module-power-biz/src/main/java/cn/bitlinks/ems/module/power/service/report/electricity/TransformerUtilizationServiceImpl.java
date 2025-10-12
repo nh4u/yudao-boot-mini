@@ -5,10 +5,7 @@ import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.MinuteAggDataDTO;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.TransformerUtilizationSettingsDTO;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.TransformerUtilizationSettingsOptionsVO;
-import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.TransformerUtilizationSettingsVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.report.hvac.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
 import cn.bitlinks.ems.module.power.dal.dataobject.report.electricity.TransformerUtilizationSettingsDO;
@@ -22,13 +19,11 @@ import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDa
 import cn.bitlinks.ems.module.power.service.standingbook.type.StandingbookTypeService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.NumberUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.util.ListUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -73,7 +68,8 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
     private MinuteAggDataService minuteAggDataService;
     private final Integer scale = DEFAULT_SCALE;
 
-    private final BigDecimal sqrt3=new BigDecimal("1.732050807568877293527446341505");
+    private final BigDecimal sqrt3 = new BigDecimal("1.732050807568877293527446341505");
+
     @Override
     @Transactional
     public void updSettings(List<TransformerUtilizationSettingsVO> settings) {
@@ -137,7 +133,7 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
         }
         Map<Long, StandingbookDTO> standingbookDTOMap = list.stream().collect(Collectors.toMap(StandingbookDTO::getStandingbookId, Function.identity()));
         List<TransformerUtilizationSettingsVO> result = BeanUtils.toBean(transformerUtilizationSettingsDOList, TransformerUtilizationSettingsVO.class);
-        result.forEach(vo->{
+        result.forEach(vo -> {
             Optional.ofNullable(standingbookDTOMap.get(vo.getTransformerId()))
                     .ifPresent(dto -> {
                         vo.setTransformerNodeName(String.format(namePattern, dto.getName(), dto.getCode()));
@@ -190,6 +186,7 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
 
     /**
      * 获取变压器利用率设置+能源参数编码
+     * 添加排序  排序：首先按台账分类顺序排序，同分类下变压器按创建台账中的顺序排序。
      *
      * @return list 配置
      */
@@ -203,9 +200,9 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
             if (CollUtil.isEmpty(transformerUtilizationSettingsDOList)) {
                 return Collections.emptyList();
             }
-            List<TransformerUtilizationSettingsDTO> transformerUtilizationSettingsDTOS = BeanUtils.toBean(transformerUtilizationSettingsDOList, TransformerUtilizationSettingsDTO.class);
+            List<TransformerUtilizationSettingsSortedDTO> transformerUtilizationSettingsSortedDTOS = BeanUtils.toBean(transformerUtilizationSettingsDOList, TransformerUtilizationSettingsSortedDTO.class);
             // 2.依赖的所有台账id
-            List<Long> standingbookIds = transformerUtilizationSettingsDTOS.stream()
+            List<Long> standingbookIds = transformerUtilizationSettingsSortedDTOS.stream()
                     .map(TransformerUtilizationSettingsDTO::getLoadCurrentId)
                     .collect(Collectors.toList());
 
@@ -219,7 +216,7 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
             Map<Long, StandingbookDTO> standingbookDTOMap = list.stream().collect(Collectors.toMap(StandingbookDTO::getStandingbookId, Function.identity()));
             Map<Long, StandingbookTypeDO> typeMap = standingbookTypeService.getStandingbookTypeIdMap(null);
 
-            for (TransformerUtilizationSettingsDTO settingsDTO : transformerUtilizationSettingsDTOS) {
+            for (TransformerUtilizationSettingsSortedDTO settingsDTO : transformerUtilizationSettingsSortedDTOS) {
                 Long sbId = settingsDTO.getLoadCurrentId();
 
                 List<StandingbookTmplDaqAttrDO> attrList = energyDaqAttrsBySbIdsMap.getOrDefault(sbId, Collections.emptyList());
@@ -243,8 +240,26 @@ public class TransformerUtilizationServiceImpl implements TransformerUtilization
                 }
                 settingsDTO.setType(superTypeDO.getName());
                 settingsDTO.setChildType(standingbookTypeDO.getName());
+
+                // 设置排序
+                settingsDTO.setSort(superTypeDO.getSort());
+                settingsDTO.setChildSort(standingbookTypeDO.getSort());
+                settingsDTO.setSbId(sbDO.getStandingbookId());
             }
-            return transformerUtilizationSettingsDTOS;
+
+            // 进行排序 排序：首先按台账分类顺序排序，同分类下变压器按创建台账中的顺序排序。 // null 排最后，升序
+            transformerUtilizationSettingsSortedDTOS.sort(
+                    Comparator.comparing(
+                                    TransformerUtilizationSettingsSortedDTO::getSort,
+                                    Comparator.nullsLast(Comparator.naturalOrder()))
+                            .thenComparing(
+                                    TransformerUtilizationSettingsSortedDTO::getChildSort,
+                                    Comparator.nullsLast(Comparator.naturalOrder()))
+                            .thenComparing(
+                                    TransformerUtilizationSettingsSortedDTO::getSbId,
+                                    Comparator.nullsLast(Comparator.naturalOrder())));
+
+            return BeanUtils.toBean(transformerUtilizationSettingsSortedDTOS, TransformerUtilizationSettingsDTO.class);
         } catch (Exception e) {
             log.error("获取变压器利用率设备发生异常异常：{}", e.getMessage(), e);
             return Collections.emptyList();

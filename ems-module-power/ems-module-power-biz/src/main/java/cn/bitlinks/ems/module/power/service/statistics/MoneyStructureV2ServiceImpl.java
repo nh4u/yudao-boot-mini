@@ -1180,6 +1180,7 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
                     String energyName = energy.getEnergyName();
 
                     if (CollUtil.isNotEmpty(labelMap)) {
+                        log.info(labelMap.toString());
                         return createPieChart(energyName, labelMap);
                     } else {
                         return null;

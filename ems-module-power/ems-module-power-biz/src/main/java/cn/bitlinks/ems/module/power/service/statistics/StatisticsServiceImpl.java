@@ -187,7 +187,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         // 3.2.根据台账和其他条件从数据库里拿出折标煤数据
         // 3.2.1.根据台账ID查询用量和折标煤
-        List<UsageCostData> energyStandardCoalList = usageCostService.getEnergyStandardCoal(
+        List<UsageCostData> energyStandardCoalList = usageCostService.getEnergyStandardCoalCostBySbIds(
                 rangeOrigin[0],
                 rangeOrigin[1],
                 energysbIds);

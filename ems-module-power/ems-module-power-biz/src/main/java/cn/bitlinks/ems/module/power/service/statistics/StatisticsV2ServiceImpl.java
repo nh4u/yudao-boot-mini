@@ -807,9 +807,18 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             Map<Long, Map<String, BigDecimal>> energyTimeCostMap = usageCostDataList.stream()
                     .collect(Collectors.groupingBy(
                             UsageCostData::getEnergyId,
-                            Collectors.toMap(
+                            Collectors.groupingBy(
                                     UsageCostData::getTime,
-                                    UsageCostData::getTotalCost
+                                    Collectors.mapping(
+                                            // 保留原始值（可能为null）
+                                            UsageCostData::getTotalCost,
+                                            // 合并逻辑：处理各种null情况
+                                            Collectors.reducing(null, (v1, v2) -> {
+                                                if (v1 == null) return v2;
+                                                if (v2 == null) return v1;
+                                                return v1.add(v2);
+                                            })
+                                    )
                             )
                     ));
             Map<Long, EnergyConfigurationDO> energyMap = energyList
@@ -889,19 +898,19 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
             );
 
             // 构造 (labelKey, time) -> cost 的二维映射
-            Map<String, Map<String, BigDecimal>> labelTimeCostMap = new HashMap<>();
-            for (UsageCostData data : usageCostDataList) {
-                Long standingbookId = data.getStandingbookId();
-                String time = data.getTime();
-                BigDecimal cost = data.getTotalCost();
-
-                String labelKey = standingbookIdToLabel.get(standingbookId);
-                if (labelKey == null) continue;
-
-                labelTimeCostMap
-                        .computeIfAbsent(labelKey, k -> new HashMap<>())
-                        .merge(time, cost, BigDecimal::add);
-            }
+            Map<String, Map<String, BigDecimal>> labelTimeCostMap = dealMap(usageCostDataList, UsageCostData::getTotalCost, standingbookIdToLabel);
+//            for (UsageCostData data : usageCostDataList) {
+//                Long standingbookId = data.getStandingbookId();
+//                String time = data.getTime();
+//                BigDecimal cost = data.getTotalCost();
+//
+//                String labelKey = standingbookIdToLabel.get(standingbookId);
+//                if (labelKey == null) continue;
+//
+//                labelTimeCostMap
+//                        .computeIfAbsent(labelKey, k -> new HashMap<>())
+//                        .merge(time, cost, BigDecimal::add);
+//            }
 
             //构建结果
             List<StatisticsChartYInfoV2VO> infoV2VOS = new ArrayList<>();
@@ -1242,6 +1251,44 @@ public class StatisticsV2ServiceImpl implements StatisticsV2Service {
         if (Objects.isNull(unit)) {
             throw exception(UNIT_NOT_EMPTY);
         }
+    }
+
+
+    /**
+     *  处理
+     * @param usageCostDataList
+     * @param valueExtractor
+     * @param standingbookLabelMap
+     * @return
+     */
+    private Map<String, Map<String, BigDecimal>> dealMap(List<UsageCostData> usageCostDataList,
+                                                         Function<UsageCostData, BigDecimal> valueExtractor,
+                                                         Map<Long, String> standingbookLabelMap) {
+        Map<String, Map<String, BigDecimal>> map = new HashMap<>();
+        for (UsageCostData data : usageCostDataList) {
+            String label = standingbookLabelMap.get(data.getStandingbookId());
+            if (label == null) {
+                continue;
+            }
+            BigDecimal value = valueExtractor.apply(data);
+            String time = data.getTime();
+            Map<String, BigDecimal> subMap = map.get(label);
+            if (CollUtil.isNotEmpty(subMap)) {
+                BigDecimal oldValue = subMap.get(time);
+                if (Objects.nonNull(oldValue)) {
+                    oldValue = Objects.isNull(value) ? oldValue : oldValue.add(value);
+                } else {
+                    oldValue = Objects.isNull(value) ? null : value;
+                }
+                subMap.put(time, oldValue);
+            } else {
+                subMap = new HashMap<>();
+                subMap.put(time, value);
+            }
+
+            map.put(label, subMap);
+        }
+        return map;
     }
 }
 
