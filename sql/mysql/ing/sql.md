@@ -228,3 +228,24 @@ CREATE TABLE `power_production` (
                                     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=1969944740413693954 DEFAULT CHARSET=utf8mb4;
 ```
+
+```sql
+-- 内网共享文件设置表
+CREATE TABLE `power_share_file_settings` (
+                                             `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '编号',
+                                             `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '部门名称',
+                                             `type` int(11) NOT NULL COMMENT '目录拼接类型[1：年月日；2：年。]',
+                                             `ip` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '部门服务器ip地址',
+                                             `dir` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '共享文件夹地址前缀',
+                                             `creator` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '创建者',
+                                             `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                             `updater` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '更新者',
+                                             `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                             `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+                                             `tenant_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '租户编号',
+                                             PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `ydme_ems`.`power_share_file_settings` (`id`, `name`, `type`, `ip`, `dir`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (3, '燃气', 2, '172.16.150.23', '\\\\172.16.150.23\\Users\\YDME-C03\\Desktop\\数据', '1', '2025-10-13 15:15:48', '1', '2025-10-13 15:16:01', b'0', 1);
+
+```
