@@ -180,7 +180,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
             // 园区
             stageSbIds = statisticsCommonService.getStageEnergySbIdsByEnergyIds(
                     StandingBookStageEnum.PROCESSING_CONVERSION.getCode(),
-                    false,
+                    true,
                     energyIdList);
         } else {
             // 不处理
@@ -677,7 +677,7 @@ public class StatisticsHomeServiceImpl implements StatisticsHomeService {
             // 园区
             stageSbIds = statisticsCommonService.getStageEnergySbIdsByEnergyIds(
                     StandingBookStageEnum.PROCESSING_CONVERSION.getCode(),
-                    false,
+                    true,
                     energyIds);
         } else {
             // 不处理

@@ -374,7 +374,7 @@ public class BigScreenServiceImpl implements BigScreenService {
                 // 园区
                 List<Long> sbIds = statisticsCommonService.getStageEnergySbIdsByEnergyIds(
                         StandingBookStageEnum.PROCESSING_CONVERSION.getCode(),
-                        false,
+                        true,
                         Collections.singletonList(energy.getId()));
                 stageSbIds.addAll(sbIds);
             } else {
@@ -532,7 +532,7 @@ public class BigScreenServiceImpl implements BigScreenService {
                 // 园区
                 List<Long> sbIds = statisticsCommonService.getStageEnergySbIdsByEnergyIds(
                         StandingBookStageEnum.PROCESSING_CONVERSION.getCode(),
-                        false,
+                        true,
                         Collections.singletonList(energy.getId()));
                 stageSbIds.addAll(sbIds);
             } else {

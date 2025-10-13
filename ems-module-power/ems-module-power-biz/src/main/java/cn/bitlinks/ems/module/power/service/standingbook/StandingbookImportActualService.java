@@ -183,6 +183,7 @@ public class StandingbookImportActualService {
                 // 插入台账映射表 code
                 DoubleCarbonMappingDO mappingDO = new DoubleCarbonMappingDO();
                 mappingDO.setStandingbookCode(dto.getSbCode());
+                mappingDO.setStandingbookId(sbId);
                 doubleCarbonMappings.add(mappingDO);
                 // 2. 生成台账属性表（根据分类编码查内置属性）
                 // 查询属性分类部分的关联属性
