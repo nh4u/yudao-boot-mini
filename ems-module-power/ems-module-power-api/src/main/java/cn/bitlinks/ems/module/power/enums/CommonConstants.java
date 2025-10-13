@@ -279,6 +279,10 @@ public interface CommonConstants {
      * 产量外部接口任务，锁
      */
     String PRODUCTION_SYNC_TASK_LOCK_KEY = "production-sync-task:%s";
+    /**
+     * 共享文件同步任务，锁
+     */
+    String SHARE_FILE_TASK_LOCK_KEY = "share-file-task:%s";
 
     String COP_HOUR_AGG_TABLE_NAME = "cop_hour_aggregate_data";
     /**
