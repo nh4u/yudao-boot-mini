@@ -1179,6 +1179,9 @@ public class MoneyStructureV2ServiceImpl implements MoneyStructureV2Service {
 
                     String energyName = energy.getEnergyName();
 
+                    // 清理 labelMap 中 value 为 null 的项
+                    labelMap.entrySet().removeIf(entry -> entry.getValue() == null);
+
                     if (CollUtil.isNotEmpty(labelMap)) {
                         log.info(labelMap.toString());
                         return createPieChart(energyName, labelMap);
