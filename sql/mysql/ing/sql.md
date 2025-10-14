@@ -244,8 +244,8 @@ CREATE TABLE `power_share_file_settings` (
                                              `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
                                              `tenant_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '租户编号',
                                              PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COMMENT='内网共享文件设置表';
 
-INSERT INTO `ydme_ems`.`power_share_file_settings` (`id`, `name`, `type`, `ip`, `dir`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (3, '燃气', 2, '172.16.150.23', '\\\\172.16.150.23\\Users\\YDME-C03\\Desktop\\数据', '1', '2025-10-13 15:15:48', '1', '2025-10-13 15:16:01', b'0', 1);
+INSERT INTO `ydme_ems`.`power_share_file_settings` (`id`, `name`, `type`, `ip`, `dir`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1, '燃气', 2, '172.16.150.23', '\\\\172.16.150.23\\Users\\YDME-C03\\Desktop\\数据', '1', '2025-10-13 15:15:48', '1', '2025-10-13 15:16:01', b'0', 1);
 
 ```
