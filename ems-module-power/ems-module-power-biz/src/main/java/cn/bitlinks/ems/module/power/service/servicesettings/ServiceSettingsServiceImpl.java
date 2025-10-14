@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.servicesettings;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.modbus.ModbusConnectionTester;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.common.util.opcda.ItemStatus;
 import cn.bitlinks.ems.framework.common.util.opcda.OpcConnectionTester;
 import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
@@ -16,18 +17,27 @@ import cn.bitlinks.ems.module.power.dal.mysql.servicesettings.ServiceSettingsMap
 import cn.bitlinks.ems.module.power.dal.mysql.standingbook.acquisition.StandingbookAcquisitionMapper;
 import cn.bitlinks.ems.module.power.enums.ProtocolEnum;
 import cn.hutool.core.collection.CollUtil;
+import com.alibaba.fastjson2.JSONFactory;
+import com.alibaba.fastjson2.JSONReader;
+import com.alibaba.fastjson2.reader.ObjectReader;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Predicate;
 
 import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_DEV;
 import static cn.bitlinks.ems.framework.common.enums.CommonConstants.SPRING_PROFILES_ACTIVE_LOCAL;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.COLLECTOR_AGG_REALTIME_CACHE_KEY;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.SERVICE_NAME_FORMAT;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.SUCCESS_PROBABILITY;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.ACQUISITION_PROTOCOL;
@@ -51,6 +61,11 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
     @Value("${spring.profiles.active}")
     private String env;
 
+    @Resource
+    private RedissonClient redissonClient;
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
     @Override
     public Long createServiceSettings(ServiceSettingsSaveReqVO createReqVO) {
@@ -152,6 +167,12 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
         return serviceSettingsMapper.selectPage(pageReqVO);
     }
 
+    /**
+     * 测试操作：使用opc客户端去取对应的实时数据
+     *
+     * @param createReqVO 服务数据
+     * @return
+     */
     @Override
     public Boolean testLink(ServiceSettingsTestReqVO createReqVO) {
         if (env.equals(SPRING_PROFILES_ACTIVE_LOCAL) || env.equals(SPRING_PROFILES_ACTIVE_DEV)) {
@@ -167,6 +188,63 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
         }
     }
 
+    /**
+     * 测试操作：从redis去取对应的实时数据
+     *
+     * @param createReqVO 服务数据
+     * @return
+     */
+
+    public Boolean testLinkRedis(ServiceSettingsTestReqVO createReqVO) {
+        if (env.equals(SPRING_PROFILES_ACTIVE_LOCAL) || env.equals(SPRING_PROFILES_ACTIVE_DEV)) {
+            return mockTestLink();
+        } else {
+            // redis 1s一条对应的采集数据  但确保有数据 默认在取前5s的数据
+            LocalDateTime jobTime = LocalDateTime.now().minusSeconds(5);
+            String timestampStr = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(jobTime);
+
+            String serverKey = "";
+            Integer protocol = createReqVO.getProtocol();
+
+            if (protocol == 0) {
+                serverKey = protocol + createReqVO.getIpAddress() + "|" + createReqVO.getUsername() + "|" + createReqVO.getPassword() + "|" + createReqVO.getClsid();
+            } else if (protocol == 1) {
+                // WHEN ss.protocol = 1 THEN CONCAT_WS('|', createReqVO.protocol, ss.ip_address, ss.port,acqd.modbus_register_type,acqd.modbus_salve)
+                serverKey = protocol + createReqVO.getIpAddress() + "|" + createReqVO.getPort() + "|" + createReqVO.getPort() + "|" + createReqVO.getClsid();
+
+            } else {
+                throw exception(SERVICE_SETTINGS_PROTOCOL_NOT_EXISTS);
+            }
+
+            // 查询 服务key在当前时间的采集数据
+            String hashKey = String.format(COLLECTOR_AGG_REALTIME_CACHE_KEY, serverKey, timestampStr);
+
+            Map<String, String> rawEntries = stringRedisTemplate.<String, String>opsForHash().entries(hashKey);
+            if (CollUtil.isEmpty(rawEntries)) {
+                return false;
+            }
+
+            String dataSite = "";
+            String value = rawEntries.get(dataSite);
+            if (Objects.isNull(value)) {
+                return false;
+            }
+            // 可用 Fastjson2/ObjectReader 缓存
+            ItemStatus status = fastParse(value);
+            String value1 = status.getValue();
+            return true;
+
+        }
+    }
+
+    private ItemStatus fastParse(String json) {
+        ObjectReader<ItemStatus> reader = JSONFactory
+                .getDefaultObjectReaderProvider()
+                .getObjectReader(ItemStatus.class);
+        try (JSONReader jsonReader = JSONReader.of(json)) {
+            return reader.readObject(jsonReader);  // 这才是正确的用法
+        }
+    }
 
     @Override
     public List<ServiceSettingsOptionsRespVO> getServiceSettingsList() {
