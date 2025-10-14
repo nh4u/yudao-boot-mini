@@ -72,6 +72,11 @@ public class ServiceSettingsServiceImpl implements ServiceSettingsService {
         // 不通也可以添加服务设置
         // 校验 IP 地址是否重复
         validIpAddressRepeat(createReqVO.getIpAddress(), null);
+
+        Integer port = createReqVO.getPort();
+        if (Objects.isNull(port)) {
+            throw exception(SERVICE_SETTINGS_PORT_NOT_EXISTS);
+        }
         // 插入
         ServiceSettingsDO serviceSettings = BeanUtils.toBean(createReqVO, ServiceSettingsDO.class);
         serviceSettingsMapper.insert(serviceSettings);

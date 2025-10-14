@@ -177,6 +177,7 @@ public interface ErrorCodeConstants {
     ErrorCode SERVICE_SETTINGS_REFUSE_DELETE = new ErrorCode(1_001_901_004, "服务设置已关联设备数采，不可删除");
     ErrorCode SERVICE_SETTINGS_REFUSE_UPD = new ErrorCode(1_001_901_005, "服务设置已关联设备数采，只可修改服务名称和重试次数");
     ErrorCode SERVICE_SETTINGS_PROTOCOL_NOT_EXISTS = new ErrorCode(1_001_901_006, "协议类型不存在");
+    ErrorCode SERVICE_SETTINGS_PORT_NOT_EXISTS = new ErrorCode(1_001_901_007, "服务设置端口号不存在");
 
     // ========== 数采设置  ==========
     ErrorCode STANDINGBOOK_ACQUISITION_NOT_EXISTS = new ErrorCode(1_002_101_001, "台账-数采设置不存在");
