@@ -368,22 +368,22 @@ public class BigScreenServiceImpl implements BigScreenService {
         List<Long> stageSbIds = new ArrayList<>();
 
         for (EnergyConfigurationDO energy : energyList) {
-
-            String code = energy.getCode();
-            if ("W_Reclaimed Water".equals(code)) {
+            if (EnergyClassifyEnum.PARK.getCode().equals(energy.getEnergyClassify())) {
                 // 园区
                 List<Long> sbIds = statisticsCommonService.getStageEnergySbIdsByEnergyIds(
                         StandingBookStageEnum.PROCESSING_CONVERSION.getCode(),
                         true,
                         Collections.singletonList(energy.getId()));
                 stageSbIds.addAll(sbIds);
-            } else {
+            } else if (EnergyClassifyEnum.OUTSOURCED.getCode().equals(energy.getEnergyClassify())) {
                 // 外购
                 List<Long> sbIds = statisticsCommonService.getStageEnergySbIdsByEnergyIds(
                         StandingBookStageEnum.PROCUREMENT_STORAGE.getCode(),
                         false,
                         Collections.singletonList(energy.getId()));
                 stageSbIds.addAll(sbIds);
+            } else {
+                // 不处理
             }
         }
 
@@ -527,21 +527,22 @@ public class BigScreenServiceImpl implements BigScreenService {
 
         for (EnergyConfigurationDO energy : energyList) {
 
-            String code = energy.getCode();
-            if ("W_Reclaimed Water".equals(code)) {
+            if (EnergyClassifyEnum.PARK.getCode().equals(energy.getEnergyClassify())) {
                 // 园区
                 List<Long> sbIds = statisticsCommonService.getStageEnergySbIdsByEnergyIds(
                         StandingBookStageEnum.PROCESSING_CONVERSION.getCode(),
                         true,
                         Collections.singletonList(energy.getId()));
                 stageSbIds.addAll(sbIds);
-            } else {
+            } else if (EnergyClassifyEnum.OUTSOURCED.getCode().equals(energy.getEnergyClassify())) {
                 // 外购
                 List<Long> sbIds = statisticsCommonService.getStageEnergySbIdsByEnergyIds(
                         StandingBookStageEnum.PROCUREMENT_STORAGE.getCode(),
                         false,
                         Collections.singletonList(energy.getId()));
                 stageSbIds.addAll(sbIds);
+            } else {
+                // 不处理
             }
         }
 
