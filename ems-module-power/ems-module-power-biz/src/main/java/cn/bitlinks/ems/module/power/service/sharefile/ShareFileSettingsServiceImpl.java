@@ -6,6 +6,7 @@ import cn.bitlinks.ems.module.power.dal.dataobject.sharefile.ShareFileSettingsDO
 import cn.bitlinks.ems.module.power.dal.mysql.sharefile.ShareFileSettingsMapper;
 import cn.bitlinks.ems.module.power.service.additionalrecording.ExcelMeterDataProcessor;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.StrPool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -129,16 +130,16 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
             String path = dir.trim();
 
             // 确保 UNC 路径以 \ 结尾，如果用户输入没有，我们补上
-            if (!path.endsWith("\\")) {
-                path = path + "\\";
+            if (!path.endsWith(StrPool.SLASH)) {
+                path = path + StrPool.SLASH;
             }
 
             if (type == 1) {
                 // 1：年月日；
-                path = path + yesterday.format(DateTimeFormatter.ofPattern("yyyy.MM.dd")) + "\\";
+                path = path + yesterday.format(DateTimeFormatter.ofPattern("yyyy.MM.dd")) + StrPool.SLASH;
             } else {
                 // 2：年。
-                path = path + yesterday.getYear() + "\\";
+                path = path + yesterday.getYear() + StrPool.SLASH;
             }
 
             // 3. 访问该路径，获取所有 Excel 文件
