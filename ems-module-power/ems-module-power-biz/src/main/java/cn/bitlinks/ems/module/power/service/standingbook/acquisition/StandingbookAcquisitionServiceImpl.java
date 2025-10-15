@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.standingbook.acquisition;
 import cn.bitlinks.ems.framework.common.core.ParameterKey;
 import cn.bitlinks.ems.framework.common.core.StandingbookAcquisitionDetailDTO;
 import cn.bitlinks.ems.framework.common.enums.FrequencyUnitEnum;
+import cn.bitlinks.ems.framework.common.exception.ErrorCode;
 import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.util.calc.AcquisitionFormulaUtils;
 import cn.bitlinks.ems.framework.common.util.calc.FormulaUtil;
@@ -431,7 +432,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             String formula = currentDetail.getFormula();
             // 0.未配置io未配置公式
             if (StringUtils.isEmpty(dataSite) && StringUtils.isEmpty(formula)) {
-                throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+                throw exception(STANDINGBOOK_ACQUISITION_TEST_NOT_EXISTS);
             }
             currentDetail.setActualFormula(currentDetail.getFormula());
             // 创建一个 Map，用于存储参数的唯一标识 (ParameterKey) 到 StandingbookAcquisitionDetailVO 对象的映射
@@ -465,14 +466,14 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                 Set<ParameterKey> parameterKeys = FormulaUtil.getDependencies(currentFormulaDetail.getActualFormula());
                 // 配置了公式但不需要依赖任何参数，公式必须包含参数，所以公式不对。
                 if (CollUtil.isEmpty(parameterKeys)) {
-                    throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+                    throw exception(STANDINGBOOK_ACQUISITION_FORMULA_SET);
                 }
 
                 Map<ParameterKey, StandingbookAcquisitionDetailVO> relyParamMap = paramMap.entrySet().stream()
                         .filter(entry -> parameterKeys.contains(entry.getKey()))
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
                 if (CollUtil.isEmpty(relyParamMap)) {
-                    throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+                    throw exception(STANDINGBOOK_ACQUISITION_FORMULA_SET);
                 }
                 dataSites = relyParamMap.values().stream().map(StandingbookAcquisitionDetailVO::getDataSite).collect(Collectors.toList());
                 // 存储modbus信息
@@ -491,7 +492,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                 modbusTcpDataSites.put(currentDetail.getModbusRegisterType() + "|" + currentDetail.getModbusSalve(), dataSites);
             }
             if (CollUtil.isEmpty(dataSites)) {
-                throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+                throw exception(STANDINGBOOK_ACQUISITION_TEST_IO_NOT_EXISTS);
             }
 
             // 2.2 采集这些参数，
@@ -514,24 +515,27 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                     });
 
                 } else {
-                    throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+                    throw exception(STANDINGBOOK_ACQUISITION_TEST_PROTOCOL_NOT_EXISTS);
                 }
             }
             if (CollUtil.isEmpty(itemStatusMap)) {
-                throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+                throw exception(STANDINGBOOK_ACQUISITION_TEST_DATA_FAIL);
             }
 
+            log.info(itemStatusMap.toString());
+            log.info(currentDetailDTO.toString());
             String resultValue = AcquisitionFormulaUtils.calcSingleParamValue(currentDetailDTO, paramDTOMap,
                     itemStatusMap);
             if (StringUtils.isEmpty(resultValue)) {
-                throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+                throw exception(STANDINGBOOK_ACQUISITION_TEST_CAL_FAIL);
             }
             return resultValue;
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {
             log.error("数采-测试，异常：{}", e.getMessage(), e);
-            throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+            ErrorCode err =  new ErrorCode(1_002_101_004,e.getMessage());
+            throw exception(err);
         }
 
     }
