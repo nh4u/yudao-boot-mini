@@ -523,7 +523,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             }
 
             if (StringUtils.isEmpty(itemStatusMap.get(dataSite).getValue())) {
-                return itemStatusMap.get(dataSite).getValue();
+                return StringPool.EMPTY;
             }
 
             String resultValue = AcquisitionFormulaUtils.calcSingleParamValue(currentDetailDTO, paramDTOMap,
