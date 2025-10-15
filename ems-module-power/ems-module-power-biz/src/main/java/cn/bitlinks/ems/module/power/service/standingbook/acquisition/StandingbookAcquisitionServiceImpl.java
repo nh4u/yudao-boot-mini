@@ -522,8 +522,10 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                 throw exception(STANDINGBOOK_ACQUISITION_TEST_DATA_FAIL);
             }
 
-            log.info(itemStatusMap.toString());
-            log.info(currentDetailDTO.toString());
+            if (StringUtils.isEmpty(itemStatusMap.get(dataSite).getValue())) {
+                return itemStatusMap.get(dataSite).getValue();
+            }
+
             String resultValue = AcquisitionFormulaUtils.calcSingleParamValue(currentDetailDTO, paramDTOMap,
                     itemStatusMap);
             if (StringUtils.isEmpty(resultValue)) {
