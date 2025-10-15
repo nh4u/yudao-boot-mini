@@ -500,7 +500,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                 itemStatusMap = mockItemStatus(dataSites);
             } else {
                 if (ProtocolEnum.OPC_DA.getCode().equals(serviceSettingsDO.getProtocol())) {
-                    itemStatusMap = OpcConnectionTester.testLink(serviceSettingsDO.getIpAddress(),
+                    itemStatusMap = OpcConnectionTester.testLinkNew(serviceSettingsDO.getIpAddress(),
                             serviceSettingsDO.getUsername(),
                             serviceSettingsDO.getPassword(),
                             serviceSettingsDO.getClsid(), dataSites);
