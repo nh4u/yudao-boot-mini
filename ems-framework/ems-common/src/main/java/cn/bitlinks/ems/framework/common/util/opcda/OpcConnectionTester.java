@@ -2,8 +2,11 @@ package cn.bitlinks.ems.framework.common.util.opcda;
 
 import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.jinterop.dcom.common.JIException;
 import org.openscada.opc.lib.common.ConnectionInformation;
+import org.openscada.opc.lib.da.AddFailedException;
 import org.openscada.opc.lib.da.Group;
+import org.openscada.opc.lib.da.Item;
 import org.openscada.opc.lib.da.Server;
 
 import java.util.Collections;
@@ -105,6 +108,17 @@ public class OpcConnectionTester {
 
             // 等待 OPC Server 处理完 group 初始化（某些厂商需要）
             Thread.sleep(50);
+
+            // ✅ 手动添加所有点位到 group（关键步骤！） 在调用 OpcUtil.readValues(...) 之前，确保点位已添加到 group
+            try {
+                Map<String, Item> addedItems = group.addItems(items);
+                log.info("成功添加 {} 个点位到 group", addedItems.size());
+            } catch (AddFailedException e) {
+                log.error("批量添加点位失败，错误: {}", e.getMessage());
+                // 可以继续尝试读取，但可能部分点位读取失败
+            } catch (JIException e) {
+                log.error("添加点位异常: {}", e.getMessage());
+            }
 
             return OpcUtil.readValues(group, itemList);
 
