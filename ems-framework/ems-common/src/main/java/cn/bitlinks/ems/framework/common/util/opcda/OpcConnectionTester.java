@@ -144,8 +144,28 @@ public class OpcConnectionTester {
         }
     }
 
+
+    /**
+     * 测试链接读取值
+     *
+     * @param host
+     * @param user
+     * @param password
+     * @param clsid
+     * @param itemList
+     * @return
+     */
+    public static Map<String, ItemStatus> testLinkNew(String host, String user, String password, String clsid,
+                                                      List<String> itemList) {
+        if (CollUtil.isEmpty(itemList)) {
+            return Collections.emptyMap();
+        } else {
+            return OpcDaUtils.readOnly(host, user, password, clsid, itemList);
+        }
+    }
+
     private static boolean retryOperation(RetryableOperation operation, int retryCount) {
-        for (int i = 0; i <= retryCount-1; i++) {
+        for (int i = 0; i <= retryCount - 1; i++) {
             try {
                 if (operation.execute()) {
                     log.info("OPC连接测试成功 (第 {} 次尝试)", i + 1);
