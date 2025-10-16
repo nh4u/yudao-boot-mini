@@ -84,10 +84,12 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
     private RedisTemplate<String, String> redisTemplate;
     @Resource
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
+
     @PostConstruct
     public void init() {
         initAcqRedisConfig(); // 项目启动后自动执行
     }
+
     @Override
     @Transactional
     public Long createOrUpdateStandingbookAcquisition(StandingbookAcquisitionVO updateReqVO) {
@@ -418,6 +420,14 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
 
             detailVOS.add(standingbookAcquisitionDetailVO);
         });
+
+        // 有些属性status可能会确实，当为null的时候 补成false
+        detailVOS.forEach(d -> {
+            if (Objects.isNull(d.getStatus())) {
+                d.setStatus(false);
+            }
+        });
+
         standingbookAcquisitionVO.setDetails(detailVOS);
         return standingbookAcquisitionVO;
     }
@@ -507,9 +517,9 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                             serviceSettingsDO.getClsid(), dataSites);
                 } else if (ProtocolEnum.MODBUS_TCP.getCode().equals(serviceSettingsDO.getProtocol())) {
                     itemStatusMap = new HashMap<>();
-                    modbusTcpDataSites.forEach((k,v)->{
+                    modbusTcpDataSites.forEach((k, v) -> {
                         Map<String, ItemStatus> partItemStatusMap = ModbusConnectionTester.testLink(serviceSettingsDO.getIpAddress(),
-                                serviceSettingsDO.getPort(),k.split(StringPool.PIPE)[0],
+                                serviceSettingsDO.getPort(), k.split(StringPool.PIPE)[0],
                                 k.split(StringPool.PIPE)[1], v);
                         itemStatusMap.putAll(partItemStatusMap);
                     });
@@ -536,7 +546,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             throw e;
         } catch (Exception e) {
             log.error("数采-测试，异常：{}", e.getMessage(), e);
-            ErrorCode err =  new ErrorCode(1_002_101_004,e.getMessage());
+            ErrorCode err = new ErrorCode(1_002_101_004, e.getMessage());
             throw exception(err);
         }
 
