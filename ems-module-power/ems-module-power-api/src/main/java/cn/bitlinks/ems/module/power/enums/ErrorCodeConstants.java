@@ -186,8 +186,11 @@ public interface ErrorCodeConstants {
     ErrorCode STANDINGBOOK_ACQUISITION_TEST_FAIL =  new ErrorCode(1_002_101_004,"采集失败");
     ErrorCode STANDINGBOOK_ACQUISITION_CRON_FAIL =  new ErrorCode(1_002_101_005,"频率和单位不能为空且频率必须大于0");
     ErrorCode STANDINGBOOK_ACQUISITION_CRON_UNIT_NOT_EXISTS =  new ErrorCode(1_002_101_006,"无效的频率单位: {}");
-
-
+    ErrorCode STANDINGBOOK_ACQUISITION_TEST_CAL_FAIL =  new ErrorCode(1_002_101_007,"采集数据计算失败");
+    ErrorCode STANDINGBOOK_ACQUISITION_TEST_NOT_EXISTS =  new ErrorCode(1_002_101_008,"未配置io未配置公式");
+    ErrorCode STANDINGBOOK_ACQUISITION_TEST_IO_NOT_EXISTS =  new ErrorCode(1_002_101_009,"dataSites不存在");
+    ErrorCode STANDINGBOOK_ACQUISITION_TEST_DATA_FAIL =  new ErrorCode(1_002_101_010,"数据未采集成功");
+    ErrorCode STANDINGBOOK_ACQUISITION_TEST_PROTOCOL_NOT_EXISTS =  new ErrorCode(1_002_101_011,"数据服务协议类型不存在");
     // ========== COP参数设置  ==========
     ErrorCode COP_SETTINGS_NOT_EXISTS = new ErrorCode(1_001_102_001, "COP参数设置不存在");
     ErrorCode STANDINGBOOK_REPEAT = new ErrorCode(1_001_102_002, "COP参数关联台账重复");

@@ -47,6 +47,7 @@ public class StandingbookDO extends BaseDO {
      * 环节 | 1：外购存储  2：加工转换 3：传输分配 4：终端使用 5：回收利用
      */
     @Schema(description = "环节")
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Integer stage;
 
     @TableField(exist = false)
