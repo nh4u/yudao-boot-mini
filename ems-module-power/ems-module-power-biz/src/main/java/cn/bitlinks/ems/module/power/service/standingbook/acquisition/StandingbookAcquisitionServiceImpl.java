@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.standingbook.acquisition;
 import cn.bitlinks.ems.framework.common.core.ParameterKey;
 import cn.bitlinks.ems.framework.common.core.StandingbookAcquisitionDetailDTO;
 import cn.bitlinks.ems.framework.common.enums.FrequencyUnitEnum;
+import cn.bitlinks.ems.framework.common.exception.ErrorCode;
 import cn.bitlinks.ems.framework.common.exception.ServiceException;
 import cn.bitlinks.ems.framework.common.util.calc.AcquisitionFormulaUtils;
 import cn.bitlinks.ems.framework.common.util.calc.FormulaUtil;
@@ -83,10 +84,12 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
     private RedisTemplate<String, String> redisTemplate;
     @Resource
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
+
     @PostConstruct
     public void init() {
         initAcqRedisConfig(); // 项目启动后自动执行
     }
+
     @Override
     @Transactional
     public Long createOrUpdateStandingbookAcquisition(StandingbookAcquisitionVO updateReqVO) {
@@ -417,6 +420,14 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
 
             detailVOS.add(standingbookAcquisitionDetailVO);
         });
+
+        // 有些属性status可能会确实，当为null的时候 补成false
+        detailVOS.forEach(d -> {
+            if (Objects.isNull(d.getStatus())) {
+                d.setStatus(false);
+            }
+        });
+
         standingbookAcquisitionVO.setDetails(detailVOS);
         return standingbookAcquisitionVO;
     }
@@ -431,7 +442,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
             String formula = currentDetail.getFormula();
             // 0.未配置io未配置公式
             if (StringUtils.isEmpty(dataSite) && StringUtils.isEmpty(formula)) {
-                throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+                throw exception(STANDINGBOOK_ACQUISITION_TEST_NOT_EXISTS);
             }
             currentDetail.setActualFormula(currentDetail.getFormula());
             // 创建一个 Map，用于存储参数的唯一标识 (ParameterKey) 到 StandingbookAcquisitionDetailVO 对象的映射
@@ -465,14 +476,14 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                 Set<ParameterKey> parameterKeys = FormulaUtil.getDependencies(currentFormulaDetail.getActualFormula());
                 // 配置了公式但不需要依赖任何参数，公式必须包含参数，所以公式不对。
                 if (CollUtil.isEmpty(parameterKeys)) {
-                    throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+                    throw exception(STANDINGBOOK_ACQUISITION_FORMULA_SET);
                 }
 
                 Map<ParameterKey, StandingbookAcquisitionDetailVO> relyParamMap = paramMap.entrySet().stream()
                         .filter(entry -> parameterKeys.contains(entry.getKey()))
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
                 if (CollUtil.isEmpty(relyParamMap)) {
-                    throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+                    throw exception(STANDINGBOOK_ACQUISITION_FORMULA_SET);
                 }
                 dataSites = relyParamMap.values().stream().map(StandingbookAcquisitionDetailVO::getDataSite).collect(Collectors.toList());
                 // 存储modbus信息
@@ -491,7 +502,7 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                 modbusTcpDataSites.put(currentDetail.getModbusRegisterType() + "|" + currentDetail.getModbusSalve(), dataSites);
             }
             if (CollUtil.isEmpty(dataSites)) {
-                throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+                throw exception(STANDINGBOOK_ACQUISITION_TEST_IO_NOT_EXISTS);
             }
 
             // 2.2 采集这些参数，
@@ -506,32 +517,37 @@ public class StandingbookAcquisitionServiceImpl implements StandingbookAcquisiti
                             serviceSettingsDO.getClsid(), dataSites);
                 } else if (ProtocolEnum.MODBUS_TCP.getCode().equals(serviceSettingsDO.getProtocol())) {
                     itemStatusMap = new HashMap<>();
-                    modbusTcpDataSites.forEach((k,v)->{
+                    modbusTcpDataSites.forEach((k, v) -> {
                         Map<String, ItemStatus> partItemStatusMap = ModbusConnectionTester.testLink(serviceSettingsDO.getIpAddress(),
-                                serviceSettingsDO.getPort(),k.split(StringPool.PIPE)[0],
+                                serviceSettingsDO.getPort(), k.split(StringPool.PIPE)[0],
                                 k.split(StringPool.PIPE)[1], v);
                         itemStatusMap.putAll(partItemStatusMap);
                     });
 
                 } else {
-                    throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+                    throw exception(STANDINGBOOK_ACQUISITION_TEST_PROTOCOL_NOT_EXISTS);
                 }
             }
             if (CollUtil.isEmpty(itemStatusMap)) {
-                throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+                throw exception(STANDINGBOOK_ACQUISITION_TEST_DATA_FAIL);
+            }
+
+            if (StringUtils.isEmpty(itemStatusMap.get(dataSite).getValue())) {
+                return StringPool.EMPTY;
             }
 
             String resultValue = AcquisitionFormulaUtils.calcSingleParamValue(currentDetailDTO, paramDTOMap,
                     itemStatusMap);
             if (StringUtils.isEmpty(resultValue)) {
-                throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+                throw exception(STANDINGBOOK_ACQUISITION_TEST_CAL_FAIL);
             }
             return resultValue;
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {
             log.error("数采-测试，异常：{}", e.getMessage(), e);
-            throw exception(STANDINGBOOK_ACQUISITION_TEST_FAIL);
+            ErrorCode err = new ErrorCode(1_002_101_004, e.getMessage());
+            throw exception(err);
         }
 
     }
