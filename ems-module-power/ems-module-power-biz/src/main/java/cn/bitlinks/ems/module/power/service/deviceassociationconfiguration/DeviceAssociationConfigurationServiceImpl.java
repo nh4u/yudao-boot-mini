@@ -14,10 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * 设备关联配置 Service 实现类
@@ -57,17 +54,26 @@ public class DeviceAssociationConfigurationServiceImpl implements DeviceAssociat
     @Override
     @Transactional
     public void updAssociationDevice(DeviceAssociationSaveReqVO createReqVO) {
+
+        // 如果设备为空说明是删除操作
+        Long deviceId = createReqVO.getDeviceId();
+        if(Objects.isNull(deviceId)){
+            measurementDeviceMapper.delete(new LambdaQueryWrapper<MeasurementDeviceDO>()
+                    .eq(MeasurementDeviceDO::getMeasurementInstrumentId, createReqVO.getMeasurementInstrumentId()));
+            return;
+        }
+
         MeasurementDeviceDO existing = measurementDeviceMapper.selectOne(new LambdaQueryWrapper<MeasurementDeviceDO>()
                 .eq(MeasurementDeviceDO::getMeasurementInstrumentId, createReqVO.getMeasurementInstrumentId()));
         if (existing == null) {
             MeasurementDeviceDO measurementDeviceDO = new MeasurementDeviceDO();
-            measurementDeviceDO.setDeviceId(createReqVO.getDeviceId());
+            measurementDeviceDO.setDeviceId(deviceId);
             measurementDeviceDO.setMeasurementInstrumentId(createReqVO.getMeasurementInstrumentId());
             measurementDeviceMapper.insert(measurementDeviceDO);
             return;
         }
         measurementDeviceMapper.update(new LambdaUpdateWrapper<MeasurementDeviceDO>()
-                .set(MeasurementDeviceDO::getDeviceId, createReqVO.getDeviceId())
+                .set(MeasurementDeviceDO::getDeviceId, deviceId)
                 .eq(MeasurementDeviceDO::getMeasurementInstrumentId, createReqVO.getMeasurementInstrumentId()));
 
     }
