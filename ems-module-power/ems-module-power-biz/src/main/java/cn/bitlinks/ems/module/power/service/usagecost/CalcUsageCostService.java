@@ -167,9 +167,6 @@ public class CalcUsageCostService {
 
             Map<String, CoalFactorFormulaData> coalFactorFormulaDataMap = new HashMap<>();
             if (CollectionUtil.isNotEmpty(coalFactorFormulaList)) {
-
-                //打印一下折标煤公式
-                log.info(coalFactorFormulaList.toString());
                 //能源折标煤系数公式
                 coalFactorFormulaDataMap = coalFactorFormulaList.stream()
                         .map(coalFactorFormulaData -> {
@@ -180,7 +177,12 @@ public class CalcUsageCostService {
                             }
                             return coalFactorFormulaData;
                         })
-                        .collect(Collectors.toMap(v -> v.getEnergyId() + "_" + LocalDateTimeUtil.format(v.getAggregateTime(), DatePattern.NORM_DATETIME_MINUTE_PATTERN)+"_"+ FormulaTypeEnum.COAL.getCode(), Function.identity()));
+                        .collect(Collectors.toMap(
+                                v -> v.getEnergyId() + "_" + LocalDateTimeUtil.format(v.getAggregateTime(), DatePattern.NORM_DATETIME_MINUTE_PATTERN)+"_"+ FormulaTypeEnum.COAL.getCode(),
+                                Function.identity(),
+                                // 保留第一个值
+                                (existing, replacement) -> existing
+                        ));
             }
 
 
