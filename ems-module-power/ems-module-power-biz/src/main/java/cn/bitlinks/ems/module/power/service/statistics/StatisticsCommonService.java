@@ -324,7 +324,7 @@ public class StatisticsCommonService {
                 })
                 .collect(Collectors.toList());
         List<StandingbookLabelInfoDO> standingbookLabelInfoDOS = filterStandingbookLabelInfoDO(standingbookLabelInfoList, childIds, CHILD_LABEL_REGEX_ADD);
-        log.info("根据标签查询的计量器具数据：top:{}, childLabels:{}, 计量器具：{}", topLabel, childLabels, JSONUtil.toJsonStr(standingbookLabelInfoDOS));
+//        log.info("根据标签查询的计量器具数据：top:{}, childLabels:{}, 计量器具：{}", topLabel, childLabels, JSONUtil.toJsonStr(standingbookLabelInfoDOS));
         return standingbookLabelInfoDOS;
     }
 
