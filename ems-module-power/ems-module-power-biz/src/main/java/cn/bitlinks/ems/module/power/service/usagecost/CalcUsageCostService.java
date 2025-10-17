@@ -167,6 +167,9 @@ public class CalcUsageCostService {
 
             Map<String, CoalFactorFormulaData> coalFactorFormulaDataMap = new HashMap<>();
             if (CollectionUtil.isNotEmpty(coalFactorFormulaList)) {
+
+                //打印一下折标煤公式
+                log.info(coalFactorFormulaList.toString());
                 //能源折标煤系数公式
                 coalFactorFormulaDataMap = coalFactorFormulaList.stream()
                         .map(coalFactorFormulaData -> {

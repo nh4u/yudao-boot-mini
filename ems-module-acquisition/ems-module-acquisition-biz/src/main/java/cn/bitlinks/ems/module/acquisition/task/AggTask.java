@@ -55,6 +55,9 @@ public class AggTask {
 
     private static final long DELAY_MINUTE = 20L;
 
+    /**
+     *  聚合任务-用量 入usage cost表
+     */
     @Scheduled(cron = "0 0/1 * * * ? ") // 每分钟的 0 秒执行一次
 //    @Scheduled(cron = "0/10 * * * * ? ") // 每分钟的 0 秒执行一次
     public void execute() {
@@ -79,7 +82,7 @@ public class AggTask {
     }
 
     /**
-     * 聚合任务-稳态值
+     * 聚合任务-稳态值 入分钟级表
      */
     @Scheduled(cron = "30 0/1 * * * ? ") // 每分钟的 30 秒执行一次
     public void executeSteady() {
@@ -140,8 +143,9 @@ public class AggTask {
     }
 
     /**
-     * 聚合用量值
-     * 当前分钟（-20min）的聚合时间的数据计算与插入
+     * 聚合用量值  （execute->insertMinuteData->interpolate->splitData 得到 List<MinuteAggregateDataDO> currentAggDataList
+     * 然后通过minuteAggregateDataService.sendMsgToUsageCostBatch()保存到usage_cost  copFlag为false）
+     * 当前分钟（-20min）的聚合时间的数据计算与插入  然后保存到usage cost表中
      */
     private void insertMinuteData() throws IOException {
 

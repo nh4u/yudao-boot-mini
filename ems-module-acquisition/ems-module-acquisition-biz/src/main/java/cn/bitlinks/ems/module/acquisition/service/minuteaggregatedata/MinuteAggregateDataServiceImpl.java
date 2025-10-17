@@ -84,7 +84,12 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         }, "mq-sender-thread").start();
     }
 
-
+    /**
+     *  主要用于手动补录、批量补录数据分钟级数据处理  然后保存到usage_cost表中
+     * @param aggDataList
+     * @param copFlag
+     * @throws IOException
+     */
     @TenantIgnore
     public void sendMsgToUsageCostBatchNew(List<MinuteAggregateDataDO> aggDataList, Boolean copFlag) throws IOException {
         if (CollUtil.isEmpty(aggDataList)) {
@@ -108,6 +113,9 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
                     MultiMinuteAggDataDTO msgDTO = new MultiMinuteAggDataDTO();
                     msgDTO.setCopFlag(copFlag);
                     msgDTO.setMinuteAggregateDataDTOList(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class));
+
+
+                    // TODO: 2025/10/16 入队列消费
 
                     boolean offered = mqQueue.offer(msgDTO, 5, TimeUnit.SECONDS);
                     if (!offered) {
@@ -148,6 +156,12 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         }
     }
 
+    /**
+     * 主要用于 数采实时数据分钟聚合数据处理   聚合数据调用的方法 用于把分钟级别数据发送到mq中 然后保存到usage_cost表中
+     * @param aggDataList
+     * @param copFlag
+     * @throws IOException
+     */
     @Override
     public void sendMsgToUsageCostBatch(List<MinuteAggregateDataDO> aggDataList, Boolean copFlag) throws IOException {
         if (CollUtil.isEmpty(aggDataList)) {
