@@ -1,7 +1,6 @@
 package cn.bitlinks.ems.module.power.task;
 
 
-import cn.bitlinks.ems.framework.tenant.core.context.TenantContextHolder;
 import cn.bitlinks.ems.framework.tenant.core.job.TenantJob;
 import cn.bitlinks.ems.module.power.service.sharefile.ShareFileSettingsService;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +41,7 @@ public class ShareFileTask {
      * 2025-10-16 12:00:00
      * 2025-10-17 12:00:00
      */
-    @Scheduled(cron = "0 0 12 * * ?")
+    @Scheduled(cron = "0 0/10 * * * ?")
     @TenantJob
     public void execute() {
 
@@ -56,7 +55,6 @@ public class ShareFileTask {
             }
             try {
                 log.info("共享文件同步Task 开始");
-                TenantContextHolder.setTenantId(1L);
                 shareFileSettingsService.dealFile();
                 log.info("共享文件同步Task 结束");
             } finally {
