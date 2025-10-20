@@ -109,6 +109,20 @@ public class CopHourAggTask {
                     break;
                 }
 
+                // ✅ 1. 先检查队列是否存在
+                 hasKey = redisTemplate.hasKey(COP_RECALCULATE_HOUR_QUEUE);
+                if (Boolean.FALSE.equals(hasKey)) {
+                    log.info("COP重算任务 ZSET键不存在【while内】：{}", COP_RECALCULATE_HOUR_QUEUE);
+                    break;
+                }
+
+                // ✅ 2. 再检查队列是否为空（ZCARD = 0 表示空）
+                 zcard = redisTemplate.opsForZSet().zCard(COP_RECALCULATE_HOUR_QUEUE);
+                if (zcard == null || zcard == 0) {
+                    log.info("COP重算任务 队列为空（ZCARD=0），本次处理结束【while内】");
+                    break;
+                }
+
                 // 获取下一个任务
                 ZSetOperations.TypedTuple<String> element = redisTemplate.opsForZSet().popMin(COP_RECALCULATE_HOUR_QUEUE);
                 if (element == null || element.getValue() == null) {
