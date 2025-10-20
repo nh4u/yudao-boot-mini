@@ -402,8 +402,9 @@ public class ExcelMeterDataProcessor {
         paramDTO.setStarTime(startTime);
         paramDTO.setEndTime(endTime);
         paramDTO.setSbIds(sbIds);
+        log.info(paramDTO.toString());
         Map<Long, MinuteAggDataSplitDTO> standingboookUsageRangeTimePreNextAggDataMap = minuteAggregateDataApi.getPreAndNextData(paramDTO).getData();
-
+        log.info(standingboookUsageRangeTimePreNextAggDataMap.toString());
         for (Map.Entry<String, List<BigDecimal>> entry : meterValuesMap.entrySet()) {
             String meter = entry.getKey();
             List<BigDecimal> values = entry.getValue();
@@ -435,10 +436,6 @@ public class ExcelMeterDataProcessor {
             baseDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
 
             futures.add(executor.submit(() -> {
-                log.info(standingBookHeaderDTO.toString());
-                log.info(standingboookUsageRangeTimePreNextAggDataMap.toString());
-                log.info(standingBookHeaderDTO.getStandingbookId().toString());
-
                 MinuteAggDataSplitDTO minuteAggDataSplitDTO = standingboookUsageRangeTimePreNextAggDataMap.get(standingBookHeaderDTO.getStandingbookId());
                 List<MinuteAggregateDataDTO> toAddAcqDataList = new ArrayList<>();
                 List<MinuteAggDataSplitDTO> toAddNotAcqSplitDataList = new ArrayList<>();
