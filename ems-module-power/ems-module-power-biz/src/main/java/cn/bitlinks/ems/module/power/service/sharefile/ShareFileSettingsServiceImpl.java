@@ -1,5 +1,7 @@
 package cn.bitlinks.ems.module.power.service.sharefile;
 
+import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelCoordinate;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelListResultVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.sharefile.ShareFileSettingsDO;
@@ -167,6 +169,11 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
         }
 
         return map;
+    }
+
+    @Override
+    public Map<Long, MinuteAggDataSplitDTO>  getPreAndNextDataTest(){
+        return excelMeterDataProcessor.getPreAndNextDataTest();
     }
 
 
