@@ -1,7 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.sharefile;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelCoordinate;
 import cn.bitlinks.ems.module.power.service.sharefile.ShareFileSettingsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

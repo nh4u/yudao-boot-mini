@@ -435,7 +435,8 @@ public class ExcelMeterDataProcessor {
             baseDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
 
             futures.add(executor.submit(() -> {
-                MinuteAggDataSplitDTO minuteAggDataSplitDTO = standingboookUsageRangeTimePreNextAggDataMap.get(standingBookHeaderDTO.getStandingbookId());
+                // standingboookUsageRangeTimePreNextAggDataMap可能是空，因此需要判空
+                MinuteAggDataSplitDTO minuteAggDataSplitDTO = CollUtil.isNotEmpty(standingboookUsageRangeTimePreNextAggDataMap) ? standingboookUsageRangeTimePreNextAggDataMap.get(standingBookHeaderDTO.getStandingbookId()) : null;
                 List<MinuteAggregateDataDTO> toAddAcqDataList = new ArrayList<>();
                 List<MinuteAggDataSplitDTO> toAddNotAcqSplitDataList = new ArrayList<>();
 

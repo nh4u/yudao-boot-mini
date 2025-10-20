@@ -1,7 +1,6 @@
 package cn.bitlinks.ems.module.power.task;
 
 
-import cn.bitlinks.ems.framework.tenant.core.context.TenantContextHolder;
 import cn.bitlinks.ems.framework.tenant.core.job.TenantJob;
 import cn.bitlinks.ems.module.power.service.sharefile.ShareFileSettingsService;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +55,6 @@ public class ShareFileTask {
             }
             try {
                 log.info("共享文件同步Task 开始");
-                TenantContextHolder.setTenantId(1L);
                 shareFileSettingsService.dealFile();
                 log.info("共享文件同步Task 结束");
             } finally {
