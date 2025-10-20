@@ -162,7 +162,12 @@ public class CalcUsageCostService {
                             }
                             return energyTimeResultVO;
                         })
-                        .collect(Collectors.toMap(v -> v.getEnergyId() + "_" + LocalDateTimeUtil.format(v.getAggregateTime(), DatePattern.NORM_DATETIME_MINUTE_PATTERN)+"_"+ FormulaTypeEnum.USAGE_COST.getCode(), Function.identity()));
+                        .collect(Collectors.toMap(
+                                v -> v.getEnergyId() + "_" + LocalDateTimeUtil.format(v.getAggregateTime(), DatePattern.NORM_DATETIME_MINUTE_PATTERN)+"_"+ FormulaTypeEnum.USAGE_COST.getCode(),
+                                Function.identity(),
+                                // 保留第一个值
+                                (existing, replacement) -> existing
+                        ));
             }
 
             Map<String, CoalFactorFormulaData> coalFactorFormulaDataMap = new HashMap<>();
