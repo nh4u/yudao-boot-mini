@@ -84,12 +84,22 @@ public class CopHourAggTask {
             }
 
             log.info("COP重算任务开始执行");
-            long startTime = System.currentTimeMillis(); // 记录开始时间
+            // 记录开始时间
+            long startTime = System.currentTimeMillis();
+            // ✅ 1. 先检查队列是否存在
             Boolean hasKey = redisTemplate.hasKey(COP_RECALCULATE_HOUR_QUEUE);
             if (Boolean.FALSE.equals(hasKey)) {
                 log.info("COP重算任务 ZSET键不存在：{}", COP_RECALCULATE_HOUR_QUEUE);
                 return;
             }
+
+            // ✅ 2. 再检查队列是否为空（ZCARD = 0 表示空）
+            Long zcard = redisTemplate.opsForZSet().zCard(COP_RECALCULATE_HOUR_QUEUE);
+            if (zcard == null || zcard == 0) {
+                log.info("COP重算任务 队列为空（ZCARD=0），本次处理结束");
+                return;
+            }
+
             // 循环处理任务，直到超时或队列为空
             while (true) {
                 // 检查是否超过最大执行时间
