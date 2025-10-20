@@ -1,11 +1,9 @@
 package cn.bitlinks.ems.module.power.task;
 
 
+import cn.bitlinks.ems.framework.tenant.core.context.TenantContextHolder;
 import cn.bitlinks.ems.framework.tenant.core.job.TenantJob;
-import cn.bitlinks.ems.module.power.dal.dataobject.chemicals.PowerChemicalsSettingsDO;
-import cn.bitlinks.ems.module.power.dal.mysql.chemicals.PowerChemicalsSettingsMapper;
 import cn.bitlinks.ems.module.power.service.sharefile.ShareFileSettingsService;
-import cn.hutool.core.date.LocalDateTimeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -14,10 +12,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
-import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.SHARE_FILE_TASK_LOCK_KEY;
 
 /**
  * 共享文件同步任务
@@ -59,6 +56,7 @@ public class ShareFileTask {
             }
             try {
                 log.info("共享文件同步Task 开始");
+                TenantContextHolder.setTenantId(1L);
                 shareFileSettingsService.dealFile();
                 log.info("共享文件同步Task 结束");
             } finally {

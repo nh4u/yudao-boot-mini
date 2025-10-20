@@ -697,7 +697,7 @@ public class StandingbookServiceImpl implements StandingbookService {
         }
 
         // 去重 去空格
-        List<String> collect = headList.stream().map(String::trim).distinct().collect(Collectors.toList());
+        List<String> collect = headList.stream().distinct().collect(Collectors.toList());
 
         // 获取已有台账数据
         Map<String, StandingBookHeaderDTO> standingBookHeaderMap = getStandingBookCodeKeyMap();
@@ -705,8 +705,8 @@ public class StandingbookServiceImpl implements StandingbookService {
         List<StandingBookHeaderDTO> standingBookHeaderDTOList = new ArrayList<>();
 
         for (String header : collect) {
-            header = header.trim();
-            String s = header.split(" ")[0];
+            String tempHeader = header.trim();
+            String s = tempHeader.split(" ")[0];
             s = s.trim();
             // 定义一个flag  如果已经匹配完成 则直接break 无需再匹配 否则就继续匹配4
             Boolean flag = false;
