@@ -253,7 +253,7 @@ public class CalcUsageCostService {
     }
 
     private BigDecimal calcCoalFactorFormula(CoalFactorFormulaData coalFactorFormulaData, BigDecimal currentUsage) {
-        log.info("【计算计量器具折标煤】");
+//        log.info("【计算计量器具折标煤】");
         if (Objects.isNull(coalFactorFormulaData) || StrUtil.isBlank(coalFactorFormulaData.getEnergyFormula())) {
             log.info("当前周期能源类型未配置折标煤公式，energyId:{}，aggregateTime：{}", coalFactorFormulaData.getEnergyId(), LocalDateTimeUtil.format(coalFactorFormulaData.getAggregateTime(), DatePattern.NORM_DATETIME_MINUTE_PATTERN));
             return BigDecimal.ZERO;
@@ -274,7 +274,7 @@ public class CalcUsageCostService {
      * 计算成本
      */
     private BigDecimal calcCost(List<PriceDetailDO> priceDetailList, BigDecimal currentUsage, EnergyTimeResultVO energyTimeResultVO, LocalDateTime queryTime) {
-        log.info("计算计量器具用能成本，计价方式：{}，当前用量，{}", energyTimeResultVO.getBillingMethod(), currentUsage.toString());
+//        log.info("计算计量器具用能成本，计价方式：{}，当前用量，{}", energyTimeResultVO.getBillingMethod(), currentUsage.toString());
         if (Objects.isNull(energyTimeResultVO) || StrUtil.isBlank(energyTimeResultVO.getEnergyFormula())) {
             log.info("当前周期能源类型未配置单价公式，energyId:{}，aggregateTime：{}", energyTimeResultVO.getEnergyId(), LocalDateTimeUtil.format(energyTimeResultVO.getAggregateTime(), DatePattern.NORM_DATETIME_MINUTE_PATTERN));
             return BigDecimal.ZERO;
