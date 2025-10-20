@@ -70,21 +70,6 @@ public class ExcelMeterDataProcessor {
     @Resource
     private MinuteAggregateDataFiveMinuteApi minuteAggregateDataFiveMinuteApi;
 
-    public Map<Long, MinuteAggDataSplitDTO> getPreAndNextDataTest() {
-
-        LocalDateTime startTime = LocalDateTime.parse("2025-10-14T00:00");
-        LocalDateTime endTime = LocalDateTime.parse("2025-10-14T23:00");
-        List<Long> sbIds = Arrays.asList(1937470440238743554L, 1937470437860573186L, 1937470436468064258L, 1937470438561021953L, 1937470432747716610L, 1937470439924170753L, 1937470432387006466L, 1937470430310825985L, 1937470440867889153L, 1937470436069605378L, 1937470433016152065L, 1937470435411099649L, 1937470431061606402L, 1937470438930120706L, 1937470433653686273L, 1937470441329262593L, 1937470437151735809L, 1937470437504057345L, 1937470432110182401L, 1937470439479574530L, 1937470431803998210L, 1937470431455870977L, 1937470433334919169L, 1937470430747033601L, 1937470440565899265L, 1937470436778442753L, 1937470438225477634L);
-        MinuteRangeDataParamDTO paramDTO = new MinuteRangeDataParamDTO();
-        paramDTO.setStarTime(startTime);
-        paramDTO.setEndTime(endTime);
-        paramDTO.setSbIds(sbIds);
-        log.info(paramDTO.toString());
-        Map<Long, MinuteAggDataSplitDTO> standingboookUsageRangeTimePreNextAggDataMap = minuteAggregateDataApi.getPreAndNextData(paramDTO).getData();
-        log.info(standingboookUsageRangeTimePreNextAggDataMap.toString());
-        return standingboookUsageRangeTimePreNextAggDataMap;
-    }
-
     public AcqDataExcelListResultVO process(InputStream file, String timeStartCell, String timeEndCell,
                                             String meterStartCell, String meterEndCell) throws IOException {
 
@@ -417,9 +402,8 @@ public class ExcelMeterDataProcessor {
         paramDTO.setStarTime(startTime);
         paramDTO.setEndTime(endTime);
         paramDTO.setSbIds(sbIds);
-        log.info(paramDTO.toString());
         Map<Long, MinuteAggDataSplitDTO> standingboookUsageRangeTimePreNextAggDataMap = minuteAggregateDataApi.getPreAndNextData(paramDTO).getData();
-        log.info(standingboookUsageRangeTimePreNextAggDataMap.toString());
+
         for (Map.Entry<String, List<BigDecimal>> entry : meterValuesMap.entrySet()) {
             String meter = entry.getKey();
             List<BigDecimal> values = entry.getValue();
@@ -451,7 +435,8 @@ public class ExcelMeterDataProcessor {
             baseDTO.setAcqFlag(AcqFlagEnum.ACQ.getCode());
 
             futures.add(executor.submit(() -> {
-                MinuteAggDataSplitDTO minuteAggDataSplitDTO = standingboookUsageRangeTimePreNextAggDataMap.get(standingBookHeaderDTO.getStandingbookId());
+                // standingboookUsageRangeTimePreNextAggDataMap可能是空，因此需要判空
+                MinuteAggDataSplitDTO minuteAggDataSplitDTO = CollUtil.isNotEmpty(standingboookUsageRangeTimePreNextAggDataMap) ? standingboookUsageRangeTimePreNextAggDataMap.get(standingBookHeaderDTO.getStandingbookId()) : null;
                 List<MinuteAggregateDataDTO> toAddAcqDataList = new ArrayList<>();
                 List<MinuteAggDataSplitDTO> toAddNotAcqSplitDataList = new ArrayList<>();
 
