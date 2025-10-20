@@ -171,10 +171,5 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
         return map;
     }
 
-    @Override
-    public Map<Long, MinuteAggDataSplitDTO>  getPreAndNextDataTest(){
-        return excelMeterDataProcessor.getPreAndNextDataTest();
-    }
-
 
 }

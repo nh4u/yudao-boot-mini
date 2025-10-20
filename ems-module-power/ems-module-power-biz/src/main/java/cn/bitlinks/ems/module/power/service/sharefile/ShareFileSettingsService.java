@@ -1,8 +1,5 @@
 package cn.bitlinks.ems.module.power.service.sharefile;
 
-import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelCoordinate;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +16,4 @@ public interface ShareFileSettingsService {
 
 
     Map<String, List<Map<String, Object>>> testShareFile() throws IOException;
-
-     Map<Long, MinuteAggDataSplitDTO>  getPreAndNextDataTest();
 }

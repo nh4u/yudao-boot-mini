@@ -1,8 +1,6 @@
 package cn.bitlinks.ems.module.power.controller.admin.sharefile;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
-import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelCoordinate;
 import cn.bitlinks.ems.module.power.service.sharefile.ShareFileSettingsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,12 +33,6 @@ public class ShareFileSettingsController {
     //@PreAuthorize("@ss.hasPermission('power:service-settings:create')")
     public CommonResult< Map<String, List<Map<String, Object>>>> testShareFileSettings() throws IOException {
         return success(shareFileSettingsService.testShareFile());
-    }
-    @PostMapping("/testFeign")
-    @Operation(summary = "测试Feign连通")
-    //@PreAuthorize("@ss.hasPermission('power:service-settings:create')")
-    public CommonResult<Map<Long, MinuteAggDataSplitDTO>> getPreAndNextDataTest() throws IOException {
-        return success(shareFileSettingsService.getPreAndNextDataTest());
     }
 
 
