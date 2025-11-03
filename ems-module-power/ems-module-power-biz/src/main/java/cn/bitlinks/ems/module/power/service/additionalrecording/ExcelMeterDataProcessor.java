@@ -46,6 +46,7 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
@@ -94,14 +95,14 @@ public class ExcelMeterDataProcessor {
             }
             boolean timeError;
             if (timeVertical && meterHorizontal) {
-                timeError = timeStart[0] + times.size() - 1 != timeEnd[0];
+                timeError = timeStart[0] + times.size()-1 != timeEnd[0];
             } else {
-                timeError = timeStart[1] + times.size() - 1 != timeEnd[1];
+                timeError = timeStart[1] + times.size()-1 != timeEnd[1];
             }
-            if (timeError) {
+            if(timeError){
                 throw exception(IMPORT_TIMES_ERROR);
             }
-            if (CollUtil.isEmpty(meterValuesMap)) {
+            if(CollUtil.isEmpty(meterValuesMap)){
                 throw exception(IMPORT_NO_METER);
             }
             return calculateMinuteDataParallel(meterValuesMap, times, meterNames);
@@ -130,7 +131,7 @@ public class ExcelMeterDataProcessor {
             Cell cell = row.getCell(0);
             if (Objects.isNull(cell)) {
                 throw exception(IMPORT_EXCEL_FORMAT_ERROR);
-            }
+        }
             String stringCellValue = cell.getStringCellValue();
             if (!"时间\\数据".equals(stringCellValue)) {
                 throw exception(IMPORT_EXCEL_FORMAT_ERROR);
@@ -439,12 +440,21 @@ public class ExcelMeterDataProcessor {
                 MinuteAggDataSplitDTO minuteAggDataSplitDTO = CollUtil.isNotEmpty(standingboookUsageRangeTimePreNextAggDataMap) ? standingboookUsageRangeTimePreNextAggDataMap.get(standingBookHeaderDTO.getStandingbookId()) : null;
                 List<MinuteAggregateDataDTO> toAddAcqDataList = new ArrayList<>();
                 List<MinuteAggDataSplitDTO> toAddNotAcqSplitDataList = new ArrayList<>();
+                // 1. 收集非 null 下标
+                List<Integer> idx = IntStream.range(0, values.size())
+                        .filter(i -> values.get(i) != null)
+                        .boxed()
+                        .sorted(Comparator.comparing(times::get)) // 按时间升序
+                        .collect(Collectors.toList());
 
-                for (int i = 0; i < times.size(); i++) {
-                    LocalDateTime curTime = times.get(i);
+                // 2. 生成两个新的、已排序且 value 非 null 的列表
+                List<BigDecimal>  newValues = idx.stream().map(values::get).collect(Collectors.toList());
+                List<LocalDateTime> newTimes  = idx.stream().map(times::get).collect(Collectors.toList());
+                for (int i = 0; i < newTimes.size(); i++) {
+                    LocalDateTime curTime = newTimes.get(i);
                     MinuteAggregateDataDTO curDTO = BeanUtils.toBean(baseDTO, MinuteAggregateDataDTO.class);
                     curDTO.setAggregateTime(curTime);
-                    curDTO.setFullValue(values.get(i));
+                    curDTO.setFullValue(newValues.get(i));
 
                     if (i == 0) {
                         if (minuteAggDataSplitDTO != null && minuteAggDataSplitDTO.getStartDataDO() != null) {
@@ -457,9 +467,9 @@ public class ExcelMeterDataProcessor {
                             curDTO.setIncrementalValue(BigDecimal.ZERO);
                             toAddAcqDataList.add(curDTO);
                         }
-                    } else if (i == times.size() - 1) {
+                    } else if (i == newTimes.size() - 1) {
                         MinuteAggregateDataDTO preDTO = toAddAcqDataList.get(i - 1);
-                        BigDecimal incr = AggSplitUtils.calculatePerMinuteIncrement(times.get(i - 1), curTime, values.get(i - 1), values.get(i));
+                        BigDecimal incr = AggSplitUtils.calculatePerMinuteIncrement(newTimes.get(i - 1), curTime, newValues.get(i - 1), newValues.get(i));
                         curDTO.setIncrementalValue(incr.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : incr);
                         toAddAcqDataList.add(curDTO);
                         toAddNotAcqSplitDataList.add(new MinuteAggDataSplitDTO(preDTO, curDTO));
@@ -473,7 +483,7 @@ public class ExcelMeterDataProcessor {
                         }
                     } else {
                         MinuteAggregateDataDTO preDTO = toAddAcqDataList.get(i - 1);
-                        BigDecimal incr = AggSplitUtils.calculatePerMinuteIncrement(times.get(i - 1), curTime, values.get(i - 1), values.get(i));
+                        BigDecimal incr = AggSplitUtils.calculatePerMinuteIncrement(newTimes.get(i - 1), curTime, newValues.get(i - 1), newValues.get(i));
                         curDTO.setIncrementalValue(incr.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : incr);
                         toAddAcqDataList.add(curDTO);
                         toAddNotAcqSplitDataList.add(new MinuteAggDataSplitDTO(preDTO, curDTO));
@@ -565,7 +575,7 @@ public class ExcelMeterDataProcessor {
      * @return
      */
     private BigDecimal getNumericValue(Cell cell) {
-        if (cell == null) return BigDecimal.ZERO;
+        if (cell == null) return null;
         if (cell.getCellType() == CellType.NUMERIC)
             return BigDecimal.valueOf(cell.getNumericCellValue());
         if (cell.getCellType() == CellType.STRING) {
@@ -573,10 +583,10 @@ public class ExcelMeterDataProcessor {
                 return new BigDecimal(cell.getStringCellValue());
             } catch (NumberFormatException e) {
                 log.error("{} not a number", cell.getStringCellValue());
-                return BigDecimal.ZERO;
+                return null;
             }
         }
-        return BigDecimal.ZERO;
+        return null;
     }
 
     private Map<String, StandingBookHeaderDTO> getStandingbookInfo(List<String> headList) {
