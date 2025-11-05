@@ -311,6 +311,6 @@ public interface CommonConstants {
     String REDIS_BATCH_QUEUE_KEY = "starrocks:minute_agg_batch:queue"; // acq=0 队列
 
     // 定时兜底间隔（毫秒）
-    long FLUSH_INTERVAL_QUICK = 1 * 60 * 1000; // acq=1：1分钟
-    long FLUSH_INTERVAL = 10 * 60 * 1000; // acq=0：10分钟
+    long FLUSH_INTERVAL_QUICK = 30 * 1000; // acq=1：1分钟
+    long FLUSH_INTERVAL = 2 * 60 * 1000; // acq=0：10分钟
 }
