@@ -301,8 +301,9 @@ public interface CommonConstants {
     String STARROCKS_INSPECT_LOCK_KEY = "%s:starrocks:queue:inspect:lock:%s";
     String STARROCKS_FLUSH_LOCK_KEY = "%s:starrocks:queue:flush:lock:%s";
     // 原阈值常量保留（或拆分为两个阈值）
-    int BATCH_THRESHOLD_QUICK = 10000; // acq=1 阈值：1万条
-    int BATCH_THRESHOLD = 50000; // acq=0 阈值：5万条
+    int BATCH_THRESHOLD_QUICK = 1000; // acq=1 阈值：1万条
+    int BATCH_THRESHOLD = 5000; // acq=0 阈值：5万条
+    int BATCH_POP_SIZE = 500;
 
     // 两个队列的Redis Key（带acq标识）
     String REDIS_BATCH_QUEUE_KEY_QUICK = "starrocks:minute_agg_batch:queue:quick"; // acq=1 队列
