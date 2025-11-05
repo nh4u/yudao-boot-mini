@@ -1,7 +1,6 @@
 package cn.bitlinks.ems.module.power.service.sharefile;
 
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelCoordinate;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelListResultVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.sharefile.ShareFileSettingsDO;
 import cn.bitlinks.ems.module.power.dal.mysql.sharefile.ShareFileSettingsMapper;
 import cn.bitlinks.ems.module.power.service.additionalrecording.ExcelMeterDataProcessor;
@@ -57,14 +56,14 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
                 AcqDataExcelCoordinate excelImportCoordinate = excelMeterDataProcessor.getExcelImportCoordinate(excelStream1);
 
                 // 2.然后调用导入功能
-                AcqDataExcelListResultVO process = excelMeterDataProcessor.process(
+                excelMeterDataProcessor.process(
                         excelStream2,
                         excelImportCoordinate.getAcqTimeStart(),
                         excelImportCoordinate.getAcqTimeEnd(),
                         excelImportCoordinate.getAcqNameStart(),
-                        excelImportCoordinate.getAcqNameEnd(),acqFlag);
+                        excelImportCoordinate.getAcqNameEnd(), acqFlag);
             } catch (Exception e) {
-                log.error("手动执行指定目录excel文件[]写入失败：｛｝", excelFile.getName(), e.getMessage(), e);
+                log.error("手动执行指定目录excel文件[{}]写入失败:{}", excelFile.getName(), e.getMessage(), e);
             }
         }
 
@@ -118,14 +117,14 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
                     AcqDataExcelCoordinate excelImportCoordinate = excelMeterDataProcessor.getExcelImportCoordinate(excelStream1);
 
                     // 2.然后调用导入功能
-                    AcqDataExcelListResultVO process = excelMeterDataProcessor.process(
+                    excelMeterDataProcessor.process(
                             excelStream2,
                             excelImportCoordinate.getAcqTimeStart(),
                             excelImportCoordinate.getAcqTimeEnd(),
                             excelImportCoordinate.getAcqNameStart(),
-                            excelImportCoordinate.getAcqNameEnd(),false);
+                            excelImportCoordinate.getAcqNameEnd(), false);
                 } catch (Exception e) {
-                    log.error("excel文件[]写入失败：｛｝", excelFile.getName(), e.getMessage(), e);
+                    log.error("excel文件[{}]写入失败:{}", excelFile.getName(), e.getMessage(), e);
                 }
             }
 
