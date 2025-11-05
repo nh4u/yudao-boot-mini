@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.STARROCKS_BATCH_SIZE;
 
 @Service
 @Slf4j
@@ -98,9 +99,9 @@ public class StarRocksBatchImportService {
 
         log.info("quick={} 触发StarRocks批量导入，数据量：{}，队列Key：{}", quick, batchData.size(), queueKey);
         // 分批提交给 StarRocks Feign，防止单次调用过大
-        final int STARROCKS_BATCH_SIZE = 2000;
-        for (int i = 0; i < batchData.size(); i += STARROCKS_BATCH_SIZE) {
-            int end = Math.min(i + STARROCKS_BATCH_SIZE, batchData.size());
+        final int STARROCKS_BATCH_SIZE_FINAL = STARROCKS_BATCH_SIZE;
+        for (int i = 0; i < batchData.size(); i += STARROCKS_BATCH_SIZE_FINAL) {
+            int end = Math.min(i + STARROCKS_BATCH_SIZE_FINAL, batchData.size());
             List<MinuteAggregateDataDTO> subBatch = batchData.subList(i, end);
             starRocksAsyncExecutor.submit(() -> {
                 try {
@@ -199,9 +200,9 @@ public class StarRocksBatchImportService {
             }
 
             // 分批提交给 StarRocks Feign，防止单次调用过大
-            final int STARROCKS_BATCH_SIZE = 2000;
-            for (int i = 0; i < allData.size(); i += STARROCKS_BATCH_SIZE) {
-                int end = Math.min(i + STARROCKS_BATCH_SIZE, allData.size());
+            final int STARROCKS_BATCH_SIZE_FINAL = STARROCKS_BATCH_SIZE;
+            for (int i = 0; i < allData.size(); i += STARROCKS_BATCH_SIZE_FINAL) {
+                int end = Math.min(i + STARROCKS_BATCH_SIZE_FINAL, allData.size());
                 List<MinuteAggregateDataDTO> subBatch = allData.subList(i, end);
                 starRocksAsyncExecutor.submit(() -> {
                     try {
