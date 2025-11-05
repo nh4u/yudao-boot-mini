@@ -193,7 +193,7 @@ public class StarRocksBatchImportService {
                 allData.addAll(popped);
 
                 // 防止长时间阻塞
-                if (System.currentTimeMillis() - start > 3000) {
+                if (System.currentTimeMillis() - start > 10000) {
                     log.warn("quick={} Redis分批pop超时，已取出 {} 条，提前结束", quick, allData.size());
                     break;
                 }
