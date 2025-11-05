@@ -39,6 +39,7 @@ public interface CommonConstants {
     String USAGE_COST_TB_NAME = "usage_cost";
     String COP_HOUR_AGGREGATE_DATA_TB_NAME = "cop_hour_aggregate_data";
     int batchSize = 2000;
+    int STAR_ROCKS_BATCH_SIZE = 10000;
     /**
      * redis 创建分区的上限分区:dev:tbName
      */

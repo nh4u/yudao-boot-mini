@@ -11,26 +11,24 @@ import cn.bitlinks.ems.module.acquisition.dal.mysql.minuteaggregatedata.MinuteAg
 import cn.bitlinks.ems.module.acquisition.starrocks.StarRocksStreamLoadService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.RandomUtil;
-import cn.hutool.json.JSONUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
-import com.google.common.util.concurrent.RateLimiter;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -60,35 +58,27 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
     @Value("${rocketmq.topic.device-aggregate}")
     private String deviceAggTopic;
 
-    private static final RateLimiter MQ_RATE_LIMITER = RateLimiter.create(200); // 每秒200条消息
-    // MQ异步发送队列
-    private final BlockingQueue<MultiMinuteAggDataDTO> mqQueue = new LinkedBlockingQueue<>(100000);
+    /**
+     * MQ分发：按原有逻辑拆分（比如按小时+100条/批）
+     */
+    private void dispatchToMQ(List<MinuteAggregateDataDO> aggDataList, Boolean copFlag) {
+        // 1. 按原有逻辑拆分（比如和之前的getHourGroupBatch逻辑一致，按小时+100条拆分）
+        List<List<MinuteAggregateDataDO>> batchList = getHourGroupBatch(aggDataList);
+        // 2. 对每个MQ小批，构造DTO并发送到MQ
+        for (List<MinuteAggregateDataDO> batch : batchList) {
+            // 3. 构造 MQ DTO 并加入队列（异步发送）
+            MultiMinuteAggDataDTO msgDTO = new MultiMinuteAggDataDTO();
+            msgDTO.setCopFlag(copFlag);
+            msgDTO.setMinuteAggregateDataDTOList(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class));
 
-
-    // 启动MQ推送线程（建议在 @PostConstruct 中调用一次）
-    @PostConstruct
-    public void init() {
-        startMqSenderThread();
-    }
-
-    public void startMqSenderThread() {
-        new Thread(() -> {
-            while (true) {
-                try {
-                    MultiMinuteAggDataDTO dto = mqQueue.take(); // 阻塞获取
-                    MQ_RATE_LIMITER.acquire(); // 限速
-                    Message<MultiMinuteAggDataDTO> msg = MessageBuilder.withPayload(dto).build();
-                    rocketMQTemplate.send(deviceAggTopic, msg);
-                    log.info("MQ消息已发送，header: {}", msg.getHeaders());
-                } catch (Exception e) {
-                    log.error("MQ发送失败", e);
-                }
-            }
-        }, "mq-sender-thread").start();
+            Message<MultiMinuteAggDataDTO> msg = MessageBuilder.withPayload(msgDTO).build();
+            rocketMQTemplate.send(deviceAggTopic, msg);
+        }
     }
 
     /**
-     *  主要用于手动补录、批量补录数据分钟级数据处理  然后保存到usage_cost表中
+     * 主要用于手动补录、批量补录数据分钟级数据处理  然后保存到usage_cost表中
+     *
      * @param aggDataList
      * @param copFlag
      * @throws IOException
@@ -98,36 +88,30 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         if (CollUtil.isEmpty(aggDataList)) {
             return;
         }
-
-        // 1. 按小时分组，再按100条拆分小批
-        List<List<MinuteAggregateDataDO>> batchList = getHourGroupBatch(aggDataList);
-
-        for (List<MinuteAggregateDataDO> batch : batchList) {
-            starRocksAsyncExecutor.submit(() -> { // 用全局单例线程池，不要每次创建！
+        // 复制copFlag到局部变量，避免跨线程引用风险
+        final Boolean finalCopFlag = copFlag != null ? copFlag : false;
+        // StarRocks 导入批次（1万条/批）
+        List<List<MinuteAggregateDataDO>> starRocksBatches = Lists.partition(aggDataList, STAR_ROCKS_BATCH_SIZE);
+        log.info("StarRocks 导入批次数量：{}，总数据量：{}", starRocksBatches.size(), aggDataList.size());
+        // 异步执行StarRocks导入（1w条/批，调用次数极少）
+        for (int i = 0; i < starRocksBatches.size(); i++) {
+            List<MinuteAggregateDataDO> srBatch = starRocksBatches.get(i);
+            int batchIndex = i; // 批次索引，用于label唯一化
+            // 异步执行 StarRocks 导入 + MQ 分发
+            starRocksAsyncExecutor.submit(() -> {
                 try {
-                    // 2. 写入 StarRocks（异步执行，提交后就返回，不等待结果）
-                    String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
-                    starRocksStreamLoadService.streamLoadData(batch, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
+                    // 1. StarRocks 批量导入
+                    String labelName = batchIndex + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+                    starRocksStreamLoadService.streamLoadData(srBatch, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
+                    log.info("StarRocks 导入成功，批次数据量：{}，label：{}", srBatch.size(), labelName);
 
-                    // 3. 构造 MQ DTO 并加入队列（异步发送）
-                    MultiMinuteAggDataDTO msgDTO = new MultiMinuteAggDataDTO();
-                    msgDTO.setCopFlag(copFlag);
-                    msgDTO.setMinuteAggregateDataDTOList(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class));
-
-                    // 优化：MQ入队避免阻塞——如果队列满了，直接丢到死信队列或异步重试，不要阻塞5秒
-                    boolean offered = mqQueue.offer(msgDTO, 100, TimeUnit.MILLISECONDS); // 缩短超时到100ms
-                    if (!offered) {
-                        //后续重试
-                        log.warn("【分钟聚合】MQ消息队列已满，消息被丢弃！data:{}", JSONUtil.toJsonStr(batch));
-                    }
-
+                    // 第二步：MQ 分发
+                    dispatchToMQ(srBatch, finalCopFlag);
                 } catch (Exception e) {
-                    //后续重试
-                    log.warn("【分钟聚合】MQ消息队列已满，消息被丢弃！data:{}", JSONUtil.toJsonStr(batch));
+                    log.error("StarRocks 导入或 MQ 分发失败，批次数据量：{}", srBatch.size(), e);
                 }
             });
         }
-
     }
 
     @Override
@@ -145,6 +129,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
 
     /**
      * 主要用于 数采实时数据分钟聚合数据处理   聚合数据调用的方法 用于把分钟级别数据发送到mq中 然后保存到usage_cost表中
+     *
      * @param aggDataList
      * @param copFlag
      * @throws IOException
