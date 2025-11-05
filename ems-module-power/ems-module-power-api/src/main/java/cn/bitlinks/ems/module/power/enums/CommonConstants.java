@@ -312,5 +312,5 @@ public interface CommonConstants {
 
     // 定时兜底间隔（毫秒）
     long FLUSH_INTERVAL_QUICK = 1 * 60 * 1000; // acq=1：1分钟
-    long FLUSH_INTERVAL = 10 * 60 * 1000; // acq=0：10分钟
+    long FLUSH_INTERVAL = 5 * 60 * 1000; // acq=0：10分钟
 }
