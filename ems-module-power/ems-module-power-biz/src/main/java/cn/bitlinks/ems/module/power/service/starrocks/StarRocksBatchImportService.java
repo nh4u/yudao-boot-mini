@@ -51,12 +51,17 @@ public class StarRocksBatchImportService {
             return;
         }
 
+        final int BATCH_SIZE = BATCH_POP_SIZE;
         try {
-            // 1. 根据acq选择对应的队列Key和阈值
             String queueKey = getQueueKeyByAcq(quick);
+            String fullKey = env + ":" + queueKey;
 
-            // 2. 批量存入对应Redis队列（左进右出，FIFO）
-            redisTemplate.opsForList().leftPushAll(env + ":" + queueKey, dataList);
+            for (int i = 0; i < dataList.size(); i += BATCH_SIZE) {
+                int end = Math.min(i + BATCH_SIZE, dataList.size());
+                List<MinuteAggregateDataDTO> subList = dataList.subList(i, end);
+                redisTemplate.opsForList().leftPushAll(fullKey, subList);
+            }
+
         } catch (Exception e) {
             log.error("quick={} 数据入队Redis失败", quick, e);
         }
