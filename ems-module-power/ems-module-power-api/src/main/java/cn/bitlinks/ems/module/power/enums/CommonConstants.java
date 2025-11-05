@@ -294,4 +294,9 @@ public interface CommonConstants {
      */
     String COP_RECALCULATE_HOUR_QUEUE = "cop:recalc:hour:queue";
 
+
+    // Redis攒批队列Key（自定义，避免和其他队列冲突）
+    String REDIS_BATCH_QUEUE_KEY = "starrocks:minute_aggregate_queue";
+    // 攒批阈值（10万条/批，可根据需求调整）
+    int BATCH_THRESHOLD = 50000;
 }

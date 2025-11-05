@@ -19,6 +19,7 @@ import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingBoo
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookServiceImpl;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
+import cn.bitlinks.ems.module.power.service.starrocks.StarRocksBatchImportService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
 import feign.FeignException;
@@ -71,6 +72,8 @@ public class ExcelMeterDataProcessor {
     @Resource
     private MinuteAggregateDataFiveMinuteApi minuteAggregateDataFiveMinuteApi;
 
+    @Resource
+    private StarRocksBatchImportService starRocksBatchImportService;
     public AcqDataExcelListResultVO process(InputStream file, String timeStartCell, String timeEndCell,
                                             String meterStartCell, String meterEndCell,Boolean acqFlag) throws IOException {
 
@@ -521,13 +524,13 @@ public class ExcelMeterDataProcessor {
 
         // 添加业务点手动写入
         if (acqFlag) {
-            minuteAggregateDataFiveMinuteApi.insertDataBatch(toAddAllAcqList);
+            starRocksBatchImportService.addDataToQueue(toAddAllAcqList);
             additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
             resultVO.setFailList(failMsgList);
             resultVO.setFailAcqTotal(acqFailCount.get());
             return resultVO;
         }
-        minuteAggregateDataFiveMinuteApi.insertDataBatch(toAddAllAcqList);
+        starRocksBatchImportService.addDataToQueue(toAddAllAcqList);
         additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
         splitTaskDispatcher.dispatchSplitTaskBatch(toAddAllNotAcqSplitList);
 
