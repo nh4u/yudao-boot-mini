@@ -49,13 +49,13 @@ public class SplitMinuteAggTask {
     @Resource
     private RedisTemplate<String, String> redisTemplate;
 
-    // 单次调度最大执行时间（2秒，小于3秒的调度间隔）
-    private static final long MAX_EXECUTE_MILLIS = 2500;
+    // 单次调度最大执行时间（9秒，小于10秒的调度间隔）
+    private static final long MAX_EXECUTE_MILLIS = 9000;
 
     /**
-     * 3秒拆分一批
+     * 10秒拆分一批
      */
-    @Scheduled(fixedDelay = 3000)
+    @Scheduled(fixedDelay = 10000)
     @TenantIgnore
     public void scheduledSplitMinuteAggData() {
         String lockKey = String.format(SPLIT_MINUTE_AGG_LOCK_KEY, env);
