@@ -74,8 +74,9 @@ public class ExcelMeterDataProcessor {
 
     @Resource
     private StarRocksBatchImportService starRocksBatchImportService;
+
     public AcqDataExcelListResultVO process(InputStream file, String timeStartCell, String timeEndCell,
-                                            String meterStartCell, String meterEndCell,Boolean acqFlag) throws IOException {
+                                            String meterStartCell, String meterEndCell, Boolean acqFlag) throws IOException {
 
         // 单元格处理
         int[] timeStart = parseCell(timeStartCell);
@@ -524,13 +525,13 @@ public class ExcelMeterDataProcessor {
 
         // 添加业务点手动写入
         if (acqFlag) {
-            starRocksBatchImportService.addDataToQueue(toAddAllAcqList);
+            starRocksBatchImportService.addDataToQueue(toAddAllAcqList, true);
             additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
             resultVO.setFailList(failMsgList);
             resultVO.setFailAcqTotal(acqFailCount.get());
             return resultVO;
         }
-        starRocksBatchImportService.addDataToQueue(toAddAllAcqList);
+        starRocksBatchImportService.addDataToQueue(toAddAllAcqList, true);
         additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
         splitTaskDispatcher.dispatchSplitTaskBatch(toAddAllNotAcqSplitList);
 
