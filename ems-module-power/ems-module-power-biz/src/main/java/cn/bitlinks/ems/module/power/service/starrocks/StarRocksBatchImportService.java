@@ -75,30 +75,44 @@ public class StarRocksBatchImportService {
      */
     public void triggerBatchImport(Boolean quick) {
         String queueKey = getQueueKeyByAcq(quick);
-        int batchSize = 5000; // 每次处理5k条
+        int threshold = getThresholdByAcq(quick);
+        String fullKey = env + ":" + queueKey;
 
-        while (true) {
-            // 如果剩余数据少于batchSize，就取剩余数量
-            Long queueLen = redisTemplate.opsForList().size(env + ":" + queueKey);
-            if (queueLen == null || queueLen == 0) break;
+        List<MinuteAggregateDataDTO> batchData = new ArrayList<>(threshold);
 
-            int currentBatch = (int) Math.min(batchSize, queueLen);
-            List<MinuteAggregateDataDTO> batchData = redisTemplate.opsForList()
-                    .rightPop(env + ":" + queueKey, currentBatch);
+        while (batchData.size() < threshold) {
+            int remaining = threshold - batchData.size();
+            int currentPop = Math.min(BATCH_POP_SIZE, remaining);
 
-            if (CollUtil.isEmpty(batchData)) break;
+            List<MinuteAggregateDataDTO> popped = redisTemplate.opsForList().rightPop(fullKey, currentPop);
+            if (CollUtil.isEmpty(popped)) {
+                break; // 队列空了
+            }
+            batchData.addAll(popped);
+        }
 
-            log.info("quick={} 触发StarRocks批量导入，数据量：{}，队列Key：{}", quick, batchData.size(), queueKey);
+        if (CollUtil.isEmpty(batchData)) {
+            log.warn("quick={} Redis队列无足够数据，跳过批量导入", quick);
+            return;
+        }
+
+        log.info("quick={} 触发StarRocks批量导入，数据量：{}，队列Key：{}", quick, batchData.size(), queueKey);
+        // 分批提交给 StarRocks Feign，防止单次调用过大
+        final int STARROCKS_BATCH_SIZE = 2000;
+        for (int i = 0; i < batchData.size(); i += STARROCKS_BATCH_SIZE) {
+            int end = Math.min(i + STARROCKS_BATCH_SIZE, batchData.size());
+            List<MinuteAggregateDataDTO> subBatch = batchData.subList(i, end);
             starRocksAsyncExecutor.submit(() -> {
                 try {
-                    minuteAggregateDataFiveMinuteApi.insertDataBatch(batchData);
-                    log.info("quick={} StarRocks批量导入成功，数据量：{}", quick, batchData.size());
+                    minuteAggregateDataFiveMinuteApi.insertDataBatch(subBatch);
+                    log.info("quick={} StarRocks批量导入成功，数据量：{}", quick, subBatch.size());
                 } catch (Exception e) {
                     log.error("quick={} StarRocks批量导入失败，数据回滚Redis队列", quick, e);
-                    rollbackToRedisQueue(batchData, quick);
+                    rollbackToRedisQueue(subBatch, quick);
                 }
             });
         }
+
     }
 
 
@@ -158,22 +172,22 @@ public class StarRocksBatchImportService {
                     quick, queueSize, threshold);
 
             List<MinuteAggregateDataDTO> allData = new ArrayList<>(queueSize.intValue());
-            final int BATCH_POP_SIZE = 5000;
+
             long start = System.currentTimeMillis();
 
             while (allData.size() < queueSize) {
-                int remain = queueSize.intValue() - allData.size();
-                int fetch = Math.min(remain, BATCH_POP_SIZE);
+                int remaining = queueSize.intValue() - allData.size();
+                int currentPop = Math.min(BATCH_POP_SIZE, remaining);
 
                 // 分批右出队
-                List<MinuteAggregateDataDTO> popped = redisTemplate.opsForList().rightPop(fullKey, fetch);
-                if (popped == null || popped.isEmpty()) {
+                List<MinuteAggregateDataDTO> popped = redisTemplate.opsForList().rightPop(fullKey, currentPop);
+                if (CollUtil.isEmpty(popped)) {
                     break;
                 }
                 allData.addAll(popped);
 
                 // 防止长时间阻塞
-                if (System.currentTimeMillis() - start > 10000) {
+                if (System.currentTimeMillis() - start > 3000) {
                     log.warn("quick={} Redis分批pop超时，已取出 {} 条，提前结束", quick, allData.size());
                     break;
                 }
@@ -184,15 +198,21 @@ public class StarRocksBatchImportService {
                 return;
             }
 
-            starRocksAsyncExecutor.submit(() -> {
-                try {
-                    minuteAggregateDataFiveMinuteApi.insertDataBatch(allData);
-                    log.info("quick={} 定时任务导入StarRocks成功，数据量：{}", quick, allData.size());
-                } catch (Exception e) {
-                    log.error("quick={} 定时任务导入失败，数据回滚Redis队列", quick, e);
-                    rollbackToRedisQueue(allData, quick);
-                }
-            });
+            // 分批提交给 StarRocks Feign，防止单次调用过大
+            final int STARROCKS_BATCH_SIZE = 2000;
+            for (int i = 0; i < allData.size(); i += STARROCKS_BATCH_SIZE) {
+                int end = Math.min(i + STARROCKS_BATCH_SIZE, allData.size());
+                List<MinuteAggregateDataDTO> subBatch = allData.subList(i, end);
+                starRocksAsyncExecutor.submit(() -> {
+                    try {
+                        minuteAggregateDataFiveMinuteApi.insertDataBatch(subBatch);
+                        log.info("quick={} 定时任务导入StarRocks成功，数据量：{}", quick, subBatch.size());
+                    } catch (Exception e) {
+                        log.error("quick={} 定时任务导入失败，数据回滚Redis队列", quick, e);
+                        rollbackToRedisQueue(subBatch, quick);
+                    }
+                });
+            }
         }
     }
 
