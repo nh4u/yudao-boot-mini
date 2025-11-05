@@ -10,6 +10,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import javax.annotation.security.PermitAll;
 import java.util.List;
 
 
@@ -26,6 +27,7 @@ public interface MinuteAggregateDataFiveMinuteApi {
      */
     @PostMapping(PREFIX + "/insertDataBatch")
     @Operation(summary = "直接插入数据")
+    @PermitAll
     CommonResult<String> insertDataBatch(@RequestBody List<MinuteAggregateDataDTO> minuteAggregateDataDTO);
 
 
