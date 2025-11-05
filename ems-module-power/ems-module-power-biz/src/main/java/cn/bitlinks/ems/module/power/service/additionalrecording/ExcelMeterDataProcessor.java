@@ -72,7 +72,7 @@ public class ExcelMeterDataProcessor {
     private MinuteAggregateDataFiveMinuteApi minuteAggregateDataFiveMinuteApi;
 
     public AcqDataExcelListResultVO process(InputStream file, String timeStartCell, String timeEndCell,
-                                            String meterStartCell, String meterEndCell) throws IOException {
+                                            String meterStartCell, String meterEndCell,Boolean acqFlag) throws IOException {
 
         // 单元格处理
         int[] timeStart = parseCell(timeStartCell);
@@ -95,17 +95,17 @@ public class ExcelMeterDataProcessor {
             }
             boolean timeError;
             if (timeVertical && meterHorizontal) {
-                timeError = timeStart[0] + times.size()-1 != timeEnd[0];
+                timeError = timeStart[0] + times.size() - 1 != timeEnd[0];
             } else {
-                timeError = timeStart[1] + times.size()-1 != timeEnd[1];
+                timeError = timeStart[1] + times.size() - 1 != timeEnd[1];
             }
-            if(timeError){
+            if (timeError) {
                 throw exception(IMPORT_TIMES_ERROR);
             }
-            if(CollUtil.isEmpty(meterValuesMap)){
+            if (CollUtil.isEmpty(meterValuesMap)) {
                 throw exception(IMPORT_NO_METER);
             }
-            return calculateMinuteDataParallel(meterValuesMap, times, meterNames);
+            return calculateMinuteDataParallel(meterValuesMap, times, meterNames, acqFlag);
         } catch (ServiceException e) {
             ErrorCode errorCode = new ErrorCode(1_001_000_000, e.getMessage());
             throw exception(errorCode);
@@ -131,7 +131,7 @@ public class ExcelMeterDataProcessor {
             Cell cell = row.getCell(0);
             if (Objects.isNull(cell)) {
                 throw exception(IMPORT_EXCEL_FORMAT_ERROR);
-        }
+            }
             String stringCellValue = cell.getStringCellValue();
             if (!"时间\\数据".equals(stringCellValue)) {
                 throw exception(IMPORT_EXCEL_FORMAT_ERROR);
@@ -372,7 +372,7 @@ public class ExcelMeterDataProcessor {
      * @param times
      * @return
      */
-    private AcqDataExcelListResultVO calculateMinuteDataParallel(Map<String, List<BigDecimal>> meterValuesMap, List<LocalDateTime> times, List<String> meterNames) {
+    private AcqDataExcelListResultVO calculateMinuteDataParallel(Map<String, List<BigDecimal>> meterValuesMap, List<LocalDateTime> times, List<String> meterNames, Boolean acqFlag) {
         int availableProcessors = Runtime.getRuntime().availableProcessors();
         ExecutorService executor = Executors.newFixedThreadPool(Math.min(availableProcessors * 2, meterValuesMap.size()));
         AcqDataExcelListResultVO resultVO = new AcqDataExcelListResultVO();
@@ -448,8 +448,8 @@ public class ExcelMeterDataProcessor {
                         .collect(Collectors.toList());
 
                 // 2. 生成两个新的、已排序且 value 非 null 的列表
-                List<BigDecimal>  newValues = idx.stream().map(values::get).collect(Collectors.toList());
-                List<LocalDateTime> newTimes  = idx.stream().map(times::get).collect(Collectors.toList());
+                List<BigDecimal> newValues = idx.stream().map(values::get).collect(Collectors.toList());
+                List<LocalDateTime> newTimes = idx.stream().map(times::get).collect(Collectors.toList());
                 for (int i = 0; i < newTimes.size(); i++) {
                     LocalDateTime curTime = newTimes.get(i);
                     MinuteAggregateDataDTO curDTO = BeanUtils.toBean(baseDTO, MinuteAggregateDataDTO.class);
@@ -519,14 +519,22 @@ public class ExcelMeterDataProcessor {
 
         executor.shutdown();
 
+        // 添加业务点手动写入
+        if (acqFlag) {
+            minuteAggregateDataFiveMinuteApi.insertDataBatch(toAddAllAcqList);
+            additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
+            resultVO.setFailList(failMsgList);
+            resultVO.setFailAcqTotal(acqFailCount.get());
+            return resultVO;
+        }
         minuteAggregateDataFiveMinuteApi.insertDataBatch(toAddAllAcqList);
         additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
         splitTaskDispatcher.dispatchSplitTaskBatch(toAddAllNotAcqSplitList);
 
-
         resultVO.setFailList(failMsgList);
         resultVO.setFailAcqTotal(acqFailCount.get());
         return resultVO;
+
     }
 
     /**
