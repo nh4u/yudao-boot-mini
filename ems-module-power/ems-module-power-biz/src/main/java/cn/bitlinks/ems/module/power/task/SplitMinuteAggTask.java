@@ -29,7 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.SPLIT_MINUTE_AGG_LOCK_KEY;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.SPLIT_MINUTE_AGG_LOCK_KEY;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.SPLIT_TASK_QUEUE_REDIS_KEY;
 
 /**
@@ -126,7 +126,7 @@ public class SplitMinuteAggTask {
         long minutes = Duration.between(start, end).toMinutes();
         if (minutes < 0) return;
         if (minutes == 0) {
-            starRocksBatchImportService.addDataToQueue(Collections.singletonList(dto.getStartDataDO()));
+            starRocksBatchImportService.addDataToQueue(Collections.singletonList(dto.getStartDataDO()), false);
             return;
         }
 
@@ -142,7 +142,7 @@ public class SplitMinuteAggTask {
             d.setIncrementalValue(perMin.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : perMin);
             dataList.add(d);
         }
-        starRocksBatchImportService.addDataToQueue(dataList);
+        starRocksBatchImportService.addDataToQueue(dataList, false);
     }
 
 
