@@ -1,14 +1,18 @@
 package cn.bitlinks.ems.module.acquisition.task;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class ThreadPoolConfig {
-
+    private static final int THREAD_POOL_SIZE = 4;
     /**
      * 配置OPC数据采集专用线程池
      */
@@ -30,6 +34,23 @@ public class ThreadPoolConfig {
         // 初始化线程池
         executor.initialize();
         return executor;
+    }
+
+    /**
+     * StarRocks异步导入专用线程池：全局单例，用于处理StarRocks流式导入的异步任务
+     */
+    @Bean(name = "starRocksAsyncExecutor") // 给线程池起名字，方便后续按名称注入
+    public ExecutorService starRocksAsyncExecutor() {
+
+        return new ThreadPoolExecutor(
+                THREAD_POOL_SIZE,                      // 核心线程数：根据StarRocks集群承载能力调整（如16核CPU设16）
+                8,                      // 最大线程数：核心线程忙不过来时，最多再创建16个临时线程
+                30,                      // 空闲线程存活时间：临时线程空闲60秒后销毁，避免资源占用
+                TimeUnit.SECONDS,        // 时间单位：秒
+                new LinkedBlockingQueue<>(1000), // 任务队列：最多缓存2000个待执行任务
+                new ThreadFactoryBuilder().setNameFormat("starrocks-async-%d").build(),
+                new ThreadPoolExecutor.DiscardOldestPolicy() // 队列满时策略：丢弃最旧的任务（可根据业务改）
+        );
     }
 }
     

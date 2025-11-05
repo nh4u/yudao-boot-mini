@@ -15,9 +15,11 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.google.common.util.concurrent.RateLimiter;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
@@ -50,13 +52,14 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
 
     @Resource
     private StarRocksStreamLoadService starRocksStreamLoadService;
-
+    @Resource(name = "starRocksAsyncExecutor")
+    private ExecutorService starRocksAsyncExecutor;
 
     @Resource
     private RocketMQTemplate rocketMQTemplate;
     @Value("${rocketmq.topic.device-aggregate}")
     private String deviceAggTopic;
-    private static final int THREAD_POOL_SIZE = 4;
+
     private static final RateLimiter MQ_RATE_LIMITER = RateLimiter.create(200); // 每秒200条消息
     // MQ异步发送队列
     private final BlockingQueue<MultiMinuteAggDataDTO> mqQueue = new LinkedBlockingQueue<>(100000);
@@ -99,13 +102,10 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         // 1. 按小时分组，再按100条拆分小批
         List<List<MinuteAggregateDataDO>> batchList = getHourGroupBatch(aggDataList);
 
-        ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
-        List<Future<Void>> futures = new ArrayList<>();
-
         for (List<MinuteAggregateDataDO> batch : batchList) {
-            futures.add(executor.submit(() -> {
+            starRocksAsyncExecutor.submit(() -> { // 用全局单例线程池，不要每次创建！
                 try {
-                    // 2. 写入 StarRocks
+                    // 2. 写入 StarRocks（异步执行，提交后就返回，不等待结果）
                     String labelName = System.currentTimeMillis() + STREAM_LOAD_PREFIX + RandomUtil.randomNumbers(6);
                     starRocksStreamLoadService.streamLoadData(batch, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
 
@@ -114,33 +114,20 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
                     msgDTO.setCopFlag(copFlag);
                     msgDTO.setMinuteAggregateDataDTOList(BeanUtils.toBean(batch, MinuteAggregateDataDTO.class));
 
-
-                    // TODO: 2025/10/16 入队列消费
-
-                    boolean offered = mqQueue.offer(msgDTO, 5, TimeUnit.SECONDS);
+                    // 优化：MQ入队避免阻塞——如果队列满了，直接丢到死信队列或异步重试，不要阻塞5秒
+                    boolean offered = mqQueue.offer(msgDTO, 100, TimeUnit.MILLISECONDS); // 缩短超时到100ms
                     if (!offered) {
+                        //后续重试
                         log.warn("【分钟聚合】MQ消息队列已满，消息被丢弃！data:{}", JSONUtil.toJsonStr(batch));
                     }
 
                 } catch (Exception e) {
-                    log.error("【分钟聚合】批次处理失败,data:{}",JSONUtil.toJsonStr(batch), e);
-                    throw e;
+                    //后续重试
+                    log.warn("【分钟聚合】MQ消息队列已满，消息被丢弃！data:{}", JSONUtil.toJsonStr(batch));
                 }
-                return null;
-            }));
+            });
         }
 
-        // 4. 等待所有线程完成（可加超时）
-        for (Future<Void> future : futures) {
-            try {
-                future.get(); // 也可以加 future.get(60, TimeUnit.SECONDS);
-            } catch (Exception e) {
-                log.error("多线程处理异常", e);
-                throw new IOException("sendMsgToUsageCostBatch 多线程失败", e);
-            }
-        }
-
-        executor.shutdown();
     }
 
     @Override
