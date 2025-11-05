@@ -5,9 +5,7 @@ import cn.bitlinks.ems.module.power.service.sharefile.ShareFileSettingsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.io.IOException;
@@ -28,10 +26,11 @@ public class ShareFileSettingsController {
     @Resource
     private ShareFileSettingsService shareFileSettingsService;
 
+
     @PostMapping("/test")
     @Operation(summary = "测试共享服务连通")
     //@PreAuthorize("@ss.hasPermission('power:service-settings:create')")
-    public CommonResult< Map<String, List<Map<String, Object>>>> testShareFileSettings() throws IOException {
+    public CommonResult<Map<String, List<Map<String, Object>>>> testShareFileSettings() throws IOException {
         return success(shareFileSettingsService.testShareFile());
     }
 
@@ -41,6 +40,13 @@ public class ShareFileSettingsController {
     //@PreAuthorize("@ss.hasPermission('power:service-settings:create')")
     public CommonResult<Boolean> manualShareFileSettings() throws IOException {
         shareFileSettingsService.dealFile();
+        return success(true);
+    }
+
+    @GetMapping("/testDir")
+    @Operation(summary = "手动执行目录")
+    public CommonResult<Boolean> testExcel(@RequestParam("dir") String dir, @RequestParam("acqFlag") Boolean acqFlag) {
+        shareFileSettingsService.dealFile(dir, acqFlag);
         return success(true);
     }
 

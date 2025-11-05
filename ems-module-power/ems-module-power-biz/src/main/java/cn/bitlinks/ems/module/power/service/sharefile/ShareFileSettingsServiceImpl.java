@@ -1,9 +1,6 @@
 package cn.bitlinks.ems.module.power.service.sharefile;
 
-import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
-import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelCoordinate;
-import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelListResultVO;
 import cn.bitlinks.ems.module.power.dal.dataobject.sharefile.ShareFileSettingsDO;
 import cn.bitlinks.ems.module.power.dal.mysql.sharefile.ShareFileSettingsMapper;
 import cn.bitlinks.ems.module.power.service.additionalrecording.ExcelMeterDataProcessor;
@@ -20,7 +17,10 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static cn.bitlinks.ems.module.power.utils.ShareFileUtil.scanAndCollectExcelFiles;
 
@@ -39,6 +39,36 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
 
     @Resource
     private ExcelMeterDataProcessor excelMeterDataProcessor;
+
+    @Override
+    public void dealFile(String filePath, Boolean acqFlag) {
+
+        // 3. 访问该路径，获取所有 Excel 文件
+        List<File> excelFiles = scanAndCollectExcelFiles(filePath);
+
+        // 4. 遍历并处理每一个 File（这里只是打印文件名，后续你可解析或上传）
+        for (File excelFile : excelFiles) {
+            // 每个文件的两个流都声明在 try() 中，循环一次自动关闭一次，不影响下一个文件
+            try (InputStream excelStream1 = Files.newInputStream(excelFile.toPath());
+                 InputStream excelStream2 = Files.newInputStream(excelFile.toPath())) {
+                // 注意：使用完后需要自己关闭流！！或者用 try-with-resources
+                // 1.调用自动识别功能，
+                AcqDataExcelCoordinate excelImportCoordinate = excelMeterDataProcessor.getExcelImportCoordinate(excelStream1);
+
+                // 2.然后调用导入功能
+                excelMeterDataProcessor.process(
+                        excelStream2,
+                        excelImportCoordinate.getAcqTimeStart(),
+                        excelImportCoordinate.getAcqTimeEnd(),
+                        excelImportCoordinate.getAcqNameStart(),
+                        excelImportCoordinate.getAcqNameEnd(), acqFlag);
+            } catch (Exception e) {
+                log.error("手动执行指定目录excel文件[{}]写入失败:{}", excelFile.getName(), e.getMessage(), e);
+            }
+        }
+
+
+    }
 
     @Override
     public void dealFile() throws IOException {
@@ -79,24 +109,22 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
 
             // 4. 遍历并处理每一个 File（这里只是打印文件名，后续你可解析或上传）
             for (File excelFile : excelFiles) {
-                try {
+                // 每个文件的两个流都声明在 try() 中，循环一次自动关闭一次，不影响下一个文件
+                try (InputStream excelStream1 = Files.newInputStream(excelFile.toPath());
+                     InputStream excelStream2 = Files.newInputStream(excelFile.toPath())) {
                     // 注意：使用完后需要自己关闭流！！或者用 try-with-resources
                     // 1.调用自动识别功能，
-                    InputStream excelStream1 = Files.newInputStream(excelFile.toPath());
                     AcqDataExcelCoordinate excelImportCoordinate = excelMeterDataProcessor.getExcelImportCoordinate(excelStream1);
-                    log.info(excelImportCoordinate.toString());
 
                     // 2.然后调用导入功能
-                    InputStream excelStream2 = Files.newInputStream(excelFile.toPath());
-                    AcqDataExcelListResultVO process = excelMeterDataProcessor.process(
+                    excelMeterDataProcessor.process(
                             excelStream2,
                             excelImportCoordinate.getAcqTimeStart(),
                             excelImportCoordinate.getAcqTimeEnd(),
                             excelImportCoordinate.getAcqNameStart(),
-                            excelImportCoordinate.getAcqNameEnd());
-                    log.info(process.toString());
+                            excelImportCoordinate.getAcqNameEnd(), false);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("excel文件[{}]写入失败:{}", excelFile.getName(), e.getMessage(), e);
                 }
             }
 

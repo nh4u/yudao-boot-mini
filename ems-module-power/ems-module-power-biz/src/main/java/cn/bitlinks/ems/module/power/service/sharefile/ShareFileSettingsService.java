@@ -14,6 +14,8 @@ public interface ShareFileSettingsService {
 
     void dealFile() throws IOException;
 
+    void dealFile(String filePath, Boolean acqFlag);
+
 
     Map<String, List<Map<String, Object>>> testShareFile() throws IOException;
 }
