@@ -207,7 +207,7 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             List<MinuteAggregateDataDO> group = entry.getValue();
 
             // 判断是否超出最大批次
-            if (currentBatch.size() + group.size() > batchSize) {
+            if (currentBatch.size() + group.size() > 100) {
                 finalBatches.add(new ArrayList<>(currentBatch));
                 currentBatch.clear();
             }
