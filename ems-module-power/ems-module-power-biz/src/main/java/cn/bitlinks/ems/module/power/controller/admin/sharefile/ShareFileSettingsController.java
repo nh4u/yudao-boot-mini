@@ -8,6 +8,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.annotation.security.PermitAll;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ public class ShareFileSettingsController {
 
     @PostMapping("/test")
     @Operation(summary = "测试共享服务连通")
+    @PermitAll
     //@PreAuthorize("@ss.hasPermission('power:service-settings:create')")
     public CommonResult<Map<String, List<Map<String, Object>>>> testShareFileSettings() throws IOException {
         return success(shareFileSettingsService.testShareFile());
@@ -37,16 +39,26 @@ public class ShareFileSettingsController {
 
     @PostMapping("/manual")
     @Operation(summary = "手动执行一次")
+    @PermitAll
     //@PreAuthorize("@ss.hasPermission('power:service-settings:create')")
     public CommonResult<Boolean> manualShareFileSettings() throws IOException {
         shareFileSettingsService.dealFile();
         return success(true);
     }
 
+    @GetMapping("/testDirYear")
+    @Operation(summary = "手动执行目录YEAR")
+    @PermitAll
+    public CommonResult<Boolean> testExcelYear(@RequestParam("dir") String dir) {
+        shareFileSettingsService.dealFile(dir, true);
+        return success(true);
+    }
+
     @GetMapping("/testDir")
     @Operation(summary = "手动执行目录")
+    @PermitAll
     public CommonResult<Boolean> testExcel(@RequestParam("dir") String dir) {
-        shareFileSettingsService.dealFile(dir);
+        shareFileSettingsService.dealFile(dir, false);
         return success(true);
     }
 
