@@ -76,7 +76,7 @@ public class ExcelMeterDataProcessor {
     private StarRocksBatchImportService starRocksBatchImportService;
 
     public AcqDataExcelListResultVO process(InputStream file, String timeStartCell, String timeEndCell,
-                                            String meterStartCell, String meterEndCell, Boolean acqFlag) throws IOException {
+                                            String meterStartCell, String meterEndCell) throws IOException {
 
         // 单元格处理
         int[] timeStart = parseCell(timeStartCell);
@@ -109,7 +109,7 @@ public class ExcelMeterDataProcessor {
             if (CollUtil.isEmpty(meterValuesMap)) {
                 throw exception(IMPORT_NO_METER);
             }
-            return calculateMinuteDataParallel(meterValuesMap, times, meterNames, acqFlag);
+            return calculateMinuteDataParallel(meterValuesMap, times, meterNames);
         } catch (ServiceException e) {
             ErrorCode errorCode = new ErrorCode(1_001_000_000, e.getMessage());
             throw exception(errorCode);
@@ -376,7 +376,7 @@ public class ExcelMeterDataProcessor {
      * @param times
      * @return
      */
-    private AcqDataExcelListResultVO calculateMinuteDataParallel(Map<String, List<BigDecimal>> meterValuesMap, List<LocalDateTime> times, List<String> meterNames, Boolean acqFlag) {
+    private AcqDataExcelListResultVO calculateMinuteDataParallel(Map<String, List<BigDecimal>> meterValuesMap, List<LocalDateTime> times, List<String> meterNames) {
         int availableProcessors = Runtime.getRuntime().availableProcessors();
         ExecutorService executor = Executors.newFixedThreadPool(Math.min(availableProcessors * 2, meterValuesMap.size()));
         AcqDataExcelListResultVO resultVO = new AcqDataExcelListResultVO();
@@ -523,14 +523,6 @@ public class ExcelMeterDataProcessor {
 
         executor.shutdown();
 
-        // 添加业务点手动写入
-        if (acqFlag) {
-            starRocksBatchImportService.addDataToQueue(toAddAllAcqList, true);
-            additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
-            resultVO.setFailList(failMsgList);
-            resultVO.setFailAcqTotal(acqFailCount.get());
-            return resultVO;
-        }
         starRocksBatchImportService.addDataToQueue(toAddAllAcqList, true);
         additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
         splitTaskDispatcher.dispatchSplitTaskBatch(toAddAllNotAcqSplitList);

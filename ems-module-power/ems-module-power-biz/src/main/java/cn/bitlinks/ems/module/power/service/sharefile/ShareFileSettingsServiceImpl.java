@@ -41,7 +41,7 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
     private ExcelMeterDataProcessor excelMeterDataProcessor;
 
     @Override
-    public void dealFile(String filePath, Boolean acqFlag) {
+    public void dealFile(String filePath) {
 
         // 3. 访问该路径，获取所有 Excel 文件
         List<File> excelFiles = scanAndCollectExcelFiles(filePath);
@@ -61,7 +61,7 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
                         excelImportCoordinate.getAcqTimeStart(),
                         excelImportCoordinate.getAcqTimeEnd(),
                         excelImportCoordinate.getAcqNameStart(),
-                        excelImportCoordinate.getAcqNameEnd(), acqFlag);
+                        excelImportCoordinate.getAcqNameEnd());
             } catch (Exception e) {
                 log.error("手动执行指定目录excel文件[{}]写入失败:{}", excelFile.getName(), e.getMessage(), e);
             }
@@ -122,13 +122,13 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
                             excelImportCoordinate.getAcqTimeStart(),
                             excelImportCoordinate.getAcqTimeEnd(),
                             excelImportCoordinate.getAcqNameStart(),
-                            excelImportCoordinate.getAcqNameEnd(), false);
+                            excelImportCoordinate.getAcqNameEnd());
                 } catch (Exception e) {
                     log.error("excel文件[{}]写入失败:{}", excelFile.getName(), e.getMessage(), e);
                 }
                 // 限速，避免瞬时压力过大
                 try {
-                    Thread.sleep(3000); // 每个文件间隔 200ms，可根据压力调整
+                    Thread.sleep(1000); // 每个文件间隔 200ms，可根据压力调整
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }

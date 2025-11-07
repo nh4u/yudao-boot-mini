@@ -45,8 +45,8 @@ public class ShareFileSettingsController {
 
     @GetMapping("/testDir")
     @Operation(summary = "手动执行目录")
-    public CommonResult<Boolean> testExcel(@RequestParam("dir") String dir, @RequestParam("acqFlag") Boolean acqFlag) {
-        shareFileSettingsService.dealFile(dir, acqFlag);
+    public CommonResult<Boolean> testExcel(@RequestParam("dir") String dir) {
+        shareFileSettingsService.dealFile(dir);
         return success(true);
     }
 
