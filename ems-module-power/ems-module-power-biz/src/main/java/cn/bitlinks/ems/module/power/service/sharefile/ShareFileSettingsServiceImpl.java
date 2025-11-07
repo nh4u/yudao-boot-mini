@@ -117,12 +117,21 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
                     AcqDataExcelCoordinate excelImportCoordinate = excelMeterDataProcessor.getExcelImportCoordinate(excelStream1);
 
                     // 2.然后调用导入功能
-                    excelMeterDataProcessor.process(
-                            excelStream2,
-                            excelImportCoordinate.getAcqTimeStart(),
-                            excelImportCoordinate.getAcqTimeEnd(),
-                            excelImportCoordinate.getAcqNameStart(),
-                            excelImportCoordinate.getAcqNameEnd());
+                    if (type == 1) {
+                        excelMeterDataProcessor.process(
+                                excelStream2,
+                                excelImportCoordinate.getAcqTimeStart(),
+                                excelImportCoordinate.getAcqTimeEnd(),
+                                excelImportCoordinate.getAcqNameStart(),
+                                excelImportCoordinate.getAcqNameEnd());
+                    }else{
+                        excelMeterDataProcessor.processYear(
+                                excelStream2,
+                                excelImportCoordinate.getAcqTimeStart(),
+                                excelImportCoordinate.getAcqTimeEnd(),
+                                excelImportCoordinate.getAcqNameStart(),
+                                excelImportCoordinate.getAcqNameEnd());
+                    }
                 } catch (Exception e) {
                     log.error("excel文件[{}]写入失败:{}", excelFile.getName(), e.getMessage(), e);
                 }
