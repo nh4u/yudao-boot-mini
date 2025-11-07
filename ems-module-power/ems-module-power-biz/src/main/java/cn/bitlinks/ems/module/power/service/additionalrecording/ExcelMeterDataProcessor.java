@@ -10,7 +10,6 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
-import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataFiveMinuteApi;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelCoordinate;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelListResultVO;
@@ -69,14 +68,12 @@ public class ExcelMeterDataProcessor {
     private SplitTaskDispatcher splitTaskDispatcher;
     @Autowired
     private StandingbookServiceImpl standingbookService;
-    @Resource
-    private MinuteAggregateDataFiveMinuteApi minuteAggregateDataFiveMinuteApi;
 
     @Resource
     private StarRocksBatchImportService starRocksBatchImportService;
 
-    public AcqDataExcelListResultVO process(InputStream file, String timeStartCell, String timeEndCell,
-                                            String meterStartCell, String meterEndCell, Boolean acqFlag) throws IOException {
+    public AcqDataExcelListResultVO processYear(InputStream file, String timeStartCell, String timeEndCell,
+                                                String meterStartCell, String meterEndCell) throws IOException {
 
         // 单元格处理
         int[] timeStart = parseCell(timeStartCell);
@@ -109,7 +106,79 @@ public class ExcelMeterDataProcessor {
             if (CollUtil.isEmpty(meterValuesMap)) {
                 throw exception(IMPORT_NO_METER);
             }
-            return calculateMinuteDataParallel(meterValuesMap, times, meterNames, acqFlag);
+            // 处理一下手动导入年表时，只补录最近一周的数据
+            // 1. 获取最近一周的日期索引
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime oneWeekAgo = now.minusDays(6); // 最近7天，包括今天
+
+            List<Integer> validIndexes = new ArrayList<>();
+            for (int i = 0; i < times.size(); i++) {
+                LocalDateTime t = times.get(i);
+                if (!t.isBefore(oneWeekAgo) && !t.isAfter(now)) {
+                    validIndexes.add(i);
+                }
+            }
+
+            // 2. 过滤 times
+            List<LocalDateTime> filteredTimes = validIndexes.stream()
+                    .map(times::get)
+                    .collect(Collectors.toList());
+
+            // 3. 过滤 meterValuesMap
+            Map<String, List<BigDecimal>> filteredMeterValuesMap = new HashMap<>();
+            for (Map.Entry<String, List<BigDecimal>> entry : meterValuesMap.entrySet()) {
+                List<BigDecimal> values = entry.getValue();
+                List<BigDecimal> filteredValues = validIndexes.stream()
+                        .map(values::get)
+                        .collect(Collectors.toList());
+                filteredMeterValuesMap.put(entry.getKey(), filteredValues);
+            }
+
+            // 替换原来的变量
+            times = filteredTimes;
+            meterValuesMap = filteredMeterValuesMap;
+            return calculateMinuteDataParallel(meterValuesMap, times, meterNames);
+        } catch (ServiceException e) {
+            ErrorCode errorCode = new ErrorCode(1_001_000_000, e.getMessage());
+            throw exception(errorCode);
+        }
+    }
+
+    public AcqDataExcelListResultVO process(InputStream file, String timeStartCell, String timeEndCell,
+                                            String meterStartCell, String meterEndCell) throws IOException {
+
+        // 单元格处理
+        int[] timeStart = parseCell(timeStartCell);
+        int[] timeEnd = parseCell(timeEndCell);
+        int[] meterStart = parseCell(meterStartCell);
+        int[] meterEnd = parseCell(meterEndCell);
+
+        boolean timeVertical = timeStart[1] == timeEnd[1];
+        boolean meterHorizontal = meterStart[0] == meterEnd[0];
+
+        try (Workbook workbook = WorkbookFactory.create(file)) {
+            //只判断一个sheet页的数据
+            Sheet sheet = workbook.getSheetAt(0);
+
+            List<String> meterNames = parseMeterNames(sheet, meterStart, meterEnd, meterHorizontal);
+            List<LocalDateTime> times = parseTimeSeries(sheet, timeStart, timeEnd, timeVertical);
+            Map<String, List<BigDecimal>> meterValuesMap = extractMeterValues(sheet, meterNames, timeStart, times, meterStart, timeVertical, meterHorizontal);
+            if (CollUtil.isEmpty(times)) {
+                throw exception(IMPORT_NO_TIMES);
+            }
+            boolean timeError;
+            if (timeVertical && meterHorizontal) {
+                timeError = timeStart[0] + times.size() - 1 != timeEnd[0];
+            } else {
+                timeError = timeStart[1] + times.size() - 1 != timeEnd[1];
+            }
+            if (timeError) {
+                throw exception(IMPORT_TIMES_ERROR);
+            }
+            if (CollUtil.isEmpty(meterValuesMap)) {
+                throw exception(IMPORT_NO_METER);
+            }
+            return calculateMinuteDataParallel(meterValuesMap, times, meterNames);
         } catch (ServiceException e) {
             ErrorCode errorCode = new ErrorCode(1_001_000_000, e.getMessage());
             throw exception(errorCode);
@@ -376,7 +445,7 @@ public class ExcelMeterDataProcessor {
      * @param times
      * @return
      */
-    private AcqDataExcelListResultVO calculateMinuteDataParallel(Map<String, List<BigDecimal>> meterValuesMap, List<LocalDateTime> times, List<String> meterNames, Boolean acqFlag) {
+    private AcqDataExcelListResultVO calculateMinuteDataParallel(Map<String, List<BigDecimal>> meterValuesMap, List<LocalDateTime> times, List<String> meterNames) {
         int availableProcessors = Runtime.getRuntime().availableProcessors();
         ExecutorService executor = Executors.newFixedThreadPool(Math.min(availableProcessors * 2, meterValuesMap.size()));
         AcqDataExcelListResultVO resultVO = new AcqDataExcelListResultVO();
@@ -523,14 +592,6 @@ public class ExcelMeterDataProcessor {
 
         executor.shutdown();
 
-        // 添加业务点手动写入
-        if (acqFlag) {
-            starRocksBatchImportService.addDataToQueue(toAddAllAcqList, true);
-            additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
-            resultVO.setFailList(failMsgList);
-            resultVO.setFailAcqTotal(acqFailCount.get());
-            return resultVO;
-        }
         starRocksBatchImportService.addDataToQueue(toAddAllAcqList, true);
         additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
         splitTaskDispatcher.dispatchSplitTaskBatch(toAddAllNotAcqSplitList);

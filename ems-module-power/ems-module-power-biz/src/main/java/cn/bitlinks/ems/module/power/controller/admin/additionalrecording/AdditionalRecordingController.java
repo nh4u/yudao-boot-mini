@@ -177,7 +177,7 @@ public class AdditionalRecordingController {
             // 截取相对路径
             String fileName = file.substring(file.lastIndexOf("/") + 1);
             InputStream inputStream = new ByteArrayInputStream(fileApi.getMasterFileContent(fileName).getData());
-            return success(excelMeterDataProcessor.process(inputStream, acqTimeStart, acqTimeEnd, acqNameStart, acqNameEnd, false));
+            return success(excelMeterDataProcessor.process(inputStream, acqTimeStart, acqTimeEnd, acqNameStart, acqNameEnd));
         } catch (IOException e) {
             log.error("Excel解析失败{}", e.getMessage(), e);
             return error(IMPORT_EXCEL_ERROR);
