@@ -41,7 +41,7 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
     private ExcelMeterDataProcessor excelMeterDataProcessor;
 
     @Override
-    public void dealFile(String filePath) {
+    public void dealFile(String filePath, Boolean year) {
 
         // 3. 访问该路径，获取所有 Excel 文件
         List<File> excelFiles = scanAndCollectExcelFiles(filePath);
@@ -55,13 +55,23 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
                 // 1.调用自动识别功能，
                 AcqDataExcelCoordinate excelImportCoordinate = excelMeterDataProcessor.getExcelImportCoordinate(excelStream1);
 
-                // 2.然后调用导入功能
-                excelMeterDataProcessor.process(
-                        excelStream2,
-                        excelImportCoordinate.getAcqTimeStart(),
-                        excelImportCoordinate.getAcqTimeEnd(),
-                        excelImportCoordinate.getAcqNameStart(),
-                        excelImportCoordinate.getAcqNameEnd());
+                if(year){
+                    // 2.然后调用导入功能
+                    excelMeterDataProcessor.processYear(
+                            excelStream2,
+                            excelImportCoordinate.getAcqTimeStart(),
+                            excelImportCoordinate.getAcqTimeEnd(),
+                            excelImportCoordinate.getAcqNameStart(),
+                            excelImportCoordinate.getAcqNameEnd());
+                }else{
+                    excelMeterDataProcessor.process(
+                            excelStream2,
+                            excelImportCoordinate.getAcqTimeStart(),
+                            excelImportCoordinate.getAcqTimeEnd(),
+                            excelImportCoordinate.getAcqNameStart(),
+                            excelImportCoordinate.getAcqNameEnd());
+                }
+
             } catch (Exception e) {
                 log.error("手动执行指定目录excel文件[{}]写入失败:{}", excelFile.getName(), e.getMessage(), e);
             }
