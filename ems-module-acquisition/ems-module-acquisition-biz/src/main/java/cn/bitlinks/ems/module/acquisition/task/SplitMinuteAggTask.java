@@ -59,17 +59,17 @@ public class SplitMinuteAggTask {
         RLock lock = redissonClient.getLock(lockKey);
 
         try {
+            log.info("尝试获取锁，锁键: {}", lockKey); // 日志：尝试获取锁
             // 尝试获取锁，高并发下快速跳过
             if (!lock.tryLock(5000, TimeUnit.MILLISECONDS)) {
-                log.info("分钟聚合拆分任务 已由其他节点执行，跳过本次");
+                log.info("分钟聚合拆分任务 已由其他节点执行，跳过本次"); // 日志：锁竞争，跳过本次执行
                 return;
             }
 
             log.info("分钟聚合拆分任务 开始执行");
             long startTime = System.currentTimeMillis();
 
-            String scoredSetKey = env + ":" + SPLIT_TASK_QUEUE_REDIS_KEY;
-            RScoredSortedSet<String> scoredSet = redissonClient.getScoredSortedSet(scoredSetKey);
+            RScoredSortedSet<String> scoredSet = redissonClient.getScoredSortedSet(SPLIT_TASK_QUEUE_REDIS_KEY);
 
             while (!scoredSet.isEmpty()) {
                 long elapsed = System.currentTimeMillis() - startTime;
@@ -86,6 +86,7 @@ public class SplitMinuteAggTask {
 
                 for (ScoredEntry<String> entry : batch) {
                     String json = entry.getValue(); // 获取元素
+
                     try {
                         MinuteAggDataSplitDTO dto = JsonUtils.parseObject(json, MinuteAggDataSplitDTO.class);
                         if (dto == null) {
