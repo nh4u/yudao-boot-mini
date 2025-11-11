@@ -168,9 +168,9 @@ public class ShareFileUtil {
                 // 如果是目录，继续递归深入
                 scanDirectoryRecursively(file, excelFiles);
             } else {
-                // 如果是文件，判断是否为 Excel 文件
+                // 如果是文件，判断是否为 Excel 文件,忽略带有括号的文件，只读取一天的不然老是重复读取
                 String fileName = file.getName().toLowerCase();
-                if ((fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) && !fileName.startsWith("~$")) {
+                if ((fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) && !fileName.startsWith("~$") && !fileName.contains("（") && !fileName.contains("(")) {
 
                     // ✅ 新增：检查文件大小是否大于 0
                     if (file.length() > 0) {
