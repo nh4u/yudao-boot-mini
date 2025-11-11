@@ -126,6 +126,7 @@ easy-trans:
 
 ems:
   batch-split-day-size: 5
+  batch-acq-size: 5
   info:
     version: 1.0.0
     base-package: cn.bitlinks.ems.module.acquisition

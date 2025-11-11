@@ -71,6 +71,7 @@ public interface CommonConstants {
      * 拆分分钟聚合数据 任务锁
      */
     String SPLIT_MINUTE_AGG_LOCK_KEY = "split-minute-agg-task:%s";
+    String ACQ_MINUTE_AGG_LOCK_KEY = "acq-minute-agg-task:%s";
 }
 
 

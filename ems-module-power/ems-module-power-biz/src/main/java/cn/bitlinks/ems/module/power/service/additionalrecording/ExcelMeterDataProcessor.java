@@ -10,7 +10,6 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
-import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataFiveMinuteApi;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelCoordinate;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelListResultVO;
@@ -19,7 +18,6 @@ import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingBoo
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookServiceImpl;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
-import cn.bitlinks.ems.module.power.service.starrocks.StarRocksBatchImportService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
 import feign.FeignException;
@@ -67,10 +65,10 @@ public class ExcelMeterDataProcessor {
     private AdditionalRecordingService additionalRecordingService;
     @Resource
     private SplitTaskDispatcher splitTaskDispatcher;
+    @Resource
+    private AcqTaskDispatcher acqTaskDispatcher;
     @Autowired
     private StandingbookServiceImpl standingbookService;
-    @Resource
-    private StarRocksBatchImportService starRocksBatchImportService;
 
     public AcqDataExcelListResultVO processYear(InputStream file, String timeStartCell, String timeEndCell,
                                                 String meterStartCell, String meterEndCell) throws IOException {
@@ -593,7 +591,7 @@ public class ExcelMeterDataProcessor {
         executor.shutdown();
         // 调用 Feign 批量插入
         log.info("业务点数据插入：{}", toAddAllAcqList.size());
-        starRocksBatchImportService.addDataToQueue(toAddAllAcqList, true);
+        acqTaskDispatcher.dispatchTaskBatch(toAddAllAcqList);
         additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
         splitTaskDispatcher.dispatchSplitTaskBatch(toAddAllNotAcqSplitList);
 
