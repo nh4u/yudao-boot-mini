@@ -67,6 +67,10 @@ public interface CommonConstants {
      */
     String COLLECTOR_AGG_REALTIME_CACHE_KEY = "collector:agg:realtime:%s:%s";
 
+    /**
+     * 拆分分钟聚合数据 任务锁
+     */
+    String SPLIT_MINUTE_AGG_LOCK_KEY = "split-minute-agg-task:%s";
 }
 
 
