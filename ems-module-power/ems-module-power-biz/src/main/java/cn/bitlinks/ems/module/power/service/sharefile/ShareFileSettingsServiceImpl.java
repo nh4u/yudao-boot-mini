@@ -7,7 +7,6 @@ import cn.bitlinks.ems.module.power.service.additionalrecording.ExcelMeterDataPr
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.StrPool;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -41,8 +40,6 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
     @Resource
     private ExcelMeterDataProcessor excelMeterDataProcessor;
 
-    @Value("${ems.excel-sleep}")
-    private long excelSleep;
     @Override
     public void dealFile(String filePath, Boolean year) {
 
@@ -77,12 +74,6 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
 
             } catch (Exception e) {
                 log.error("手动执行指定目录excel文件[{}]写入失败:{}", excelFile.getName(), e.getMessage(), e);
-            }
-            // 限速，避免瞬时压力过大
-            try {
-                Thread.sleep(excelSleep);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
             }
         }
 
@@ -156,7 +147,7 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
                 }
                 // 限速，避免瞬时压力过大
                 try {
-                    Thread.sleep(excelSleep);
+                    Thread.sleep(1000); // 每个文件间隔 200ms，可根据压力调整
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }

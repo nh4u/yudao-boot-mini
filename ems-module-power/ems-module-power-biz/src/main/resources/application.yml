@@ -103,7 +103,6 @@ easy-trans:
 --- #################### bitlinks相关配置 ####################
 
 ems:
-  excel-sleep: 5000
   info:
     version: 1.0.0
     base-package: cn.bitlinks.ems.module.power

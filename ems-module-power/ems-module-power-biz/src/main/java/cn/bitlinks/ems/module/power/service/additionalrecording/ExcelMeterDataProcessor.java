@@ -10,7 +10,6 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
-import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataFiveMinuteApi;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelCoordinate;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelListResultVO;
@@ -19,6 +18,7 @@ import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingBoo
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookServiceImpl;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
+import cn.bitlinks.ems.module.power.service.starrocks.StarRocksBatchImportService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
 import feign.FeignException;
@@ -68,8 +68,9 @@ public class ExcelMeterDataProcessor {
     private SplitTaskDispatcher splitTaskDispatcher;
     @Autowired
     private StandingbookServiceImpl standingbookService;
+
     @Resource
-    private MinuteAggregateDataFiveMinuteApi minuteAggregateDataFiveMinuteApi;
+    private StarRocksBatchImportService starRocksBatchImportService;
 
     public AcqDataExcelListResultVO processYear(InputStream file, String timeStartCell, String timeEndCell,
                                                 String meterStartCell, String meterEndCell) throws IOException {
@@ -590,20 +591,10 @@ public class ExcelMeterDataProcessor {
         }
 
         executor.shutdown();
-        try {
-            // 调用 Feign 批量插入
-            CommonResult<String> feignResult = minuteAggregateDataFiveMinuteApi.insertDataBatch(toAddAllAcqList);
-            // 判断调用是否成功
-            if (feignResult != null && feignResult.isSuccess()) {
-                additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
-                splitTaskDispatcher.dispatchSplitTaskBatch(toAddAllNotAcqSplitList);
-            }
-        } catch (Exception e) {
-            log.error("调用 insertDataBatch 异常", e);
-            resultVO.setFailList(failMsgList);
-            resultVO.setFailAcqTotal(acqFailCount.get());
-            return resultVO; // 出现异常也直接返回
-        }
+
+        starRocksBatchImportService.addDataToQueue(toAddAllAcqList, true);
+        additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
+        splitTaskDispatcher.dispatchSplitTaskBatch(toAddAllNotAcqSplitList);
 
         resultVO.setFailList(failMsgList);
         resultVO.setFailAcqTotal(acqFailCount.get());
