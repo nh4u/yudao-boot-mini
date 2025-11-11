@@ -125,7 +125,6 @@ easy-trans:
 --- #################### bitlinks相关配置 ####################
 
 ems:
-  batch-split-day-size: 5
   info:
     version: 1.0.0
     base-package: cn.bitlinks.ems.module.acquisition
