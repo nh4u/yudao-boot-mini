@@ -15,8 +15,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static cn.bitlinks.ems.module.acquisition.enums.CommonConstants.ACQ_MINUTE_AGG_LOCK_KEY;
@@ -51,10 +53,9 @@ public class AcqMinuteAggTask {
         RLock lock = redissonClient.getLock(lockKey);
 
         try {
-            log.info("尝试获取锁，锁键: {}", lockKey); // 日志：尝试获取锁
-            // 尝试获取锁，高并发下快速跳过
+            log.info("尝试获取锁，锁键: {}", lockKey);
             if (!lock.tryLock(5000, TimeUnit.MILLISECONDS)) {
-                log.info("业务点入库任务 已由其他节点执行，跳过本次"); // 日志：锁竞争，跳过本次执行
+                log.info("业务点入库任务 已由其他节点执行，跳过本次");
                 return;
             }
 
@@ -70,43 +71,49 @@ public class AcqMinuteAggTask {
                     break;
                 }
 
-                // 每批处理 BATCH_SIZE 条
+                // 每批处理 batchAcqSize 条
                 Collection<ScoredEntry<String>> batch = scoredSet.entryRange(0, batchAcqSize - 1);
                 if (batch.isEmpty()) {
+                    log.info("业务点入库任务 当前队列为空，本次处理结束");
                     break;
                 }
 
-                for (ScoredEntry<String> entry : batch) {
-                    String json = entry.getValue(); // 获取元素
+                List<MinuteAggregateDataDTO> batchList = new ArrayList<>();
+                List<String> successfulJsons = new ArrayList<>();
 
+                for (ScoredEntry<String> entry : batch) {
+                    String json = entry.getValue();
                     try {
                         MinuteAggregateDataDTO dto = JsonUtils.parseObject(json, MinuteAggregateDataDTO.class);
-                        if (dto == null) {
+                        if (dto != null) {
+                            batchList.add(dto);
+                            successfulJsons.add(json); // 成功处理后再删除
+                        } else {
                             log.warn("业务点入库任务反序列化为空，跳过 json: {}", json);
-                            continue;
                         }
-                        // 入库
-                        minuteAggregateDataService.insertDataBatch(Collections.singletonList(dto));
-
-                        // 成功处理后再从队列移除
-                        scoredSet.remove(json);
-
                     } catch (Exception e) {
-                        // 绝对安全策略：记录异常，但不删除队列任务
-                        log.error("分钟聚合任务处理异常，保留任务以便下次执行 json: {}", json, e);
-                    }
-
-                    // 检查全局执行时间
-                    if (System.currentTimeMillis() - startTime > MAX_EXECUTE_MILLIS) {
-                        break;
+                        log.error("业务点入库任务反序列化异常，保留任务 json: {}", json, e);
                     }
                 }
 
-                // 每批处理后稍微休息，控制数据库压力
+                // 批量入库
+                if (!batchList.isEmpty()) {
+                    try {
+                        minuteAggregateDataService.insertDataBatch(batchList);
+                        // 入库成功，移除 Redis
+                        for (String json : successfulJsons) {
+                            scoredSet.remove(json);
+                        }
+                        log.info("业务点入库任务 批量处理成功，本批次条数: {}", batchList.size());
+                    } catch (Exception e) {
+                        log.error("业务点入库任务 批量入库失败，保留任务以便下次重试", e);
+                    }
+                }
+
+                // 控制数据库压力
                 try {
                     Thread.sleep(50);
-                } catch (InterruptedException ignored) {
-                }
+                } catch (InterruptedException ignored) {}
             }
 
         } catch (Exception e) {
@@ -115,8 +122,10 @@ public class AcqMinuteAggTask {
             if (lock.isHeldByCurrentThread()) {
                 lock.unlock();
             }
+            log.info("业务点入库任务 执行结束");
         }
     }
+
 
 
 }
