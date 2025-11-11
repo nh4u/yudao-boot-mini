@@ -5,14 +5,23 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 @Configuration
 public class ThreadPoolConfig {
     private static final int THREAD_POOL_SIZE = 4;
+    @Bean(name = "splitTaskExecutor")
+    public Executor splitTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(4); // 根据机器性能调整
+        executor.setMaxPoolSize(6);
+        executor.setQueueCapacity(200);
+        executor.setThreadNamePrefix("split-task-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
+
     /**
      * 配置OPC数据采集专用线程池
      */
