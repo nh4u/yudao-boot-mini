@@ -30,5 +30,15 @@ public interface MinuteAggregateDataFiveMinuteApi {
     @PermitAll
     CommonResult<String> insertDataBatch(@RequestBody List<MinuteAggregateDataDTO> minuteAggregateDataDTO);
 
+    /**
+     * 直接插入数据(业务点数据)
+     *
+     * @param minuteAggregateDataDTO
+     */
+    @PostMapping(PREFIX + "/insertDataBatchTest")
+    @Operation(summary = "直接插入数据")
+    @PermitAll
+    CommonResult<String> insertDataBatchTest(@RequestBody List<MinuteAggregateDataDTO> minuteAggregateDataDTO);
+
 
 }
