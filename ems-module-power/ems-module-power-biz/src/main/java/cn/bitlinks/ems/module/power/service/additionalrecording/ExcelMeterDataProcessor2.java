@@ -54,7 +54,7 @@ import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 @Slf4j
 @Service
 @Validated
-public class ExcelMeterDataProcessor {
+public class ExcelMeterDataProcessor2 {
 
 
     @Resource
@@ -68,10 +68,80 @@ public class ExcelMeterDataProcessor {
     private SplitTaskDispatcher splitTaskDispatcher;
     @Resource
     private MinuteAggregateDataFiveMinuteApi minuteAggregateDataFiveMinuteApi;
-
     @Autowired
     private StandingbookServiceImpl standingbookService;
 
+    public AcqDataExcelListResultVO processYear(InputStream file, String timeStartCell, String timeEndCell,
+                                                String meterStartCell, String meterEndCell) throws IOException {
+
+        // 单元格处理
+        int[] timeStart = parseCell(timeStartCell);
+        int[] timeEnd = parseCell(timeEndCell);
+        int[] meterStart = parseCell(meterStartCell);
+        int[] meterEnd = parseCell(meterEndCell);
+
+        boolean timeVertical = timeStart[1] == timeEnd[1];
+        boolean meterHorizontal = meterStart[0] == meterEnd[0];
+
+        try (Workbook workbook = WorkbookFactory.create(file)) {
+            //只判断一个sheet页的数据
+            Sheet sheet = workbook.getSheetAt(0);
+
+            List<String> meterNames = parseMeterNames(sheet, meterStart, meterEnd, meterHorizontal);
+            List<LocalDateTime> times = parseTimeSeries(sheet, timeStart, timeEnd, timeVertical);
+            Map<String, List<BigDecimal>> meterValuesMap = extractMeterValues(sheet, meterNames, timeStart, times, meterStart, timeVertical, meterHorizontal);
+            if (CollUtil.isEmpty(times)) {
+                throw exception(IMPORT_NO_TIMES);
+            }
+            boolean timeError;
+            if (timeVertical && meterHorizontal) {
+                timeError = timeStart[0] + times.size() - 1 != timeEnd[0];
+            } else {
+                timeError = timeStart[1] + times.size() - 1 != timeEnd[1];
+            }
+            if (timeError) {
+                throw exception(IMPORT_TIMES_ERROR);
+            }
+            if (CollUtil.isEmpty(meterValuesMap)) {
+                throw exception(IMPORT_NO_METER);
+            }
+            // 处理一下手动导入年表时，只补录最近一周的数据
+            // 1. 获取最近一周的日期索引
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime oneWeekAgo = now.minusDays(6); // 最近7天，包括今天
+
+            List<Integer> validIndexes = new ArrayList<>();
+            for (int i = 0; i < times.size(); i++) {
+                LocalDateTime t = times.get(i);
+                if (!t.isBefore(oneWeekAgo) && !t.isAfter(now)) {
+                    validIndexes.add(i);
+                }
+            }
+
+            // 2. 过滤 times
+            List<LocalDateTime> filteredTimes = validIndexes.stream()
+                    .map(times::get)
+                    .collect(Collectors.toList());
+
+            // 3. 过滤 meterValuesMap
+            Map<String, List<BigDecimal>> filteredMeterValuesMap = new HashMap<>();
+            for (Map.Entry<String, List<BigDecimal>> entry : meterValuesMap.entrySet()) {
+                List<BigDecimal> values = entry.getValue();
+                List<BigDecimal> filteredValues = validIndexes.stream()
+                        .map(values::get)
+                        .collect(Collectors.toList());
+                filteredMeterValuesMap.put(entry.getKey(), filteredValues);
+            }
+
+            // 替换原来的变量
+            times = filteredTimes;
+            meterValuesMap = filteredMeterValuesMap;
+            return calculateMinuteDataParallel(meterValuesMap, times, meterNames);
+        } catch (ServiceException e) {
+            ErrorCode errorCode = new ErrorCode(1_001_000_000, e.getMessage());
+            throw exception(errorCode);
+        }
+    }
 
     public AcqDataExcelListResultVO process(InputStream file, String timeStartCell, String timeEndCell,
                                             String meterStartCell, String meterEndCell) throws IOException {
@@ -520,6 +590,7 @@ public class ExcelMeterDataProcessor {
         }
 
         executor.shutdown();
+        // 调用 Feign 批量插入
         minuteAggregateDataFiveMinuteApi.insertDataBatch(toAddAllAcqList);
         additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
         splitTaskDispatcher.dispatchSplitTaskBatch(toAddAllNotAcqSplitList);

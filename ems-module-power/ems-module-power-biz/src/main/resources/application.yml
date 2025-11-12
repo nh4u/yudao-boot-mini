@@ -69,6 +69,7 @@ knife4j:
 # MyBatis Plus 的配置项
 mybatis-plus:
   configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
     map-underscore-to-camel-case: true # 虽然默认为 true ，但是还是显示去指定下。
   global-config:
     db-config:
@@ -125,6 +126,7 @@ ems:
       - /admin-api/power/test/get
       - /admin-api/power/externalApi/getAllOut
       - /admin-api/power/monitor/*
+      - /admin-api/power/shareFile/*
     ignore-tables:
       - crashdata
       - weatherdata

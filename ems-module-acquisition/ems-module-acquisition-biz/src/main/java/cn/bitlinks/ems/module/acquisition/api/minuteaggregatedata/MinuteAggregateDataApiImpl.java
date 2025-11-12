@@ -28,7 +28,18 @@ public class MinuteAggregateDataApiImpl implements MinuteAggregateDataApi,Minute
     @Resource
     private MinuteAggregateDataService minuteAggregateDataService;
 
-
+    @Override
+    public CommonResult<String> insertDataBatchTest(List<MinuteAggregateDataDTO> minuteAggregateDataDTOList) {
+        try {
+            minuteAggregateDataService.insertDataBatchTest(minuteAggregateDataDTOList);
+            return CommonResult.success(null);
+        } catch (ServiceException e) {
+            return CommonResult.error(e);
+        } catch (Exception e) {
+            log.error("insertDataBatchError", e);
+            return CommonResult.error(STREAM_LOAD_RANGE_FAIL);
+        }
+    }
     @Override
     public CommonResult<String> insertDataBatch(List<MinuteAggregateDataDTO> minuteAggregateDataDTOList) {
         try {
