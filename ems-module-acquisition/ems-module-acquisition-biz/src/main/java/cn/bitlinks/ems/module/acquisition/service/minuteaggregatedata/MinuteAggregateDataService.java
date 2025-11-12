@@ -35,6 +35,8 @@ public interface MinuteAggregateDataService {
      * 插入单条数据，初始化数据
      */
     void insertDataBatch(List<MinuteAggregateDataDTO> minuteAggregateDataDTOList);
+    void insertDataBatchTest(List<MinuteAggregateDataDTO> minuteAggregateDataDTOList);
+
 
 
     /**

@@ -170,7 +170,7 @@ public class ShareFileUtil {
             } else {
                 // 如果是文件，判断是否为 Excel 文件,忽略带有括号的文件，只读取一天的不然老是重复读取
                 String fileName = file.getName().toLowerCase();
-                if ((fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) && !fileName.startsWith("~$") && !fileName.contains("（") && !fileName.contains("(")) {
+                if ((fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) && !fileName.startsWith("~$") ) {
 
                     // ✅ 新增：检查文件大小是否大于 0
                     if (file.length() > 0) {
