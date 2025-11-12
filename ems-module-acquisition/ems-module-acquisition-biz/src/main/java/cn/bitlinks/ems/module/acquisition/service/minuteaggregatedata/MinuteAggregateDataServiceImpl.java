@@ -50,8 +50,6 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
 
     @Resource
     private StarRocksStreamLoadService starRocksStreamLoadService;
-    @Resource(name = "starRocksAsyncExecutor")
-    private ExecutorService starRocksAsyncExecutor;
 
     @Resource
     private RocketMQTemplate rocketMQTemplate;
@@ -93,25 +91,24 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
         // StarRocks 导入批次（1万条/批）
         List<List<MinuteAggregateDataDO>> starRocksBatches = Lists.partition(aggDataList, STAR_ROCKS_BATCH_SIZE);
         log.info("StarRocks 导入批次数量：{}，总数据量：{}", starRocksBatches.size(), aggDataList.size());
-        // 异步执行StarRocks导入（1w条/批，调用次数极少）
+        // 同步执行StarRocks导入（1w条/批，调用次数极少）
         for (int i = 0; i < starRocksBatches.size(); i++) {
             List<MinuteAggregateDataDO> srBatch = starRocksBatches.get(i);
-            int batchIndex = i; // 批次索引，用于label唯一化
-            // 异步执行 StarRocks 导入 + MQ 分发
-            starRocksAsyncExecutor.submit(() -> {
-                try {
-                    // 1. StarRocks 批量导入
-                    String labelName = batchIndex + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-                    starRocksStreamLoadService.streamLoadData(srBatch, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
-                    log.info("StarRocks 导入成功，批次数据量：{}，label：{}", srBatch.size(), labelName);
-                    // 第二步：MQ 分发
-                    dispatchToMQ(srBatch, finalCopFlag);
-                } catch (Exception e) {
-                    log.error("StarRocks 导入或 MQ 分发失败，批次数据量：{}", srBatch.size(), e);
-                }
-            });
+            // 批次索引，用于label唯一化
+            // 同步执行 StarRocks 导入 + MQ 分发
+            try {
+                // 1. StarRocks 批量导入
+                String labelName = i + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+                starRocksStreamLoadService.streamLoadData(srBatch, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
+                log.info("StarRocks 导入成功，批次数据量：{}，label：{}", srBatch.size(), labelName);
+                // 第二步：MQ 分发
+                dispatchToMQ(srBatch, finalCopFlag);
+            } catch (Exception e) {
+                log.error("StarRocks 导入或 MQ 分发失败，批次数据量：{}", srBatch.size(), e);
+            }
         }
     }
+
     @TenantIgnore
     public void sendMsgToUsageCostBatchNewTest(List<MinuteAggregateDataDO> aggDataList, Boolean copFlag) throws IOException {
         if (CollUtil.isEmpty(aggDataList)) {
@@ -127,18 +124,17 @@ public class MinuteAggregateDataServiceImpl implements MinuteAggregateDataServic
             List<MinuteAggregateDataDO> srBatch = starRocksBatches.get(i);
             int batchIndex = i; // 批次索引，用于label唯一化
             // 异步执行 StarRocks 导入 + MQ 分发
-            starRocksAsyncExecutor.submit(() -> {
-                try {
-                    // 1. StarRocks 批量导入
-                    String labelName = batchIndex + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-                    starRocksStreamLoadService.streamLoadData(srBatch, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
-                    log.info("StarRocks 导入成功，批次数据量：{}，label：{}", srBatch.size(), labelName);
-                } catch (Exception e) {
-                    log.error("StarRocks 导入或 MQ 分发失败，批次数据量：{}", srBatch.size(), e);
-                }
-            });
+            try {
+                // 1. StarRocks 批量导入
+                String labelName = batchIndex + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+                starRocksStreamLoadService.streamLoadData(srBatch, labelName, MINUTE_AGGREGATE_DATA_TB_NAME);
+                log.info("StarRocks 导入成功，批次数据量：{}，label：{}", srBatch.size(), labelName);
+            } catch (Exception e) {
+                log.error("StarRocks 导入或 MQ 分发失败，批次数据量：{}", srBatch.size(), e);
+            }
         }
     }
+
     @Override
     public void insertSteadyAggDataBatch(List<MinuteAggregateDataDO> aggDataList) throws IOException {
         if (CollUtil.isEmpty(aggDataList)) {
