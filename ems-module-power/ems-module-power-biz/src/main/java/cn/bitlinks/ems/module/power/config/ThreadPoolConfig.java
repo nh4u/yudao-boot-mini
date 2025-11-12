@@ -3,7 +3,9 @@ package cn.bitlinks.ems.module.power.config;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import java.util.concurrent.*;
 
@@ -22,7 +24,14 @@ public class ThreadPoolConfig {
         executor.initialize();
         return executor;
     }
-
+    @Bean
+    public TaskScheduler taskScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(10);
+        scheduler.setThreadNamePrefix("scheduled-task-");
+        scheduler.initialize();
+        return scheduler;
+    }
     /**
      * StarRocks异步导入专用线程池：全局单例，用于处理StarRocks流式导入的异步任务
      */

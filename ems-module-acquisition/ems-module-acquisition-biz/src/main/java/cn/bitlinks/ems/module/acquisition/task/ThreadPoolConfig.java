@@ -3,24 +3,15 @@ package cn.bitlinks.ems.module.acquisition.task;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import java.util.concurrent.*;
 
 @Configuration
 public class ThreadPoolConfig {
     private static final int THREAD_POOL_SIZE = 4;
-    @Bean(name = "splitTaskExecutor")
-    public Executor splitTaskExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(4); // 根据机器性能调整
-        executor.setMaxPoolSize(6);
-        executor.setQueueCapacity(200);
-        executor.setThreadNamePrefix("split-task-");
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        executor.initialize();
-        return executor;
-    }
 
     /**
      * 配置OPC数据采集专用线程池
@@ -44,7 +35,14 @@ public class ThreadPoolConfig {
         executor.initialize();
         return executor;
     }
-
+    @Bean
+    public TaskScheduler taskScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(6);
+        scheduler.setThreadNamePrefix("scheduled-task-");
+        scheduler.initialize();
+        return scheduler;
+    }
     /**
      * StarRocks异步导入专用线程池：全局单例，用于处理StarRocks流式导入的异步任务
      */
