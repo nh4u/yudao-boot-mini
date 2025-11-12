@@ -3,7 +3,7 @@ package cn.bitlinks.ems.module.power.service.sharefile;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelCoordinate;
 import cn.bitlinks.ems.module.power.dal.dataobject.sharefile.ShareFileSettingsDO;
 import cn.bitlinks.ems.module.power.dal.mysql.sharefile.ShareFileSettingsMapper;
-import cn.bitlinks.ems.module.power.service.additionalrecording.ExcelMeterDataProcessor;
+import cn.bitlinks.ems.module.power.service.additionalrecording.ExcelMeterDataProcessor2;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.StrPool;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +39,7 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
     private ShareFileSettingsMapper shareFileSettingsMapper;
 
     @Resource
-    private ExcelMeterDataProcessor excelMeterDataProcessor;
+    private ExcelMeterDataProcessor2 excelMeterDataProcessor2;
 
     @Value("${ems.excel-sleep}")
     private long excelSleep;
@@ -56,18 +56,18 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
                  InputStream excelStream2 = Files.newInputStream(excelFile.toPath())) {
                 // 注意：使用完后需要自己关闭流！！或者用 try-with-resources
                 // 1.调用自动识别功能，
-                AcqDataExcelCoordinate excelImportCoordinate = excelMeterDataProcessor.getExcelImportCoordinate(excelStream1);
+                AcqDataExcelCoordinate excelImportCoordinate = excelMeterDataProcessor2.getExcelImportCoordinate(excelStream1);
 
                 if(year){
                     // 2.然后调用导入功能
-                    excelMeterDataProcessor.processYear(
+                    excelMeterDataProcessor2.processYear(
                             excelStream2,
                             excelImportCoordinate.getAcqTimeStart(),
                             excelImportCoordinate.getAcqTimeEnd(),
                             excelImportCoordinate.getAcqNameStart(),
                             excelImportCoordinate.getAcqNameEnd());
                 }else{
-                    excelMeterDataProcessor.process(
+                    excelMeterDataProcessor2.process(
                             excelStream2,
                             excelImportCoordinate.getAcqTimeStart(),
                             excelImportCoordinate.getAcqTimeEnd(),
@@ -133,18 +133,18 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
                      InputStream excelStream2 = Files.newInputStream(excelFile.toPath())) {
                     // 注意：使用完后需要自己关闭流！！或者用 try-with-resources
                     // 1.调用自动识别功能，
-                    AcqDataExcelCoordinate excelImportCoordinate = excelMeterDataProcessor.getExcelImportCoordinate(excelStream1);
+                    AcqDataExcelCoordinate excelImportCoordinate = excelMeterDataProcessor2.getExcelImportCoordinate(excelStream1);
 
                     // 2.然后调用导入功能
                     if (type == 1) {
-                        excelMeterDataProcessor.process(
+                        excelMeterDataProcessor2.process(
                                 excelStream2,
                                 excelImportCoordinate.getAcqTimeStart(),
                                 excelImportCoordinate.getAcqTimeEnd(),
                                 excelImportCoordinate.getAcqNameStart(),
                                 excelImportCoordinate.getAcqNameEnd());
                     }else{
-                        excelMeterDataProcessor.processYear(
+                        excelMeterDataProcessor2.processYear(
                                 excelStream2,
                                 excelImportCoordinate.getAcqTimeStart(),
                                 excelImportCoordinate.getAcqTimeEnd(),
@@ -215,7 +215,7 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
                     // 注意：使用完后需要自己关闭流！！或者用 try-with-resources
                     // 1.调用自动识别功能，
                     InputStream excelStream1 = Files.newInputStream(excelFile.toPath());
-                    AcqDataExcelCoordinate excelImportCoordinate = excelMeterDataProcessor.getExcelImportCoordinate(excelStream1);
+                    AcqDataExcelCoordinate excelImportCoordinate = excelMeterDataProcessor2.getExcelImportCoordinate(excelStream1);
                     Map<String, Object> map1 = new HashMap<>();
                     map1.put("fileName", excelFile.getName());
                     map1.put("coordinate", excelImportCoordinate);
