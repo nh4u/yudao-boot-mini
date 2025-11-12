@@ -10,6 +10,7 @@ import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggDataSplitDTO;
 import cn.bitlinks.ems.module.acquisition.api.collectrawdata.dto.MinuteAggregateDataDTO;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataApi;
+import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.MinuteAggregateDataFiveMinuteApi;
 import cn.bitlinks.ems.module.acquisition.api.minuteaggregatedata.dto.MinuteRangeDataParamDTO;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelCoordinate;
 import cn.bitlinks.ems.module.power.controller.admin.additionalrecording.vo.AcqDataExcelListResultVO;
@@ -66,7 +67,7 @@ public class ExcelMeterDataProcessor2 {
     @Resource
     private SplitTaskDispatcher splitTaskDispatcher;
     @Resource
-    private AcqTaskDispatcher acqTaskDispatcher;
+    private MinuteAggregateDataFiveMinuteApi minuteAggregateDataFiveMinuteApi;
     @Autowired
     private StandingbookServiceImpl standingbookService;
 
@@ -590,8 +591,7 @@ public class ExcelMeterDataProcessor2 {
 
         executor.shutdown();
         // 调用 Feign 批量插入
-        log.info("业务点数据插入：{}", toAddAllAcqList.size());
-        acqTaskDispatcher.dispatchTaskBatch(toAddAllAcqList);
+        minuteAggregateDataFiveMinuteApi.insertDataBatch(toAddAllAcqList);
         additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
         splitTaskDispatcher.dispatchSplitTaskBatch(toAddAllNotAcqSplitList);
 
