@@ -19,6 +19,7 @@ import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingBoo
 import cn.bitlinks.ems.module.power.dal.dataobject.standingbook.tmpl.StandingbookTmplDaqAttrDO;
 import cn.bitlinks.ems.module.power.service.standingbook.StandingbookServiceImpl;
 import cn.bitlinks.ems.module.power.service.standingbook.tmpl.StandingbookTmplDaqAttrService;
+import cn.bitlinks.ems.module.power.service.starrocks.StarRocksBatchImportService;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
 import feign.FeignException;
@@ -70,6 +71,8 @@ public class ExcelMeterDataProcessor2 {
     private MinuteAggregateDataFiveMinuteApi minuteAggregateDataFiveMinuteApi;
     @Autowired
     private StandingbookServiceImpl standingbookService;
+    @Resource
+    private StarRocksBatchImportService starRocksBatchImportService;
 
     public AcqDataExcelListResultVO processYear(InputStream file, String timeStartCell, String timeEndCell,
                                                 String meterStartCell, String meterEndCell) throws IOException {
@@ -591,7 +594,7 @@ public class ExcelMeterDataProcessor2 {
 
         executor.shutdown();
         // 调用 Feign 批量插入
-        minuteAggregateDataFiveMinuteApi.insertDataBatch(toAddAllAcqList);
+        starRocksBatchImportService.addDataToQueue(toAddAllAcqList);
         additionalRecordingService.saveAdditionalRecordingBatch(toAddAllAcqList);
         splitTaskDispatcher.dispatchSplitTaskBatch(toAddAllNotAcqSplitList);
 
