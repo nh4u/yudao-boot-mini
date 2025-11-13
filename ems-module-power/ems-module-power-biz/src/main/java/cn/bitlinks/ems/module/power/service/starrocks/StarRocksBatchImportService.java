@@ -43,7 +43,6 @@ public class StarRocksBatchImportService {
             return;
         }
 
-        log.info("quick=true 入队数据量：{}", dataList.size());
         final int BATCH_SIZE = BATCH_POP_SIZE;
         try {
             String queueKey = getQueueKeyByAcq();
