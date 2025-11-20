@@ -41,7 +41,7 @@ public class ShareFileTask {
      * 2025-10-16 12:00:00
      * 2025-10-17 12:00:00
      */
-    @Scheduled(cron = "0 0 12 * * ?")
+    @Scheduled(cron = "0 0 8 * * ?")
     @TenantJob
     public void execute() {
 

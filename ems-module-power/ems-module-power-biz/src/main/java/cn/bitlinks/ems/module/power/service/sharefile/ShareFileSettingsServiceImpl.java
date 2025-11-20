@@ -48,7 +48,7 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
 
         // 3. 访问该路径，获取所有 Excel 文件
         List<File> excelFiles = scanAndCollectExcelFiles(filePath);
-        log.info("excel共享补录开始处理：{}", excelFiles.size());
+
         // 4. 遍历并处理每一个 File（这里只是打印文件名，后续你可解析或上传）
         for (File excelFile : excelFiles) {
             // 每个文件的两个流都声明在 try() 中，循环一次自动关闭一次，不影响下一个文件
@@ -74,13 +74,12 @@ public class ShareFileSettingsServiceImpl implements ShareFileSettingsService {
                             excelImportCoordinate.getAcqNameStart(),
                             excelImportCoordinate.getAcqNameEnd());
                 }
-                log.info("excel共享补录 手动执行指定目录excel文件[{}]完成", excelFile.getName());
+
             } catch (Exception e) {
-                log.error("excel共享补录 手动执行指定目录excel文件[{}]写入失败:{}", excelFile.getName(), e.getMessage(), e);
+                log.error("手动执行指定目录excel文件[{}]写入失败:{}", excelFile.getName(), e.getMessage(), e);
             }
             // 限速，避免瞬时压力过大
             try {
-
                 Thread.sleep(excelSleep);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
