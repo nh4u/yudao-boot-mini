@@ -289,7 +289,6 @@ public interface CommonConstants {
      * 拆分任务队列 redis key
      */
     String SPLIT_TASK_QUEUE_REDIS_KEY = "split_task_queue";
-    String ACQ_TASK_QUEUE_REDIS_KEY = "acq_task_queue";
     /**
      * COP 重算队列
      */
