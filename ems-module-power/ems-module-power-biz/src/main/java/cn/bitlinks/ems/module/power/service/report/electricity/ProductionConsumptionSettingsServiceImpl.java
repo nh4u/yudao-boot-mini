@@ -1,9 +1,11 @@
 package cn.bitlinks.ems.module.power.service.report.electricity;
 
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
+import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
+import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookDTO;
@@ -37,8 +39,10 @@ import java.util.stream.Collectors;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
+import static cn.bitlinks.ems.module.power.enums.ConsumptionStatisticsCacheConstants.ELECTRICITY_CONSUMPTION_STATISTICS_CHART;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.PRODUCTION_CONSUMPTION_STATISTICS;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_PRODUCTION_CONSUMPTION_CHART;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.USAGE_PRODUCTION_CONSUMPTION_TABLE;
 import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
 
@@ -370,6 +374,69 @@ public class ProductionConsumptionSettingsServiceImpl implements ProductionConsu
         bottom.add(getConvertData(bottomSumMap.get("sumConsumption")));
         result.add(bottom);
         return result;
+    }
+
+    @Override
+    public ConsumptionStatisticsChartResultVO<ConsumptionStatisticsChartYInfo> productionConsumptionChart(ProductionConsumptionReportParamVO paramVO) {
+
+        // 查询表格数据
+        StatisticsResultV2VO<ProductionConsumptionStatisticsInfo> resultTable = productionConsumptionTable(paramVO);
+        ConsumptionStatisticsChartResultVO<ConsumptionStatisticsChartYInfo> resultVO = new ConsumptionStatisticsChartResultVO<>();
+
+        // x轴
+        List<String> xdata = resultTable.getHeader();
+        resultVO.setXdata(xdata);
+
+        List<ProductionConsumptionStatisticsInfo> statisticsInfoList = resultTable.getStatisticsInfoList();
+
+        // 底部合计map
+        Map<String, BigDecimal> sumConsumptionMap = new HashMap<>();
+        List<ConsumptionStatisticsChartYInfo> yInfoList = new ArrayList<>();
+        for (ProductionConsumptionStatisticsInfo s : statisticsInfoList) {
+
+            ConsumptionStatisticsChartYInfo yInfo = new ConsumptionStatisticsChartYInfo();
+            yInfo.setName(s.getName());
+
+            // 处理数据
+            List<ProductionConsumptionStatisticInfoData> statisticInfoDataV2List = s.getStatisticsDateDataList();
+            Map<String, ProductionConsumptionStatisticInfoData> dateMap = statisticInfoDataV2List.stream()
+                    .collect(Collectors.toMap(ProductionConsumptionStatisticInfoData::getDate, Function.identity()));
+
+            List<BigDecimal> data = ListUtils.newArrayList();
+            xdata.forEach(date -> {
+                ProductionConsumptionStatisticInfoData statisticInfoDataV2 = dateMap.get(date);
+                if (statisticInfoDataV2 == null) {
+                    data.add(BigDecimal.ZERO);
+                } else {
+                    BigDecimal consumption = statisticInfoDataV2.getConsumption();
+                    data.add(!Objects.isNull(consumption) ? consumption : BigDecimal.ZERO);
+                    // 底部合计处理
+                    sumConsumptionMap.put(date, addBigDecimal(sumConsumptionMap.get(date), consumption));
+                }
+            });
+            yInfo.setData(data);
+
+            // 处理底部合计
+            BigDecimal sumCost = s.getSumConsumption();
+            sumConsumptionMap.put("sumNum", addBigDecimal(sumConsumptionMap.get("sumNum"), sumCost));
+
+            yInfoList.add(yInfo);
+        }
+
+        // 汇总数据
+        List<BigDecimal> summary = ListUtils.newArrayList();
+        ConsumptionStatisticsChartYInfo yInfo = new ConsumptionStatisticsChartYInfo();
+        yInfo.setName("汇总");
+        xdata.forEach(date -> {
+            BigDecimal consumption = sumConsumptionMap.get(date);
+            summary.add(!Objects.isNull(consumption) ? consumption : BigDecimal.ZERO);
+        });
+        yInfo.setData(summary);
+
+        yInfoList.add(yInfo);
+        resultVO.setYdata(yInfoList);
+
+        return resultVO;
     }
 
 
