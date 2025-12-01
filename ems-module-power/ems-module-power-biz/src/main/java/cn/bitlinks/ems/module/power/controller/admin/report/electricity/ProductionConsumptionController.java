@@ -80,6 +80,12 @@ public class ProductionConsumptionController {
         return success(productionConsumptionSettingsService.productionConsumptionTable(paramVO));
     }
 
+    @PostMapping("/productionConsumptionChart")
+    @Operation(summary = "生产源耗图")
+    public CommonResult<ConsumptionStatisticsChartResultVO<ConsumptionStatisticsChartYInfo>> productionConsumptionChart(@Valid @RequestBody ProductionConsumptionReportParamVO paramVO) {
+        return success(productionConsumptionSettingsService.productionConsumptionChart(paramVO));
+    }
+
     @PostMapping("/exportProductionConsumptionTable")
     @Operation(summary = "导出生产源耗表")
     @ApiAccessLog(operateType = EXPORT)

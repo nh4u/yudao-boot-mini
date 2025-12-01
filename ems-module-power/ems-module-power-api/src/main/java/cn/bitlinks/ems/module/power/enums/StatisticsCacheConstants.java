@@ -76,6 +76,7 @@ public class StatisticsCacheConstants {
      * 生产源耗表
      */
     public static final String  USAGE_PRODUCTION_CONSUMPTION_TABLE = "report:usage:productionConsumption:table:";
+    public static final String  USAGE_PRODUCTION_CONSUMPTION_CHART = "report:usage:productionConsumption:chart:";
 
     /**
      * 水科
