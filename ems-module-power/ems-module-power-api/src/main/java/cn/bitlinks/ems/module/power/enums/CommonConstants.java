@@ -289,9 +289,22 @@ public interface CommonConstants {
      * 拆分任务队列 redis key
      */
     String SPLIT_TASK_QUEUE_REDIS_KEY = "split_task_queue";
-    String ACQ_TASK_QUEUE_REDIS_KEY = "acq_task_queue";
     /**
      * COP 重算队列
      */
     String COP_RECALCULATE_HOUR_QUEUE = "cop:recalc:hour:queue";
+    String STARROCKS_INSPECT_LOCK_KEY = "%s:starrocks:queue:inspect:lock:%s";
+    String STARROCKS_FLUSH_LOCK_KEY = "%s:starrocks:queue:flush:lock";
+    // 原阈值常量保留（或拆分为两个阈值）
+    int BATCH_THRESHOLD_QUICK = 10000; // acq=1 阈值：1万条
+    int BATCH_POP_SIZE = 500;
+    int STARROCKS_BATCH_SIZE = 2000;
+
+    // 两个队列的Redis Key（带acq标识）
+    String REDIS_BATCH_QUEUE_KEY_QUICK = "starrocks:minute_agg_batch:queue:quick"; // acq=1 队列
+
+    // 定时兜底间隔（毫秒）
+    long INSPECT_INTERVAL = 30 * 1000;
+
+    long FLUSH_INTERVAL_QUICK = 5 * 60 * 1000; // acq=1：1分钟
 }
