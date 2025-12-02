@@ -47,10 +47,10 @@ public class InvoicePowerRecordController {
         return success(invoicePowerRecordService.getInvoicePowerRecord(recordMonth));
     }
 
-    @GetMapping("/page")
+    @PostMapping("/page")
     @Operation(summary = "查询发票电量记录（列表展示）")
     @PreAuthorize("@ss.hasPermission('power:invoice-power-record:query')")
-    public CommonResult<List<InvoicePowerRecordRespVO>> getList(@Valid InvoicePowerRecordPageReqVO pageReqVO) {
+    public CommonResult<List<InvoicePowerRecordRespVO>> getList(@Valid @RequestBody InvoicePowerRecordPageReqVO pageReqVO) {
         return success(invoicePowerRecordService.getInvoicePowerRecordList(pageReqVO));
     }
 
