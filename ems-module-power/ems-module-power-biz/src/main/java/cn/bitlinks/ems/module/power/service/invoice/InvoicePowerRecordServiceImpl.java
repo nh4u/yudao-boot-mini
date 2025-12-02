@@ -1,6 +1,5 @@
 package cn.bitlinks.ems.module.power.service.invoice;
 
-import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordItemRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordPageReqVO;
@@ -28,6 +27,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -91,35 +91,39 @@ public class InvoicePowerRecordServiceImpl implements InvoicePowerRecordService 
     }
 
     @Override
-    public InvoicePowerRecordRespVO getInvoicePowerRecord(Long id) {
-        InvoicePowerRecordDO record = recordMapper.selectById(id);
+    public InvoicePowerRecordRespVO getInvoicePowerRecord(LocalDate recordMonth) {
+        InvoicePowerRecordDO record = recordMapper.selectByRecordMonth(recordMonth);
         if (record == null) {
             return null;
         }
-        List<InvoicePowerRecordItemDO> items = itemMapper.selectListByRecordId(id);
+        // 用查到的 record.id 去取明细
+        List<InvoicePowerRecordItemDO> items = itemMapper.selectListByRecordId(record.getId());
         return buildResp(record, items);
     }
 
     @Override
-    public PageResult<InvoicePowerRecordRespVO> getInvoicePowerRecordPage(InvoicePowerRecordPageReqVO pageReqVO) {
-        PageResult<InvoicePowerRecordDO> page = recordMapper.selectPage(pageReqVO);
-        if (page.getList().isEmpty()) {
-            return new PageResult<>(java.util.Collections.emptyList(), page.getTotal());
+    public List<InvoicePowerRecordRespVO> getInvoicePowerRecordList(InvoicePowerRecordPageReqVO pageReqVO) {
+        // 1. 不分页，直接按条件查全部记录
+        List<InvoicePowerRecordDO> records = recordMapper.selectList(pageReqVO);
+        if (records.isEmpty()) {
+            return Collections.emptyList();
         }
 
+        // 2. 批量查明细
+        List<Long> recordIds = records.stream()
+                .map(InvoicePowerRecordDO::getId)
+                .collect(Collectors.toList());
 
-        // 批量查明细
-        List<Long> recordIds = page.getList().stream().map(InvoicePowerRecordDO::getId).collect(Collectors.toList());
         List<InvoicePowerRecordItemDO> allItems = itemMapper.selectListByRecordIds(recordIds);
         Map<Long, List<InvoicePowerRecordItemDO>> itemMap = allItems.stream()
                 .collect(Collectors.groupingBy(InvoicePowerRecordItemDO::getRecordId));
 
-        List<InvoicePowerRecordRespVO> list = page.getList().stream()
+        // 3. 组装 VO + 计算平均电价
+        return records.stream()
                 .map(r -> buildResp(r, itemMap.getOrDefault(r.getId(), Collections.emptyList())))
                 .collect(Collectors.toList());
-
-        return new PageResult<>(list, page.getTotal());
     }
+
 
     /**
      * 组装 RespVO，并计算平均电价
@@ -154,8 +158,7 @@ public class InvoicePowerRecordServiceImpl implements InvoicePowerRecordService 
                                               InvoicePowerRecordPageReqVO exportReqVO) throws IOException {
 
         // 1. 用「列表接口同一套逻辑」拿数据，保证导出 = 页面
-        PageResult<InvoicePowerRecordRespVO> page = getInvoicePowerRecordPage(exportReqVO);
-        List<InvoicePowerRecordRespVO> data = page.getList();
+        List<InvoicePowerRecordRespVO> data = getInvoicePowerRecordList(exportReqVO);
 
         // 1.0 聚合结构
         LinkedHashSet<String> monthSet = new LinkedHashSet<>();
