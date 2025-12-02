@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.invoice;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.dict.core.DictFrameworkUtils;
 import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
 import cn.bitlinks.ems.module.power.dal.dataobject.invoice.InvoicePowerRecordDO;
@@ -30,6 +31,7 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -93,13 +95,60 @@ public class InvoicePowerRecordServiceImpl implements InvoicePowerRecordService 
     @Override
     public InvoicePowerRecordRespVO getInvoicePowerRecord(LocalDate recordMonth) {
         InvoicePowerRecordDO record = recordMapper.selectByRecordMonth(recordMonth);
+        List<InvoicePowerRecordItemDO> items;
+
         if (record == null) {
-            return null;
+            // 没有主表记录：构造一个“空”的记录，只带月份，方便前端编辑
+            record = new InvoicePowerRecordDO();
+            record.setId(null);
+            record.setRecordMonth(recordMonth);
+            record.setAmount(null);
+            record.setRemark(null);
+            items = Collections.emptyList();
+        } else {
+            // 有主表记录：查明细
+            items = itemMapper.selectListByRecordId(record.getId());
         }
-        // 用查到的 record.id 去取明细
-        List<InvoicePowerRecordItemDO> items = itemMapper.selectListByRecordId(record.getId());
-        return buildResp(record, items);
+
+        // 先用原来的逻辑组装 VO（里面会把 DO -> RespVO）
+        InvoicePowerRecordRespVO vo = buildResp(record, items);
+
+        // ========= 关键补齐逻辑：用字典补全所有电表 =========
+
+        // 1. 从字典获取所有电表编码（顺序就是表格展示顺序）
+        List<String> meterCodes = DictFrameworkUtils.getDictDataLabelList("INVOICE_METER_CODE");
+        if (meterCodes == null || meterCodes.isEmpty()) {
+            // 字典没配好就不强行补齐，直接返回原始数据
+            return vo;
+        }
+
+        // 2. 现有的明细转 map，key = meterCode
+        Map<String, InvoicePowerRecordItemRespVO> itemMap =
+                Optional.ofNullable(vo.getItems())
+                        .orElse(Collections.emptyList())
+                        .stream()
+                        .filter(i -> i.getMeterCode() != null)
+                        .collect(Collectors.toMap(InvoicePowerRecordItemRespVO::getMeterCode,
+                                Function.identity(),
+                                (a, b) -> a));
+
+        // 3. 按字典顺序重新构造 items：有数据用原有的，没有就补一条 totalKwh/demandKwh = null
+        List<InvoicePowerRecordItemRespVO> normalizedItems = new ArrayList<>();
+        for (String meterCode : meterCodes) {
+            InvoicePowerRecordItemRespVO itemVO = itemMap.get(meterCode);
+            if (itemVO == null) {
+                itemVO = new InvoicePowerRecordItemRespVO();
+                itemVO.setMeterCode(meterCode);
+                itemVO.setTotalKwh(null);
+                itemVO.setDemandKwh(null);
+            }
+            normalizedItems.add(itemVO);
+        }
+
+        vo.setItems(normalizedItems);
+        return vo;
     }
+
 
     private static class MeterMonthAgg {
         BigDecimal totalKwh = BigDecimal.ZERO;
