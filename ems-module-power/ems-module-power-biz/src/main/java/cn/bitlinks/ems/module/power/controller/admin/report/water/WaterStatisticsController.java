@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.controller.admin.report.water;
 
 import cn.bitlinks.ems.framework.apilog.core.annotation.ApiAccessLog;
+import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.FeeChartResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.FeeChartYInfo;
@@ -69,7 +70,14 @@ public class WaterStatisticsController {
                                            HttpServletResponse response) throws IOException {
 
         String childLabels = paramVO.getChildLabels();
+        // 默认按标签深度
         Integer labelDeep = getLabelDeep(childLabels);
+        // 根据查看维度调整：能源维度不需要标签列
+        Integer queryType = paramVO.getQueryType();
+        if (QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)) {
+            labelDeep = 0;
+        }
+
         // 文件名字处理
         String filename = WATER_STATISTICS + XLSX;
 
@@ -77,7 +85,6 @@ public class WaterStatisticsController {
         List<List<Object>> dataList = waterStatisticsService.getExcelData(paramVO);
 
         // 放在 write前配置response才会生效，放在后面不生效
-        // 设置 header 和 contentType。写在最后的原因是，避免报错时，响应 contentType 已经被修改了
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
         response.addHeader("Access-Control-Expose-Headers","File-Name");
         response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
@@ -88,13 +95,10 @@ public class WaterStatisticsController {
         headerStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
         // 设置垂直居中对齐
         headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-        // 创建一个新的 WriteCellStyle 对象
+        // 内容样式
         WriteCellStyle contentStyle = new WriteCellStyle();
-        // 设置水平居中对齐
         contentStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
-        // 设置垂直居中对齐
         contentStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-
         // 设置边框
         contentStyle.setBorderLeft(BorderStyle.THIN);
         contentStyle.setBorderTop(BorderStyle.THIN);
@@ -105,14 +109,15 @@ public class WaterStatisticsController {
                 .head(header)
                 .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
                 .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
-                // 设置表头行高 30，内容行高 20
+                // 设置表头行高 15，内容行高 15
                 .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))
-                // 自适应表头宽度
-//                .registerWriteHandler(new MatchTitleWidthStyleStrategy())
-                // 由于column索引从0开始 返回来的labelDeep是从1开始，又由于有个能源列，所以合并索引 正好相抵，直接使用labelDeep即可
+                // 合并标题单元格：
+                // 由于column索引从0开始，labelDeep 从 1 开始，又由于有个能源列，
+                // 综合/标签模式下直接用 labelDeep；能源模式下 labelDeep=0 只合并能源列。
                 .registerWriteHandler(new FullCellMergeStrategy(0, null, 0, labelDeep))
                 .sheet("数据").doWrite(dataList);
     }
+
 
 
 }
