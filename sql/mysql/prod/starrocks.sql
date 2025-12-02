@@ -121,3 +121,46 @@ PROPERTIES (
 "replication_num" = "6",
 "storage_volume" = "builtin_storage_volume"
 );;
+
+
+SHOW PARTITIONS FROM minute_aggregate_data;
+ALTER TABLE minute_aggregate_data SET ("dynamic_partition.enable" = "false");
+ALTER TABLE minute_aggregate_data
+    ADD PARTITIONS START ("2025-01-01") END ("2025-12-02") EVERY (INTERVAL 1 DAY);
+ALTER TABLE minute_aggregate_data SET ("dynamic_partition.enable" = "true");
+
+
+SHOW PARTITIONS FROM usage_cost;
+ALTER TABLE usage_cost SET ("dynamic_partition.enable" = "false");
+ALTER TABLE usage_cost
+    ADD PARTITIONS START ("2025-01-01") END ("2025-12-02") EVERY (INTERVAL 1 DAY);
+ALTER TABLE usage_cost SET ("dynamic_partition.enable" = "true");
+
+
+SHOW PARTITIONS FROM cop_hour_aggregate_data;
+ALTER TABLE cop_hour_aggregate_data SET ("dynamic_partition.enable" = "false");
+ALTER TABLE cop_hour_aggregate_data
+    ADD PARTITIONS START ("2025-01-01") END ("2025-12-02") EVERY (INTERVAL 1 DAY);
+ALTER TABLE cop_hour_aggregate_data SET ("dynamic_partition.enable" = "true");
+
+
+
+SHOW PARTITIONS FROM minute_aggregate_data;
+ALTER TABLE minute_aggregate_data SET ("dynamic_partition.enable" = "false");
+ALTER TABLE minute_aggregate_data
+    ADD PARTITIONS START ("2015-01-01") END ("2025-01-01") EVERY (INTERVAL 1 DAY);
+ALTER TABLE minute_aggregate_data SET ("dynamic_partition.enable" = "true");
+
+
+SHOW PARTITIONS FROM usage_cost;
+ALTER TABLE usage_cost SET ("dynamic_partition.enable" = "false");
+ALTER TABLE usage_cost
+    ADD PARTITIONS START ("2015-01-01") END ("2025-01-01") EVERY (INTERVAL 1 DAY);
+ALTER TABLE usage_cost SET ("dynamic_partition.enable" = "true");
+
+
+SHOW PARTITIONS FROM cop_hour_aggregate_data;
+ALTER TABLE cop_hour_aggregate_data SET ("dynamic_partition.enable" = "false");
+ALTER TABLE cop_hour_aggregate_data
+    ADD PARTITIONS START ("2015-01-01") END ("2025-01-01") EVERY (INTERVAL 1 DAY);
+ALTER TABLE cop_hour_aggregate_data SET ("dynamic_partition.enable" = "true");
