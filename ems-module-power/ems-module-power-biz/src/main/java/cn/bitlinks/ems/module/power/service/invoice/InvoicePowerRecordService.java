@@ -4,6 +4,8 @@ import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordStatisticsInfo;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
@@ -26,7 +28,7 @@ public interface InvoicePowerRecordService {
     /**
      * 列表
      */
-    List<InvoicePowerRecordRespVO> getInvoicePowerRecordList(InvoicePowerRecordPageReqVO pageReqVO);
+    StatisticsResultV2VO<InvoicePowerRecordStatisticsInfo> getInvoicePowerRecordList(InvoicePowerRecordPageReqVO pageReqVO);
 
 
     /**

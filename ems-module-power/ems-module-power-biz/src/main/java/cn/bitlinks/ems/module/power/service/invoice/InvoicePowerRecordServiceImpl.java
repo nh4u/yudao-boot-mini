@@ -1,10 +1,8 @@
 package cn.bitlinks.ems.module.power.service.invoice;
 
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
-import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordItemRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordPageReqVO;
-import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordRespVO;
-import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.*;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
 import cn.bitlinks.ems.module.power.dal.dataobject.invoice.InvoicePowerRecordDO;
 import cn.bitlinks.ems.module.power.dal.dataobject.invoice.InvoicePowerRecordItemDO;
 import cn.bitlinks.ems.module.power.dal.mysql.invoice.InvoicePowerRecordItemMapper;
@@ -28,6 +26,8 @@ import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -101,32 +101,170 @@ public class InvoicePowerRecordServiceImpl implements InvoicePowerRecordService 
         return buildResp(record, items);
     }
 
+    private static class MeterMonthAgg {
+        BigDecimal totalKwh = BigDecimal.ZERO;
+        BigDecimal demandKwh = BigDecimal.ZERO;
+    }
+
     @Override
-    public List<InvoicePowerRecordRespVO> getInvoicePowerRecordList(InvoicePowerRecordPageReqVO pageReqVO) {
-        // 1. 不分页，直接按条件查全部记录
-        List<InvoicePowerRecordDO> records = recordMapper.selectList(pageReqVO);
-        if (records.isEmpty()) {
-            return Collections.emptyList();
+    public StatisticsResultV2VO<InvoicePowerRecordStatisticsInfo> getInvoicePowerRecordList(
+            InvoicePowerRecordPageReqVO pageReqVO) {
+
+        // 1. 解析月份范围 -> monthList + header （保持你现在的实现）
+        LocalDate[] range = pageReqVO.getRecordMonth();
+        LocalDate start;
+        LocalDate end;
+        if (range != null && range.length == 2) {
+            start = range[0];
+            end = range[1];
+        } else {
+            start = LocalDate.now().withDayOfMonth(1);
+            end = start;
         }
 
-        // 2. 批量查明细
+        List<YearMonth> monthList = new ArrayList<>();
+        List<String> header = new ArrayList<>();
+        YearMonth cursor = YearMonth.from(start);
+        YearMonth last = YearMonth.from(end);
+        DateTimeFormatter headerFormatter = DateTimeFormatter.ofPattern("yyyy年MM月");
+        while (!cursor.isAfter(last)) {
+            monthList.add(cursor);
+            header.add(cursor.format(headerFormatter));
+            cursor = cursor.plusMonths(1);
+        }
+
+        StatisticsResultV2VO<InvoicePowerRecordStatisticsInfo> result = new StatisticsResultV2VO<>();
+        result.setHeader(header);
+        result.setDataTime(LocalDateTime.now());
+
+        // 2. 查主表记录
+        List<InvoicePowerRecordDO> records = recordMapper.selectList(pageReqVO);
+        if (records.isEmpty()) {
+            result.setStatisticsInfoList(Collections.emptyList());
+            return result;
+        }
+
+        // 3. 查明细
         List<Long> recordIds = records.stream()
                 .map(InvoicePowerRecordDO::getId)
                 .collect(Collectors.toList());
 
         List<InvoicePowerRecordItemDO> allItems = itemMapper.selectListByRecordIds(recordIds);
-        Map<Long, List<InvoicePowerRecordItemDO>> itemMap = allItems.stream()
+        Map<Long, List<InvoicePowerRecordItemDO>> itemsByRecordId = allItems.stream()
                 .collect(Collectors.groupingBy(InvoicePowerRecordItemDO::getRecordId));
 
-        // 3. 组装 VO + 计算平均电价
-        return records.stream()
-                .map(r -> buildResp(r, itemMap.getOrDefault(r.getId(), Collections.emptyList())))
-                .collect(Collectors.toList());
+        // 3.1 记录 -> YearMonth
+        Map<Long, YearMonth> recordMonthMap = records.stream()
+                .collect(Collectors.toMap(
+                        InvoicePowerRecordDO::getId,
+                        r -> YearMonth.from(r.getRecordMonth())
+                ));
+
+        // 3.2 电表-月份-电度 聚合
+        Map<String, Map<YearMonth, MeterMonthAgg>> meterMonthMap = new LinkedHashMap<>();
+
+        // 3.3 月份-金额 聚合
+        Map<YearMonth, BigDecimal> monthAmountMap = new HashMap<>();
+
+        for (InvoicePowerRecordDO record : records) {
+            Long recordId = record.getId();
+            YearMonth ym = recordMonthMap.get(recordId);
+
+            // 金额：按月份汇总
+            if (record.getAmount() != null) {
+                monthAmountMap.merge(ym, record.getAmount(), BigDecimal::add);
+            }
+
+            List<InvoicePowerRecordItemDO> items = itemsByRecordId.getOrDefault(recordId, Collections.emptyList());
+            for (InvoicePowerRecordItemDO item : items) {
+                String meterCode = item.getMeterCode();
+                if (meterCode == null) {
+                    continue;
+                }
+                Map<YearMonth, MeterMonthAgg> monthAggMap =
+                        meterMonthMap.computeIfAbsent(meterCode, k -> new HashMap<>());
+                MeterMonthAgg agg = monthAggMap.computeIfAbsent(ym, k -> new MeterMonthAgg());
+
+                if (item.getTotalKwh() != null) {
+                    agg.totalKwh = agg.totalKwh.add(item.getTotalKwh());
+                }
+                if (item.getDemandKwh() != null) {
+                    agg.demandKwh = agg.demandKwh.add(item.getDemandKwh());
+                }
+            }
+        }
+
+        // 4. 组装“电表行”：总电度 + 需量电度，没有就 null
+        List<InvoicePowerRecordStatisticsInfo> statisticsInfoList = new ArrayList<>();
+        long idx = 1L;
+
+        for (Map.Entry<String, Map<YearMonth, MeterMonthAgg>> entry : meterMonthMap.entrySet()) {
+            String meterCode = entry.getKey();
+            Map<YearMonth, MeterMonthAgg> monthAggMap = entry.getValue();
+
+            InvoicePowerRecordStatisticsInfo info = new InvoicePowerRecordStatisticsInfo();
+            info.setId(idx++);
+            info.setName(meterCode);
+
+            List<InvoicePowerRecordStatisticsData> dataList = new ArrayList<>();
+
+            for (int i = 0; i < monthList.size(); i++) {
+                YearMonth ym = monthList.get(i);
+
+                InvoicePowerRecordStatisticsData data = new InvoicePowerRecordStatisticsData();
+                data.setDate(header.get(i)); // 2025年09月
+
+                MeterMonthAgg agg = monthAggMap.get(ym);
+                if (agg != null) {
+                    data.setTotalKwh(
+                            agg.totalKwh.compareTo(BigDecimal.ZERO) == 0 ? null : agg.totalKwh);
+                    data.setDemandKwh(
+                            agg.demandKwh.compareTo(BigDecimal.ZERO) == 0 ? null : agg.demandKwh);
+                } else {
+                    // 没数据 = null
+                    data.setTotalKwh(null);
+                    data.setDemandKwh(null);
+                }
+                // 电表行不写金额
+                data.setAmount(null);
+
+                dataList.add(data);
+            }
+
+            info.setStatisticsDateDataList(dataList);
+            statisticsInfoList.add(info);
+        }
+
+        // 5. 追加“金额”一行：每个月只写 amount，其它为 null
+        InvoicePowerRecordStatisticsInfo amountRow = new InvoicePowerRecordStatisticsInfo();
+        amountRow.setId(idx);
+        amountRow.setName("金额");
+
+        List<InvoicePowerRecordStatisticsData> amountDataList = new ArrayList<>();
+        for (int i = 0; i < monthList.size(); i++) {
+            YearMonth ym = monthList.get(i);
+
+            InvoicePowerRecordStatisticsData data = new InvoicePowerRecordStatisticsData();
+            data.setDate(header.get(i));
+
+            BigDecimal monthAmount = monthAmountMap.get(ym);
+            data.setAmount(monthAmount);   // 金额
+            data.setTotalKwh(null);        // 不用
+            data.setDemandKwh(null);       // 不用
+
+            amountDataList.add(data);
+        }
+        amountRow.setStatisticsDateDataList(amountDataList);
+        statisticsInfoList.add(amountRow);
+
+        result.setStatisticsInfoList(statisticsInfoList);
+        return result;
     }
 
 
+
     /**
-     * 组装 RespVO，并计算平均电价
+     * 组装 RespVO（不再计算平均电价）
      */
     private InvoicePowerRecordRespVO buildResp(InvoicePowerRecordDO record, List<InvoicePowerRecordItemDO> items) {
         InvoicePowerRecordRespVO vo = BeanUtils.toBean(record, InvoicePowerRecordRespVO.class);
@@ -135,20 +273,8 @@ public class InvoicePowerRecordServiceImpl implements InvoicePowerRecordService 
         List<InvoicePowerRecordItemRespVO> itemVOList = BeanUtils.toBean(items, InvoicePowerRecordItemRespVO.class);
         vo.setItems(itemVOList);
 
-        // 平均电价：金额 ÷ 总电度之和
-        BigDecimal totalKwhSum = items.stream()
-                .map(InvoicePowerRecordItemDO::getTotalKwh)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        if (record.getAmount() != null && totalKwhSum.compareTo(BigDecimal.ZERO) > 0) {
-            vo.setAvgPrice(
-                    record.getAmount().divide(totalKwhSum, 4, RoundingMode.HALF_UP)
-            );
-        } else {
-            // 金额为空或总电度为 0，不计算，前端展示为空
-            vo.setAvgPrice(null);
-        }
+        // 不再计算 avgPrice，保持为 null 或数据库原值
+        vo.setAvgPrice(null);
 
         return vo;
     }
@@ -158,7 +284,7 @@ public class InvoicePowerRecordServiceImpl implements InvoicePowerRecordService 
                                               InvoicePowerRecordPageReqVO exportReqVO) throws IOException {
 
         // 1. 用「列表接口同一套逻辑」拿数据，保证导出 = 页面
-        List<InvoicePowerRecordRespVO> data = getInvoicePowerRecordList(exportReqVO);
+        List<InvoicePowerRecordRespVO> data = getInvoicePowerRecordListRaw(exportReqVO);
 
         // 1.0 聚合结构
         LinkedHashSet<String> monthSet = new LinkedHashSet<>();
@@ -339,6 +465,30 @@ public class InvoicePowerRecordServiceImpl implements InvoicePowerRecordService 
         }
 
         sheetBuilder.doWrite(rows);
+    }
+    /**
+     * 导出专用：获取“原始列表结构”的发票电量记录
+     */
+    private List<InvoicePowerRecordRespVO> getInvoicePowerRecordListRaw(InvoicePowerRecordPageReqVO pageReqVO) {
+        // 1. 不分页，直接查全部记录
+        List<InvoicePowerRecordDO> records = recordMapper.selectList(pageReqVO);
+        if (records.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 2. 批量查明细
+        List<Long> recordIds = records.stream()
+                .map(InvoicePowerRecordDO::getId)
+                .collect(Collectors.toList());
+
+        List<InvoicePowerRecordItemDO> allItems = itemMapper.selectListByRecordIds(recordIds);
+        Map<Long, List<InvoicePowerRecordItemDO>> itemMap = allItems.stream()
+                .collect(Collectors.groupingBy(InvoicePowerRecordItemDO::getRecordId));
+
+        // 3. 复用原来的 buildResp 组装 RespVO
+        return records.stream()
+                .map(r -> buildResp(r, itemMap.getOrDefault(r.getId(), Collections.emptyList())))
+                .collect(Collectors.toList());
     }
 
     /**
