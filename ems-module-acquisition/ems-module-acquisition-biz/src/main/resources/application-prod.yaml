@@ -132,7 +132,7 @@ ems:
     usage-cost: "2025-01-01 00:00:00"
     cop-hour-agg: "2025-01-01 00:00:00"
   starrocks:
-    api-url: http://192.168.91.122:8040
+    api-url: http://192.168.91.122:8030
     db: acquisition
   tenant: # 多租户相关配置项
     enable: true
