@@ -4,6 +4,8 @@ import cn.bitlinks.ems.framework.common.pojo.CommonResult;
 import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordStatisticsInfo;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
 import cn.bitlinks.ems.module.power.service.invoice.InvoicePowerRecordService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -50,14 +52,17 @@ public class InvoicePowerRecordController {
     @PostMapping("/page")
     @Operation(summary = "查询发票电量记录（列表展示）")
     @PreAuthorize("@ss.hasPermission('power:invoice-power-record:query')")
-    public CommonResult<List<InvoicePowerRecordRespVO>> getList(@Valid @RequestBody InvoicePowerRecordPageReqVO pageReqVO) {
+    public CommonResult<StatisticsResultV2VO<InvoicePowerRecordStatisticsInfo>> getList(
+            @Valid @RequestBody InvoicePowerRecordPageReqVO pageReqVO) {
         return success(invoicePowerRecordService.getInvoicePowerRecordList(pageReqVO));
     }
 
-    @GetMapping("/export-excel")
+
+
+    @PostMapping("/export-excel")
     @Operation(summary = "导出发票电量记录 Excel（与列表一致）")
     @PreAuthorize("@ss.hasPermission('power:invoice-power-record:export')")
-    public void exportExcel(@Valid InvoicePowerRecordPageReqVO exportReqVO,
+    public void exportExcel(@Valid @RequestBody InvoicePowerRecordPageReqVO exportReqVO,
                             HttpServletResponse response) throws IOException {
         invoicePowerRecordService.exportInvoicePowerRecordExcel(response, exportReqVO);
     }
