@@ -1,13 +1,15 @@
 package cn.bitlinks.ems.module.power.controller.admin.invoice;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
-import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordPageReqVO;
 import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordRespVO;
 import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordSaveReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.invoice.vo.InvoicePowerRecordStatisticsInfo;
+import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsResultV2VO;
 import cn.bitlinks.ems.module.power.service.invoice.InvoicePowerRecordService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +18,8 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.util.List;
 
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 
@@ -39,21 +43,26 @@ public class InvoicePowerRecordController {
     @GetMapping("/get")
     @Operation(summary = "获取发票电量记录详情（编辑回显）")
     @PreAuthorize("@ss.hasPermission('power:invoice-power-record:query')")
-    public CommonResult<InvoicePowerRecordRespVO> get(@RequestParam("id") Long id) {
-        return success(invoicePowerRecordService.getInvoicePowerRecord(id));
+    public CommonResult<InvoicePowerRecordRespVO> get(
+            @RequestParam("recordMonth")
+            @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate recordMonth) {
+        return success(invoicePowerRecordService.getInvoicePowerRecord(recordMonth));
     }
 
-    @GetMapping("/page")
-    @Operation(summary = "分页查询发票电量记录（列表展示）")
+    @PostMapping("/page")
+    @Operation(summary = "查询发票电量记录（列表展示）")
     @PreAuthorize("@ss.hasPermission('power:invoice-power-record:query')")
-    public CommonResult<PageResult<InvoicePowerRecordRespVO>> getPage(@Valid InvoicePowerRecordPageReqVO pageReqVO) {
-        return success(invoicePowerRecordService.getInvoicePowerRecordPage(pageReqVO));
+    public CommonResult<StatisticsResultV2VO<InvoicePowerRecordStatisticsInfo>> getList(
+            @Valid @RequestBody InvoicePowerRecordPageReqVO pageReqVO) {
+        return success(invoicePowerRecordService.getInvoicePowerRecordList(pageReqVO));
     }
 
-    @GetMapping("/export-excel")
+
+
+    @PostMapping("/export-excel")
     @Operation(summary = "导出发票电量记录 Excel（与列表一致）")
     @PreAuthorize("@ss.hasPermission('power:invoice-power-record:export')")
-    public void exportExcel(@Valid InvoicePowerRecordPageReqVO exportReqVO,
+    public void exportExcel(@Valid @RequestBody InvoicePowerRecordPageReqVO exportReqVO,
                             HttpServletResponse response) throws IOException {
         invoicePowerRecordService.exportInvoicePowerRecordExcel(response, exportReqVO);
     }
