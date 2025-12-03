@@ -4,6 +4,7 @@ import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.enums.QueryDimensionEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
+import cn.bitlinks.ems.module.infra.api.config.ConfigApi;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.*;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
@@ -24,7 +25,6 @@ import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.util.ListUtils;
-import com.alibaba.excel.util.StringUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import de.danielbechler.util.Strings;
@@ -75,7 +75,8 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
     @Resource
     private UsageCostService usageCostService;
-
+    @Resource
+    private ConfigApi configApi;
     @Resource
     private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
 
@@ -151,7 +152,15 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
             standingbookIdsByLabelAllMap.put(k,standingbookIdsByLabel);
             standingbookIdsByLabelAllList.addAll(standingbookIdsByLabel);
         });
-       // List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByTopLabels(topLabel, childLabels);
+        // 全厂= 用能单位-》燕东微+ 用能单位-》
+        String allFactoryLabels = configApi.getConfigValueByKey(CONFIG_POWER_LABEL_ALL).getCheckedData();
+        Map<String,List<String>> allFactoryLabelsMap = statisticsCommonService.splitLabels(allFactoryLabels);
+        List<StandingbookLabelInfoDO> factoryList = new ArrayList<>();
+        allFactoryLabelsMap.forEach((k,v)->{
+            List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByTopLabels(k, v);
+            factoryList.addAll(standingbookIdsByLabel);
+        });
+        standingbookIdsByLabelAllList.addAll(factoryList);
 
         if (CollUtil.isNotEmpty(standingbookIdsByLabelAllList)) {
             List<Long> sids = standingbookIdsByLabelAllList.stream().map(StandingbookLabelInfoDO::getStandingbookId).collect(Collectors.toList());
@@ -186,6 +195,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
         });
         resultVO.setStatisticsInfoList(statisticsInfoList);
 
+        resultVO.setAllFactoryList(queryDefaultAllFactory(factoryList, usageCostDataList));
         resultVO.setDataTime(lastTime);
         String jsonStr = JSONUtil.toJsonStr(resultVO);
         byte[] bytes = StrUtils.compressGzip(jsonStr);
@@ -194,62 +204,20 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
     }
 
 
-    public List<ConsumptionStatisticsInfo> queryDefault(String topLabel,
-                                                        String childLabels,
+    public List<ConsumptionStatisticsInfo> queryDefaultAllFactory(
                                                         List<StandingbookLabelInfoDO> standingbookIdsByLabel,
                                                         List<UsageCostData> usageCostDataList) {
-
-        // 实际用到的能源ids
-        Set<Long> energyIdSet = usageCostDataList
-                .stream()
-                .map(UsageCostData::getEnergyId)
-                .collect(Collectors.toSet());
-
-        // 获取实际用到的能源实体
-        List<EnergyConfigurationDO> energyList = energyConfigurationService
-                .getByEnergyClassify(energyIdSet, null);
-
-        // 能源list转换成map
-        Map<Long, EnergyConfigurationDO> energyMap = energyList
-                .stream()
-                .collect(Collectors.toMap(EnergyConfigurationDO::getId, Function.identity()));
-
-        // 标签list转换成map
-        Map<Long, LabelConfigDO> labelMap = labelConfigService.getAllLabelConfig()
-                .stream()
-                .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
 
         // 聚合数据按台账id分组
         Map<Long, List<UsageCostData>> standingBookUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
+        return queryAllFactoryLabel(standingBookUsageMap, standingbookIdsByLabel);
 
-        if (CharSequenceUtil.isNotBlank(topLabel) && CharSequenceUtil.isBlank(childLabels)) {
-            // 只有顶级标签
-            return queryDefaultTopLabel(standingBookUsageMap, labelMap, standingbookIdsByLabel, energyMap);
-        } else {
-            // 有顶级、有子集标签
-            return queryDefaultSubLabel(standingBookUsageMap, labelMap, standingbookIdsByLabel, energyMap);
-        }
     }
     public List<ConsumptionStatisticsInfo> queryDefaultV2(String topLabel,
                                                         List<String> childLabels,
                                                         List<StandingbookLabelInfoDO> standingbookIdsByLabel,
                                                         List<UsageCostData> usageCostDataList) {
-
-        // 实际用到的能源ids
-        Set<Long> energyIdSet = usageCostDataList
-                .stream()
-                .map(UsageCostData::getEnergyId)
-                .collect(Collectors.toSet());
-
-        // 获取实际用到的能源实体
-        List<EnergyConfigurationDO> energyList = energyConfigurationService
-                .getByEnergyClassify(energyIdSet, null);
-
-        // 能源list转换成map
-        Map<Long, EnergyConfigurationDO> energyMap = energyList
-                .stream()
-                .collect(Collectors.toMap(EnergyConfigurationDO::getId, Function.identity()));
 
         // 标签list转换成map
         Map<Long, LabelConfigDO> labelMap = labelConfigService.getAllLabelConfig()
@@ -262,17 +230,78 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
         if (CharSequenceUtil.isNotBlank(topLabel) && CollUtil.isEmpty(childLabels)) {
             // 只有顶级标签
-            return queryDefaultTopLabel(standingBookUsageMap, labelMap, standingbookIdsByLabel, energyMap);
+            return queryDefaultTopLabel(standingBookUsageMap, labelMap, standingbookIdsByLabel);
         } else {
             // 有顶级、有子集标签
-            return queryDefaultSubLabel(standingBookUsageMap, labelMap, standingbookIdsByLabel, energyMap);
+            return queryDefaultSubLabel(standingBookUsageMap, labelMap, standingbookIdsByLabel);
         }
     }
+    public List<ConsumptionStatisticsInfo> queryAllFactoryLabel(Map<Long, List<UsageCostData>> standingBookUsageMap,
+                                                                List<StandingbookLabelInfoDO> standingbookIdsByLabel) {
 
+        List<ConsumptionStatisticsInfo> resultList = new ArrayList<>();
+
+        List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
+
+        // 获取标签关联的台账id，并取到对应的数据
+        standingbookIdsByLabel.forEach(labelInfo -> {
+            List<UsageCostData> usageList = standingBookUsageMap.get(labelInfo.getStandingbookId());
+            if (usageList == null || usageList.isEmpty()) {
+                return; // 计量器具没有数据，跳过
+            }
+            labelUsageCostDataList.addAll(usageList);
+        });
+
+        // 由于数采数据是按 台账 日期能源进行分组的 而一个标签关联多个台账，那么标签同一个日期就会有多条不同台账的数据，所以要按日期进行合并
+        // 聚合数据 转换成 ConsumptionStatisticsInfoData
+        List<ConsumptionStatisticsInfoData> dataList = new ArrayList<>(labelUsageCostDataList.stream().collect(Collectors.groupingBy(
+                UsageCostData::getTime,
+                Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        list -> {
+                            BigDecimal totalConsumption = list.stream()
+                                    .map(UsageCostData::getCurrentTotalUsage)
+                                    .filter(Objects::nonNull)
+                                    .reduce(BigDecimal::add).orElse(null);
+                            BigDecimal totalCost = list.stream()
+                                    .map(UsageCostData::getTotalCost)
+                                    .filter(Objects::nonNull)
+                                    .reduce(BigDecimal::add).orElse(null);
+                            return new ConsumptionStatisticsInfoData(list.get(0).getTime(), totalConsumption, totalCost);
+                        }
+                )
+        )).values());
+
+        BigDecimal totalConsumption = dataList.stream()
+                .map(ConsumptionStatisticsInfoData::getConsumption)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal::add).orElse(null);
+
+        ConsumptionStatisticsInfo info = new ConsumptionStatisticsInfo();
+
+        // 获取标签信息 - 使用第一个标签信息，因为只选择了一个顶级标签
+
+        info.setLabel1(REPORT_ALL_FACTORY_LABEL);
+        info.setLabel2(REPORT_ALL_FACTORY_LABEL);
+        info.setLabel3(REPORT_ALL_FACTORY_LABEL);
+        info.setLabel4(REPORT_ALL_FACTORY_LABEL);
+        info.setLabel5(REPORT_ALL_FACTORY_LABEL);
+
+        dataList = dataList.stream().peek(i -> {
+            i.setMoney(dealBigDecimalScale(i.getMoney(), scale));
+            i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
+        }).collect(Collectors.toList());
+
+        info.setStatisticsDateDataList(dataList);
+        info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
+
+        resultList.add(info);
+
+        return resultList;
+    }
     public List<ConsumptionStatisticsInfo> queryDefaultTopLabel(Map<Long, List<UsageCostData>> standingBookUsageMap,
                                                                 Map<Long, LabelConfigDO> labelMap,
-                                                                List<StandingbookLabelInfoDO> standingbookIdsByLabel,
-                                                                Map<Long, EnergyConfigurationDO> energyMap) {
+                                                                List<StandingbookLabelInfoDO> standingbookIdsByLabel) {
 
         List<ConsumptionStatisticsInfo> resultList = new ArrayList<>();
 
@@ -345,8 +374,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
     public List<ConsumptionStatisticsInfo> queryDefaultSubLabel(Map<Long, List<UsageCostData>> standingBookUsageMap,
                                                                 Map<Long, LabelConfigDO> labelMap,
-                                                                List<StandingbookLabelInfoDO> standingbookIdsByLabel,
-                                                                Map<Long, EnergyConfigurationDO> energyMap) {
+                                                                List<StandingbookLabelInfoDO> standingbookIdsByLabel) {
         // 标签查询条件处理
         //根据能源ID分组
         // 使用 Collectors.groupingBy 根据 name 和 value 分组
@@ -884,6 +912,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
         List<String> tableHeader = resultVO.getHeader();
 
         List<ConsumptionStatisticsInfo> statisticsInfoList = resultVO.getStatisticsInfoList();
+        List<ConsumptionStatisticsInfo> allFactoryList = resultVO.getAllFactoryList();
         Integer labelDeep = getLabelDeepV2(paramVO.getTopLabels());
 
         Integer queryType = paramVO.getQueryType();
@@ -892,6 +921,65 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
         Map<String, BigDecimal> sumConsumptionMap = new HashMap<>();
 
         for (ConsumptionStatisticsInfo s : statisticsInfoList) {
+
+            List<Object> data = ListUtils.newArrayList();
+            String[] labels = {s.getLabel1(), s.getLabel2(), s.getLabel3(), s.getLabel4(), s.getLabel5()};
+            switch (queryType) {
+                case 0:
+                    // 综合
+                    // 处理标签
+                    for (int i = 0; i < labelDeep; i++) {
+                        data.add(labels[i]);
+                    }
+                    // 处理能源
+                    //data.add(s.getEnergyName());
+                    break;
+                case 1:
+                    // 按能源
+                    data.add(s.getEnergyName());
+                    break;
+                case 2:
+                    // 按标签
+                    // 处理标签
+                    for (int i = 0; i < labelDeep; i++) {
+                        data.add(labels[i]);
+                    }
+                    break;
+                default:
+            }
+
+            // 处理数据
+            List<ConsumptionStatisticsInfoData> statisticInfoDataV2List = s.getStatisticsDateDataList();
+
+            Map<String, ConsumptionStatisticsInfoData> dateMap = statisticInfoDataV2List.stream()
+                    .collect(Collectors.toMap(ConsumptionStatisticsInfoData::getDate, Function.identity()));
+
+            tableHeader.forEach(date -> {
+                ConsumptionStatisticsInfoData statisticInfoDataV2 = dateMap.get(date);
+                if (statisticInfoDataV2 == null) {
+                    //data.add("/");
+                    data.add("/");
+                } else {
+                    BigDecimal consumption = statisticInfoDataV2.getConsumption();
+                    data.add(getConvertData(consumption));
+
+                    // 底部合计处理
+                    sumConsumptionMap.put(date, addBigDecimal(sumConsumptionMap.get(date), consumption));
+                }
+
+            });
+
+            BigDecimal sumEnergyConsumption = s.getSumEnergyConsumption();
+            // 处理周期合计
+            data.add(getConvertData(sumEnergyConsumption));
+
+            // 处理底部合计
+            sumConsumptionMap.put("sumNum", addBigDecimal(sumConsumptionMap.get("sumNum"), sumEnergyConsumption));
+
+            result.add(data);
+        }
+
+        for (ConsumptionStatisticsInfo s : allFactoryList) {
 
             List<Object> data = ListUtils.newArrayList();
             String[] labels = {s.getLabel1(), s.getLabel2(), s.getLabel3(), s.getLabel4(), s.getLabel5()};

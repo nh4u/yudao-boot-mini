@@ -36,7 +36,7 @@ import java.util.List;
 import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.XLSX;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.getLabelDeep;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.getLabelDeepV2;
 
 
 @Tag(name = "管理后台 - 个性化报表[电]-用电量统计")
@@ -67,8 +67,7 @@ public class ConsumptionStatisticsController {
     public void exportConsumptionStatisticsTable(@Valid @RequestBody ConsumptionStatisticsParamVO paramVO,
                                                  HttpServletResponse response) throws IOException {
         paramVO.setQueryType(QueryDimensionEnum.OVERALL_REVIEW.getCode());
-        String childLabels = paramVO.getChildLabels();
-        Integer labelDeep = getLabelDeep(childLabels);
+        Integer labelDeep = getLabelDeepV2(paramVO.getTopLabels());
         Integer mergeIndex = labelDeep - 1;
         // 文件名字处理
         String filename = "用电量统计表" + XLSX;

@@ -310,6 +310,7 @@ public interface CommonConstants {
 
     // 全行:对应标签选择
     String CONFIG_POWER_LABEL_ALL = "power.label.all";
+    String REPORT_ALL_FACTORY_LABEL = "全厂";
     // 用电量统计默认标签选择 17个
     String CONFIG_POWER_ELECTRIC_DEFAULT_LABELS = "power.electric.default.labels";
 
