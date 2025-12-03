@@ -307,4 +307,10 @@ public interface CommonConstants {
     long INSPECT_INTERVAL = 30 * 1000;
 
     long FLUSH_INTERVAL_QUICK = 5 * 60 * 1000; // acq=1：1分钟
+
+    // 全行:对应标签选择
+    String CONFIG_POWER_LABEL_ALL = "power.label.all";
+    // 用电量统计默认标签选择 17个
+    String CONFIG_POWER_ELECTRIC_DEFAULT_LABELS = "power.electric.default.labels";
+
 }
