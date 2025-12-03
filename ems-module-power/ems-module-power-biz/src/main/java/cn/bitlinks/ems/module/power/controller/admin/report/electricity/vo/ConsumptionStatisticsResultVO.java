@@ -22,6 +22,10 @@ public class ConsumptionStatisticsResultVO<T> {
      * 统计信息
      */
     private List<T> statisticsInfoList;
+    /**
+     * 统计信息
+     */
+    private List<T> allFactoryList;
 
     /**
      * 表头

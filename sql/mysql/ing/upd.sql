@@ -20,3 +20,6 @@ INSERT INTO `system_dict_data` (`sort`, `label`, `value`, `dict_type`, `status`,
 INSERT INTO `system_dict_data` ( `sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`) VALUES (4, 'PO2-CHQ', '(O2_CHQ_01_LL)+(O2_CHQ_02_LL)', 'gas_report_formula', 0, '', '', '氧气用量：1#氧气纯化器流量+2#氧气纯化器流量');
 INSERT INTO `system_dict_data` ( `sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`) VALUES ( 5, 'PAR-CHQ', '(AR_CHQ_01_LL)+(AR_CHQ_02_LL)', 'gas_report_formula', 0, '', '', '氩气用量：1#氩气纯化器流量+2#氩气纯化器流量');
 INSERT INTO `system_dict_data` (`sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`) VALUES (6, 'PHE-CHQ', '(HE_CHQ_01_LL)+(HE_CHQ_02_LL)', 'gas_report_formula', 0, '', '', '氦气用量：1#氦气纯化器流量+2#氦气纯化器流量');
+
+
+

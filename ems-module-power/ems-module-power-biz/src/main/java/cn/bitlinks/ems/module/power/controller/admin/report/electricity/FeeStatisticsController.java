@@ -36,7 +36,7 @@ import static cn.bitlinks.ems.framework.apilog.core.enums.OperateTypeEnum.EXPORT
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.STATISTICS_FEE;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.XLSX;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.getLabelDeep;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.getLabelDeepV2;
 
 /**
  * @author liumingqiang
@@ -69,8 +69,7 @@ public class FeeStatisticsController {
     public void exportFeeStatisticsTable(@Valid @RequestBody StatisticsParamV2VO paramVO,
                                          HttpServletResponse response) throws IOException {
 
-        String childLabels = paramVO.getChildLabels();
-        Integer labelDeep = getLabelDeep(childLabels);
+        Integer labelDeep = getLabelDeepV2(paramVO.getTopLabels());
         Integer mergeIndex = labelDeep - 1;
         // 文件名字处理
         String filename = STATISTICS_FEE + XLSX;

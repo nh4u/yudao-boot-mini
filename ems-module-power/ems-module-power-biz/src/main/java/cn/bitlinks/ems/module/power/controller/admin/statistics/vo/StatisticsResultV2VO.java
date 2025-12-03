@@ -28,6 +28,7 @@ public class StatisticsResultV2VO<T> {
      * 统计信息
      */
     private List<T> statisticsInfoList;
+    private List<T> allFactoryList;
 
     /**
      * 表头
