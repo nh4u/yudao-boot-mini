@@ -337,30 +337,24 @@ public class StatisticsCommonService {
         List<Map<String, List<String>>> res = new ArrayList<>();
         if (topLabels == null || topLabels.isEmpty()) return res;
 
-        String[] groups = topLabels.split("#");
-        if (groups.length == 0) return res;
+        for (String seg : topLabels.split("#")) {
+            seg = seg.trim();
+            if (seg.isEmpty()) continue;
 
-        String key = "label_"+groups[0].split(",", 2)[0].trim();
+            String key;
+            List<String> values = new ArrayList<>();
 
-        List<String> values = new ArrayList<>();
-        boolean hasBareKey = false;
-
-        for (String g : groups) {
-            if (!g.contains(",")) {
-                hasBareKey = true;
+            if (seg.contains(",")) {
+                String[] kv = seg.split(",", 2);
+                key = "label_" + kv[0].trim();
+                String right = kv[1].trim();
+                if (!right.isEmpty()) values.add(right);
             } else {
-                String[] p = g.split(",", 2);
-                values.add(p[1].trim());
+                key = "label_" + seg;
             }
+
+            res.add(Collections.singletonMap(key, values));
         }
-
-        res.add(Collections.singletonMap(key, values));
-
-        // 只有存在裸 key 且 values 非空时才补空 Map
-        if (hasBareKey && !values.isEmpty()) {
-            res.add(Collections.singletonMap(key, new ArrayList<>()));
-        }
-
         return res;
     }
     /**
@@ -592,7 +586,7 @@ public class StatisticsCommonService {
 
     public static void main(String[] args) {
 
-        List<Map<String,List<String>>> result = splitLabels("204");
+        List<Map<String,List<String>>> result = splitLabels("344#211#204,205,206#204,205,207#204#204,205,208");
         System.out.println(JsonUtils.toJsonString(result));
 
 
