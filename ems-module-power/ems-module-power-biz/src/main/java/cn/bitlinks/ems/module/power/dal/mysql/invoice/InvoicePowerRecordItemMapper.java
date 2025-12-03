@@ -19,5 +19,7 @@ public interface InvoicePowerRecordItemMapper extends BaseMapperX<InvoicePowerRe
         return selectList(InvoicePowerRecordItemDO::getRecordId, recordIds);
     }
 
-    int deleteByRecordId(@Param("recordId") Long recordId);
+    default int deleteByRecordId(Long recordId) {
+        return delete(InvoicePowerRecordItemDO::getRecordId, recordId);
+    }
 }
