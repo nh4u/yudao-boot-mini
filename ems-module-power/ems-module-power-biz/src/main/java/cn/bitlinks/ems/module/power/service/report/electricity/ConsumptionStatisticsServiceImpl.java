@@ -144,22 +144,33 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 //        String childLabels = paramVO.getChildLabels();
         // 查询多级标签
 
-        Map<String,List<String>> topLabelMap = statisticsCommonService.splitLabels(paramVO.getTopLabels());
+        List<Map<String,List<String>>> topLabelMapList = statisticsCommonService.splitLabels(paramVO.getTopLabels());
         Map<String,List<StandingbookLabelInfoDO>> standingbookIdsByLabelAllMap = new LinkedHashMap<>();
+
+        Map<String,List<StandingbookLabelInfoDO>> standingbookIdsByLabelAllTopMap = new LinkedHashMap<>();
         List<StandingbookLabelInfoDO> standingbookIdsByLabelAllList = new ArrayList<>();
-        topLabelMap.forEach((k,v)->{
-            List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByTopLabels(k, v);
-            standingbookIdsByLabelAllMap.put(k,standingbookIdsByLabel);
-            standingbookIdsByLabelAllList.addAll(standingbookIdsByLabel);
-        });
+        for(Map<String,List<String>> topLabelMap : topLabelMapList){
+            topLabelMap.forEach((k,v)->{
+                List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByTopLabels(k, v);
+                if(CollUtil.isEmpty(v)){
+                    standingbookIdsByLabelAllTopMap.put(k,standingbookIdsByLabel);
+                }else{
+                    standingbookIdsByLabelAllMap.put(k,standingbookIdsByLabel);
+                }
+                standingbookIdsByLabelAllList.addAll(standingbookIdsByLabel);
+            });
+        }
+
         // 全厂= 用能单位-》燕东微+ 用能单位-》
         String allFactoryLabels = configApi.getConfigValueByKey(CONFIG_POWER_LABEL_ALL).getCheckedData();
-        Map<String,List<String>> allFactoryLabelsMap = statisticsCommonService.splitLabels(allFactoryLabels);
+        List<Map<String,List<String>>> allFactoryLabelsMapList = statisticsCommonService.splitLabels(allFactoryLabels);
         List<StandingbookLabelInfoDO> factoryList = new ArrayList<>();
-        allFactoryLabelsMap.forEach((k,v)->{
-            List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByTopLabels(k, v);
-            factoryList.addAll(standingbookIdsByLabel);
-        });
+        for(Map<String,List<String>> allFactoryLabelsMap : allFactoryLabelsMapList) {
+            allFactoryLabelsMap.forEach((k, v) -> {
+                List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByTopLabels(k, v);
+                factoryList.addAll(standingbookIdsByLabel);
+            });
+        }
         standingbookIdsByLabelAllList.addAll(factoryList);
 
         if (CollUtil.isNotEmpty(standingbookIdsByLabelAllList)) {
@@ -187,12 +198,19 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
         // 0、综合查看（默认）
         List<ConsumptionStatisticsInfo> statisticsInfoList = new ArrayList<>();
-        topLabelMap.forEach((k,v)->{
-            List<ConsumptionStatisticsInfo> statisticsInfoV2s = queryDefaultV2(k, v, standingbookIdsByLabelAllMap.get(k), usageCostDataList);
-            if(CollUtil.isNotEmpty(statisticsInfoV2s)) {
-                statisticsInfoList.addAll(statisticsInfoV2s);
-            }
-        });
+        for(Map<String,List<String>> topLabelMap : topLabelMapList) {
+            topLabelMap.forEach((k, v) -> {
+                List<ConsumptionStatisticsInfo> statisticsInfoV2s;
+                if(CollUtil.isEmpty(v)){
+                    statisticsInfoV2s = queryDefaultV2(k, v, standingbookIdsByLabelAllTopMap.get(k), usageCostDataList);
+                }else{
+                    statisticsInfoV2s = queryDefaultV2(k, v, standingbookIdsByLabelAllMap.get(k), usageCostDataList);
+                }
+                if (CollUtil.isNotEmpty(statisticsInfoV2s)) {
+                    statisticsInfoList.addAll(statisticsInfoV2s);
+                }
+            });
+        }
         resultVO.setStatisticsInfoList(statisticsInfoList);
 
         resultVO.setAllFactoryList(queryDefaultAllFactory(factoryList, usageCostDataList));

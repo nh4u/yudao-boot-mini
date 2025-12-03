@@ -133,22 +133,31 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
 //        String childLabels = paramVO.getChildLabels();
         // 查询多级标签
 
-        Map<String,List<String>> topLabelMap = statisticsCommonService.splitLabels(paramVO.getTopLabels());
+        List<Map<String,List<String>>> topLabelMapList = statisticsCommonService.splitLabels(paramVO.getTopLabels());
         Map<String,List<StandingbookLabelInfoDO>> standingbookIdsByLabelAllMap = new LinkedHashMap<>();
+        Map<String,List<StandingbookLabelInfoDO>> standingbookIdsByLabelAllTopMap = new LinkedHashMap<>();
         List<StandingbookLabelInfoDO> standingbookIdsByLabelAllList = new ArrayList<>();
-        topLabelMap.forEach((k,v)->{
-            List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByTopLabels(k, v);
-            standingbookIdsByLabelAllMap.put(k,standingbookIdsByLabel);
-            standingbookIdsByLabelAllList.addAll(standingbookIdsByLabel);
-        });
+        for(Map<String,List<String>> topLabelMap : topLabelMapList){
+            topLabelMap.forEach((k,v)->{
+                List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByTopLabels(k, v);
+                if(CollUtil.isEmpty(v)){
+                    standingbookIdsByLabelAllTopMap.put(k,standingbookIdsByLabel);
+                }else{
+                    standingbookIdsByLabelAllMap.put(k,standingbookIdsByLabel);
+                }
+                standingbookIdsByLabelAllList.addAll(standingbookIdsByLabel);
+            });
+        }
         // 全厂= 用能单位-》燕东微+ 用能单位-》
         String allFactoryLabels = configApi.getConfigValueByKey(CONFIG_POWER_LABEL_ALL).getCheckedData();
-        Map<String,List<String>> allFactoryLabelsMap = statisticsCommonService.splitLabels(allFactoryLabels);
+        List<Map<String,List<String>>> allFactoryLabelsMapList = statisticsCommonService.splitLabels(allFactoryLabels);
         List<StandingbookLabelInfoDO> factoryList = new ArrayList<>();
-        allFactoryLabelsMap.forEach((k,v)->{
-            List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByTopLabels(k, v);
-            factoryList.addAll(standingbookIdsByLabel);
-        });
+        for(Map<String,List<String>> allFactoryLabelsMap : allFactoryLabelsMapList) {
+            allFactoryLabelsMap.forEach((k, v) -> {
+                List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByTopLabels(k, v);
+                factoryList.addAll(standingbookIdsByLabel);
+            });
+        }
         standingbookIdsByLabelAllList.addAll(factoryList);
         // 4.3.3.能源台账ids和标签台账ids是否有交集。如果有就取交集，如果没有则取能源台账ids
         if (CollUtil.isNotEmpty(standingbookIdsByLabelAllList)) {
@@ -188,12 +197,19 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
 
         // 按标签查看
         List<StatisticsInfoV2> statisticsInfoList = new ArrayList<>();
-        topLabelMap.forEach((k,v)->{
-            List<StatisticsInfoV2> statisticsInfoV2s = queryByLabel(k, v, standingbookIdsByLabelAllMap.get(k), usageCostDataList);
-            if(CollUtil.isNotEmpty(statisticsInfoV2s)) {
-                statisticsInfoList.addAll(statisticsInfoV2s);
-            }
-        });
+        for(Map<String,List<String>> topLabelMap : topLabelMapList) {
+            topLabelMap.forEach((k, v) -> {
+                List<StatisticsInfoV2> statisticsInfoV2s = queryByLabel(k, v, standingbookIdsByLabelAllMap.get(k), usageCostDataList);
+                if(CollUtil.isEmpty(v)){
+                    statisticsInfoV2s = queryByLabel(k, v, standingbookIdsByLabelAllTopMap.get(k), usageCostDataList);
+                }else{
+                    statisticsInfoV2s = queryByLabel(k, v, standingbookIdsByLabelAllMap.get(k), usageCostDataList);
+                }
+                if (CollUtil.isNotEmpty(statisticsInfoV2s)) {
+                    statisticsInfoList.addAll(statisticsInfoV2s);
+                }
+            });
+        }
        // List<StatisticsInfoV2> statisticsInfoList = queryByLabel(topLabel, childLabels, standingbookIdsByLabel, usageCostDataList);
 
         resultVO.setStatisticsInfoList(statisticsInfoList);
