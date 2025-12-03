@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.report.electricityfee;
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsInfo;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.FeeChartResultVO;
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.FeeChartYInfo;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
@@ -26,6 +27,7 @@ import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.util.ListUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
+import de.danielbechler.util.Strings;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -80,6 +82,9 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
 
         // 2.2.校验时间类型
         DataTypeEnum dataTypeEnum = validateDateType(paramVO.getDateType());
+        if (Strings.isEmpty(paramVO.getTopLabels())) {
+            throw exception(TOP_LABELS_NOT_EXISTS);
+        }
 
         // 3.查询对应缓存是否已经存在，如果存在这直接返回（如果查最新的，最新的在实时更新，所以缓存的是不对的）
         String cacheKey = USAGE_FEE_TABLE + SecureUtil.md5(paramVO.toString());
@@ -123,14 +128,22 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
                 .collect(Collectors.toList());
 
         // 4.3.2.根据标签id查询
-        String topLabel = paramVO.getTopLabel();
-        String childLabels = paramVO.getChildLabels();
-        List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService
-                .getStandingbookIdsByLabel(topLabel, childLabels);
+//        String topLabel = paramVO.getTopLabel();
+//        String childLabels = paramVO.getChildLabels();
+        // 查询多级标签
+
+        Map<String,List<String>> topLabelMap = statisticsCommonService.splitLabels(paramVO.getTopLabels());
+        Map<String,List<StandingbookLabelInfoDO>> standingbookIdsByLabelAllMap = new LinkedHashMap<>();
+        List<StandingbookLabelInfoDO> standingbookIdsByLabelAllList = new ArrayList<>();
+        topLabelMap.forEach((k,v)->{
+            List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByTopLabels(k, v);
+            standingbookIdsByLabelAllMap.put(k,standingbookIdsByLabel);
+            standingbookIdsByLabelAllList.addAll(standingbookIdsByLabel);
+        });
 
         // 4.3.3.能源台账ids和标签台账ids是否有交集。如果有就取交集，如果没有则取能源台账ids
-        if (CollUtil.isNotEmpty(standingbookIdsByLabel)) {
-            List<Long> sids = standingbookIdsByLabel
+        if (CollUtil.isNotEmpty(standingbookIdsByLabelAllList)) {
+            List<Long> sids = standingbookIdsByLabelAllList
                     .stream()
                     .map(StandingbookLabelInfoDO::getStandingbookId)
                     .collect(Collectors.toList());
@@ -165,38 +178,16 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
                 standingBookIds);
 
         // 按标签查看
-        List<StatisticsInfoV2> statisticsInfoList = queryByLabel(topLabel, childLabels, standingbookIdsByLabel, usageCostDataList);
+        List<StatisticsInfoV2> statisticsInfoList = new ArrayList<>();
+        topLabelMap.forEach((k,v)->{
+            List<StatisticsInfoV2> statisticsInfoV2s = queryByLabel(k, v, standingbookIdsByLabelAllMap.get(k), usageCostDataList);
+            if(CollUtil.isNotEmpty(statisticsInfoV2s)) {
+                statisticsInfoList.addAll(statisticsInfoV2s);
+            }
+        });
+       // List<StatisticsInfoV2> statisticsInfoList = queryByLabel(topLabel, childLabels, standingbookIdsByLabel, usageCostDataList);
 
         resultVO.setStatisticsInfoList(statisticsInfoList);
-
-        // 无数据的填充0
-        statisticsInfoList.forEach(l -> {
-
-            List<StatisticInfoDataV2> newList = new ArrayList<>();
-            List<StatisticInfoDataV2> oldList = l.getStatisticsDateDataList();
-            if (tableHeader.size() != oldList.size()) {
-                Map<String, List<StatisticInfoDataV2>> dateMap = oldList.stream()
-                        .collect(Collectors.groupingBy(StatisticInfoDataV2::getDate));
-
-                tableHeader.forEach(date -> {
-                    List<StatisticInfoDataV2> standardCoalInfoDataList = dateMap.get(date);
-                    if (standardCoalInfoDataList == null) {
-                        StatisticInfoDataV2 standardCoalInfoData = new StatisticInfoDataV2();
-                        standardCoalInfoData.setDate(date);
-                        standardCoalInfoData.setMoney(null);
-                        standardCoalInfoData.setConsumption(null);
-                        newList.add(standardCoalInfoData);
-                    } else {
-                        newList.add(standardCoalInfoDataList.get(0));
-                    }
-                });
-
-                // 设置新数据list
-                l.setStatisticsDateDataList(newList);
-            }
-
-        });
-
 
         // 获取数据更新时间
         LocalDateTime lastTime = usageCostService.getLastTime(
@@ -294,7 +285,7 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
 
 
     private List<StatisticsInfoV2> queryByLabel(String topLabel,
-                                                String childLabels,
+                                                List<String> childLabels,
                                                 List<StandingbookLabelInfoDO> standingbookIdsByLabel,
                                                 List<UsageCostData> usageCostDataList) {
 
@@ -306,7 +297,7 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
                 .collect(Collectors.toMap(LabelConfigDO::getId, Function.identity()));
 
 
-        if (CharSequenceUtil.isNotBlank(topLabel) && CharSequenceUtil.isBlank(childLabels)) {
+        if (CharSequenceUtil.isNotBlank(topLabel) && CollUtil.isEmpty(childLabels)) {
             // 只有顶级标签
             return queryByTopLabel(standingBookUsageMap, labelMap, standingbookIdsByLabel);
         } else {
