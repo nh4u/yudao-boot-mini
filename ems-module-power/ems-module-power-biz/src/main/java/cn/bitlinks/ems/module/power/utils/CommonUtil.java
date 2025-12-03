@@ -146,6 +146,29 @@ public class CommonUtil {
 
         return defaultDeep;
     }
+    public static Integer getLabelDeepV2(String childLabels) {
+
+        Integer defaultDeep = 0;
+        // 下级标签
+        List<String> childLabelValues = StrSplitter.split(childLabels, "#", 0, true, true);
+        if (CollUtil.isNotEmpty(childLabelValues)) {
+            Optional<Integer> max = childLabelValues.stream()
+                    .map(c -> {
+                        List<String> split = StrSplitter.split(c, ",", 0, true, true);
+                        return split.size();
+                    }).max(Comparator.naturalOrder());
+            if (max.isPresent()) {
+                // 最多五层 top已经占了一层 deep最多是4
+                Integer deep = max.get() + defaultDeep;
+                if (deep > LABEL_MAX_DISPLAY_DEEP) {
+                    return LABEL_MAX_DISPLAY_DEEP;
+                }
+                return deep;
+            }
+        }
+
+        return defaultDeep;
+    }
 
     /**
      * 两个数据相加

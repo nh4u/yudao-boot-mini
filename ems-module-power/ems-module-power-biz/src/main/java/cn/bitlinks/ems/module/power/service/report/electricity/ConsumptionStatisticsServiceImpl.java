@@ -813,10 +813,8 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
         String strTime = getFormatTime(startTime) + "~" + getFormatTime(endTime);
 
         // 统计标签
-        String topLabel = paramVO.getTopLabel();
-        String childLabels = paramVO.getChildLabels();
-        String labelName = getLabelName(topLabel, childLabels);
-        Integer labelDeep = getLabelDeep(childLabels);
+        String labelName = getLabelName(paramVO.getTopLabels());
+        Integer labelDeep = getLabelDeepV2(paramVO.getTopLabels());
         // 表单名称
         Integer queryType = paramVO.getQueryType();
         String sheetName;
@@ -862,21 +860,15 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
     }
 
-    private String getLabelName(String topLabel, String childLabels) {
+    private String getLabelName(String topLabels) {
 
-        // 一级标签
-        Long topLabelId = Long.valueOf(topLabel.substring(topLabel.indexOf("_") + 1));
-
-        // 下级标签
-        List<String> childLabelValues = StrSplitter.split(childLabels, "#", 0, true, true);
+        List<String> childLabelValues = StrSplitter.split(topLabels, "#", 0, true, true);
         List<Long> labelIds = childLabelValues.stream()
                 .map(c -> StrSplitter.split(c, ",", 0, true, true))
                 .flatMap(List::stream)
                 .map(Long::valueOf)
                 .distinct()
                 .collect(Collectors.toList());
-
-        labelIds.add(topLabelId);
 
         // 获取标签数据
         List<LabelConfigDO> labels = labelConfigService.getByIds(labelIds);
@@ -892,8 +884,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
         List<String> tableHeader = resultVO.getHeader();
 
         List<ConsumptionStatisticsInfo> statisticsInfoList = resultVO.getStatisticsInfoList();
-        String childLabels = paramVO.getChildLabels();
-        Integer labelDeep = getLabelDeep(childLabels);
+        Integer labelDeep = getLabelDeepV2(paramVO.getTopLabels());
 
         Integer queryType = paramVO.getQueryType();
 
