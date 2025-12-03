@@ -38,6 +38,9 @@ public class StatisticsParamV2VO {
     @Schema(description = "统计标签-顶级标签", example = "label_130")
     private String topLabel;
 
+    @Schema(description = "统计标签-顶级标签多个", example = "[{topLabel:'a',childLabels:'aa'},{topLabel:'b',childLabels:'bb'}]")
+    private String topLabels;
+
     @Schema(description = "统计能源", example = "当能源ID不为空时，优先以能源ID统计")
     private List<Long> energyIds;
 

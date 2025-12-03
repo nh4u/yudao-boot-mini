@@ -278,7 +278,88 @@ public class StatisticsCommonService {
 //            }
 //        }
 //    }
+    /**
+     * 根据筛选条件筛选台账ID，多层标签
+     *
+     * @return
+     */
+    public List<StandingbookLabelInfoDO> getStandingbookIdsByTopLabels(String topLabel, List<String> childLabels) {
+        if (StrUtil.isBlank(topLabel) && CollUtil.isEmpty(childLabels)) {
+            return Collections.emptyList();
+        }
 
+        //根据标签获取台账
+        //只选择顶级标签
+        //标签也可能关联重点设备，需要去除重点设备ID
+        // 查询所有一级标签下的
+        List<StandingbookLabelInfoDO> byLabelNames = standingbookLabelInfoService.getByLabelNames(Collections.singletonList(topLabel));
+        Set<String> childIds = new HashSet<>();
+        if (StrUtil.isNotBlank(topLabel) && CollUtil.isEmpty(childLabels)) {
+            String topId = topLabel.split("_")[1];
+            // 查询所有的二级标签
+            List<LabelConfigDO> childId = labelConfigService.getByParentId(Collections.singletonList(Long.valueOf(topId)));
+            Set<String> childIdSet = childId.stream().map(LabelConfigDO::getId).map(String::valueOf).collect(Collectors.toSet());
+            childIds.addAll(childIdSet);
+            // 顶级跟下级都选择
+        } else if (StrUtil.isNotBlank(topLabel) && CollUtil.isNotEmpty(childLabels)) {
+            // 查询所有的标签
+            childIds.addAll(childLabels);
+        }
+
+
+        if (CollUtil.isEmpty(childIds)) {
+            return Collections.emptyList();
+        }
+
+        List<StandingbookLabelInfoDO> standingbookLabelInfoList = byLabelNames.stream()
+                .filter(standingbook -> {
+                    String value = standingbook.getValue();
+                    if (Objects.isNull(value)) {
+                        return false;
+                    } else {
+                        return childIds.stream().anyMatch(value::startsWith);
+                    }
+                })
+                .collect(Collectors.toList());
+        List<StandingbookLabelInfoDO> standingbookLabelInfoDOS = filterStandingbookLabelInfoDO(standingbookLabelInfoList, childIds, CHILD_LABEL_REGEX_ADD);
+//        log.info("根据标签查询的计量器具数据：top:{}, childLabels:{}, 计量器具：{}", topLabel, childLabels, JSONUtil.toJsonStr(standingbookLabelInfoDOS));
+        return standingbookLabelInfoDOS;
+    }
+
+    /**
+     * 用电量勾选多个一级标签前端组装结构逻辑。
+     * @param topLabels
+     * @return
+     */
+    public Map<String, List<String>> splitLabels(String topLabels) {
+        Map<String, List<String>> labelMap = new LinkedHashMap<>();
+
+        if (topLabels == null || topLabels.isEmpty()) {
+            return labelMap;
+        }
+
+        // 1. 按 # 分割
+        String[] groups = topLabels.split("#");
+
+        for (String group : groups) {
+            // 2. 按 , 分割
+            String[] parts = group.split(",");
+            if (parts.length == 0) continue;
+
+            String topLabel = "label_"+parts[0].trim();
+            // 3. 获取二级标签（跳过第一个）
+            List<String> childLabels = new ArrayList<>();
+            for (int i = 1; i < parts.length; i++) {
+                childLabels.add(parts[i].trim());
+            }
+
+            // 4. 合并相同一级标签的二级标签
+            labelMap.computeIfAbsent(topLabel, k -> new ArrayList<>())
+                    .addAll(childLabels);
+        }
+
+        return labelMap;
+    }
     /**
      * 根据筛选条件筛选台账ID
      *
@@ -511,6 +592,7 @@ public class StatisticsCommonService {
         Set<String> childLabelValues = new HashSet<>();
         //childLabelValues.add("2");
         childLabelValues.add("2,897");
+        childLabelValues.add("2,897,89");
 //        childLabelValues.add("2,896");
 //
 //        childLabelValues.add("3,897");
@@ -538,7 +620,7 @@ public class StatisticsCommonService {
         byLabelNames.add(infoDO2);
         byLabelNames.add(infoDO3);
         byLabelNames.add(infoDO4);
-//        byLabelNames.add(infoDO5);
+        //byLabelNames.add(infoDO5);
         byLabelNames.add(infoDO6);
         byLabelNames.add(infoDO7);
         byLabelNames.add(infoDO8);
