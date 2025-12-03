@@ -3,6 +3,7 @@ package cn.bitlinks.ems.module.power.service.statistics;
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.enums.EnergyClassifyEnum;
 import cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils;
+import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
 import cn.bitlinks.ems.module.power.controller.admin.standingbook.vo.StandingbookEnergyTypeVO;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.StatisticsParamV2VO;
 import cn.bitlinks.ems.module.power.dal.dataobject.energyconfiguration.EnergyConfigurationDO;
@@ -23,6 +24,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -294,7 +296,7 @@ public class StatisticsCommonService {
         // 查询所有一级标签下的
         List<StandingbookLabelInfoDO> byLabelNames = standingbookLabelInfoService.getByLabelNames(Collections.singletonList(topLabel));
         Set<String> childIds = new HashSet<>();
-        if (StrUtil.isNotBlank(topLabel) && CollUtil.isEmpty(childLabels)) {
+        if (StrUtil.isNotBlank(topLabel) && (CollUtil.isEmpty(childLabels) || childLabels.contains(""))) {
             String topId = topLabel.split("_")[1];
             // 查询所有的二级标签
             List<LabelConfigDO> childId = labelConfigService.getByParentId(Collections.singletonList(Long.valueOf(topId)));
@@ -331,34 +333,35 @@ public class StatisticsCommonService {
      * @param topLabels
      * @return
      */
-    public Map<String, List<String>> splitLabels(String topLabels) {
-        Map<String, List<String>> labelMap = new LinkedHashMap<>();
+    public static List<Map<String, List<String>>> splitLabels(String topLabels) {
+        List<Map<String, List<String>>> res = new ArrayList<>();
+        if (topLabels == null || topLabels.isEmpty()) return res;
 
-        if (topLabels == null || topLabels.isEmpty()) {
-            return labelMap;
-        }
-
-        // 1. 按 # 分割
         String[] groups = topLabels.split("#");
+        if (groups.length == 0) return res;
 
-        for (String group : groups) {
-            // 2. 按 , 分割
-            String[] parts = group.split(",");
-            if (parts.length == 0) continue;
+        String key = "label_"+groups[0].split(",", 2)[0].trim();
 
-            String topLabel = "label_"+parts[0].trim();
-            // 3. 获取二级标签（跳过第一个）
-            List<String> childLabels = new ArrayList<>();
-            for (int i = 1; i < parts.length; i++) {
-                childLabels.add(parts[i].trim());
+        List<String> values = new ArrayList<>();
+        boolean hasBareKey = false;
+
+        for (String g : groups) {
+            if (!g.contains(",")) {
+                hasBareKey = true;
+            } else {
+                String[] p = g.split(",", 2);
+                values.add(p[1].trim());
             }
-
-            // 4. 合并相同一级标签的二级标签
-            labelMap.computeIfAbsent(topLabel, k -> new ArrayList<>())
-                    .addAll(childLabels);
         }
 
-        return labelMap;
+        res.add(Collections.singletonMap(key, values));
+
+        // 只有存在裸 key 且 values 非空时才补空 Map
+        if (hasBareKey && !values.isEmpty()) {
+            res.add(Collections.singletonMap(key, new ArrayList<>()));
+        }
+
+        return res;
     }
     /**
      * 根据筛选条件筛选台账ID
@@ -588,55 +591,9 @@ public class StatisticsCommonService {
 
 
     public static void main(String[] args) {
-        List<StandingbookLabelInfoDO> byLabelNames = new ArrayList<>();
-        Set<String> childLabelValues = new HashSet<>();
-        //childLabelValues.add("2");
-        childLabelValues.add("2,897");
-        childLabelValues.add("2,897,89");
-//        childLabelValues.add("2,896");
-//
-//        childLabelValues.add("3,897");
 
-
-        StandingbookLabelInfoDO infoDO2 = new StandingbookLabelInfoDO();
-        infoDO2.setValue("2,897,893");
-        StandingbookLabelInfoDO infoDO3 = new StandingbookLabelInfoDO();
-        infoDO3.setValue("2,897,89");
-        StandingbookLabelInfoDO infoDO4 = new StandingbookLabelInfoDO();
-        infoDO4.setValue("3,897,82");
-        StandingbookLabelInfoDO infoDO5 = new StandingbookLabelInfoDO();
-        infoDO5.setValue("2,897");
-
-        StandingbookLabelInfoDO infoDO6 = new StandingbookLabelInfoDO();
-        infoDO6.setValue("2,897,88,88");
-
-        StandingbookLabelInfoDO infoDO7 = new StandingbookLabelInfoDO();
-        infoDO7.setValue("2,897,89,88");
-
-        StandingbookLabelInfoDO infoDO8 = new StandingbookLabelInfoDO();
-        infoDO8.setValue("2,896,98");
-
-
-        byLabelNames.add(infoDO2);
-        byLabelNames.add(infoDO3);
-        byLabelNames.add(infoDO4);
-        //byLabelNames.add(infoDO5);
-        byLabelNames.add(infoDO6);
-        byLabelNames.add(infoDO7);
-        byLabelNames.add(infoDO8);
-
-
-        List<StandingbookLabelInfoDO> standingbookLabelInfoList = byLabelNames.stream()
-                .filter(standingbook -> {
-                    String value = standingbook.getValue();
-                    return childLabelValues.stream().anyMatch(value::startsWith);
-                })
-                .collect(Collectors.toList());
-
-        List<StandingbookLabelInfoDO> tt = filterStandingbookLabelInfoDO(standingbookLabelInfoList, childLabelValues, CHILD_LABEL_REGEX_ADD);
-        tt.forEach(a -> {
-            System.out.println(a.getValue());
-        });
+        List<Map<String,List<String>>> result = splitLabels("204");
+        System.out.println(JsonUtils.toJsonString(result));
 
 
     }

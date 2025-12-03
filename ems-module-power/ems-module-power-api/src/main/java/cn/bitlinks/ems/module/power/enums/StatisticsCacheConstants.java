@@ -85,4 +85,7 @@ public class StatisticsCacheConstants {
     public static final String WATER_CHART = "report:usage:water:chart:";
 
     public static final String DEVICE_MONITOR_DEVICE_DATA = "device-monitor:device:";
+    // 缓存key
+    public static final String LABEL_CONFIG_TREE = "system:label:config:tree:";
+
 }

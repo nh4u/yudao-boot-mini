@@ -1,7 +1,8 @@
 package cn.bitlinks.ems.module.power.service.labelconfig;
-
+import java.util.concurrent.TimeUnit;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
+import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigDTO;
 import cn.bitlinks.ems.module.power.controller.admin.labelconfig.vo.LabelConfigPageReqVO;
@@ -17,12 +18,17 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.core.lang.tree.TreeNode;
 import cn.hutool.core.lang.tree.TreeUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
+import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -35,7 +41,9 @@ import java.util.stream.Collectors;
 import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_LABEL_INFO_PREFIX;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
+import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.LABEL_CONFIG_TREE;
 
+import com.alibaba.fastjson.TypeReference;
 /**
  * 配置标签 Service 实现类
  *
@@ -53,7 +61,8 @@ public class LabelConfigServiceImpl implements LabelConfigService {
 
     @Resource
     private StandingbookLabelInfoMapper standingbookLabelInfoMapper;
-
+    @Resource
+    private RedisTemplate<String, byte[]> byteArrayRedisTemplate;
     @Override
     @CacheEvict(value = {RedisKeyConstants.LABEL_CONFIG_LIST}, allEntries = true)
     public Long createLabelConfig(LabelConfigSaveReqVO createReqVO) {
@@ -172,6 +181,15 @@ public class LabelConfigServiceImpl implements LabelConfigService {
 
     @Override
     public List<Tree<Long>> getLabelTree(boolean lazy, Long parentId, String labelName) {
+
+        String rawKey = String.format("%s|%s|%s", lazy, parentId, labelName);
+        String cacheKey = LABEL_CONFIG_TREE + SecureUtil.md5(rawKey);
+        byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
+        String cacheRes = StrUtils.decompressGzip(compressed);
+        if (CharSequenceUtil.isNotEmpty(cacheRes)) {
+            return JSON.parseObject(cacheRes, new TypeReference<List<Tree<Long>>>() {
+            });
+        }
         if (!lazy) {
 
             if (parentId == null) {
@@ -180,12 +198,20 @@ public class LabelConfigServiceImpl implements LabelConfigService {
                                 .like(StrUtil.isNotEmpty(labelName), LabelConfigDO::getLabelName, labelName)
                                 .orderByAsc(LabelConfigDO::getSort)).stream()
                         .map(getNodeFunction()).collect(Collectors.toList());
-                return TreeUtil.build(collect, CommonConstants.LABEL_TREE_ROOT_ID);
+                List<Tree<Long>> result =  TreeUtil.build(collect, CommonConstants.LABEL_TREE_ROOT_ID);
+                String jsonStr = JSONUtil.toJsonStr(result);
+                byte[] bytes = StrUtils.compressGzip(jsonStr);
+                byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+                return result;
             } else {
                 // 递归获取该节点下所有子集
                 List<LabelConfigDO> collect = getLabelTreeNodeList(parentId);
                 List<TreeNode<Long>> collect1 = collect.stream().map(getNodeFunction()).collect(Collectors.toList());
-                return TreeUtil.build(collect1, parentId);
+                List<Tree<Long>> result =  TreeUtil.build(collect1, parentId);
+                String jsonStr = JSONUtil.toJsonStr(result);
+                byte[] bytes = StrUtils.compressGzip(jsonStr);
+                byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+                return result;
             }
 
         }
@@ -198,7 +224,11 @@ public class LabelConfigServiceImpl implements LabelConfigService {
                         .orderByAsc(LabelConfigDO::getSort))
                 .stream().map(getNodeFunction()).collect(Collectors.toList());
 
-        return TreeUtil.build(collect, parent);
+        List<Tree<Long>> result =  TreeUtil.build(collect, parent);
+        String jsonStr = JSONUtil.toJsonStr(result);
+        byte[] bytes = StrUtils.compressGzip(jsonStr);
+        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+        return result;
 
     }
 
