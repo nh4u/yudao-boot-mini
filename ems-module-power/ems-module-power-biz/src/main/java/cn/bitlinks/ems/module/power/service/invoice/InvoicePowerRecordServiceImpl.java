@@ -472,6 +472,8 @@ public class InvoicePowerRecordServiceImpl implements InvoicePowerRecordService 
         response.setCharacterEncoding("utf-8");
         response.setHeader("Content-disposition",
                 "attachment;filename=" + fileName + ".xlsx");
+        response.addHeader("Access-Control-Expose-Headers", "File-Name");
+        response.addHeader("File-Name", fileName);
 
         // 4.1 计算需要合并的行号（0 基）
         int dataRowStart = HEADER_ROW_COUNT;
