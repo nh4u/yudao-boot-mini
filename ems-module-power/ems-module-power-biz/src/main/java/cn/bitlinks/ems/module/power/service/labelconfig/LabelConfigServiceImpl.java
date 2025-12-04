@@ -1,6 +1,7 @@
 package cn.bitlinks.ems.module.power.service.labelconfig;
 import java.util.concurrent.TimeUnit;
 import cn.bitlinks.ems.framework.common.pojo.PageResult;
+import cn.bitlinks.ems.framework.common.util.json.JsonUtils;
 import cn.bitlinks.ems.framework.common.util.object.BeanUtils;
 import cn.bitlinks.ems.framework.common.util.string.StrUtils;
 import cn.bitlinks.ems.framework.mybatis.core.query.LambdaQueryWrapperX;
@@ -22,9 +23,9 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
-import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -49,6 +50,7 @@ import com.alibaba.fastjson.TypeReference;
  *
  * @author bitlinks
  */
+@Slf4j
 @Service
 @Validated
 public class LabelConfigServiceImpl implements LabelConfigService {
@@ -180,19 +182,24 @@ public class LabelConfigServiceImpl implements LabelConfigService {
     }
 
     @Override
-    public List<Tree<Long>> getLabelTree(boolean lazy, Long parentId, String labelName) {
+    public List<Tree<Long>> getLabelTree(boolean lazy, Long parentId, String labelName)  {
 
         String rawKey = String.format("%s|%s|%s", lazy, parentId, labelName);
         String cacheKey = LABEL_CONFIG_TREE + SecureUtil.md5(rawKey);
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            return JSON.parseObject(cacheRes, new TypeReference<List<Tree<Long>>>() {
-            });
+            log.error("label config raw json = {}", cacheRes);
+            try {
+                return JsonUtils.objectMapper.readValue(cacheRes, new com.fasterxml.jackson.core.type.TypeReference<List<Tree<Long>>>() {
+                });
+            } catch (Exception e){
+
+            }
         }
         if (!lazy) {
 
-            if (parentId == null) {
+            if (parentId == null || CommonConstants.LABEL_TREE_ROOT_ID.equals(parentId)) {
                 List<TreeNode<Long>> collect = labelConfigMapper
                         .selectList(Wrappers.<LabelConfigDO>lambdaQuery()
                                 .like(StrUtil.isNotEmpty(labelName), LabelConfigDO::getLabelName, labelName)
