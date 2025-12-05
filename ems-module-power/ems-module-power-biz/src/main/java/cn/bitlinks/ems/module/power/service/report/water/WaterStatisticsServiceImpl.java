@@ -540,18 +540,35 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
 
         List<StatisticsInfoV2> resultList = new ArrayList<>();
 
+        if (CollUtil.isEmpty(standingbookIdsByLabel)) {
+            return resultList;
+        }
+
+        // 这里和 queryDefaultTopLabel 一样，也是取第一个 label 做“当前查询的顶级标签”
+        StandingbookLabelInfoDO firstLabelInfo = standingbookIdsByLabel.get(0);
+        String topLabelKey = firstLabelInfo.getName();
+        Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
+        LabelConfigDO topLabel = labelMap.get(topLabelId);
+        if (topLabel == null) {
+            return resultList;
+        }
+
+        // 收集所有标签关联的用量数据
         List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
-        // 获取标签关联的台账id，并取到对应的数据
         standingbookIdsByLabel.forEach(labelInfo -> {
             List<UsageCostData> usageList = standingBookUsageMap.get(labelInfo.getStandingbookId());
-            if (usageList == null || usageList.isEmpty()) {
-                return; // 计量器具没有数据，跳过
+            if (CollUtil.isEmpty(usageList)) {
+                return;
             }
             labelUsageCostDataList.addAll(usageList);
         });
 
-        // 由于数采数据是按 台账 日期能源进行分组的 而一个标签关联多个台账，那么标签同一个日期就会有多条不同台账的数据，所以要按日期进行合并
-        List<StatisticInfoDataV2> dataList = new ArrayList<>(labelUsageCostDataList.stream()
+        if (CollUtil.isEmpty(labelUsageCostDataList)) {
+            return resultList;
+        }
+
+        //按日期聚合（同一天多个台账的值相加）
+        Map<String, StatisticInfoDataV2> dateAggMap = labelUsageCostDataList.stream()
                 .collect(Collectors.groupingBy(
                         UsageCostData::getTime,
                         Collectors.collectingAndThen(
@@ -560,27 +577,30 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
                                     BigDecimal totalConsumption = list.stream()
                                             .map(UsageCostData::getCurrentTotalUsage)
                                             .filter(Objects::nonNull)
-                                            .reduce(BigDecimal::add).orElse(null);
+                                            .reduce(BigDecimal::add)
+                                            .orElse(null);
                                     return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, null);
                                 }
-                        )
-                )).values());
+                        )));
 
-        //按标签统计时候 用量不用合计
+        List<StatisticInfoDataV2> dataList = new ArrayList<>(dateAggMap.values());
+
+        //计算“周期合计”
         BigDecimal totalConsumption = dataList.stream()
                 .map(StatisticInfoDataV2::getConsumption)
                 .filter(Objects::nonNull)
-                .reduce(BigDecimal::add).orElse(null);
-//        BigDecimal totalStandardCoal = dataList.stream()
-//                .map(StandardCoalInfoData::getStandardCoal)
-//                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal::add)
+                .orElse(null);
 
+        //处理小数位
+        dataList = dataList.stream().peek(i -> {
+            i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
+        }).collect(Collectors.toList());
+
+        //组装返回对象
         StatisticsInfoV2 info = new StatisticsInfoV2();
-        StandingbookLabelInfoDO standingbookLabelInfoDO = standingbookIdsByLabel.get(0);
-
-        String topLabelKey = standingbookLabelInfoDO.getName();
-        Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
-        LabelConfigDO topLabel = labelMap.get(topLabelId);
+        info.setEnergyId(null);            // 按标签查看时，如果不需要按能源拆分，可以为 null
+        info.setEnergyName("/");           // 或者根据你的前端约定写“全部能源”等
 
         info.setLabel1(topLabel.getLabelName());
         info.setLabel2("/");
@@ -588,17 +608,13 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
         info.setLabel4("/");
         info.setLabel5("/");
 
-        dataList = dataList.stream().peek(i -> {
-            i.setConsumption(dealBigDecimalScale(i.getConsumption(), DEFAULT_SCALE));
-        }).collect(Collectors.toList());
-
         info.setStatisticsDateDataList(dataList);
-        info.setSumEnergyConsumption(dealBigDecimalScale(null, DEFAULT_SCALE));
+        info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
 
         resultList.add(info);
-
         return resultList;
     }
+
 
     /**
      * 有顶级喝有子集标签处理
@@ -611,27 +627,26 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
     public List<StatisticsInfoV2> queryBySubLabel(Map<Long, List<UsageCostData>> standingBookUsageMap,
                                                   Map<Long, LabelConfigDO> labelMap,
                                                   List<StandingbookLabelInfoDO> standingbookIdsByLabel) {
-        // 标签查询条件处理
-        //根据能源ID分组
-        // 使用 Collectors.groupingBy 根据 name 和 value 分组
-        // 此处不应该过滤，因为如果指定5个标签 因为有一个标签 和能源没有交集，则改标签在取用量数据时候，是取不到的， 而且该标签还需要展示对应数据
-        // 所以不需要过滤 ：即选中五个标签 那么就要展示五个标签，如果过滤的话 那么 标签就有可能过滤掉然后不展示
-        Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
-                .collect(Collectors.groupingBy(
-                        // 第一个分组条件：按 name
-                        StandingbookLabelInfoDO::getName,
-                        // 第二个分组条件：按 value
-                        Collectors.groupingBy(StandingbookLabelInfoDO::getValue)
-                ));
 
         List<StatisticsInfoV2> resultList = new ArrayList<>();
+        if (CollUtil.isEmpty(standingbookIdsByLabel)) {
+            return resultList;
+        }
+
+        // 按 topLabelKey + value 分组（和 queryDefaultSubLabel 一致）
+        Map<String, Map<String, List<StandingbookLabelInfoDO>>> grouped = standingbookIdsByLabel.stream()
+                .collect(Collectors.groupingBy(
+                        StandingbookLabelInfoDO::getName,
+                        Collectors.groupingBy(StandingbookLabelInfoDO::getValue)
+                ));
 
         grouped.forEach((topLabelKey, labelInfoGroup) -> {
             Long topLabelId = Long.valueOf(topLabelKey.substring(topLabelKey.indexOf("_") + 1));
             LabelConfigDO topLabel = labelMap.get(topLabelId);
             if (topLabel == null) {
-                return; // 如果一级标签不存在，跳过
+                return;
             }
+
             labelInfoGroup.forEach((valueKey, labelInfoList) -> {
                 String[] labelIds = valueKey.split(",");
                 String label2Name = getLabelName(labelMap, labelIds, 0);
@@ -639,19 +654,22 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
                 String label4Name = labelIds.length > 2 ? getLabelName(labelMap, labelIds, 2) : "/";
                 String label5Name = labelIds.length > 3 ? getLabelName(labelMap, labelIds, 3) : "/";
 
+                // 收集该“标签路径”下所有台账的数据
                 List<UsageCostData> labelUsageCostDataList = new ArrayList<>();
-                // 获取标签关联的台账id，并取到对应的数据
                 labelInfoList.forEach(labelInfo -> {
                     List<UsageCostData> usageList = standingBookUsageMap.get(labelInfo.getStandingbookId());
-                    if (usageList == null || usageList.isEmpty()) {
-                        return; // 计量器具没有数据，跳过
+                    if (CollUtil.isEmpty(usageList)) {
+                        return;
                     }
                     labelUsageCostDataList.addAll(usageList);
                 });
 
+                if (CollUtil.isEmpty(labelUsageCostDataList)) {
+                    return;
+                }
 
-                // 由于数采数据是按 台账 日期能源进行分组的 而一个标签关联多个台账，那么标签同一个日期就会有多条不同台账的数据，所以要按日期进行合并
-                List<StatisticInfoDataV2> dataList = new ArrayList<>(labelUsageCostDataList.stream()
+                // 按日期聚合（同一天多个台账的值相加）
+                Map<String, StatisticInfoDataV2> dateAggMap = labelUsageCostDataList.stream()
                         .collect(Collectors.groupingBy(
                                 UsageCostData::getTime,
                                 Collectors.collectingAndThen(
@@ -660,37 +678,47 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
                                             BigDecimal totalConsumption = list.stream()
                                                     .map(UsageCostData::getCurrentTotalUsage)
                                                     .filter(Objects::nonNull)
-                                                    .reduce(BigDecimal::add).orElse(null);
+                                                    .reduce(BigDecimal::add)
+                                                    .orElse(null);
                                             return new StatisticInfoDataV2(list.get(0).getTime(), totalConsumption, null);
                                         }
-                                )
-                        )).values());
+                                )));
 
-                //按标签统计时候 用量不用合计
+                List<StatisticInfoDataV2> dataList = new ArrayList<>(dateAggMap.values());
+
+                // 计算“周期合计”
                 BigDecimal totalConsumption = dataList.stream()
                         .map(StatisticInfoDataV2::getConsumption)
                         .filter(Objects::nonNull)
-                        .reduce(BigDecimal::add).orElse(null);
+                        .reduce(BigDecimal::add)
+                        .orElse(null);
 
+                // 小数位处理
+                dataList = dataList.stream().peek(i -> {
+                    i.setConsumption(dealBigDecimalScale(i.getConsumption(), scale));
+                }).collect(Collectors.toList());
+
+                // 组装一行
                 StatisticsInfoV2 info = new StatisticsInfoV2();
+                info.setEnergyId(null);    // 如果按标签不拆能源就给 null 或 "/"
+                info.setEnergyName("/");
+
                 info.setLabel1(topLabel.getLabelName());
                 info.setLabel2(label2Name);
                 info.setLabel3(label3Name);
                 info.setLabel4(label4Name);
                 info.setLabel5(label5Name);
 
-                dataList = dataList.stream().peek(i -> {
-                    i.setConsumption(dealBigDecimalScale(i.getConsumption(), DEFAULT_SCALE));
-                }).collect(Collectors.toList());
-
                 info.setStatisticsDateDataList(dataList);
-                info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, DEFAULT_SCALE));
+                info.setSumEnergyConsumption(dealBigDecimalScale(totalConsumption, scale));
 
                 resultList.add(info);
             });
         });
+
         return resultList;
     }
+
 
     @Override
     public FeeChartResultVO<FeeChartYInfo> waterStatisticsChart(StatisticsParamV2VO paramVO) {
