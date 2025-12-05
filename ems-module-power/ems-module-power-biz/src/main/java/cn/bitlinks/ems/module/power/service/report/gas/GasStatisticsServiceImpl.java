@@ -356,27 +356,30 @@ public class GasStatisticsServiceImpl implements GasStatisticsService {
                 for (GasStatisticsInfoData dateData : g.getStatisticsDateDataList()) {
                     String date = dateData.getDate();
                     Map<String, Object> paramMap = new HashMap<>();
-                    boolean existValue = false;
+                    boolean existChildValue = false;
 
                     for (String relyCode : relyCodes) {
                         BigDecimal relyValue = Optional.ofNullable(relyDataList.get(relyCode))
                                 .map(m -> m.get(date))
                                 .orElse(null);
                         if (relyValue != null) {
-                            existValue = true;
+                            existChildValue = true;
                         }
                         // 下划线替换
-                        paramMap.put(relyCode.replace("-", "_"), relyValue);
+                        paramMap.put(relyCode.replace("-", "_"), relyValue==null?BigDecimal.ZERO:relyValue);
                     }
 
-                    if (!existValue) {
+                    if (!existChildValue) {
                         // 如果全为空则，保持原值
                         continue;
                     }
 
                     // 5. 执行公式计算
-                    BigDecimal value = (BigDecimal) CalculateUtil.execute(formula, paramMap);
-                    dateData.setValue(value);
+                    Object result = CalculateUtil.execute(formula, paramMap);
+
+                    if (result != null && !result.toString().trim().isEmpty()) {
+                        dateData.setValue(new BigDecimal(result.toString().trim()));
+                    }
                 }
             }
 
