@@ -473,7 +473,15 @@ public class InvoicePowerRecordServiceImpl implements InvoicePowerRecordService 
         // 2.1 统计周期文本，只在前端有选范围时展示，否则用 "/"
         String periodText = "/";
         if (range != null && range.length == 2 && range[0] != null && range[1] != null) {
-            periodText = range[0].toString() + " ~ " + range[1].toString();
+            YearMonth startYm = YearMonth.from(range[0]);
+            YearMonth endYm = YearMonth.from(range[1]);
+            if (startYm.equals(endYm)) {
+                // 同一个月份时只展示一个，例如：2024-09
+                periodText = startYm.format(MONTH_FMT); // MONTH_FMT = yyyy-MM
+            } else {
+                // 不同月份时展示区间，例如：2024-09 ~ 2024-12
+                periodText = startYm.format(MONTH_FMT) + " ~ " + endYm.format(MONTH_FMT);
+            }
         }
 
         // 2.2 表计列表：优先用字典，保证没数据也有行
