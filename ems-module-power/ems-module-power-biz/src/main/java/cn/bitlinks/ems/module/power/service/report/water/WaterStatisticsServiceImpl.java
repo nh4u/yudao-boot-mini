@@ -1041,7 +1041,16 @@ public class WaterStatisticsServiceImpl implements WaterStatisticsService {
         String labelName = getLabelName(topLabel, childLabels); // 你的原方法
         String strTime = getFormatTime(startTime) + "~" + getFormatTime(endTime);
 
-        String sheetName = WATER_STATISTICS;
+        // === 表单名称拼接维度信息 ===
+        String suffix;
+        if (QueryDimensionEnum.LABEL_REVIEW.getCode().equals(queryType)) {
+            suffix = "（按标签）";
+        } else if (QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)) {
+            suffix = "（按能源）";
+        } else {
+            suffix = "（按综合）";
+        }
+        final String sheetName = WATER_STATISTICS + suffix; // lambda 可用的 final 变量
 
         List<List<String>> list = ListUtils.newArrayList();
 

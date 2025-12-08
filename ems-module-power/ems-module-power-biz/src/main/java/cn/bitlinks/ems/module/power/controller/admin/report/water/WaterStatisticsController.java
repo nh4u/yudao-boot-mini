@@ -7,6 +7,7 @@ import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.FeeCh
 import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.FeeChartYInfo;
 import cn.bitlinks.ems.module.power.controller.admin.statistics.vo.*;
 import cn.bitlinks.ems.module.power.excelstyle.FullCellMergeStrategy;
+import cn.bitlinks.ems.module.power.excelstyle.HierarchyMergeStrategy;
 import cn.bitlinks.ems.module.power.service.report.water.WaterStatisticsService;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.write.metadata.style.WriteCellStyle;
@@ -70,52 +71,68 @@ public class WaterStatisticsController {
                                            HttpServletResponse response) throws IOException {
 
         String childLabels = paramVO.getChildLabels();
-        // 默认按标签深度
-        Integer labelDeep = getLabelDeep(childLabels);
-        // 根据查看维度调整：能源维度不需要标签列
         Integer queryType = paramVO.getQueryType();
-        if (QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)) {
-            labelDeep = 0;
-        }
 
-        // 文件名字处理
         String filename = WATER_STATISTICS + XLSX;
 
+        // 表头 & 数据
         List<List<String>> header = waterStatisticsService.getExcelHeader(paramVO);
         List<List<Object>> dataList = waterStatisticsService.getExcelData(paramVO);
 
-        // 放在 write前配置response才会生效，放在后面不生效
-        response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
-        response.addHeader("Access-Control-Expose-Headers","File-Name");
+        // response
+        response.addHeader("Content-Disposition", "attachment;filename=" +
+                URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
+        response.addHeader("Access-Control-Expose-Headers", "File-Name");
         response.addHeader("File-Name", URLEncoder.encode(filename, StandardCharsets.UTF_8.name()));
         response.setContentType("application/vnd.ms-excel;charset=UTF-8");
 
+        // 样式
         WriteCellStyle headerStyle = new WriteCellStyle();
-        // 设置水平居中对齐
         headerStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
-        // 设置垂直居中对齐
         headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-        // 内容样式
+
         WriteCellStyle contentStyle = new WriteCellStyle();
         contentStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
         contentStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-        // 设置边框
         contentStyle.setBorderLeft(BorderStyle.THIN);
         contentStyle.setBorderTop(BorderStyle.THIN);
         contentStyle.setBorderRight(BorderStyle.THIN);
         contentStyle.setBorderBottom(BorderStyle.THIN);
 
+        // ===== 合并配置 =====
+        final int headRowNumber = 4; // 你的 head 是 4 层：表单名称/统计标签/统计周期/末级
+
+        // 用你原来的工具方法算标签深度
+        Integer labelDeep = getLabelDeep(childLabels);
+
+        int[] mergeColumns;
+        int hierarchyDepth;
+
+        if (QueryDimensionEnum.ENERGY_REVIEW.getCode().equals(queryType)) {
+            // 按能源：只合并第 0 列（能源）
+            mergeColumns = new int[]{0};
+            hierarchyDepth = 0;
+        } else if (QueryDimensionEnum.LABEL_REVIEW.getCode().equals(queryType)) {
+            // 按标签：合并 0..labelDeep-1 列（标签列）
+            hierarchyDepth = labelDeep;
+            mergeColumns = java.util.stream.IntStream.range(0, labelDeep).toArray();
+        } else {
+            // 综合：合并 0..labelDeep-1（标签列）+ labelDeep（能源列）
+            hierarchyDepth = labelDeep;
+            mergeColumns = java.util.stream.IntStream.range(0, labelDeep + 1).toArray();
+        }
+
+        HierarchyMergeStrategy mergeStrategy =
+                new HierarchyMergeStrategy(dataList, headRowNumber, mergeColumns, hierarchyDepth);
+
         EasyExcelFactory.write(response.getOutputStream())
                 .head(header)
                 .registerWriteHandler(new SimpleColumnWidthStyleStrategy(20))
                 .registerWriteHandler(new HorizontalCellStyleStrategy(headerStyle, contentStyle))
-                // 设置表头行高 15，内容行高 15
                 .registerWriteHandler(new SimpleRowHeightStyleStrategy((short) 15, (short) 15))
-                // 合并标题单元格：
-                // 由于column索引从0开始，labelDeep 从 1 开始，又由于有个能源列，
-                // 综合/标签模式下直接用 labelDeep；能源模式下 labelDeep=0 只合并能源列。
-                .registerWriteHandler(new FullCellMergeStrategy(0, null, 0, labelDeep))
-                .sheet("数据").doWrite(dataList);
+                .registerWriteHandler(mergeStrategy) // 用新的合并策略
+                .sheet("数据")
+                .doWrite(dataList);
     }
 
 
