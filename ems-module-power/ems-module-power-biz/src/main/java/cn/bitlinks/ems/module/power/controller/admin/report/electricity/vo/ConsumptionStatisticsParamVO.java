@@ -58,6 +58,7 @@ public class ConsumptionStatisticsParamVO {
                 "range=" + Arrays.toString(range) +
                 ", childLabels='" + childLabels + '\'' +
                 ", topLabel='" + topLabel + '\'' +
+                ", topLabels='" + topLabels + '\'' +
                 ", energyIds=" + energyIds +
                 ", queryType=" + queryType +
                 ", dateType=" + dateType +

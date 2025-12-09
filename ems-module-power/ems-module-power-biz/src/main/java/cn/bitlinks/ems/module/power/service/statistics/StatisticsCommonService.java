@@ -333,27 +333,53 @@ public class StatisticsCommonService {
      * @param topLabels
      * @return
      */
+
     public static List<Map<String, List<String>>> splitLabels(String topLabels) {
         List<Map<String, List<String>>> res = new ArrayList<>();
         if (topLabels == null || topLabels.isEmpty()) return res;
+
+        /* 记录“当前正在累积 value 的那一行”下标，key 不存在表示没有累积行 */
+        Map<String, Integer> curRow = new HashMap<>();
 
         for (String seg : topLabels.split("#")) {
             seg = seg.trim();
             if (seg.isEmpty()) continue;
 
             String key;
-            List<String> values = new ArrayList<>();
+            String value = null;
 
             if (seg.contains(",")) {
                 String[] kv = seg.split(",", 2);
-                key = "label_" + kv[0].trim();
-                String right = kv[1].trim();
-                if (!right.isEmpty()) values.add(right);
+                key   = "label_" + kv[0].trim();
+                value = kv[1].trim();          // 可能为空串
             } else {
                 key = "label_" + seg;
             }
 
-            res.add(Collections.singletonMap(key, values));
+            if (value == null || value.isEmpty()) {
+                /* 纯 key 片段：直接新增一行空列表 */
+                res.add(Collections.singletonMap(key, new ArrayList<>()));
+                curRow.remove(key);            // 取消之前可能的累积行
+            } else {
+                /* 带 value 片段 */
+                Integer idx = curRow.get(key);
+                if (idx == null) {
+                    /* 还没有累积行，新建一行并放入第一个 value */
+                    List<String> list = new ArrayList<>();
+                    list.add(value);
+                    res.add(Collections.singletonMap(key, list));
+                    curRow.put(key, res.size() - 1);
+                } else {
+                    /* 往同一行继续追加 value */
+                    Map<String, List<String>> oldMap = res.get(idx);
+                    List<String> oldList = oldMap.get(key);
+                    List<String> newList = new ArrayList<>(oldList);
+                    newList.add(value);
+                    Map<String, List<String>> newMap = new HashMap<>();
+                    newMap.put(key, newList);
+                    res.set(idx, newMap);
+                }
+            }
         }
         return res;
     }
@@ -586,7 +612,7 @@ public class StatisticsCommonService {
 
     public static void main(String[] args) {
 
-        List<Map<String,List<String>>> result = splitLabels("344#211#204,205,206#204,205,207#204#204,205,208");
+        List<Map<String,List<String>>> result = splitLabels("344#211#204#204,205,206#204,205,207#204,205,208");
         System.out.println(JsonUtils.toJsonString(result));
 
 
