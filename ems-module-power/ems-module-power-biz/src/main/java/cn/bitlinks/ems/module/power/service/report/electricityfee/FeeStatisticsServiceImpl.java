@@ -199,7 +199,7 @@ public class FeeStatisticsServiceImpl implements FeeStatisticsService {
         List<StatisticsInfoV2> statisticsInfoList = new ArrayList<>();
         for(Map<String,List<String>> topLabelMap : topLabelMapList) {
             topLabelMap.forEach((k, v) -> {
-                List<StatisticsInfoV2> statisticsInfoV2s = queryByLabel(k, v, standingbookIdsByLabelAllMap.get(k), usageCostDataList);
+                List<StatisticsInfoV2> statisticsInfoV2s;
                 if(CollUtil.isEmpty(v)){
                     statisticsInfoV2s = queryByLabel(k, v, standingbookIdsByLabelAllTopMap.get(k), usageCostDataList);
                 }else{
