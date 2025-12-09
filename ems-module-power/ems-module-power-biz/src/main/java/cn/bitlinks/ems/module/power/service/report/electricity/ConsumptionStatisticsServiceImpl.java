@@ -215,9 +215,9 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
         resultVO.setAllFactoryList(queryDefaultAllFactory(factoryList, usageCostDataList));
         resultVO.setDataTime(lastTime);
-//        String jsonStr = JSONUtil.toJsonStr(resultVO);
-//        byte[] bytes = StrUtils.compressGzip(jsonStr);
-//        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
+        String jsonStr = JSONUtil.toJsonStr(resultVO);
+        byte[] bytes = StrUtils.compressGzip(jsonStr);
+        byteArrayRedisTemplate.opsForValue().set(cacheKey, bytes, 1, TimeUnit.MINUTES);
         return resultVO;
     }
 

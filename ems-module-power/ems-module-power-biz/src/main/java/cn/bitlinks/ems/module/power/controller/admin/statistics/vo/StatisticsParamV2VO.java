@@ -66,6 +66,7 @@ public class StatisticsParamV2VO {
                 "range=" + Arrays.toString(range) +
                 ", childLabels='" + childLabels + '\'' +
                 ", topLabel='" + topLabel + '\'' +
+                ", topLabels='" + topLabels + '\'' +
                 ", energyIds=" + energyIds +
                 ", queryType=" + queryType +
                 ", dateType=" + dateType +
