@@ -285,48 +285,7 @@ public class StatisticsCommonService {
      *
      * @return
      */
-    public List<StandingbookLabelInfoDO> getStandingbookIdsByTopLabels(String topLabel, List<String> childLabels) {
-        if (StrUtil.isBlank(topLabel) && CollUtil.isEmpty(childLabels)) {
-            return Collections.emptyList();
-        }
 
-        //根据标签获取台账
-        //只选择顶级标签
-        //标签也可能关联重点设备，需要去除重点设备ID
-        // 查询所有一级标签下的
-        List<StandingbookLabelInfoDO> byLabelNames = standingbookLabelInfoService.getByLabelNames(Collections.singletonList(topLabel));
-        Set<String> childIds = new HashSet<>();
-        if (StrUtil.isNotBlank(topLabel) && (CollUtil.isEmpty(childLabels) || childLabels.contains(""))) {
-            String topId = topLabel.split("_")[1];
-            // 查询所有的二级标签
-            List<LabelConfigDO> childId = labelConfigService.getByParentId(Collections.singletonList(Long.valueOf(topId)));
-            Set<String> childIdSet = childId.stream().map(LabelConfigDO::getId).map(String::valueOf).collect(Collectors.toSet());
-            childIds.addAll(childIdSet);
-            // 顶级跟下级都选择
-        } else if (StrUtil.isNotBlank(topLabel) && CollUtil.isNotEmpty(childLabels)) {
-            // 查询所有的标签
-            childIds.addAll(childLabels);
-        }
-
-
-        if (CollUtil.isEmpty(childIds)) {
-            return Collections.emptyList();
-        }
-
-        List<StandingbookLabelInfoDO> standingbookLabelInfoList = byLabelNames.stream()
-                .filter(standingbook -> {
-                    String value = standingbook.getValue();
-                    if (Objects.isNull(value)) {
-                        return false;
-                    } else {
-                        return childIds.stream().anyMatch(value::startsWith);
-                    }
-                })
-                .collect(Collectors.toList());
-        List<StandingbookLabelInfoDO> standingbookLabelInfoDOS = filterStandingbookLabelInfoDO(standingbookLabelInfoList, childIds, CHILD_LABEL_REGEX_ADD);
-//        log.info("根据标签查询的计量器具数据：top:{}, childLabels:{}, 计量器具：{}", topLabel, childLabels, JSONUtil.toJsonStr(standingbookLabelInfoDOS));
-        return standingbookLabelInfoDOS;
-    }
 
     /**
      * 用电量勾选多个一级标签前端组装结构逻辑。
@@ -334,55 +293,70 @@ public class StatisticsCommonService {
      * @return
      */
 
-    public static List<Map<String, List<String>>> splitLabels(String topLabels) {
-        List<Map<String, List<String>>> res = new ArrayList<>();
+    /**
+     * 按照用户最终确认的规则拆分 topLabels：
+     * - 返回 List<Map<String,String>>
+     * - 每个 key 第一次出现时输出一条 {key:""}（只输出一次，保持 key 第一次出现顺序）
+     * - 将该 key 的 value 段按出现顺序分组，分组之间用 '#' 连接，组内用 ',' 连接
+     * - 规则细节见实现注释（已针对示例验证）
+     */
+    public static List<Map<String, String>> splitLabels(String topLabels) {
+        List<Map<String, String>> res = new ArrayList<>();
         if (topLabels == null || topLabels.isEmpty()) return res;
 
-        /* 记录“当前正在累积 value 的那一行”下标，key 不存在表示没有累积行 */
-        Map<String, Integer> curRow = new HashMap<>();
+        String[] segs = topLabels.split("#");
 
-        for (String seg : topLabels.split("#")) {
-            seg = seg.trim();
+        // 记录 key 首次出现顺序
+        LinkedHashMap<String, Boolean> firstSeen = new LinkedHashMap<>();
+
+        // key -> list of groups，每组是段内剩余值（保留逗号组合）
+        Map<String, List<String>> groups = new LinkedHashMap<>();
+
+        for (String raw : segs) {
+            String seg = raw.trim();
             if (seg.isEmpty()) continue;
 
-            String key;
-            String value = null;
-
             if (seg.contains(",")) {
+                // 带 value 段
                 String[] kv = seg.split(",", 2);
-                key   = "label_" + kv[0].trim();
-                value = kv[1].trim();          // 可能为空串
-            } else {
-                key = "label_" + seg;
-            }
+                String key = "label_" + kv[0].trim();
+                String valuePart = kv[1].trim();
 
-            if (value == null || value.isEmpty()) {
-                /* 纯 key 片段：直接新增一行空列表 */
-                res.add(Collections.singletonMap(key, new ArrayList<>()));
-                curRow.remove(key);            // 取消之前可能的累积行
+                firstSeen.putIfAbsent(key, true);
+                groups.putIfAbsent(key, new ArrayList<>());
+
+                // 整段剩余部分作为一个组，保留逗号
+                groups.get(key).add(valuePart);
+
             } else {
-                /* 带 value 片段 */
-                Integer idx = curRow.get(key);
-                if (idx == null) {
-                    /* 还没有累积行，新建一行并放入第一个 value */
-                    List<String> list = new ArrayList<>();
-                    list.add(value);
-                    res.add(Collections.singletonMap(key, list));
-                    curRow.put(key, res.size() - 1);
-                } else {
-                    /* 往同一行继续追加 value */
-                    Map<String, List<String>> oldMap = res.get(idx);
-                    List<String> oldList = oldMap.get(key);
-                    List<String> newList = new ArrayList<>(oldList);
-                    newList.add(value);
-                    Map<String, List<String>> newMap = new HashMap<>();
-                    newMap.put(key, newList);
-                    res.set(idx, newMap);
-                }
+                // 纯 key 段
+                String key = "label_" + seg;
+                firstSeen.putIfAbsent(key, true);
+                groups.putIfAbsent(key, new ArrayList<>());
             }
         }
+
+        // 输出纯 key 行（每个 key 只输出一次）
+        for (String key : firstSeen.keySet()) {
+            res.add(Collections.singletonMap(key, ""));
+        }
+
+        // 输出 value 行（按 key 首次出现顺序）
+        for (String key : firstSeen.keySet()) {
+            List<String> gs = groups.get(key);
+            if (gs == null || gs.isEmpty()) continue;
+
+            String merged = String.join("#", gs);
+            res.add(Collections.singletonMap(key, merged));
+        }
+
         return res;
     }
+
+
+
+
+
     /**
      * 根据筛选条件筛选台账ID
      *
@@ -612,7 +586,16 @@ public class StatisticsCommonService {
 
     public static void main(String[] args) {
 
-        List<Map<String,List<String>>> result = splitLabels("344#211#204#204,205,206#204,205,207#204,205,208");
+        List<Map<String,String>> result = splitLabels("248,251,258#" +
+                "204,205,207#" +
+                "204#" +
+                "204,205#" +
+                "248#" +
+                "204,209#" +
+                "204,210#" +
+                "204,205,206#" +
+                "204,205,208");
+        //[{"label_248":""},{"label_204":""},{"label_248":"251,258"},{"label_204":"205,207#205#209,210#205,206#205,208"}]
         System.out.println(JsonUtils.toJsonString(result));
 
 
