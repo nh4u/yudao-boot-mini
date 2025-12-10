@@ -35,8 +35,8 @@ import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getF
 import static cn.bitlinks.ems.module.power.enums.CommonConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.SUPPLY_WATER_TMP;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.divideWithScale;
-import static cn.bitlinks.ems.module.power.utils.CommonUtil.getConvertData;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.*;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
 
 /**
  * @author liumingqiang
@@ -242,7 +242,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                             if (Objects.isNull(minuteAggregateData)) {
                                 map.put(key, null);
                             } else {
-                                map.put(key, minuteAggregateData.getFullValue());
+                                map.put(key, dealBigDecimalScale(minuteAggregateData.getFullValue(),DEFAULT_SCALE));
                             }
                         });
 
@@ -320,7 +320,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                             } else {
                                 list.forEach(l -> {
                                     if (POINT_ONE.equals(l.getPoint())) {
-                                        map1.put(key1, l.getFullValue());
+                                        map1.put(key1, dealBigDecimalScale(l.getFullValue(),DEFAULT_SCALE));
                                         Object o = map2.getOrDefault(key2, 0);
                                         if (o.equals(0)) {
                                             map2.put(key2, null);
@@ -331,7 +331,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                                         if (o.equals(0)) {
                                             map2.put(key2, null);
                                         }
-                                        map2.put(key2, l.getFullValue());
+                                        map2.put(key2, dealBigDecimalScale(l.getFullValue(),DEFAULT_SCALE));
                                     }
                                 });
                             }
@@ -436,8 +436,8 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                     // 点位1：0点到7点，18点到23点，共14个点，用14个小时点总值求平均，得到点位1的值。
                     //点位2：8点到17点，共10个点，用10个小时点总值求平均，得到点位2的值。
                     //注：当中间采集时间数据缺失时，分母保持24、14、10。
-                    BigDecimal onwAvg = divideWithScale(new BigDecimal(14), oneSum, 10);
-                    BigDecimal twoAvg = divideWithScale(new BigDecimal(10), twoSum, 10);
+                    BigDecimal onwAvg = divideWithScale(new BigDecimal(14), oneSum, DEFAULT_SCALE);
+                    BigDecimal twoAvg = divideWithScale(new BigDecimal(10), twoSum, DEFAULT_SCALE);
 
                     // 点位1 构建
                     SupplyWaterTmpMinuteAggData old = list.get(0);
@@ -507,7 +507,7 @@ public class SupplyWaterTmpSettingsServiceImpl implements SupplyWaterTmpSettings
                                 if (Objects.isNull(minuteAggregateData)) {
                                     map.put(key, null);
                                 } else {
-                                    map.put(key, minuteAggregateData.getFullValue());
+                                    map.put(key, dealBigDecimalScale(minuteAggregateData.getFullValue(),DEFAULT_SCALE));
                                 }
                             });
 

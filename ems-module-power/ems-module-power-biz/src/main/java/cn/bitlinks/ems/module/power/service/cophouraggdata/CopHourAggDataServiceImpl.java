@@ -25,10 +25,13 @@ import static cn.bitlinks.ems.framework.common.exception.util.ServiceExceptionUt
 import static cn.bitlinks.ems.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getFormatTime;
 import static cn.bitlinks.ems.framework.common.util.date.LocalDateTimeUtils.getSamePeriodLastYear;
+import static cn.bitlinks.ems.module.power.enums.CommonConstants.DEFAULT_SCALE;
 import static cn.bitlinks.ems.module.power.enums.DictTypeConstants.SYSTEM_TYPE;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.DATE_TYPE_NOT_EXISTS;
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.END_TIME_MUST_AFTER_START_TIME;
 import static cn.bitlinks.ems.module.power.enums.ExportConstants.COP;
+import static cn.bitlinks.ems.module.power.enums.ExportConstants.DEFAULT;
+import static cn.bitlinks.ems.module.power.utils.CommonUtil.dealBigDecimalScale;
 
 /**
  * @author liumingqiang
@@ -96,7 +99,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
                                     BigDecimal copValue = c.getCopValue();
                                     String copType = c.getCopType();
                                     String key = copType + "_" + year + "-" + monthValue;
-                                    map.put(key, copValue);
+                                    map.put(key, dealBigDecimalScale(copValue, DEFAULT_SCALE));
                                 });
                             } else {
                                 // 不等的情况
@@ -111,7 +114,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
                                     if (Objects.isNull(copHourAggData)) {
                                         map.put(key, null);
                                     } else {
-                                        map.put(key, copHourAggData.getCopValue());
+                                        map.put(key, dealBigDecimalScale(copHourAggData.getCopValue(), DEFAULT_SCALE));
                                     }
                                 });
                             }
@@ -196,7 +199,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
 
                                 sortedCopHourAggDatas.forEach(c -> {
                                     BigDecimal copValue = c.getCopValue();
-                                    data.add(copValue);
+                                    data.add(dealBigDecimalScale(copValue,DEFAULT_SCALE));
                                 });
                             } else {
                                 // 不等的情况
@@ -210,7 +213,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
                                     if (Objects.isNull(copHourAggData)) {
                                         data.add("/");
                                     } else {
-                                        data.add(copHourAggData.getCopValue());
+                                        data.add(dealBigDecimalScale(copHourAggData.getCopValue(),DEFAULT_SCALE));
                                     }
                                 });
                             }
@@ -505,7 +508,7 @@ public class CopHourAggDataServiceImpl implements CopHourAggDataService {
 
     private BigDecimal dealCopValue(CopHourAggData copHourAggData) {
         if (!Objects.isNull(copHourAggData)) {
-            return copHourAggData.getCopValue();
+            return dealBigDecimalScale(copHourAggData.getCopValue(),DEFAULT_SCALE);
         } else {
             return BigDecimal.ZERO;
         }
