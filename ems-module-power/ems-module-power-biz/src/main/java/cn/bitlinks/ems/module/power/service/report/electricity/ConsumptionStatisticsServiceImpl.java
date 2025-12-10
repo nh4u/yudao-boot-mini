@@ -144,15 +144,15 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 //        String childLabels = paramVO.getChildLabels();
         // 查询多级标签
 
-        List<Map<String,List<String>>> topLabelMapList = statisticsCommonService.splitLabels(paramVO.getTopLabels());
+        List<Map<String,String>> topLabelMapList = statisticsCommonService.splitLabels(paramVO.getTopLabels());
         Map<String,List<StandingbookLabelInfoDO>> standingbookIdsByLabelAllMap = new LinkedHashMap<>();
 
         Map<String,List<StandingbookLabelInfoDO>> standingbookIdsByLabelAllTopMap = new LinkedHashMap<>();
         List<StandingbookLabelInfoDO> standingbookIdsByLabelAllList = new ArrayList<>();
-        for(Map<String,List<String>> topLabelMap : topLabelMapList){
+        for(Map<String,String> topLabelMap : topLabelMapList){
             topLabelMap.forEach((k,v)->{
-                List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByTopLabels(k, v);
-                if(CollUtil.isEmpty(v)){
+                List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByLabel(k, v);
+                if(Strings.isEmpty(v)){
                     standingbookIdsByLabelAllTopMap.put(k,standingbookIdsByLabel);
                 }else{
                     standingbookIdsByLabelAllMap.put(k,standingbookIdsByLabel);
@@ -163,11 +163,11 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
         // 全厂= 用能单位-》燕东微+ 用能单位-》
         String allFactoryLabels = configApi.getConfigValueByKey(CONFIG_POWER_LABEL_ALL).getCheckedData();
-        List<Map<String,List<String>>> allFactoryLabelsMapList = statisticsCommonService.splitLabels(allFactoryLabels);
+        List<Map<String,String>> allFactoryLabelsMapList = statisticsCommonService.splitLabels(allFactoryLabels);
         List<StandingbookLabelInfoDO> factoryList = new ArrayList<>();
-        for(Map<String,List<String>> allFactoryLabelsMap : allFactoryLabelsMapList) {
+        for(Map<String,String> allFactoryLabelsMap : allFactoryLabelsMapList) {
             allFactoryLabelsMap.forEach((k, v) -> {
-                List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByTopLabels(k, v);
+                List<StandingbookLabelInfoDO> standingbookIdsByLabel = statisticsCommonService.getStandingbookIdsByLabel(k, v);
                 factoryList.addAll(standingbookIdsByLabel);
             });
         }
@@ -198,10 +198,10 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
         // 0、综合查看（默认）
         List<ConsumptionStatisticsInfo> statisticsInfoList = new ArrayList<>();
-        for(Map<String,List<String>> topLabelMap : topLabelMapList) {
+        for(Map<String,String> topLabelMap : topLabelMapList) {
             topLabelMap.forEach((k, v) -> {
                 List<ConsumptionStatisticsInfo> statisticsInfoV2s;
-                if(CollUtil.isEmpty(v)){
+                if(Strings.isEmpty(v)){
                     statisticsInfoV2s = queryDefaultV2(k, v, standingbookIdsByLabelAllTopMap.get(k), usageCostDataList);
                 }else{
                     statisticsInfoV2s = queryDefaultV2(k, v, standingbookIdsByLabelAllMap.get(k), usageCostDataList);
@@ -233,7 +233,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
 
     }
     public List<ConsumptionStatisticsInfo> queryDefaultV2(String topLabel,
-                                                        List<String> childLabels,
+                                                        String childLabels,
                                                         List<StandingbookLabelInfoDO> standingbookIdsByLabel,
                                                         List<UsageCostData> usageCostDataList) {
 
@@ -246,7 +246,7 @@ public class ConsumptionStatisticsServiceImpl implements ConsumptionStatisticsSe
         Map<Long, List<UsageCostData>> standingBookUsageMap = usageCostDataList.stream()
                 .collect(Collectors.groupingBy(UsageCostData::getStandingbookId));
 
-        if (CharSequenceUtil.isNotBlank(topLabel) && CollUtil.isEmpty(childLabels)) {
+        if (CharSequenceUtil.isNotBlank(topLabel) && Strings.isEmpty(childLabels)) {
             // 只有顶级标签
             return queryDefaultTopLabel(standingBookUsageMap, labelMap, standingbookIdsByLabel);
         } else {
