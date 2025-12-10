@@ -306,10 +306,13 @@ public class StatisticsCommonService {
 
         String[] segs = topLabels.split("#");
 
-        // 记录 key 首次出现顺序
+        // 记录 key 首次出现顺序（用于 value 行的输出顺序）
         LinkedHashMap<String, Boolean> firstSeen = new LinkedHashMap<>();
 
-        // key -> list of groups，每组是段内剩余值（保留逗号组合）
+        // 记录哪些 key 是以“单独出现”的形式（无逗号），并保持它们单独出现时的顺序
+        LinkedHashSet<String> standaloneOrder = new LinkedHashSet<>();
+
+        // key -> list of groups，每个组是段内剩余值（保留逗号组合）
         Map<String, List<String>> groups = new LinkedHashMap<>();
 
         for (String raw : segs) {
@@ -329,15 +332,18 @@ public class StatisticsCommonService {
                 groups.get(key).add(valuePart);
 
             } else {
-                // 纯 key 段
+                // 纯 key 段（单独出现）
                 String key = "label_" + seg;
+                // 记录为首次出现（若之前已出现过 value 段，这里不会覆盖第一次出现顺序）
                 firstSeen.putIfAbsent(key, true);
                 groups.putIfAbsent(key, new ArrayList<>());
+                // 记录该 key 是以单独段出现（仅记录一次，保持出现顺序）
+                standaloneOrder.add(key);
             }
         }
 
-        // 输出纯 key 行（每个 key 只输出一次）
-        for (String key : firstSeen.keySet()) {
+        // 输出：每个 key 单独出现时输出一条 {key:""}（只输出一次，按单独出现顺序）
+        for (String key : standaloneOrder) {
             res.add(Collections.singletonMap(key, ""));
         }
 
@@ -352,6 +358,7 @@ public class StatisticsCommonService {
 
         return res;
     }
+
 
 
 
@@ -586,15 +593,15 @@ public class StatisticsCommonService {
 
     public static void main(String[] args) {
 
-        List<Map<String,String>> result = splitLabels("248,251,258#" +
-                "204,205,207#" +
-                "204#" +
-                "204,205#" +
-                "248#" +
-                "204,209#" +
-                "204,210#" +
-                "204,205,206#" +
-                "204,205,208");
+        List<Map<String,String>> result = splitLabels("248,251,258#204,205,207#251");
+//                "204,205,207#" +
+//                "204#" +
+//                "204,205#" +
+//                "248#" +
+//                "204,209#" +
+//                "204,210#" +
+//                "204,205,206#" +
+//                "204,205,208");
         //[{"label_248":""},{"label_204":""},{"label_248":"251,258"},{"label_204":"205,207#205#209,210#205,206#205,208"}]
         System.out.println(JsonUtils.toJsonString(result));
 
