@@ -16,6 +16,7 @@ import cn.bitlinks.ems.module.power.enums.CommonConstants;
 import cn.bitlinks.ems.module.power.enums.RedisKeyConstants;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.lang.TypeReference;
 import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.core.lang.tree.TreeNode;
 import cn.hutool.core.lang.tree.TreeUtil;
@@ -44,7 +45,6 @@ import static cn.bitlinks.ems.module.power.enums.ApiConstants.ATTR_LABEL_INFO_PR
 import static cn.bitlinks.ems.module.power.enums.ErrorCodeConstants.*;
 import static cn.bitlinks.ems.module.power.enums.StatisticsCacheConstants.LABEL_CONFIG_TREE;
 
-import com.alibaba.fastjson.TypeReference;
 /**
  * 配置标签 Service 实现类
  *
@@ -189,10 +189,9 @@ public class LabelConfigServiceImpl implements LabelConfigService {
         byte[] compressed = byteArrayRedisTemplate.opsForValue().get(cacheKey);
         String cacheRes = StrUtils.decompressGzip(compressed);
         if (CharSequenceUtil.isNotEmpty(cacheRes)) {
-            log.error("label config raw json = {}", cacheRes);
             try {
-                return JsonUtils.objectMapper.readValue(cacheRes, new com.fasterxml.jackson.core.type.TypeReference<List<Tree<Long>>>() {
-                });
+                return JSONUtil.toBean(cacheRes, new TypeReference<List<Tree<Long>>>() {
+                },false);
             } catch (Exception e){
 
             }
