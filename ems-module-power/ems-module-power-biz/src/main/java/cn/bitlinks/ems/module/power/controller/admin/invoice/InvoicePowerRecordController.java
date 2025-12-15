@@ -34,7 +34,7 @@ public class InvoicePowerRecordController {
 
     @PostMapping("/save")
     @Operation(summary = "新增/修改发票电量记录（数据补录弹窗提交）")
-    @PreAuthorize("@ss.hasPermission('power:invoice-power-record:save')")
+//    @PreAuthorize("@ss.hasPermission('power:invoice-power-record:save')")
     public CommonResult<Long> save(@Valid @RequestBody InvoicePowerRecordSaveReqVO reqVO) {
         Long id = invoicePowerRecordService.saveInvoicePowerRecord(reqVO);
         return success(id);
@@ -42,7 +42,7 @@ public class InvoicePowerRecordController {
 
     @GetMapping("/get")
     @Operation(summary = "获取发票电量记录详情（编辑回显）")
-    @PreAuthorize("@ss.hasPermission('power:invoice-power-record:query')")
+//    @PreAuthorize("@ss.hasPermission('power:invoice-power-record:query')")
     public CommonResult<InvoicePowerRecordRespVO> get(
             @RequestParam("recordMonth")
             @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate recordMonth) {
@@ -51,7 +51,7 @@ public class InvoicePowerRecordController {
 
     @PostMapping("/page")
     @Operation(summary = "查询发票电量记录（列表展示）")
-    @PreAuthorize("@ss.hasPermission('power:invoice-power-record:query')")
+//    @PreAuthorize("@ss.hasPermission('power:invoice-power-record:query')")
     public CommonResult<StatisticsResultV2VO<InvoicePowerRecordStatisticsInfo>> getList(
             @Valid @RequestBody InvoicePowerRecordPageReqVO pageReqVO) {
         return success(invoicePowerRecordService.getInvoicePowerRecordList(pageReqVO));
@@ -61,7 +61,7 @@ public class InvoicePowerRecordController {
 
     @PostMapping("/export-excel")
     @Operation(summary = "导出发票电量记录 Excel（与列表一致）")
-    @PreAuthorize("@ss.hasPermission('power:invoice-power-record:export')")
+//    @PreAuthorize("@ss.hasPermission('power:invoice-power-record:export')")
     public void exportExcel(@Valid @RequestBody InvoicePowerRecordPageReqVO exportReqVO,
                             HttpServletResponse response) throws IOException {
         invoicePowerRecordService.exportInvoicePowerRecordExcel(response, exportReqVO);
