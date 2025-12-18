@@ -14,7 +14,7 @@ infra_config
 | admin   | 2021-01-05 17:03:48 | 1       | 2024-07-20 17:22:47 |         |
 |  2 | biz      |    1 | 设备详情跳转连接                | power.device.monitor.url        | <a href="http://192.168.91.135:8100/monitor/detail?id=%s&topType=%s">查看详情</a>                                                                                                                                                                                                                                                                                                                                                                                             |         | 设备详情跳转连接                                                 | admin   | 2025-08-31 18:47:02 | 1       | 2025-12-02 16:45:09 |         |
 |  3 | biz      |    1 | 二维码                          | power.device.monitor.qrcode.url | http://192.168.91.135:8100/monitor/equipment?id=%s&type=%s                                                                                                                                                                                                                                     
-infra_file  //需要同步minio数据
+infra_file\ems_energy_configuration   //需要同步minio数据
 infra_file_config
 
 |  1 | minio |      20 |        |       | {"@class":"cn.bitlinks.ems.module.infra.framework.file.core.client.s3.S3FileClientConfig","endpoint":"http://192.168.91.128:9000","domain":"http://192.168.91.128:9000/ydems","bucket":"ydems","accessKey":"24ec408394b774c8qsde","accessSecret":"41385f1624ec408394b774c88364f457j9ye73nh"} | 1       | 2024-01-13 22:11:12 | 1       | 2025-12-15 18:09:29 |         |
