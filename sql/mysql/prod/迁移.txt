@@ -1,0 +1,114 @@
+INSERT INTO
+FILES(
+    "path" = "s3://starrocks/unload/cop/his",
+    "format" = "parquet",
+    "compression" = "zstd",
+    "single" = "true",
+    "aws.s3.access_key" = "minio",
+    "aws.s3.secret_key" = "admin-minio",
+    "aws.s3.region" = "us-west-2",
+    "aws.s3.use_instance_profile" = "false",
+    "aws.s3.enable_ssl" = "false",
+    "aws.s3.enable_path_style_access" = "true",
+    "aws.s3.endpoint" = "http://192.168.91.128:9000"
+)
+SELECT * FROM cop_hour_aggregate_data ;
+
+
+
+
+ mc ls myminio/starrocks/unload/cop/his
+6ac59027-db34-11f0-98ea-02429f1f7cd7_0_0_0.parquet
+
+SELECT * FROM FILES
+(
+    "aws.s3.endpoint" = "http://192.168.91.128:9000",
+    "path" = "s3://starrocks/unload/cop/his/6ac59027-db34-11f0-98ea-02429f1f7cd7_0_0_0.parquet",
+    "aws.s3.enable_ssl" = "false",
+    "aws.s3.access_key" = "minio",
+    "aws.s3.secret_key" = "admin-minio",
+    "format" = "parquet",
+    "aws.s3.use_aws_sdk_default_behavior" = "false",
+    "aws.s3.use_instance_profile" = "false",
+    "aws.s3.enable_path_style_access" = "true"
+)
+LIMIT 3;
+
+
+INSERT INTO cop_hour_aggregate_data
+SELECT * FROM FILES
+(
+    "aws.s3.endpoint" = "http://192.168.91.128:9000",
+    "path" = "s3://starrocks/unload/cop/his/6ac59027-db34-11f0-98ea-02429f1f7cd7_0_0_0.parquet",
+    "aws.s3.enable_ssl" = "false",
+    "aws.s3.access_key" = "minio",
+    "aws.s3.secret_key" = "admin-minio",
+    "format" = "parquet",
+    "aws.s3.use_aws_sdk_default_behavior" = "false",
+    "aws.s3.use_instance_profile" = "false",
+    "aws.s3.enable_path_style_access" = "true"
+);
+
+mc rm --recursive --force myminio/starrocks/unload/cop/
+
+
+
+
+
+
+
+
+
+前端页面
+http://192.168.91.135:8100/login?redirect=/index
+
+-------------------------- mysql迁移
+迁移完成之后进行数据清洗，需要清洗的表在项目目录下
+替换ip
+已完成、使用mysqldump
+mysqldump -u root -p ydme_ems > backup.sql
+f6158df6cd0b81d228e315d568f20b7f
+
+docker cp mysql:/backup.sql /home/nr/
+docker cp  /home/nr/backup.sql      mysql:/
+
+mysql -u root -p ydme_ems < backup.sql
+
+示例
+UPDATE ems_energy_configuration
+SET energy_icon = REPLACE(energy_icon, '192.168.91.64', '192.168.91.128') where deleted = false;
+
+-------------------------- redis迁移
+
+----1.备份源redis
+sudo docker exec -it redis bash
+redis-cli -h 192.168.91.65 -p 6379 -a SbtyMveYNfLzTks7H0apCmyStPzWJqjy 进容器
+bgsave
+info persistence 查看bgsave状态（很快就备份好了）
+
+exit
+cd /home/nr/env/redis/data
+cp dump.rdb devdump.rdb
+
+-- 2.传输rdb文件
+scp nr@192.168.91.65:/home/nr/env/redis/data/devdump.rdb  /home/nr/env/redis/data
+-- 3.目标redis恢复数据
+
+ 停容器
+ sudo docker compose -f docker-compose-redis.yml down
+ 关掉aof
+ vim docker-compose-redis.yml
+ 清数据
+ sudo cp dump.rdb dumpbk.rdb
+ sudo cp devdump.rdb dump.rdb
+ rm -rf appendonly.aof
+ 授权
+sudo chmod 644 dump.rdb
+sudo chown 999:999 dump.rdb
+sudo docker compose -f docker-compose-redis.yml up -d
+
+-- 4. 改成aof开启，重启容器
+vim docker-compose-redis.yml
+
+
+
