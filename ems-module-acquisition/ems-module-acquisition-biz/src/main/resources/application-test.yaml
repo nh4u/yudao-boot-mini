@@ -66,7 +66,7 @@ spring:
           password: BitlinkMysql@2022
         starrocks: # 模拟从库，可根据自己需要修改
           lazy: true # 开启懒加载，保证启动速度
-          url: jdbc:mysql://82.157.40.213:8187/acquisition?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
+          url: jdbc:mysql://192.168.1.139:9030/acquisition?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
           username: root
           password: BitlinkStarrocks@2025
   # Redis 配置。Redisson 默认的配置足够使用，一般不需要进行调优
@@ -135,5 +135,5 @@ ems:
     usage-cost: "2025-01-01 00:00:00"
     cop-hour-agg: "2025-01-01 00:00:00"
   starrocks:
-    api-url: http://82.157.40.213:8191
+    api-url: http://192.168.1.139:8040
     db: acquisition

@@ -1,3 +1,6 @@
+CREATE DATABASE acquisition
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_general_ci;
 CREATE TABLE `collect_raw_data` (
     `sync_time` datetime NOT NULL COMMENT "数据同步时间",
     `standingbook_id` bigint(20) NOT NULL COMMENT "台账id",
@@ -28,7 +31,7 @@ PROPERTIES (
 "dynamic_partition.time_unit" = "DAY",
 "dynamic_partition.time_zone" = "Asia/Shanghai",
 "enable_async_write_back" = "false",
-"replication_num" = "6",
+"replication_num" = "3",
 "storage_volume" = "builtin_storage_volume"
 );;
 
@@ -54,7 +57,7 @@ PROPERTIES (
 "dynamic_partition.time_unit" = "DAY",
 "dynamic_partition.time_zone" = "Asia/Shanghai",
 "enable_async_write_back" = "false",
-"replication_num" = "6",
+"replication_num" = "3",
 "storage_volume" = "builtin_storage_volume"
 );;
 
@@ -89,7 +92,7 @@ PROPERTIES (
 "dynamic_partition.time_unit" = "DAY",
 "dynamic_partition.time_zone" = "Asia/Shanghai",
 "enable_async_write_back" = "false",
-"replication_num" = "6",
+"replication_num" = "3",
 "storage_volume" = "builtin_storage_volume"
 );;
 
@@ -118,7 +121,7 @@ PROPERTIES (
 "dynamic_partition.time_unit" = "DAY",
 "dynamic_partition.time_zone" = "Asia/Shanghai",
 "enable_async_write_back" = "false",
-"replication_num" = "6",
+"replication_num" = "3",
 "storage_volume" = "builtin_storage_volume"
 );;
 
