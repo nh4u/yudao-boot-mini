@@ -18,7 +18,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AirConditionerSettingsRecordDO extends BaseDO {
+public class AirConditionerSettingsDO extends BaseDO {
 
     /**
      * 主键
