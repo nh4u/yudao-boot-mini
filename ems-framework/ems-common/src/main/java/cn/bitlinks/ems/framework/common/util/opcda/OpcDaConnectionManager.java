@@ -100,66 +100,6 @@ public class OpcDaConnectionManager {
         });
     }
 
-    /**
-     * 批量更新group items，线程安全
-     */
-    public static void updateGroupItems(ServerGroupWrapper wrapper, Set<String> newItems) throws Exception {
-        wrapper.lock.writeLock().lock();
-        try {
-            Set<String> toRemove = new HashSet<>(wrapper.currentItems);
-            toRemove.removeAll(newItems);
-
-            Set<String> toAdd = new HashSet<>(newItems);
-            toAdd.removeAll(wrapper.currentItems);
-
-            if (!toRemove.isEmpty()) {
-                wrapper.group.clear();
-                log.debug("Removed items: {}", toRemove);
-            }
-
-            if (!toAdd.isEmpty()) {
-                wrapper.group.addItems(toAdd.toArray(new String[0]));
-                log.debug("Added items: {}", toAdd);
-            }
-
-            wrapper.currentItems.clear();
-            wrapper.currentItems.addAll(newItems);
-        } finally {
-            wrapper.lock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * 读取items数据，线程安全
-     */
-    public static Map<String, ItemStatus> readItems(ServerGroupWrapper wrapper, List<String> items) throws Exception {
-        wrapper.lock.readLock().lock();
-        try {
-            return OpcUtil.readValues(wrapper.group, items);
-        } finally {
-            wrapper.lock.readLock().unlock();
-        }
-    }
-
-    /**
-     * 关闭所有server和group
-     */
-    public static void closeAll() {
-        cache.values().forEach(wrapper -> {
-            try {
-                wrapper.server.removeGroup(wrapper.group, true);
-            } catch (Exception e) {
-                log.warn("Failed to remove group", e);
-            }
-            try {
-                wrapper.server.disconnect();
-            } catch (Exception e) {
-                log.warn("Failed to disconnect server", e);
-            }
-        });
-        cache.clear();
-    }
-
     // 获取/创建 SyncAccessHolder
     public static SyncAccessHolder getOrCreateSyncAccessHolder(ServerGroupWrapper wrapper, String host, String clsid) throws Exception {
         String key = host + "_" + clsid;
@@ -270,16 +210,6 @@ public class OpcDaConnectionManager {
         return result;
     }
 
-    // 停止 SyncAccess
-    public static void stopAllSyncAccess() throws JIException {
-        for (SyncAccessHolder holder : SYNC_ACCESS_HOLDER_MAP.values()) {
-            if (holder.isRunning) {
-                holder.syncAccess.unbind();
-                holder.isRunning = false;
-            }
-        }
-        SYNC_EXECUTOR.shutdown();
-    }
 
 
 }
