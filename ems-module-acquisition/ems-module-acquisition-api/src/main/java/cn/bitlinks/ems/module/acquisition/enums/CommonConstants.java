@@ -31,6 +31,7 @@ public interface CommonConstants {
     /**
      * 聚合任务锁
      */
+    String AIR_CONDITIONER_TASK_LOCK_KEY = "air-conditioner-task:%s";
     String AGG_TASK_LOCK_KEY = "agg-task:%s";
     String AGG_TASK_STEADY_LOCK_KEY = "agg-steady-task:%s";
     String COLLECT_AGG_TASK_LOCK_KEY = "collect-agg-task:%s";

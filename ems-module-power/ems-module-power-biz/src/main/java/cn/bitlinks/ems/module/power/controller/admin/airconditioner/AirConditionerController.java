@@ -30,4 +30,11 @@ public class AirConditionerController {
         return success(airConditionerService.getOptions());
     }
 
+
+    @GetMapping("/chart")
+    @Operation(summary = "图")
+    public CommonResult<List<String>> getChart() {
+        return success(airConditionerService.getChart());
+    }
+
 }

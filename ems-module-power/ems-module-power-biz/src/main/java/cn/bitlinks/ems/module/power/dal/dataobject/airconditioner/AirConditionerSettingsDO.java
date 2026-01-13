@@ -41,6 +41,10 @@ public class AirConditionerSettingsDO extends BaseDO {
      * 连接服务ip
      */
     private String ip;
+    private String user;
+    private String password;
+    private String clsid;
+
     /**
      * 排序
      */
