@@ -1,15 +1,17 @@
 package cn.bitlinks.ems.module.power.controller.admin.airconditioner;
 
 import cn.bitlinks.ems.framework.common.pojo.CommonResult;
+import cn.bitlinks.ems.module.power.controller.admin.airconditioner.vo.AirConditionerSettingsReqVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsChartResultVO;
+import cn.bitlinks.ems.module.power.controller.admin.report.electricity.vo.ConsumptionStatisticsChartYInfo;
 import cn.bitlinks.ems.module.power.service.airconditioner.AirConditionerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.validation.Valid;
 import java.util.List;
 
 import static cn.bitlinks.ems.framework.common.pojo.CommonResult.success;
@@ -31,10 +33,10 @@ public class AirConditionerController {
     }
 
 
-    @GetMapping("/chart")
+    @PostMapping("/chart")
     @Operation(summary = "图")
-    public CommonResult<List<String>> getChart() {
-        return success(airConditionerService.getChart());
+    public CommonResult<ConsumptionStatisticsChartResultVO<ConsumptionStatisticsChartYInfo>> getChart(@Valid @RequestBody AirConditionerSettingsReqVO paramVO) {
+        return success(airConditionerService.getChart(paramVO));
     }
 
 }

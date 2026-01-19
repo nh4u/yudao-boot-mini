@@ -170,6 +170,7 @@ public interface ErrorCodeConstants {
     ErrorCode BENCH_MARK_NOT_EXISTS = new ErrorCode(1_001_601_005, "基准年限不存在");
     ErrorCode SYSTEM_TYPE_NOT_EXISTS = new ErrorCode(1_001_601_006, "系统类型不存在");
     ErrorCode DATE_TYPE_NOT_MATCH = new ErrorCode(1_001_601_006, "时间类型不匹配");
+
     // ========== 服务设置  ==========
     ErrorCode SERVICE_SETTINGS_NOT_EXISTS = new ErrorCode(1_001_901_001, "服务设置不存在");
     ErrorCode SERVICE_SETTINGS_ADD_ERROR = new ErrorCode(1_001_901_002, "服务设置添加失败，请检查服务设置信息是否正确");
@@ -225,4 +226,9 @@ public interface ErrorCodeConstants {
 
 
     ErrorCode PARK_FLAG_NOT_EXISTS = new ErrorCode(1_001_901_000, "区域标签不存在");
+    //========== 空调工况报表  ==========
+
+    ErrorCode PARAM_START_TIME_15_DAY_LIMIT = new ErrorCode(1_001_100_000, "只能查看最近15天的数据");
+    ErrorCode PARAM_ITEM_NAME_NECESSARY = new ErrorCode(1_001_100_001, "统计项名称不能为空");
+    ErrorCode AIR_CONDITIONER_NO_DATA_SITE = new ErrorCode(1_001_100_002, "该统计项无数采点位");
 }

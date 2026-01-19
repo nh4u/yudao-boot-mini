@@ -3,8 +3,7 @@ package cn.bitlinks.ems.framework.common.util.date;
 import cn.bitlinks.ems.framework.common.enums.DataTypeEnum;
 import cn.bitlinks.ems.framework.common.enums.DateIntervalEnum;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.date.*;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
 
@@ -15,6 +14,7 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 时间工具类，用于 {@link java.time.LocalDateTime}
@@ -490,6 +490,18 @@ public class LocalDateTimeUtils {
     }
 
 
+    public static List<String> getTimeRangeListByStep(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+        DateTime start = DateUtil.date(startDateTime);
+        DateTime end = DateUtil.date(endDateTime);
+
+        // 自动按 30 秒步进生成序列
+        List<DateTime> range = DateUtil.rangeToList(start, end, DateField.SECOND, 30);
+
+        // 3. 将结果格式化为字符串列表
+        return range.stream()
+                .map(DateUtil::formatDateTime)
+                .collect(Collectors.toList());
+    }
     /**
      * 生成时间范围列表 开始时间必须小于结束时间
      *

@@ -10,8 +10,8 @@ import lombok.*;
 /**
  * 空调工况报表设置表
  */
-@TableName("air_conditioner_settings")
-@KeySequence("air_conditioner_settings_seq")
+@TableName("ems_air_conditioner_settings")
+@KeySequence("ems_air_conditioner_settings_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
